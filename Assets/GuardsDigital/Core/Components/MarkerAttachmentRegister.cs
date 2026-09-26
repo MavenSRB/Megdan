@@ -237,9 +237,30 @@ namespace GuardsDigital.Core.Components
                 holderHeroId,
                 moving.SourceCardInstanceId,
                 moving.SourceActionDefinitionId,
-                moving.TurnSlotIndex);
+                moving.TurnSlotIndex,
+                moving.ActiveUntilHolderNextAction);
             attachments[index] = moved;
             return moved;
+        }
+
+        /// <summary>Expires only this holder's action-bounded marker activations.</summary>
+        public void EndTemporaryActivations(HeroId holderHeroId)
+        {
+            for (var index = 0; index < attachments.Count; index++)
+                if (attachments[index].HolderHeroId.Equals(holderHeroId) &&
+                    attachments[index].ActiveUntilHolderNextAction)
+                    attachments[index] = attachments[index].WithTemporaryActivation(false);
+        }
+
+        public void ActivateUntilHolderNextAction(MarkerInstanceId markerId, int turnIndex)
+        {
+            if (turnIndex < 1 || turnIndex > GuardsDigital.Core.Cards.RoundResolutionAuthority.TurnsPerRound)
+                throw new ArgumentOutOfRangeException(nameof(turnIndex));
+            var index = attachments.FindIndex(marker => marker.Id.Equals(markerId));
+            if (index < 0 || !attachments[index].TurnSlotIndex.HasValue ||
+                attachments[index].IsActiveInTurn(turnIndex))
+                throw new InvalidOperationException("Only an inactive turn-slot marker can be activated.");
+            attachments[index] = attachments[index].WithTemporaryActivation(true);
         }
 
         public MarkerAttachmentRestoreState CaptureRestoreState() =>

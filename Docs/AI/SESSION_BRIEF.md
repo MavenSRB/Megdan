@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-26
+Last updated: 2026-09-27
 
 ## Purpose and authority
 
@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all twenty-three heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v45 persists turn-slot marker positions; wire protocol is `guards-private-online/22`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-three heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty-three heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v46 persists turn-slot marker positions, temporary rune activation and held action selections; wire protocol is `guards-private-online/23`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-three heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.106**.
-- Active authorized milestone: **8.93e**.
-- Next authorized milestone: **8.93f**.
+- Current completed milestone: **8.93e**.
+- Active authorized milestone: **8.93f**.
+- Next proposed milestone: **8.93f**.
 
-**[8.106](Roadmap/PHASE_8.md)** is complete: a teammate-away pause no longer erases the owning side's unchanged `WHO ACTS FIRST?` window; it stays visible but cannot submit until reconnect restores private commands. **8.93e-8.93g** remain authorized and 8.93e resumes; [SN-Q3](Rules/HERO_SNORRI.md) is settled.
+**[8.93e](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md)** is complete: Rune Mastery chooses one inactive rune before every action and keeps it active until the next action; nineteen fronts are reconciled. **8.93f-8.93g** remain authorized; 8.93f is active.
 
-**Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His remaining sequence is active. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No publication authorized.
+**Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93e complete**: staged full set and Rune Mastery (v46, wire /23). Dealing, artwork and the player-path gate remain. Twenty-three heroes dealt. No publication authorized.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 

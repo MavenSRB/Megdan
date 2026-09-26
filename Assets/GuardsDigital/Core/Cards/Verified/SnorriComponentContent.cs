@@ -55,6 +55,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 new AnySupportRuneHandler()
             };
 
+        public static bool IsRuneActive(MarkerAttachmentRegister markers, int turnIndex, int ordinal) =>
+            ordinal >= 1 && ordinal <= Runes.Length &&
+            markers.Attachments.Any(marker => marker.IsActiveInTurn(turnIndex) &&
+                marker.Definition.Reference.Equals(Runes[ordinal - 1].Reference));
+
         /// <summary>The support target is chosen once, before its individually gated clauses.</summary>
         public sealed class AnySupportRuneHandler : IEffectCapabilityHandler
         {
@@ -76,12 +81,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 if (mask.Kind != EffectValueKind.Integer || mask.IntegerValue < 1 ||
                     mask.IntegerValue > 15)
                     return EffectExecutionResult.ImpossibleMandatory();
-                var rune = ActiveRune(
-                    context.Components.Markers, context.ActorId, context.TurnIndex);
-                var active = rune != null &&
-                    Enumerable.Range(1, Runes.Length).Any(ordinal =>
+                var active = Enumerable.Range(1, Runes.Length).Any(ordinal =>
                         (mask.IntegerValue & (1 << (ordinal - 1))) != 0 &&
-                        rune.Definition.Reference.Equals(Runes[ordinal - 1].Reference));
+                        IsRuneActive(context.Components.Markers, context.TurnIndex, ordinal));
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("active", EffectValue.Boolean(active))
@@ -123,13 +125,11 @@ namespace GuardsDigital.Core.Cards.Verified
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var active = ActiveRune(
-                    context.Components.Markers, context.ActorId, context.TurnIndex);
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("active", EffectValue.Boolean(
-                        active != null &&
-                        active.Definition.Reference.Equals(Runes[value.IntegerValue - 1].Reference)))
+                        IsRuneActive(context.Components.Markers, context.TurnIndex,
+                            value.IntegerValue)))
                 });
             }
 
@@ -196,7 +196,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         identity, definition, context.ActorId, context.ActorId,
                         held?.SourceCardInstanceId ?? context.SourceCardInstanceId,
                         held?.SourceActionDefinitionId ?? context.ActionDefinitionId,
-                        pair.Slot);
+                        pair.Slot, held?.ActiveUntilHolderNextAction ?? false);
                 }).ToArray();
 
                 components.Markers.SetTurnSlotMarkers(context.ActorId, placements);

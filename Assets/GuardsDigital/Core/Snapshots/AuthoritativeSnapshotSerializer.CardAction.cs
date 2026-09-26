@@ -423,6 +423,21 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.HeldResolutionId.Value);
             WriteActionOffer(writer, pending.HeldOffer);
             writer.Write(pending.HeldActionHasStarted);
+            writer.Write(pending.Selection != null);
+            if (pending.Selection != null)
+            {
+                var selected = pending.Selection;
+                writer.Write((int)selected.Kind);
+                writer.Write(selected.ReplacedActionId.Value ?? string.Empty);
+                writer.Write(selected.Destination.HasValue);
+                if (selected.Destination.HasValue) WriteCoordinate(writer, selected.Destination.Value);
+                writer.Write(selected.Tokens.Count);
+                foreach (var token in selected.Tokens) writer.Write(token.Value);
+                writer.Write(selected.DefenseChoiceId.Value ?? string.Empty);
+                writer.Write(selected.DefenseCardId.Value ?? string.Empty);
+                writer.Write(selected.ResumesOwedAfterActionRepeat);
+                writer.Write(selected.ResumesOwedAttackRepeat);
+            }
             writer.Write(pending.Frame != null);
             if (pending.Frame != null)
             {
@@ -457,6 +472,25 @@ namespace GuardsDigital.Core.Snapshots
             var heldResolutionId = new ActionResolutionId(reader.ReadString());
             var heldOffer = ReadActionOffer(reader);
             var heldActionHasStarted = reader.ReadBoolean();
+            GuardsDigital.Core.Rules.CardResolution.HeldActionSelection selection = null;
+            if (reader.ReadBoolean())
+            {
+                var actionKind = SnapshotEnumReader.Read<ActionKind>(reader, "held action kind");
+                var replaced = reader.ReadString();
+                var destination = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
+                var tokens = ReadMany(reader, "held Clear tokens",
+                    () => new TokenInstanceId(reader.ReadString()));
+                var defenseChoice = reader.ReadString();
+                var defenseCard = reader.ReadString();
+                var resumesOwedAfterActionRepeat = reader.ReadBoolean();
+                var resumesOwedAttackRepeat = reader.ReadBoolean();
+                selection = new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(
+                    actionKind, string.IsNullOrEmpty(replaced) ? default : new ActionDefinitionId(replaced),
+                    destination, tokens,
+                    string.IsNullOrEmpty(defenseChoice) ? default : new ActionResolutionStepId(defenseChoice),
+                    string.IsNullOrEmpty(defenseCard) ? default : new CardInstanceId(defenseCard),
+                    resumesOwedAfterActionRepeat, resumesOwedAttackRepeat);
+            }
             var frame = reader.ReadBoolean()
                 ? ReadSkillResolution(
                     reader, definitions, cards, catalogs.Capabilities, participants, components,
@@ -490,7 +524,7 @@ namespace GuardsDigital.Core.Snapshots
             }
 
             return new GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution(
-                frame, kind, placement, heldResolutionId, heldOffer, heldActionHasStarted);
+                frame, kind, placement, heldResolutionId, heldOffer, heldActionHasStarted, selection);
         }
 
         /// <summary>

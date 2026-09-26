@@ -1135,7 +1135,8 @@ namespace GuardsDigital.Application
                 new HeroId(row.OwnerHeroId), new HeroId(row.HolderHeroId),
                 new CardInstanceId(row.SourceCardInstanceId),
                 new ActionDefinitionId(row.SourceActionDefinitionId),
-                row.TurnSlotIndex == 0 ? (int?)null : row.TurnSlotIndex);
+                row.TurnSlotIndex == 0 ? (int?)null : row.TurnSlotIndex,
+                row.ActiveUntilHolderNextAction);
         }
 
         private static HexCoordinate ToCoordinate(NetworkCoordinateRow row) =>

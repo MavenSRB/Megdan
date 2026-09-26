@@ -102,6 +102,8 @@ Non-goals: keeping other stale decision families, allowing input while paused, c
 
 Completed 2026-09-26. The presenter now separates the public fact that a viewer owns the standing decision from whether this transient projection may submit. It retains an already-rendered tied-Initiative model only across the same authority version, same public ownership and non-ended phase; the session interaction wall continues to block its retained controls while private commands are absent. The regression failed 0/1 before the correction and passes 1/1 afterward. Complete decision-window plus network-client review Edit Mode passed 27/27; the reconnect player-experience fixture and exact tied-Initiative seat journey passed 4/4. No authority, initiative rule, schema or wire change. 8.93e resumes.
 
+Historical evidence: [8.106 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8106-tied-initiative-reconnect-visibility-evidence).
+
 ### [x] 8.105 Correct Ignatia's Tie Breaker colour-to-symbol mapping
 
 Authorized 2026-09-26 by the user's live correction: "Ignatias what blue/red means is inverted. On blue initiative it triggers red part of the card." This bounded rules/content corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
@@ -115,6 +117,8 @@ Acceptance: record the failing-then-passing typed mapping regression; run every 
 Non-goals: changing initiative rules, the physical coin, the printed card lines, 8.103's glyph controls, Snorri work, package cutting or publication.
 
 Completed 2026-09-26. `CoinSelectedTextQuery` now owns the corrected `☀ = Blue`, `☾ = Red` mapping and all semantic Ignatia stages follow it. The pre-fix regression failed 0/1 with expected Blue / actual Red and passes 1/1 afterward. All directly affected Edit Mode fixtures pass 158/158 and the four Ignatia Play Mode fixtures pass 40/40, including both live faces, Equilibrium, Chaos Incarnate and retained-prefix replay. The replay journey was corrected to compare the next question actually produced by the selected face rather than assume the formerly inverted face's repeat clause. Schema, wire, card text and the symbol-only controls are unchanged. 8.93e resumes.
+
+Historical evidence: [8.105 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8105-ignatia-coin-mapping-correction-evidence).
 
 ### [x] 8.104 Keep a legal target visible after a conditional pre-attack move
 
@@ -130,6 +134,8 @@ Non-goals: changing Crimson Trail's text or target set, changing movement destin
 
 Completed 2026-09-26. The live packaged log confirms Crimson Trail was revealed while its primary never started; the later four-space `Move` was its secondary Movement. The shared binding walk now follows one declared actor relocation through read-only Conditional, Optional and Sequence containers and judges later actor-origin selections from every space that answer can actually leave the hero on. An undecidable shape stays conservatively offered, a false gate preserves the unchanged space, and a second hypothetical relocation remains suppressed. The exact Crimson Trail regression failed before the correction because no Attack was offered and passes afterward through commitment, the conditional step, target selection and defeat. Focused shared Edit Mode passed 35/35; directly affected Whisper and Ursafar journeys plus Whisper's permanent player-path gate passed 15/15. No card text, target rule, destination, schema or wire changed. 8.93e resumes.
 
+Historical evidence: [8.104 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8104-conditional-pre-attack-relocation-evidence).
+
 ### [x] 8.103 Show Ignatia's printed symbols on her face-choice controls
 
 Authorized 2026-09-26 by the user's live correction: "For Ignatia on card choises, dont say \"sun\" \"moon\" its just confusing people, put icons from the card." This bounded presentation corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
@@ -141,6 +147,8 @@ Acceptance: record a failing-then-passing presentation regression that pins both
 Non-goals: coin rules, live-face rail language, card artwork, effect composition, Snorri work, package cutting or publication.
 
 Completed 2026-09-26. Ignatia's typed face-choice presentation now labels the two controls `APPLY ☀ TEXT` and `APPLY ☾ TEXT`, labels the question `CHOOSE THE SYMBOL`, and uses `☀ OR ☾?` as its unreachable dealt-content fallback. No choice control says `SUN` or `MOON`. The typed candidates and Red/Blue mapping are unchanged. The presentation regression failed before the correction (4 of 23 focused cases) and passes afterward (23/23); the exact Equilibrium journey chooses both symbols and passes 1/1. The captured rendered decision window was inspected and shows both card symbols without missing glyphs. No authority, rule, bot, schema, wire or card-art change. 8.93e resumes.
+
+Historical evidence: [8.103 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8103-ignatia-printed-symbol-choice-evidence).
 
 ### [x] 8.102 Turn Trinkets' prepared Turret face toward the player
 
@@ -155,6 +163,8 @@ Acceptance: record a failing-then-passing view regression over the prepared Turr
 Non-goals: card behavior, token semantics, obstacle authority, Snorri work, package cutting or publication.
 
 Completed 2026-09-26. The packaged match log proves Rapid Redeployment accepted its Skill, arm, move and placement answers and emitted `SkillUsed`; the obstacle existed. `PlaceholderObstacleView` had disabled the fallback block after loading the prepared art, then aimed the Quad's local `+Z` at the camera even though Unity renders its local `-Z` face, so back-face culling made the piece invisible. The billboard now aims local `-Z` at the camera. The new regression failed before the correction (world-normal dot camera direction `-0.4866`) and passes afterward. Final focused Edit Mode 4/4 and the exact Rapid Redeployment Play Mode journey 1/1 pass; a rendered frame was inspected and shows the upright Turret beside Trinkets. No rule, choice, obstacle state, schema, wire or content identity changed. 8.93e resumes.
+
+Historical evidence: [8.102 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8102-trinkets-turret-face-evidence).
 
 ### [x] 8.101 Package the reconnect and lobby-host fixes
 

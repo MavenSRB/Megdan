@@ -12,6 +12,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
@@ -181,6 +182,7 @@ namespace GuardsDigital.Tests.EditMode
                     new CardInstanceId("silver"), SnorriSilverFace.PrimarySkill,
                     5 - ordinal));
             }
+            markers.ActivateUntilHolderNextAction(new MarkerInstanceId("rune-1"), 1);
             var actions = new CardActionResolutionAuthority(catalogs, board, markers);
             var round = new RoundResolutionAuthority(
                 configuration.CardDefinitions, configuration.CardInstances,
@@ -197,8 +199,115 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EquivalentTo(new int?[] { 1, 2, 3, 4 }));
             Assert.That(SnorriComponentContent.ActiveRune(restored.Round.Markers, redHero, 1)
                 .Definition.Reference, Is.EqualTo(SnorriComponentContent.Runes[3].Reference));
+            Assert.That(restored.Round.Markers.OfDefinition(
+                SnorriComponentContent.Runes[0].Reference).Single()
+                .ActiveUntilHolderNextAction, Is.True,
+                "Rune Mastery's counts-as activation is authoritative continuation state.");
+            Assert.That(SnorriComponentContent.IsRuneActive(
+                restored.Round.Markers, 1, 1), Is.True);
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(snapshot));
+        }
+
+        [Test]
+        public void RuneMasteryOffersOnlyInactiveRunes_AndExpiresThePriorChoiceBeforeNextAction()
+        {
+            var components = Components();
+            var inscribe = new SnorriComponentContent.InscribeRunesHandler();
+            Assert.That(inscribe.Resume(Context(components, 1, 1), Values(3, 5, 12, 14)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+            var mastery = new SnorriUltimateContent.ChooseRuneHandler();
+            var currentAction = mastery.Execute(Context(components, 1, 1));
+
+            Assert.That(currentAction.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(currentAction.Choice.Candidates.Select(value => value.IntegerValue),
+                Is.EquivalentTo(new[] { 1, 3, 4 }),
+                "Rune 2 is physically below current slot one and therefore is not inactive.");
+            Assert.That(mastery.Resume(Context(components, 1, 1), Values(1)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(SnorriComponentContent.IsRuneActive(components.Markers, 1, 1), Is.True);
+            Assert.That(SnorriComponentContent.IsRuneActive(components.Markers, 1, 2), Is.True,
+                "The chosen rune counts as active beside, not instead of, the slot rune.");
+
+            var nextAction = mastery.Execute(Context(components, 1, 1));
+            Assert.That(SnorriComponentContent.IsRuneActive(components.Markers, 1, 1), Is.False,
+                "The prior extra rune expires before the choice for the next action.");
+            Assert.That(nextAction.Choice.Candidates.Select(value => value.IntegerValue),
+                Is.EquivalentTo(new[] { 1, 3, 4 }));
+        }
+
+        [Test]
+        public void RuneMasteryActivationSurvivesRoundBoundaryUntilTheNextAction()
+        {
+            var components = Components();
+            var inscribe = new SnorriComponentContent.InscribeRunesHandler();
+            Assert.That(inscribe.Resume(Context(components, 1, 1), Values(3, 5, 12, 14)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+            var mastery = new SnorriUltimateContent.ChooseRuneHandler();
+            Assert.That(mastery.Resume(Context(components, 1, 1), Values(1)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+
+            Assert.That(SnorriComponentContent.IsRuneActive(components.Markers, 1, 1), Is.True,
+                "Round cleanup does not define Rune Mastery's expiry boundary.");
+            Assert.That(mastery.Execute(Context(components, 2, 1)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(SnorriComponentContent.IsRuneActive(components.Markers, 1, 1), Is.False);
+        }
+
+        [Test]
+        public void ReconciledInventoryContainsNineteenDistinctFronts_AndBoxesOnlyRuneShards()
+        {
+            Assert.That(SnorriCardContent.AllDefinitions.Count, Is.EqualTo(19));
+            Assert.That(SnorriCardContent.AllDefinitions.Select(card => card.Id).Distinct().Count(),
+                Is.EqualTo(19));
+            Assert.That(SnorriCardContent.DealtDefinitions.Count, Is.EqualTo(18));
+            Assert.That(SnorriCardContent.ReturnedToBoxAtSetup,
+                Is.EqualTo(new[] { SnorriHandicapContent.RuneShards }));
+            Assert.That(SnorriCardContent.DealtDefinitions.Any(card =>
+                card.Id.Equals(SnorriUltimateContent.RuneMastery)), Is.True);
+        }
+
+        [Test]
+        public void RuneMasteryDeclaresEveryActionIncludingGeneralActionsRepeatsAndDefense()
+        {
+            var ultimate = CardInstance.CreateInDeck(
+                new CardInstanceId("snorri-ultimate"),
+                SnorriUltimateContent.Definition.Reference, Actor);
+            Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
+            var unlocked = UltimateUnlockQuery.Derive(
+                new[] { SnorriUltimateContent.Definition }, new[] { ultimate });
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
+                new[] { new HeroOccupancy(Actor, new HexCoordinate(0, 0)) });
+            var offer = new ActionOffer(
+                new CardInstanceId("snorri-action"),
+                SnorriAttackFaces.Definitions[0].Reference,
+                SnorriAttackFaces.PrimaryRangedAttack,
+                Actor, ActionInvocationContext.PrintedPrimary, true);
+
+            foreach (var kind in new[]
+            {
+                ActionKind.Attack, ActionKind.Movement, ActionKind.Skill,
+                ActionKind.Hold, ActionKind.FastTravel, ActionKind.Clear
+            })
+            {
+                Assert.That(BeforeActionTriggerQuery.Derive(
+                    unlocked, board, StagedBoardParticipants.Create(),
+                    offer, kind, Array.Empty<string>()).Single().Trigger.Frequency,
+                    Is.EqualTo(BeforeActionTriggerFrequency.EveryActionIncludingReactions),
+                    kind.ToString());
+            }
+
+            Assert.That(BeforeActionTriggerQuery.Derive(
+                unlocked, board, StagedBoardParticipants.Create(),
+                new ActionOffer(
+                    offer.SourceCardInstanceId, offer.SourceDefinitionReference,
+                    offer.ActionDefinitionId, offer.ActorId,
+                    ActionInvocationContext.Repeated, true),
+                ActionKind.Attack, Array.Empty<string>()).Count, Is.EqualTo(1));
+            Assert.That(BeforeActionTriggerQuery.DeriveForDefense(
+                unlocked, null, board, StagedBoardParticipants.Create(), Actor).Count,
+                Is.EqualTo(1));
         }
 
         [Test]

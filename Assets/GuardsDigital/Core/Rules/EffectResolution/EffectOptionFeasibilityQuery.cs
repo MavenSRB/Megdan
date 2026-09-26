@@ -542,6 +542,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         private static bool ReadsTheActorSpace(EffectNodeDefinition node)
         {
+            // Milestone 8.93e regression closure. This selector's contract is a radius measured from
+            // the acting hero; unlike the generic roster selector it has no explicit origin input
+            // because Actor is its only origin. The hypothetical-space walk must therefore name the
+            // typed reader itself or an impossible move-then-target continuation is offered merely
+            // because its selection expresses that origin through its capability rather than an input.
+            if (node.Capability.Equals(
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .RadiusHeroTargetV1))
+            {
+                return true;
+            }
+
             foreach (var input in node.Inputs)
             {
                 if (string.Equals(
@@ -711,11 +723,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             if (node.Kind == EffectNodeKind.Optional)
             {
-                if (node.ChildNodeIds.Count != 1 ||
-                    !TryAnticipateActorRelocationClause(
-                        node.ChildNodeIds[0], frame, outcomes, context, out spaces))
+                if (node.ChildNodeIds.Count != 1)
                 {
                     return false;
+                }
+
+                if (!TryAnticipateActorRelocationClause(
+                        node.ChildNodeIds[0], frame, outcomes, context, out spaces))
+                {
+                    // Declining an optional relocation always preserves the actor's current space.
+                    // Keep that proven answer when the branch itself is impossible; where the branch
+                    // is performable but its destinations cannot be anticipated, retain the existing
+                    // conservative unknown instead of falsely ruling out a continuation it may create.
+                    return !CanPerformOptionalBranch(node, frame, outcomes, context) &&
+                        TryCurrentActorSpace(frame, context, out spaces);
                 }
 
                 if (TryCurrentActorSpace(frame, context, out var unchanged))
@@ -723,6 +744,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     spaces = spaces.Concat(unchanged).Distinct().ToArray();
                 }
 
+                return true;
+            }
+
+            if (node.Kind == EffectNodeKind.Sequence && node.ChildNodeIds.Count == 2 &&
+                TryAnticipateSelectedRelocation(
+                    node.ChildNodeIds[0], node.ChildNodeIds[1], frame, outcomes, context,
+                    out spaces))
+            {
                 return true;
             }
 
@@ -753,6 +782,102 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Milestone 8.93e regression closure: the actor spaces behind the typed
+        /// selection-then-relocation shape used by an optional Move. The selection and relocation
+        /// handlers already own every candidate and destination; this method merely joins their
+        /// read-only contracts once per eligible answer. Moving another piece preserves the actor's
+        /// current space, while moving the actor contributes the relocation handler's own spaces.
+        /// Any unreadable answer leaves the whole clause unknown rather than narrowing it by guess.
+        /// </summary>
+        private static bool TryAnticipateSelectedRelocation(
+            EffectNodeId selectionId,
+            EffectNodeId relocationId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out IReadOnlyList<HexCoordinate> spaces)
+        {
+            spaces = Array.Empty<HexCoordinate>();
+            if (!context.Definition.TryGetNode(selectionId, out var selectionNode) ||
+                selectionNode.Kind != EffectNodeKind.Capability ||
+                !context.Definition.TryGetNode(relocationId, out var relocationNode) ||
+                relocationNode.Kind != EffectNodeKind.Capability ||
+                !ContainsActorRelocation(relocationId, context) ||
+                !context.Catalog.TryLoad(selectionNode.Capability, out var selectionHandler) ||
+                !(selectionHandler is IEffectSelectionCapabilityHandler selection) ||
+                !(selectionHandler is IEffectAnticipatedOutcomeCapabilityHandler publisher) ||
+                !publisher.PublishesWithoutApplying ||
+                !context.Catalog.TryLoad(relocationNode.Capability, out var relocationHandler) ||
+                !(relocationHandler is IEffectActorRelocationCapabilityHandler relocating) ||
+                !TryCurrentActorSpace(frame, context, out var current))
+            {
+                return false;
+            }
+
+            var selectionContext =
+                EffectResolutionSession.BuildCapabilityContext(
+                    frame, selectionNode, outcomes, context);
+            if (!IsDecidable(selectionHandler, selectionContext) ||
+                selectionHandler.Anticipate(selectionContext) !=
+                    EffectExecutionResultKind.NeedsChoice ||
+                selection.AnticipateMinimumSelections(selectionContext) != 1)
+            {
+                return false;
+            }
+
+            var candidates = EffectSelectionEligibilityQuery.EligibleCandidates(
+                selectionNode, selection.AnticipateCandidates(selectionContext),
+                frame, outcomes, context);
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            var anticipated = new List<HexCoordinate>();
+            foreach (var candidate in candidates)
+            {
+                var facts = publisher.AnticipateOutcomes(
+                    selectionContext, new[] { candidate });
+                if (facts == null || facts.Count == 0)
+                {
+                    return false;
+                }
+
+                var carried = outcomes.Concat(new[]
+                {
+                    new EffectNodeOutcome(
+                        selectionNode.Id, EffectExecutionResultKind.Applied, facts)
+                }).ToArray();
+                var relocationContext =
+                    EffectResolutionSession.BuildCapabilityContext(
+                        frame, relocationNode, carried, context);
+                if (relocating.TryAnticipateActorSpaces(
+                        relocationContext, out var candidateSpaces) &&
+                    candidateSpaces != null)
+                {
+                    anticipated.AddRange(candidateSpaces);
+                    continue;
+                }
+
+                // A relocation of somebody other than the actor changes none of the spaces from
+                // which later actor-anchored text is measured. This is read from the relocation's
+                // declared subject after the selection outcome has been supplied.
+                var mover = relocationContext.Input("mover");
+                if (mover.Kind == EffectValueKind.Coordinate &&
+                    !mover.Coordinate.Equals(current[0]))
+                {
+                    anticipated.Add(current[0]);
+                    continue;
+                }
+
+                return false;
+            }
+
+            spaces = anticipated.Distinct().ToArray();
+            return spaces.Count > 0;
         }
 
         private static bool TryCurrentActorSpace(

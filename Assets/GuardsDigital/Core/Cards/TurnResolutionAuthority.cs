@@ -1028,9 +1028,23 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
 
-            var events = new List<TurnResolutionEvent>();
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                new ActionResolutionId($"hold:{cardInstanceId.Value}"), offer.Value,
+                ActionKind.Hold, out var events,
+                new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(ActionKind.Hold));
+            if (intercepted.HasValue)
+            {
+                return intercepted.Value;
+            }
+
+            return PerformHoldCore(offer.Value, events);
+        }
+
+        private TurnResolutionResult PerformHoldCore(
+            ActionOffer offer, List<TurnResolutionEvent> events)
+        {
             AddTiming(events, TimingCheckpoint.ActionStarted);
-            events.Add(TurnResolutionEvent.HoldPerformed(offer.Value));
+            events.Add(TurnResolutionEvent.HoldPerformed(offer));
 
             // Milestone 8.9. p.9 counts *every* action on a basic card as basic, and p.7's Hold is an
             // action a hero performs on one, so a Hold spent from Magnetic Dagger or Static Barrier
@@ -1044,9 +1058,9 @@ namespace GuardsDigital.Core.Cards
             // owed for a Hold had nothing to run on.
             AddCompletedAction(
                 events,
-                offer.Value.SourceCardInstanceId,
-                offer.Value.ActionDefinitionId,
-                offer.Value.ActorId,
+                offer.SourceCardInstanceId,
+                offer.ActionDefinitionId,
+                offer.ActorId,
                 ActionKind.Hold);
             return CompleteGeneralRuleActionAndAdvance(events, "Hold");
         }
@@ -1457,11 +1471,34 @@ namespace GuardsDigital.Core.Cards
             List<TurnResolutionEvent> events) =>
             cardActions.HasBorrowedSkillParent ? ResumeBorrowingSkill(events) : (TurnResolutionResult?)null;
 
-        private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
+        private TurnResolutionResult? TryStartOwedAfterActionRepeat(
+            List<TurnResolutionEvent> events, bool skipBeforeActionTrigger = false)
         {
             if (cardActions == null || !cardActions.HasOwedAfterActionRepeat)
             {
                 return null;
+            }
+
+            var owed = cardActions.OwedAfterActionRepeat;
+            if (!skipBeforeActionTrigger)
+            {
+                var sourceCard = instances.Single(candidate =>
+                    candidate.Id.Equals(owed.SourceCardInstanceId));
+                var repeatedOffer = new ActionOffer(
+                    owed.SourceCardInstanceId, sourceCard.DefinitionReference,
+                    owed.ActionDefinitionId, owed.ActorId,
+                    ActionInvocationContext.Repeated, true);
+                var intercepted = TryInterceptWithBeforeActionTrigger(
+                    owed.ResolutionId, repeatedOffer, owed.Kind, out var triggerEvents,
+                    new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(
+                        owed.Kind, resumesOwedAfterActionRepeat: true));
+                events.AddRange(triggerEvents);
+                if (intercepted.HasValue)
+                {
+                    return intercepted.Value.Accepted
+                        ? TurnResolutionResult.Accept(events)
+                        : intercepted;
+                }
             }
 
             // Milestone 8.25e. p.12's Hold is the one basic action no card-action resolver holds - it
@@ -1789,6 +1826,28 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
 
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                resolutionId, replacementOffer, ActionKind.FastTravel, out var events,
+                new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(
+                    ActionKind.FastTravel, replacedMovementActionDefinitionId, destination));
+            if (intercepted.HasValue)
+            {
+                return intercepted.Value;
+            }
+
+            return PerformFastTravelCore(resolutionId, replacementOffer,
+                replacedMovementActionDefinitionId, destination, cardActions.Board.Minions, events);
+        }
+
+        private TurnResolutionResult PerformFastTravelCore(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedMovementActionDefinitionId,
+            GuardsDigital.Core.Board.HexCoordinate destination,
+            IEnumerable<MinionOccupancy> minions,
+            List<TurnResolutionEvent> events)
+        {
+
             var result = cardActions.PerformTurnFastTravel(
                 resolutionId,
                 replacementOffer,
@@ -1808,7 +1867,7 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.25e. The card resolves and Initiative is acknowledged below the checkpoint
             // rather than above it, for the reason p.12's Hold does; see that path.
             return CompleteGeneralRuleActionAndAdvance(
-                MaterializeSteps(result.Steps, TurnResolutionEvent.FromFastTravelAction),
+                AppendMaterialized(events, result.Steps, TurnResolutionEvent.FromFastTravelAction),
                 "Fast Travel");
         }
 
@@ -1860,6 +1919,28 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.ClearCannotRemoveAnything);
             }
 
+            var tokens = selectedTokenIds?.ToArray();
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                resolutionId, replacementOffer, ActionKind.Clear, out var events,
+                new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(
+                    ActionKind.Clear, replacedAttackActionDefinitionId, tokens: tokens));
+            if (intercepted.HasValue)
+            {
+                return intercepted.Value;
+            }
+
+            return PerformClearCore(resolutionId, replacementOffer,
+                replacedAttackActionDefinitionId, tokens, events);
+        }
+
+        private TurnResolutionResult PerformClearCore(
+            ActionResolutionId resolutionId,
+            ActionOffer replacementOffer,
+            ActionDefinitionId replacedAttackActionDefinitionId,
+            IEnumerable<TokenInstanceId> selectedTokenIds,
+            List<TurnResolutionEvent> events)
+        {
+
             var result = cardActions.PerformTurnClear(
                 resolutionId,
                 replacementOffer,
@@ -1877,7 +1958,17 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.25e. Below the checkpoint rather than above it, for the reason p.12's Hold
             // is; see that path.
             return CompleteGeneralRuleActionAndAdvance(
-                MaterializeSteps(result.Steps, TurnResolutionEvent.FromClearAction), "Clear");
+                AppendMaterialized(events, result.Steps, TurnResolutionEvent.FromClearAction), "Clear");
+        }
+
+        private List<TurnResolutionEvent> AppendMaterialized(
+            List<TurnResolutionEvent> events,
+            IEnumerable<ResolutionStep> steps,
+            Func<GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEvent,
+                TurnResolutionEvent> materialize)
+        {
+            events.AddRange(MaterializeSteps(steps, materialize));
+            return events;
         }
 
         /// <summary>
@@ -2619,6 +2710,35 @@ namespace GuardsDigital.Core.Cards
                     reopened.Steps, TurnResolutionEvent.FromAttackAction));
                 return TurnResolutionResult.Accept(events);
             }
+            if (paused.Selection?.ResumesOwedAttackRepeat == true)
+            {
+                return StartTheOwedAttackRepeat(events, skipBeforeActionTrigger: true);
+            }
+            if (paused.Selection?.ResumesOwedAfterActionRepeat == true)
+            {
+                var repeated = TryStartOwedAfterActionRepeat(
+                    events, skipBeforeActionTrigger: true);
+                return repeated ?? CompleteTheActionTheTurnHeldOpen(events);
+            }
+            if (paused.Selection != null)
+            {
+                switch (paused.Selection.Kind)
+                {
+                    case ActionKind.Hold:
+                        return PerformHoldCore(paused.HeldOffer, events);
+                    case ActionKind.FastTravel:
+                        return PerformFastTravelCore(
+                            paused.HeldResolutionId, paused.HeldOffer,
+                            paused.Selection.ReplacedActionId,
+                            paused.Selection.Destination.Value,
+                            cardActions.Board.Minions, events);
+                    case ActionKind.Clear:
+                        return PerformClearCore(
+                            paused.HeldResolutionId, paused.HeldOffer,
+                            paused.Selection.ReplacedActionId,
+                            paused.Selection.Tokens, events);
+                }
+            }
             var owed = cardActions.PendingPreActionResolution;
             if (owed != null && owed.OwesWork &&
                 owed.Placement ==
@@ -2876,7 +2996,8 @@ namespace GuardsDigital.Core.Cards
             ActionResolutionId resolutionId,
             ActionOffer offer,
             ActionKind actionKind,
-            out List<TurnResolutionEvent> events)
+            out List<TurnResolutionEvent> events,
+            GuardsDigital.Core.Rules.CardResolution.HeldActionSelection selection = null)
         {
             events = new List<TurnResolutionEvent>();
             if (cardActions?.Board == null)
@@ -2908,7 +3029,7 @@ namespace GuardsDigital.Core.Cards
             }
             var started = cardActions.StartBeforeActionTrigger(
                 source, resolutionId, offer, definitions, instances, participants, timing,
-                CurrentModifications(), roundIndex, turnIndex);
+                CurrentModifications(), roundIndex, turnIndex, selection: selection);
             if (!started.Accepted)
             {
                 return TurnResolutionResult.Reject(
@@ -3210,8 +3331,29 @@ namespace GuardsDigital.Core.Cards
                 : TurnResolutionResult.Accept(events);
         }
 
-        private TurnResolutionResult StartTheOwedAttackRepeat(List<TurnResolutionEvent> events)
+        private TurnResolutionResult StartTheOwedAttackRepeat(
+            List<TurnResolutionEvent> events, bool skipBeforeActionTrigger = false)
         {
+            if (!skipBeforeActionTrigger)
+            {
+                var owed = cardActions.OwedAttackRepeat;
+                var repeatedOffer = new ActionOffer(
+                    owed.SourceCardInstanceId, owed.SourceDefinitionReference,
+                    owed.ActionDefinitionId, owed.ActorId,
+                    ActionInvocationContext.Repeated, true);
+                var intercepted = TryInterceptWithBeforeActionTrigger(
+                    cardActions.OwedAttackRepeatResolutionId, repeatedOffer,
+                    ActionKind.Attack, out var triggerEvents,
+                    new GuardsDigital.Core.Rules.CardResolution.HeldActionSelection(
+                        ActionKind.Attack, resumesOwedAttackRepeat: true));
+                events.AddRange(triggerEvents);
+                if (intercepted.HasValue)
+                {
+                    return intercepted.Value.Accepted
+                        ? TurnResolutionResult.Accept(events)
+                        : intercepted.Value;
+                }
+            }
             var repeated = cardActions.StartOwedAttackRepeat(
                 definitions, instances, participants, CurrentModifications());
             events.AddRange(MaterializeSteps(repeated.Steps, TurnResolutionEvent.FromAttackAction));
@@ -3756,7 +3898,7 @@ namespace GuardsDigital.Core.Cards
                 cardActions.PendingDefenseChoice == null)
                 return false;
             var sources = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery
-                .DeriveForDefense(timing, cardActions.Board, participants,
+                .DeriveForDefense(CurrentUltimates(), timing, cardActions.Board, participants,
                     attack.TargetHeroId, heroItems);
             var source = sources.FirstOrDefault(candidate => !consumedTurnScopedKeys.Contains(
                 $"before-defense:{attack.ResolutionId.Value}:{candidate.SourceId}"));

@@ -28,7 +28,8 @@ namespace GuardsDigital.Core.Components
             HeroId holderHeroId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId sourceActionDefinitionId,
-            int? turnSlotIndex = null)
+            int? turnSlotIndex = null,
+            bool activeUntilHolderNextAction = false)
         {
             if (!id.IsDefined)
             {
@@ -56,6 +57,11 @@ namespace GuardsDigital.Core.Components
                     nameof(turnSlotIndex));
             }
 
+            if (activeUntilHolderNextAction && !turnSlotIndex.HasValue)
+                throw new ArgumentException(
+                    "Temporary activation belongs to a turn-slot marker.",
+                    nameof(activeUntilHolderNextAction));
+
             Id = id;
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             OwnerHeroId = ownerHeroId;
@@ -63,6 +69,7 @@ namespace GuardsDigital.Core.Components
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
             TurnSlotIndex = turnSlotIndex;
+            ActiveUntilHolderNextAction = activeUntilHolderNextAction;
 
             // Milestone 8.23, the exact shape PlacedToken derives its own from - one source per
             // declared property, in declaration order, so the two collections address the same
@@ -104,6 +111,17 @@ namespace GuardsDigital.Core.Components
         /// hero-held markers. It is a dashboard association, never a board coordinate.
         /// </summary>
         public int? TurnSlotIndex { get; }
+
+        /// <summary>A counts-as activation independent of the live turn-slot position.</summary>
+        public bool ActiveUntilHolderNextAction { get; }
+
+        public bool IsActiveInTurn(int turnIndex) =>
+            turnIndex >= 1 && turnIndex <= RoundResolutionAuthority.TurnsPerRound &&
+            (TurnSlotIndex == turnIndex || ActiveUntilHolderNextAction);
+
+        internal MarkerAttachment WithTemporaryActivation(bool active) =>
+            new MarkerAttachment(Id, Definition, OwnerHeroId, HolderHeroId,
+                SourceCardInstanceId, SourceActionDefinitionId, TurnSlotIndex, active);
 
         /// <summary>
         /// The explicit return state milestone 6.2's second acceptance check requires, read from the

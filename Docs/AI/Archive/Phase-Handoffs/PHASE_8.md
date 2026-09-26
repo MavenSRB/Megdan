@@ -74,6 +74,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.95 | Skill starts now honor the same before-primary-action trigger and held-offer continuation as Attack and Movement. Focus, Discipline and Mastery each offer their free step on the next turn before a Skill; Discipline moves on the board and resumes the held Skill. Focused T2 rules/continuation and player-input checks green. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-895-misas-next-turn-green-movement-offer). | milestone/8.95 |
 
+## Milestone 8.93e Snorri Rune Mastery and set reconciliation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93e | Rune Mastery runs before every action, expires the prior temporary activation, offers one inactive physical rune and keeps the answer active beside the slot rune until Snorri's next action. General actions, Defense and repeated instances retain exact validated arguments across the pause; schema v46 and wire /23 carry marker and held-selection state. Nineteen distinct fronts reconcile to eighteen staged dealt cards plus boxed Rune Shards. Focused Rune Mastery/serialization and shared feasibility checks passed; affected Unity Edit Mode finished 203/203. The wider run first reproduced a move-then-target over-offer, then the actor-anchored radius and selection-to-relocation read-only feasibility walk were corrected and rerun green (exact case and shared 109/109). Core/Application builds passed; Unity-free test discovery remains blocked by its existing Presentation-reference compile failure. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893e-compose-rune-mastery-and-reconcile-the-set). | milestone/8.93e |
+
 ## Milestone 8.93d Snorri Green defense and disruption evidence
 
 | Milestone | Outcome and definition | Commit |

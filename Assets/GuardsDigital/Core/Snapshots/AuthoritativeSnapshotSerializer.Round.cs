@@ -786,6 +786,7 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(attachment.SourceCardInstanceId.Value ?? string.Empty);
                 writer.Write(attachment.SourceActionDefinitionId.Value ?? string.Empty);
                 writer.Write(attachment.TurnSlotIndex ?? 0);
+                writer.Write(attachment.ActiveUntilHolderNextAction);
             }
         }
 
@@ -818,7 +819,8 @@ namespace GuardsDigital.Core.Snapshots
                     holder,
                     sourceCard,
                     string.IsNullOrEmpty(sourceActionValue) ? default : new ActionDefinitionId(sourceActionValue),
-                    turnSlotIndex == 0 ? (int?)null : turnSlotIndex);
+                    turnSlotIndex == 0 ? (int?)null : turnSlotIndex,
+                    reader.ReadBoolean());
             }));
         }
 

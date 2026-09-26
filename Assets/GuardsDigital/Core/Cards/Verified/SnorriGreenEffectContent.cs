@@ -251,13 +251,9 @@ namespace GuardsDigital.Core.Cards.Verified
                     !context.ActorId.IsDefined || context.TurnIndex < 1 ||
                     context.TurnIndex > RoundResolutionAuthority.TurnsPerRound)
                     return Array.Empty<int>();
-                var marker = SnorriComponentContent.ActiveRune(
-                    context.Components.Markers, context.ActorId, context.TurnIndex);
-                if (marker == null) return Array.Empty<int>();
-                var ordinal = Array.FindIndex(
-                    SnorriComponentContent.Runes,
-                    rune => rune.Reference.Equals(marker.Definition.Reference)) + 1;
-                return ordinal > 0 ? new[] { ordinal } : Array.Empty<int>();
+                return Enumerable.Range(1, SnorriComponentContent.Runes.Length)
+                    .Where(ordinal => SnorriComponentContent.IsRuneActive(
+                        context.Components.Markers, context.TurnIndex, ordinal)).ToArray();
             }
 
             private static EffectExecutionResult Selected(int ordinal)

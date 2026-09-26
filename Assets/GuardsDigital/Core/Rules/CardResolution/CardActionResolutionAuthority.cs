@@ -1093,6 +1093,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public bool HasOwedAttackRepeat => owedAttackRepeat != null;
 
+        public PendingAttackResolution OwedAttackRepeat => owedAttackRepeat;
+
+        public ActionResolutionId OwedAttackRepeatResolutionId =>
+            owedAttackRepeat == null ? default : CardTextRepeatResolutionIdFor(owedAttackRepeat);
+
         /// <summary>
         /// The modifications in effect right now, derived from the supplied timing state and this
         /// authority's board. Built per command rather than cached: an Active effect can expire, a
@@ -3872,7 +3877,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             HeroId triggeredHeroId = default,
             PreActionContinuationKind continuationKind =
-                PreActionContinuationKind.BeforeActionTrigger)
+                PreActionContinuationKind.BeforeActionTrigger,
+            HeldActionSelection selection = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (pendingPreAction != null)
@@ -3938,7 +3944,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     continuationKind,
                     PreActionPlacement.BeforeTheAction,
                     heldResolutionId,
-                    heldOffer);
+                    heldOffer, selection: selection);
             }
 
             var facts = new List<ResolutionStep>(PreActionFacts(

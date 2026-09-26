@@ -135,10 +135,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         BoardObjectReference.ForHero(context.ActorId), out var actorAt))
                     return Array.Empty<BoardObjectReference>();
 
-                var rune = SnorriComponentContent.ActiveRune(
-                    context.Components.Markers, context.ActorId, context.TurnIndex);
-                var firstRune = rune != null &&
-                    rune.Definition.Reference.Equals(SnorriComponentContent.Runes[0].Reference);
+                var firstRune = SnorriComponentContent.IsRuneActive(
+                    context.Components.Markers, context.TurnIndex, 1);
                 var all = SyntheticTargetingCapabilities.PrintedIconSelection(
                     context, PrintedValueChannel.Range,
                     SyntheticTargetingCapabilities.PrintedIconKinds.Units,

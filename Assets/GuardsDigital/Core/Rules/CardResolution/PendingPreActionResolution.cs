@@ -77,7 +77,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PreActionPlacement placement,
             ActionResolutionId heldResolutionId,
             ActionOffer heldOffer,
-            bool heldActionHasStarted = false)
+            bool heldActionHasStarted = false,
+            HeldActionSelection selection = null)
         {
             // The frame is absent in exactly one shape: the side has been decided and the work it
             // places has not been entered yet. Every other shape is a frame standing somewhere - paused
@@ -145,6 +146,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeldResolutionId = heldResolutionId;
             HeldOffer = heldOffer;
             HeldActionHasStarted = heldActionHasStarted;
+            Selection = selection;
         }
 
         /// <summary>The paused effect frame, identical in kind to a paused Skill's.</summary>
@@ -166,11 +168,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Whether the held action has already been started and this frame is parked behind it.</summary>
         public bool HeldActionHasStarted { get; }
+        public HeldActionSelection Selection { get; }
 
         /// <summary>The same continuation carrying a frame that has taken one more step.</summary>
         public PendingPreActionResolution WithFrame(PendingResolution frame) =>
             new PendingPreActionResolution(
-                frame, Kind, Placement, HeldResolutionId, HeldOffer, HeldActionHasStarted);
+                frame, Kind, Placement, HeldResolutionId, HeldOffer, HeldActionHasStarted, Selection);
 
         /// <summary>
         /// The same continuation once its ordering capability has answered. Only an
@@ -187,7 +190,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return new PendingPreActionResolution(
-                Frame, Kind, placement, HeldResolutionId, HeldOffer);
+                Frame, Kind, placement, HeldResolutionId, HeldOffer, selection: Selection);
         }
 
         /// <summary>
@@ -203,7 +206,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return new PendingPreActionResolution(
-                null, Kind, Placement, HeldResolutionId, HeldOffer, heldActionHasStarted: true);
+                null, Kind, Placement, HeldResolutionId, HeldOffer, heldActionHasStarted: true,
+                selection: Selection);
         }
 
         /// <summary>

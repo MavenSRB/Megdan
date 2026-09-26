@@ -357,7 +357,8 @@ namespace GuardsDigital.Application
         // pinned constant moves with this bump.
         // v22: the admission tuple's snapshot schema advances to 45 for persisted marker turn slots.
         // Peers with older authoritative-state shape must refuse each other before gameplay.
-        public const int Version = 22;
+        // v23: marker projection rows carry the temporary counts-as-active state (snapshot v46).
+        public const int Version = 23;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

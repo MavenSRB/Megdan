@@ -391,7 +391,8 @@ namespace GuardsDigital.Core.Snapshots
         // v45: marker attachments carry an optional numbered dashboard turn slot. Snorri's four
         // distinct runes persist through round end and defeat, so their assignment is match-wide
         // rules state, not presentation placement. v44 lacks that association and is rejected.
-        public const int CurrentSchemaVersion = 45;
+        // v46: a turn-slot marker can count as active until its holder's next action.
+        public const int CurrentSchemaVersion = 46;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -113,6 +113,9 @@ namespace GuardsDigital.Core.Rules.Progression
                     // Tsunami's names one; asking the declaration keeps that difference in the one
                     // place that states it.
                     ultimate.Rule.BeforeAction.FiresBefore(actionKind) &&
+                    (BeforeActionTriggerAdmitsKind(actionKind) ||
+                        ultimate.Rule.BeforeAction.Frequency ==
+                            BeforeActionTriggerFrequency.EveryActionIncludingReactions) &&
                     ultimate.Rule.TriggeredEffect.HasValue &&
                     ultimate.OwnerId.Equals(offer.ActorId) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
@@ -237,15 +240,29 @@ namespace GuardsDigital.Core.Rules.Progression
         /// trigger runs before that selection, so it can discard the only eligible Defense card.
         /// </summary>
         public static IReadOnlyList<BeforeActionTriggerSource> DeriveForDefense(
-            ActiveEffectLifecycle timing, AdjacentMoveAuthority board,
+            UnlockedUltimateSet ultimates, ActiveEffectLifecycle timing, AdjacentMoveAuthority board,
             MatchParticipants participants,
             GuardsDigital.Core.Units.Heroes.HeroId defenderId,
             HeroItemState heroItems = null)
         {
-            if (timing == null || board == null || participants == null ||
+            if (ultimates == null || board == null || participants == null ||
                 !defenderId.IsDefined)
                 return Array.Empty<BeforeActionTriggerSource>();
-            return timing.Effects
+            var permanent = ultimates.Ultimates
+                .Where(ultimate =>
+                    ultimate.OwnerId.Equals(defenderId) &&
+                    ultimate.Rule.BeforeAction.Frequency ==
+                        BeforeActionTriggerFrequency.EveryActionIncludingReactions &&
+                    ultimate.Rule.TriggeredEffect.HasValue &&
+                    board.TryGetHeroCoordinate(defenderId, out _))
+                .Select(ultimate => new BeforeActionTriggerSource(
+                    ultimate.Source.SourceId, ultimate.OwnerId,
+                    ultimate.SourceCardInstanceId, ultimate.SourceDefinitionReference,
+                    ultimate.Rule.EffectSourceId, ultimate.Rule.TriggeredEffect.Value,
+                    ultimate.Rule.BeforeAction));
+            var active = timing == null
+                ? Enumerable.Empty<BeforeActionTriggerSource>()
+                : timing.Effects
                 .Where(effect =>
                     effect.Phase == ActiveEffectPhase.Active &&
                     effect.Definition.TriggeredEffect.HasValue &&
@@ -262,6 +279,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     new BeforeActionTrigger(ActionKind.None,
                         BeforeActionTriggerFrequency.EveryAction)))
                 .ToArray();
+            return permanent.Concat(active).ToArray();
         }
 
         /// <summary>

@@ -31,7 +31,10 @@ namespace GuardsDigital.Core.Cards
         /// records the sources it has spent so a once-per-turn ability cannot fire twice, and an
         /// ability with no limit is never written into that record.</para>
         /// </summary>
-        EveryAction = 2
+        EveryAction = 2,
+
+        /// <summary>An action-bounded rule also watches reactions and general-rule actions.</summary>
+        EveryActionIncludingReactions = 3
     }
 
     /// <summary>
@@ -64,7 +67,8 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.35z30. Every-action is the one declaration that names no kind, and
             // it is the only one that may: see BeforeActionTriggerFrequency.EveryAction for why the
             // pairing is exact in both directions.
-            var everyAction = frequency == BeforeActionTriggerFrequency.EveryAction;
+            var everyAction = frequency == BeforeActionTriggerFrequency.EveryAction ||
+                frequency == BeforeActionTriggerFrequency.EveryActionIncludingReactions;
             if (everyAction && action != ActionKind.None)
             {
                 throw new ArgumentException(
@@ -101,7 +105,9 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public bool FiresBefore(ActionKind actionKind) =>
             IsDeclared &&
-            (Frequency == BeforeActionTriggerFrequency.EveryAction || Action == actionKind);
+            (Frequency == BeforeActionTriggerFrequency.EveryAction ||
+                Frequency == BeforeActionTriggerFrequency.EveryActionIncludingReactions ||
+                Action == actionKind);
 
         /// <summary>
         /// Whether a turn records this source once it has fired. "Each time" records nothing, which is

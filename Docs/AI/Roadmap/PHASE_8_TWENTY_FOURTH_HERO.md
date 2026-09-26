@@ -68,7 +68,7 @@ Completed 2026-09-25. The five staged Green faces retain their printed ribbons a
 
 Historical evidence: [8.93d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893d-snorri-green-defense-and-disruption-evidence).
 
-### [!] 8.93e Compose Rune Mastery and reconcile the set
+### [x] 8.93e Compose Rune Mastery and reconcile the set
 
 Outcome: the Ultimate's chosen inactive rune counts as active until the next action; all eighteen dealt faces and the boxed Handicap have complete, audited definitions behind the registration gate.
 
@@ -76,9 +76,13 @@ Acceptance: choice timing and expiry, no inactive choice, repeated actions, roun
 
 Non-goals: dealing, artwork or player-path gate.
 
-Pending 2026-09-26: [SN-Q3](../Rules/HERO_SNORRI.md) asks whether Rune Mastery's chosen rune applies before the current action resolves or after it finishes. Prior 8.93a-8.93d evidence remains valid; no Ultimate code has been changed. Resume this already authorized milestone when the timing is settled, then continue 8.93f-8.93g.
+Resumed 2026-09-26: the user settled [SN-Q3](../Rules/HERO_SNORRI.md): choose the rune for the current action, before resolution. Prior 8.93a-8.93d evidence remains valid. Continue 8.93f-8.93g after this milestone.
 
-### [ ] 8.93f Deal Snorri and present his artwork
+Completed 2026-09-27. Rune Mastery is a typed permanent before-action source for printed actions, Defense, Hold, Fast Travel, Clear and repeated instances. Before each action it expires the prior temporary activation, offers only inactive physical runes, and activates the chosen rune beside the current-slot rune until Snorri's next action; the state survives round boundaries, snapshots and private projection. The nineteen-front inventory now has one guarded aggregate: eighteen staged dealt definitions and boxed Rune Shards. Snapshot schema v46 and private-online /23 carry the temporary marker state and held general/repeat continuations. Focused and affected Unity Edit checks passed, culminating in 203/203. That wider run exposed a pre-existing move-then-target offer regression: the failing charge case was reproduced, the actor-anchored radius and selection-to-relocation feasibility walk were corrected through existing read-only handler contracts, and the exact case plus 109 shared Whisper/Ursafar/feasibility regressions reran green. Core and Application builds passed; the Unity-free test assembly remains blocked before discovery by its existing missing Presentation reference.
+
+Historical evidence: [8.93e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893e-snorri-rune-mastery-and-set-reconciliation-evidence).
+
+### [~] 8.93f Deal Snorri and present his artwork
 
 Outcome: register the eighteen playable definitions, profile and rune pieces; add Snorri to legal pickers and configurations with printed stars and roles, hero and rune artwork, and card faces/hover catalog.
 

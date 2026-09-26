@@ -83,17 +83,15 @@ namespace GuardsDigital.Core.Cards.Verified
                 HeroId defender, MarkerAttachmentRegister markers, int turnIndex,
                 CardClassification attackClassification, AttackRangeKind attackRange)
             {
-                var rune = SnorriComponentContent.ActiveRune(markers, defender, turnIndex);
-                if (rune == null) return false;
-                var ordinal = Array.FindIndex(
-                    SnorriComponentContent.Runes,
-                    definition => definition.Reference.Equals(rune.Definition.Reference)) + 1;
-                return ordinal == 4 && attackClassification == CardClassification.Basic ||
-                    ordinal == 2 && attackRange == AttackRangeKind.NonRanged ||
+                return SnorriComponentContent.IsRuneActive(markers, turnIndex, 4) &&
+                        attackClassification == CardClassification.Basic ||
+                    SnorriComponentContent.IsRuneActive(markers, turnIndex, 2) &&
+                        attackRange == AttackRangeKind.NonRanged ||
                     !card.Equals(SnorriGreenFaces.OathOfEndurance) &&
-                        ordinal == 1 && attackRange == AttackRangeKind.Ranged ||
+                        SnorriComponentContent.IsRuneActive(markers, turnIndex, 1) &&
+                        attackRange == AttackRangeKind.Ranged ||
                     card.Equals(SnorriGreenFaces.OathOfPerseverance) &&
-                        ordinal == 3 &&
+                        SnorriComponentContent.IsRuneActive(markers, turnIndex, 3) &&
                         (attackClassification == CardClassification.NonBasic ||
                             attackClassification == CardClassification.Ultimate);
             }

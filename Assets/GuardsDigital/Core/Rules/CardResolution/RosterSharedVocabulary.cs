@@ -756,7 +756,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             "An active-turn-slot-marker Attack contribution requires the live marker register.");
                     return turnIndex >= 1 && turnIndex <= RoundResolutionAuthority.TurnsPerRound &&
                         markers.Attachments.Any(marker =>
-                            marker.TurnSlotIndex == turnIndex &&
+                            marker.IsActiveInTurn(turnIndex) &&
                             marker.Definition.Reference.Equals(declaration.MarkerDefinition))
                         ? 1
                         : 0;
