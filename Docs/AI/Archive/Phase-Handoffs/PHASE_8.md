@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.95 Misa next-turn Movement evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.95 | Skill starts now honor the same before-primary-action trigger and held-offer continuation as Attack and Movement. Focus, Discipline and Mastery each offer their free step on the next turn before a Skill; Discipline moves on the board and resumes the held Skill. Focused T2 rules/continuation and player-input checks green. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-895-misas-next-turn-green-movement-offer). | milestone/8.95 |
+
 ## Milestone 8.93d Snorri Green defense and disruption evidence
 
 | Milestone | Outcome and definition | Commit |

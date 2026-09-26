@@ -536,6 +536,68 @@ namespace GuardsDigital.Tests.PlayMode
                 "the cancellation-window defect milestone 8.35z29's finding F-6 records - a NextTurn " +
                 "effect expires at TurnOnlyCancellationBeforeTurnEnded, not at TurnEnded. " +
                 Remaining(runtime));
+
+            // Regression 8.95: the real game offered no step when the next primary was a Skill.
+            // The older journey stopped at "active" and never clicked that primary.
+            yield return PointTrayAt(root, misaId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "Discipline must interrupt the next turn's Skill before that Skill starts. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo("discipline-step-move"),
+                "The first choice is Discipline's optional free Movement, not Swoop In's text.");
+            var destinations = LitDestinations(runtime);
+            Assert.That(destinations, Is.Not.Empty,
+                "Discipline must offer reachable map spaces.");
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var chosen = destinations[0];
+            Assert.That(UiPlayer.ClickBoard(
+                pointerInput, root.Hud, Tile(chosen).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate,
+                Is.EqualTo(chosen), "The free step changes the authoritative board.");
+            Assert.That(runtime.PendingEffectChoice?.NodeId.Value,
+                Is.Not.EqualTo("discipline-step-move"),
+                "Answering the free step resumes the held Skill instead of offering it again.");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusAndMastery_AlsoOfferTheirStepBeforeTheNextSkill()
+        {
+            var cases = new[]
+            {
+                (SceneCardContent.VerifiedEngagedStagedMisa,
+                    MisaCardContent.Focus, "focus-step-move"),
+                (SceneCardContent.VerifiedTierThreeEngagedStagedMisa,
+                    MisaCardContent.Mastery, "mastery-step-move")
+            };
+            foreach (var (staged, greenCard, expectedNode) in cases)
+            {
+                yield return LoadStagedScene(staged);
+                var root = Root();
+                var runtime = root.Runtime;
+                var misaId = MisaSeat(runtime).HeroId;
+                CommitSoTheNamedSeatActs(runtime, misaId, greenCard);
+                yield return YieldUntilTheNamedSeatActs(runtime, misaId);
+                yield return PointTrayAt(root, misaId);
+                yield return StartActionThroughControl(root, ActionKind.Skill);
+                if (runtime.IsTurnActive)
+                {
+                    Assert.That(runtime.SubmitEndTurn(), Is.True, Remaining(runtime));
+                    yield return null;
+                }
+                yield return AdvanceToNextTurn(runtime);
+                CommitSoTheNamedSeatActs(runtime, misaId, MisaCardContent.SwoopIn);
+                yield return YieldUntilTheNamedSeatActs(runtime, misaId);
+                yield return PointTrayAt(root, misaId);
+                yield return StartActionThroughControl(root, ActionKind.Skill);
+                Assert.That(runtime.PendingEffectChoice?.NodeId.Value,
+                    Is.EqualTo(expectedNode),
+                    "Each Green tier must offer its own next-turn free step before a Skill. " +
+                    Remaining(runtime));
+            }
         }
 
         /// <summary>

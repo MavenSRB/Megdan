@@ -68,7 +68,7 @@ Completed 2026-09-25. The five staged Green faces retain their printed ribbons a
 
 Historical evidence: [8.93d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893d-snorri-green-defense-and-disruption-evidence).
 
-### [~] 8.93e Compose Rune Mastery and reconcile the set
+### [ ] 8.93e Compose Rune Mastery and reconcile the set
 
 Outcome: the Ultimate's chosen inactive rune counts as active until the next action; all eighteen dealt faces and the boxed Handicap have complete, audited definitions behind the registration gate.
 

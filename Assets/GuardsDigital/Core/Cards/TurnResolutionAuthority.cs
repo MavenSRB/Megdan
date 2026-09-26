@@ -1982,13 +1982,30 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.SkillCannotApplyAnything);
             }
 
+            // A Skill is a primary action too. Misa's next-turn step (and any other
+            // before-primary source) must run before its card text begins.
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                resolutionId, offer, ActionKind.Skill, out var precedingEvents);
+            if (intercepted != null)
+            {
+                return intercepted.Value;
+            }
+
+            return StartSkillCore(resolutionId, offer, precedingEvents);
+        }
+
+        private TurnResolutionResult StartSkillCore(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            List<TurnResolutionEvent> precedingEvents)
+        {
             var skillResult = cardActions.StartTurnSkill(
                 resolutionId, offer, definitions, instances, participants, timing,
                 CurrentModifications(), TieBreakerState, roundIndex, turnIndex);
             if (!skillResult.Accepted)
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.SkillActionRejected, skillResult.RejectionReason);
-            return CompleteSkillStep(skillResult);
+            return CompleteSkillStep(skillResult, precedingEvents);
         }
 
         /// <summary>
@@ -2620,7 +2637,9 @@ namespace GuardsDigital.Core.Cards
                 .FindActionDefinition(paused.HeldOffer, definitions).Kind;
             return heldKind == ActionKind.Attack
                 ? StartAttackCore(paused.HeldResolutionId, paused.HeldOffer, events)
-                : StartHeldMovement(paused.HeldResolutionId, paused.HeldOffer, events);
+                : heldKind == ActionKind.Skill
+                    ? StartSkillCore(paused.HeldResolutionId, paused.HeldOffer, events)
+                    : StartHeldMovement(paused.HeldResolutionId, paused.HeldOffer, events);
         }
 
         /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>

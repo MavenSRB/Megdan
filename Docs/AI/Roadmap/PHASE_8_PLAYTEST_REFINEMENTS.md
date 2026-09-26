@@ -2,17 +2,23 @@
 
 On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, requested the revealed-card Initiative badge include the bonus, and approved fixing both Shotgun and Super-Shotgun. They then requested that clicking another player's token must not show that player's cards. The approved sequence is **8.42 -> 8.42a -> 8.42b**, with separate validation and local commits. Return to [ROADMAP.md](../ROADMAP.md); [SESSION_BRIEF.md](../SESSION_BRIEF.md) owns the live route.
 
-## Reports queued while Snorri is active
+## Approved playtest corrections ahead of Snorri
 
-These reports do not interrupt the approved 8.93-8.93g sequence. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed.
+On 2026-09-26 the user approved investigating and fixing these reports in order: **8.95 -> 8.96 -> 8.97**, before resuming Snorri at 8.93e. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed. The private host-game log under the 8.92 playtest build is available as evidence; preserve it.
 
-### [ ] 8.95 Misa's next-turn Green Movement offer
+### [x] 8.95 Misa's next-turn Green Movement offer
 
-Reported 2026-09-25: "Misas green does not offer movment" on the **next turn**, when it should. Diagnose Focus, Discipline and Mastery's p.7 Next Turn active effect and RULING 31's once-only pre-primary-action trigger; distinguish a missing offer from a legal offer hidden in the seat UI, and the source-correct fourth-turn/round-end cancellation. Closing check: a before/after player-path regression for each affected tier, including repeated-action, round boundary and Undo/restore cases. Status: queued; no diagnosis or fix yet.
+Reported 2026-09-25: "Misas green does not offer movment" on the **next turn**, when it should. Focus, Discipline and Mastery create the correct Next Turn effect; the turn authority intercepted Attack and Movement starts but omitted Skill starts and could not resume a held Skill. Fixed at the shared pre-action seam. The host log shows Discipline's Skill on round 2 turn 1 and a next-turn Skill with no logged Misa move; the log alone cannot prove a missing offer. Player-input journeys now reach all three tier-specific free-step choices before a next-turn Skill and Discipline's step changes the board before its held Skill resumes. Existing source-linked tests retain once-only, round-boundary, and pre-action snapshot contracts. Status: complete; no content or schema revision.
 
-### [ ] 8.96 Tali Totem art and save/removal, with Ice Wall audit
+Historical evidence: [8.95 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-895-misa-next-turn-movement-evidence).
 
-Reported 2026-09-25 with a playtest photo: Tali's Totem appears without its expected art; after it saved a minion, the minion survived but the Totem remained and no removal choice appeared. Treat the art and rules behavior as independent failures to reproduce. Audit Ice Wall and other Tali token-kind removal only for the same confirmed seam; the user's "probably" is a suspicion, not evidence of an Ice Wall defect. Closing checks: exact before/after board-input reproductions and rule tests for a saved minion, required removal choice/result, correct piece art across spawn/refresh/restore, and negative controls for unaffected token kinds. Status: queued; no diagnosis or fix yet.
+### [~] 8.96 Tali Totem art and save/removal, with Ice Wall audit
+
+Reported 2026-09-25 with a playtest photo: Tali's Totem appears without its expected art; after it saved a minion, the minion survived but the Totem remained and no removal choice appeared. Treat the art and rules behavior as independent failures to reproduce. Audit Ice Wall and every other Tali Green face for both art and printed effect, as the user added on 2026-09-26; the user's "probably" is a suspicion, not evidence of an Ice Wall defect. Closing checks: exact before/after board-input reproductions and rule tests for a saved minion, required removal choice/result, correct piece art across spawn/refresh/restore, and face-by-face art/effect checks for the Green branch with negative controls for unaffected token kinds. Status: queued; no diagnosis or fix yet.
+
+### [ ] 8.97 Ursafar Angry Roar candidate and borrowed action
+
+Reported 2026-09-26: Ursafar's Silver (Angry Roar) offered a card choice that appeared to include a red and a gold card although only the gold had an Active effect; after selection it appeared to fizzle, leaving END TURN. Its printed condition is "If enraged, perform the primary action on one of your active cards with an active effect." Reproduce the exact live enraged state, active-card/effect eligibility, available candidates and selected card; then separate a stale/invalid candidate from a borrowed-action continuation or UI failure. Closing checks: failing-then-passing candidate and action-result player paths, no ineligible color/card offered, the chosen printed primary actually performed with its ordinary targets/choices, and restore/Undo parity. Status: queued; the candidate observation is tentative, not yet a confirmed rule defect.
 
 ### [x] 8.42 Exclude the attack target from shotgun scatter
 
