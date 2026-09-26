@@ -540,9 +540,8 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// Presses the coin-face control Equilibrium's round frees - the one pause in her set whose
-        /// candidates are a labelled VOCABULARY rather than a board pick, so it is answered by the words
-        /// the decision window draws ("APPLY THE SUN TEXT" / "APPLY THE MOON TEXT") and never by an
-        /// integer a player never sees.
+        /// candidates are a labelled VOCABULARY rather than a board pick, so it is answered by the
+        /// card's printed symbols in the decision window and never by an integer a player never sees.
         /// </summary>
         internal static IEnumerator PressFace(MatchSceneCompositionRoot root, PrintedTextFace face)
         {
@@ -564,7 +563,9 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(face == PrintedTextFace.Sun
                     ? PrintedTextFaceLabels.ApplySunTextLabel
                     : PrintedTextFaceLabels.ApplyMoonTextLabel),
-                "and the control says which TEXT it applies rather than printing an integer.");
+                "and the control uses the card's own symbol for the text it applies.");
+            Assert.That(control.Label, Does.Not.Contain("SUN").And.Not.Contain("MOON"),
+                "the card's printed symbols must replace the confusing face names.");
             UiPlayer.ClickDecisionControl(runtime, root.Hud, control);
             yield return null;
             yield return null;

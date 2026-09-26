@@ -47,8 +47,8 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class CoinSelectedTextPresentationTests
     {
         // -------------------------------------------------------------------------------------------
-        // The controls. Two buttons naming the consequence, never the buttons "1" and "2". UNTOUCHED
-        // by 8.75e: the window is where a player is ASKED, and an asked question needs its words.
+        // The controls. Two buttons naming the consequence with the same symbols printed on the card,
+        // never the buttons "1" and "2" and never the translated words SUN and MOON.
         // -------------------------------------------------------------------------------------------
 
         [Test]
@@ -57,11 +57,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 EffectChoiceLabels.VocabularyLabel(
                     EffectChoiceValueVocabulary.PrintedTextFace, (int)PrintedTextFace.Sun),
-                Is.EqualTo("APPLY THE SUN TEXT"));
+                Is.EqualTo("APPLY ☀ TEXT"));
             Assert.That(
                 EffectChoiceLabels.VocabularyLabel(
                     EffectChoiceValueVocabulary.PrintedTextFace, (int)PrintedTextFace.Moon),
-                Is.EqualTo("APPLY THE MOON TEXT"));
+                Is.EqualTo("APPLY ☾ TEXT"));
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 EffectChoiceLabels.DeselectLabel(
                     EffectChoiceValueVocabulary.PrintedTextFace, (int)PrintedTextFace.Moon),
-                Is.EqualTo("UNDO APPLY THE MOON TEXT"));
+                Is.EqualTo("UNDO APPLY ☾ TEXT"));
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(subject, Is.EqualTo(EffectChoiceSubject.TextFace));
             Assert.That(
-                EffectChoicePromptLabels.SectionLabel(subject), Is.EqualTo("CHOOSE THE FACE"));
+                EffectChoicePromptLabels.SectionLabel(subject), Is.EqualTo("CHOOSE THE SYMBOL"));
             Assert.That(
                 EffectChoicePromptLabels.StatusLine(choice, subject),
                 Does.Contain("2 printed texts"));
@@ -373,13 +373,25 @@ namespace GuardsDigital.Tests.EditMode
         /// the badge's used to be.
         /// </summary>
         [Test]
-        public void TheWindowsOwnWords_AreTheOnlyPlaceAFaceIsNamedOnTheHud()
+        public void TheWindowUsesTheCardsSymbolsWithoutNamingSunOrMoon()
         {
-            Assert.That(PrintedTextFaceLabels.ApplySunTextLabel, Is.EqualTo("APPLY THE SUN TEXT"));
-            Assert.That(PrintedTextFaceLabels.ApplyMoonTextLabel, Is.EqualTo("APPLY THE MOON TEXT"));
-            Assert.That(PrintedTextFaceLabels.SectionLabel, Is.EqualTo("CHOOSE THE FACE"));
+            Assert.That(PrintedTextFaceLabels.ApplySunTextLabel, Is.EqualTo("APPLY ☀ TEXT"));
+            Assert.That(PrintedTextFaceLabels.ApplyMoonTextLabel, Is.EqualTo("APPLY ☾ TEXT"));
+            Assert.That(PrintedTextFaceLabels.SectionLabel, Is.EqualTo("CHOOSE THE SYMBOL"));
+            Assert.That(PrintedTextFaceLabels.FallbackTitle, Is.EqualTo("☀ OR ☾?"));
             Assert.That(
-                PrintedTextFaceLabels.Word(PrintedTextFace.Sun), Is.EqualTo("SUN"));
+                PrintedTextFaceLabels.Word(PrintedTextFace.Sun), Is.EqualTo("☀"));
+            Assert.That(
+                PrintedTextFaceLabels.Word(PrintedTextFace.Moon), Is.EqualTo("☾"));
+            Assert.That(
+                new[]
+                {
+                    PrintedTextFaceLabels.ApplySunTextLabel,
+                    PrintedTextFaceLabels.ApplyMoonTextLabel,
+                    PrintedTextFaceLabels.SectionLabel,
+                    PrintedTextFaceLabels.FallbackTitle
+                },
+                Has.None.Contains("SUN").And.None.Contains("MOON"));
             Assert.That(
                 PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SunSide), Is.EqualTo("RED"),
                 "and the word for the side the rail's banner is on, which is what a journey says " +

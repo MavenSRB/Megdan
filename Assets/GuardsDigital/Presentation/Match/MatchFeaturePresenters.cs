@@ -161,9 +161,9 @@ namespace GuardsDigital.Presentation.Match
                 case EffectChoiceValueVocabulary.PrintedTextFace:
                     // Milestone 8.75b. The one vocabulary whose controls NAME THE CONSEQUENCE rather
                     // than wearing the member's own word, which is the decision window's own rule since
-                    // 8.46 ("two buttons whose labels NAME THE CONSEQUENCE"). `SUN` and `MOON` alone say
+                    // 8.46 ("two buttons whose labels NAME THE CONSEQUENCE"). The symbol alone says
                     // what was picked, not what picking it does; the card in the window prints both
-                    // lines, and these two controls say which of them will run.
+                    // lines, and these controls use those symbols while saying which line will run.
                     //
                     // `PrintedTextFace.None` is deliberately not labelled: it is the unrevealed coin,
                     // never an offered candidate, so meeting one here means the handler and its declared

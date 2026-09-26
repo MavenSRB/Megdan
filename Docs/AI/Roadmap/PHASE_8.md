@@ -88,6 +88,18 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.103 Show Ignatia's printed symbols on her face-choice controls
+
+Authorized 2026-09-26 by the user's live correction: "For Ignatia on card choises, dont say \"sun\" \"moon\" its just confusing people, put icons from the card." This bounded presentation corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
+
+Outcome: when Equilibrium lets Ignatia choose which printed text to apply, the decision window uses the card's own `☀` and `☾` symbols instead of the words `SUN` and `MOON`. The typed `PrintedTextFace` candidates, Red/Blue mapping, authority, bot policy, schema and wire remain unchanged.
+
+Acceptance: record a failing-then-passing presentation regression that pins both controls and the face-choice heading/fallback to symbol language with no player-facing `SUN` or `MOON`; retain an exact Ignatia UI journey that chooses each face through the drawn controls; visually inspect a rendered face-choice window. T2 because Presentation changes.
+
+Non-goals: coin rules, live-face rail language, card artwork, effect composition, Snorri work, package cutting or publication.
+
+Completed 2026-09-26. Ignatia's typed face-choice presentation now labels the two controls `APPLY ☀ TEXT` and `APPLY ☾ TEXT`, labels the question `CHOOSE THE SYMBOL`, and uses `☀ OR ☾?` as its unreachable dealt-content fallback. No choice control says `SUN` or `MOON`. The typed candidates and Red/Blue mapping are unchanged. The presentation regression failed before the correction (4 of 23 focused cases) and passes afterward (23/23); the exact Equilibrium journey chooses both symbols and passes 1/1. The captured rendered decision window was inspected and shows both card symbols without missing glyphs. No authority, rule, bot, schema, wire or card-art change. 8.93e resumes.
+
 ### [x] 8.102 Turn Trinkets' prepared Turret face toward the player
 
 Authorized 2026-09-26 by the user's live report: "Triketts gold, offered me correct choises, but no turret appeared after my move" / "it let me choose where to spawn it, but no token appeared." This bounded corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.

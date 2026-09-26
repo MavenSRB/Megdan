@@ -412,8 +412,8 @@ namespace GuardsDigital.Tests.PlayMode
         /// <para>It is the input half of <see cref="CoinSelectedTextReading"/> and a separate shape
         /// for the reason <see cref="ColorNamingChoice"/> is separate from
         /// <see cref="HandCardSelection"/>: what is named is a VALUE from a closed vocabulary rather
-        /// than a piece, a space or a card, so the control is a pair of named buttons ("APPLY THE SUN
-        /// TEXT" / "APPLY THE MOON TEXT") and the candidate set is the same two whatever the board
+        /// than a piece, a space or a card, so the control is a pair of symbol-labelled buttons
+        /// (`APPLY ☀ TEXT` / `APPLY ☾ TEXT`) and the candidate set is the same two whatever the board
         /// looks like. It is also not <see cref="ModalBulletChoice"/>: a modal picks which SENTENCE of
         /// a card to perform and this picks which PRINTING of the card is the card, which is why it
         /// is raised by a capability rather than by a p.10 Choose node.</para>

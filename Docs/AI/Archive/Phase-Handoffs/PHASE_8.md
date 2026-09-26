@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.103 Ignatia printed-symbol choice evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.103 | Equilibrium's typed face-choice controls now show the card's own `☀` / `☾` marks without the confusing words `SUN` / `MOON`; authority and Red/Blue mapping are unchanged. The presentation regression failed 4/23 before the correction and passes 23/23 afterward; the exact two-face Equilibrium journey passes 1/1, and its captured rendered window shows both glyphs. [Definition](../../Roadmap/PHASE_8.md#x-8103-show-ignatias-printed-symbols-on-her-face-choice-controls). | milestone/8.103 |
+
 ## Milestone 8.102 Trinkets Turret face evidence
 
 | Milestone | Outcome and definition | Commit |

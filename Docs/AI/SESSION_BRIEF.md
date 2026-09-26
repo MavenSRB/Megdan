@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.102**.
+- Current completed milestone: **8.103**.
 - Active authorized milestone: **8.93e**.
 - Next authorized milestone: **8.93f**.
 
-**[8.102](Roadmap/PHASE_8.md)** is complete: Rapid Redeployment had resolved and placed its authoritative obstacle, but the prepared Turret Quad faced away from the camera and was back-face culled; its visible face now points at the player with a failing-then-passing regression and inspected rendered frame. **8.93e-8.93g** remain authorized and 8.93e resumes; [SN-Q3](Rules/HERO_SNORRI.md) is settled.
+**[8.103](Roadmap/PHASE_8.md)** is complete: Ignatia's face-choice controls now use the `☀` / `☾` symbols printed on her cards instead of saying `SUN` / `MOON`; both symbols were verified in the rendered decision window. **8.93e-8.93g** remain authorized and 8.93e resumes; [SN-Q3](Rules/HERO_SNORRI.md) is settled.
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His remaining sequence is active. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No publication authorized.
 

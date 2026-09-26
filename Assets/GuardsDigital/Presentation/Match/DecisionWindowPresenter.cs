@@ -1297,7 +1297,7 @@ namespace GuardsDigital.Presentation.Match
                     // names a card-faced control - and "which of this card's two printed texts applies"
                     // wants exactly what a mode choice already draws: the card itself, with one control
                     // per printed arm beside it. What makes it its own question is the eyebrow
-                    // (`EffectChoicePromptLabels.SectionLabel`) and the two controls' own words, both of
+                    // (`EffectChoicePromptLabels.SectionLabel`) and the two controls' own labels, both of
                     // which come from the SUBJECT. A new member here would have been a second name for
                     // the same shape, and every switch over this enum would have had to learn it.
                     return DecisionWindowFamily.Mode;
