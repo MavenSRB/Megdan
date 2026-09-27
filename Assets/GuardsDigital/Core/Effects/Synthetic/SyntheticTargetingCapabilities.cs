@@ -1703,6 +1703,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     EffectValueKind.Node,
                     isRequired: false));
 
+                // Milestone 8.112d. Mrak's Boulder Rush, Boulder Blitz and Boulderdozer, "Push a
+                // token, or an enemy unit, adjacent to you" - the side of the board, read through
+                // TargetQuery.StandsInRelationTo exactly as the batch Push reads its own, so
+                // `OpposingSourceOrUnaligned` is "an enemy unit or a token" here as it is there.
+                // Optional and unbound everywhere else, so every selection written before it keeps
+                // its exact candidate set.
+                parameters.Add(new EffectCapabilityParameter(
+                    TargetRelationParameterName,
+                    EffectValueKind.Integer,
+                    isRequired: false,
+                    integerDomain: EffectIntegerDomain.All<SourceTeamRelation>()));
+
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
                     new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
@@ -1841,9 +1853,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Participants,
                     context.Modifications);
 
+                // Milestone 8.112d. An unbound relation reads as None and narrows nothing.
+                var relation = (SourceTeamRelation)context.Input(TargetRelationParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(SourceTeamRelation), relation))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
                 var spaces = new List<HexCoordinate>(targets.Count);
                 foreach (var target in targets)
                 {
+                    if (relation != SourceTeamRelation.None &&
+                        !TargetQuery.StandsInRelationTo(
+                            relation, target, context.ActorId, context.Participants, board))
+                    {
+                        continue;
+                    }
+
                     if (board.TryGetObjectCoordinate(target, out var at))
                     {
                         spaces.Add(at);

@@ -233,6 +233,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> AllDefinitions =>
             new[] { FissureDefinition, StoneGripDefinition }
                 .Concat(MrakRedFaces.Definitions)
+                .Concat(MrakBlueFaces.Definitions)
                 .ToArray();
 
         private static CardDefinitionId Id(string card) =>

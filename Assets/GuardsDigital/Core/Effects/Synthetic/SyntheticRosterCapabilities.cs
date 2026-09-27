@@ -1401,6 +1401,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string LineSubjectSpaceParameter = "subjectSpace";
 
         /// <summary>
+        /// Milestone 8.112d. A space fixing the HEADING of the line, read from where the mover stands
+        /// through that space and on: Mrak's Boulder Rush, Boulder Blitz and Boulderdozer, "you may
+        /// move up to 2 [3 / 4] spaces <b>in the direction of the push</b>".
+        ///
+        /// <para><b>It is <see cref="ContinuedLineFromParameter"/>'s mirror.</b> That parameter names
+        /// the far end of a line already travelled BEHIND the mover; this one names a space AHEAD of
+        /// the mover on the heading it keeps. The Boulders' push travels directly away from Mrak
+        /// (p.18) from the space its subject stood on, so the space the selection published is the
+        /// heading, and it stays the heading whether the push carried the subject one space, several
+        /// or none: the text sets no condition on the follow move.</para>
+        ///
+        /// <para>A bound space equal to the mover's own, or off every one of p.19's six files, names
+        /// no heading and keeps nothing - the reading its mirror gives a degenerate line. Optional and
+        /// unbound everywhere else, so every consumer written before this milestone keeps its exact
+        /// candidate set.</para>
+        /// </summary>
+        public const string LineHeadingThroughParameter = "headingThrough";
+
+        /// <summary>
         /// The hero a <c>retrieve-card@1</c> node actually retrieved for, published only on success -
         /// the "if they do" of Silverarrow's two Green healing faces.
         /// </summary>
@@ -1519,6 +1538,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // rather than a second capability.
                         new EffectCapabilityParameter(
                             LineSubjectSpaceParameter, EffectValueKind.Coordinate,
+                            isRequired: false),
+
+                        // Milestone 8.112d. "In the direction of the push" - see
+                        // LineHeadingThroughParameter.
+                        new EffectCapabilityParameter(
+                            LineHeadingThroughParameter, EffectValueKind.Coordinate,
                             isRequired: false)
                     },
                     new[]
@@ -1598,6 +1623,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var subjectSpace = subjectSpaceInput.Kind == EffectValueKind.Coordinate
                     ? subjectSpaceInput.Coordinate
                     : (HexCoordinate?)null;
+                // Milestone 8.112d. The heading a named space ahead of the mover fixes.
+                var headingInput = context.Input(LineHeadingThroughParameter);
+                var headingThrough = headingInput.Kind == EffectValueKind.Coordinate
+                    ? headingInput.Coordinate
+                    : (HexCoordinate?)null;
                 if (board == null || maximum < 1 || minimum > maximum)
                 {
                     return Array.Empty<HexCoordinate>();
@@ -1640,6 +1670,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // space the mover is standing on names no heading and keeps nothing.
                     if (continuesFrom.HasValue && !ContinuedLineQuery.ContinuesTheLine(
                             continuesFrom.Value, moverAt, route.Destination))
+                    {
+                        continue;
+                    }
+
+                    if (headingThrough.HasValue &&
+                        (!StraightLineQuery.TryGetDirection(
+                             moverAt, headingThrough.Value, out var heading, out _) ||
+                         heading != direction))
                     {
                         continue;
                     }

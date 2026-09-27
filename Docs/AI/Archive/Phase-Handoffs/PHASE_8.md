@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112d Mrak Blue push and stomp evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112d | Mrak's three Boulder pushes ignoring obstacles with the optional follow along the push's heading (kept after a zero-space push), and the two stomps that leave a rock in the vacated space behind p.18's short supply, Ground Shaker repeating on a different unit; two optional engine narrowings. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112d-compose-the-blue-push-and-stomp-faces). | `milestone/8.112d` |
+
 ## Milestone 8.112c Mrak Red faces and Carapace substitution evidence
 
 | Milestone | Outcome and definition | Commit |

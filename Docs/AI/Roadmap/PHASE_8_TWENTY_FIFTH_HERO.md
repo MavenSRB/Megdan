@@ -73,13 +73,17 @@ Completed 2026-09-27. `MrakRedFaces` composes the five Red faces. The Seismic li
 
 Historical evidence: [8.112c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112c-mrak-red-faces-and-carapace-substitution-evidence).
 
-### [ ] 8.112d Compose the Blue push and stomp faces
+### [x] 8.112d Compose the Blue push and stomp faces
 
 Outcome: Boulder Rush, Blitz and Boulderdozer push a token or enemy unit adjacent to Mrak a chosen 1..N spaces ignoring obstacles, then offer Mrak an optional move up to N along the push's direction ignoring obstacles; Stomping Step and Ground Shaker move a unit in Radius adjacent to terrain or a rock 1 space and place a rock in the vacated space, Ground Shaker repeating on a different target.
 
 Acceptance: pushes through obstacles to the first reachable empty space, short and zero pushes, a pushed rock and a pushed hero, follow-move directions and blocked endings, the follow still offered after a zero-space push (the direction is fixed by the chosen target, and the text sets no condition); stomp with no legal step not offered, rock supply shortage, the Ultimate fact recorded; restore. T2 minimum.
 
 Non-goals: dealing.
+
+Completed 2026-09-27. `MrakBlueFaces` composes the five Blue faces. A Boulder first selects its subject (`synthetic-choose-target@4` at distance one, naming the push as its consumer), so a face with nothing to push is not offered; then p.18's named push ignoring obstacles at a distance Mrak chooses from one to the printed most, which keeps the last empty space it crosses (zero included); then the `may` follow move, one straight line from Mrak through the space the subject stood on, crossing obstacles and never ending on one. Two optional engine narrowings, unbound everywhere else: the adjacent selection's `relation` ("an enemy unit, or a token", `OpposingSourceOrUnaligned`) and `choose-line-destination@1`'s `headingThrough`. The stomps are 8.88's printed-Radius unit selection with terrain and rock-kind adjacency, naming the one-space Move as consumer, then two new capabilities, p.18's short-supply step and one rock into the vacated space, which names its placing card for 8.112f's report; Ground Shaker repeats on a different unit. "A unit in radius" excludes Mrak, as every printed-Radius unit selection reads it. With the two narrowings disabled, six Boulder tests failed; all pass with them. Unregistered until 8.112g. T2, with the complete harness because shared targeting changed; evidence in the milestone commit.
+
+Historical evidence: [8.112d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112d-mrak-blue-push-and-stomp-evidence).
 
 ### [ ] 8.112e Compose the Green move-a-unit and rolling faces
 

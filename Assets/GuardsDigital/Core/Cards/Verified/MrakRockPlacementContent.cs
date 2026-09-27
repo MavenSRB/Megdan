@@ -65,13 +65,27 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(
                 new EffectCapabilityId("mrak-place-rocks-farthest-adjacent"), 1);
 
+        /// <summary>
+        /// Milestone 8.112d. Stomping Step and Ground Shaker, "Place a rock token in the space it
+        /// occupied": one rock into one named space - the space the moved unit left.
+        /// </summary>
+        public const string SpaceParameterName = "space";
+
+        public static EffectCapabilityReference ReclaimForSpaceV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("mrak-reclaim-rock-for-space"), 1);
+
+        public static EffectCapabilityReference PlaceInSpaceV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("mrak-place-rock-in-space"), 1);
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ReclaimHandler(ReclaimForLineV1, LineDemand.Instance),
                 new PlaceAlongLineHandler(),
                 new ReclaimHandler(ReclaimForFarthestAdjacentV1, FarthestAdjacentDemand.Instance),
-                new PlaceFarthestAdjacentHandler()
+                new PlaceFarthestAdjacentHandler(),
+                new ReclaimHandler(ReclaimForSpaceV1, SpaceDemand.Instance),
+                new PlaceInSpaceHandler()
             };
 
         // -------------------------------------------------------------------------------------------
@@ -245,6 +259,27 @@ namespace GuardsDigital.Core.Cards.Verified
 
                 demand = Math.Min(PrintedRockCount,
                     FarthestAdjacentGroups(context, actor, target).Sum(group => group.Length));
+                return true;
+            }
+        }
+
+        /// <summary>One rock, when the named space is empty; none when something stands there.</summary>
+        private sealed class SpaceDemand : IRockDemand
+        {
+            internal static readonly SpaceDemand Instance = new SpaceDemand();
+
+            public EffectCapabilityParameterSchema Schema { get; } = SpaceSchema(false);
+
+            public bool TryMeasure(EffectCapabilityContext context, out int demand)
+            {
+                demand = 0;
+                if (!TryActorSpace(context, out var actor) ||
+                    !TryCoordinate(context, SpaceParameterName, out var space))
+                {
+                    return false;
+                }
+
+                demand = EmptySpaces(context, actor).Contains(space) ? 1 : 0;
                 return true;
             }
         }
@@ -508,7 +543,55 @@ namespace GuardsDigital.Core.Cards.Verified
             }
         }
 
+        /// <summary>
+        /// Milestone 8.112d. The stomp's one rock into the space the moved unit left: automatic, and
+        /// nothing placed when that space is no longer empty or the pile (after p.18's step) is dry.
+        /// </summary>
+        private sealed class PlaceInSpaceHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => PlaceInSpaceV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = SpaceSchema(true);
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (context?.Components == null || !context.Components.IsLive)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                if (!TryActorSpace(context, out var actor) ||
+                    !TryCoordinate(context, SpaceParameterName, out var space) ||
+                    !EmptySpaces(context, actor).Contains(space))
+                {
+                    return Placed(0);
+                }
+
+                return Placed(PlaceRock(context, space, 0) ? 1 : 0);
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException(
+                    "mrak-place-rock-in-space@1 places automatically and asks nothing.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context?.Components != null && context.Components.IsLive
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
         // -------------------------------------------------------------------------------------------
+
+        private static EffectCapabilityParameterSchema SpaceSchema(bool publishesCount) =>
+            new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(SpaceParameterName, EffectValueKind.Coordinate) },
+                publishesCount
+                    ? new[] { new EffectOutputBinding(PlacedCountOutput, EffectValueKind.Integer) }
+                    : Array.Empty<EffectOutputBinding>());
 
         private static EffectCapabilityParameterSchema LineSchema(bool publishesCount) =>
             new EffectCapabilityParameterSchema(

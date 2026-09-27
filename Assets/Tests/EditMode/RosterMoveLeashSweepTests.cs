@@ -310,6 +310,11 @@ namespace GuardsDigital.Tests.EditMode
                 ["misa-thunder-shot-attack-text | shove-move"] =
                     "Thunder Shot: \"you may move it 1 space, to a space farther away from you\"",
 
+                ["mrak-stomping-step-skill | stomp-move"] =
+                    "Stomping Step: \"Move a unit in radius which is adjacent to terrain, or to a rock token, 1 space\"",
+                ["mrak-ground-shaker-skill | stomp-move"] =
+                    "Ground Shaker: the same \"1 space\", May repeat once on a different target",
+
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",
 
