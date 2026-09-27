@@ -22,7 +22,15 @@ namespace GuardsDigital.Presentation.Match
         /// primary: no invented lines and no icon shine; the existing print glows. The badge
         /// slot above stays for the Defense prompt, which lights the shield itself.
         /// </summary>
-        PrimaryRing = 4
+        PrimaryRing = 4,
+
+        /// <summary>
+        /// Milestone 8.112a. The crossed-swords badge of a printed SECONDARY Attack - Mrak's six Red
+        /// faces are the first to print one. Its overlay is traced like the other rail badges by
+        /// Tools/Prepare-ShineSprites.ps1 at the dealing; until then the loader's own absence path
+        /// keeps the prior treatment.
+        /// </summary>
+        SecondaryAttack = 5
     }
 
     /// <summary>
@@ -128,6 +136,7 @@ namespace GuardsDigital.Presentation.Match
                 case CardShineSlot.PrimaryRing: return "primary-ring";
                 case CardShineSlot.SecondaryDefense: return "secondary-defense";
                 case CardShineSlot.SecondaryMovement: return "secondary-movement";
+                case CardShineSlot.SecondaryAttack: return "secondary-attack";
                 default: throw new ArgumentOutOfRangeException(nameof(slot));
             }
         }

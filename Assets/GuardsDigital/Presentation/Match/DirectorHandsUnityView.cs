@@ -1003,9 +1003,12 @@ namespace GuardsDigital.Presentation.Match
                     AddPreparedArtworkHighlight(
                         control,
                         region.ActionKind,
-                        // Milestone 8.85: only the rail's SECONDARY Movement badge keeps the circle;
-                        // a primary Movement now owns the panel box like every other primary.
-                        circle: region.ActionKind == ActionKind.Movement && !isPrimary,
+                        // Milestone 8.85: only a rail's SECONDARY badge keeps the circle; a primary
+                        // Movement now owns the panel box like every other primary. Milestone 8.112a:
+                        // a secondary Attack is a rail badge too.
+                        circle: !isPrimary &&
+                            (region.ActionKind == ActionKind.Movement ||
+                                region.ActionKind == ActionKind.Attack),
                         available: lit && region.Invocation != null);
                 }
                 else
@@ -1102,8 +1105,11 @@ namespace GuardsDigital.Presentation.Match
             // the symmetric title tab approved at 8.30f2; Secondary Fast Travel keeps 8.30d's
             // side-mounted swallowtail. The cloth follows the CARD's printed colour, and remains
             // text-first by the standing rule: this HUD invents no action glyph.
+            // Milestone 8.112a: CLEAR attaches above a PRIMARY Attack's title; a secondary Attack's
+            // CLEAR sits beside its rail badge, exactly as FAST TRAVEL sits beside the boot.
             var clearAbovePreparedAttack = usesPreparedArtwork &&
                 region.ActionKind == ActionKind.Attack &&
+                region.InvocationContext == ActionInvocationContext.PrintedPrimary &&
                 string.Equals(label, "CLEAR", StringComparison.Ordinal);
             var fastTravelAbovePreparedMovement = usesPreparedArtwork &&
                 region.ActionKind == ActionKind.Movement &&
@@ -1147,9 +1153,8 @@ namespace GuardsDigital.Presentation.Match
             }
             chip.style.position = Position.Absolute;
             // Overlay-alignment corrective (post-8.35z9, user screenshots at hand and enlarged-
-            // preview scale). The FAST TRAVEL "beside" placement - the only path this reaches,
-            // since Attack never prints as a Secondary badge and CLEAR always attaches to a
-            // Primary title above - used to anchor against the padded highlight ring
+            // preview scale). The FAST TRAVEL "beside" placement - with, since milestone 8.112a, a
+            // secondary Attack's CLEAR, the only paths this reaches - used to anchor against the padded highlight ring
             // (PreparedActionSourceBounds' generous 80x82 glow box around the boot badge), which
             // measured about 15-20 reference units clear of the actual printed boot/value ink -
             // PreparedActionSourceBounds' own comment names that ink as roughly
@@ -1500,7 +1505,7 @@ namespace GuardsDigital.Presentation.Match
             return new Rect(4f + (width * region.SecondaryIndex), 47f, width, 31f);
         }
 
-        private static Rect PreparedActionSourceBounds(PrintedActionRegionViewModel region)
+        internal static Rect PreparedActionSourceBounds(PrintedActionRegionViewModel region)
         {
             // Prepared fronts share one verified 372x520 anatomy. A SECONDARY Movement owns a compact
             // circular treatment around its printed boot/value badge on the left rail. Every PRIMARY -
@@ -1530,11 +1535,29 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            // Milestone 8.112a. A rail printing THREE badges - Defense, Movement and Attack, Mrak's
+            // Red Skills - packs them tighter and higher than the ordinary two: measured on the
+            // shared source, the boot's value sits at y=179..207 and the swords' at y=241..269,
+            // against y=210..238 for an ordinary boot. A card offering two secondary actions is
+            // exactly that rail, so the count selects the layout; no card is named.
+            var threeBadgeRail = region.SecondaryCount >= 2;
             if (region.ActionKind == ActionKind.Movement)
             {
                 // The visible boot/value composite spans roughly x=21..69 and y=203..249 on the
                 // shared source. This footprint centres the circle on that ink rather than the rail.
-                return new Rect(5f, 184f, 80f, 82f);
+                return threeBadgeRail
+                    ? new Rect(5f, 162f, 80f, 62f)
+                    : new Rect(5f, 184f, 80f, 82f);
+            }
+
+            if (region.ActionKind == ActionKind.Attack)
+            {
+                // The crossed swords under the boot on a three-badge rail, or directly under the
+                // shield where no boot is printed (Stone Carapace and Rock Solid, whose Movement is
+                // their primary): value ink measured at y=206..223 there.
+                return threeBadgeRail
+                    ? new Rect(5f, 224f, 80f, 62f)
+                    : new Rect(5f, 178f, 80f, 70f);
             }
 
             // Future typed prepared Secondary actions retain a bounded left-rail badge without
@@ -1621,16 +1644,22 @@ namespace GuardsDigital.Presentation.Match
         /// and the rail badge of the region's own kind for a secondary. Milestone 8.30d - the
         /// mapping is typed, exactly like the sprite files it selects between.
         /// </summary>
-        private static CardShineSlot ShineSlotFor(PrintedActionRegionViewModel region)
+        internal static CardShineSlot ShineSlotFor(PrintedActionRegionViewModel region)
         {
             if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
             {
                 return CardShineSlot.PrimaryRing;
             }
 
-            return region.ActionKind == ActionKind.Defense
-                ? CardShineSlot.SecondaryDefense
-                : CardShineSlot.SecondaryMovement;
+            switch (region.ActionKind)
+            {
+                case ActionKind.Defense:
+                    return CardShineSlot.SecondaryDefense;
+                case ActionKind.Attack:
+                    return CardShineSlot.SecondaryAttack;
+                default:
+                    return CardShineSlot.SecondaryMovement;
+            }
         }
 
         /// <summary>
@@ -1735,6 +1764,8 @@ namespace GuardsDigital.Presentation.Match
                     return cardSurface.Q<VisualElement>("gd-card-secondary-defense");
                 case CardShineSlot.SecondaryMovement:
                     return cardSurface.Q<VisualElement>("gd-card-secondary-movement");
+                case CardShineSlot.SecondaryAttack:
+                    return cardSurface.Q<VisualElement>("gd-card-secondary-attack");
                 default:
                     return null;
             }
@@ -2139,7 +2170,9 @@ namespace GuardsDigital.Presentation.Match
                     ? "gd-card-secondary-defense"
                     : value.Channel == PrintedValueChannel.Movement
                         ? "gd-card-secondary-movement"
-                        : "gd-card-secondary-value";
+                        : value.Channel == PrintedValueChannel.Attack
+                            ? "gd-card-secondary-attack"
+                            : "gd-card-secondary-value";
                 label.tooltip = value.AssistiveLabel;
                 if (!first)
                 {

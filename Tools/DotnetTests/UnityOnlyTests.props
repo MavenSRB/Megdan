@@ -52,6 +52,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/MinimalHexGridSceneTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/MinionBattleAgreementRenderingTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/MinionChoicePresentationTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/MrakSecondaryAttackPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/OfficialBoardArtworkTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PendingDecisionContractConformanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PhaseBannerTests.cs" />

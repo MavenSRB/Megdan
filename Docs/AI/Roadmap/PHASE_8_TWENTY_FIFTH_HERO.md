@@ -35,13 +35,19 @@ Completed 2026-09-27. The nineteen fronts, one shared back, profile (three stars
 
 Historical evidence: [8.112 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112-mrak-inventory-evidence).
 
-### [ ] 8.112a Implement rock tokens, the printed secondary Attack and the after-place fact
+### [x] 8.112a Implement rock tokens and the printed secondary Attack
 
-Outcome: a rock token definition (obstacle, supply 3 per MR-Q1, p.18 short-supply reclaim, p.8 cleanup, Clear) and a printed secondary Attack action kind: non-Ranged, printed value plus Attack items, no card text, replaceable by Clear, offered to players and bots and drawn as a ribbon control. A typed fact records each placement step's placed rock spaces for the Ultimate.
+Outcome: a rock token definition (obstacle, supply 3 per MR-Q1, p.18 short-supply reclaim, p.8 cleanup, Clear) and a printed secondary Attack: non-Ranged, printed value plus Attack items, no card text, replaceable by Clear, offered to players and bots and drawn as a ribbon control on the prepared rail and the generated face.
 
-Acceptance: synthetic cards prove the secondary Attack against an adjacent enemy hero (Defense window) and minion (defeat, coins), refusal at distance 2 even beside a Radius icon, item arithmetic, Clear replacement, repeat/immunity boundaries, snapshot/restore and both seat projections; rock supply exhaustion and reclaim, obstacle blocking, cleanup and Clear; the placement fact across pause and restore. Schema or wire movement promotes this block to T3.
+Acceptance: a synthetic card of Seismic Slam's printed shape proves the secondary Attack through a configured turn: offered beside the secondary Movement, adjacent enemy hero (Defense window at the printed value, no card text) and minion (defeated), refusal at distance 2 even beside a Radius icon, item arithmetic through the Attack total's own queries, Clear replacement; the prepared-rail hit surfaces cover the ink measured on Mrak's fronts for three-badge and Defense-and-Attack rails without moving any earlier card's boot, and the badge has its own shine slot and generated chip; rock supply exhaustion and reclaim candidates, obstacle blocking, cleanup and Clear. Schema or wire movement promotes this block to T3.
+
+Amended 2026-09-27 before implementation finished, recording what the probe found: the after-place fact moves to 8.112f, because the only reader of that fact is the Ultimate and the engine's trigger seam (`MarkerGivenTo` -> `AfterMarkerGivenTriggerQuery` shape) is built with its consumer - a report nobody reads would be the declared-and-unread shape. Configured-match snapshot/restore and both-seat projection of a paused secondary Attack need Mrak dealt and are owned by 8.112g/8.112h; the serializer writes the invocation context as a declared enum member, so no persisted field is new.
 
 Non-goals: Mrak's printed faces or dealing.
+
+Completed 2026-09-27. `MrakComponentContent` defines the three-rock `mrak-rock` token (bare impassable obstacle, end-of-round cleanup) and its p.18 reclamation; `MrakCardContent.SecondaryAttack` declares the printed secondary Attack. The probe showed the engine's Attack path was already generic over a PrintedSecondary invocation - offer, adjacency-only targeting beside a Radius icon, Defense at the printed value with no card text, minion defeat, Clear and item arithmetic all pass through a configured turn with no Core change - so the production work is Presentation: prepared-rail hit surfaces for three-badge and Defense-and-Attack rails (measured ink, typed by the card's secondary count, no earlier card's boot moved), a `SecondaryAttack` shine slot and generated chip, the circle treatment for any secondary badge, and a secondary Attack's CLEAR beside its badge. All unregistered until 8.112g. T2; evidence in the milestone commit.
+
+Historical evidence: [8.112a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112a-mrak-rock-token-and-secondary-attack-evidence).
 
 ### [ ] 8.112b Compose Fissure and Stone Grip
 
@@ -77,9 +83,9 @@ Non-goals: dealing.
 
 ### [ ] 8.112f Compose Rock and a Hard Place and reconcile the set
 
-Outcome: the Ultimate discards a card from each enemy hero adjacent to rocks Mrak's placement step just placed, once per turn; all eighteen dealt definitions and the boxed Handicap are reconciled with the inventory.
+Outcome: the Ultimate discards a card from each enemy hero adjacent to rocks Mrak's placement step just placed, once per turn - through a typed after-place report on the placing step (moved here from 8.112a) and a trigger query in the shape the marker-given Ultimate uses; all eighteen dealt definitions and the boxed Handicap are reconciled with the inventory.
 
-Acceptance: triggers from Fissure, Stone Grip and Stomping Step placements; no trigger from pushes, moves or another hero's tokens; one trigger per turn with several heroes; immunity; snapshot/replay; p.15 upgrade lists and closed integer vocabularies asserted; every definition's printed values compared with the inventory table. T2 minimum.
+Acceptance: the placement report across pause and restore; triggers from Fissure (Attack text), Stone Grip and Stomping Step placements; no trigger from pushes, moves or another hero's tokens; one trigger per turn with several heroes; immunity; snapshot/replay; p.15 upgrade lists and closed integer vocabularies asserted; every definition's printed values compared with the inventory table. T2 minimum.
 
 Non-goals: dealing or artwork.
 
@@ -87,7 +93,7 @@ Non-goals: dealing or artwork.
 
 Outcome: register the eighteen playable definitions, the rock token and handlers; add Mrak to legal pickers and configurations with three stars and Melee, Tokens, Durable, Disabler, Tactician; prepare card fronts, profile, standee, rock token art and hover catalog.
 
-Acceptance: stable identities, setup, hand and upgrades, selection/filter/spawn and both seat projections; contact sheet of catalog filename against printed title; the rock token's rendered face toward the camera in a captured frame; the secondary Attack ribbon control reachable on a real hand; private art boundaries; content-revision and artwork-catalog agreement; focused Unity input and visual checks plus the affected regression tier. T2 minimum.
+Acceptance: stable identities, setup, hand and upgrades, selection/filter/spawn and both seat projections; contact sheet of catalog filename against printed title; the rock token's rendered face toward the camera in a captured frame; the secondary Attack ribbon control reachable on a real hand, its CLEAR chip beside the badge, and a captured frame of both three-badge and Defense-and-Attack rails; `Tools/Prepare-ShineSprites.ps1` traces the three-badge rail's boot and the swords badge (its Movement trace assumes the two-badge position today); private art boundaries; content-revision and artwork-catalog agreement; focused Unity input and visual checks plus the affected regression tier. T2 minimum.
 
 Non-goals: a package or another hero.
 
@@ -95,6 +101,6 @@ Non-goals: a package or another hero.
 
 Outcome: a content-derived matrix and real-input journeys cover every dealt face, the rock token, the secondary Attack and the substitution, with no parked or skipped required journey.
 
-Acceptance: every declared interaction shape mapped to named journeys that assert a board or state change; items, progression, defeat/respawn, round cleanup of rocks, stale input, snapshot/restore, retained-prefix Undo, network projection agreement, whole-face footprint; complete unfiltered harness, Edit Mode and Play Mode green with zero new skips. T3.
+Acceptance: every declared interaction shape mapped to named journeys that assert a board or state change; a paused secondary Attack's snapshot/restore and both-seat projection; items, progression, defeat/respawn, round cleanup of rocks, stale input, snapshot/restore, retained-prefix Undo, network projection agreement, whole-face footprint; complete unfiltered harness, Edit Mode and Play Mode green with zero new skips. T3.
 
 Non-goals: a package or the next hero.

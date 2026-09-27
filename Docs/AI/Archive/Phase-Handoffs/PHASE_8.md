@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112a Mrak rock token and secondary Attack evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112a | Mrak's three-rock token and the roster's first printed secondary Attack: configured-turn proof over the engine's already-generic Attack path, prepared-rail hit surfaces, shine slot and generated chip; after-place fact moved to 8.112f, configured snapshot/projection to 8.112g/h. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112a-implement-rock-tokens-and-the-printed-secondary-attack). | `milestone/8.112a` |
+
 ## Milestone 8.113 Ignatia magma supply evidence
 
 | Milestone | Outcome and definition | Commit |
