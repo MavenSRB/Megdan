@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112 Mrak inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112 | Mrak's nineteen fronts, profile, stat bars, dashboard, standee and rock-token manifest pieces inventoried; secondary Attack, resolved-card substitution, rock placement, rolling move and after-place trigger mapped as new contracts; MR-Q1-MR-Q4 routed to the user; 8.112a-8.112h sequence with carried lessons recorded. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112-inventory-mrak-and-map-the-implementation-sequence). | `milestone/8.112` |
+
 ## Milestone 8.111 lobby and Snorri Windows package evidence
 
 | Milestone | Outcome and definition | Commit |
