@@ -1420,6 +1420,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string LineHeadingThroughParameter = "headingThrough";
 
         /// <summary>
+        /// Milestone 8.112e. The most EMPTY spaces the line may pass through - Mrak's Rolling Stone,
+        /// "without moving through more than one empty space. (The starting space and the destination
+        /// space do not count.)", and Strolling Stone's "more than two empty spaces".
+        ///
+        /// <para>Counted over the spaces strictly between the mover and the destination, which is the
+        /// card's own parenthetical; a space is empty where it is no obstacle (p.18's endpoint
+        /// question), so a unit, a token and terrain crossed under "ignoring obstacles" spend nothing.
+        /// Unbound, the line has no budget at all, so every consumer written before this milestone keeps
+        /// its exact candidate set; a bound zero is a line through obstacles only.</para>
+        /// </summary>
+        public const string LineMaximumEmptyCrossedParameter = "maximumEmptyCrossed";
+
+        /// <summary>
         /// The hero a <c>retrieve-card@1</c> node actually retrieved for, published only on success -
         /// the "if they do" of Silverarrow's two Green healing faces.
         /// </summary>
@@ -1544,6 +1557,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // LineHeadingThroughParameter.
                         new EffectCapabilityParameter(
                             LineHeadingThroughParameter, EffectValueKind.Coordinate,
+                            isRequired: false),
+
+                        // Milestone 8.112e. Rolling and Strolling Stone's empty-space budget - see
+                        // LineMaximumEmptyCrossedParameter.
+                        new EffectCapabilityParameter(
+                            LineMaximumEmptyCrossedParameter, EffectValueKind.Integer,
                             isRequired: false)
                     },
                     new[]
@@ -1628,6 +1647,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var headingThrough = headingInput.Kind == EffectValueKind.Coordinate
                     ? headingInput.Coordinate
                     : (HexCoordinate?)null;
+
+                // Milestone 8.112e. Unbound is no budget; a negative bound admits nothing.
+                var budgetInput = context.Input(LineMaximumEmptyCrossedParameter);
+                var emptyBudget = budgetInput.Kind == EffectValueKind.Integer
+                    ? budgetInput.IntegerValue
+                    : (int?)null;
+                if (emptyBudget < 0)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
                 if (board == null || maximum < 1 || minimum > maximum)
                 {
                     return Array.Empty<HexCoordinate>();
@@ -1678,6 +1707,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         (!StraightLineQuery.TryGetDirection(
                              moverAt, headingThrough.Value, out var heading, out _) ||
                          heading != direction))
+                    {
+                        continue;
+                    }
+
+                    // Milestone 8.112e. The empty spaces strictly between, against the budget.
+                    if (emptyBudget.HasValue &&
+                        Enumerable.Range(1, distance - 1)
+                            .Select(step => StraightLineQuery.Step(moverAt, direction, step))
+                            .Count(space => !ObstacleQuery.IsObstacle(
+                                context.Components.Tokens, space, context.Modifications)) >
+                        emptyBudget.Value)
                     {
                         continue;
                     }

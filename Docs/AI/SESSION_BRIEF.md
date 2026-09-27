@@ -16,11 +16,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 - Current completed milestone: **8.113**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.112e**.
+- Next proposed milestone: **8.112f**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
-On 2026-09-27 the user cleared the next hero ("be careful, look at all the recent bugs we found, learn from them"); the agent chose **Mrak the Rockshaper**, authorizing [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md), whose carried-lessons list binds each recent defect class to a block. **8.112** inventoried him ([his shard](Rules/HERO_MRAK.md)); MR-Q1-MR-Q4 are settled by the user; **8.112a** (rock token, secondary Attack), **8.112b** (Fissure, Stone Grip), **8.112c** (Red faces, Carapace substitution) and **8.112d** (Blue pushes and stomps) are complete. The user's same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four and applied p.18's short-supply reclaim to her placements.
+On 2026-09-27 the user cleared the next hero ("be careful, look at all the recent bugs we found, learn from them"); the agent chose **Mrak the Rockshaper**, authorizing [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md), whose carried-lessons list binds each recent defect class to a block. **8.112** inventoried him ([his shard](Rules/HERO_MRAK.md)); MR-Q1-MR-Q4 are settled by the user; **8.112a** (rock token, secondary Attack), **8.112b** (Fissure, Stone Grip), **8.112c** (Red faces, Carapace substitution), **8.112d** (Blue pushes and stomps) and **8.112e** (Green shifts and rolls) are complete. The user's same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four and applied p.18's short-supply reclaim to her placements.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

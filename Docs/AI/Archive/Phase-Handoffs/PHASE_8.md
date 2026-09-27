@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112e Mrak Green shift and roll evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112e | Mrak's three declinable one-space shifts of a unit in range to a space beside terrain or a rock (Avalanche repeating on the same unit), withheld when nothing can take such a step, and Rolling and Strolling Stone's straight line through obstacles with a one- or two-empty-space budget; two optional engine narrowings. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112e-compose-the-green-move-a-unit-and-rolling-faces). | `milestone/8.112e` |
+
 ## Milestone 8.112d Mrak Blue push and stomp evidence
 
 | Milestone | Outcome and definition | Commit |

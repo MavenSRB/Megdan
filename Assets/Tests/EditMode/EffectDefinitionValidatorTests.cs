@@ -86,6 +86,10 @@ namespace GuardsDigital.Tests.EditMode
                 // number of spaces, whose meaning the parameter's name already says.
                 "adjacentAtLeast",
                 "minimumDistance",
+                // Milestone 8.112e. Rolling and Strolling Stone's "without moving through more than one
+                // [two] empty space[s]": a count of spaces compared against the spaces a line crosses,
+                // an ordinary quantity in the sense `adjacentAtLeast` is.
+                "maximumEmptyCrossed",
                 // Milestone 8.71h. The number Hanu's Hurry up! sets a printed icon TO - "Set the
                 // printed Initiative value of an unresolved card of a hero in range to 11". It is an
                 // ordinary quantity in every sense this list means: it is an Initiative value, a

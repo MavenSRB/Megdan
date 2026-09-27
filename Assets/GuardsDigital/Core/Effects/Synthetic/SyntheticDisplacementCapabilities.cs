@@ -177,6 +177,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string MovesThroughObstaclesParameterName = "movesThroughObstacles";
 
         /// <summary>
+        /// Milestone 8.112e. "to a space adjacent to terrain, or a rock token" - Mrak's Treacherous
+        /// Ground, Rockslide and Avalanche: the DESTINATION must stand beside terrain, or beside a
+        /// token of the named kind, or beside either. The spellings are 8.88's printed-icon adjacency
+        /// clauses, and the reading is theirs (<c>PrintedIconSpaceClauses</c>): p.17's Adjacent asked
+        /// of the destination's six neighbours, terrain as <c>TerrainPresenceQuery</c> answers it.
+        ///
+        /// <para>Optional and unbound everywhere else, so every Move composed before this milestone
+        /// keeps its exact candidate set; a parameter added to a registered capability moves no pinned
+        /// byte.</para>
+        /// </summary>
+        public const string DestinationAdjacentToTerrainParameterName =
+            SyntheticTargetingCapabilities.AdjacentToTerrainParameterName;
+
+        /// <summary>Milestone 8.112e. See <see cref="DestinationAdjacentToTerrainParameterName"/>.</summary>
+        public const string DestinationAdjacentToTokenKindParameterName =
+            SyntheticTargetingCapabilities.AdjacentToTokenKindParameterName;
+
+        /// <summary>
         /// Milestone 8.57b. WHO decides where this Move goes, where that is not the acting hero -
         /// Rowenna's Throw the Gauntlet, "Place yourself into a space in range adjacent to an enemy
         /// hero in range; <b>that hero</b> may move 1 space".
@@ -537,7 +555,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // the mover's own decision. Optional and unbound everywhere else, so every Move
                     // composed before it keeps the actor as its chooser.
                     new EffectCapabilityParameter(
-                        ChooserParameterName, EffectValueKind.Hero, isRequired: false)
+                        ChooserParameterName, EffectValueKind.Hero, isRequired: false),
+
+                    // Milestone 8.112e. Mrak's "to a space adjacent to terrain, or a rock token" -
+                    // see DestinationAdjacentToTerrainParameterName.
+                    new EffectCapabilityParameter(
+                        DestinationAdjacentToTerrainParameterName, EffectValueKind.Boolean,
+                        isRequired: false),
+                    new EffectCapabilityParameter(
+                        DestinationAdjacentToTokenKindParameterName, EffectValueKind.TokenKind,
+                        isRequired: false)
                 },
                 new[]
                 {
@@ -919,6 +946,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     besideSpace.Kind == EffectValueKind.Coordinate
                         ? besideSpace.Coordinate
                         : (HexCoordinate?)null);
+
+                // Milestone 8.112e. The destination's own adjacency, asked through 8.88's clause
+                // reader over the same parameter names. Unbound, it declares no adjacency and admits
+                // every space, which is every Move composed before it.
+                if (context.Input(DestinationAdjacentToTerrainParameterName).BooleanValue ||
+                    context.Input(DestinationAdjacentToTokenKindParameterName).Kind ==
+                        EffectValueKind.TokenKind)
+                {
+                    var clauses = new SyntheticTargetingCapabilities.PrintedIconSpaceClauses(
+                        context, components.Board, moverAt, distance);
+                    travelled = travelled.Where(clauses.Admit).ToArray();
+                }
 
                 // Standing still is p.10's decision not to move, and a sentence that names where to
                 // move offers no such decision: the named space is the only thing that satisfies it.

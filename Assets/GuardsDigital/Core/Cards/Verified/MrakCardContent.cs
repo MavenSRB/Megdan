@@ -234,6 +234,7 @@ namespace GuardsDigital.Core.Cards.Verified
             new[] { FissureDefinition, StoneGripDefinition }
                 .Concat(MrakRedFaces.Definitions)
                 .Concat(MrakBlueFaces.Definitions)
+                .Concat(MrakGreenFaces.Definitions)
                 .ToArray();
 
         private static CardDefinitionId Id(string card) =>

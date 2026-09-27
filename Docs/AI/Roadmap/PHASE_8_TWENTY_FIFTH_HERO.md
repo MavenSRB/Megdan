@@ -85,13 +85,17 @@ Completed 2026-09-27. `MrakBlueFaces` composes the five Blue faces. A Boulder fi
 
 Historical evidence: [8.112d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112d-mrak-blue-push-and-stomp-evidence).
 
-### [ ] 8.112e Compose the Green move-a-unit and rolling faces
+### [x] 8.112e Compose the Green move-a-unit and rolling faces
 
 Outcome: Treacherous Ground, Rockslide and Avalanche optionally move a unit in Range 1 space to a space adjacent to terrain or a rock, Avalanche allowing one repeat; Rolling Stone and Strolling Stone move Mrak in a straight line ignoring obstacles with at most one or two empty intermediate spaces.
 
 Acceptance: destination filter boundaries (terrain, rock, neither), immunity, the optional decline, Avalanche's same-unit repeat; rolling lines over terrain, units and tokens, budget boundaries, never ending on an obstacle, board edges; restore. T2 minimum.
 
 Non-goals: dealing.
+
+Completed 2026-09-27. `MrakGreenFaces` composes the five Green faces. The shift is one `may` wrapping the whole sentence (the Rock Solid shape), so a face with no unit able to take a qualifying step can apply nothing and is not offered (6.5af); inside it are the printed-Range unit selection (any side, never Mrak), which names the Move as its consumer, and p.11's exact one-space Move. The Move is narrowed by two new optional `direct-move@3` parameters that reuse 8.88's adjacency clauses on the destination ("adjacent to terrain, or a rock token"). Avalanche's repeat sits inside the `may` and is unbound, so the same unit may be chosen again. Rolling and Strolling Stone are a `may` straight line through obstacles (declining is GA-Q1's zero move) with a new optional `choose-line-destination@1` budget, `maximumEmptyCrossed`, counting non-obstacle spaces strictly between (1 and 2), then the named Move. Immunity is the shared selection's, already covered by `ComposableTargetSelectionTests`. With the two narrowings disabled, six Green tests failed; all pass with them. Unregistered until 8.112g. T2, with the complete harness because shared displacement changed; evidence in the milestone commit.
+
+Historical evidence: [8.112e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112e-mrak-green-shift-and-roll-evidence).
 
 ### [ ] 8.112f Compose Rock and a Hard Place and reconcile the set
 

@@ -314,6 +314,12 @@ namespace GuardsDigital.Tests.EditMode
                     "Stomping Step: \"Move a unit in radius which is adjacent to terrain, or to a rock token, 1 space\"",
                 ["mrak-ground-shaker-skill | stomp-move"] =
                     "Ground Shaker: the same \"1 space\", May repeat once on a different target",
+                ["mrak-treacherous-ground-skill | shift-move"] =
+                    "Treacherous Ground: \"You may move a unit in range 1 space to a space adjacent to terrain, or a rock token\"",
+                ["mrak-rockslide-skill | shift-move"] =
+                    "Rockslide: the same \"1 space\" at Range 4",
+                ["mrak-avalanche-skill | shift-move"] =
+                    "Avalanche: the same \"1 space\", May repeat once",
 
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",
