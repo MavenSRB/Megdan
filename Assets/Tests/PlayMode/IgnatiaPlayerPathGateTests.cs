@@ -114,7 +114,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ScorchingBlaze = nameof(IgnatiaProgressedUiJourneyPlayModeTests
             .ScorchingBlazePushesTwoOrThreeSpacesInAStraightLine);
         private const string PathOfFlames = nameof(IgnatiaProgressedUiJourneyPlayModeTests
-            .PathOfFlamesSpendsHerWholeMagmaSupplyAndThenStops);
+            .PathOfFlamesSpendsHerWholePileOfFour);
+        private const string MagmaShortSupply = nameof(IgnatiaProgressedUiJourneyPlayModeTests
+            .ChaosIncarnateRepeatsPathOfFlamesAndTheEmptyPileTakesMagmaBack);
         private const string ChaosGate = nameof(IgnatiaProgressedUiJourneyPlayModeTests
             .ChaosGateSwapsAndThenMovesOneSpaceOrNone);
         private const string ChaosIncarnate = nameof(IgnatiaProgressedUiJourneyPlayModeTests
@@ -427,7 +429,8 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         Prove(BoardSpaceSelection, PathOfAshesWake),
                         Prove(BoardSpaceSelection, PathOfAshesScatter),
-                        Prove(BoardSpaceSelection, PathOfFlames)
+                        Prove(BoardSpaceSelection, PathOfFlames),
+                        Prove(BoardSpaceSelection, MagmaShortSupply)
                     },
                     new[] { "IgnatiaMagmaTests", "IgnatiaDealingTests" }),
 

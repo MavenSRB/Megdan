@@ -200,21 +200,46 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <c>PlaceHeroTokenHandler</c>'s own remarks name for "place up to N", since a stateless handler
         /// cannot tell a second placement from a first and so a second decision belongs to a second node.
         /// Each node is <see cref="EffectFailurePolicy.May"/>, so "up to" is honoured a token at a time.
+        ///
+        /// <para><b>Milestone 8.113: p.18's short supply before each placement.</b> "If you need to place
+        /// more tokens than are available in the supply, first remove up to that number of tokens of
+        /// the same type from the board, if able." Each placement is preceded by
+        /// <c>ignatia-reclaim-magma@1</c>, which declines on its own while the pile holds a token - so
+        /// the placement's question is unchanged - and otherwise asks which standing magma token comes
+        /// back. It is a `may`, because the placement it makes room for is one: declining it is
+        /// declining that token, and the empty pile then leaves the placement nothing to do.</para>
         /// </summary>
         private static IEnumerable<EffectNodeDefinition> MagmaRadiusArm(EffectNodeId arm, int count)
         {
             var places = new EffectNodeId[count];
+            var reclaims = new EffectNodeId[count];
+            var steps = new List<EffectNodeId>();
             for (var index = 0; index < count; index++)
             {
+                reclaims[index] = new EffectNodeId($"ignatia-magma-moon-reclaim-{index + 1}");
                 places[index] = new EffectNodeId($"ignatia-magma-moon-place-{index + 1}");
+                steps.Add(reclaims[index]);
+                steps.Add(places[index]);
             }
 
             var nodes = new List<EffectNodeDefinition>
             {
                 new EffectNodeDefinition(
                     arm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                    childNodeIds: places)
+                    childNodeIds: steps)
             };
+
+            foreach (var reclaim in reclaims)
+            {
+                nodes.Add(new EffectNodeDefinition(
+                    reclaim, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    IgnatiaMagmaContent.ReclaimMagmaV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticTokenCapabilities.ReclaimedOutput, EffectValueKind.Coordinate)
+                    }));
+            }
 
             foreach (var place in places)
             {

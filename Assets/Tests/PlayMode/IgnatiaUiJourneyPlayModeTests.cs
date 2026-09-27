@@ -1573,7 +1573,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Space(root);
 
             Assert.That(MagmaSpaces(runtime), Has.Length.EqualTo(2),
-                "Two magma tokens, out of a supply of three. " + Remaining(runtime));
+                "Two magma tokens, out of a supply of four. " + Remaining(runtime));
             Assert.That(MagmaSpaces(runtime), Has.Member(firstSpace));
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             SeatsAgree(runtime, "the scattered tokens");

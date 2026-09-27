@@ -37,7 +37,7 @@ Historical evidence: [8.112 completion index](../Archive/Phase-Handoffs/PHASE_8.
 
 ### [ ] 8.112a Implement rock tokens, the printed secondary Attack and the after-place fact
 
-Outcome: a rock token definition (obstacle, supply per MR-Q1, p.18 short-supply reclaim, p.8 cleanup, Clear) and a printed secondary Attack action kind: non-Ranged, printed value plus Attack items, no card text, replaceable by Clear, offered to players and bots and drawn as a ribbon control. A typed fact records each placement step's placed rock spaces for the Ultimate.
+Outcome: a rock token definition (obstacle, supply 3 per MR-Q1, p.18 short-supply reclaim, p.8 cleanup, Clear) and a printed secondary Attack action kind: non-Ranged, printed value plus Attack items, no card text, replaceable by Clear, offered to players and bots and drawn as a ribbon control. A typed fact records each placement step's placed rock spaces for the Ultimate.
 
 Acceptance: synthetic cards prove the secondary Attack against an adjacent enemy hero (Defense window) and minion (defeat, coins), refusal at distance 2 even beside a Radius icon, item arithmetic, Clear replacement, repeat/immunity boundaries, snapshot/restore and both seat projections; rock supply exhaustion and reclaim, obstacle blocking, cleanup and Clear; the placement fact across pause and restore. Schema or wire movement promotes this block to T3.
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
@@ -47,12 +48,12 @@ namespace GuardsDigital.Core.Cards.Verified
     public static class IgnatiaMagmaContent
     {
         /// <summary>
-        /// The physical magma supply. USER-SETTLED 2026-09-22: "Magma token count is 3". Her faces
-        /// print "up to N" placements (Path of Flames' "up to 4"), which p.18's short-supply step
-        /// bounds to what is available - so a card printing "up to 4" places at most these 3 when the
-        /// pile is drained, and the tokens return to supply at end of round (their cleanup).
+        /// The physical magma supply. USER-CORRECTED 2026-09-27 (milestone 8.113): "Ignatia has 4
+        /// tokens in supply, i was wrong" - superseding the 2026-09-22 count of 3. Her faces print
+        /// "up to N" placements, the largest Path of Flames' "up to 4", so one card can now spend the
+        /// whole pile; the tokens return to supply at end of round (their cleanup).
         /// </summary>
-        public const int MagmaSupplyCount = 3;
+        public const int MagmaSupplyCount = 4;
 
         /// <summary>The one physical pile every magma placement of hers draws from.</summary>
         public const string MagmaSupplyGroupId = "ignatia-magma-tokens";
@@ -89,6 +90,18 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityReference PlaceMagmaWakeV1 =>
             new EffectCapabilityReference(PlaceMagmaWake, 1);
 
+        /// <summary>
+        /// Milestone 8.113. Rulebook p.18's short-supply step for one moon placement: "If you need to
+        /// place more tokens than are available in the supply, first remove up to that number of
+        /// tokens of the same type from the board, if able." It stands aside (declines) while the pile
+        /// still holds a token, so the placement that follows it asks exactly what it asked before.
+        /// </summary>
+        public static EffectCapabilityId ReclaimMagma { get; } =
+            new EffectCapabilityId("ignatia-reclaim-magma");
+
+        public static EffectCapabilityReference ReclaimMagmaV1 =>
+            new EffectCapabilityReference(ReclaimMagma, 1);
+
         /// <summary>The move-origin the wake reads - the actor's space before her Move, "moved out of".</summary>
         public const string WakeOriginParameterName = "origin";
 
@@ -112,6 +125,7 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceMagmaInRadiusV1, MagmaTokenDefinition, PrintedValueChannel.Radius),
+                SyntheticTokenCapabilities.ReclaimHandler(ReclaimMagmaV1, MagmaTokenDefinition),
                 new PlaceMagmaWakeHandler(PlaceMagmaWakeV1, MagmaTokenDefinition)
             };
 
@@ -127,10 +141,12 @@ namespace GuardsDigital.Core.Cards.Verified
         /// of", the spaces between are the ones "moved through", and the destination is where she now
         /// stands, which no obstacle may share.</para>
         ///
-        /// <para><b>It asks no question.</b> "Place a magma token in EACH empty space" is p.10's
-        /// mandatory automatic step, so the actor chooses nothing - the spaces are determined by the
-        /// Move she already made - and the node applies at once, placing as many tokens as the wake and
-        /// the supply allow. A space that is off the map, occupied, or made an obstacle by an overlay is
+            /// <para><b>It asks no question about WHERE.</b> "Place a magma token in EACH empty space" is
+        /// p.10's mandatory automatic step - the spaces are determined by the Move she already
+        /// made. Its one question is p.18's (milestone 8.113): when the wake needs more tokens than
+        /// the pile holds and more magma stands on the board than that shortfall, the actor names
+        /// which standing tokens come back first; when all of them must come back, nothing is
+        /// asked. Then it places as many tokens as the wake and the supply allow. A space that is off the map, occupied, or made an obstacle by an overlay is
         /// simply not empty and takes none, which <see cref="PlaceOperation.PlaceFromSupply"/> answers by
         /// refusing that one coordinate rather than the whole step.</para>
         /// </summary>
@@ -183,6 +199,81 @@ namespace GuardsDigital.Core.Cards.Verified
                 var origin = originInput.Coordinate;
                 var destination = destinationInput.Coordinate;
 
+                // p.18's short supply, milestone 8.113: "first remove up to that number of tokens of
+                // the same type from the board, if able." The shortfall is measured before anything
+                // is placed, so the tokens this wake is about to lay are never candidates. When every
+                // standing magma token must come back there is nothing to choose; otherwise the
+                // actor names which ones.
+                var standing = StandingMagma(components);
+                var take = Math.Min(Shortfall(context, components, origin, destination), standing.Length);
+                if (take > 0 && take < standing.Length)
+                {
+                    return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor,
+                        standing.Select(token => EffectValue.Space(token.Coordinate)).ToArray(),
+                        take,
+                        take));
+                }
+
+                foreach (var token in standing.Take(Math.Max(0, take)))
+                {
+                    components.Tokens.CommitValidatedTokenReclamation(token.Id);
+                }
+
+                return Applied(PlaceWake(context, components, origin, destination));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var components = context?.Components;
+                if (components == null || !components.IsLive || selected == null)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var originInput = context.Input(WakeOriginParameterName);
+                var destinationInput = context.Input(WakeDestinationParameterName);
+                if (originInput.Kind != EffectValueKind.Coordinate ||
+                    destinationInput.Kind != EffectValueKind.Coordinate)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var origin = originInput.Coordinate;
+                var destination = destinationInput.Coordinate;
+
+                // The answer is re-derived against the live board rather than trusted: the same
+                // count the question asked for, each naming a distinct standing magma token.
+                var standing = StandingMagma(components);
+                var take = Math.Min(Shortfall(context, components, origin, destination), standing.Length);
+                var chosen = selected
+                    .Where(value => value.Kind == EffectValueKind.Coordinate)
+                    .Select(value => value.Coordinate)
+                    .Distinct()
+                    .Select(coordinate => standing.FirstOrDefault(
+                        token => token.Coordinate.Equals(coordinate)))
+                    .ToArray();
+                if (take < 1 || chosen.Length != selected.Count || chosen.Length != take ||
+                    chosen.Any(token => token == null))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                foreach (var token in chosen)
+                {
+                    components.Tokens.CommitValidatedTokenReclamation(token.Id);
+                }
+
+                return Applied(PlaceWake(context, components, origin, destination));
+            }
+
+            private int PlaceWake(
+                EffectCapabilityContext context,
+                MatchComponents components,
+                HexCoordinate origin,
+                HexCoordinate destination)
+            {
                 var placed = 0;
                 foreach (var space in WakeSpaces(origin, destination))
                 {
@@ -192,13 +283,54 @@ namespace GuardsDigital.Core.Cards.Verified
                     }
                 }
 
-                return Applied(placed);
+                return placed;
             }
 
-            public EffectExecutionResult Resume(
-                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
-                throw new InvalidOperationException(
-                    "ignatia-place-magma-wake@1 places every empty wake space at once and asks nothing.");
+            /// <summary>
+            /// How many more magma tokens this wake needs than the pile holds: the wake spaces a Place
+            /// would admit, less the supply. Zero or less means no reclamation is owed.
+            /// </summary>
+            private int Shortfall(
+                EffectCapabilityContext context,
+                MatchComponents components,
+                HexCoordinate origin,
+                HexCoordinate destination)
+            {
+                var reach = HexDistanceQuery.Calculate(origin, destination);
+                if (reach < 1)
+                {
+                    return 0;
+                }
+
+                var admitted = PlaceDestinationQuery.FindDestinations(
+                    WakePolicy(reach),
+                    components.Tokens,
+                    destination,
+                    Array.Empty<HexCoordinate>(),
+                    context.Modifications);
+                var needed = WakeSpaces(origin, destination).Count(space => admitted.Contains(space));
+                var available = components.Catalog.CountAvailableTokens(
+                    definition.Reference, components.Tokens.PlacedTokens);
+                return needed - available;
+            }
+
+            /// <summary>p.18's "tokens of the same type", in a stable board order.</summary>
+            private PlacedToken[] StandingMagma(MatchComponents components) =>
+                components.Catalog
+                    .ReclaimableForPlacement(definition.Reference, components.Tokens.PlacedTokens)
+                    .OrderBy(token => token.Coordinate.Q)
+                    .ThenBy(token => token.Coordinate.R)
+                    .ToArray();
+
+            private static PlacePolicy WakePolicy(int reach) =>
+                new PlacePolicy(
+                    PlaceSourceContainer.Supply,
+                    PlaceEligiblePieceKind.Token,
+                    PlaceDestinationScope.EmptySpacesWithinRadius,
+                    reach,
+                    PlaceChooserKind.ActingHero,
+                    PlaceNoDestinationPolicy.Impossible,
+                    PlaceDestinationAnchor.ActingHero);
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
@@ -267,14 +399,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     return false;
                 }
 
-                var policy = new PlacePolicy(
-                    PlaceSourceContainer.Supply,
-                    PlaceEligiblePieceKind.Token,
-                    PlaceDestinationScope.EmptySpacesWithinRadius,
-                    reach,
-                    PlaceChooserKind.ActingHero,
-                    PlaceNoDestinationPolicy.Impossible,
-                    PlaceDestinationAnchor.ActingHero);
+                var policy = WakePolicy(reach);
 
                 var token = new PlacedToken(
                     // Deterministic under replay and unique across the several tokens this one node

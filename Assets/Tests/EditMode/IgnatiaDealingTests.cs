@@ -527,10 +527,13 @@ namespace GuardsDigital.Tests.EditMode
                 "ignatia-range-hero-not-adjacent@1",
                 "ignatia-range-unit-at-maximum-range@1",
                 "ignatia-range-unit-in-straight-line@1",
-                "ignatia-range-unit-not-in-straight-line@1"
+                "ignatia-range-unit-not-in-straight-line@1",
+                // Milestone 8.113: p.18's short-supply step before each moon placement.
+                "ignatia-reclaim-magma@1"
             }),
-                "EXACTLY the eleven 8.75 and 8.75a named as the deferral list, and no more: a " +
-                "twelfth arriving is a registration somebody has to decide on rather than inherit.");
+                "EXACTLY the eleven 8.75 and 8.75a named as the deferral list plus 8.113's magma " +
+                "reclamation, and no more: another arriving is a registration somebody has to decide " +
+                "on rather than inherit.");
 
             Assert.That(
                 build.Components.RegisteredTokens.Select(token => token.DefinitionId.Value)

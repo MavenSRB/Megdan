@@ -133,7 +133,10 @@ namespace GuardsDigital.Tests.EditMode
             "ignatia-range-hero-not-adjacent@1",
             "ignatia-range-unit-at-maximum-range@1",
             "ignatia-range-unit-in-straight-line@1",
-            "ignatia-range-unit-not-in-straight-line@1"
+            "ignatia-range-unit-not-in-straight-line@1",
+            // Milestone 8.113: p.18's short-supply step before each moon placement - a registration
+            // of the build's shared hero-token reclamation type over her magma.
+            "ignatia-reclaim-magma@1"
         };
 
         /// <summary>
@@ -802,9 +805,9 @@ namespace GuardsDigital.Tests.EditMode
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(HerOwnContracts),
-                "Exactly eleven of the contracts her bodies name are HERS (8.75a added the flip, named " +
-                "by the Ultimate's triggered body) - a contract of hers that no body names, and a " +
-                "twelfth one appearing, both fail here.");
+                "Exactly twelve of the contracts her bodies name are HERS (8.75a added the flip, named " +
+                "by the Ultimate's triggered body; 8.113 the magma reclamation) - a contract of hers " +
+                "that no body names, and another one appearing, both fail here.");
 
             Assert.That(
                 named.Count(capability =>
@@ -823,12 +826,12 @@ namespace GuardsDigital.Tests.EditMode
                 "the list her dealing registers is neither short nor long by one.");
             Assert.That(
                 HerDeclaredHandlers().Select(handler => handler.Reference).Distinct().Count(),
-                Is.EqualTo(11),
+                Is.EqualTo(12),
                 "each reference ONCE - 8.40j's BA-18, which is what a second concat would break.");
 
             Assert.That(
-                IgnatiaComponentContent.RegisteredHandlers().Count(), Is.EqualTo(11),
-                "MILESTONE 8.75b FLIPPED MILESTONE 7.9's GATE. All eleven are registered, which is " +
+                IgnatiaComponentContent.RegisteredHandlers().Count(), Is.EqualTo(12),
+                "MILESTONE 8.75b FLIPPED MILESTONE 7.9's GATE. All twelve are registered, which is " +
                 "the one edit that turns her printed set into a hero a configured match can deal.");
             Assert.That(
                 named.Where(capability =>
@@ -896,10 +899,11 @@ namespace GuardsDigital.Tests.EditMode
                 .Distinct()
                 .ToArray();
 
-            Assert.That(reused, Has.Length.EqualTo(2),
-                "and exactly two of her ten registrations are reuses of types this build already " +
-                "ships - Equilibrium's Active-effect creation and the magma radius Place - which is " +
-                "why ten contracts cost five new types rather than ten.");
+            Assert.That(reused, Has.Length.EqualTo(3),
+                "and exactly three of her registration types are reuses of types this build already " +
+                "ships - Equilibrium's Active-effect creation, the magma radius Place and (milestone " +
+                "8.113) the p.18 short-supply reclamation - which is why her contracts cost only five " +
+                "new types.");
 
             Assert.That(
                 HerDeclaredHandlers().Count(handler =>
@@ -921,7 +925,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionAndEveryBody()
         {
-            Assert.That(IgnatiaCardContent.ContentRevision, Is.EqualTo("ignatia-8-75-rev-1"));
+            Assert.That(IgnatiaCardContent.ContentRevision, Is.EqualTo("ignatia-8-113-rev-1"));
             Assert.That(IgnatiaCardContent.ContentSetId, Is.EqualTo("ignatia"));
 
             Assert.That(

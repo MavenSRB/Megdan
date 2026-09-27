@@ -91,7 +91,7 @@ New contracts, each owned by one block:
 
 Each blocks only the block named.
 
-- **MR-Q1 (user):** how many rock tokens are in Mrak's supply? Blocks 8.112a's token definition.
+- **MR-Q1 (user, settled 2026-09-27):** "Mark has 3 tokens in supply" - Mrak's rock supply is **three**, with p.18's short-supply step taking standing rocks back when a placement needs more (Fissure's three and Stone Grip's exactly-three can each spend the whole pile).
 - **MR-Q2 (user):** Fissure's "first three empty spaces in the straight line" - literal reading: walk outward from Mrak through the target's space and place in the first three empty spaces met, skipping occupied spaces and terrain until the board ends. The alternative stops at the first non-empty space. Blocks 8.112b.
 - **MR-Q3 (user):** Stone Grip's "exactly 3 ... farthest away from you" - when fewer than three empty adjacent spaces share the greatest distance (off-line targets have two), do the next-farthest fill the rest; and when fewer than three empty adjacent spaces exist at all, is the clause unappliable (place none, p.10) or does it place as many as possible? Blocks 8.112b.
 - **MR-Q4 (user):** Stone Carapace with an empty hand: when Mrak "discards a card, or is defeated", may the resolved Carapace be discarded instead to avoid defeat? Blocks 8.112c.

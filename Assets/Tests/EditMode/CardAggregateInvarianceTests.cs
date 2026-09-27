@@ -879,17 +879,20 @@ namespace GuardsDigital.Tests.EditMode
         // 8.93f re-pins all nine for dealing Snorri: his capability ids and four rune marker
         // definitions join the recorded registration lists - the same +981 bytes the sibling corpus
         // measures on all sixteen captures. No scenario plays Snorri; the three groups still hold.
+        // 8.113 re-pins all nine for Ignatia's magma correction: her new `ignatia-reclaim-magma@1`
+        // registration joins the recorded capability list - the same +26 bytes the sibling corpus
+        // measures on all sixteen captures. No scenario plays Ignatia; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
-            new ScenarioDigest("rejected", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
-            new ScenarioDigest("stale", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
-            new ScenarioDigest("restored", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
-            new ScenarioDigest("replayed", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
-            new ScenarioDigest("undo-truncated", "36dfc0c0fcc26b31ac690360fd1d50d939a0c9048aeac728e3791cd0908351e8", "48b0f248197ad1244f9f536f6089a0894efcafdf55654070c1f14aeaa8f0725b"),
-            new ScenarioDigest("defense-discarded", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
-            new ScenarioDigest("defense-discarded-restored", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
-            new ScenarioDigest("defense-discarded-replayed", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
+            new ScenarioDigest("accepted", "b212a047175806f45bc09009e5cefca1ea16225a691462404f6b5c58fe9b6d10", "bc7e02a8f5971afb3590ed79434661494162bc7aacb2c68b63d01da29509a0b8"),
+            new ScenarioDigest("rejected", "b212a047175806f45bc09009e5cefca1ea16225a691462404f6b5c58fe9b6d10", "bc7e02a8f5971afb3590ed79434661494162bc7aacb2c68b63d01da29509a0b8"),
+            new ScenarioDigest("stale", "b212a047175806f45bc09009e5cefca1ea16225a691462404f6b5c58fe9b6d10", "bc7e02a8f5971afb3590ed79434661494162bc7aacb2c68b63d01da29509a0b8"),
+            new ScenarioDigest("restored", "b212a047175806f45bc09009e5cefca1ea16225a691462404f6b5c58fe9b6d10", "bc7e02a8f5971afb3590ed79434661494162bc7aacb2c68b63d01da29509a0b8"),
+            new ScenarioDigest("replayed", "b212a047175806f45bc09009e5cefca1ea16225a691462404f6b5c58fe9b6d10", "bc7e02a8f5971afb3590ed79434661494162bc7aacb2c68b63d01da29509a0b8"),
+            new ScenarioDigest("undo-truncated", "da700ab43c7ce8da7762469b6d084685d09e5f45367998320e7e18c63d39844f", "b7c990a4b07bc8d1fef3602a369149b1e5d45fd2bc7c3f734fec136c6308c8ad"),
+            new ScenarioDigest("defense-discarded", "44fed7232c38c955f07a300b0f00fc9cad75ee6778193f450f139552587a745d", "b2bbc836919263d12dd41efe3865f41c907f70cf96c455d6186e4815760b355d"),
+            new ScenarioDigest("defense-discarded-restored", "44fed7232c38c955f07a300b0f00fc9cad75ee6778193f450f139552587a745d", "b2bbc836919263d12dd41efe3865f41c907f70cf96c455d6186e4815760b355d"),
+            new ScenarioDigest("defense-discarded-replayed", "44fed7232c38c955f07a300b0f00fc9cad75ee6778193f450f139552587a745d", "b2bbc836919263d12dd41efe3865f41c907f70cf96c455d6186e4815760b355d"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

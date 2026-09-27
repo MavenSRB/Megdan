@@ -35,8 +35,12 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class IgnatiaCardContent
     {
-        /// <summary>The revision all nineteen definitions carry at the inventory pass.</summary>
-        public const string ContentRevision = "ignatia-8-75-rev-1";
+        /// <summary>
+        /// The revision all nineteen definitions carry. Milestone 8.113 moved it from
+        /// <c>ignatia-8-75-rev-1</c>: her magma supply became four and her magma placements gained
+        /// p.18's short-supply step, so the semantics her faces reach changed with it.
+        /// </summary>
+        public const string ContentRevision = "ignatia-8-113-rev-1";
 
         /// <summary>p.5's content-set identity - the printed set a seat deals from. Every id is prefixed with it.</summary>
         public const string ContentSetId = "ignatia";

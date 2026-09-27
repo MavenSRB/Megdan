@@ -433,11 +433,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// Path of Cinders: "☀: Move up to 3 spaces in a straight line. Place a magma token in each
         /// empty space you moved through, or out of. ☾: Place up to 3 magma tokens in radius."
         ///
-        /// <para>Path of Ashes at the Tier II count, which is exactly the size of her physical supply -
-        /// USER-SETTLED 2026-09-22, "Magma token count is 3". A three-space walk lays three tokens and
-        /// empties the pile; the moon line's three placements are three separate decisions, and this
-        /// journey refuses the last of them, which is the printed "up to" a player presses. Neither
-        /// face needs p.18's short supply step, which is Path of Flames' business.</para>
+        /// <para>Path of Ashes at the Tier II count, one short of her physical supply of four
+        /// (USER-CORRECTED 2026-09-27 at milestone 8.113). A three-space walk lays three tokens; the
+        /// moon line's three placements are three separate decisions, and this journey refuses the
+        /// last of them, which is the printed "up to" a player presses. Neither face needs p.18's short
+        /// supply step, which only a second magma card in the same round can reach.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator PathOfCindersLaysThreeTokensInItsWakeAndRefusesItsThirdPlacement()

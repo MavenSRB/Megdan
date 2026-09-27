@@ -20,8 +20,10 @@ namespace GuardsDigital.Tests.EditMode
     ///
     /// <para>"☀ Move up to N spaces in a straight line. Place a magma token in each empty space you
     /// moved through, or out of. ☾ Place up to N magma tokens in radius." Both faces draw from one
-    /// physical pile of THREE (USER-SETTLED 2026-09-22), and both leave the same thing on the board: a
-    /// bare p.18 obstacle that nothing may cross and that p.19 removes at the end of the round.</para>
+    /// physical pile of FOUR (USER-CORRECTED 2026-09-27 at milestone 8.113, superseding the 2026-09-22
+    /// count of three), and both leave the same thing on the board: a bare p.18 obstacle that nothing
+    /// may cross and that p.19 removes at the end of the round. When the pile cannot cover a
+    /// placement, p.18's short-supply step takes standing magma back from the board first.</para>
     ///
     /// <para>Unity-independent, so it runs in the cross-platform harness as well as the Windows
     /// tier.</para>
@@ -48,18 +50,19 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// What a magma token IS: a bare p.18 obstacle from a pile of three, with no standing property
+        /// What a magma token IS: a bare p.18 obstacle from a pile of four, with no standing property
         /// of any kind and p.19's own lifetime. Every one of those is an absence, and an absence is what
         /// the printed faces say - none of the three prints an aura, a screen, a trap or a duration.
         /// </summary>
         [Test]
-        public void TheMagmaTokenIsABareImpassableObstacle_FromAPileOfThree()
+        public void TheMagmaTokenIsABareImpassableObstacle_FromAPileOfFour()
         {
             var definition = IgnatiaMagmaContent.MagmaTokenDefinition;
 
-            Assert.That(IgnatiaMagmaContent.MagmaSupplyCount, Is.EqualTo(3),
-                "USER-SETTLED 2026-09-22: \"Magma token count is 3\".");
-            Assert.That(definition.SupplyCount, Is.EqualTo(3),
+            Assert.That(IgnatiaMagmaContent.MagmaSupplyCount, Is.EqualTo(4),
+                "USER-CORRECTED 2026-09-27 (milestone 8.113): \"Ignatia has 4 tokens in supply, i " +
+                "was wrong\".");
+            Assert.That(definition.SupplyCount, Is.EqualTo(4),
                 "and the definition carries that pile rather than a second number.");
 
             Assert.That(definition.Properties, Is.Empty,
@@ -257,28 +260,115 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The pile is physical and it is shared: a move longer than the supply lays as many tokens as
-        /// there are, and then stops. p.18's short-supply step, measured on the one face that can
-        /// outrun three.
+        /// Path of Flames' longest wake spends the whole pile: four wake spaces, four tokens. Before
+        /// milestone 8.113 the pile was read as three and the fourth space stayed bare.
         /// </summary>
         [Test]
-        public void AWakeLongerThanTheSupplyLaysExactlyTheThreeTokensThatExist()
+        public void AFourSpaceWakeSpendsTheWholePileOfFour()
         {
             var frame = new IgnatiaFrame(IgnatiaCardContent.PathOfFlames, IgnatiaBoard.Sun, Board());
             frame.Pick(new HexCoordinate(4, 0));
 
-            Assert.That(frame.Where(IgnatiaBoard.Ignatia), Is.EqualTo(new HexCoordinate(4, 0)),
-                "The move itself is unaffected by the pile: she walks the four spaces her card " +
-                "prints.");
+            Assert.That(frame.Where(IgnatiaBoard.Ignatia), Is.EqualTo(new HexCoordinate(4, 0)));
             Assert.That(
                 frame.TokenSpaces(),
                 Is.EqualTo(new[]
                 {
-                    IgnatiaBoard.Origin, new HexCoordinate(1, 0), new HexCoordinate(2, 0)
+                    IgnatiaBoard.Origin, new HexCoordinate(1, 0), new HexCoordinate(2, 0),
+                    new HexCoordinate(3, 0)
                 }),
-                "and three of the four wake spaces take a token, in the order the walk visits them - " +
-                "the supply is three, and a piece that does not exist is not placed.");
+                "every space she moved out of or through takes a token - four of them, her whole pile.");
             Assert.That(frame.Tokens, Has.Count.EqualTo(IgnatiaMagmaContent.MagmaSupplyCount));
+            Assert.That(frame.Step.IsComplete, Is.True, "Nothing needed reclaiming, so nothing asked.");
+        }
+
+        /// <summary>
+        /// p.18's short supply on the wake, when every standing token must come back: "If you need to
+        /// place more tokens than are available in the supply, first remove up to that number of
+        /// tokens of the same type from the board, if able." Three stand from an earlier scatter, one
+        /// is in the pile, and the four-space wake needs four - so all three return and there is
+        /// nothing to choose.
+        /// </summary>
+        [Test]
+        public void AShortWakeTakesBackEveryStandingTokenWhenItNeedsThemAll()
+        {
+            var board = Board();
+            var scatter = new IgnatiaFrame(IgnatiaCardContent.PathOfCinders, IgnatiaBoard.Moon, board);
+            var standing = new[]
+            {
+                new HexCoordinate(-2, 0), new HexCoordinate(-1, -1), new HexCoordinate(0, -2)
+            };
+            foreach (var space in standing)
+            {
+                scatter.Pick(space);
+            }
+
+            Assert.That(scatter.Tokens, Has.Count.EqualTo(3));
+
+            var wake = new IgnatiaFrame(IgnatiaCardContent.PathOfFlames, IgnatiaBoard.Sun, board);
+            wake.Pick(new HexCoordinate(4, 0));
+
+            Assert.That(wake.Step.IsComplete, Is.True,
+                "Needing three and having exactly three standing is no choice at all.");
+            Assert.That(
+                wake.TokenSpaces(),
+                Is.EqualTo(new[]
+                {
+                    IgnatiaBoard.Origin, new HexCoordinate(1, 0), new HexCoordinate(2, 0),
+                    new HexCoordinate(3, 0)
+                }),
+                "The three scattered tokens came back and all four wake spaces took one.");
+            Assert.That(wake.TokenSpaces().Intersect(standing), Is.Empty);
+        }
+
+        /// <summary>
+        /// The same step when more stands than the wake is short of: the actor names which standing
+        /// tokens return, exactly as many as the shortfall, and the rest stay where they are.
+        /// </summary>
+        [Test]
+        public void AShortWakeAsksWhichStandingTokenReturnsWhenMoreStandThanItNeeds()
+        {
+            var board = Board();
+            var scatter = new IgnatiaFrame(IgnatiaCardContent.PathOfCinders, IgnatiaBoard.Moon, board);
+            var standing = new[]
+            {
+                new HexCoordinate(-2, 0), new HexCoordinate(-1, -1), new HexCoordinate(0, -2)
+            };
+            foreach (var space in standing)
+            {
+                scatter.Pick(space);
+            }
+
+            // One token left in the pile; Path of Flames walks three spaces, so the wake needs three
+            // and is short by two, with three standing to choose from.
+            var wake = new IgnatiaFrame(IgnatiaCardContent.PathOfFlames, IgnatiaBoard.Sun, board);
+            wake.Pick(new HexCoordinate(3, 0));
+
+            Assert.That(wake.Choice, Is.Not.Null, "Three stand and two must return - a real choice.");
+            Assert.That(wake.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-sun-wake"));
+            Assert.That(wake.Spaces(), Is.EquivalentTo(standing),
+                "Only standing magma is offered - never the wake spaces it is about to fill.");
+            Assert.That(wake.Choice.MinimumSelections, Is.EqualTo(2));
+            Assert.That(wake.Choice.MaximumSelections, Is.EqualTo(2));
+
+            wake.Answer(wake.Choice.SelectInvocations.Single(
+                invocation => invocation.Candidate.Value.Equals(EffectValue.Space(standing[0]))));
+            wake.Answer(wake.Choice.SelectInvocations.Single(
+                invocation => invocation.Candidate.Value.Equals(EffectValue.Space(standing[2]))));
+            if (wake.Choice != null)
+            {
+                wake.Confirm();
+            }
+
+            Assert.That(wake.Step.IsComplete, Is.True);
+            Assert.That(
+                wake.TokenSpaces(),
+                Is.EquivalentTo(new[]
+                {
+                    standing[1], IgnatiaBoard.Origin, new HexCoordinate(1, 0), new HexCoordinate(2, 0)
+                }),
+                "the two named tokens returned, the unnamed one stayed, and the three wake spaces " +
+                "took the pile's four.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -348,25 +438,84 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The pile bounds the scatter exactly as it bounds the wake: Path of Flames prints "up to 4"
-        /// and there are three tokens, so the fourth placement has nothing to place and is skipped.
+        /// Path of Flames' "up to 4" and a pile of four: every placement is asked and every one lands,
+        /// and none of the short-supply steps between them asks anything while the pile holds a token.
         /// </summary>
         [Test]
-        public void TheFourthPlacementHasNoTokenToPlace_BecauseThePileIsThree()
+        public void TheScatterCanSpendTheWholePileOfFour()
         {
             var frame = new IgnatiaFrame(IgnatiaCardContent.PathOfFlames, IgnatiaBoard.Moon, Board());
 
-            frame.Pick(new HexCoordinate(2, 0));
-            frame.Pick(new HexCoordinate(3, 0));
-            frame.Pick(new HexCoordinate(4, 0));
+            for (var placement = 1; placement <= 4; placement++)
+            {
+                Assert.That(frame.Choice.NodeId.Value,
+                    Is.EqualTo("ignatia-magma-moon-place-" + placement),
+                    "the pile is not empty, so the placement is the question and not a reclamation.");
+                frame.Pick(new[]
+                {
+                    new HexCoordinate(2, 0), new HexCoordinate(3, 0), new HexCoordinate(0, 2),
+                    new HexCoordinate(0, 3)
+                }[placement - 1]);
+            }
 
-            Assert.That(frame.Tokens, Has.Count.EqualTo(3));
-            Assert.That(frame.Step.IsComplete, Is.True,
-                "The fourth placement is not asked at all: there is no fourth magma token, and a " +
-                "`may` node with nothing to do is skipped rather than opening an empty question.");
+            Assert.That(frame.Step.IsComplete, Is.True);
+            Assert.That(frame.Tokens, Has.Count.EqualTo(IgnatiaMagmaContent.MagmaSupplyCount));
+            Assert.That(frame.Outcome("ignatia-magma-moon-reclaim-2"),
+                Is.EqualTo(EffectExecutionResultKind.DeclinedOptional),
+                "and the reclamation before each placement stood aside on its own.");
+        }
+
+        /// <summary>
+        /// p.18's short supply on the scatter: once the pile is empty the next placement is preceded by
+        /// the question of which standing magma token comes back. Taking one lets the placement ask
+        /// where it goes; declining it declines that token, and the empty pile then leaves the
+        /// placement with nothing to do.
+        /// </summary>
+        [Test]
+        public void AnEmptyPileAsksWhichStandingTokenReturnsBeforeTheNextPlacement()
+        {
+            var board = Board();
+            var first = new IgnatiaFrame(IgnatiaCardContent.PathOfCinders, IgnatiaBoard.Moon, board);
+            var standing = new[]
+            {
+                new HexCoordinate(-2, 0), new HexCoordinate(-1, -1), new HexCoordinate(0, -2)
+            };
+            foreach (var space in standing)
+            {
+                first.Pick(space);
+            }
+
+            var frame = new IgnatiaFrame(IgnatiaCardContent.PathOfFlames, IgnatiaBoard.Moon, board);
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-place-1"),
+                "The fourth token is still in the pile, so the first placement asks as it always did.");
+            frame.Pick(new HexCoordinate(2, 0));
+
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-2"),
+                "The pile is empty now, so p.18 asks which standing token comes back first.");
+            Assert.That(frame.Spaces(),
+                Is.EquivalentTo(standing.Concat(new[] { new HexCoordinate(2, 0) })),
+                "every standing magma token is a candidate, the one just placed included.");
+            Assert.That(frame.Choice.DeclineInvocation, Is.Not.Null,
+                "and it may be declined, because the placement it makes room for is optional.");
+
+            frame.Pick(standing[0]);
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-place-2"));
+            frame.Pick(new HexCoordinate(3, 0));
+            Assert.That(frame.TokenSpaces(), Has.No.Member(standing[0]));
+            Assert.That(frame.TokenSpaces(), Has.Member(new HexCoordinate(3, 0)));
+
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-3"));
+            frame.Decline();
+            Assert.That(frame.Outcome("ignatia-magma-moon-place-3"),
+                Is.Not.EqualTo(EffectExecutionResultKind.Applied),
+                "declining the reclamation declines that token: the pile is empty and nothing lands.");
+
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-4"));
+            frame.Decline();
+
+            Assert.That(frame.Step.IsComplete, Is.True);
             Assert.That(frame.Tokens, Has.Count.EqualTo(IgnatiaMagmaContent.MagmaSupplyCount),
-                "so a card printing \"up to 4\" places at most the three that exist - p.18's " +
-                "short-supply step, which bounds the printed number by the physical pile.");
+                "still four magma on the board, never five.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -414,7 +563,7 @@ namespace GuardsDigital.Tests.EditMode
         /// stated as a set so a third arriving unnoticed fails here.
         /// </summary>
         [Test]
-        public void TheMagmaLineNamesExactlyTwoPlacementContracts()
+        public void TheMagmaLineNamesExactlyTwoPlacementContractsAndTheShortSupplyStep()
         {
             var named = new[]
                 {
@@ -434,7 +583,8 @@ namespace GuardsDigital.Tests.EditMode
             {
                 "ignatia-coin-sun@1",
                 "ignatia-place-magma-in-radius@1",
-                "ignatia-place-magma-wake@1"
+                "ignatia-place-magma-wake@1",
+                "ignatia-reclaim-magma@1"
             }));
 
             Assert.That(
@@ -443,9 +593,11 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     "ignatia-place-magma-in-radius@1",
-                    "ignatia-place-magma-wake@1"
+                    "ignatia-place-magma-wake@1",
+                    "ignatia-reclaim-magma@1"
                 }),
-                "and the subsystem ships exactly those two, which is what her dealing registers.");
+                "and the subsystem ships exactly those three, which is what her dealing registers - " +
+                "the reclamation being p.18's short-supply step (milestone 8.113).");
         }
     }
 }

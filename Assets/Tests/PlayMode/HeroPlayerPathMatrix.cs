@@ -1397,13 +1397,16 @@ namespace GuardsDigital.Tests.PlayMode
                 ["ignatia-place-magma-in-radius"] =
                     new[] { PlayerInteractionShape.BoardSpaceSelection },
 
-                // THE WAKE ASKS NOBODY ANYTHING. "Place a magma token in each empty space you moved
-                // through, or out of" is p.10's mandatory automatic step: the spaces are decided by
-                // the Move the player already made, and the node applies at once. A row claiming a
-                // space click would name a journey for an input no player is ever offered - the
-                // clicks that DO decide the trail are the straight-line offer's, which is
-                // `choose-line-destination@1` above.
-                ["ignatia-place-magma-wake"] = Array.Empty<PlayerInteractionShape>()
+                // THE WAKE ASKS NOTHING ABOUT WHERE. "Place a magma token in each empty space you
+                // moved through, or out of" is p.10's mandatory automatic step: the spaces are decided
+                // by the Move the player already made. Since milestone 8.113 it carries p.18's short
+                // supply, and when more magma stands than the wake is short of, the player clicks
+                // which standing tokens come back - a board space click.
+                ["ignatia-place-magma-wake"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Milestone 8.113. p.18's short-supply step before each moon placement: the reclaim
+                // handler Tali's tokens use, over her magma, asking for a standing token's space.
+                ["ignatia-reclaim-magma"] = new[] { PlayerInteractionShape.BoardSpaceSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

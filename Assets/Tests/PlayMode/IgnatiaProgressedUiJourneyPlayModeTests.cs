@@ -657,16 +657,15 @@ namespace GuardsDigital.Tests.PlayMode
         /// Path of Flames: "☀: Move up to 4 spaces in a straight line. Place a magma token in each empty
         /// space you moved through, or out of. ☾: Place up to 4 magma tokens in radius."
         ///
-        /// <para><b>THE ONLY FACE OF HERS THAT ASKS FOR MORE MAGMA THAN SHE OWNS.</b> Her supply is
-        /// THREE (USER-SETTLED 2026-09-22, "Magma token count is 3") and both printed lines say four, so
-        /// rulebook p.18's short-supply step is what decides the fourth: on the sun line a four-space
-        /// walk has four wake spaces and only the first three take a token, and on the moon line the
-        /// fourth placement is a step with no supply behind it and is not drawn at all. Neither is a
-        /// refusal - the card completes either way - which is what the page says and what this journey
-        /// asserts exactly rather than paraphrasing.</para>
+        /// <para><b>THE ONE FACE OF HERS THAT SPENDS HER WHOLE PILE.</b> Her supply is FOUR
+        /// (USER-CORRECTED 2026-09-27 at milestone 8.113, superseding the 2026-09-22 count of three) and
+        /// both printed lines say four: a four-space walk lays a token in every one of its four wake
+        /// spaces, and the moon line's four placements each land. With the pile full, p.18's
+        /// short-supply step before each placement stands aside and asks nothing - which is why every
+        /// question below is a placement.</para>
         /// </summary>
         [UnityTest]
-        public IEnumerator PathOfFlamesSpendsHerWholeMagmaSupplyAndThenStops()
+        public IEnumerator PathOfFlamesSpendsHerWholePileOfFour()
         {
             yield return StageIgnatia(
                 SceneCardContent.VerifiedEngagedStagedIgnatia,
@@ -693,20 +692,17 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(new[]
                     {
                         new HexCoordinate(-3, 1), new HexCoordinate(-2, 1),
-                        new HexCoordinate(-1, 1)
+                        new HexCoordinate(-1, 1), new HexCoordinate(0, 1)
                     }).AsCollection,
-                "p.18's short supply: the wake names FOUR empty spaces and she owns three tokens, " +
-                "so the first three take one and the fourth takes none. " + Remaining(sunRuntime));
-            Assert.That(MagmaSpaces(sunRuntime), Has.No.Member(new HexCoordinate(0, 1)),
-                "and the one left bare is the last space of the wake rather than an arbitrary one. " +
-                Remaining(sunRuntime));
+                "The wake names FOUR empty spaces and she owns four tokens, so every one of them " +
+                "takes one. " + Remaining(sunRuntime));
             Assert.That(sunRuntime.PendingEffectChoice, Is.Null,
-                "A step the supply cannot fill is still a step discharged - nobody is asked and the " +
-                "card completes. " + Remaining(sunRuntime));
-            SeatsAgree(sunRuntime, "the exhausted wake");
+                "Nothing needed taking back, so nobody is asked and the card completes. " +
+                Remaining(sunRuntime));
+            SeatsAgree(sunRuntime, "the four-token wake");
             Healthy(sunRuntime);
 
-            // ☾ the same shortfall as four separate decisions.
+            // ☾ the same pile as four separate decisions.
             yield return StageIgnatia(
                 SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon,
                 hand: new[] { IgnatiaCardContent.PathOfFlames, IgnatiaCardContent.Equilibrium },
@@ -716,21 +712,21 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return BeginIgnatia(
                 moonRoot, IgnatiaCardContent.PathOfFlames, ActionKind.Skill, WaspCardContent.Shock);
-            for (var placement = 1; placement <= 3; placement++)
+            for (var placement = 1; placement <= 4; placement++)
             {
                 Assert.That(moonRuntime.PendingEffectChoice, Is.Not.Null, Remaining(moonRuntime));
                 Assert.That(moonRuntime.PendingEffectChoice.NodeId.Value,
-                    Is.EqualTo("ignatia-magma-moon-place-" + placement));
+                    Is.EqualTo("ignatia-magma-moon-place-" + placement),
+                    "a placement, never a reclamation, while the pile holds a token. " +
+                    Remaining(moonRuntime));
                 yield return Space(moonRoot);
             }
 
-            Assert.That(MagmaSpaces(moonRuntime), Has.Length.EqualTo(3),
-                "Three tokens, which is what she owns. " + Remaining(moonRuntime));
+            Assert.That(MagmaSpaces(moonRuntime), Has.Length.EqualTo(4),
+                "Four tokens, which is her whole pile. " + Remaining(moonRuntime));
             Assert.That(moonRuntime.PendingEffectChoice, Is.Null,
-                "and the FOURTH placement is never drawn: p.18's short supply leaves the step with " +
-                "no destination at all rather than offering a token she does not have. " +
-                Remaining(moonRuntime));
-            SeatsAgree(moonRuntime, "the exhausted supply");
+                "and the card completes. " + Remaining(moonRuntime));
+            SeatsAgree(moonRuntime, "the spent pile");
             Healthy(moonRuntime);
 
             // And the printed "up to", refused outright - a step a player declines rather than a
@@ -758,6 +754,102 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(declineRuntime.PendingEffectChoice, Is.Null, Remaining(declineRuntime));
             SeatsAgree(declineRuntime, "the refused four-space line");
             Healthy(declineRuntime);
+        }
+
+        /// <summary>
+        /// Rulebook p.18's short supply, reached the one way her dealt hand can reach it: Chaos
+        /// Incarnate repeats Path of Flames in the same turn. "If you need to place more tokens than are
+        /// available in the supply, first remove up to that number of tokens of the same type from the
+        /// board, if able." Milestone 8.113.
+        ///
+        /// <para>The sun wake spends all four tokens; the flip turns the coin to the moon; the repeated
+        /// action's first placement finds the pile empty, so the board asks which standing magma token
+        /// comes back - a real click on a lit space - and the placement then puts it somewhere else.
+        /// Declining the next reclamation declines that token, and the empty pile ends the card with
+        /// four magma still on the board and never five.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ChaosIncarnateRepeatsPathOfFlamesAndTheEmptyPileTakesMagmaBack()
+        {
+            yield return StageIgnatia(
+                SceneCardContent.VerifiedTierThreeEngagedStagedIgnatia,
+                hand: new[] { IgnatiaCardContent.PathOfFlames, IgnatiaCardContent.Equilibrium },
+                enemyHand: new[] { WaspCardContent.Shock, WaspCardContent.Electrocute });
+            var root = Root();
+            var runtime = root.Runtime;
+            var hers = Ignatia(runtime);
+            Assert.That(Coin(runtime), Is.EqualTo(PrintedTextFace.Sun), Remaining(runtime));
+
+            yield return BeginIgnatia(
+                root, IgnatiaCardContent.PathOfFlames, ActionKind.Skill, WaspCardContent.Shock);
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo("ignatia-magma-sun-line"), Remaining(runtime));
+            var from = Position(runtime, hers);
+            var fourAway = OfferedSpaces(runtime)
+                .Where(space => Distance(space, from) == 4)
+                .ToArray();
+            Assert.That(fourAway, Is.Not.Empty,
+                "the staged board leaves her a free four-space file. " + Remaining(runtime));
+            yield return Space(root, fourAway[0]);
+            yield return null;
+            yield return null;
+
+            var wake = MagmaSpaces(runtime);
+            Assert.That(wake, Has.Length.EqualTo(4),
+                "The four-space wake spends her whole pile. " + Remaining(runtime));
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo(IgnatiaEffectContent.ChaosIncarnateFlipNode), Remaining(runtime));
+            yield return May(root);
+            yield return null;
+            yield return null;
+            Assert.That(Coin(runtime), Is.EqualTo(PrintedTextFace.Moon), Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo(IgnatiaEffectContent.ChaosIncarnateRepeatNode), Remaining(runtime));
+            yield return May(root);
+            yield return null;
+            yield return null;
+
+            var reclaim = runtime.PendingEffectChoice;
+            Assert.That(reclaim, Is.Not.Null, Remaining(runtime));
+            Assert.That(reclaim.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-1"),
+                "The repeated moon line finds the pile empty, so p.18 asks first which standing " +
+                "token comes back. " + Remaining(runtime));
+            Assert.That(OfferedSpaces(runtime), Is.EquivalentTo(wake),
+                "and every candidate is a magma token standing on the board. " + Remaining(runtime));
+            Assert.That(reclaim.DeclineInvocation, Is.Not.Null, Remaining(runtime));
+            var takenBack = wake[0];
+            yield return Space(root, takenBack);
+            yield return null;
+
+            Assert.That(MagmaSpaces(runtime), Has.No.Member(takenBack),
+                "the token the player clicked has left the board. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo("ignatia-magma-moon-place-1"), Remaining(runtime));
+            yield return Space(root);
+            yield return null;
+            Assert.That(MagmaSpaces(runtime), Has.Length.EqualTo(4),
+                "it came back into the pile and went straight out again. " + Remaining(runtime));
+
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                Is.EqualTo("ignatia-magma-moon-reclaim-2"), Remaining(runtime));
+            for (var remaining = 2; remaining <= 4; remaining++)
+            {
+                Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+                Assert.That(runtime.PendingEffectChoice.NodeId.Value,
+                    Is.EqualTo("ignatia-magma-moon-reclaim-" + remaining), Remaining(runtime));
+                yield return May(root, accept: false);
+                yield return null;
+            }
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "Declining each reclamation declines its token, and the card completes. " +
+                Remaining(runtime));
+            Assert.That(MagmaSpaces(runtime), Has.Length.EqualTo(4),
+                "four magma on the board, never five. " + Remaining(runtime));
+            SeatsAgree(runtime, "the reclaimed magma");
+            Healthy(runtime);
         }
 
         /// <summary>

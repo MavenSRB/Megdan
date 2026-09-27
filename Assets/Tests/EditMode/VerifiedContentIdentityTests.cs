@@ -297,7 +297,13 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: her staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("ignatia", "ignatia-8-75-rev-1", "166986e315339edf015beb4eb6286ada58420819ee8d89df97f02a7bc86d5300"),
+            //
+            // Milestone 8.113 MOVED THIS PIN WITH ITS REVISION: the user corrected her magma supply
+            // from three to four and directed p.18's short-supply step onto her placements (a new
+            // `ignatia-reclaim-magma@1` node before each moon placement and a shortfall question in
+            // the wake), so the reachable semantics changed and the revision moved with them
+            // (ignatia-8-75-rev-1 / 166986e3... -> ignatia-8-113-rev-1). Measured, not predicted.
+            new IdentityPin("ignatia", "ignatia-8-113-rev-1", "aa05e3f01164ae37d247eec5a7336a47042aabf969d972c5aaf135b0dac8b3f7"),
             // 8.92d's generic object-selection vocabulary widened the canonical walk for eight
             // earlier owners above without changing their printed behavior; the measured pins move
             // with the shared contract. Trinkets is the newly dealt owner of its full graph.

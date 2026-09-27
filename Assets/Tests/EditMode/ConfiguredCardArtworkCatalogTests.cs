@@ -376,7 +376,8 @@ namespace GuardsDigital.Tests.EditMode
         /// else's revision.
         /// </summary>
         /// <remarks>
-        /// Her revision string is fixed at <c>ignatia-8-75-rev-1</c> for the whole 8.75 series, so
+        /// Her revision string was fixed at <c>ignatia-8-75-rev-1</c> for the whole 8.75 series and
+        /// moved to <c>ignatia-8-113-rev-1</c> with its eighteen rows at milestone 8.113, so
         /// this case is the one that catches a later block bumping it without bringing the eighteen
         /// rows along - which is exactly the shape 8.35l recorded and the reason the constant is
         /// read here rather than spelled out.
