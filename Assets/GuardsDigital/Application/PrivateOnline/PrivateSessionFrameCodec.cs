@@ -260,6 +260,8 @@ namespace GuardsDigital.Application
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 writer.Write(message.Seat.Value);
+                // Milestone 8.108 (wire /24). The player's name, already cleaned.
+                writer.Write(message.PlayerName);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.ClaimSeat, stream.ToArray());
             }
@@ -274,12 +276,15 @@ namespace GuardsDigital.Application
                 using (var reader = new BinaryReader(stream, Encoding.UTF8))
                 {
                     var seat = reader.ReadString();
-                    if (string.IsNullOrWhiteSpace(seat) || stream.Position != stream.Length)
+                    var playerName = reader.ReadString();
+                    if (string.IsNullOrWhiteSpace(seat) || stream.Position != stream.Length ||
+                        playerName.Length > PrivateSessionProtocol.MaxPlayerNameWireChars)
                     {
                         return false;
                     }
 
-                    message = new SeatClaimMessage(new SeatId(seat));
+                    // The constructor cleans the name, so the host never stores what was sent.
+                    message = new SeatClaimMessage(new SeatId(seat), playerName);
                     return true;
                 }
             }
@@ -588,6 +593,8 @@ namespace GuardsDigital.Application
             // in the same way readiness is, and which a client cannot infer - see
             // SeatRosterEntry.HasChosenHero for why the hero column alone cannot say it.
             writer.Write(entry.HasChosenHero);
+            // Milestone 8.108 (wire /24). The seat's player name, public like the rest of the row.
+            writer.Write(entry.PlayerName);
         }
 
         private static bool TryReadRosterEntry(BinaryReader reader, out SeatRosterEntry entry)
@@ -599,7 +606,9 @@ namespace GuardsDigital.Application
             var occupancyValue = reader.ReadInt32();
             var isReady = reader.ReadBoolean();
             var hasChosenHero = reader.ReadBoolean();
+            var playerName = reader.ReadString();
             if (string.IsNullOrWhiteSpace(seat) || string.IsNullOrWhiteSpace(hero) ||
+                playerName.Length > PrivateSessionProtocol.MaxPlayerNameWireChars ||
                 !TryReadTeamSide(teamValue, out var team) ||
                 !TryReadOccupancy(occupancyValue, out var occupancy))
             {
@@ -607,7 +616,7 @@ namespace GuardsDigital.Application
             }
 
             entry = new SeatRosterEntry(
-                new SeatId(seat), new HeroId(hero), team, occupancy, isReady, hasChosenHero);
+                new SeatId(seat), new HeroId(hero), team, occupancy, isReady, hasChosenHero, playerName);
             return true;
         }
 

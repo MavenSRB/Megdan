@@ -470,8 +470,11 @@ namespace GuardsDigital.Tests.PlayMode
             // Milestone 8.107: leaving lands on the first screen, which is HOST and JOIN alone.
             Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.EntryName)), Is.False);
+            yield return null;
+            yield return UiPlayer.CaptureScreen("tmp/8-108-lobby-landing.png");
 
             yield return OpenJoinMenu(driver);
+            yield return UiPlayer.CaptureScreen("tmp/8-108-lobby-join-menu.png");
             foreach (var field in new[]
                      {
                          PrivateLobbyUnityView.AddressFieldName,
@@ -494,6 +497,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls), "CANCEL goes back to the first screen.");
 
             yield return OpenHostMenu(driver);
+            yield return UiPlayer.CaptureScreen("tmp/8-108-lobby-host-menu.png");
             Assert.That(ControlLabels(driver), Is.EqualTo(new[]
             {
                 "2V2", "3V3", PrivateLobbyUnityView.CancelLabel, "HOST", "LONG GAME", "SHORT GAME"
@@ -776,9 +780,13 @@ namespace GuardsDigital.Tests.PlayMode
                 }
 
                 var claimed = new HashSet<SeatId>();
+                var named = 0;
                 foreach (var remote in remotes)
                 {
                     remote.Pump();
+                    // Milestone 8.108: every player names themselves, and one pads it with spaces.
+                    remote.Machine.PlayerName = named == 0 ? "  Player 1 " : "Player " + (named + 1);
+                    named++;
                     var seat = remote.Machine.Roster.First(row =>
                         row.Occupancy == SeatOccupancyState.Open && !claimed.Contains(row.Seat)).Seat;
                     claimed.Add(seat);
@@ -818,6 +826,10 @@ namespace GuardsDigital.Tests.PlayMode
 
                 Assert.That(driver.Presenter.Model.IsHostConsole, Is.True,
                     "The match started without the host in a seat, so its screen is the host console.");
+                Assert.That(driver.Presenter.Model.Seats.Select(row => row.SeatLabel),
+                    Is.EquivalentTo(new[] { "Player 1", "Player 2", "Player 3", "Player 4" }),
+                    "8.108: every seat row shows its player's name, cleaned, in place of the seat id.");
+                Assert.That(Texts(driver, "gd-lobby-seat-name"), Is.SupersetOf(new[] { "Player 1", "Player 4" }));
                 yield return null;
                 yield return null;
                 Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "DIRECTOR RESTART", "DIRECTOR UNDO", "LEAVE" }));

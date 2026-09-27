@@ -275,6 +275,13 @@ namespace GuardsDigital.Application
             /// every roster, which is what makes six people able to see each other get ready.
             /// </summary>
             public bool IsReady { get; set; }
+
+            /// <summary>
+            /// Milestone 8.108. The name the seat's player gave when claiming it, already cleaned.
+            /// Public: it rides every roster. It is kept while the seat is away, so a returning
+            /// player comes back under the same name, and it is cleared when the seat opens.
+            /// </summary>
+            public string PlayerName { get; set; } = string.Empty;
         }
 
         private const int RetainedEventCount = 1024;
@@ -556,7 +563,8 @@ namespace GuardsDigital.Application
                         seat.TeamSide,
                         hold.State,
                         hold.IsReady,
-                        hasChosen));
+                        hasChosen,
+                        hold.PlayerName));
                 }
 
                 return entries;
@@ -876,6 +884,8 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            // Milestone 8.108. Set before the grant, whose roster broadcast then carries it.
+            targetHold.PlayerName = claim.PlayerName;
             GrantSeat(record, seat, targetHold, PrivateSessionEventKind.SeatClaimed);
         }
 
@@ -2067,6 +2077,7 @@ namespace GuardsDigital.Application
                 hold.HeldByOrdinal = 0;
                 hold.Capability = string.Empty;
                 hold.IsReady = false;
+                hold.PlayerName = string.Empty;
             }
 
             sessionEnded = true;
@@ -2125,6 +2136,7 @@ namespace GuardsDigital.Application
             hold.HeldByOrdinal = 0;
             if (forfeited)
             {
+                hold.PlayerName = string.Empty;
                 // The leaver chose the exposure. Clearing the capability is what makes the seat
                 // plainly claimable again rather than leaving a token that could still reclaim it.
                 hold.Capability = string.Empty;
@@ -2183,6 +2195,7 @@ namespace GuardsDigital.Application
             hold.Capability = string.Empty;
             hold.Epoch = 0;
             hold.HeldByOrdinal = 0;
+            hold.PlayerName = string.Empty;
             if (!matchStarted)
             {
                 hold.IsReady = false;

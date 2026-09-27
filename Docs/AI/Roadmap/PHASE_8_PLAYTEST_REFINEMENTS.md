@@ -18,13 +18,17 @@ Completed 2026-09-27. The view keeps the page as its own state and returns to th
 
 Historical evidence: [8.107 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8107-lobby-host-and-join-menus-evidence).
 
-### [~] 8.108 Player names in the lobby
+### [x] 8.108 Player names in the lobby
 
 Outcome: both menus carry a `NAME` field, remembered between launches. The name travels with the join and appears in every lobby seat row in place of the seat identifier. An empty name keeps today's `RED-1` style label. The host cleans every name it receives: trimmed, control and invisible characters removed, at most 16 characters. Duplicate names are allowed. Bot seats keep their seat label. Names are lobby-only: the match HUD, match log, victory screen and snapshots do not change.
 
 This changes the wire (the join message and the roster row gain a name), so the private-online protocol version moves from `/23` to `/24`.
 
 Acceptance: codec round-trip and bounds tests for the new fields, host-side cleaning of hostile names, roster/model rows showing the name with the seat-label fallback, the redraw signature noticing a name, the protocol-version pins moved, and the affected lobby and wire Edit/Play Mode fixtures green. T2.
+
+Completed 2026-09-27. The name rides the seat claim rather than the Hello, because a keyed session seals every frame after the key proof and the Hello carries that proof in the clear. The host keeps it on the seat hold: an away seat keeps it for its returning player, and it is cleared whenever the seat opens. One NAME field serves both menus. `PrivateLobbyLabels.SeatName` falls back to the seat identifier. Wire `guards-private-online/24`; schema v46 unchanged. During this milestone the user also asked for the entry panel to fit its content and be centred ("Why is that box for host/join that big"): it is now 540 wide on the landing and 720 on the menus, with its contents centred; a session's lobby keeps the 72% panel.
+
+Historical evidence: [8.108 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8108-lobby-player-names-evidence).
 
 ## Approved playtest corrections ahead of Snorri
 

@@ -358,7 +358,18 @@ namespace GuardsDigital.Application
         // v22: the admission tuple's snapshot schema advances to 45 for persisted marker turn slots.
         // Peers with older authoritative-state shape must refuse each other before gameplay.
         // v23: marker projection rows carry the temporary counts-as-active state (snapshot v46).
-        public const int Version = 23;
+        // v24 (milestone 8.108): the seat claim and every roster row carry the player's name. A v23
+        // reader would take the name's length prefix as the next field, so v23 peers are refused
+        // from the header. Lobby-only: no projection, match-log, snapshot or schema field moves.
+        public const int Version = 24;
+
+        /// <summary>
+        /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next
+        /// to the 16 a lobby shows (<see cref="PrivateLobbyEntryText.MaxPlayerNameChars"/>), so a
+        /// name with invisible characters to strip is still read and cleaned, while a larger one is
+        /// refused as malformed rather than read into memory.
+        /// </summary>
+        public const int MaxPlayerNameWireChars = 64;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

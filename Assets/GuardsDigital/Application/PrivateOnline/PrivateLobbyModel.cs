@@ -489,6 +489,16 @@ namespace GuardsDigital.Application
         /// </summary>
         public static string Identifier(string value) =>
             (value ?? string.Empty).ToUpperInvariant();
+
+        /// <summary>
+        /// Milestone 8.108. What a lobby calls a seat: its player's name when they gave one, else
+        /// the seat's own identifier, as before.
+        /// </summary>
+        public static string SeatName(SeatRosterEntry entry)
+        {
+            if (entry == null) return string.Empty;
+            return entry.PlayerName.Length > 0 ? entry.PlayerName : Identifier(entry.Seat.Value);
+        }
     }
 
     /// <summary>
@@ -667,7 +677,7 @@ namespace GuardsDigital.Application
             {
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
-                    PrivateLobbyLabels.Identifier(entry.Seat.Value),
+                    PrivateLobbyLabels.SeatName(entry),
                     entry.HasChosenHero ? PrivateLobbyLabels.Identifier(entry.Hero.Value) : string.Empty,
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     PrivateLobbyLabels.Occupancy(entry.Occupancy),
@@ -737,7 +747,7 @@ namespace GuardsDigital.Application
 
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
-                    PrivateLobbyLabels.Identifier(entry.Seat.Value),
+                    PrivateLobbyLabels.SeatName(entry),
                     entry.HasChosenHero ? PrivateLobbyLabels.Identifier(entry.Hero.Value) : string.Empty,
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     PrivateLobbyLabels.Occupancy(entry.Occupancy),
@@ -972,7 +982,8 @@ namespace GuardsDigital.Application
             }
 
             var isOwnPick = viewingSeat.IsDefined && picking.Equals(viewingSeat);
-            var pickingLabel = PrivateLobbyLabels.Identifier(picking.Value);
+            // Milestone 8.108: "WAITING ON" names the picking player when they gave a name.
+            var pickingLabel = PrivateLobbyLabels.SeatName(roster.First(entry => entry.Seat.Equals(picking)));
             return new PrivateLobbySelection(
                 true,
                 isOwnPick,
@@ -1005,7 +1016,9 @@ namespace GuardsDigital.Application
                     .Append(entry.Occupancy)
                     .Append(entry.IsReady ? '1' : '0')
                     .Append(entry.Hero.Value)
-                    .Append(entry.HasChosenHero ? '1' : '0');
+                    .Append(entry.HasChosenHero ? '1' : '0')
+                    // Milestone 8.108: a name arriving must redraw the rows that show it.
+                    .Append(entry.PlayerName.Length).Append(':').Append(entry.PlayerName);
             }
 
             return builder.ToString();

@@ -183,6 +183,18 @@ namespace GuardsDigital.Application
 
         public PrivateSessionClientState State { get; private set; }
 
+        /// <summary>
+        /// Milestone 8.108. The name this player typed, sent with every seat claim and shown on
+        /// that seat's roster row. Empty sends no name, and the lobby shows the seat's own label.
+        /// </summary>
+        public string PlayerName
+        {
+            get => playerName;
+            set => playerName = PrivateLobbyEntryText.CleanPlayerName(value);
+        }
+
+        private string playerName = string.Empty;
+
         public SeatId TargetSeat => targetSeat;
 
         /// <summary>Why the host refused, when <see cref="State"/> is <c>Rejected</c>.</summary>
@@ -622,7 +634,7 @@ namespace GuardsDigital.Application
                     Send(IsReconnecting && reconnectCapability.Length > 0
                         ? PrivateSessionFrameCodec.ReclaimSeatFrame(
                             new SeatReclaimMessage(targetSeat, reconnectCapability))
-                        : PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat)));
+                        : PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat, PlayerName)));
                     State = PrivateSessionClientState.AwaitingSeat;
                     return;
 
@@ -1317,7 +1329,7 @@ namespace GuardsDigital.Application
             }
 
             targetSeat = seat;
-            Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(seat)));
+            Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(seat, PlayerName)));
             State = PrivateSessionClientState.AwaitingSeat;
             return true;
         }

@@ -19,13 +19,18 @@ namespace GuardsDigital.Presentation.Interaction
     /// </remarks>
     public sealed class PrivateLobbyEntry
     {
-        public PrivateLobbyEntry(string address, string port, string sessionKey, SeatId seat)
+        public PrivateLobbyEntry(
+            string address, string port, string sessionKey, SeatId seat, string playerName = "")
         {
             Address = PrivateLobbyEntryText.CleanEndpointPart(address);
             Port = PrivateLobbyEntryText.CleanEndpointPart(port);
             SessionKey = PrivateLobbyEntryText.CleanSessionId(sessionKey);
             Seat = seat;
+            PlayerName = PrivateLobbyEntryText.CleanPlayerName(playerName);
         }
+
+        /// <summary>Milestone 8.108. The name this player typed, cleaned; empty when none.</summary>
+        public string PlayerName { get; }
 
         public string Address { get; }
         public string Port { get; }

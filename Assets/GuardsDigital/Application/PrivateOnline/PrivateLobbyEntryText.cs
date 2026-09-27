@@ -69,6 +69,66 @@ namespace GuardsDigital.Application
             return value.Substring(start, end - start);
         }
 
+        /// <summary>Milestone 8.108. The longest player name a lobby shows.</summary>
+        public const int MaxPlayerNameChars = 16;
+
+        /// <summary>
+        /// Milestone 8.108. A player name as every lobby shows it. Control and invisible characters
+        /// are removed, each run of blanks becomes one space, the ends are trimmed, and the result
+        /// is cut to <see cref="MaxPlayerNameChars"/> without splitting a surrogate pair.
+        /// </summary>
+        /// <remarks>
+        /// The host applies this to every name it receives, because a name arrives from another
+        /// machine and is shown on everybody's screen. Each client applies it again when it
+        /// decodes a roster, so no build can draw more than this allows.
+        /// </remarks>
+        public static string CleanPlayerName(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var builder = new StringBuilder(Math.Min(value.Length, MaxPlayerNameChars * 2));
+            var pendingSpace = false;
+            foreach (var character in value)
+            {
+                if (char.IsWhiteSpace(character) ||
+                    CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.SpaceSeparator)
+                {
+                    pendingSpace = builder.Length > 0;
+                    continue;
+                }
+
+                if (IsBlankOrInvisible(character))
+                {
+                    continue;
+                }
+
+                if (pendingSpace)
+                {
+                    builder.Append(' ');
+                    pendingSpace = false;
+                }
+
+                builder.Append(character);
+            }
+
+            var cleaned = builder.ToString();
+            if (cleaned.Length <= MaxPlayerNameChars)
+            {
+                return cleaned;
+            }
+
+            var cut = MaxPlayerNameChars;
+            if (char.IsHighSurrogate(cleaned[cut - 1]))
+            {
+                cut--;
+            }
+
+            return cleaned.Substring(0, cut).TrimEnd();
+        }
+
         /// <summary>
         /// The session ID a given run of random bytes names. The bytes come from
         /// <c>GuardsDigital.Network.PrivateSessionIdSource</c>: the Application boundary draws no
@@ -167,19 +227,25 @@ namespace GuardsDigital.Application
         public const string JoinSessionIdKey = "guards.lobby.join-session-id";
         public const string HostPortKey = "guards.lobby.host-port";
 
+        /// <summary>Milestone 8.108. The player's own name, shared by both menus.</summary>
+        public const string PlayerNameKey = "guards.lobby.player-name";
+
         public PrivateLobbyRememberedFields(
-            string joinAddress, string joinPort, string joinSessionId, string hostPort)
+            string joinAddress, string joinPort, string joinSessionId, string hostPort,
+            string playerName = "")
         {
             JoinAddress = joinAddress ?? string.Empty;
             JoinPort = joinPort ?? string.Empty;
             JoinSessionId = joinSessionId ?? string.Empty;
             HostPort = hostPort ?? string.Empty;
+            PlayerName = playerName ?? string.Empty;
         }
 
         public string JoinAddress { get; }
         public string JoinPort { get; }
         public string JoinSessionId { get; }
         public string HostPort { get; }
+        public string PlayerName { get; }
 
         /// <summary>
         /// What the store holds, with each missing value replaced by the lobby's default. The
@@ -198,7 +264,15 @@ namespace GuardsDigital.Application
                 Read(JoinAddressKey, defaultAddress),
                 Read(JoinPortKey, defaultPort),
                 Read(JoinSessionIdKey, string.Empty),
-                Read(HostPortKey, defaultPort));
+                Read(HostPortKey, defaultPort),
+                PrivateLobbyEntryText.CleanPlayerName(Read(PlayerNameKey, string.Empty)));
+        }
+
+        /// <summary>Milestone 8.108. Remembers the name a HOST or JOIN press used.</summary>
+        public static void RememberPlayerName(IPrivateLobbyFieldMemory memory, string playerName)
+        {
+            if (memory == null) return;
+            memory.Write(PlayerNameKey, PrivateLobbyEntryText.CleanPlayerName(playerName));
         }
 
         /// <summary>Remembers what a JOIN press used, cleaned exactly as the join reads it.</summary>

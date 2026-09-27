@@ -70,6 +70,9 @@ namespace GuardsDigital.Presentation.Interaction
         public const string FormatChoicesName = "gd-lobby-format-choices";
         public const string HostPortFieldName = "gd-lobby-host-port";
         public const string HostKeyFieldName = "gd-lobby-host-key";
+
+        /// <summary>Milestone 8.108. The one NAME field both menus show.</summary>
+        public const string PlayerNameFieldName = "gd-lobby-player-name";
         public const string InvitationSessionName = "gd-lobby-invitation-session";
         public const string InvitationAddressName = "gd-lobby-invitation-address";
 
@@ -115,6 +118,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly TextField key;
         private readonly TextField hostPort;
         private readonly TextField hostKey;
+        private readonly TextField playerName;
         private readonly Label title;
         private readonly Label mode;
         private readonly VisualElement hostMenu;
@@ -134,6 +138,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label emptyHeroFilters;
         private readonly Image heroOverview;
         private readonly Label wordmark;
+        private readonly ScrollView panel;
         private SeatId picked;
 
         /// <summary>
@@ -178,6 +183,7 @@ namespace GuardsDigital.Presentation.Interaction
             Root.Add(wordmark);
 
             var frame = new ScrollView(ScrollViewMode.Vertical) { name = PanelName };
+            panel = frame;
             frame.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             frame.verticalScrollerVisibility = ScrollerVisibility.Auto;
             frame.style.width = new StyleLength(new Length(72f, LengthUnit.Percent));
@@ -228,6 +234,11 @@ namespace GuardsDigital.Presentation.Interaction
             entry = new VisualElement { name = EntryName };
             entry.style.flexDirection = FlexDirection.Column;
             entry.style.marginTop = 8f;
+
+            // Milestone 8.108. One NAME field above both menus: the same player hosts or joins.
+            playerName = Field("NAME", string.Empty, PlayerNameFieldName);
+            playerName.maxLength = PrivateLobbyEntryText.MaxPlayerNameChars;
+            entry.Add(playerName);
 
             hostMenu = new VisualElement { name = HostMenuName };
             hostMenu.style.flexDirection = FlexDirection.Column;
@@ -384,8 +395,8 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
-                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked)
-                : new PrivateLobbyEntry(address.value, port.value, key.value, picked);
+                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value)
+                : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
         public PrivateLobbyEntryPage Page => page;
@@ -417,6 +428,7 @@ namespace GuardsDigital.Presentation.Interaction
             port.value = fields.JoinPort;
             key.value = fields.JoinSessionId;
             hostPort.value = fields.HostPort;
+            playerName.value = fields.PlayerName;
         }
 
         /// <summary>Milestone 8.107. Puts a fresh session ID in the host menu.</summary>
@@ -459,6 +471,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (model == null) throw new ArgumentNullException(nameof(model));
 
             var isEntry = model.Role == PrivateLobbyRole.None;
+            FitPanelTo(isEntry);
             // Milestone 8.107. Coming back to the entry from a session (LEAVE, a lost host) lands on
             // the first screen rather than on whichever menu started that session.
             if (isEntry && renderedRole != PrivateLobbyRole.None)
@@ -594,6 +607,45 @@ namespace GuardsDigital.Presentation.Interaction
                     controls.Add(BuildPageButton(CancelLabel, PrivateLobbyEntryPage.Landing));
                     break;
             }
+
+            // Equal margins on both sides, so a centred row is centred exactly.
+            foreach (var button in controls.Children().Concat(formatChoices.Children()))
+            {
+                button.style.marginLeft = 5f;
+                button.style.marginRight = 5f;
+            }
+        }
+
+        /// <summary>
+        /// The panel's width on the entry pages: the landing's two buttons, or a menu's 620-wide
+        /// fields, plus the panel's padding and border.
+        /// </summary>
+        public const float LandingPanelWidth = 540f;
+
+        public const float MenuPanelWidth = 720f;
+
+        /// <summary>
+        /// Milestone 8.108, the user on 8.107's landing: "Why is that box for host/join that big.
+        /// Make it fit the required size, and center it." The entry pages hold two buttons or one
+        /// short menu, so the panel is sized to them and everything in it is centred. A session's
+        /// lobby keeps the wide panel its seat table and hero picker need.
+        /// </summary>
+        private void FitPanelTo(bool isEntry)
+        {
+            panel.style.width = !isEntry
+                ? new StyleLength(new Length(72f, LengthUnit.Percent))
+                : new StyleLength(page == PrivateLobbyEntryPage.Landing ? LandingPanelWidth : MenuPanelWidth);
+            var align = isEntry ? Align.Center : Align.Stretch;
+            panel.contentContainer.style.alignItems = align;
+            entry.style.alignItems = align;
+            hostMenu.style.alignItems = align;
+            joinMenu.style.alignItems = align;
+            formatChoices.style.justifyContent = isEntry ? Justify.Center : Justify.FlexStart;
+            controls.style.justifyContent = isEntry ? Justify.Center : Justify.FlexStart;
+            var text = isEntry ? TextAnchor.MiddleCenter : TextAnchor.UpperLeft;
+            title.style.unityTextAlign = text;
+            mode.style.unityTextAlign = text;
+            feedback.style.unityTextAlign = text;
         }
 
         private Button BuildPageButton(string text, PrivateLobbyEntryPage target)
@@ -1208,6 +1260,9 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateSessionClient machine;
         private SeatId joinedSeat;
         private string sessionKey = string.Empty;
+
+        /// <summary>Milestone 8.108. The name this process's player joined or hosted under.</summary>
+        private string playerName = string.Empty;
         private PrivateSessionEndpoint dialled;
         private string signature = string.Empty;
 
@@ -2101,9 +2156,13 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            playerName = entry.PlayerName;
             machine = new PrivateSessionClient(
                 compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
-                clientOutbox, new CryptoNonceSource(), retainedCapabilities: RetainedCapabilities());
+                clientOutbox, new CryptoNonceSource(), retainedCapabilities: RetainedCapabilities())
+            {
+                PlayerName = playerName
+            };
             OpenTransport();
             if (!Dial())
             {
@@ -2193,6 +2252,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             joinedSeat = entry.Seat;
             sessionKey = entry.SessionKey;
+            playerName = entry.PlayerName;
             dialled = endpoint;
             refusalReported = false;
             // Milestone 8.35k. The road back for a relaunched process. The store is consulted by
@@ -2201,7 +2261,10 @@ namespace GuardsDigital.Presentation.Interaction
             machine = new PrivateSessionClient(
                 compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
                 clientOutbox, new CryptoNonceSource(),
-                retainedCapabilities: RetainedCapabilities());
+                retainedCapabilities: RetainedCapabilities())
+            {
+                PlayerName = playerName
+            };
             OpenTransport();
             if (!Dial())
             {
@@ -2292,7 +2355,10 @@ namespace GuardsDigital.Presentation.Interaction
             machine = new PrivateSessionClient(
                 compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
                 clientOutbox, new CryptoNonceSource(),
-                retainedCapabilities: RetainedCapabilities());
+                retainedCapabilities: RetainedCapabilities())
+            {
+                PlayerName = playerName
+            };
             OpenTransport();
             if (!Dial())
             {
@@ -2511,10 +2577,12 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 PrivateLobbyRememberedFields.RememberJoin(
                     fieldMemory, entry.Address, entry.Port, entry.SessionKey);
+                PrivateLobbyRememberedFields.RememberPlayerName(fieldMemory, entry.PlayerName);
             }
             else if (control == PrivateLobbyControl.Host)
             {
                 PrivateLobbyRememberedFields.RememberHost(fieldMemory, entry.Port);
+                PrivateLobbyRememberedFields.RememberPlayerName(fieldMemory, entry.PlayerName);
             }
         }
 

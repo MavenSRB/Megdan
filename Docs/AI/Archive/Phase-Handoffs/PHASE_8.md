@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.108 lobby player names evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.108 | Both lobby menus carry a remembered NAME. The seat claim and every roster row carry it (wire /24), and the host cleans it: trimmed, invisible and control characters removed, at most 16 characters. Every lobby seat row shows the name in place of the seat identifier, falling back to the identifier when empty. Lobby only. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-8108-player-names-in-the-lobby). | milestone/8.108 |
+
 ## Milestone 8.107 lobby host and join menus evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -268,7 +268,8 @@ namespace GuardsDigital.Application
             TeamSide teamSide,
             SeatOccupancyState occupancy,
             bool isReady = false,
-            bool hasChosenHero = false)
+            bool hasChosenHero = false,
+            string playerName = "")
         {
             if (!seat.IsDefined)
             {
@@ -281,7 +282,16 @@ namespace GuardsDigital.Application
             Occupancy = occupancy;
             IsReady = isReady;
             HasChosenHero = hasChosenHero;
+            PlayerName = PrivateLobbyEntryText.CleanPlayerName(playerName);
         }
+
+        /// <summary>
+        /// Milestone 8.108. The name the seat's player typed, cleaned by
+        /// <see cref="PrivateLobbyEntryText.CleanPlayerName"/>. It is empty when they typed none
+        /// and while the seat is open. It is public at a real table, like the rest of the row, and
+        /// it is shown in the lobby only.
+        /// </summary>
+        public string PlayerName { get; }
 
         /// <summary>
         /// Milestone 8.35z37. Whether this row's hero was PICKED by that seat, rather than
@@ -414,10 +424,10 @@ namespace GuardsDigital.Application
         public string Detail { get; }
     }
 
-    /// <summary>The client's claim of one seat by id.</summary>
+    /// <summary>The client's claim of one seat by id, and since 8.108 the name to show on it.</summary>
     public sealed class SeatClaimMessage
     {
-        public SeatClaimMessage(SeatId seat)
+        public SeatClaimMessage(SeatId seat, string playerName = "")
         {
             if (!seat.IsDefined)
             {
@@ -425,9 +435,17 @@ namespace GuardsDigital.Application
             }
 
             Seat = seat;
+            PlayerName = PrivateLobbyEntryText.CleanPlayerName(playerName);
         }
 
         public SeatId Seat { get; }
+
+        /// <summary>
+        /// Milestone 8.108. The claiming player's name, already cleaned. It rides the claim rather
+        /// than the Hello because a keyed session seals every frame after the key proof, and the
+        /// Hello carries that proof in the clear.
+        /// </summary>
+        public string PlayerName { get; }
     }
 
     /// <summary>

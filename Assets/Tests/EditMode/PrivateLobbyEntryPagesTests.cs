@@ -30,6 +30,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheEntryPanel_FitsItsPage_AndASessionGetsTheWidePanel()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            var view = EntryView();
+            var panel = Named(view, PrivateLobbyUnityView.PanelName);
+
+            Assert.That(panel.style.width.value, Is.EqualTo(new Length(PrivateLobbyUnityView.LandingPanelWidth)),
+                "The landing's panel is as wide as its two buttons need, not 72% of the screen.");
+            Assert.That(Named(view, PrivateLobbyUnityView.ControlsName).style.justifyContent.value,
+                Is.EqualTo(Justify.Center));
+
+            view.ShowPage(PrivateLobbyEntryPage.Join);
+            Assert.That(panel.style.width.value, Is.EqualTo(new Length(PrivateLobbyUnityView.MenuPanelWidth)));
+
+            view.Render(PrivateLobbyModel.ForHost(harness.Session, string.Empty));
+            Assert.That(panel.style.width.value, Is.EqualTo(new Length(72f, LengthUnit.Percent)),
+                "A session's lobby keeps the wide panel its seat table and hero picker need.");
+        }
+        [Test]
         public void TheHostMenu_OffersTheSetupPortSessionIdHostAndCancel()
         {
             var view = EntryView();
@@ -39,7 +58,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", PrivateLobbyUnityView.CancelLabel
             }));
-            Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "PORT", "SESSION ID" }));
+            Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "NAME", "PORT", "SESSION ID" }));
             Assert.That(Label(view, PrivateLobbyUnityView.ModeName), Is.EqualTo("MODE: 3V3 SHORT GAME"));
             Assert.That(Label(view, PrivateLobbyUnityView.TitleName), Is.EqualTo("HOST A GAME"));
 
@@ -73,7 +92,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(ShownControlLabels(view), Is.EqualTo(new[] { "JOIN", PrivateLobbyUnityView.CancelLabel }));
             Assert.That(ShownFields(view).Select(field => field.label),
-                Is.EqualTo(new[] { "HOST IP", "PORT", "SESSION ID" }));
+                Is.EqualTo(new[] { "NAME", "HOST IP", "PORT", "SESSION ID" }));
             Assert.That(Label(view, PrivateLobbyUnityView.TitleName), Is.EqualTo("JOIN A GAME"));
         }
 
@@ -102,18 +121,21 @@ namespace GuardsDigital.Tests.EditMode
             Field(view, PrivateLobbyUnityView.KeyFieldName).value = " JOIN-KEY ";
             Field(view, PrivateLobbyUnityView.HostPortFieldName).value = " 6000";
             Field(view, PrivateLobbyUnityView.HostKeyFieldName).value = "HOST-KEY\n";
+            Field(view, PrivateLobbyUnityView.PlayerNameFieldName).value = "  Stefan\u200B";
 
             view.ShowPage(PrivateLobbyEntryPage.Join);
             var join = view.CurrentEntry();
             Assert.That(join.Address, Is.EqualTo("192.168.1.20"));
             Assert.That(join.Port, Is.EqualTo("45677"));
             Assert.That(join.SessionKey, Is.EqualTo("JOIN-KEY"));
+            Assert.That(join.PlayerName, Is.EqualTo("Stefan"), "8.108: one NAME field serves both menus.");
 
             view.ShowPage(PrivateLobbyEntryPage.Host);
             var host = view.CurrentEntry();
             Assert.That(host.Address, Is.Empty, "8.100: the host menu names no address of its own.");
             Assert.That(host.Port, Is.EqualTo("6000"));
             Assert.That(host.SessionKey, Is.EqualTo("HOST-KEY"));
+            Assert.That(host.PlayerName, Is.EqualTo("Stefan"));
         }
 
         [Test]
@@ -122,7 +144,8 @@ namespace GuardsDigital.Tests.EditMode
             var view = EntryView();
             var fresh = view.HostSessionId;
 
-            view.LoadRememberedFields(new PrivateLobbyRememberedFields("81.2.69.160", "5000", "JOIN-KEY", "6000"));
+            view.LoadRememberedFields(new PrivateLobbyRememberedFields("81.2.69.160", "5000", "JOIN-KEY", "6000", "Stefan"));
+            Assert.That(Field(view, PrivateLobbyUnityView.PlayerNameFieldName).value, Is.EqualTo("Stefan"));
 
             Assert.That(Field(view, PrivateLobbyUnityView.AddressFieldName).value, Is.EqualTo("81.2.69.160"));
             Assert.That(Field(view, PrivateLobbyUnityView.PortFieldName).value, Is.EqualTo("5000"));

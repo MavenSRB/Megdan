@@ -8,17 +8,17 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all twenty-four heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v46 persists turn-slot marker positions, temporary rune activation and held action selections; wire protocol is `guards-private-online/23`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-four heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty-four heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v46 persists turn-slot marker positions, temporary rune activation and held action selections; wire protocol is `guards-private-online/24`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-four heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.107**.
-- Active authorized milestone: **8.108**.
-- Next proposed milestone: **8.108**.
+- Current completed milestone: **8.108**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **8.35z87**.
 
-**[8.107](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)** is complete: HOST/JOIN lobby menus, the host's session ID and internet IP, Director tools for a non-playing host. **8.108** (lobby player names, wire /24) is active, user-approved 2026-09-27. **8.93g** is complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
+**[8.108](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)** is complete: lobby seat rows show each player's typed name (wire /24). **8.107** (HOST/JOIN menus, host session ID and internet IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93g complete** (v46, wire /23). Twenty-four heroes dealt. No publication authorized.
 
