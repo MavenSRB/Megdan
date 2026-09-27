@@ -88,13 +88,17 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
-### [~] 8.111 Package the lobby and Snorri build for Windows
+### [x] 8.111 Package the lobby and Snorri build for Windows
 
 Authorized 2026-09-27: "cut the build", then "windows only" and "nvm we playing tonight, dont rush". Outcome: a private Windows package `Builds/Playtest-8.110-lobby` with its ZIP, carrying main at 8.110: all twenty-four heroes including Snorri, the 8.107-8.110 lobby (HOST/JOIN menus, the host's session ID and internet IP, the non-playing host's Director tools, player names, the boxed setup choices), protocol `/24` and schema v46. No Mac package this time.
 
 Acceptance: the T3 pre-build gate at the packaged source (the full offline harness and the complete Unity Edit and Play Mode suites), a fresh Windows build and launch smoke, the packaged six-client Full rehearsal, a boot of the packaged lobby from its own folder, and a regenerated identity, read-me and manifest. The ZIP must be byte-verified against the folder with no logs or DoNotShip content.
 
 Non-goals: macOS, publishing, signing, NAT traversal, or changing protocol, schema or content identity just to label the package.
+
+Completed 2026-09-27. `Builds/Playtest-8.110-lobby` and its ZIP carry stamp `1.0-8.110-lobby+20260927133323-0b413375`, protocol `/24`, schema 46, digest `ebb3a9f5...` and 24 heroes. The packaged binaries are the build the six-client Full rehearsal ran against. Harness 4745/4745; Unity Edit 5769 passed with the 37 established Explicit diagnostics skipped; Play 890/890; build/launch smoke, board visual smoke (327 colours), the complete Full rehearsal (match, host loss, fresh-process AWAY reclaim) and a boot of the packaged lobby from its own folder passed. The ZIP was SHA-256 verified file-for-file (183 files), with no logs or DoNotShip content.
+
+Historical evidence: [8.111 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8111-lobby-and-snorri-windows-package-evidence).
 
 ### [x] 8.106 Keep WHO ACTS FIRST visible through a teammate reconnect pause
 

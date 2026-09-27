@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.111 lobby and Snorri Windows package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.111 | Private Windows package `Builds/Playtest-8.110-lobby` (+ZIP): twenty-four heroes including Snorri, the 8.107-8.110 lobby, protocol /24, schema 46, after the full T3 gate and the six-client Full rehearsal. [Definition](../../Roadmap/PHASE_8.md#x-8111-package-the-lobby-and-snorri-build-for-windows). | milestone/8.111 |
+
 ## Milestone 8.110 setup choice boxes evidence
 
 | Milestone | Outcome and definition | Commit |
