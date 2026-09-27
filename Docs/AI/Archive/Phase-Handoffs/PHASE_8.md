@@ -2567,3 +2567,15 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | 8.46e | Geometry, readability and journeys: the live-bounds gate at every viewport, the longest label fitted, every journey pressing the window's controls. Landed on `decision-window` through `f4ede27c`. [Definition](../../Roadmap/PHASE_8_DECISION_WINDOW.md#x-846e-geometry-readability-and-journeys). | `milestone/8.46` |
 | 8.46g | The level-up upgrade in the window, minimisable, with the hand preview at 0.524 scale. Landed as `5cbb13b2`. [Definition](../../Roadmap/PHASE_8_DECISION_WINDOW.md#x-846g-the-level-up-upgrade-in-the-window). | `milestone/8.46` |
 | 8.46f | Integration and evidence: the four worktrees merged behind 8.47-8.52, the complete suites in the 8.46 row above. [Definition](../../Roadmap/PHASE_8_DECISION_WINDOW.md#x-846f-integration-and-evidence). | `milestone/8.46` |
+
+## Milestone 8.35z71 closed without implementation
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z71 | Closed without implementation on 2026-09-27 on the user's instruction ("Kill these."). The bot in-match spinning / Fast Travel report was never reproduced; no diagnosis, fix, or test evidence is claimed. A recurrence opens a new item. | documentation-only closure |
+
+## Milestone 8.35z72 closed without implementation
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z72 | Closed without implementation on 2026-09-27 on the user's instruction ("Kill these."). The Wasp movement-before-card-selection report was never reproduced; no diagnosis, fix, or test evidence is claimed. A recurrence opens a new item. | documentation-only closure |

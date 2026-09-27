@@ -161,15 +161,23 @@ Reconciled from the private local `tmp/8-35d-8-35e-multiplayer-corrections/PLAN.
 
 Outcome: verified Tali definitions/tokens integrate into configuration, draft, and the permanent player-path gate. Dependency: validate the existing prep branch/checklist and remaining printed face/capability against rules authority; reconcile private rulings before registration. Closing check: focused content/identity/token/borrow scenarios plus full hero gate and required Unity tier. No execution authorized by cleanup.
 
-### [ ] 8.35z71 Diagnose reported bot in-match spinning
+### [x] 8.35z71 Diagnose reported bot in-match spinning
 
 Outcome: a reported infeasible-offer loop is reproduced and corrected or documented as unconfirmed on the final bot build. Dependency: 8.35z69. Closing check: deterministic scenario showing forward progress and bounded decision work; carry unresolved reproduction limits explicitly. If 8.35z69 proves the exact case fixed, link its evidence instead of implementing it twice.
 
 2026-09-09 report after the 8.35z85 Tier-2 integration: bots still appear weak and do not use Fast Travel to reach battle. Source confirms the lobby uses static Tier-2 without lookahead; Fast Travel participates in action and geometry scoring, but the observed decision is not reproduced. A focused diagnosis must distinguish a missing legal offer, policy ranking and an execution refusal. Random draft picks (approved 8.36e) do not close tactical competence. A broader AI upgrade remains separately scoped, not authorized by this report.
 
-### [ ] 8.35z72 Investigate Wasp movement before card selection
+**Closed without implementation, 2026-09-27**, on the user's instruction ("8.35z71, 8.35z72 Kill these."). The report was never reproduced; no diagnosis, fix or evidence is claimed. A recurrence is a new report and a new item.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z71-closed-without-implementation).
+
+### [x] 8.35z72 Investigate Wasp movement before card selection
 
 Outcome: distinguish a rules mutation from presentation timing or an old-build report. Dependency: source-identified logs from a recurrence/final build. Closing check: reproduce through the actual commitment flow and assert no unauthorized action/state advancement; do not invent a cause for an unreproduced report.
+
+**Closed without implementation, 2026-09-27**, on the user's instruction ("8.35z71, 8.35z72 Kill these."). The report was never reproduced; no diagnosis, fix or evidence is claimed. A recurrence is a new report and a new item.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z72-closed-without-implementation).
 
 ### [x] 8.35z73 Include coin-award amounts in gameplay narration
 
