@@ -88,6 +88,14 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [~] 8.111 Package the lobby and Snorri build for Windows
+
+Authorized 2026-09-27: "cut the build", then "windows only" and "nvm we playing tonight, dont rush". Outcome: a private Windows package `Builds/Playtest-8.110-lobby` with its ZIP, carrying main at 8.110: all twenty-four heroes including Snorri, the 8.107-8.110 lobby (HOST/JOIN menus, the host's session ID and internet IP, the non-playing host's Director tools, player names, the boxed setup choices), protocol `/24` and schema v46. No Mac package this time.
+
+Acceptance: the T3 pre-build gate at the packaged source (the full offline harness and the complete Unity Edit and Play Mode suites), a fresh Windows build and launch smoke, the packaged six-client Full rehearsal, a boot of the packaged lobby from its own folder, and a regenerated identity, read-me and manifest. The ZIP must be byte-verified against the folder with no logs or DoNotShip content.
+
+Non-goals: macOS, publishing, signing, NAT traversal, or changing protocol, schema or content identity just to label the package.
+
 ### [x] 8.106 Keep WHO ACTS FIRST visible through a teammate reconnect pause
 
 Authorized 2026-09-26 by the user's live correction: "it disappeared, he reconnected and it appeared again." This bounded presentation corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.

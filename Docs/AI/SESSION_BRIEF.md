@@ -15,8 +15,8 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.110**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z87**.
+- Active authorized milestone: **8.111**.
+- Next proposed milestone: **8.111**.
 
 **[8.110](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)** is complete: host-menu setup choices boxed in two groups. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
