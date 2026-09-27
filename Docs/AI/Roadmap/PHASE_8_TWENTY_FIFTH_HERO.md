@@ -49,13 +49,17 @@ Completed 2026-09-27. `MrakComponentContent` defines the three-rock `mrak-rock` 
 
 Historical evidence: [8.112a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112a-mrak-rock-token-and-secondary-attack-evidence).
 
-### [ ] 8.112b Compose Fissure and Stone Grip
+### [x] 8.112b Compose Fissure and Stone Grip
 
 Outcome: the Gold Basic Attack places rocks in the first three empty spaces of the Attack's line after the Attack (MR-Q2); the Silver Basic Skill places exactly three rocks adjacent to an enemy hero in Range, farthest from Mrak (MR-Q3), with a player choice when distances tie.
 
 Acceptance: both readings as the user settled them, tested on straight and off-line targets, board edges, terrain and occupied spaces, defeat-emptied target spaces, supply shortage, immunity, the three-pick prompt's DONE, restore and replay. T2 minimum.
 
 Non-goals: other faces, dealing.
+
+Completed 2026-09-27. `MrakRockPlacementContent` adds four capabilities: p.18's short-supply step for Fissure's line and for Stone Grip's farthest spaces (declines when the pile covers the demand, takes back every standing rock when all are needed, otherwise asks which), and the two placements. Each face is two nodes with at most one question each, because a second question asked from `Resume` could not be rebuilt by a restored snapshot. Fissure reads the attacked space through `attacked-target-space@1` and walks outward past occupied spaces and terrain to the board's edge (MR-Q2); Stone Grip takes the three farthest empty adjacent spaces with the next-farthest filling in and a question only for a tie that does not fit whole, placing what fits (MR-Q3). A configured round proves surviving and defeated targets, skipping, the board edge, both short-supply branches, all three Stone Grip shapes, offers withheld with no legal target, and restore/replay of both pauses plus 8.112a's paused secondary Attack. Unregistered until 8.112g. T2; evidence in the milestone commit.
+
+Historical evidence: [8.112b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112b-mrak-fissure-and-stone-grip-evidence).
 
 ### [ ] 8.112c Compose the Red Seismic and Carapace faces
 

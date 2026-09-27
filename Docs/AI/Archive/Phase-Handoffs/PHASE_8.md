@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112b Mrak Fissure and Stone Grip evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112b | Fissure's line and Stone Grip's farthest spaces as the user settled them, each behind its own p.18 short-supply step, proved through a configured round with restore/replay. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112b-compose-fissure-and-stone-grip). | `milestone/8.112b` |
+
 ## Milestone 8.112a Mrak rock token and secondary Attack evidence
 
 | Milestone | Outcome and definition | Commit |

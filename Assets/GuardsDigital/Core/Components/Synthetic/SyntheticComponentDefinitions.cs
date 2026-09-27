@@ -117,8 +117,9 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // nine above joined on. It is the plainest token in the set and deliberately so:
                     // it declares no standing property at all, which is what makes it the impassable
                     // p.19 obstacle her Greens print and her Blues read ("adjacent to a token"). Its
-                    // supply of three is the user's own ruling and p.18's short-supply step is what
-                    // bounds a face printing "up to 4".
+                    // supply is the user's own ruling - four since milestone 8.113 corrected the
+                    // earlier three - and p.18's short-supply step takes standing magma back when a
+                    // placement needs more than the pile holds.
                     .Concat(GuardsDigital.Core.Cards.Verified.IgnatiaMagmaContent.MagmaTokens())
                     .Concat(GuardsDigital.Core.Cards.Verified.TrinketsComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
