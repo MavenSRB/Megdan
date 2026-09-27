@@ -62,6 +62,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PracticeBotSeatDriverTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PrimitiveHeroViewTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PrivateOnlineBackgroundExecutionTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/PrivateOnlineRehearsalDriverGateTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PrivateSeatDriverGreedyPreferenceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PrivateSeatDriverTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PromptReachabilityConformanceTests.cs" />

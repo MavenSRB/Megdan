@@ -9,7 +9,6 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
-using GuardsDigital.Presentation.Interaction;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -17,69 +16,6 @@ namespace GuardsDigital.Tests.EditMode
     /// <summary>Mechanical ownership of milestone 8.35c's Full rehearsal inventory.</summary>
     public sealed class PrivateOnlineRehearsalContractTests
     {
-        [Test]
-        public void ProjectionAudit_AllowsOnlyPubliclyNamedFaceUpCardsInAnotherHerosHand()
-        {
-            const string ownHeroId = "hero-own";
-            const string otherHeroId = "hero-other";
-            const string cardId = "card-known";
-            var namedLog = new[]
-            {
-                new MatchLogEntry(
-                    1,
-                    MatchLogEntryKind.CardRevealed,
-                    1,
-                    1,
-                    subjectCardInstanceId: new CardInstanceId(cardId))
-            };
-            var emptyLog = Array.Empty<MatchLogEntry>();
-
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, otherHeroId, CardLocation.Hand, CardFaceOrientation.FaceUp),
-                namedLog,
-                ownHeroId), Is.True,
-                "A face-up card that the public match log names remains public when it returns to hand.");
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, otherHeroId, CardLocation.Hand, CardFaceOrientation.FaceUp),
-                emptyLog,
-                ownHeroId), Is.False);
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, otherHeroId, CardLocation.Deck, CardFaceOrientation.FaceUp),
-                namedLog,
-                ownHeroId), Is.False);
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, otherHeroId, CardLocation.TurnArea, CardFaceOrientation.FaceDown),
-                namedLog,
-                ownHeroId), Is.False);
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, ownHeroId, CardLocation.TurnArea, CardFaceOrientation.FaceUp),
-                namedLog,
-                ownHeroId), Is.False);
-            Assert.That(PrivateOnlineRehearsalDriver.PublicCardVisibilityIsValid(
-                Card(cardId, otherHeroId, CardLocation.TurnArea, CardFaceOrientation.FaceUp),
-                emptyLog,
-                ownHeroId), Is.True);
-        }
-
-        [TestCase(false, true, 20, false, false)]
-        [TestCase(true, false, 20, false, false)]
-        [TestCase(true, true, 19, false, false)]
-        [TestCase(true, true, 20, true, false)]
-        [TestCase(true, true, 20, false, true)]
-        public void FreshProcessRejoinCut_WaitsUntilAllPreobservedChoreographyIsActuallyComplete(
-            bool initiativeObserved,
-            bool minionBattleObserved,
-            long version,
-            bool waitingForHost,
-            bool expected)
-        {
-            Assert.That(PrivateOnlineRehearsalDriver.RejoinCutIsReady(
-                initiativeObserved,
-                minionBattleObserved,
-                version,
-                waitingForHost), Is.EqualTo(expected));
-        }
-
         [Test]
         public void FullPlan_HasUniqueStableCaseIdsAndPositiveReplayCoordinates()
         {
@@ -620,21 +556,6 @@ namespace GuardsDigital.Tests.EditMode
 
         private static byte[] LengthPrefixedPayload(int declaredLength) =>
             Payload(writer => writer.Write(declaredLength));
-
-        private static NetworkCardRow Card(
-            string instanceId,
-            string ownerHeroId,
-            CardLocation location,
-            CardFaceOrientation faceOrientation) =>
-            new NetworkCardRow(
-                instanceId,
-                "definition",
-                "revision",
-                ownerHeroId,
-                (int)location,
-                false,
-                (int)CardResolutionStatus.Unresolved,
-                (int)faceOrientation);
 
         private static byte[] Payload(Action<BinaryWriter> write)
         {

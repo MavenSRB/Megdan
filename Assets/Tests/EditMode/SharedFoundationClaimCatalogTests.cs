@@ -109,7 +109,7 @@ namespace GuardsDigital.Tests.EditMode
             new SharedFoundationClaim(
                 "targeting.pre-attack-token-swap",
                 new MemberLocator(typeof(GuardsDigital.Core.Rules.EffectResolution.EffectOptionFeasibilityQuery),
-                    "TryAnticipateActorSwapClause", MemberTypes.Method),
+                    "TryAnticipateActorRelocationClause", MemberTypes.Method),
                 SharedFoundationClaimStatus.ExplicitlyNarrow,
                 new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetPrintedSetTests),
                     nameof(WidgetPrintedSetTests.AirborneSwapsBeforeSelectingTheAttackTarget_ThenOptionallySwapsBack), MemberTypes.Method),
