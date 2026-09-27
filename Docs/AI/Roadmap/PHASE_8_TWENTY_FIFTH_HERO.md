@@ -97,13 +97,17 @@ Completed 2026-09-27. `MrakGreenFaces` composes the five Green faces. The shift 
 
 Historical evidence: [8.112e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112e-mrak-green-shift-and-roll-evidence).
 
-### [ ] 8.112f Compose Rock and a Hard Place and reconcile the set
+### [x] 8.112f Compose Rock and a Hard Place and reconcile the set
 
 Outcome: the Ultimate discards a card from each enemy hero adjacent to rocks Mrak's placement step just placed, once per turn - through a typed after-place report on the placing step (moved here from 8.112a) and a trigger query in the shape the marker-given Ultimate uses; all eighteen dealt definitions and the boxed Handicap are reconciled with the inventory.
 
 Acceptance: the placement report across pause and restore; triggers from Fissure (Attack text), Stone Grip and Stomping Step placements; no trigger from pushes, moves or another hero's tokens; one trigger per turn with several heroes; immunity; snapshot/replay; p.15 upgrade lists and closed integer vocabularies asserted; every definition's printed values compared with the inventory table. T2 minimum.
 
 Non-goals: dealing or artwork.
+
+Completed 2026-09-28. `MrakCardContent.Set` adds Rock and a Hard Place (an `after-tokens-placed` Ultimate naming the rock kind), the boxed Lesser Fissure (its text deferred to an odd-player-count configuration, as every Handicap's is) and the set reconciled with the inventory: nineteen rows in table order, refused at load if a face is composed but not inventoried or the reverse; eighteen dealt; the p.6 starting hand of five; a deck of thirteen. Shared engine: a handler reports the tokens it placed (`EffectExecutionResult.PlacedTokens`, beside `AppliedPushes`). When an Ultimate watches, the effect session stops after that node, and the Skill and card-text altitudes both hand the moment to `AfterTokensPlacedTriggerQuery`. That query yields one run per enemy hero adjacent to a rock the step placed, in identity order. The once is spent in the turn's own key set only when some hero is concerned. A new interrupt kind, `AfterTokensPlacedTrigger` (enum value 5, no schema change, as kind 4 was added), carries the heroes still owed as its remaining subjects across the pause and a snapshot. Mrak's three placement capabilities report their rocks; a push or a move of a standing rock reports nothing. The discard is not a targeting question, so p.18's immunity does not reach it, as for Bain's marker-given Ultimate. Five trigger tests failed with the trigger start disabled and one with the once-per-turn check disabled; all pass with both. The new public rule property moved all twenty-four identity digests with no printed content changed (the 8.38d class): an isolation probe excluding it measured every pin identical, so they were re-pinned without revision bumps. Unity alone caught a static-initialisation order fault in the new partial file (Lesser Fissure read an action id before the other file had set it), fixed by making those definitions lazy. Unregistered until 8.112g. Complete harness and complete Edit Mode because shared effect resolution changed; Play Mode belongs to 8.112g and 8.112h, where the content is registered. Evidence in the milestone commit.
+
+Historical evidence: [8.112f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112f-mrak-ultimate-and-set-reconciliation-evidence).
 
 ### [ ] 8.112g Deal Mrak and present his artwork
 

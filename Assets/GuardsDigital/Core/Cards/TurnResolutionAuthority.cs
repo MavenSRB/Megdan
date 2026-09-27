@@ -613,6 +613,7 @@ namespace GuardsDigital.Core.Cards
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
             this.cardActions = cardActions;
             cardActions?.BindBorrowedTargetScopeKeys(consumedTurnScopedKeys);
+            cardActions?.BindTurnScopedKeys(consumedTurnScopedKeys);
 
             // Milestone 8.75a. The dispatcher is handed the turn's live coin the way it is handed the
             // turn's borrowed-target keys, one line above: this authority owns the Initiative state

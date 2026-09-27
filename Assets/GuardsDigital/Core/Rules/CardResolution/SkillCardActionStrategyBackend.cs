@@ -123,6 +123,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Defeats, and both of them describe the one node the frame is standing after.</para>
         /// </summary>
         internal HeroId StagedMarkerGive { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.112f. The tokens this call's walk placed and stopped after, or empty whenever it
+        /// placed none or nobody was watching - published the way <see cref="StagedMarkerGive"/> is.
+        /// </summary>
+        internal IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> StagedTokenPlacements { get; private set; } =
+            Array.Empty<GuardsDigital.Core.Components.PlacedToken>();
         internal CardInstanceId StagedResolvedDiscard { get; private set; }
         internal bool StagedHeroDefeat { get; private set; }
 
@@ -156,6 +163,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IEnumerable<CardInstance> instances) =>
             GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.AnyWatching(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, instances));
+
+        /// <summary>
+        /// Milestone 8.112f. Whether any unlocked Ultimate in these cards runs after its controller
+        /// places tokens - the coarse question, exactly as <see cref="WatchesMarkerGives"/> is.
+        /// </summary>
+        private static bool WatchesTokenPlacements(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerQuery.AnyWatching(
                 GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
                     definitions, instances));
 
@@ -222,6 +240,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -317,6 +336,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -479,6 +499,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
@@ -568,6 +589,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
@@ -683,6 +705,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // completed step has none by construction; saying so keeps the stale report of a previous
             // call from being read as this one's.
             StagedMarkerGive = step.IsComplete ? default : step.MarkerGivenTo;
+            StagedTokenPlacements = step.IsComplete
+                ? Array.Empty<GuardsDigital.Core.Components.PlacedToken>() : step.PlacedTokens;
             StagedResolvedDiscard = step.IsComplete ? default : step.ResolvedCardDiscarded;
             StagedHeroDefeat = !step.IsComplete && step.RequestedHeroDefeats.Count > 0;
 

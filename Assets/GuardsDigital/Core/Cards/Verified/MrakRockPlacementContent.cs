@@ -188,8 +188,10 @@ namespace GuardsDigital.Core.Cards.Verified
             context.Components.Board.TryGetObjectCoordinate(
                 BoardObjectReference.ForHero(context.ActorId), out at);
 
-        private static bool PlaceRock(EffectCapabilityContext context, HexCoordinate space, int index)
+        private static void PlaceRock(
+            EffectCapabilityContext context, HexCoordinate space, List<PlacedToken> placed)
         {
+            var index = placed.Count;
             var token = new PlacedToken(
                 new TokenInstanceId(
                     $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}:mrak-rock" +
@@ -199,16 +201,24 @@ namespace GuardsDigital.Core.Cards.Verified
                 context.ControllerId,
                 context.SourceCardInstanceId,
                 space);
-            if (Available(context) < 1) return false;
+            if (Available(context) < 1) return;
             context.Components.Tokens.CommitValidatedTokenPlacement(token);
-            return true;
+            placed.Add(token);
         }
 
-        private static EffectExecutionResult Placed(int count) =>
-            EffectExecutionResult.Applied(new[]
-            {
-                new EffectOutcomeFact(PlacedCountOutput, EffectValue.Integer(count))
-            });
+        /// <summary>
+        /// The placed count as the fact card text binds, and the placed tokens as milestone 8.112f's
+        /// typed report - the moment Rock and a Hard Place watches.
+        /// </summary>
+        private static EffectExecutionResult Placed(IReadOnlyList<PlacedToken> placed) =>
+            EffectExecutionResult.Applied(
+                new[]
+                {
+                    new EffectOutcomeFact(PlacedCountOutput, EffectValue.Integer(placed.Count))
+                },
+                placedTokens: placed);
+
+        private static EffectExecutionResult PlacedNothing() => Placed(Array.Empty<PlacedToken>());
 
         // -------------------------------------------------------------------------------------------
         // p.18's short-supply step
@@ -405,13 +415,13 @@ namespace GuardsDigital.Core.Cards.Verified
                 if (!TryCoordinate(context, OriginParameterName, out var origin) ||
                     !TryCoordinate(context, ThroughParameterName, out var through))
                 {
-                    return Placed(0);
+                    return PlacedNothing();
                 }
 
-                var placed = 0;
+                var placed = new List<PlacedToken>();
                 foreach (var space in FirstEmptyAlongLine(context, origin, through))
                 {
-                    if (PlaceRock(context, space, placed)) placed++;
+                    PlaceRock(context, space, placed);
                 }
 
                 return Placed(placed);
@@ -446,7 +456,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 if (!TryPlan(context, out var certain, out var tie, out var fromTie))
                 {
                     return context?.Components != null && context.Components.IsLive
-                        ? Placed(0)
+                        ? PlacedNothing()
                         : EffectExecutionResult.ImpossibleMandatory();
                 }
 
@@ -492,10 +502,10 @@ namespace GuardsDigital.Core.Cards.Verified
             private static EffectExecutionResult PlaceAll(
                 EffectCapabilityContext context, IEnumerable<HexCoordinate> spaces)
             {
-                var placed = 0;
+                var placed = new List<PlacedToken>();
                 foreach (var space in spaces)
                 {
-                    if (PlaceRock(context, space, placed)) placed++;
+                    PlaceRock(context, space, placed);
                 }
 
                 return Placed(placed);
@@ -567,10 +577,12 @@ namespace GuardsDigital.Core.Cards.Verified
                     !TryCoordinate(context, SpaceParameterName, out var space) ||
                     !EmptySpaces(context, actor).Contains(space))
                 {
-                    return Placed(0);
+                    return PlacedNothing();
                 }
 
-                return Placed(PlaceRock(context, space, 0) ? 1 : 0);
+                var placed = new List<PlacedToken>();
+                PlaceRock(context, space, placed);
+                return Placed(placed);
             }
 
             public EffectExecutionResult Resume(

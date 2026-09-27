@@ -116,8 +116,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             BorrowRequest borrowRequested = default,
             HeroId markerGivenTo = default,
             CardInstanceId resolvedCardDiscarded = default,
-            bool tieBreakerFlipRequested = false)
+            bool tieBreakerFlipRequested = false,
+            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null)
         {
+            PlacedTokens = new ReadOnlyCollection<GuardsDigital.Core.Components.PlacedToken>(
+                (placedTokens ?? Array.Empty<GuardsDigital.Core.Components.PlacedToken>()).ToArray());
             TieBreakerFlipRequested = tieBreakerFlipRequested;
             MarkerGivenTo = markerGivenTo;
             ResolvedCardDiscarded = resolvedCardDiscarded;
@@ -303,6 +306,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public bool PlacedActingHero { get; }
 
         /// <summary>
+        /// Milestone 8.112f. The tokens the node this walk stopped after placed, nonempty exactly when
+        /// <see cref="EffectResolutionContext.WatchesTokenPlacements"/> is set and a Place applied - the
+        /// counterpart of <see cref="AppliedPushes"/> for rulebook p.18's Place.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> PlacedTokens { get; }
+
+        /// <summary>
         /// Milestone 8.75a. The same result with earlier events in front of its own.
         ///
         /// <para>A frame that stopped on a Tie Breaker flip and was continued produces TWO steps for
@@ -321,7 +331,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     RepeatRequested, LanePushCause, RequestedHeroDefeats, RequestedMinionDefeats,
                     BoundAttackTarget, AroundActionPlacement, AppliedPushes,
                     RequestedAttackSequences, PlacedActingHero, BorrowRequested, MarkerGivenTo,
-                    ResolvedCardDiscarded, TieBreakerFlipRequested);
+                    ResolvedCardDiscarded, TieBreakerFlipRequested, PlacedTokens);
 
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
@@ -342,13 +352,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             BorrowRequest borrowRequested = default,
             HeroId markerGivenTo = default,
             CardInstanceId resolvedCardDiscarded = default,
-            bool tieBreakerFlipRequested = false) =>
+            bool tieBreakerFlipRequested = false,
+            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
                 placedActingHero, borrowRequested, markerGivenTo, resolvedCardDiscarded,
-                tieBreakerFlipRequested);
+                tieBreakerFlipRequested, placedTokens);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -395,8 +406,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             CardInstanceId triggeredCardId = default,
             bool stagesHeroDefeats = false,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
-            bool watchesTieBreakerFlips = false)
+            bool watchesTieBreakerFlips = false,
+            bool watchesTokenPlacements = false)
         {
+            WatchesTokenPlacements = watchesTokenPlacements;
             WatchesTieBreakerFlips = watchesTieBreakerFlips;
             TieBreakerRevealedSide = tieBreakerRevealedSide;
             StagesHeroDefeats = stagesHeroDefeats;
@@ -522,6 +535,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// milestone, which is what keeps every Tigerclaw Poison give in this build byte-identical.</para>
         /// </summary>
         public bool WatchesMarkerGives { get; }
+
+        /// <summary>
+        /// Milestone 8.112f. Whether any live rule source runs after its controller places tokens -
+        /// Mrak's Rock and a Hard Place. False by default, so every walk without such a source is the
+        /// walk it always was; see <see cref="WatchesAppliedPushes"/> for why this is a boolean.
+        /// </summary>
+        public bool WatchesTokenPlacements { get; }
         public bool WatchesResolvedDiscards { get; }
         public CardInstanceId TriggeredCardId { get; }
         public bool StagesMinionDefeats { get; }
@@ -1525,6 +1545,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         return EffectResolutionStepResult.Accept(
                             Rebuild(frame, continuation, outcomes, choices), false, events,
                             markerGivenTo: result.MarkerGivenTo);
+                    }
+
+                    // Milestone 8.112f. The same stop after a Place, for Mrak's Rock and a Hard Place:
+                    // "after you place one or more Rock tokens" is the moment this node finished.
+                    if (context.WatchesTokenPlacements && result.PlacedTokens.Count > 0)
+                    {
+                        return EffectResolutionStepResult.Accept(
+                            Rebuild(frame, continuation, outcomes, choices), false, events,
+                            placedTokens: result.PlacedTokens);
                     }
 
                     // Milestone 8.75a. The same stop a third time, at the moment a node asked for the

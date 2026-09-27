@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -52,5 +53,15 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 SyntheticTokenCapabilities.ReclaimHandler(ReclaimRockV1, Rock)
             };
+
+        /// <summary>
+        /// Milestone 8.112f. Every capability Mrak's composed set names that milestone 7.9's gate holds
+        /// out of the registration list until 8.112g deals him - the list a composition validator reads
+        /// beside the registered catalog, as every earlier hero's was before his dealing.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Handlers()
+                .Concat(MrakRockPlacementContent.Handlers())
+                .Concat(MrakRedFaces.Handlers());
     }
 }

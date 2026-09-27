@@ -60,7 +60,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// already says what to do with that: nothing is invented in its place, the trigger's own work
         /// is reported, and the action is left as the rest of the engine finds it.</para>
         /// </summary>
-        AfterMoveThroughTrapTrigger = 4
+        AfterMoveThroughTrapTrigger = 4,
+
+        // Milestone 8.112f. Subject is the enemy hero this run of an after-tokens-placed Ultimate
+        // concerns; the heroes still owed a run by the same placing step are RemainingSubjects.
+        AfterTokensPlacedTrigger = 5
     }
 
     /// <summary>

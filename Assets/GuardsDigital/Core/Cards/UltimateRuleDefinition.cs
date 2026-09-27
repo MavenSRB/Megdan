@@ -250,8 +250,10 @@ namespace GuardsDigital.Core.Cards
             BeforeActionTrigger beforeAction = default,
             GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null,
             AfterPushTrigger afterPush = default,
-            GrantedTargetExclusion grantedTargetExclusion = GrantedTargetExclusion.None)
+            GrantedTargetExclusion grantedTargetExclusion = GrantedTargetExclusion.None,
+            AfterTokensPlacedTrigger afterTokensPlaced = default)
         {
+            AfterTokensPlaced = afterTokensPlaced;
             GrantedTargetExclusion = grantedTargetExclusion;
             BeforeAction = beforeAction;
             AfterPush = afterPush;
@@ -302,13 +304,24 @@ namespace GuardsDigital.Core.Cards
                     "one, or the moment a Push it performed applied.", nameof(afterPush));
             }
 
+            // Milestone 8.112f. The fourth shape of the same pairing, exclusive with the other three for
+            // the same reason: one Ultimate, one permanent ability.
+            if (afterTokensPlaced.IsDeclared &&
+                (isCheckpointTriggered || beforeAction.IsDeclared || afterPush.IsDeclared))
+            {
+                throw new ArgumentException(
+                    "An Ultimate declares one trigger: a checkpoint after an action, a start before " +
+                    "one, a Push it performed, or tokens it placed.", nameof(afterTokensPlaced));
+            }
+
             // Milestone 8.19c. p.16 gives an Ultimate one permanent ability, and a Minion-Battle rule
             // is the whole of the one that declares it. An Ultimate that also modified a value or ran
             // an effect would be two abilities on a card that prints one sentence, and the reader would
             // have to decide which of them "the ability" meant.
             if (minionBattleRule != null &&
                 (Modifications.Count > 0 || triggeredEffect.HasValue || beforeAction.IsDeclared ||
-                    afterPush.IsDeclared || textComposition.IsAwaited))
+                    afterPush.IsDeclared || afterTokensPlaced.IsDeclared ||
+                    textComposition.IsAwaited))
             {
                 throw new ArgumentException(
                     "An Ultimate that declares a Minion-Battle rule declares nothing else.",
@@ -317,7 +330,8 @@ namespace GuardsDigital.Core.Cards
 
             if (!Enum.IsDefined(typeof(UltimateTriggerCondition), triggerCondition) ||
                 triggeredEffect.HasValue !=
-                    (isCheckpointTriggered || beforeAction.IsDeclared || afterPush.IsDeclared) ||
+                    (isCheckpointTriggered || beforeAction.IsDeclared || afterPush.IsDeclared ||
+                        afterTokensPlaced.IsDeclared) ||
                 isCheckpointTriggered != (triggerCondition != UltimateTriggerCondition.None) ||
                 (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined) ||
                 TriggerCheckpoints.Any(value => value != WatchedMomentOf(triggerCondition)) ||
@@ -636,6 +650,31 @@ namespace GuardsDigital.Core.Cards
                 triggeredEffect, null, UltimateTriggerCondition.None, default, null, afterPush);
         }
 
+        /// <summary>
+        /// Milestone 8.112f. An Ultimate that runs its effect once per turn after its controller places
+        /// tokens of the declared kind, once for each enemy hero adjacent to what that step placed -
+        /// Mrak's Rock and a Hard Place. See <see cref="AfterTokensPlacedTrigger"/>.
+        /// </summary>
+        public static UltimateRuleDefinition AfterTokensPlacedAbility(
+            string ruleId,
+            string ruleKind,
+            EffectDefinitionReference triggeredEffect,
+            AfterTokensPlacedTrigger afterTokensPlaced,
+            IEnumerable<PrintedValueDefinition> printedValues)
+        {
+            if (!afterTokensPlaced.IsDeclared)
+            {
+                throw new ArgumentException(
+                    "An after-tokens-placed Ultimate names the token kind it watches.",
+                    nameof(afterTokensPlaced));
+            }
+
+            return new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                triggeredEffect, null, UltimateTriggerCondition.None,
+                afterTokensPlaced: afterTokensPlaced);
+        }
+
         /// <summary>This ability's stable identity inside its card, and the derived source's identity suffix.</summary>
         public string RuleId { get; }
 
@@ -685,6 +724,12 @@ namespace GuardsDigital.Core.Cards
         /// Ultimate that declares no such trigger - which is every one in this build before Sabina's.
         /// </summary>
         public AfterPushTrigger AfterPush { get; }
+
+        /// <summary>
+        /// Milestone 8.112f. The after-tokens-placed declaration, or <see cref="AfterTokensPlacedTrigger.None"/>
+        /// on every Ultimate that declares none - which is every one in this build before Mrak's.
+        /// </summary>
+        public AfterTokensPlacedTrigger AfterTokensPlaced { get; }
 
         /// <summary>
         /// Milestone 8.19c. The Minion-Battle rule this Ultimate declares, or <c>null</c> on every

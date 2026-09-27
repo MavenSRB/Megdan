@@ -153,6 +153,12 @@ namespace GuardsDigital.Tests.EditMode
                     // drift from what the build actually registers, which is precisely what this case
                     // exists to refuse.
                     .Concat(IgnatiaComponentContent.RegisteredHandlers())
+
+                    // Milestone 8.112f widened it for the TWENTY-FIFTH hero while milestone 7.9's gate
+                    // still holds his contracts out of the registration list: his printed set became
+                    // whole at that block, and validating him against the registered list alone reported
+                    // his rock faces as naming unregistered capabilities. 8.112g discharges it.
+                    .Concat(MrakComponentContent.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

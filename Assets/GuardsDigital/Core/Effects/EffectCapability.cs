@@ -678,8 +678,23 @@ namespace GuardsDigital.Core.Effects
             EffectChoiceRequest choice,
             IEnumerable<RuleObject> appliedPushes = null,
             IEnumerable<RevealedCard> revealedCards = null,
-            HeroId markerGivenTo = default)
+            HeroId markerGivenTo = default,
+            IEnumerable<PlacedToken> placedTokens = null)
         {
+            var placed = (placedTokens ?? Enumerable.Empty<PlacedToken>()).ToArray();
+            if (placed.Any(token => token == null))
+            {
+                throw new ArgumentException(
+                    "A reported placement names the token it placed.", nameof(placedTokens));
+            }
+
+            if (placed.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a token it placed.", nameof(placedTokens));
+            }
+
+            PlacedTokens = new ReadOnlyCollection<PlacedToken>(placed);
             var revealed = (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray();
             if (revealed.Length > 0 && kind != EffectExecutionResultKind.Applied)
             {
@@ -787,16 +802,30 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public HeroId MarkerGivenTo { get; }
 
+        /// <summary>
+        /// Milestone 8.112f. The tokens this handler PLACED (rulebook p.18's Place), in the order it
+        /// committed them, and empty for every handler that placed none - the moment Mrak's Rock and a
+        /// Hard Place watches, "after you place one or more Rock tokens".
+        ///
+        /// <para>A typed report rather than an outcome fact for the reason <see cref="AppliedPushes"/>
+        /// is: nothing binds it, and the resolver reads it so it can hand the moment to whatever
+        /// declared an after-tokens-placed trigger. A push or a move of a standing token is not a
+        /// Place and never reports here; p.18's short-supply reclaim is a removal, and the placement
+        /// after it is what reports.</para>
+        /// </summary>
+        public IReadOnlyList<PlacedToken> PlacedTokens { get; }
+
         public static EffectExecutionResult Applied(
             IEnumerable<EffectOutcomeFact> outcomes = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
             IEnumerable<RuleObject> appliedPushes = null,
             IEnumerable<RevealedCard> revealedCards = null,
-            HeroId markerGivenTo = default) =>
+            HeroId markerGivenTo = default,
+            IEnumerable<PlacedToken> placedTokens = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
-                appliedPushes, revealedCards, markerGivenTo);
+                appliedPushes, revealedCards, markerGivenTo, placedTokens);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

@@ -26,7 +26,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <para>Nothing here is registered: Mrak sits behind milestone 7.9's gate until 8.112g deals
     /// him.</para>
     /// </summary>
-    public static class MrakCardContent
+    public static partial class MrakCardContent
     {
         /// <summary>The revision every Mrak definition carries.</summary>
         public const string ContentRevision = "mrak-8-112-rev-1";
@@ -225,19 +225,7 @@ namespace GuardsDigital.Core.Cards.Verified
             AttackRangeKind.None,
             new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
 
-        /// <summary>
-        /// Every Mrak definition composed so far - the list the corpus sweeps walk. A getter rather
-        /// than a stored field, so reading it never races the static initialisation of the face
-        /// classes it joins (the static-init cycle Tali's dealing met).
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> AllDefinitions =>
-            new[] { FissureDefinition, StoneGripDefinition }
-                .Concat(MrakRedFaces.Definitions)
-                .Concat(MrakBlueFaces.Definitions)
-                .Concat(MrakGreenFaces.Definitions)
-                .ToArray();
-
-        private static CardDefinitionId Id(string card) =>
+        internal static CardDefinitionId Id(string card) =>
             new CardDefinitionId(ContentSetId + "-" + card);
     }
 }

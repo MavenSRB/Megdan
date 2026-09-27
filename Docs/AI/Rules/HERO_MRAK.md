@@ -68,7 +68,7 @@ Quoted from the fronts; each implementation test uses the front, not this routin
 - **Stomping Step's "a unit in radius"** is read as every printed-Radius unit selection in the build reads it (Ignatia, Brynn, Whisper): any side, never Mrak himself. It is a precedent reading, not a new ruling; a user answer to the contrary is one literal.
 - **Rolling/Strolling Stone** is one straight-line move ignoring obstacles. Every intermediate space is counted and at most one (two) may be empty; the destination must be empty (p.18). Whether "any number" admits standing still follows the settled Garrus reading (GA-Q1, a zero move is legal) rather than a new ruling.
 - **Avalanche's** "May repeat once" has no "different target" wording, so p.10's repeat, "with the same range, restrictions", allows the same unit. Epicentre and Ground Shaker print "different target".
-- **Rock and a Hard Place** listens for Place (p.18). A push or a Rolling Stone move of a rock is not a placement; a p.18 short-supply reclaim followed by placing is. It fires once per turn, after the placing step completes, for every enemy hero adjacent to any rock that step placed.
+- **Rock and a Hard Place** listens for Place (p.18). A push or a Rolling Stone move of a rock is not a placement; a p.18 short-supply reclaim followed by placing is. It fires once per turn, after the placing step completes, for every enemy hero adjacent to any rock that step placed. The discard is no targeting question, so p.18's immunity does not reach it (the reading Bain's marker-given Ultimate has); a placement beside no enemy hero spends nothing.
 
 ## Capability mapping
 

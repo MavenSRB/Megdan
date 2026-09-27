@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112f Mrak Ultimate and set reconciliation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112f | Rock and a Hard Place through a typed placement report, a once-per-turn after-tokens-placed trigger and a new interrupt kind carrying the heroes still owed; the boxed Lesser Fissure; the nineteen-row set reconciled with the inventory, the p.6 split and p.15 upgrade lists asserted. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112f-compose-rock-and-a-hard-place-and-reconcile-the-set). | `milestone/8.112f` |
+
 ## Milestone 8.112e Mrak Green shift and roll evidence
 
 | Milestone | Outcome and definition | Commit |

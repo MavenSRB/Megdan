@@ -166,6 +166,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindBorrowedTargetScopeKeys(IEnumerable<string> keys) => borrowedTargetScopeKeys = keys;
 
         /// <summary>
+        /// Milestone 8.112f. The turn's own consumed-key set, writable, so an after-tokens-placed
+        /// Ultimate's "Once per turn" is spent where the turn keeps every other once - and crosses a
+        /// snapshot and a seat rewind with it. Bound by the turn authority beside the borrow scope.
+        /// </summary>
+        internal void BindTurnScopedKeys(ICollection<string> keys) => turnScopedKeys = keys;
+
+        private ICollection<string> turnScopedKeys;
+
+        /// <summary>
         /// The offer a parentless - that is, ability-granted - borrow is authorized to start, held
         /// only for the length of the command that takes it. Milestone 8.38d.
         /// </summary>
@@ -2411,6 +2420,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // sits in an "After the attack:" clause, so his Ultimate's moment happens inside
                 // rulebook p.14's card text rather than inside a Skill.
                 watchesMarkerGives: WatchesMarkerGives(materializedDefinitions, instances),
+                // Milestone 8.112f. Fissure places its rocks "After the attack", inside this card text.
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, instances),
                 // Milestone 8.25d. Rulebook p.10: "You cannot repeat a repeated action!" A
                 // `RepeatAction` node reached inside p.14 asks to repeat the attack this text is
                 // running inside - `RecordOwedAttackRepeat` owes the request to that attack and to no
@@ -2544,12 +2555,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 // Milestone 8.40h. The give's own moment, asked where the push's is and only where the
                 // push's did not stand. No printed face pushes and gives at one node.
-                RunCardTextMarkerGiveTrigger(
+                if (!RunCardTextMarkerGiveTrigger(
                     result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
                     step.CardTextActionDefinitionId, step.CardTextTiming,
                     step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
                     materializedDefinitions, instances, participants, timing, tieBreaker,
-                    roundIndex, turnIndex, steps);
+                    roundIndex, turnIndex, steps))
+                {
+                    // Milestone 8.112f. Fissure's after-the-attack placement.
+                    RunCardTextPlacementTrigger(
+                        result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
+                        step.CardTextActionDefinitionId, step.CardTextTiming,
+                        step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
+                        materializedDefinitions, instances, participants, timing, tieBreaker,
+                        roundIndex, turnIndex, steps);
+                }
             }
 
             // Milestone 8.19a. Rulebook p.14's step 1 is the one moment whose remainder is the rest of
@@ -3723,6 +3743,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // half alone would have watched the moment on every composition except the one the
                 // printed card actually has.
                 watchesMarkerGives: WatchesMarkerGives(materializedDefinitions, materializedInstances),
+                watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 // Milestone 8.25d, the resume half of the same bound the start half states: a frame
                 // that comes back to a `RepeatAction` node after answering an earlier question is
                 // still running inside the same attack, and p.10 bars a repeat of a repeat wherever
@@ -3834,6 +3855,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // receives the marker, so the give happens on THIS pass and the moment his Ultimate watches
             // is produced here rather than where the text started.
             if (RunCardTextMarkerGiveTrigger(
+                    step, paused.Frame.ActorId, paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
+                    materializedDefinitions, instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex, facts))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
+
+            // Milestone 8.112f, the resume half: a placement reached after an earlier question.
+            if (RunCardTextPlacementTrigger(
                     step, paused.Frame.ActorId, paused.Frame.SourceCardInstanceId,
                     paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
                     materializedDefinitions, instances, participants, timing, tieBreaker,
@@ -4408,6 +4439,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ((appliedPushes == null || appliedPushes.Count == 0) &&
                     skillBackend.StagedMinionDefeats.Count == 0 &&
                     !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined &&
+                    skillBackend.StagedTokenPlacements.Count == 0 &&
                     !skillBackend.StagedHeroDefeat &&
                     // Milestone 8.61e. A displacement this effect made may have walked a hero over
                     // something that goes off even when nothing else about it is staged - a card-text
@@ -4435,6 +4467,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var complete = result.IsComplete;
             while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
                 skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedResolvedDiscard.IsDefined ||
+                skillBackend.StagedTokenPlacements.Count > 0 ||
                 skillBackend.StagedHeroDefeat)
             {
                 var interrupted = skillBackend.PendingResolution;
@@ -4479,6 +4512,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         !TryStartMarkerGivenTrigger(
                             interrupted.ActorId, interrupted.ResolutionId, markerGivenTo, boundary,
                             steps) &&
+                        !TryStartAfterTokensPlacedTrigger(
+                            interrupted.ActorId, interrupted.ResolutionId,
+                            skillBackend.StagedTokenPlacements, boundary, steps) &&
                         !TryStartResolvedDiscardTrigger(interrupted, skillBackend.StagedResolvedDiscard,
                             boundary, steps)))
                 {
@@ -5066,6 +5102,192 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.112f. Starts the runs an after-tokens-placed Ultimate owes for what one placing
+        /// step placed - Mrak's Rock and a Hard Place - and reports whether one is standing.
+        ///
+        /// <para>The once is spent here, in the turn's own key set, the moment the step is found to
+        /// concern at least one enemy hero: a placement beside nobody spends nothing, and a second
+        /// placement this turn beside somebody runs nothing. Each hero then gets one run, in the
+        /// query's order, and the heroes after a run that pauses are carried on the interrupt as its
+        /// remaining subjects - the after-push queue's own shape.</para>
+        /// </summary>
+        private bool TryStartAfterTokensPlacedTrigger(
+            HeroId placingHeroId,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placed,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (placed == null || placed.Count == 0 || board == null)
+            {
+                return false;
+            }
+
+            var sources = GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    boundary.Definitions, boundary.Instances),
+                board,
+                boundary.Participants,
+                placingHeroId,
+                placed);
+            if (sources.Count == 0)
+            {
+                return false;
+            }
+
+            var once = sources[0].OncePerTurnKey;
+            if (turnScopedKeys != null)
+            {
+                if (turnScopedKeys.Contains(once))
+                {
+                    return false;
+                }
+
+                turnScopedKeys.Add(once);
+            }
+
+            return RunAfterTokensPlacedTriggers(sources, interruptedResolutionId, boundary, steps);
+        }
+
+        private bool RunAfterTokensPlacedTriggers(
+            IReadOnlyList<GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerSource> sources,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            for (var index = 0; index < sources.Count; index++)
+            {
+                var owed = sources.Skip(index + 1)
+                    .Select(source => RuleObject.ForHero(source.RecipientId))
+                    .ToArray();
+                if (RunOneAfterTokensPlacedTrigger(
+                        sources[index], interruptedResolutionId, owed, boundary, steps))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool RunOneAfterTokensPlacedTrigger(
+            GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerSource source,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            IReadOnlyList<RuleObject> remainingSubjects,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect))
+            {
+                throw new InvalidOperationException(
+                    $"After-tokens-placed trigger effect '{source.TriggeredEffect}' is not configured.");
+            }
+
+            var step = EffectResolutionSession.Start(
+                new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                    source.ResolutionIdValue),
+                source.SourceCardInstanceId,
+                source.SourceDefinitionReference,
+                source.SourceActionDefinitionId,
+                source.ControllerId,
+                source.ControllerId,
+                ActionInvocationContext.PrintedPrimary,
+                new EffectResolutionContext(
+                    effect,
+                    ContentCatalogs.Capabilities,
+                    boundary.Participants,
+                    boundary.Timing,
+                    boundary.RoundIndex,
+                    boundary.TurnIndex,
+                    CurrentModificationsFor(boundary, source.ControllerId),
+                    EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                    ActionKind.Skill,
+                    opposingHeroId: source.RecipientId,
+                    components: components,
+                    heroItems: skillBackend.HeroItems,
+                    rosterState: rosterState,
+                    tieBreakerRevealedSide: LiveTieBreakerSide));
+            if (!step.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A configured after-tokens-placed trigger was refused by its own effect frame.");
+            }
+
+            steps.AddRange(PreActionFacts(
+                step, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                source.ControllerId, CardTextTiming.None));
+            if (step.Frame?.PendingChoice == null)
+            {
+                AppendSkillRequestedHeroDefeats(
+                    step.RequestedHeroDefeats,
+                    new ActionResolutionId(source.ResolutionIdValue),
+                    source.SourceCardInstanceId,
+                    source.SourceActionDefinitionId,
+                    source.ControllerId,
+                    boundary,
+                    steps);
+                return false;
+            }
+
+            pendingEffectInterrupt =
+                new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                    step.Frame,
+                    GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind
+                        .AfterTokensPlacedTrigger,
+                    RuleObject.ForHero(source.RecipientId),
+                    interruptedResolutionId,
+                    remainingSubjects);
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.112f. The card-text altitude's placement moment - Fissure's "After the attack:
+        /// Place a rock token in each of the first three empty spaces" - asked where the push and the
+        /// give are asked, and standing the page exactly as they do.
+        /// </summary>
+        private bool RunCardTextPlacementTrigger(
+            EffectResolutionStepResult result,
+            HeroId actorId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            CardTextTiming moment,
+            PendingAttackResolution remainderAttack,
+            AttackResolutionOutcome remainderOutcome,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
+            List<ResolutionStep> steps)
+        {
+            if (pendingCardText != null || board == null || result.PlacedTokens.Count == 0)
+            {
+                return false;
+            }
+
+            var boundary = new ActionBoundaryContext(
+                definitions, instances, participants, timing, tieBreaker, roundIndex, turnIndex);
+            if (!TryStartAfterTokensPlacedTrigger(
+                    actorId,
+                    new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                        $"card-text-{sourceCardInstanceId.Value}-" +
+                        $"{actionDefinitionId.Value}-{moment}"),
+                    result.PlacedTokens,
+                    boundary,
+                    steps))
+            {
+                return false;
+            }
+
+            pendingCardTextAwaitingInterrupt = remainderAttack == null
+                ? null
+                : new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
+            return pendingCardTextAwaitingInterrupt != null;
+        }
+
+        /// <summary>
         /// The frame context an after-marker-given trigger runs under. Its opposing hero is the hero
         /// who received the marker, because "that hero" is the whole subject of the printed rider and
         /// the frame's own vocabulary for the other side of a moment is this slot - the same slot
@@ -5182,6 +5404,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingEffectInterrupt = null;
             AppendRequestedHeroDefeatsFromInterrupt(step, standing.Frame, boundary, steps);
 
+            // Milestone 8.112f. The rest of one placing step's queue runs before anything the step
+            // interrupted, at either altitude: "each of those heroes discards a card".
+            if (standing.Kind == EffectInterruptKind.AfterTokensPlacedTrigger &&
+                standing.RemainingSubjects.Count > 0 &&
+                RunAfterTokensPlacedTriggers(
+                    GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerQuery.ForRecipients(
+                        GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                            boundary.Definitions, boundary.Instances),
+                        standing.Frame.ActorId,
+                        standing.RemainingSubjects.Select(subject => subject.HeroId)),
+                    standing.InterruptedResolutionId, boundary, steps))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
             if (standing.Kind == EffectInterruptKind.AfterResolvedCardDiscardTrigger && step.BorrowRequested.IsRequested)
             {
                 // The trigger is finished; the ordinary borrow stack now suspends the interrupted
@@ -5225,7 +5462,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var repeat = default(PendingRepeatedAction);
             var lanePushCause = LanePushCauseKind.None;
             var owed = standing.RemainingSubjects;
-            if (owed.Count > 0 && TryStartAfterPushTrigger(interrupted, owed, boundary, steps))
+            if (standing.Kind == EffectInterruptKind.AfterPushTrigger && owed.Count > 0 &&
+                TryStartAfterPushTrigger(interrupted, owed, boundary, steps))
             {
                 return CardActionResolutionResult.Accept(false, null, null, steps);
             }
@@ -5467,6 +5705,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IEnumerable<CardInstance> instances) =>
             GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.AnyWatching(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, instances));
+
+        /// <summary>Milestone 8.112f. Whether any unlocked Ultimate watches a Place.</summary>
+        private static bool WatchesTokenPlacements(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.AfterTokensPlacedTriggerQuery.AnyWatching(
                 GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
                     definitions, instances));
 
