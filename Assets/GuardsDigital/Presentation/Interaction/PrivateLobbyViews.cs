@@ -240,19 +240,23 @@ namespace GuardsDigital.Presentation.Interaction
             playerName.maxLength = PrivateLobbyEntryText.MaxPlayerNameChars;
             entry.Add(playerName);
 
+            // Milestone 8.109, the user: "make the buttons below the text fields, all in one row, then
+            // in 2nd row host and cancel". The fields come first, then the setup line and its four
+            // choices on one row; HOST and CANCEL follow in the controls row beneath.
             hostMenu = new VisualElement { name = HostMenuName };
             hostMenu.style.flexDirection = FlexDirection.Column;
-            mode = Caption(string.Empty, 20, ModeName);
-            hostMenu.Add(mode);
-            formatChoices = new VisualElement { name = FormatChoicesName };
-            formatChoices.style.flexDirection = FlexDirection.Row;
-            formatChoices.style.flexWrap = Wrap.Wrap;
-            formatChoices.style.marginBottom = 8f;
-            hostMenu.Add(formatChoices);
             hostPort = Field("PORT", defaultPort, HostPortFieldName);
             hostKey = Field("SESSION ID", PrivateSessionIdSource.NewSessionId(), HostKeyFieldName);
             hostMenu.Add(hostPort);
             hostMenu.Add(hostKey);
+            mode = Caption(string.Empty, 20, ModeName);
+            mode.style.marginTop = 8f;
+            hostMenu.Add(mode);
+            formatChoices = new VisualElement { name = FormatChoicesName };
+            formatChoices.style.flexDirection = FlexDirection.Row;
+            formatChoices.style.flexWrap = Wrap.NoWrap;
+            formatChoices.style.marginBottom = 4f;
+            hostMenu.Add(formatChoices);
             entry.Add(hostMenu);
 
             joinMenu = new VisualElement { name = JoinMenuName };
@@ -579,6 +583,10 @@ namespace GuardsDigital.Presentation.Interaction
                         if (IsFormatChoice(control))
                         {
                             var button = BuildControl(control);
+                            // Milestone 8.109: four on one row inside the 720-wide menu panel.
+                            button.style.minWidth = FormatChoiceWidth;
+                            button.style.width = FormatChoiceWidth;
+                            button.style.fontSize = 18f;
                             if (IsChosenFormat(control, model.MatchFormatLabel))
                             {
                                 HudElements.Border(
@@ -623,6 +631,9 @@ namespace GuardsDigital.Presentation.Interaction
         public const float LandingPanelWidth = 540f;
 
         public const float MenuPanelWidth = 720f;
+
+        /// <summary>Milestone 8.109. A setup choice's width, so all four share one row.</summary>
+        public const float FormatChoiceWidth = 150f;
 
         /// <summary>
         /// Milestone 8.108, the user on 8.107's landing: "Why is that box for host/join that big.

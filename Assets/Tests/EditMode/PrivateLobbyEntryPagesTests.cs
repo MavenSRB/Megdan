@@ -61,6 +61,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "NAME", "PORT", "SESSION ID" }));
             Assert.That(Label(view, PrivateLobbyUnityView.ModeName), Is.EqualTo("MODE: 3V3 SHORT GAME"));
             Assert.That(Label(view, PrivateLobbyUnityView.TitleName), Is.EqualTo("HOST A GAME"));
+            // Milestone 8.109: the fields first, then the four setup choices on one row.
+            var hostMenu = Named(view, PrivateLobbyUnityView.HostMenuName);
+            var order = hostMenu.Children().Select(child => child.name).ToList();
+            Assert.That(order.IndexOf(PrivateLobbyUnityView.FormatChoicesName),
+                Is.GreaterThan(order.IndexOf(PrivateLobbyUnityView.HostKeyFieldName)));
+            var row = Named(view, PrivateLobbyUnityView.FormatChoicesName);
+            Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
+            Assert.That(row.childCount * (PrivateLobbyUnityView.FormatChoiceWidth + 10f),
+                Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
+                "Four setup choices fit one row inside the menu panel's padding and border.");
 
             var chosen = ShownButtons(view)
                 .Where(button => button.ClassListContains("gd-lobby-format-chosen"))

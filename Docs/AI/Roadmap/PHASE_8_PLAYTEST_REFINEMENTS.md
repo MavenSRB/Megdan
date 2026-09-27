@@ -30,6 +30,14 @@ Completed 2026-09-27. The name rides the seat claim rather than the Hello, becau
 
 Historical evidence: [8.108 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8108-lobby-player-names-evidence).
 
+### [x] 8.109 Host menu: fields first, setup choices on one row
+
+Authorized 2026-09-27 from the user's screenshot of 8.108's host menu: "this is ugly make the buttons below the text fields, all in one row, then in 2nd row host and cancel". Outcome: the host menu reads NAME, PORT, SESSION ID, then the mode line and the four setup choices (2V2, 3V3, SHORT GAME, LONG GAME) on a single non-wrapping row, then HOST and CANCEL. The join menu, landing and every behavior are unchanged. Acceptance: an Edit Mode check of the host menu's order and one-row fit, the lobby Edit and Play Mode fixtures green, and a fresh capture of the host menu. T2.
+
+Completed 2026-09-27. Each setup choice is 150 wide so four fit the 720-wide menu panel.
+
+Historical evidence: [8.109 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8109-host-menu-layout-evidence).
+
 ## Approved playtest corrections ahead of Snorri
 
 On 2026-09-26 the user approved investigating and fixing these reports in order: **8.95 -> 8.96 -> 8.97**, before resuming Snorri at 8.93e. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed. The private host-game log under the 8.92 playtest build is available as evidence; preserve it.

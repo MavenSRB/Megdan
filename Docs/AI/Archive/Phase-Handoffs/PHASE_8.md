@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.109 host menu layout evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.109 | The host menu shows its fields first, then the four setup choices on one row, then HOST and CANCEL. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-8109-host-menu-fields-first-setup-choices-on-one-row). | milestone/8.109 |
+
 ## Milestone 8.108 lobby player names evidence
 
 | Milestone | Outcome and definition | Commit |
