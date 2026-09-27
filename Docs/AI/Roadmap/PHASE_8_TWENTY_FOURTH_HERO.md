@@ -82,7 +82,7 @@ Completed 2026-09-27. Rune Mastery is a typed permanent before-action source for
 
 Historical evidence: [8.93e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893e-snorri-rune-mastery-and-set-reconciliation-evidence).
 
-### [~] 8.93f Deal Snorri and present his artwork
+### [x] 8.93f Deal Snorri and present his artwork
 
 Outcome: register the eighteen playable definitions, profile and rune pieces; add Snorri to legal pickers and configurations with printed stars and roles, hero and rune artwork, and card faces/hover catalog.
 
@@ -90,7 +90,11 @@ Acceptance: stable identities, setup, hand/upgrades, selection/filter/spawn and 
 
 Non-goals: a distributable package or another hero.
 
-### [ ] 8.93g Gate Snorri through the complete player path
+Completed 2026-09-27. Snorri joins both selected formats with eighteen dealt faces, Rune Shards boxed, four registered rune markers, his handlers and Rune Mastery's trigger, and the printed four-star, six-role picker row ("Snorri the Runescribe", from the dashboard). Private card fronts, selection art and standees are prepared; the four rune glyphs are cut from Rune Sigils (SN-Q2 closed in [his shard](../Rules/HERO_SNORRI.md)). Each tray turn slot shows its assigned rune, including over a resolved card; the live turn's rune stands over the current-card slot before commitment and above the resolving card's Initiative after it; the drag pop-up pieces carry the same glyphs; slot-assigned runes leave the generic held-marker list. A real-input journey places the four runes by pointer, checks every slot, then ends turn 1 and checks turn 2's rune before and after commitment. The dealing found six corrections, each proved failing then passing: the three Oaths carried an unprinted Defense 2 (their ribbons print only Movement 2 - an 8.93 inventory misreading; the Block is their only Defense); the artwork catalog had Ancestral Boon's and Deep Passage's fronts swapped; Ancestral Boon named one Tier III upgrade (p.15 requires both); the rune predicates' integers lacked closed vocabularies; Runic Hammer and Runic Battleaxe were offered with no rune able to open their pre-Attack move and then spent doing nothing (the rune predicates now publish their live reading to the offer walk, withheld while Rune Mastery could still choose); and the shared "fill the last pick, auto-confirm" rule skipped the rune window's DONE locally and on a network seat. Schema v46 and wire /23 unchanged; registration grows every snapshot's catalog lists by 981 bytes (MIGRATE). The complete matrix, Undo/restore journeys and unfiltered suites remain 8.93g.
+
+Historical evidence: [8.93f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893f-snorri-dealing-and-artwork-evidence).
+
+### [~] 8.93g Gate Snorri through the complete player path
 
 Outcome: a content-derived matrix and real-input journeys cover every dealt face and the rune state, with no parked or skipped required journey.
 

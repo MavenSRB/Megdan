@@ -709,6 +709,9 @@ namespace GuardsDigital.Tests.EditMode
                 // that concat is there for - and by the showcase card above.
                 .Concat(IgnatiaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(TrinketsCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.93f. Snorri's dealt faces; Rune Mastery's body arrives through the
+                // triggered-effect walk below.
+                .Concat(SnorriCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -742,14 +745,28 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(heroOnlyHandlerTypes, Is.EqualTo(new[]
                 {
+                    "ActiveRuneHandler",
                     "ActorInTurretRadiusHandler",
+                    "AnySupportRuneHandler",
+                    "ChooseOwnedItemHandler",
+                    "ChooseResolvedCardHandler",
+                    "ChooseRuneHandler",
+                    "ConditionHandler",
                     "DefeatMinionHandler",
                     "HeroAdjacentToMinionHandler",
+                    "InscribeRunesHandler",
                     "ObstacleSpaceHandler",
                     "PlaceAdjacentObstacleHandler",
-                    "RemoveObstacleHandler"
+                    "RemoveObstacleHandler",
+                    "RetrieveAllDiscardedHandler",
+                    "RuneTargetHandler",
+                    "SelectRuneHandler",
+                    "SwapItemWithCardHandler",
+                    "SwapResolvedWithHandHandler"
                 }),
-                "The 8.13 pair and 8.92a's three generic obstacle operations plus Trinkets' " +
+                "Snorri's twelve rune, slot, Oath, support-swap and Rune Mastery handlers (8.93f), each " +
+                "proved by the focused 8.93a-8.93e fixtures, join " +
+                "the 8.13 pair and 8.92a's three generic obstacle operations plus Trinkets' " +
                 "actor-in-own-Turret predicate are the measured hero-only handler delta. Each " +
                 "8.92a handler has focused foundation coverage; any additional type is a new " +
                 "unapproved deferral from the synthetic gate.");

@@ -131,6 +131,7 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // registers one list of what it can put on a dashboard and the snapshot pins that
                     // list, so a marker registered before a dealt card could give it would move
                     // pinned bytes for nothing.
-                    .Concat(GuardsDigital.Core.Cards.Verified.BainComponentContent.Markers()));
+                    .Concat(GuardsDigital.Core.Cards.Verified.BainComponentContent.Markers())
+                    .Concat(GuardsDigital.Core.Cards.Verified.SnorriComponentContent.Markers()));
     }
 }

@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -260,6 +260,7 @@ $declaredHeroes = @{
     # measurement says otherwise; Swift's per-hero zero stays hers alone.
     ignatia = @{ ElementId = 8597496; ElementName = 'Ignatia'; DisplayName = 'Ignatia' }
     trinkets = @{ ElementId = 8597497; ElementName = 'Kobold'; DisplayName = 'Trinkets' }
+    snorri = @{ ElementId = 8596253; ElementName = 'Snorri'; DisplayName = 'Snorri' }
 }
 
 $declared = $declaredHeroes[$Hero]

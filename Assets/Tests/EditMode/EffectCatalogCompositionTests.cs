@@ -221,6 +221,16 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(TrinketsComponentContent.ObstacleHandlers())
                 .Concat(TrinketsComponentContent.BarrierHandlers())
                 .Concat(TrinketsActiveEffectContent.Handlers())
+                .Concat(SnorriComponentContent.Handlers())
+                .Concat(SnorriAttackTargetContent.Handlers())
+                .Concat(SnorriBlueActiveEffectContent.Handlers())
+                .Concat(SnorriBlueSupportCapabilities.Handlers())
+                .Concat(SnorriGreenBlockContent.Handlers())
+                .Concat(new IEffectCapabilityHandler[]
+                {
+                    new SnorriGreenEffectContent.SelectRuneHandler()
+                })
+                .Concat(SnorriUltimateContent.Handlers())
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

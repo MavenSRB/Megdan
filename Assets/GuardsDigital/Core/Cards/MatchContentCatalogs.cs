@@ -234,6 +234,7 @@ namespace GuardsDigital.Core.Cards
                     // triggered body - it runs no effect at all, it stands a flag the coin predicate
                     // reads.
                     IgnatiaEffectContent.TriggeredEffects(IgnatiaCardContent.ContentRevision))
+                .Concat(new[] { SnorriUltimateContent.TriggeredEffect })
                 .Concat(new[]
                 {
                     TrinketsEffectContent.DisruptorTrigger(
@@ -487,6 +488,16 @@ namespace GuardsDigital.Core.Cards
                 .Concat(TrinketsComponentContent.ObstacleHandlers())
                 .Concat(TrinketsComponentContent.BarrierHandlers())
                 .Concat(TrinketsActiveEffectContent.Handlers())
+                .Concat(SnorriComponentContent.Handlers())
+                .Concat(SnorriAttackTargetContent.Handlers())
+                .Concat(SnorriBlueActiveEffectContent.Handlers())
+                .Concat(SnorriBlueSupportCapabilities.Handlers())
+                .Concat(SnorriGreenBlockContent.Handlers())
+                .Concat(new IEffectCapabilityHandler[]
+                {
+                    new SnorriGreenEffectContent.SelectRuneHandler()
+                })
+                .Concat(SnorriUltimateContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

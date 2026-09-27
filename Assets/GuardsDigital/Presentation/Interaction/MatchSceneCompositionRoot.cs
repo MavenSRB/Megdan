@@ -1040,7 +1040,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedTrinkets = 126,
 
         /// <summary>Wasp versus Trinkets with Tier III hands and their Ultimates faceup.</summary>
-        VerifiedTierThreeEngagedStagedTrinkets = 127
+        VerifiedTierThreeEngagedStagedTrinkets = 127,
+
+        /// <summary>Wasp versus Snorri with his p.6 starting hand.</summary>
+        VerifiedEngagedStagedSnorri = 128,
+
+        /// <summary>Wasp versus Snorri with Tier III hands and Rune Mastery faceup.</summary>
+        VerifiedTierThreeEngagedStagedSnorri = 129
     }
 
     [ExecuteAlways]
@@ -1737,6 +1743,11 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets =>
                     MatchConfiguration.CreateStagedTrinketsTierThreeForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedSnorri =>
+                    MatchConfiguration.CreateStagedSnorriForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedSnorri =>
+                    MatchConfiguration.CreateStagedSnorriTierThreeForInternalTest(
+                        TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1821,7 +1832,9 @@ namespace GuardsDigital.Presentation.Interaction
                 // them would move the ally out of the disk those pushes measure.
                 IsStagedIgnatia(content) ||
                 content == SceneCardContent.VerifiedEngagedStagedTrinkets ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets ||
+                content == SceneCardContent.VerifiedEngagedStagedSnorri ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2375,6 +2388,12 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusTrinketsOneVsOne();
+                    }
+
+                    if (content == SceneCardContent.VerifiedEngagedStagedSnorri ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusSnorriOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

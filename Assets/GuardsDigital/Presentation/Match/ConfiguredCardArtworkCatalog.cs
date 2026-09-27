@@ -161,7 +161,8 @@ namespace GuardsDigital.Presentation.Match
                 // and `IgnatiaCardContent.DealtDefinitions` is a printed set whether or not
                 // `MatchContentCatalogs` knows about it.
                 { "ignatia", "Ignatia" },
-                { "trinkets", "Trinkets" }
+                { "trinkets", "Trinkets" },
+                { "snorri", "Snorri" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -498,6 +499,7 @@ namespace GuardsDigital.Presentation.Match
                 // Fight or Flight are not among theirs.
                 .Concat(IgnatiaCardContent.DealtDefinitions)
                 .Concat(TrinketsCardContent.DealtDefinitions)
+                .Concat(SnorriCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

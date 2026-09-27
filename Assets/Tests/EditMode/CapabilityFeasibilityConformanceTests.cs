@@ -378,7 +378,10 @@ namespace GuardsDigital.Tests.EditMode
             // discards, the Defeats, the Remove, the Swap, the straight line and the direct Move -
             // and this rule counts TYPES.
             // Trinkets' obstacle and Turret-radius handlers add four concrete types at 8.92f.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(107),
+            // Snorri's dealing adds twelve concrete types at 8.93f (the rune predicates, slot
+            // inscription, rune-gated targets, Passage and Oath effects, support swaps and Rune
+            // Mastery), each proved by the focused 8.93a-8.93e fixtures.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(119),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

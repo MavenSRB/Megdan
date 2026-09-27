@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         childNodeIds: new[] { Id("immunity") },
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral("mask", EffectValue.Integer(15))
+                            EffectInputBinding.FromClosedVocabulary("mask", SnorriRuneMask.Runes1234)
                         },
                         outputs: new[]
                         {
@@ -70,7 +70,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     childNodeIds: new[] { Id("body") },
                     inputs: new[]
                     {
-                        EffectInputBinding.FromLiteral("mask", EffectValue.Integer(11))
+                        EffectInputBinding.FromClosedVocabulary("mask", SnorriRuneMask.Runes124)
                     },
                     outputs: new[]
                     {
@@ -102,7 +102,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         childNodeIds: new[] { Id("body") },
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral("mask", EffectValue.Integer(15))
+                            EffectInputBinding.FromClosedVocabulary("mask", SnorriRuneMask.Runes1234)
                         },
                         outputs: new[]
                         {
@@ -150,7 +150,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 childNodeIds: new[] { discard },
                 inputs: new[]
                 {
-                    EffectInputBinding.FromLiteral("rune", EffectValue.Integer(rune))
+                    EffectInputBinding.FromClosedVocabulary("rune", (SnorriRuneGlyph)rune)
                 },
                 outputs: new[]
                 {

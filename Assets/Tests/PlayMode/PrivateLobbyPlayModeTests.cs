@@ -1580,6 +1580,59 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(Visible(), Is.False);
         }
+        [UnityTest]
+        public IEnumerator SnorriIsPickedThroughFourStarsAndAllSixPrintedRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var stars = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roles = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => stars.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roles.Single(button =>
+                button.userData is HeroRole role && role == value);
+            bool Visible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-snorri");
+
+            Assert.That(Visible(), Is.True);
+            UiPlayer.Click(Star(HeroComplexity.Wizard));
+            yield return null;
+            Assert.That(Visible(), Is.True);
+            foreach (var role in new[]
+            {
+                HeroRole.Sniper, HeroRole.Farming, HeroRole.Durable,
+                HeroRole.Damager, HeroRole.Pusher, HeroRole.Healer
+            })
+            {
+                UiPlayer.Click(Role(role));
+                yield return null;
+                Assert.That(Visible(), Is.True, role.ToString());
+            }
+
+            var snorri = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-snorri");
+            UiPlayer.Click(snorri);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-snorri"));
+            UiPlayer.PointAt(snorri.parent ?? snorri);
+            UiPlayer.PointAt(snorri);
+            yield return null;
+            Assert.That(UiPlayer.IsShown(Element(driver,
+                PrivateLobbyUnityView.HeroOverviewName)), Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/893f-snorri-pick-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            yield return null;
+            Assert.That(Visible(), Is.False);
+        }
 
         /// <summary>
         /// Milestone 8.75b. Ignatia the Mad's roster row carries FOUR stars and five roles - Sniper,
@@ -1634,8 +1687,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Select(button =>
                     ((PrivateLobbyHeroOption)button.userData).Complexity),
                 Is.All.EqualTo(HeroComplexity.Wizard));
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
-                "and she is the only one behind it, which is what makes this a single-button proof.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(2),
+                "and she and Snorri (8.93f), the only other four-star hero, are the two behind it.");
 
             UiPlayer.Click(Role(HeroRole.Sniper));
             yield return null;

@@ -983,6 +983,7 @@ namespace GuardsDigital.Presentation.Match
                     },
                     96f);
                 button.name = "gd-rune-turn-slot-" + slotIndex;
+                if (placed != null) AddRuneGlyph(button, placed.RuneOrdinal);
                 button.style.width = 142f;
                 button.style.marginRight = slot == 4 ? 0f : 9f;
                 button.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -1014,6 +1015,7 @@ namespace GuardsDigital.Presentation.Match
                     },
                     64f);
                 button.name = "gd-rune-piece-" + runeIndex;
+                AddRuneGlyph(button, runeIndex);
                 button.style.width = 142f;
                 button.style.marginRight = rune == 4 ? 0f : 9f;
                 button.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -1047,6 +1049,37 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return offer;
+        }
+
+        /// <summary>
+        /// Milestone 8.93f. The printed glyph beside a rune piece's words, from the same prepared
+        /// private artwork the tray draws; without it the words alone still answer the choice.
+        /// </summary>
+        private static void AddRuneGlyph(VisualElement button, int runeOrdinal)
+        {
+            var path = TurnSlotMarkerViewModel.RuneGlyphResourcePath(runeOrdinal);
+            var texture = path == null ? null : Resources.Load<Texture2D>(path);
+            if (texture == null)
+            {
+                return;
+            }
+
+            var glyph = new VisualElement
+            {
+                name = "gd-rune-glyph-" + runeOrdinal,
+                pickingMode = PickingMode.Ignore
+            };
+            glyph.style.position = Position.Absolute;
+            glyph.style.left = 8f;
+            glyph.style.top = Length.Percent(50f);
+            glyph.style.marginTop = -14f;
+            glyph.style.width = 34f;
+            glyph.style.height = 28f;
+            glyph.style.backgroundImage = new StyleBackground(texture);
+            glyph.style.backgroundSize =
+                new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
+            button.style.paddingLeft = 48f;
+            button.Add(glyph);
         }
 
         private void ActivateRuneSlotPair(int runeOrdinal, int slotIndex)

@@ -714,7 +714,12 @@ namespace GuardsDigital.Presentation.Match
                 !choice.ResolutionId.Equals(accepted.ResolutionId) ||
                 choice.MaximumSelections < 1 ||
                 choice.SelectedCandidates.Count != choice.MaximumSelections ||
-                choice.ConfirmInvocation == null)
+                choice.ConfirmInvocation == null ||
+                // Milestone 8.93f. A rune-to-slot permutation is reviewed as a whole: its fourth
+                // placement fills the choice, but the player still sees all four and presses DONE
+                // (8.93a's acceptance), and may deselect a slot to rearrange before committing.
+                choice.ValueVocabulary ==
+                    GuardsDigital.Core.Rules.EffectResolution.EffectChoiceValueVocabulary.RuneTurnSlot)
             {
                 return null;
             }

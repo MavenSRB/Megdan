@@ -22,7 +22,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardContentAuthority.VerifiedOfficial,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.II, PrintedValueChannel.Defense,
-                    new[] { SnorriBlueMovementFaces.AncestralGrace }),
+                    // Rulebook p.15: a Tier II upgrades to either Tier III card of its colour.
+                    new[]
+                    {
+                        SnorriBlueMovementFaces.DeepPassage,
+                        SnorriBlueMovementFaces.AncestralGrace
+                    }),
                 new[]
                 {
                     new ActionDefinition(

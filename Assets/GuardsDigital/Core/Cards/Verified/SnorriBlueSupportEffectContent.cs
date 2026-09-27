@@ -47,8 +47,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         childNodeIds: new[] { body },
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
-                                "mask", EffectValue.Integer(grace ? 7 : 6))
+                            EffectInputBinding.FromClosedVocabulary(
+                                "mask", grace ? SnorriRuneMask.Runes123 : SnorriRuneMask.Runes23)
                         },
                         outputs: new[]
                         {
@@ -173,7 +173,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 childNodeIds: new[] { child },
                 inputs: new[]
                 {
-                    EffectInputBinding.FromLiteral("rune", EffectValue.Integer(ordinal))
+                    EffectInputBinding.FromClosedVocabulary("rune", (SnorriRuneGlyph)ordinal)
                 },
                 outputs: new[]
                 {

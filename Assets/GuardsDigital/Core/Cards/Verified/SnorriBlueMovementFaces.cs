@@ -11,7 +11,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class SnorriBlueMovementFaces
     {
-        public const string ContentRevision = "snorri-8-93c-rev-1";
+        public const string ContentRevision = SnorriCardContent.ContentRevision;
 
         public static CardDefinitionId SafePassage { get; } =
             new CardDefinitionId("snorri-safe-passage");

@@ -10,7 +10,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>Rune Mastery chooses for the current action (user ruling SN-Q3).</summary>
     public static class SnorriUltimateContent
     {
-        public const string ContentRevision = "snorri-8-93e-rev-1";
+        public const string ContentRevision = SnorriCardContent.ContentRevision;
         public static CardDefinitionId RuneMastery { get; } = new CardDefinitionId("snorri-rune-mastery");
         public static EffectCapabilityReference ChooseRuneV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("snorri-choose-inactive-rune"), 1);

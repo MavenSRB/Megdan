@@ -322,6 +322,11 @@ namespace GuardsDigital.Tests.EditMode
         /// stands on either. The first branch is taken because nothing of this milestone's reads a Tier
         /// III face at all, and choosing the arm the rest of the staged fixtures use keeps one board.</para>
         /// </summary>
+        /// <summary>Milestone 8.93f. Wasp on Red against Snorri on Blue, engaged, with his p.6 hand.</summary>
+        public static MatchSession CreateEngagedStagedSnorriSession() =>
+            CreateEngagedFixtureSession(
+                MatchConfiguration.CreateStagedSnorriForInternalTest(TeamSide.Blue));
+
         public static MatchSession CreateEngagedStagedSwiftTierThreeSession() =>
             CreateEngagedFixtureSession(
                 MatchConfiguration.CreateStagedSwiftTierThreeForInternalTest(

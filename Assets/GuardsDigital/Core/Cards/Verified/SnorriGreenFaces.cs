@@ -7,7 +7,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>Source-verified Green upgrade branch, staged until Snorri is dealt.</summary>
     public static class SnorriGreenFaces
     {
-        public const string ContentRevision = "snorri-8-93d-rev-1";
+        public const string ContentRevision = SnorriCardContent.ContentRevision;
         public static CardDefinitionId OathOfEndurance { get; } =
             new CardDefinitionId("snorri-oath-of-endurance");
         public static CardDefinitionId OathOfFortitude { get; } =
@@ -109,21 +109,14 @@ namespace GuardsDigital.Core.Cards.Verified
                         CardTextTiming.DefenseAction,
                         blockCondition:
                             PrintedBlockCondition.DeclaredByDefenseTextCapability),
+                    // Milestone 8.93f: the ribbon prints only this Movement 2. Like Wasp's Stop
+                    // Projectiles, an Oath has no Defense value - it defends only by its Block.
                     new ActionDefinition(
                         SecondaryMovement, ActionKind.Movement,
                         ActionDefinitionOrigin.PrintedSecondary,
                         new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 2) },
                         new ActionDefinitionPolicy(
-                            CardTextApplicationPolicy.Suppressed, false, true)),
-                    new ActionDefinition(
-                        SecondaryDefense, ActionKind.Defense,
-                        ActionDefinitionOrigin.Reaction,
-                        new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, 2) },
-                        new ActionDefinitionPolicy(
-                            CardTextApplicationPolicy.Suppressed, false, false),
-                        AttackRangeKind.None,
-                        new ActionCardStateTransition(
-                            CardLocation.Hand, CardLocation.DiscardPile))
+                            CardTextApplicationPolicy.Suppressed, false, true))
                 },
                 CardSourceContent.Transcribed(text));
 

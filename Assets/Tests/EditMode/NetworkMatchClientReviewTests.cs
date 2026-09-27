@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -150,6 +151,95 @@ namespace GuardsDigital.Tests.EditMode
             harness.Pump();
             Assert.That(host.Sequence, Is.EqualTo(sequence + 2),
                 "Repeated rendering cannot submit the automatic confirmation twice.");
+        }
+
+        /// <summary>
+        /// Milestone 8.93f. Snorri's rune permutation is reviewed as a whole: the fourth placement
+        /// fills the choice but a network seat sends no automatic confirm, and only DONE commits the
+        /// four physical runes.
+        /// </summary>
+        [Test]
+        public void RuneSlotPermutation_WaitsForItsOwnDoneOverTheWire()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedStagedSnorriSession();
+            var snorri = session.Projection.Participants.Heroes.Select(hero => hero.Id).Single(hero =>
+                session.Projection.Cards.Any(card => card.OwnerId.Equals(hero) &&
+                    card.DefinitionReference.DefinitionId.Equals(
+                        SnorriSilverFace.InscribeTheRunes)));
+            var silver = session.Projection.Cards.Single(card =>
+                card.OwnerId.Equals(snorri) &&
+                card.DefinitionReference.DefinitionId.Equals(SnorriSilverFace.InscribeTheRunes));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(snorri, silver.Id));
+            foreach (var other in session.Projection.Participants.Heroes.Select(hero => hero.Id)
+                .Where(hero => !hero.Equals(snorri)).ToArray())
+            {
+                var card = session.Projection.Cards.First(value =>
+                    value.OwnerId.Equals(other) && value.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(other, card.Id));
+            }
+
+            for (var step = 0; step < 20 &&
+                !session.Projection.SelectedActor.CardInstanceId.Equals(silver.Id); step++)
+            {
+                var projection = session.Projection;
+                if (projection.PendingInitiativeChoice != null)
+                    ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                        projection.PendingInitiativeChoice.OwningSide,
+                        projection.PendingInitiativeChoice.CandidateCardInstanceIds
+                            .Contains(silver.Id)
+                            ? silver.Id
+                            : projection.PendingInitiativeChoice.CandidateCardInstanceIds[0]));
+                else if (projection.PendingTurnRelease != null)
+                    ConfiguredMatchFixtures.Accept(session, DirectorCommand.ReleaseTurn());
+                else
+                    ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                        projection.SelectedActor.CardInstanceId));
+            }
+
+            var skill = session.Projection.AvailableTurnActions.Single(candidate =>
+                Action(session, candidate).Kind == ActionKind.Skill &&
+                Action(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.StartAction(skill.ActionDefinitionId));
+            Assert.That(session.Projection.PendingEffectChoice.ValueVocabulary,
+                Is.EqualTo(EffectChoiceValueVocabulary.RuneTurnSlot));
+
+            var host = new MatchHost(session);
+            var harness = PrivateOnlineWireHarness.Compose(host);
+            harness.SeatAll();
+            var seat = host.Seats.Seats.Single(value =>
+                host.ProjectionForSeat(value.Id).PendingEffectChoice != null);
+            var client = harness.Client(harness.OrdinalOf(seat.Id.Value));
+            var adapter = new NetworkMatchClient(
+                client, host.Projection, MatchContentCatalogs.ForThisBuild());
+
+            // Rune N to slot (N mod 4) + 1: the encoded pair is (rune - 1) * 4 + slot.
+            foreach (var pair in new[] { 2, 7, 12, 13 })
+            {
+                var choice = adapter.Projection.PendingEffectChoice;
+                var select = adapter.Projection.DecisionContract.Commands.Single(command =>
+                    command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    command.EffectChoice.Candidate.Value.Equals(EffectValue.Integer(pair)));
+                Assert.That(adapter.Submit(select).Accepted, Is.True);
+                harness.Pump();
+                _ = adapter.Projection;
+                harness.Pump();
+                Assert.That(adapter.Projection.PendingEffectChoice, Is.Not.Null,
+                    "Placing pair " + pair + " must not close the choice.");
+            }
+
+            var filled = adapter.Projection.PendingEffectChoice;
+            Assert.That(filled.SelectedCandidates, Has.Count.EqualTo(4));
+            Assert.That(host.Projection.HeldMarkers, Is.Empty,
+                "No automatic confirm crossed the wire: the four runes are still unassigned.");
+
+            var done = adapter.Projection.DecisionContract.Commands.Single(command =>
+                command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                ReferenceEquals(command.EffectChoice, filled.ConfirmInvocation));
+            Assert.That(adapter.Submit(done).Accepted, Is.True);
+            harness.Pump();
+            Assert.That(host.Projection.MarkersHeldBy(snorri).Select(marker => marker.TurnSlotIndex),
+                Is.EquivalentTo(new int?[] { 2, 3, 4, 1 }));
         }
 
         [Test]

@@ -622,6 +622,8 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.IgnatiaCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.TrinketsHeroIdValue:
                     return Cards.Verified.TrinketsCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.SnorriHeroIdValue:
+                    return Cards.Verified.SnorriCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2127,6 +2129,32 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.TrinketsCardContent.CreateHand(ownerId, "blue"));
+
+        public static MatchConfiguration CreateStagedSnorriForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.SnorriCardContent.CreateHand(ownerId, "blue"));
+
+        public static MatchConfiguration CreateStagedSnorriTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.SnorriProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.SnorriUltimateContent.RuneMastery)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
 
         public static MatchConfiguration CreateStagedTrinketsTierThreeForInternalTest(
             TeamSide initialTieBreakerSide)

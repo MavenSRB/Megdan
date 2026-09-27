@@ -40,6 +40,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(slot, Is.Not.Null);
                 Assert.That(piece.worldBound.width, Is.GreaterThan(0f));
                 Assert.That(slot.worldBound.width, Is.GreaterThan(0f));
+                Assert.That(piece.Q("gd-rune-glyph-1"), Is.Not.Null,
+                    "The piece draws its printed glyph from the prepared marker artwork.");
 
                 var start = piece.worldBound.center;
                 var end = slot.worldBound.center;

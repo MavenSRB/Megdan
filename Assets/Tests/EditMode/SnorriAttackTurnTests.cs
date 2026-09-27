@@ -12,6 +12,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
@@ -171,6 +172,138 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.AttackTotals, Has.Count.EqualTo(1));
             Assert.That(result.RetrievedCardLocation, Is.EqualTo(CardLocation.Hand),
                 string.Join(" | ", result.EffectChoices));
+        }
+
+        /// <summary>
+        /// Milestone 8.93f. The corpus sweep for a gate hiding the target binding (8.104's Crimson
+        /// Trail shape) finds Snorri's rune-gated before-Attack text. The offer must be judged
+        /// through that gate: a lone enemy two spaces away is reachable by Hammer and Battleaxe only
+        /// through the live Rune 4's printed "you may move 1 space", and Rune Sigils reaches a
+        /// minion in Range only through the live Rune 1. Without the rune, nothing is in reach.
+        /// </summary>
+        [TestCase(2, 4, false, true)]
+        [TestCase(4, 4, false, true)]
+        [TestCase(2, 0, false, false)]
+        [TestCase(4, 0, false, false)]
+        [TestCase(0, 1, true, true)]
+        [TestCase(0, 0, true, false)]
+        // Rune Mastery chooses an inactive rune before every action, so it can open any gate.
+        [TestCase(2, 0, false, true, true, true)]
+        // ... but only when he holds a rune it could choose: none inscribed yet, nothing to open.
+        [TestCase(2, 0, false, false, true, false)]
+        public void TheAttackOffer_IsJudgedThroughItsRuneGatedStep(
+            int faceIndex, int runeOrdinal, bool minionTwoAway, bool expected,
+            bool runeMasteryUnlocked = false, bool inscribed = false)
+        {
+            var configuration = MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                TeamSide.Red);
+            var face = SnorriAttackFaces.Definitions[faceIndex];
+            var played = CardInstance.CreateInHand(
+                new CardInstanceId("snorri-offer-played"), face.Reference, Snorri);
+            var mastery = CardInstance.CreateInDeck(new CardInstanceId("snorri-offer-mastery"),
+                SnorriUltimateContent.Definition.Reference, Snorri);
+            if (runeMasteryUnlocked)
+                Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(mastery), Is.True);
+            var definitions = configuration.CardDefinitions.Concat(
+                new[] { face, SnorriUltimateContent.Definition }).ToArray();
+            var instances = configuration.CardInstances.Concat(
+                runeMasteryUnlocked ? new[] { played, mastery } : new[] { played }).ToArray();
+            var spaces = from q in Enumerable.Range(-4, 9)
+                         from r in Enumerable.Range(-4, 9)
+                         where Math.Abs(q + r) <= 4
+                         select new HexCoordinate(q, r);
+            var board = new AdjacentMoveAuthority(
+                BoardMapDefinition.CreateSynthetic(Map, 1, spaces),
+                new[]
+                {
+                    new HeroOccupancy(Snorri, new HexCoordinate(0, 0)),
+                    // Two spaces away: out of adjacency, inside Rune Sigils' printed Range 2.
+                    new HeroOccupancy(AdjacentEnemy, minionTwoAway
+                        ? new HexCoordinate(4, -4) : new HexCoordinate(2, 0)),
+                    new HeroOccupancy(FarEnemy, new HexCoordinate(-4, 4))
+                }, Array.Empty<ObstacleOccupancy>(),
+                minionTwoAway
+                    ? new[]
+                    {
+                        new QuickGameMinionSetupState(
+                            EnemyMinion,
+                            new TeamId(StagedBoardParticipants.BlueTeamIdValue),
+                            TeamSide.Blue, StandardMinionType.Melee,
+                            new ConfiguredSpawnPointReference(
+                                Map, new SpawnPointId("snorri-offer-minion-spawn")),
+                            new ConfiguredSpaceReference(Map, new SpaceId("q2_r0")),
+                            new HexCoordinate(2, 0))
+                    }
+                    : Array.Empty<QuickGameMinionSetupState>());
+            var catalogs = new MatchContentCatalogs(
+                SyntheticEffectCapabilities.CreateCatalog(
+                    SnorriComponentContent.Handlers().Concat(
+                        SnorriAttackTargetContent.Handlers()).Concat(
+                        SnorriUltimateContent.Handlers())),
+                new ComponentDefinitionCatalog(
+                    Array.Empty<TokenDefinition>(), SnorriComponentContent.Markers()),
+                new TriggeredEffectCatalog(new[] { SnorriUltimateContent.TriggeredEffect }));
+            var markers = new MarkerAttachmentRegister();
+            if (runeOrdinal > 0)
+                markers.Give(new MarkerAttachment(
+                    new MarkerInstanceId("snorri-offer-rune"),
+                    SnorriComponentContent.Runes[runeOrdinal - 1],
+                    Snorri, Snorri, new CardInstanceId("snorri-inscribe"),
+                    SnorriSilverFace.PrimarySkill, 1));
+            if (inscribed)
+                for (var ordinal = 1; ordinal <= 4; ordinal++)
+                    markers.Give(new MarkerAttachment(
+                        new MarkerInstanceId("snorri-offer-inscribed-" + ordinal),
+                        SnorriComponentContent.Runes[ordinal - 1],
+                        Snorri, Snorri, new CardInstanceId("snorri-inscribe"),
+                        SnorriSilverFace.PrimarySkill, ordinal));
+            var cardActions = new CardActionResolutionAuthority(catalogs, board, markers);
+            var round = new RoundResolutionAuthority(
+                definitions, instances, configuration.Participants,
+                new TieBreakerState(TeamSide.Red), 1,
+                RoundResolutionComposition.ForMatch(
+                    cardActions, board, new ActiveEffectLifecycle(), markers, null, null));
+            foreach (var committed in new[]
+            {
+                played,
+                configuration.CardInstances.First(card =>
+                    card.OwnerId.Equals(AdjacentEnemy) &&
+                    card.State.Location == CardLocation.Hand),
+                configuration.CardInstances.First(card =>
+                    card.OwnerId.Equals(FarEnemy) &&
+                    card.State.Location == CardLocation.Hand)
+            })
+                Assert.That(round.TryCommitCard(committed.OwnerId, committed.Id).Accepted, Is.True);
+            var turn = round.CurrentTurnAuthority;
+            for (var step = 0; step < 20 &&
+                !turn.SelectedActor.CardInstanceId.Equals(played.Id); step++)
+            {
+                if (turn.PendingChoice != null)
+                    Assert.That(round.TryChooseTiedActor(turn.PendingChoice.OwningSide,
+                        turn.PendingChoice.CandidateCardInstanceIds.Contains(played.Id)
+                            ? played.Id
+                            : turn.PendingChoice.CandidateCardInstanceIds[0]).Accepted, Is.True);
+                else if (turn.PendingTurnRelease != null)
+                    Assert.That(round.TryReleaseTurn().Accepted, Is.True);
+                else
+                    Assert.That(round.TryPerformHold(
+                        turn.SelectedActor.CardInstanceId).Accepted, Is.True);
+            }
+            Assert.That(turn.SelectedActor.CardInstanceId, Is.EqualTo(played.Id));
+            var attack = face.ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
+            var offer = ActionOfferQuery.GetAvailableTurnActionOffers(
+                    definitions, instances, Snorri, played.Id)
+                .Single(candidate => candidate.ActionDefinitionId.Equals(attack.Id));
+
+            Assert.That(cardActions.CanAttackFindTarget(
+                    offer, definitions, instances, configuration.Participants,
+                    new ActiveEffectLifecycle(), RuleModificationSet.Empty, 1, 1),
+                Is.EqualTo(expected), face.DisplayName + " with rune " + runeOrdinal);
+            // And the authority agrees when the player presses it: an offer judged empty is
+            // refused rather than started and spent with no Attack.
+            Assert.That(round.TryStartAttack(
+                    new ActionResolutionId("snorri-offer-start"), offer).Accepted,
+                Is.EqualTo(expected), face.DisplayName + " started with rune " + runeOrdinal);
         }
 
         private sealed class TurnRun

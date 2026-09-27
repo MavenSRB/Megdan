@@ -80,13 +80,13 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(PrintedBlockCondition.DeclaredByDefenseTextCapability));
                 Assert.That(action.BaseValues.Any(value =>
                     value.Channel == PrintedValueChannel.Defense), Is.False);
-                var ribbon = oath.ActionDefinitions.Single(value =>
-                    value.Id.Equals(SnorriGreenFaces.SecondaryDefense));
-                Assert.That(ribbon.DefenseResolution,
-                    Is.EqualTo(PrintedDefenseResolution.Value));
-                Assert.That(ribbon.BaseValues.Single(value =>
-                    value.Channel == PrintedValueChannel.Defense).Amount,
-                    Is.EqualTo(2));
+                // Milestone 8.93f: the ribbon prints Movement 2 and no Defense value, so the
+                // Block is the Oath's only Defense (the 8.93 inventory had misread a "D 2").
+                Assert.That(oath.ActionDefinitions.Count(value =>
+                    value.Kind == ActionKind.Defense), Is.EqualTo(1), oath.DisplayName);
+                Assert.That(oath.ActionDefinitions.Single(value =>
+                        value.Id.Equals(SnorriGreenFaces.SecondaryMovement))
+                    .BaseValues.Single().Amount, Is.EqualTo(2));
             }
             Assert.That(SnorriGreenFaces.Definitions.Count(card =>
                 card.ActionDefinitions.Any(action =>

@@ -60,13 +60,49 @@ namespace GuardsDigital.Core.Cards.Verified
             markers.Attachments.Any(marker => marker.IsActiveInTurn(turnIndex) &&
                 marker.Definition.Reference.Equals(Runes[ordinal - 1].Reference));
 
+        /// <summary>
+        /// Milestone 8.93f. What an offer may conclude from a rune gate before the action starts:
+        /// the live reading, so an Attack reachable only through an inactive rune's step is not
+        /// offered and then spent doing nothing. It is withheld (null - undecided, the walk's
+        /// conservative path) while the acting hero has Rune Mastery unlocked, because that
+        /// Ultimate chooses an inactive rune before every action and so can make any gate true.
+        /// </summary>
+        private static IReadOnlyList<EffectOutcomeFact> AnticipatedRuneReading(
+            IEffectCapabilityHandler predicate, EffectCapabilityContext context)
+        {
+            if (context == null || !context.CardState.IsAvailable ||
+                context.Components?.Markers == null)
+            {
+                return null;
+            }
+
+            var masteryCanChoose =
+                context.Components.Markers.Attachments.Any(marker =>
+                    marker.HolderHeroId.Equals(context.ActorId) &&
+                    Runes.Any(rune => rune.Reference.Equals(marker.Definition.Reference)) &&
+                    !marker.IsActiveInTurn(context.TurnIndex)) &&
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery
+                    .Derive(context.CardState.Definitions, context.CardState.Instances).Ultimates
+                    .Any(ultimate => ultimate.OwnerId.Equals(context.ActorId) &&
+                        ultimate.SourceDefinitionId.Equals(SnorriUltimateContent.RuneMastery));
+            if (masteryCanChoose)
+            {
+                return null;
+            }
+
+            var reading = predicate.Execute(context);
+            return reading.Kind == EffectExecutionResultKind.Applied ? reading.Outcomes : null;
+        }
+
         /// <summary>The support target is chosen once, before its individually gated clauses.</summary>
-        public sealed class AnySupportRuneHandler : IEffectCapabilityHandler
+        public sealed class AnySupportRuneHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => AnySupportRuneV1;
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
-                    new[] { new EffectCapabilityParameter("mask", EffectValueKind.Integer) },
+                    new[] { new EffectCapabilityParameter("mask", EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.All<SnorriRuneMask>()) },
                     new[] { new EffectOutputBinding("active", EffectValueKind.Boolean) });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -95,19 +131,27 @@ namespace GuardsDigital.Core.Cards.Verified
                 throw new InvalidOperationException("A rune predicate never requests a choice.");
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Execute(context).Kind;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                AnticipatedRuneReading(this, context);
         }
 
         /// <summary>
         /// Pure live-turn predicate for rune-gated card text. A declaration names an ordinal,
         /// while the marker register and current turn remain the sole authority for its truth.
         /// </summary>
-        public sealed class ActiveRuneHandler : IEffectCapabilityHandler
+        public sealed class ActiveRuneHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => ActiveRuneV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
-                    new[] { new EffectCapabilityParameter("rune", EffectValueKind.Integer) },
+                    new[] { new EffectCapabilityParameter("rune", EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.All<SnorriRuneGlyph>()) },
                     new[] { new EffectOutputBinding("active", EffectValueKind.Boolean) });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -139,6 +183,12 @@ namespace GuardsDigital.Core.Cards.Verified
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Execute(context).Kind;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                AnticipatedRuneReading(this, context);
         }
 
         /// <summary>
@@ -238,5 +288,37 @@ namespace GuardsDigital.Core.Cards.Verified
                 return true;
             }
         }
+    }
+
+    /// <summary>The four printed rune glyphs, by their visible order on Rune Sigils.</summary>
+    public enum SnorriRuneGlyph
+    {
+        Rune1 = 1,
+        Rune2 = 2,
+        Rune3 = 3,
+        Rune4 = 4
+    }
+
+    /// <summary>
+    /// A non-empty set of printed rune glyphs, bit N-1 for Rune N. Every combination is a declared
+    /// member so the closed-vocabulary check can reject any literal outside 1-15 at content load.
+    /// </summary>
+    public enum SnorriRuneMask
+    {
+        Runes1 = 1,
+        Runes2 = 2,
+        Runes12 = 3,
+        Runes3 = 4,
+        Runes13 = 5,
+        Runes23 = 6,
+        Runes123 = 7,
+        Runes4 = 8,
+        Runes14 = 9,
+        Runes24 = 10,
+        Runes124 = 11,
+        Runes34 = 12,
+        Runes134 = 13,
+        Runes234 = 14,
+        Runes1234 = 15
     }
 }

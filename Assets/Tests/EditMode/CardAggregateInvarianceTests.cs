@@ -876,17 +876,20 @@ namespace GuardsDigital.Tests.EditMode
         // header-bearing hashes went stale unobserved while the dotnet harness could not compile
         // (8.101-8.106). Re-measured on a clean checkout of that line; no scenario holds a marker,
         // and the three equality groups still hold.
+        // 8.93f re-pins all nine for dealing Snorri: his capability ids and four rune marker
+        // definitions join the recorded registration lists - the same +981 bytes the sibling corpus
+        // measures on all sixteen captures. No scenario plays Snorri; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "0381edfa7fee74482b067156532d93fcc0e3ef0580602b0276a593775c2e9c64", "49aecf1b969e1ede9ade767d864229445903a9408062b21b5c17265b75bc4524"),
-            new ScenarioDigest("rejected", "0381edfa7fee74482b067156532d93fcc0e3ef0580602b0276a593775c2e9c64", "49aecf1b969e1ede9ade767d864229445903a9408062b21b5c17265b75bc4524"),
-            new ScenarioDigest("stale", "0381edfa7fee74482b067156532d93fcc0e3ef0580602b0276a593775c2e9c64", "49aecf1b969e1ede9ade767d864229445903a9408062b21b5c17265b75bc4524"),
-            new ScenarioDigest("restored", "0381edfa7fee74482b067156532d93fcc0e3ef0580602b0276a593775c2e9c64", "49aecf1b969e1ede9ade767d864229445903a9408062b21b5c17265b75bc4524"),
-            new ScenarioDigest("replayed", "0381edfa7fee74482b067156532d93fcc0e3ef0580602b0276a593775c2e9c64", "49aecf1b969e1ede9ade767d864229445903a9408062b21b5c17265b75bc4524"),
-            new ScenarioDigest("undo-truncated", "cd6446d133e08a2e6704529aac208d6cff3835f8cc0232d7712d7409224b9974", "06f3d2b61e14ff42ea23968147fe3a433440318b60ad1344f7e64bf0df499fbd"),
-            new ScenarioDigest("defense-discarded", "a5dbc876faadb2706da3c8b534d7667b9532e816f48590cc85b9c27899827075", "4f72040857df54d5c10ce304f5f4de00acee1e8a65f328cd613f0d032b97f288"),
-            new ScenarioDigest("defense-discarded-restored", "a5dbc876faadb2706da3c8b534d7667b9532e816f48590cc85b9c27899827075", "4f72040857df54d5c10ce304f5f4de00acee1e8a65f328cd613f0d032b97f288"),
-            new ScenarioDigest("defense-discarded-replayed", "a5dbc876faadb2706da3c8b534d7667b9532e816f48590cc85b9c27899827075", "4f72040857df54d5c10ce304f5f4de00acee1e8a65f328cd613f0d032b97f288"),
+            new ScenarioDigest("accepted", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
+            new ScenarioDigest("rejected", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
+            new ScenarioDigest("stale", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
+            new ScenarioDigest("restored", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
+            new ScenarioDigest("replayed", "a37b26079a995ce7a9dbd5e76e84ac2184353495847c6c36edf773fce132e5af", "c6911a9421473b94e11edc6161a4fba6e914de441a8a717cb88513598114a214"),
+            new ScenarioDigest("undo-truncated", "36dfc0c0fcc26b31ac690360fd1d50d939a0c9048aeac728e3791cd0908351e8", "48b0f248197ad1244f9f536f6089a0894efcafdf55654070c1f14aeaa8f0725b"),
+            new ScenarioDigest("defense-discarded", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
+            new ScenarioDigest("defense-discarded-restored", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
+            new ScenarioDigest("defense-discarded-replayed", "821c640f92218d2addd4706088e357096479b03749cb7fc08da7c85f3a870014", "ef09e117fb4daaa2777a813683a7f3c9362c15d1b1ca499b84eaa25978758dfe"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

@@ -301,7 +301,8 @@ namespace GuardsDigital.Tests.EditMode
             // 8.92d's generic object-selection vocabulary widened the canonical walk for eight
             // earlier owners above without changing their printed behavior; the measured pins move
             // with the shared contract. Trinkets is the newly dealt owner of its full graph.
-            new IdentityPin("trinkets", "trinkets-8-92e-complete", "294850cef87d54727d35b3f8ba9b9a5ef81c6aa18419a63ba0ba99d080eeb7e0")
+            new IdentityPin("trinkets", "trinkets-8-92e-complete", "294850cef87d54727d35b3f8ba9b9a5ef81c6aa18419a63ba0ba99d080eeb7e0"),
+            new IdentityPin("snorri", "snorri-8-93f-rev-1", "b8f7a7cd2a2f12bec30c0577fce038cb0a705011f769d38f5a7635b7eaca3869")
         };
 
         [Test]
@@ -476,6 +477,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .Concat(MatchConfiguration.CreateStagedTrinketsForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.93f. Snorri's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedSnorriForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

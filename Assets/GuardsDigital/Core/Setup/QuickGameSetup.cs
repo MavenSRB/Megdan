@@ -420,6 +420,8 @@ namespace GuardsDigital.Core.Setup
 
         public const string TrinketsHeroIdValue = "hero-trinkets";
 
+        public const string SnorriHeroIdValue = "hero-snorri";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -542,7 +544,11 @@ namespace GuardsDigital.Core.Setup
                         HeroRole.Pusher),
                 (TrinketsHeroIdValue, "trinkets", "Trinkets the Scavenger",
                     HeroComplexity.VeryComplex,
-                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens),
+                (SnorriHeroIdValue, "snorri", "Snorri the Runescribe",
+                    HeroComplexity.Wizard,
+                    HeroRole.Sniper | HeroRole.Farming | HeroRole.Durable |
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer)
             };
 
         /// <summary>
@@ -890,6 +896,9 @@ namespace GuardsDigital.Core.Setup
 
         public static QuickGameSetupConfiguration CreateStagedWaspVersusTrinketsOneVsOne() =>
             CreateOneVsOne(new HeroContentId("trinkets"), "Trinkets");
+
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusSnorriOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("snorri"), "Snorri");
 
         /// <summary>
         /// Milestone 8.75b. Wasp on Red against Ignatia and Arien on Blue - the shape

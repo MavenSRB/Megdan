@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var ignatia = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == IgnatiaCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(23),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(24),
                 "She is the twenty-second hero this build can put on a board.");
             Assert.That(
                 ignatia.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.IgnatiaHeroIdValue));
@@ -99,9 +99,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RegisteredHeroRoster.ForThisBuild
                     .Count(hero => hero.Complexity == HeroComplexity.Wizard),
-                Is.EqualTo(1),
-                "and she is the only one, which is what makes the four-star filter a single-button " +
-                "proof rather than a count.");
+                Is.EqualTo(2),
+                "and she and Snorri (8.93f) are the two four-star heroes the filter finds.");
         }
 
         [TestCase(1, IgnatiaUpgradeBranch.FirstSibling)]
@@ -586,8 +585,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(IgnatiaCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(23));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(23),
+            Assert.That(dealt, Has.Count.EqualTo(24));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(24),
                 "and no two rows name one printed set.");
         }
 

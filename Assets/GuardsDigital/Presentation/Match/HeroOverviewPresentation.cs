@@ -528,6 +528,44 @@ namespace GuardsDigital.Presentation.Match
         public string AssistiveLabel { get; }
     }
 
+    /// <summary>
+    /// A public marker assigned to one numbered turn slot. The resource convention is generic: any
+    /// future turn-slot marker can supply art under its definition id without teaching presentation
+    /// a hero name or a rule.
+    /// </summary>
+    public sealed class TurnSlotMarkerViewModel
+    {
+        public TurnSlotMarkerViewModel(MarkerAttachment attachment)
+        {
+            if (attachment == null) throw new ArgumentNullException(nameof(attachment));
+            if (!attachment.TurnSlotIndex.HasValue)
+                throw new ArgumentException("A turn-slot marker names its numbered slot.", nameof(attachment));
+            TurnSlotIndex = attachment.TurnSlotIndex.Value;
+            DisplayName = attachment.Definition.DisplayName;
+            ResourcePath = ResourcePathFor(attachment.Definition.Id);
+            AssistiveLabel = DisplayName + " assigned to turn " +
+                TurnSlotIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public int TurnSlotIndex { get; }
+        public string DisplayName { get; }
+        public string ResourcePath { get; }
+        public string AssistiveLabel { get; }
+
+        public static string ResourcePathFor(MarkerDefinitionId definitionId) =>
+            "Private/Markers/" + definitionId.Value;
+
+        /// <summary>
+        /// The glyph a <c>RuneTurnSlot</c> choice's ordinal names: the same marker definition the
+        /// content's handler places for that ordinal, so the pop-up piece and the tray agree.
+        /// </summary>
+        public static string RuneGlyphResourcePath(int runeOrdinal) =>
+            runeOrdinal < 1 || runeOrdinal > GuardsDigital.Core.Cards.Verified.SnorriComponentContent.Runes.Length
+                ? null
+                : ResourcePathFor(GuardsDigital.Core.Cards.Verified.SnorriComponentContent
+                    .Runes[runeOrdinal - 1].Id);
+    }
+
     /// <summary>One of rulebook p.16's item bonuses, as a compact signed chip.</summary>
     public sealed class HeroItemBonusViewModel
     {
@@ -673,7 +711,8 @@ namespace GuardsDigital.Presentation.Match
             int turnIndex,
             CardColor color,
             bool isOccupied,
-            TrayCardViewModel playedCard = null)
+            TrayCardViewModel playedCard = null,
+            TurnSlotMarkerViewModel turnSlotMarker = null)
         {
             if (turnIndex < 1)
             {
@@ -688,6 +727,9 @@ namespace GuardsDigital.Presentation.Match
             }
 
             TurnIndex = turnIndex;
+            if (turnSlotMarker != null && turnSlotMarker.TurnSlotIndex != turnIndex)
+                throw new ArgumentException("A slot can only draw the marker assigned to it.", nameof(turnSlotMarker));
+            TurnSlotMarker = turnSlotMarker;
             Color = color;
             IsOccupied = isOccupied;
             PlayedCard = playedCard;
@@ -704,6 +746,8 @@ namespace GuardsDigital.Presentation.Match
                 ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
                     (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty)
                 : $"Turn {ordinal}: empty";
+            if (TurnSlotMarker != null)
+                AssistiveLabel += " - " + TurnSlotMarker.DisplayName;
         }
 
         public int TurnIndex { get; }
@@ -729,6 +773,8 @@ namespace GuardsDigital.Presentation.Match
         /// stay visible once the tray has moved on, and until this it carried a swatch and a word.
         /// </summary>
         public TrayCardViewModel PlayedCard { get; }
+
+        public TurnSlotMarkerViewModel TurnSlotMarker { get; }
 
         public string AssistiveLabel { get; }
     }
@@ -759,7 +805,8 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel ultimateCard = null,
             IEnumerable<HeroMarkerViewModel> heldMarkers = null,
             bool isAwaited = false,
-            int worth = 0)
+            int worth = 0,
+            TurnSlotMarkerViewModel currentTurnMarker = null)
         {
             if (!heroId.IsDefined)
             {
@@ -794,6 +841,7 @@ namespace GuardsDigital.Presentation.Match
             IsAwaited = isAwaited;
             CurrentCard = currentCard;
             UltimateCard = ultimateCard;
+            CurrentTurnMarker = currentTurnMarker;
             HeldMarkers = Array.AsReadOnly((heldMarkers ??
                 Enumerable.Empty<HeroMarkerViewModel>()).ToArray());
             if (HeldMarkers.Any(marker => !marker.HolderHeroId.Equals(heroId)))
@@ -836,6 +884,8 @@ namespace GuardsDigital.Presentation.Match
 
         public HeroId HeroId { get; }
         public TeamSide TeamSide { get; }
+
+        public TurnSlotMarkerViewModel CurrentTurnMarker { get; }
 
         /// <summary>
         /// Which hero's printed set this rail is drawing - the same identity
@@ -1118,11 +1168,17 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.UnlockedUltimate(projection, heroId),
                 // Milestone 8.23a. The register's own order, kept rather than sorted: markers are
                 // given one at a time and the order they were given in is the only order there is.
-                projection.MarkersHeldBy(heroId).Select(marker => new HeroMarkerViewModel(marker)),
+                projection.MarkersHeldBy(heroId)
+                    // Milestone 8.93f: a marker assigned to a numbered turn slot is drawn in that
+                    // slot, not repeated in the held list.
+                    .Where(marker => !marker.TurnSlotIndex.HasValue)
+                    .Select(marker => new HeroMarkerViewModel(marker)),
                 AwaitedInputQuery.IsHeroAwaited(projection, heroId),
                 // Milestone 8.49. The same reading the Defeat is priced by, over the same cards.
                 GuardsDigital.Core.Rules.Consequences.HeroDefeatCostQuery.Worth(
-                    heroId, projection.Definitions, projection.Cards));
+                    heroId, projection.Definitions, projection.Cards),
+                CurrentRoundCards.TurnSlotMarker(
+                    projection, heroId, projection.TurnIndex));
         }
     }
 
@@ -1196,6 +1252,7 @@ namespace GuardsDigital.Presentation.Match
             var slots = new List<HeroTurnSlotViewModel>(RoundResolutionAuthority.TurnsPerRound);
             for (var turnIndex = 1; turnIndex <= RoundResolutionAuthority.TurnsPerRound; turnIndex++)
             {
+                var turnSlotMarker = TurnSlotMarker(projection, heroId, turnIndex);
                 var assignment = projection.TurnSlots
                     .Where(slot => slot.RoundIndex == projection.RoundIndex && slot.TurnIndex == turnIndex)
                     .SelectMany(slot => slot.Assignments)
@@ -1206,15 +1263,28 @@ namespace GuardsDigital.Presentation.Match
                         value.Id.Equals(assignment.CardInstanceId.Value));
                 slots.Add(card == null ||
                     card.State.ResolutionStatus != CardResolutionStatus.Resolved
-                    ? new HeroTurnSlotViewModel(turnIndex, CardColor.None, false)
+                    ? new HeroTurnSlotViewModel(
+                        turnIndex, CardColor.None, false, null, turnSlotMarker)
                     : new HeroTurnSlotViewModel(
                         turnIndex,
                         ColorOf(projection, card),
                         true,
-                        TrayCard(projection, card, TrayCardGroup.Played, turnIndex, false, false)));
+                        TrayCard(projection, card, TrayCardGroup.Played, turnIndex, false, false),
+                        turnSlotMarker));
             }
 
             return Array.AsReadOnly(slots.ToArray());
+        }
+
+        public static TurnSlotMarkerViewModel TurnSlotMarker(
+            IMatchReadModel projection, HeroId heroId, int turnIndex)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            if (turnIndex < 1 || turnIndex > RoundResolutionAuthority.TurnsPerRound)
+                return null;
+            var marker = projection.MarkersHeldBy(heroId).SingleOrDefault(value =>
+                value.TurnSlotIndex == turnIndex);
+            return marker == null ? null : new TurnSlotMarkerViewModel(marker);
         }
 
         /// <summary>

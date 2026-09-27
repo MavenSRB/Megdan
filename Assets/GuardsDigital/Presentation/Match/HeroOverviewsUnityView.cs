@@ -774,6 +774,16 @@ namespace GuardsDigital.Presentation.Match
                     : BuildEmptyMiniCard("gd-turn-slot", slot.AssistiveLabel);
 
                 outline.Add(element);
+                var turnMarker = BuildTurnSlotMarker(slot.TurnSlotMarker, "gd-turn-slot-marker");
+                if (turnMarker != null)
+                {
+                    turnMarker.style.position = Position.Absolute;
+                    // Centred over the slot's top edge, above the card that may stand in it.
+                    turnMarker.style.top = -TurnSlotMarkerHeight / 2f;
+                    turnMarker.style.left = Length.Percent(50f);
+                    turnMarker.style.marginLeft = -TurnSlotMarkerWidth / 2f;
+                    outline.Add(turnMarker);
+                }
                 column.Add(outline);
 
                 // Always drawn, empty when nothing is live, so a slot's height does not change with an
@@ -1282,7 +1292,7 @@ namespace GuardsDigital.Presentation.Match
             var current = hero.CurrentCard;
             if (current == null)
             {
-                return slot;
+                return AddCurrentTurnMarker(slot, hero);
             }
 
             var ink = current.IsFacedown
@@ -1293,7 +1303,9 @@ namespace GuardsDigital.Presentation.Match
             marker.style.flexDirection = FlexDirection.Column;
             marker.style.alignItems = Align.Center;
             marker.style.justifyContent = Justify.Center;
-            marker.style.paddingTop = 2f;
+            // Milestone 8.93f: with a live-turn rune standing in the slot, the card's Initiative
+            // sits below it rather than under it.
+            marker.style.paddingTop = hero.CurrentTurnMarker != null ? TurnSlotMarkerHeight : 2f;
             marker.style.paddingBottom = 2f;
             marker.style.backgroundColor = current.IsFacedown
                 ? MatchHudTheme.CardBack
@@ -1362,7 +1374,61 @@ namespace GuardsDigital.Presentation.Match
             }
 
             slot.Add(marker);
+            return AddCurrentTurnMarker(slot, hero);
+        }
+
+        /// <summary>
+        /// Milestone 8.93f. The rune under the live turn's slot, drawn over the top edge of the
+        /// current-card marker - above its Initiative - and over the empty slot before commitment.
+        /// Added last so the card never paints over it.
+        /// </summary>
+        private static VisualElement AddCurrentTurnMarker(
+            VisualElement slot, HeroOverviewViewModel hero)
+        {
+            var currentTurnMarker = BuildTurnSlotMarker(
+                hero.CurrentTurnMarker, "gd-current-turn-marker");
+            if (currentTurnMarker != null)
+            {
+                currentTurnMarker.style.position = Position.Absolute;
+                // Inside the slot's top edge: the header clips anything drawn above it.
+                currentTurnMarker.style.top = 0f;
+                currentTurnMarker.style.left = (CurrentCardWidth - TurnSlotMarkerWidth) / 2f;
+                slot.Add(currentTurnMarker);
+            }
+
             return slot;
+        }
+
+        // Milestone 8.93f. A printed rune glyph large enough to read at 1280x720: the prepared
+        // tile is 27x22 source pixels, drawn at its own aspect.
+        private const float TurnSlotMarkerWidth = 30f;
+        private const float TurnSlotMarkerHeight = 24f;
+
+        private static VisualElement BuildTurnSlotMarker(
+            TurnSlotMarkerViewModel marker, string elementName)
+        {
+            if (marker == null) return null;
+            var icon = new VisualElement { name = elementName };
+            icon.style.width = TurnSlotMarkerWidth;
+            icon.style.height = TurnSlotMarkerHeight;
+            icon.style.flexShrink = 0f;
+            icon.tooltip = marker.AssistiveLabel;
+            var texture = Resources.Load<Texture2D>(marker.ResourcePath);
+            if (texture != null)
+            {
+                icon.style.backgroundImage = new StyleBackground(texture);
+                icon.style.backgroundSize =
+                    new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
+            }
+            else
+            {
+                var fallback = HudElements.Text(
+                    marker.TurnSlotIndex.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    9f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+                fallback.style.unityTextAlign = TextAnchor.MiddleCenter;
+                icon.Add(fallback);
+            }
+            return icon;
         }
     }
 }

@@ -640,8 +640,8 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             Assert.That(momentWatchers.Count(rule => rule.AfterPush.IsDeclared), Is.EqualTo(1),
                 "Sabina's Big Sodding Gun is still the one after-push declaration in the build.");
-            Assert.That(momentWatchers.Count(rule => rule.BeforeAction.IsDeclared), Is.EqualTo(2),
-                "and Arien's Living Tsunami and Silverarrow's Wild Hunt are still the two before-action " +
+            Assert.That(momentWatchers.Count(rule => rule.BeforeAction.IsDeclared), Is.EqualTo(3),
+                "and Arien's Living Tsunami, Silverarrow's Wild Hunt and (8.93f) Snorri's Rune Mastery are the three before-action " +
                 "declarations - measured rather than transcribed, because this block's own paragraph " +
                 "said \"both existing moment-watching declarations\" and meant the two FAMILIES.");
             Assert.That(

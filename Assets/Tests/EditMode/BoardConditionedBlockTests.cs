@@ -128,11 +128,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             var blocks = DealtBlocks().ToArray();
 
-            Assert.That(blocks.Length, Is.EqualTo(14),
-                "Wasp's three Green Blocks, Tigerclaw's five Blue ones, Bain's three Green ones and " +
-                "Min's three Green ones are the whole of p.14's Block content in this build.");
+            Assert.That(blocks.Length, Is.EqualTo(17),
+                "Wasp's three Green Blocks, Tigerclaw's five Blue ones, Bain's three Green ones, " +
+                "Min's three Green ones and Snorri's three Oaths are the whole of p.14's Block content in this build.");
+            Assert.That(
+                blocks.Count(block =>
+                    block.Action.BlockCondition ==
+                    PrintedBlockCondition.DeclaredByDefenseTextCapability),
+                Is.EqualTo(3),
+                "and the three whose rune-gated category their own Defense text decides are Snorri's " +
+                "Oath of Endurance, Fortitude and Perseverance.");
             foreach (var (cardId, action) in blocks.Where(block =>
-                !BoardConditions.Contains(block.Action.BlockCondition)))
+                !NotAClassificationClause.Contains(block.Action.BlockCondition)))
             {
                 Assert.That(
                     new[]
@@ -314,7 +321,7 @@ namespace GuardsDigital.Tests.EditMode
             // reading it through this case's classification arithmetic would assert that a
             // board-conditioned Block answers a question about the attacking card.
             foreach (var (cardId, action) in DealtBlocks().Where(block =>
-                !BoardConditions.Contains(block.Action.BlockCondition)))
+                !NotAClassificationClause.Contains(block.Action.BlockCondition)))
             {
                 foreach (var attackRange in new[] { AttackRangeKind.Ranged, AttackRangeKind.NonRanged })
                 {
@@ -686,6 +693,13 @@ namespace GuardsDigital.Tests.EditMode
             PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker,
             PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange
         };
+
+        // Milestone 8.93f. Snorri's Oaths print a rune-gated category the Defense text's own
+        // capability decides against the live marker register and turn, so they are neither a
+        // ranged/non-ranged classification nor a board condition read here.
+        private static readonly PrintedBlockCondition[] NotAClassificationClause =
+            BoardConditions.Concat(new[] { PrintedBlockCondition.DeclaredByDefenseTextCapability })
+                .ToArray();
 
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> DealtBlocks()
         {

@@ -167,13 +167,8 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
                 new[] { new HeroOccupancy(redHero, new HexCoordinate(0, 0)),
                     new HeroOccupancy(blueHero, new HexCoordinate(1, 0)) });
-            var baseline = MatchContentCatalogs.ForThisBuild();
-            var components = new ComponentDefinitionCatalog(
-                baseline.Components.RegisteredTokens.Select(baseline.Components.LoadToken),
-                baseline.Components.RegisteredMarkers.Select(baseline.Components.LoadMarker)
-                    .Concat(SnorriComponentContent.Markers()));
-            var catalogs = new MatchContentCatalogs(baseline.Capabilities, components,
-                baseline.TriggeredEffects);
+            // Milestone 8.93f: the trusted catalog registers the four runes since Snorri is dealt.
+            var catalogs = MatchContentCatalogs.ForThisBuild();
             var markers = new MarkerAttachmentRegister();
             for (var ordinal = 1; ordinal <= 4; ordinal++)
             {

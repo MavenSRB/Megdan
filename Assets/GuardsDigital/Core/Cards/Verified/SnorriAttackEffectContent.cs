@@ -219,7 +219,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 childNodeIds: new[] { Id(child) },
                 inputs: new[]
                 {
-                    EffectInputBinding.FromLiteral("rune", EffectValue.Integer(rune))
+                    EffectInputBinding.FromClosedVocabulary("rune", (SnorriRuneGlyph)rune)
                 },
                 outputs: new[]
                 {

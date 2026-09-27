@@ -10,7 +10,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class SnorriAttackFaces
     {
-        public const string ContentRevision = "snorri-8-93b-rev-1";
+        public const string ContentRevision = SnorriCardContent.ContentRevision;
 
         public static CardDefinitionId RuneSigils { get; } =
             new CardDefinitionId("snorri-rune-sigils");

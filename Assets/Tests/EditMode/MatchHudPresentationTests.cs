@@ -4446,7 +4446,8 @@ namespace GuardsDigital.Tests.EditMode
                 // is asserted against cover every hero the build can deal, and her eighteen rows
                 // joined that bijection here.
                 .Concat(IgnatiaCardContent.DealtDefinitions)
-                .Concat(TrinketsCardContent.DealtDefinitions).ToArray();
+                .Concat(TrinketsCardContent.DealtDefinitions)
+                .Concat(SnorriCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

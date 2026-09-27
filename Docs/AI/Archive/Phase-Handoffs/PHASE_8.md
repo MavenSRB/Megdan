@@ -74,6 +74,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.95 | Skill starts now honor the same before-primary-action trigger and held-offer continuation as Attack and Movement. Focus, Discipline and Mastery each offer their free step on the next turn before a Skill; Discipline moves on the board and resumes the held Skill. Focused T2 rules/continuation and player-input checks green. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-895-misas-next-turn-green-movement-offer). | milestone/8.95 |
 
+## Milestone 8.93f Snorri dealing and artwork evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93f | Snorri the Runescribe is dealt into 2v2/3v3 with eighteen faces (Rune Shards boxed), four rune markers, his handlers and Rune Mastery's trigger registered, and a four-star, six-role picker row. Rune glyphs cut from Rune Sigils stand in each tray turn slot (over a resolved card too), above the live turn's card and Initiative before and after commitment, and on the drag pop-up's pieces. Dealing corrections: the Oaths' unprinted Defense 2 removed; Boon/Deep Passage fronts unswapped; Ancestral Boon's second Tier III upgrade; closed rune vocabularies; rune-gated Attack offers (Hammer/Battleaxe no longer offered and then spent with no reachable target); the fourth rune placement waits for DONE locally and over the wire. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893f-deal-snorri-and-present-his-artwork). | milestone/8.93f |
+
 ## Milestone 8.93e Snorri Rune Mastery and set reconciliation evidence
 
 | Milestone | Outcome and definition | Commit |

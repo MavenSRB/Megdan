@@ -151,7 +151,10 @@ namespace GuardsDigital.Tests.EditMode
                     HeroRole.Sniper | HeroRole.Damager | HeroRole.Tokens | HeroRole.Tactician |
                         HeroRole.Pusher),
                 ["hero-trinkets"] = (HeroComplexity.VeryComplex,
-                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens),
+                ["hero-snorri"] = (HeroComplexity.Wizard,
+                    HeroRole.Sniper | HeroRole.Farming | HeroRole.Durable |
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

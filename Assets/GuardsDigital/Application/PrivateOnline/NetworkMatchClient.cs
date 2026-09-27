@@ -242,7 +242,10 @@ namespace GuardsDigital.Application
                 !choice.SelectedCandidates.Contains(pending.Selection.Candidate) ||
                 choice.MaximumSelections < 1 ||
                 choice.SelectedCandidates.Count != choice.MaximumSelections ||
-                choice.ConfirmInvocation == null)
+                choice.ConfirmInvocation == null ||
+                // Milestone 8.93f: a rune-to-slot permutation waits for its own DONE, exactly as
+                // the local presenters' EffectChoiceCompletion does.
+                choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot)
             {
                 pendingEffectAutoConfirm = null;
                 return;

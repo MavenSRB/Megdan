@@ -149,12 +149,18 @@ namespace GuardsDigital.Tests.EditMode
                 atRisk.Select(line => line.Split('|')[1].Trim()).Distinct().OrderBy(id => id).ToArray(),
                 Is.EqualTo(new[]
                 {
+                    "snorri-rune-sigils-before-attack",
+                    "snorri-runic-battleaxe-before-attack",
+                    "snorri-runic-hammer-before-attack",
                     "ursafar-claws-that-catch-attack-text",
                     "whisper-crimson-trail-attack-text"
                 }),
-                "Exactly two composed definitions in the whole corpus nest an unrelated optional " +
-                "step inside a mandatory Conditional ahead of their own typed target binding: " +
-                "Whisper's Crimson Trail and Ursafar's Claws That Catch. A different result here " +
+                "Five composed definitions carry a mandatory Conditional the binding does not stand " +
+                "inside: Whisper's Crimson Trail and Ursafar's Claws That Catch, and (8.93f) " +
+                "Snorri's Runic Hammer and Runic Battleaxe, whose rune-gated optional Move stands " +
+                "ahead of the binding and whose offer is proved by SnorriAttackTurnTests." +
+                "TheAttackOffer_IsJudgedThroughItsRuneGatedStep, plus Rune Sigils, whose two coin " +
+                "gates stand AFTER its binding and so cannot hide it. A different result here " +
                 "means either a new card shares the shape (read which) or one of these two changed " +
                 "(re-derive the regression case in EffectOptionFeasibilityTests.cs against the new " +
                 "shape).");
@@ -223,6 +229,7 @@ namespace GuardsDigital.Tests.EditMode
             // predicate can take reaches one, which is what `FindUnresolvedGates` asks.
             foreach (var card in IgnatiaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ignatia", d);
             foreach (var card in TrinketsCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("trinkets", d);
+            foreach (var card in SnorriCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("snorri", d);
         }
 
         /// <summary>

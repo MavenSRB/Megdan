@@ -5,7 +5,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>Snorri's nineteenth front, p.20's boxed Handicap.</summary>
     public static class SnorriHandicapContent
     {
-        public const string ContentRevision = "snorri-8-93e-rev-1";
+        public const string ContentRevision = SnorriCardContent.ContentRevision;
         public static CardDefinitionId RuneShards { get; } =
             new CardDefinitionId("snorri-rune-shards");
 
