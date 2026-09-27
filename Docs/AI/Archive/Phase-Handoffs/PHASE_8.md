@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.110 setup choice boxes evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.110 | The host menu's setup row groups 2V2/3V3 and SHORT/LONG GAME in two bordered boxes side by side. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-8110-box-the-setup-choices-in-two-groups). | milestone/8.110 |
+
 ## Milestone 8.109 host menu layout evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -68,9 +68,21 @@ namespace GuardsDigital.Tests.EditMode
                 Is.GreaterThan(order.IndexOf(PrivateLobbyUnityView.HostKeyFieldName)));
             var row = Named(view, PrivateLobbyUnityView.FormatChoicesName);
             Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
-            Assert.That(row.childCount * (PrivateLobbyUnityView.FormatChoiceWidth + 10f),
-                Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
-                "Four setup choices fit one row inside the menu panel's padding and border.");
+            // Milestone 8.110: two little boxes, team size and game length, side by side.
+            Assert.That(row.Children().Select(child => child.name), Is.EqualTo(new[]
+            {
+                PrivateLobbyUnityView.FormatSizeGroupName, PrivateLobbyUnityView.FormatLengthGroupName
+            }));
+            Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).Children()
+                .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "2V2", "3V3" }));
+            Assert.That(Named(view, PrivateLobbyUnityView.FormatLengthGroupName).Children()
+                .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "SHORT GAME", "LONG GAME" }));
+            Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).style.borderTopWidth.value,
+                Is.GreaterThan(0f), "Each group draws its own box.");
+            // Each box: two buttons with 3 px side margins, 4 px padding, 1 px border, 5 px outer margins.
+            var boxWidth = 2f * (PrivateLobbyUnityView.FormatChoiceWidth + 6f) + 8f + 2f + 10f;
+            Assert.That(2f * boxWidth, Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
+                "Both boxes fit one row inside the menu panel's padding and border.");
 
             var chosen = ShownButtons(view)
                 .Where(button => button.ClassListContains("gd-lobby-format-chosen"))

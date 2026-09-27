@@ -578,6 +578,10 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateLobbyEntryPage.Host:
                     mode.text = ModeLine(model.MatchFormatLabel);
                     mode.style.display = mode.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+                    // Milestone 8.110, the user: "Make a little box around 2v2 and 3v3 and
+                    // short/long games" - two boxes side by side, team size and game length.
+                    var sizeGroup = BuildFormatGroup(FormatSizeGroupName);
+                    var lengthGroup = BuildFormatGroup(FormatLengthGroupName);
                     foreach (var control in model.Controls)
                     {
                         if (IsFormatChoice(control))
@@ -594,7 +598,17 @@ namespace GuardsDigital.Presentation.Interaction
                                 button.EnableInClassList("gd-lobby-format-chosen", true);
                             }
 
-                            formatChoices.Add(button);
+                            button.style.marginLeft = 3f;
+                            button.style.marginRight = 3f;
+                            (IsTeamSizeChoice(control) ? sizeGroup : lengthGroup).Add(button);
+                        }
+                    }
+
+                    foreach (var group in new[] { sizeGroup, lengthGroup })
+                    {
+                        if (group.childCount > 0)
+                        {
+                            formatChoices.Add(group);
                         }
                     }
 
@@ -617,7 +631,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             // Equal margins on both sides, so a centred row is centred exactly.
-            foreach (var button in controls.Children().Concat(formatChoices.Children()))
+            foreach (var button in controls.Children())
             {
                 button.style.marginLeft = 5f;
                 button.style.marginRight = 5f;
@@ -633,7 +647,27 @@ namespace GuardsDigital.Presentation.Interaction
         public const float MenuPanelWidth = 720f;
 
         /// <summary>Milestone 8.109. A setup choice's width, so all four share one row.</summary>
-        public const float FormatChoiceWidth = 150f;
+        public const float FormatChoiceWidth = 140f;
+
+        /// <summary>Milestone 8.110. The two little boxes the setup choices sit in.</summary>
+        public const string FormatSizeGroupName = "gd-lobby-format-size";
+
+        public const string FormatLengthGroupName = "gd-lobby-format-length";
+
+        private static bool IsTeamSizeChoice(PrivateLobbyControl control) =>
+            control == PrivateLobbyControl.ChooseTwoVsTwo ||
+            control == PrivateLobbyControl.ChooseThreeVsThree;
+
+        private static VisualElement BuildFormatGroup(string name)
+        {
+            var group = new VisualElement { name = name };
+            group.style.flexDirection = FlexDirection.Row;
+            group.style.marginLeft = 5f;
+            group.style.marginRight = 5f;
+            HudElements.Padding(group, 4f);
+            HudElements.Border(group, PanelEdge, 1f, MatchHudTheme.ButtonCornerRadius);
+            return group;
+        }
 
         /// <summary>
         /// Milestone 8.108, the user on 8.107's landing: "Why is that box for host/join that big.

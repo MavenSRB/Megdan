@@ -30,6 +30,14 @@ Completed 2026-09-27. The name rides the seat claim rather than the Hello, becau
 
 Historical evidence: [8.108 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8108-lobby-player-names-evidence).
 
+### [x] 8.110 Box the setup choices in two groups
+
+Authorized 2026-09-27: "Make a little box around 2v2 and 3v3 and short/long games", with the user choosing two boxes side by side. Outcome: on the host menu's setup row, 2V2/3V3 sit in one bordered box and SHORT GAME/LONG GAME in another; the chosen halves keep their gold outline. Layout only. Acceptance: an Edit Mode check of the two groups, their buttons and their fit, the lobby Edit and Play Mode fixtures green, and a fresh host-menu capture. T2.
+
+Completed 2026-09-27. Each choice is 140 wide so both boxes fit the 720-wide menu panel.
+
+Historical evidence: [8.110 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8110-setup-choice-boxes-evidence).
+
 ### [x] 8.109 Host menu: fields first, setup choices on one row
 
 Authorized 2026-09-27 from the user's screenshot of 8.108's host menu: "this is ugly make the buttons below the text fields, all in one row, then in 2nd row host and cancel". Outcome: the host menu reads NAME, PORT, SESSION ID, then the mode line and the four setup choices (2V2, 3V3, SHORT GAME, LONG GAME) on a single non-wrapping row, then HOST and CANCEL. The join menu, landing and every behavior are unchanged. Acceptance: an Edit Mode check of the host menu's order and one-row fit, the lobby Edit and Play Mode fixtures green, and a fresh capture of the host menu. T2.
