@@ -125,7 +125,24 @@ namespace GuardsDigital.Application
         /// the control is not offered once the match has begun and the host refuses it by name if a
         /// stale surface presses it anyway.</para>
         /// </remarks>
-        HostUndo = 15
+        HostUndo = 15,
+
+        /// <summary>
+        /// Milestone 8.107. Host only, after the match has started, when the host's own client
+        /// never took a seat: rewind the match by one accepted command, exactly as a playing host's
+        /// <c>DIRECTOR</c> drawer does, and republish every seat's projection.
+        /// </summary>
+        /// <remarks>
+        /// A seated host already has this in its match HUD's drawer. A host that is not playing has
+        /// no match HUD to hold that drawer, so these two controls are the same tool placed on the
+        /// only screen it has.
+        /// </remarks>
+        DirectorUndo = 16,
+
+        /// <summary>
+        /// Milestone 8.107. The non-playing host's counterpart of the drawer's RESTART.
+        /// </summary>
+        DirectorRestart = 17
     }
 
     /// <summary>
@@ -450,6 +467,8 @@ namespace GuardsDigital.Application
                 case PrivateLobbyControl.ChooseLongGame: return "LONG GAME";
                 case PrivateLobbyControl.ClaimSeat: return "TAKE THIS SEAT";
                 case PrivateLobbyControl.HostUndo: return "UNDO";
+                case PrivateLobbyControl.DirectorUndo: return "DIRECTOR UNDO";
+                case PrivateLobbyControl.DirectorRestart: return "DIRECTOR RESTART";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(control), control, "Every offered control must have words on it.");
@@ -502,8 +521,10 @@ namespace GuardsDigital.Application
             IReadOnlyList<PrivateLobbyControl> controls,
             bool hasMatchStarted,
             PrivateLobbySelection selection = null,
-            string matchFormatLabel = null)
+            string matchFormatLabel = null,
+            bool isHostConsole = false)
         {
+            IsHostConsole = isHostConsole;
             Role = role;
             IsShown = isShown;
             StatusLabel = PrivateLobbyLabels.Bound(statusLabel);
@@ -552,6 +573,13 @@ namespace GuardsDigital.Application
         public IReadOnlyList<PrivateLobbyControl> Controls { get; }
 
         public bool HasMatchStarted { get; }
+
+        /// <summary>
+        /// Milestone 8.107. The match has started and this surface is a host whose own client holds
+        /// no seat: the lobby panel is that host's whole screen for the match, not an overlay on a
+        /// match HUD, so it stays drawn as a full screen.
+        /// </summary>
+        public bool IsHostConsole { get; }
 
         public bool Offers(PrivateLobbyControl control)
         {
@@ -778,6 +806,15 @@ namespace GuardsDigital.Application
             if (host == null) throw new ArgumentNullException(nameof(host));
             if (client == null) throw new ArgumentNullException(nameof(client));
 
+            // Milestone 8.107. A hosting client that never took a seat is never sent MatchStarted
+            // (the host announces it to seated connections only), so its own reading would keep
+            // showing a lobby for a match other people are already playing. The host's own fact
+            // decides instead, and the screen becomes the non-playing host's console.
+            if (host.HasMatchStarted && client.State == PrivateSessionClientState.Admitted)
+            {
+                return ForHostConsole(host, hostFeedback, testDriverSeats);
+            }
+
             var owner = ForClient(client);
             var controls = new List<PrivateLobbyControl>(
                 owner.Controls.Where(value => value != PrivateLobbyControl.Leave));
@@ -814,6 +851,33 @@ namespace GuardsDigital.Application
                 owner.HasMatchStarted,
                 owner.Selection,
                 host.Identity.MatchFormatId);
+        }
+
+        /// <summary>
+        /// Milestone 8.107. The screen of a host that is running a started match without playing in
+        /// it: the seats, and the Director's undo and restart beside LEAVE.
+        /// </summary>
+        private static PrivateLobbyModel ForHostConsole(
+            PrivateSessionHost host, string hostFeedback, ISet<SeatId> testDriverSeats)
+        {
+            var plain = ForHost(host, hostFeedback, testDriverSeats);
+            return new PrivateLobbyModel(
+                PrivateLobbyRole.Host,
+                true,
+                "HOSTING - MATCH UNDER WAY - YOU ARE NOT PLAYING",
+                plain.FeedbackLabel,
+                plain.SessionLabel,
+                plain.Seats,
+                new[]
+                {
+                    PrivateLobbyControl.DirectorUndo,
+                    PrivateLobbyControl.DirectorRestart,
+                    PrivateLobbyControl.Leave
+                },
+                true,
+                PrivateLobbySelection.NotRunning,
+                host.Identity.MatchFormatId,
+                isHostConsole: true);
         }
 
         /// <summary>

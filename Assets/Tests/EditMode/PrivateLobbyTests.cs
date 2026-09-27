@@ -1055,7 +1055,9 @@ namespace GuardsDigital.Tests.EditMode
         public void NoLobbySource_ReachesMatchAuthority()
         {
             var sources = LobbySources();
-            Assert.That(sources.Count, Is.EqualTo(3),
+            // Milestone 8.107 added PrivateLobbyEntryText.cs (field cleaning, the session ID, the
+            // remembered fields and the host's invitation lines), and it is scanned like the rest.
+            Assert.That(sources.Count, Is.EqualTo(4),
                 "A scan that finds no lobby source is a broken rule rather than a pass; it found " +
                 string.Join(", ", sources.Keys) + ".");
 

@@ -467,8 +467,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
-            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
-            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.EntryName)), Is.True);
+            // Milestone 8.107: leaving lands on the first screen, which is HOST and JOIN alone.
+            Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.EntryName)), Is.False);
+
+            yield return OpenJoinMenu(driver);
             foreach (var field in new[]
                      {
                          PrivateLobbyUnityView.AddressFieldName,
@@ -477,8 +480,37 @@ namespace GuardsDigital.Tests.PlayMode
                      })
             {
                 Assert.That(UiPlayer.IsShown(Element(driver, field)), Is.True,
-                    "The whole invitation - address, port and key - is typed into this form.");
+                    "The whole invitation - host IP, port and session ID - is typed into the join menu.");
             }
+
+            Assert.That(Field(driver, PrivateLobbyUnityView.AddressFieldName).label, Is.EqualTo("HOST IP"));
+            Assert.That(Field(driver, PrivateLobbyUnityView.KeyFieldName).label, Is.EqualTo("SESSION ID"));
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { PrivateLobbyUnityView.CancelLabel, "JOIN" }));
+
+            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "81.2.69.160";
+            UiPlayer.Click(Control(driver, PrivateLobbyUnityView.CancelLabel));
+            yield return null;
+            yield return null;
+            Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls), "CANCEL goes back to the first screen.");
+
+            yield return OpenHostMenu(driver);
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[]
+            {
+                "2V2", "3V3", PrivateLobbyUnityView.CancelLabel, "HOST", "LONG GAME", "SHORT GAME"
+            }));
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HostPortFieldName)), Is.True);
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HostKeyFieldName)), Is.True);
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.AddressFieldName)), Is.False,
+                "The host never types its own address.");
+            Assert.That(Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value, Is.Not.Empty,
+                "A fresh session ID is waiting in the host menu.");
+            UiPlayer.Click(Control(driver, PrivateLobbyUnityView.CancelLabel));
+            yield return null;
+            yield return null;
+
+            yield return OpenJoinMenu(driver);
+            Assert.That(Field(driver, PrivateLobbyUnityView.AddressFieldName).value, Is.EqualTo("81.2.69.160"),
+                "CANCEL kept what was typed.");
 
             Assert.That(Named(driver, PrivateLobbyUnityView.SeatPickName), Is.Empty,
                 "Milestone 8.35z54 REMOVED the pre-join seat picker, and this is the assertion that " +
@@ -505,6 +537,7 @@ namespace GuardsDigital.Tests.PlayMode
             var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
             probe.Stop();
 
+            yield return OpenJoinMenu(driver);
             Field(driver, PrivateLobbyUnityView.PortFieldName).value =
                 port.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // Milestone 8.35z54: a join names NO seat. There is no pre-join picker to press any
@@ -530,7 +563,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "A failed join says so; the entry form is still standing behind it.");
             Assert.That(said.Contains("127.0.0.1"), Is.False,
                 "Milestone 8.31's rule: a player-facing diagnostic never names an address.");
-            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { PrivateLobbyUnityView.CancelLabel, "JOIN" }),
+                "A failed join stays in the join menu, so the player can correct and retry.");
         }
 
         [UnityTest]
@@ -549,6 +583,7 @@ namespace GuardsDigital.Tests.PlayMode
                 for (var attempt = 0; attempt < 2; attempt++)
                 {
                     yield return null;
+                    yield return OpenJoinMenu(driver);
                     UiPlayer.Click(Control(driver, "JOIN"));
                     yield return null;
                     yield return null;
@@ -557,7 +592,7 @@ namespace GuardsDigital.Tests.PlayMode
                     // when joining has not yet completed. Seated Leave is covered separately.
                     UiPlayer.Click(Control(driver, "LEAVE"));
                     yield return null;
-                    CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+                    Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
                     Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
                 }
             }
@@ -583,11 +618,12 @@ namespace GuardsDigital.Tests.PlayMode
             probe.Stop();
 
             var joinAddress = Field(driver, PrivateLobbyUnityView.AddressFieldName);
-            Assert.That(joinAddress.label, Is.EqualTo("JOIN ADDRESS"));
+            Assert.That(joinAddress.label, Is.EqualTo("HOST IP"));
             joinAddress.value = "this-is-not-a-numeric-address";
-            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+            yield return OpenHostMenu(driver);
+            Field(driver, PrivateLobbyUnityView.HostPortFieldName).value =
                 port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
             yield return null;
 
             UiPlayer.Click(Control(driver, "HOST"));
@@ -623,10 +659,12 @@ namespace GuardsDigital.Tests.PlayMode
             var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
             probe.Stop();
 
-            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
-            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
-                port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            yield return OpenHostMenu(driver);
+            // Milestone 8.107: the port arrives the way a chat window hands it over - padded with
+            // an ordinary and a non-breaking space - and the host still binds it.
+            Field(driver, PrivateLobbyUnityView.HostPortFieldName).value =
+                " " + port.ToString(System.Globalization.CultureInfo.InvariantCulture) + " ";
+            Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
             yield return null;
 
             UiPlayer.Click(Control(driver, "HOST"));
@@ -643,6 +681,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(ControlLabels(driver), Does.Contain("TAKE THIS SEAT"));
             Assert.That(ControlLabels(driver), Does.Not.Contain("FILL WITH BOTS"),
                 "The host must take its own seat before bots may fill the rest.");
+            Assert.That(Text(driver, PrivateLobbyUnityView.InvitationSessionName), Is.EqualTo("SESSION ID: NONE"));
+            Assert.That(Text(driver, PrivateLobbyUnityView.InvitationAddressName),
+                Does.StartWith("THIS COMPUTER ONLY (127.0.0.1)   PORT " +
+                    port.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                "The host's screen says who can reach it; a cleared session ID means this computer only.");
 
             var capture = typeof(PrivateLobbyDriver)
                 .GetField("evidence", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
@@ -666,7 +709,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
             Assert.That(System.IO.File.ReadAllText(capturePath), Does.Contain("GD_EVIDENCE_ABORT"),
                 "Leaving an unfinished lobby must not manufacture a completed-match capture.");
-            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+            Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
+            yield return OpenHostMenu(driver);
+            Assert.That(Field(driver, PrivateLobbyUnityView.HostPortFieldName).value.Trim(' ', ' '),
+                Is.EqualTo(port.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                "The host menu kept its port across the session.");
+            Assert.That(Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value, Is.Not.Empty,
+                "Leaving a hosted session puts a fresh session ID in the host menu.");
+            Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
             UiPlayer.Click(Control(driver, "HOST"));
             yield return null;
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host));
@@ -674,7 +724,154 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             UiPlayer.Click(Control(driver, "LEAVE"));
             yield return null;
-            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+            Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
+        }
+
+        /// <summary>
+        /// Milestone 8.107. A host that never takes a seat runs the match from its lobby screen.
+        /// Four socket players fill a 2v2, and once the match starts the host's screen becomes its
+        /// console. DIRECTOR UNDO there rewinds the authority and reaches every seat.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ANonPlayingHost_UndoesFromItsConsole_AndEverySeatIsUpdated()
+        {
+            var remotes = new List<SocketJoiner>();
+            try
+            {
+                yield return LoadTheLobby();
+                var driver = Driver();
+                yield return OpenHostMenu(driver);
+                UiPlayer.Click(Control(driver, "2V2"));
+                yield return null;
+                yield return null;
+
+                var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+                probe.Start();
+                var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+                probe.Stop();
+                Field(driver, PrivateLobbyUnityView.HostPortFieldName).value = port.ToString();
+                Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
+                yield return null;
+                UiPlayer.Click(Control(driver, "HOST"));
+                var hostDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < hostDeadline &&
+                    !driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat))
+                    yield return null;
+                Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host));
+
+                var seatCount = driver.Presenter.Model.Seats.Count;
+                Assert.That(seatCount, Is.EqualTo(4));
+                for (var index = 0; index < seatCount; index++)
+                {
+                    remotes.Add(new SocketJoiner(
+                        Runtime().SessionIdentity, System.Net.IPAddress.Loopback, port, string.Empty));
+                }
+
+                var admitDeadline = Time.realtimeSinceStartup + 10f;
+                while (Time.realtimeSinceStartup < admitDeadline &&
+                    remotes.Any(remote => remote.Machine.State != PrivateSessionClientState.Admitted))
+                {
+                    foreach (var remote in remotes) remote.Pump();
+                    yield return null;
+                }
+
+                var claimed = new HashSet<SeatId>();
+                foreach (var remote in remotes)
+                {
+                    remote.Pump();
+                    var seat = remote.Machine.Roster.First(row =>
+                        row.Occupancy == SeatOccupancyState.Open && !claimed.Contains(row.Seat)).Seat;
+                    claimed.Add(seat);
+                    Assert.That(remote.Machine.TryClaimSeat(seat), Is.True);
+                }
+
+                var seatDeadline = Time.realtimeSinceStartup + 10f;
+                while (Time.realtimeSinceStartup < seatDeadline &&
+                    remotes.Any(remote => remote.Machine.State != PrivateSessionClientState.Seated))
+                {
+                    foreach (var remote in remotes) remote.Pump();
+                    yield return null;
+                }
+
+                foreach (var remote in remotes)
+                {
+                    Assert.That(remote.Machine.State, Is.EqualTo(PrivateSessionClientState.Seated));
+                    Assert.That(remote.Machine.TrySetReadiness(true), Is.True);
+                }
+
+                var startDeadline = Time.realtimeSinceStartup + 20f;
+                while (Time.realtimeSinceStartup < startDeadline && !driver.Presenter.Model.IsHostConsole)
+                {
+                    foreach (var remote in remotes)
+                    {
+                        remote.Pump();
+                        var lobby = PrivateLobbyModel.ForClient(remote.Machine);
+                        if (lobby.Selection.IsOwnPick)
+                        {
+                            Assert.That(remote.Machine.TryChooseHero(
+                                lobby.Selection.Heroes.First(hero => hero.IsAvailable).HeroIdValue), Is.True);
+                        }
+                    }
+
+                    yield return null;
+                }
+
+                Assert.That(driver.Presenter.Model.IsHostConsole, Is.True,
+                    "The match started without the host in a seat, so its screen is the host console.");
+                yield return null;
+                yield return null;
+                Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "DIRECTOR RESTART", "DIRECTOR UNDO", "LEAVE" }));
+                Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.InvitationSessionName)), Is.True,
+                    "The host console still shows what guests need to rejoin.");
+
+                var random = new GuardsDigital.Application.Bots.DeterministicBotRandom(107);
+                var matches = remotes.Select(remote => new NetworkMatchClient(
+                    remote.Machine, Runtime().Projection, Runtime().ContentCatalogs)).ToArray();
+                var playDeadline = Time.realtimeSinceStartup + 20f;
+                while (Time.realtimeSinceStartup < playDeadline &&
+                    Runtime().Host.Projection.AcceptedCommands.Count < 2)
+                {
+                    for (var index = 0; index < remotes.Count; index++)
+                    {
+                        remotes[index].Pump();
+                        PlayNetworkHuman(remotes[index].Machine, matches[index], random);
+                    }
+
+                    yield return null;
+                }
+
+                var acceptedBefore = Runtime().Host.Projection.AcceptedCommands.Count;
+                Assert.That(acceptedBefore, Is.GreaterThanOrEqualTo(2), "The players have made moves to take back.");
+
+                UiPlayer.Click(Control(driver, "DIRECTOR UNDO"));
+                yield return null;
+                Assert.That(Runtime().Host.Projection.AcceptedCommands.Count, Is.EqualTo(acceptedBefore - 1),
+                    "DIRECTOR UNDO takes back exactly one accepted command on the authority.");
+                Assert.That(Text(driver, PrivateLobbyUnityView.FeedbackName), Does.StartWith("Director undo done"));
+
+                var rewoundVersion = Runtime().Host.Projection.Version;
+                var syncDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < syncDeadline &&
+                    remotes.Any(remote => remote.Machine.LatestProjection.Version != rewoundVersion))
+                {
+                    foreach (var remote in remotes) remote.Pump();
+                    yield return null;
+                }
+
+                foreach (var remote in remotes)
+                {
+                    Assert.That(remote.Machine.LatestProjection.Version, Is.EqualTo(rewoundVersion),
+                        "Every seat was republished the rewound match.");
+                }
+
+                UiPlayer.Click(Control(driver, "LEAVE"));
+                yield return null;
+                Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
+            }
+            finally
+            {
+                foreach (var remote in remotes) remote.Dispose();
+            }
         }
 
         /// <summary>
@@ -692,6 +889,7 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 yield return LoadTheLobby();
                 var driver = Driver();
+                yield return OpenHostMenu(driver);
                 UiPlayer.Click(Control(driver, "2V2"));
                 yield return null;
                 yield return null;
@@ -701,9 +899,8 @@ namespace GuardsDigital.Tests.PlayMode
                 var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
                 probe.Stop();
                 const string Key = "g1-playing-host";
-                Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
-                Field(driver, PrivateLobbyUnityView.PortFieldName).value = port.ToString();
-                Field(driver, PrivateLobbyUnityView.KeyFieldName).value = Key;
+                Field(driver, PrivateLobbyUnityView.HostPortFieldName).value = port.ToString();
+                Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = Key;
                 yield return null;
                 UiPlayer.Click(Control(driver, "HOST"));
 
@@ -851,6 +1048,7 @@ namespace GuardsDigital.Tests.PlayMode
                 {
                     yield return LoadTheLobby();
                     var driver = Driver();
+                    yield return OpenHostMenu(driver);
                     UiPlayer.Click(Control(driver, format));
                     yield return null;
                     yield return null;
@@ -858,8 +1056,10 @@ namespace GuardsDigital.Tests.PlayMode
                     probe.Start();
                     var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
                     probe.Stop();
-                    Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
-                    Field(driver, PrivateLobbyUnityView.PortFieldName).value = port.ToString();
+                    Field(driver, PrivateLobbyUnityView.HostPortFieldName).value = port.ToString();
+                    // Before 8.107 the host menu's session ID started empty; this journey hosts the
+                    // unkeyed local session it always has.
+                    Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
                     yield return null;
                     UiPlayer.Click(Control(driver, "HOST"));
                     var admittedDeadline = Time.realtimeSinceStartup + 5f;
@@ -2039,6 +2239,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             var before = Root().ComposedPlan.Format.Id;
             var seatsBefore = Runtime().Host.Seats.Seats.Count;
+            // Milestone 8.107: the setup is chosen in the host menu.
+            yield return OpenHostMenu(driver);
             foreach (var named in new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME" })
             {
                 Assert.That(ControlLabels(driver), Contains.Item(named),
@@ -2053,6 +2255,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(Root().ComposedPlan.Format.Id, Is.Not.EqualTo(before),
                 "Pressing a named format recomposes onto that printed setup.");
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Host),
+                "Choosing a setup keeps the host menu open.");
+            Assert.That(Text(driver, PrivateLobbyUnityView.ModeName), Does.StartWith("MODE: 2V2"));
             Assert.That(Root().ComposedPlan.Format.PlayerCount, Is.EqualTo(4),
                 "2V2 IS FOUR SEATS, and this is the assertion the cycling button could not make: " +
                 "a named control lands on the format it names, in one press, from any starting " +
@@ -2094,10 +2299,10 @@ namespace GuardsDigital.Tests.PlayMode
             var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
             probe.Stop();
 
-            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
-            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+            yield return OpenHostMenu(driver);
+            Field(driver, PrivateLobbyUnityView.HostPortFieldName).value =
                 port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            Field(driver, PrivateLobbyUnityView.HostKeyFieldName).value = string.Empty;
             yield return null;
 
             var composedBeforeHosting = Root().ComposedPlan.Format.Id;
@@ -2562,9 +2767,40 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             yield return null;
+            // Milestone 8.107: every journey starts from an empty remembered-field store and never
+            // asks the real router for this network's internet address.
+            PrivateLobbyDriver.FieldMemoryOverride = new InMemoryPrivateLobbyFieldMemory();
+            PrivateLobbyDriver.SuppressRouterQuestion = true;
             var host = new GameObject("gd-private-lobby");
             host.AddComponent<PrivateLobbyDriver>().Configure(Root());
             yield return null;
+            yield return null;
+        }
+
+        /// <summary>Milestone 8.107. The first screen's two buttons, sorted as ControlLabels sorts.</summary>
+        private static readonly string[] LandingControls = { "HOST", "JOIN" };
+
+        /// <summary>
+        /// Milestone 8.107. Presses the first screen's HOST, which opens the host menu, and waits
+        /// for the menu's controls to be laid out so the next click can land on one.
+        /// </summary>
+        private static IEnumerator OpenHostMenu(PrivateLobbyDriver driver) =>
+            OpenMenu(driver, "HOST", PrivateLobbyEntryPage.Host);
+
+        /// <summary>Milestone 8.107. Presses the first screen's JOIN, which opens the join menu.</summary>
+        private static IEnumerator OpenJoinMenu(PrivateLobbyDriver driver) =>
+            OpenMenu(driver, "JOIN", PrivateLobbyEntryPage.Join);
+
+        private static IEnumerator OpenMenu(
+            PrivateLobbyDriver driver, string label, PrivateLobbyEntryPage page)
+        {
+            Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing),
+                "A menu opens from the first screen.");
+            // The landing's buttons are rebuilt on every render; give a fresh one a layout pass.
+            yield return null;
+            UiPlayer.Click(Control(driver, label));
+            yield return null;
+            Assert.That(driver.View.Page, Is.EqualTo(page));
             yield return null;
         }
     }

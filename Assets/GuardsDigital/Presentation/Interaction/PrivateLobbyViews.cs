@@ -13,6 +13,19 @@ using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Interaction
 {
+    /// <summary>Milestone 8.107. The three pages of the lobby's entry.</summary>
+    public enum PrivateLobbyEntryPage
+    {
+        /// <summary>The first screen: HOST and JOIN, nothing else.</summary>
+        Landing = 0,
+
+        /// <summary>The host menu: setup, port, session ID, HOST and CANCEL.</summary>
+        Host = 1,
+
+        /// <summary>The join menu: host IP, port, session ID, JOIN and CANCEL.</summary>
+        Join = 2
+    }
+
     /// <summary>
     /// Milestone 8.35a. The primitive private lobby drawn in UI Toolkit: a seat table, one line of
     /// status, one line of feedback, and exactly the controls the model offers.
@@ -48,6 +61,20 @@ namespace GuardsDigital.Presentation.Interaction
         public const string ControlsName = "gd-lobby-controls";
         public const string ControlName = "gd-lobby-control";
         public const string BuildStampName = "gd-lobby-build-stamp";
+
+        /// <summary>Milestone 8.107. The entry's two menus and what they hold.</summary>
+        public const string TitleName = "gd-lobby-title";
+        public const string HostMenuName = "gd-lobby-host-menu";
+        public const string JoinMenuName = "gd-lobby-join-menu";
+        public const string ModeName = "gd-lobby-mode";
+        public const string FormatChoicesName = "gd-lobby-format-choices";
+        public const string HostPortFieldName = "gd-lobby-host-port";
+        public const string HostKeyFieldName = "gd-lobby-host-key";
+        public const string InvitationSessionName = "gd-lobby-invitation-session";
+        public const string InvitationAddressName = "gd-lobby-invitation-address";
+
+        /// <summary>Milestone 8.107. The label of the button that closes a menu.</summary>
+        public const string CancelLabel = "CANCEL";
 
         /// <summary>Milestone 8.35z37. Rulebook p.22's selection screen.</summary>
         public const string SelectionStatusName = "gd-lobby-selection-status";
@@ -86,6 +113,19 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly TextField address;
         private readonly TextField port;
         private readonly TextField key;
+        private readonly TextField hostPort;
+        private readonly TextField hostKey;
+        private readonly Label title;
+        private readonly Label mode;
+        private readonly VisualElement hostMenu;
+        private readonly VisualElement joinMenu;
+        private readonly VisualElement formatChoices;
+        private readonly Label invitationSession;
+        private readonly Label invitationAddress;
+        private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
+        private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
+        private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
+        private PrivateLobbyModel renderedModel;
         private readonly Label selectionStatus;
         private readonly VisualElement heroFilters;
         private readonly VisualElement starFilters;
@@ -160,28 +200,64 @@ namespace GuardsDigital.Presentation.Interaction
             frame.style.flexDirection = FlexDirection.Column;
             Root.Add(frame);
 
-            frame.Add(Caption("PRIVATE LOBBY", 30, "gd-lobby-title"));
+            title = Caption("PRIVATE LOBBY", 30, TitleName);
+            frame.Add(title);
             status = Caption(string.Empty, 22, StatusName);
             frame.Add(status);
             session = Caption(string.Empty, 16, SessionName);
             frame.Add(session);
+
+            // Milestone 8.107. What the host reads out to the people it invites. Drawn only on the
+            // host's own screen, from values the host's driver hands this view, never from the model.
+            invitationSession = Caption(string.Empty, 22, InvitationSessionName);
+            invitationSession.selection.isSelectable = true;
+            frame.Add(invitationSession);
+            invitationAddress = Caption(string.Empty, 22, InvitationAddressName);
+            invitationAddress.selection.isSelectable = true;
+            invitationAddress.style.whiteSpace = WhiteSpace.Normal;
+            frame.Add(invitationAddress);
+
             feedback = Caption(string.Empty, 18, FeedbackName);
             feedback.style.whiteSpace = WhiteSpace.Normal;
             frame.Add(feedback);
 
+            // Milestone 8.107. The entry is three pages: the landing (HOST and JOIN only), the host
+            // menu and the join menu. Which page shows is this view's own state. Nothing on it is a
+            // session fact, and the model it draws is the same entry model on all three.
+            var defaultPort = PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture);
             entry = new VisualElement { name = EntryName };
             entry.style.flexDirection = FlexDirection.Column;
             entry.style.marginTop = 8f;
-            address = Field("JOIN ADDRESS", DefaultAddress, AddressFieldName);
-            port = Field(
-                "PORT",
-                PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture),
-                PortFieldName);
-            key = Field("SESSION KEY", string.Empty, KeyFieldName);
-            entry.Add(address);
-            entry.Add(port);
-            entry.Add(key);
+
+            hostMenu = new VisualElement { name = HostMenuName };
+            hostMenu.style.flexDirection = FlexDirection.Column;
+            mode = Caption(string.Empty, 20, ModeName);
+            hostMenu.Add(mode);
+            formatChoices = new VisualElement { name = FormatChoicesName };
+            formatChoices.style.flexDirection = FlexDirection.Row;
+            formatChoices.style.flexWrap = Wrap.Wrap;
+            formatChoices.style.marginBottom = 8f;
+            hostMenu.Add(formatChoices);
+            hostPort = Field("PORT", defaultPort, HostPortFieldName);
+            hostKey = Field("SESSION ID", PrivateSessionIdSource.NewSessionId(), HostKeyFieldName);
+            hostMenu.Add(hostPort);
+            hostMenu.Add(hostKey);
+            entry.Add(hostMenu);
+
+            joinMenu = new VisualElement { name = JoinMenuName };
+            joinMenu.style.flexDirection = FlexDirection.Column;
+            address = Field("HOST IP", DefaultAddress, AddressFieldName);
+            port = Field("PORT", defaultPort, PortFieldName);
+            key = Field("SESSION ID", string.Empty, KeyFieldName);
+            joinMenu.Add(address);
+            joinMenu.Add(port);
+            joinMenu.Add(key);
+            entry.Add(joinMenu);
+
+            // Kept for PickSeat's callers; since 8.35z54 a seat is taken from the roster after
+            // joining, so the entry no longer shows a picked seat.
             pickedSeat = Caption("SEAT: NONE PICKED", 18, PickedSeatName);
+            pickedSeat.style.display = DisplayStyle.None;
             entry.Add(pickedSeat);
             frame.Add(entry);
 
@@ -302,9 +378,72 @@ namespace GuardsDigital.Presentation.Interaction
         public HeroComplexity? SelectedComplexityFilter => selectedComplexity;
         public IReadOnlyCollection<HeroRole> SelectedRoleFilters => selectedRoles;
 
-        /// <summary>The invitation currently typed into the entry form, plus the picked seat.</summary>
+        /// <summary>
+        /// The invitation currently typed into the open menu, plus the picked seat. The host menu
+        /// names no address: 8.100 derives the host's bind locally.
+        /// </summary>
         public PrivateLobbyEntry CurrentEntry() =>
-            new PrivateLobbyEntry(address.value, port.value, key.value, picked);
+            page == PrivateLobbyEntryPage.Host
+                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked)
+                : new PrivateLobbyEntry(address.value, port.value, key.value, picked);
+
+        /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
+        public PrivateLobbyEntryPage Page => page;
+
+        /// <summary>Milestone 8.107. The host menu's session ID as it stands, for a reader that shows it.</summary>
+        public string HostSessionId => hostKey.value;
+
+        /// <summary>
+        /// Milestone 8.107. Opens one of the entry's pages, exactly as its button does. A page
+        /// only exists on the entry, so this does nothing while a session is shown.
+        /// </summary>
+        public void ShowPage(PrivateLobbyEntryPage value)
+        {
+            page = value;
+            if (renderedModel != null)
+            {
+                Render(renderedModel);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.107. Fills the fields from what was typed last time. The host's session ID
+        /// is not among them: it gets a fresh random value on every launch.
+        /// </summary>
+        public void LoadRememberedFields(PrivateLobbyRememberedFields fields)
+        {
+            if (fields == null) return;
+            address.value = fields.JoinAddress;
+            port.value = fields.JoinPort;
+            key.value = fields.JoinSessionId;
+            hostPort.value = fields.HostPort;
+        }
+
+        /// <summary>Milestone 8.107. Puts a fresh session ID in the host menu.</summary>
+        public void RenewHostSessionId() => hostKey.value = PrivateSessionIdSource.NewSessionId();
+
+        /// <summary>
+        /// Milestone 8.107. The session ID and address the host's screen shows its guests;
+        /// <see cref="PrivateLobbyInvitation.None"/> hides them.
+        /// </summary>
+        public void ShowInvitation(PrivateLobbyInvitation value)
+        {
+            invitation = value ?? PrivateLobbyInvitation.None;
+            ApplyInvitation();
+        }
+
+        private void ApplyInvitation()
+        {
+            var shown = invitation.IsShown && renderedRole == PrivateLobbyRole.Host;
+            invitationSession.text = shown ? invitation.SessionIdLine : string.Empty;
+            invitationAddress.text = shown ? invitation.AddressLine : string.Empty;
+            invitationSession.style.display = shown && invitation.SessionIdLine.Length > 0
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            invitationAddress.style.display = shown && invitation.AddressLine.Length > 0
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
 
         /// <summary>Picks the seat a join will claim, exactly as pressing its row does.</summary>
         public void PickSeat(SeatId seat)
@@ -319,21 +458,49 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
 
+            var isEntry = model.Role == PrivateLobbyRole.None;
+            // Milestone 8.107. Coming back to the entry from a session (LEAVE, a lost host) lands on
+            // the first screen rather than on whichever menu started that session.
+            if (isEntry && renderedRole != PrivateLobbyRole.None)
+            {
+                page = PrivateLobbyEntryPage.Landing;
+            }
+
+            renderedRole = model.Role;
+            renderedModel = model;
+
+            // A non-playing host's console (8.107) is a whole screen, not an overlay on a match HUD.
+            var coversScreen = !model.HasMatchStarted || model.IsHostConsole;
             Root.style.display = model.IsShown ? DisplayStyle.Flex : DisplayStyle.None;
             Root.pickingMode = model.IsShown ? PickingMode.Position : PickingMode.Ignore;
-            Root.style.backgroundColor = model.HasMatchStarted ? Color.clear : new Color(0.025f, 0.04f, 0.05f, 1f);
-            wordmark.style.display = model.HasMatchStarted ? DisplayStyle.None : DisplayStyle.Flex;
+            Root.style.backgroundColor = coversScreen ? new Color(0.025f, 0.04f, 0.05f, 1f) : Color.clear;
+            wordmark.style.display = coversScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            title.text = !isEntry ? "PRIVATE LOBBY"
+                : page == PrivateLobbyEntryPage.Host ? "HOST A GAME"
+                : page == PrivateLobbyEntryPage.Join ? "JOIN A GAME"
+                : string.Empty;
+            title.style.display = title.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             status.text = model.StatusLabel;
+            status.style.display = isEntry ? DisplayStyle.None : DisplayStyle.Flex;
             session.text = model.SessionLabel.Length == 0
                 ? string.Empty
                 : "SESSION " + model.SessionLabel;
+            session.style.display = isEntry || session.text.Length == 0
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
+            ApplyInvitation();
             feedback.text = model.FeedbackLabel;
-            feedback.style.display = model.FeedbackLabel.Length == 0
+            feedback.style.display = model.FeedbackLabel.Length == 0 ||
+                (isEntry && page == PrivateLobbyEntryPage.Landing)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
 
-            var isEntry = model.Role == PrivateLobbyRole.None;
-            entry.style.display = isEntry ? DisplayStyle.Flex : DisplayStyle.None;
+            entry.style.display = isEntry && page != PrivateLobbyEntryPage.Landing
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            hostMenu.style.display = page == PrivateLobbyEntryPage.Host ? DisplayStyle.Flex : DisplayStyle.None;
+            joinMenu.style.display = page == PrivateLobbyEntryPage.Join ? DisplayStyle.Flex : DisplayStyle.None;
+            seats.style.display = isEntry ? DisplayStyle.None : DisplayStyle.Flex;
 
             // 8.35z54. THE PRE-JOIN SEAT PICKER IS GONE. "We lose the whole seat/hero select
             // thing, we connect to the host, see available seats and pick one": the entry form's
@@ -352,10 +519,133 @@ namespace GuardsDigital.Presentation.Interaction
             RenderSelection(model.Selection);
 
             controls.Clear();
+            formatChoices.Clear();
+            if (isEntry)
+            {
+                RenderEntryControls(model);
+                return;
+            }
+
             foreach (var control in model.Controls)
             {
                 controls.Add(BuildControl(control));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.107. The entry's buttons, page by page. The landing's HOST and JOIN only open
+        /// a menu. The menus' HOST and JOIN are the model's own controls, pressed exactly as before,
+        /// and CANCEL goes back to the landing with every typed value kept.
+        /// </summary>
+        private void RenderEntryControls(PrivateLobbyModel model)
+        {
+            switch (page)
+            {
+                case PrivateLobbyEntryPage.Landing:
+                    if (model.Offers(PrivateLobbyControl.Host))
+                    {
+                        controls.Add(BuildPageButton(
+                            PrivateLobbyLabels.Control(PrivateLobbyControl.Host),
+                            PrivateLobbyEntryPage.Host));
+                    }
+
+                    if (model.Offers(PrivateLobbyControl.Join))
+                    {
+                        controls.Add(BuildPageButton(
+                            PrivateLobbyLabels.Control(PrivateLobbyControl.Join),
+                            PrivateLobbyEntryPage.Join));
+                    }
+
+                    break;
+
+                case PrivateLobbyEntryPage.Host:
+                    mode.text = ModeLine(model.MatchFormatLabel);
+                    mode.style.display = mode.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+                    foreach (var control in model.Controls)
+                    {
+                        if (IsFormatChoice(control))
+                        {
+                            var button = BuildControl(control);
+                            if (IsChosenFormat(control, model.MatchFormatLabel))
+                            {
+                                HudElements.Border(
+                                    button, MatchHudTheme.CoinFace, 1f, MatchHudTheme.ButtonCornerRadius);
+                                button.EnableInClassList("gd-lobby-format-chosen", true);
+                            }
+
+                            formatChoices.Add(button);
+                        }
+                    }
+
+                    if (model.Offers(PrivateLobbyControl.Host))
+                    {
+                        controls.Add(BuildControl(PrivateLobbyControl.Host));
+                    }
+
+                    controls.Add(BuildPageButton(CancelLabel, PrivateLobbyEntryPage.Landing));
+                    break;
+
+                case PrivateLobbyEntryPage.Join:
+                    if (model.Offers(PrivateLobbyControl.Join))
+                    {
+                        controls.Add(BuildControl(PrivateLobbyControl.Join));
+                    }
+
+                    controls.Add(BuildPageButton(CancelLabel, PrivateLobbyEntryPage.Landing));
+                    break;
+            }
+        }
+
+        private Button BuildPageButton(string text, PrivateLobbyEntryPage target)
+        {
+            var button = new Button(() => ShowPage(target))
+            {
+                name = ControlName,
+                text = text
+            };
+            button.style.minWidth = 220f;
+            button.style.height = 56f;
+            button.style.marginRight = 10f;
+            button.style.fontSize = 20f;
+            ApplyButtonChrome(button);
+            return button;
+        }
+
+        private static bool IsFormatChoice(PrivateLobbyControl control) =>
+            control == PrivateLobbyControl.ChooseTwoVsTwo ||
+            control == PrivateLobbyControl.ChooseThreeVsThree ||
+            control == PrivateLobbyControl.ChooseShortGame ||
+            control == PrivateLobbyControl.ChooseLongGame ||
+            control == PrivateLobbyControl.SetMatchFormat;
+
+        /// <summary>Whether a format button names half of the setup currently composed.</summary>
+        internal static bool IsChosenFormat(PrivateLobbyControl control, string formatLabel)
+        {
+            var label = (formatLabel ?? string.Empty).ToUpperInvariant();
+            var isLong = label.Contains("LONG");
+            switch (control)
+            {
+                case PrivateLobbyControl.ChooseTwoVsTwo: return label.StartsWith("2V2", StringComparison.Ordinal);
+                case PrivateLobbyControl.ChooseThreeVsThree: return label.StartsWith("3V3", StringComparison.Ordinal);
+                case PrivateLobbyControl.ChooseShortGame: return label.Length > 0 && !isLong;
+                case PrivateLobbyControl.ChooseLongGame: return isLong;
+                default: return false;
+            }
+        }
+
+        /// <summary>The host menu's one line naming the setup it will host, e.g. <c>MODE: 3V3 SHORT GAME</c>.</summary>
+        internal static string ModeLine(string formatLabel)
+        {
+            var label = (formatLabel ?? string.Empty).ToUpperInvariant();
+            if (label.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var size = label.StartsWith("2V2", StringComparison.Ordinal) ? "2V2"
+                : label.StartsWith("3V3", StringComparison.Ordinal) ? "3V3"
+                : label;
+            return "MODE: " + size + (label.Contains("LONG") ? " LONG GAME" : " SHORT GAME");
         }
 
         /// <summary>
@@ -714,6 +1004,21 @@ namespace GuardsDigital.Presentation.Interaction
     }
 
     /// <summary>
+    /// Milestone 8.107. The lobby's remembered fields, kept in Unity's player preferences so a
+    /// relaunched build offers what was typed last time.
+    /// </summary>
+    internal sealed class PlayerPrefsLobbyFieldMemory : IPrivateLobbyFieldMemory
+    {
+        public string Read(string key) => PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
+
+        public void Write(string key, string value)
+        {
+            PlayerPrefs.SetString(key, value ?? string.Empty);
+            PlayerPrefs.Save();
+        }
+    }
+
+    /// <summary>
     /// THIRTEENTH amendment. What the host asks for when it spawns one test-driver child.
     /// </summary>
     internal sealed class TestDriverSpawnRequest
@@ -930,6 +1235,30 @@ namespace GuardsDigital.Presentation.Interaction
 
         internal IReadOnlyCollection<SeatId> TestDriverSeatsForTests => testDriverSeats;
 
+        /// <summary>
+        /// Milestone 8.107. Where the entry's fields are remembered between launches. A Play Mode
+        /// journey sets this to an in-memory store before the lobby starts, so a test never reads or
+        /// writes the machine's real preferences; null means the default for this process. Public because
+        /// this assembly's <c>InternalsVisibleTo</c> stops at the Edit Mode test assembly.
+        /// </summary>
+        public static IPrivateLobbyFieldMemory FieldMemoryOverride;
+
+        /// <summary>
+        /// Milestone 8.107. Set by Play Mode journeys so that hosting a keyed session in a test run
+        /// never sends a real UPnP search onto the developer's network. The invitation then stays
+        /// on its "asking the router" line.
+        /// </summary>
+        public static bool SuppressRouterQuestion;
+
+        /// <summary>How long the router gets to say which internet address this network has.</summary>
+        private static readonly TimeSpan RouterQuestionBudget = TimeSpan.FromSeconds(6);
+
+        private IPrivateLobbyFieldMemory fieldMemory;
+        private RouterExternalAddressProbe addressProbe;
+        private HostAddressDiscovery shownDiscovery = HostAddressDiscovery.NotStarted;
+        private string hostedSessionId = string.Empty;
+        private int hostedPort;
+
         /// <summary>Milestone 8.35k. So one refusal is logged once rather than every redraw.</summary>
         private bool refusalReported;
         private Label matchStatus;
@@ -1011,7 +1340,20 @@ namespace GuardsDigital.Presentation.Interaction
             document.rootVisualElement?.Add(matchStatus);
             LayoutMatchStatus();
             presenter = new PrivateLobbyPresenter(view);
-            view.ControlPressed += (control, entry) => presenter.Press(control, entry);
+            // Milestone 8.107. Remember what a player typed, only when the player pressed HOST or
+            // JOIN on this screen. A rehearsal or seat driver that calls the presenter directly
+            // leaves the player's remembered fields alone.
+            fieldMemory = FieldMemoryOverride ?? DefaultFieldMemory();
+            view.LoadRememberedFields(PrivateLobbyRememberedFields.Load(
+                fieldMemory,
+                PrivateLobbyUnityView.DefaultAddress,
+                PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture)));
+            view.ControlPressed += (control, entry) =>
+            {
+                RememberTypedFields(control, entry);
+                presenter.Press(control, entry);
+            };
+            presenter.DirectorToolRequested += RunDirectorTool;
             // Milestone 8.35z37. Clicking a hero only says which one the next PICK HERO
             // press sends; the press is what reaches the host.
             view.HeroHighlighted += heroId => presenter.SelectedHeroIdValue = heroId;
@@ -1116,6 +1458,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             SurfaceLobbyPickRefusal();
+            RefreshInvitationWhenTheRouterAnswers();
 
             EnsureEvidence();
             ReportOutcomeOnce();
@@ -1370,7 +1713,10 @@ namespace GuardsDigital.Presentation.Interaction
                     .Append(machine.LatestProjection?.Version ?? -1).Append(':')
                     .Append(machine.ProjectionRevision).Append(':')
                     .Append(machine.LastSubmissionResult?.SubmissionId ?? string.Empty).Append(':')
-                    .Append(machine.LastAgreementResult?.SubmissionId ?? string.Empty);
+                    .Append(machine.LastAgreementResult?.SubmissionId ?? string.Empty).Append(':')
+                    // Milestone 8.107. A hosting client that took no seat never hears MatchStarted,
+                    // so the host's own fact is what turns its screen into the host console.
+                    .Append(session != null && session.HasMatchStarted ? '1' : '0');
                 // 8.35z54. THE HERO AND THE CHOSEN FLAG BELONG IN THIS STRING, and leaving
                 // them out is why an accepted pick "didnt do nothing" on the user's screen. It is
                 // the whole redraw condition - the lobby rebuilds when it moves and at no other
@@ -1766,6 +2112,18 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             presenter.AttachHostingClient(session, machine, string.Empty);
+            hostedSessionId = sessionKey;
+            hostedPort = listener.BoundPort;
+            addressProbe = null;
+            if (sessionKey.Length > 0 && !SuppressRouterQuestion)
+            {
+                // Milestone 8.107. Only a keyed session listens beyond this machine, so only a
+                // keyed session asks the router which address its guests should dial.
+                addressProbe = new RouterExternalAddressProbe();
+                addressProbe.Start(RouterQuestionBudget);
+            }
+
+            ShowHostInvitation();
             PrivateOnlineMarkers.Log(
                 "LOBBY_HOSTING port=" + listener.BoundPort.ToString(CultureInfo.InvariantCulture) +
                 " keyed=" + (sessionKey.Length > 0 ? "true" : "false") +
@@ -2128,8 +2486,101 @@ namespace GuardsDigital.Presentation.Interaction
 
             compositionRoot?.Runtime?.RefreshAll();
             signature = string.Empty;
+            // Milestone 8.107. A finished session's invitation goes with it, and the next host menu
+            // offers a new session ID rather than the one just handed out.
+            addressProbe = null;
+            hostedSessionId = string.Empty;
+            view.ShowInvitation(PrivateLobbyInvitation.None);
+            view.RenewHostSessionId();
             presenter.ShowEntry(LocalSeats(), string.Empty);
             PrivateOnlineMarkers.Log("LOBBY_LEFT");
+        }
+
+        /// <summary>
+        /// Milestone 8.107. Remembers the fields a HOST or JOIN press used: the join address, port
+        /// and session ID, and the host port. The host's session ID is never remembered.
+        /// </summary>
+        private void RememberTypedFields(PrivateLobbyControl control, PrivateLobbyEntry entry)
+        {
+            if (entry == null || presenter?.Model == null || !presenter.Model.Offers(control))
+            {
+                return;
+            }
+
+            if (control == PrivateLobbyControl.Join)
+            {
+                PrivateLobbyRememberedFields.RememberJoin(
+                    fieldMemory, entry.Address, entry.Port, entry.SessionKey);
+            }
+            else if (control == PrivateLobbyControl.Host)
+            {
+                PrivateLobbyRememberedFields.RememberHost(fieldMemory, entry.Port);
+            }
+        }
+
+        /// <summary>
+        /// The player build remembers through Unity's player preferences. The Editor keeps the
+        /// values for the session only, so a Play Mode run never writes the developer's preferences.
+        /// </summary>
+        private static IPrivateLobbyFieldMemory DefaultFieldMemory() =>
+            UnityEngine.Application.isEditor
+                ? (IPrivateLobbyFieldMemory)new InMemoryPrivateLobbyFieldMemory()
+                : new PlayerPrefsLobbyFieldMemory();
+
+        private void ShowHostInvitation()
+        {
+            shownDiscovery = addressProbe?.Discovery ?? HostAddressDiscovery.NotStarted;
+            view.ShowInvitation(PrivateLobbyInvitation.For(
+                hostedSessionId,
+                hostedPort,
+                shownDiscovery,
+                addressProbe?.InternetAddress,
+                addressProbe?.LanAddress));
+        }
+
+        private void RefreshInvitationWhenTheRouterAnswers()
+        {
+            if (addressProbe == null || session == null || addressProbe.Discovery == shownDiscovery)
+            {
+                return;
+            }
+
+            ShowHostInvitation();
+            PrivateOnlineMarkers.Log("LOBBY_HOST_ADDRESS discovery=" + shownDiscovery);
+        }
+
+        /// <summary>
+        /// Milestone 8.107. DIRECTOR UNDO and DIRECTOR RESTART for a host that is not playing. They
+        /// call the same authority undo/restart the playing host's DIRECTOR drawer calls, then
+        /// republish every seat's projection exactly as that drawer's
+        /// <c>republishAfterHostDebugChange</c> does.
+        /// </summary>
+        private void RunDirectorTool(PrivateLobbyControl control)
+        {
+            var tools = compositionRoot?.Runtime?.UndoRestartPresenter;
+            var isUndo = control == PrivateLobbyControl.DirectorUndo;
+            if (session == null || !session.HasMatchStarted || tools == null)
+            {
+                presenter.ShowFeedback("The Director's tools work once the match has started.");
+                return;
+            }
+
+            var accepted = isUndo ? tools.Undo() : tools.Restart();
+            if (accepted)
+            {
+                session.RepublishProjections();
+            }
+
+            PrivateOnlineMarkers.Log(
+                (isUndo ? "LOBBY_DIRECTOR_UNDO" : "LOBBY_DIRECTOR_RESTART") +
+                " accepted=" + (accepted ? "true" : "false"));
+            presenter.ShowFeedback(accepted
+                ? isUndo
+                    ? "Director undo done. Every player's board was updated."
+                    : "The match was restarted. Every player's board was updated."
+                : isUndo
+                    ? "There is nothing to undo."
+                    : "The match could not be restarted.");
         }
 
         private static bool TryReadEndpoint(
@@ -2185,7 +2636,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (panelSettings == null || presenter?.Model == null) return;
             // The menu can scroll, so short windows must not shrink it to the game's full-board
             // footprint. Restore the shared HUD coordinates for in-match connection notices.
-            var preMatch = !presenter.Model.HasMatchStarted;
+            var preMatch = !presenter.Model.HasMatchStarted || presenter.Model.IsHostConsole;
             panelSettings.screenMatchMode = preMatch ? PanelScreenMatchMode.MatchWidthOrHeight : MatchHudPanelScaling.ScreenMatchMode;
             panelSettings.match = preMatch ? 0f : MatchHudPanelScaling.Match;
         }

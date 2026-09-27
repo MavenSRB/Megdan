@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.93g**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z87**.
+- Current completed milestone: **8.107**.
+- Active authorized milestone: **8.108**.
+- Next proposed milestone: **8.108**.
 
-**[8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md)** is complete: Snorri passes the permanent player-path gate, closing his approved sequence. No milestone is authorized; 8.35z87 stays parked until the user approves it. 8.35z71 and 8.35z72 were closed unimplemented (2026-09-27).
+**[8.107](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)** is complete: HOST/JOIN lobby menus, the host's session ID and internet IP, Director tools for a non-playing host. **8.108** (lobby player names, wire /24) is active, user-approved 2026-09-27. **8.93g** is complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93g complete** (v46, wire /23). Twenty-four heroes dealt. No publication authorized.
 

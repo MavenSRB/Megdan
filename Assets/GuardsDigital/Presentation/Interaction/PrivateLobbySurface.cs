@@ -12,14 +12,18 @@ namespace GuardsDigital.Presentation.Interaction
     /// The 2026-09-01 transport amendment makes this the whole invitation mechanism - an address,
     /// a port, and a key agreed out of band. There is no code service, no account and no directory
     /// to look anything up in, so what is dialed is exactly what was typed.
+    /// <para>Milestone 8.107: "exactly what was typed" now means after
+    /// <see cref="PrivateLobbyEntryText"/>'s cleaning. A pasted address or port loses every space
+    /// and invisible character, and a session ID loses the ones at its ends. The cleaning happens
+    /// here so that HOST, JOIN and every later reader see the same values.</para>
     /// </remarks>
     public sealed class PrivateLobbyEntry
     {
         public PrivateLobbyEntry(string address, string port, string sessionKey, SeatId seat)
         {
-            Address = address ?? string.Empty;
-            Port = port ?? string.Empty;
-            SessionKey = sessionKey ?? string.Empty;
+            Address = PrivateLobbyEntryText.CleanEndpointPart(address);
+            Port = PrivateLobbyEntryText.CleanEndpointPart(port);
+            SessionKey = PrivateLobbyEntryText.CleanSessionId(sessionKey);
             Seat = seat;
         }
 
@@ -126,6 +130,13 @@ namespace GuardsDigital.Presentation.Interaction
         public event Action<SeatId> SeatClaimRequested;
 
         /// <summary>
+        /// Milestone 8.107. Raised when a host that is not playing pressed DIRECTOR UNDO or
+        /// DIRECTOR RESTART. The driver owns the authority and the republish, so the presenter only
+        /// says which of the two was asked for.
+        /// </summary>
+        public event Action<PrivateLobbyControl> DirectorToolRequested;
+
+        /// <summary>
         /// Milestone 8.35z37. The hero the surface offers on the next
         /// <see cref="PrivateLobbyControl.ChooseHero"/> press. A view sets it from whichever option
         /// the player clicked; the presenter never chooses one.
@@ -207,6 +218,16 @@ namespace GuardsDigital.Presentation.Interaction
                 feedback = status;
             }
 
+            Refresh();
+        }
+
+        /// <summary>
+        /// Milestone 8.107. Shows one line of feedback on whatever this surface is showing, without
+        /// dropping the session it is reading.
+        /// </summary>
+        public void ShowFeedback(string line)
+        {
+            feedback = line ?? string.Empty;
             Refresh();
         }
 
@@ -336,6 +357,11 @@ namespace GuardsDigital.Presentation.Interaction
 
                 case PrivateLobbyControl.SetMatchFormat:
                     MatchFormatChangeRequested?.Invoke();
+                    return true;
+
+                case PrivateLobbyControl.DirectorUndo:
+                case PrivateLobbyControl.DirectorRestart:
+                    DirectorToolRequested?.Invoke(control);
                     return true;
 
                 default:

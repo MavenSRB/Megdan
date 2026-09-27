@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.107 lobby host and join menus evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.107 | The lobby opens on HOST and JOIN only. The host menu offers the setup, port and a fresh random session ID; the join menu offers host IP, port and session ID. Pasted fields are cleaned and typed values are remembered. The host screen shows the session ID and the router-reported internet IP (LAN fallback), and a non-playing host gets DIRECTOR UNDO/RESTART once the match starts. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-8107-split-the-lobby-entry-into-host-and-join-menus). | milestone/8.107 |
+
 ## Milestone 8.106 tied-initiative reconnect visibility evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -2,6 +2,30 @@
 
 On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, requested the revealed-card Initiative badge include the bonus, and approved fixing both Shotgun and Super-Shotgun. They then requested that clicking another player's token must not show that player's cards. The approved sequence is **8.42 -> 8.42a -> 8.42b**, with separate validation and local commits. Return to [ROADMAP.md](../ROADMAP.md); [SESSION_BRIEF.md](../SESSION_BRIEF.md) owns the live route.
 
+## Lobby front door, approved 2026-09-27
+
+On 2026-09-27 the user approved the sequence **8.107 -> 8.108** ("fresh each time, router is fine, go ahead"; "Nah, lobby only"). It interrupts Snorri's 8.93g, which stays the active milestone and resumes afterwards. Each step gets its own validation and local commit; the work is built in a separate worktree beside the concurrent Snorri tree.
+
+### [x] 8.107 Split the lobby entry into HOST and JOIN menus
+
+Outcome: the first screen shows only `HOST` and `JOIN`. `HOST` opens a host menu offering the existing 2V2/3V3 and SHORT/LONG choices, `PORT`, a `SESSION ID` pre-filled with a fresh random value on every launch, and `HOST`/`CANCEL`. `JOIN` opens a join menu with `HOST IP`, `PORT`, `SESSION ID` and `JOIN`/`CANCEL`. `CANCEL` returns to the first screen and keeps the typed values. The join IP, port and session ID and the host port are remembered between launches; the host session ID is not. Pasted IP and port values lose surrounding or embedded whitespace and invisible characters before they are read, and a session ID loses surrounding whitespace. Once hosting starts, the host's lobby shows the session ID and the internet IP. The internet IP comes from the local router over UPnP; if the router gives no public address, the screen shows the LAN IPv4 labelled as such. A host whose own client never took a seat gets `DIRECTOR UNDO`, `DIRECTOR RESTART` and `LEAVE` on that screen after the match starts. These drive the same authority undo/restart and republish-to-every-client path that a playing host's `DIRECTOR` drawer already uses.
+
+Unchanged: a cleared session ID still hosts loopback-only (8.100). No rule, authority, snapshot or wire change. No outside "what is my IP" service is contacted.
+
+Acceptance: Edit Mode tests cover the endpoint and session-ID cleaning (spaces, tabs, non-breaking and zero-width characters, empty values); the generated session ID's shape and freshness; the remembered-field store's round trip and the host ID not persisting; the page flow on the view (landing shows exactly HOST and JOIN, each menu shows exactly its fields and buttons, CANCEL keeps values, leaving a session returns to the landing); the host invitation line in its keyed, unkeyed, probing, router-found and LAN-fallback forms; the UPnP response parsers; and the non-playing host's model offering the Director controls only after the match starts and never to a seated host. The existing lobby Play Mode journeys are updated to walk through the menus, and at least one real-socket journey hosts through the menu with a pasted, space-padded port. T2.
+
+Completed 2026-09-27. The view keeps the page as its own state and returns to the landing whenever a session ends. The session ID's random bytes are drawn in the Network assembly (`PrivateSessionIdSource`), because the Application boundary may draw no unrecorded entropy. The host console is `PrivateLobbyModel.IsHostConsole`: the host's own client is still `Admitted` after the match starts, because `MatchStarted` goes only to seated connections. No rule, authority, snapshot or wire change.
+
+Historical evidence: [8.107 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8107-lobby-host-and-join-menus-evidence).
+
+### [~] 8.108 Player names in the lobby
+
+Outcome: both menus carry a `NAME` field, remembered between launches. The name travels with the join and appears in every lobby seat row in place of the seat identifier. An empty name keeps today's `RED-1` style label. The host cleans every name it receives: trimmed, control and invisible characters removed, at most 16 characters. Duplicate names are allowed. Bot seats keep their seat label. Names are lobby-only: the match HUD, match log, victory screen and snapshots do not change.
+
+This changes the wire (the join message and the roster row gain a name), so the private-online protocol version moves from `/23` to `/24`.
+
+Acceptance: codec round-trip and bounds tests for the new fields, host-side cleaning of hostile names, roster/model rows showing the name with the seat-label fallback, the redraw signature noticing a name, the protocol-version pins moved, and the affected lobby and wire Edit/Play Mode fixtures green. T2.
+
 ## Approved playtest corrections ahead of Snorri
 
 On 2026-09-26 the user approved investigating and fixing these reports in order: **8.95 -> 8.96 -> 8.97**, before resuming Snorri at 8.93e. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed. The private host-game log under the 8.92 playtest build is available as evidence; preserve it.
