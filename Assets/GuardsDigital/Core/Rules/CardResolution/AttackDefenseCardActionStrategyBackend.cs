@@ -2163,9 +2163,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var defenseOffer = matchingOffers[0];
             var defenseCard = matchingInstances[0];
             var transition = defenseOffer.SourceCardStateTransition;
+
+            // Milestone 8.112c. A resolved card a live grant lets its owner defend with "as if it was
+            // in your hand" rests in the turn area; every other Defense card is in hand.
+            var paidFromTurnArea = DefenseOfferQuery.IsSubstitute(
+                defenseCard, materializedInstances, pendingAttackResolution.TargetHeroId,
+                modifications);
             if (!defenseCard.OwnerId.Equals(pendingAttackResolution.TargetHeroId) ||
                 !defenseCard.DefinitionReference.Equals(defenseOffer.SourceDefinitionReference) ||
-                defenseCard.State.Location != transition.RequiredLocation ||
+                (!paidFromTurnArea && defenseCard.State.Location != transition.RequiredLocation) ||
                 transition.RequiredLocation != CardLocation.Hand ||
                 transition.DestinationLocation != CardLocation.DiscardPile)
             {
@@ -2198,7 +2204,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // what TryDiscardFromHand performs, so the discard semantics are unchanged - but
             // the authority additionally requires the card to be unplayed with no resolution status,
             // which the duplicated guard here never checked. See milestone 6.1f / finding F613-06.
-            if (!CardLifecycleAuthority.TryDiscardFromHand(defenseCard))
+            if (!(paidFromTurnArea
+                    ? CardLifecycleAuthority.TryDiscardResolvedCard(defenseCard)
+                    : CardLifecycleAuthority.TryDiscardFromHand(defenseCard)))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }

@@ -486,7 +486,24 @@ namespace GuardsDigital.Core.Rules.Modifications
     public enum RulePermissionKind
     {
         None = 0,
-        MoveThroughObstacles = 1
+        MoveThroughObstacles = 1,
+
+        /// <summary>
+        /// Milestone 8.112c. Mrak's Stone Carapace and Rock Solid: "If you would discard a card from
+        /// your hand, you may discard this card instead". The grant's SOURCE CARD - the resolved card
+        /// whose This round effect declared it - may answer any discard an effect demands from the
+        /// affected hero's hand, whatever card or colour the demand names (user ruling MR-Q5), and it
+        /// is that source card which is discarded. p.17 then cancels the effect, because its card
+        /// changed state. An ordinary Defense is not such a discard (user ruling MR-Q6).
+        /// </summary>
+        DiscardSourceCardInsteadOfHandCard = 2,
+
+        /// <summary>
+        /// Milestone 8.112c. The same faces' second clause: "you may discard this card to perform its
+        /// defense action, as if it was in your hand." The grant's source card offers its own printed
+        /// Defense in p.14's Defense window, paid by discarding it from where it rests.
+        /// </summary>
+        DefendWithSourceCardAsIfInHand = 3
     }
 
     /// <summary>

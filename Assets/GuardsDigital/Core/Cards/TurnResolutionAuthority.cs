@@ -3188,6 +3188,15 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             }
 
+            // Milestone 8.112c. A Defense card answered from the turn area is a resolved card a live
+            // grant let its owner defend with; spending it changes its state, so p.17 cancels its
+            // Active effect once the answer is accepted.
+            var defendedFromTurnArea = command.ChoiceKind == DefenseResponseChoiceKind.SelectCards &&
+                command.SelectedCardInstanceIds.Count == 1
+                ? instances.FirstOrDefault(card =>
+                    card.Id.Equals(command.SelectedCardInstanceIds[0]) &&
+                    CardLifecycleAuthority.IsResolvedCardInTurnArea(card))
+                : null;
             var response = cardActions.AnswerDefenseResponse(
                 command,
                 definitions,
@@ -3203,6 +3212,11 @@ namespace GuardsDigital.Core.Cards
             // The result-comparison checkpoint is emitted by the Defense resolver itself, as the last
             // step of its own stream, rather than raised here between two backend calls.
             var events = MaterializeSteps(response.Steps, TurnResolutionEvent.FromAttackAction);
+            if (defendedFromTurnArea != null)
+            {
+                foreach (var timingEvent in NotifySourceCardStateChanged(defendedFromTurnArea.Id))
+                    events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            }
 
             // Milestone 8.10. p.14's step 4 is the defender's own text, and a question standing in it
             // stops the page before step 5's total - so the comparison this method would run next is

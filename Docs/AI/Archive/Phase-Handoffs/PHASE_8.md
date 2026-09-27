@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112c Mrak Red faces and Carapace substitution evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112c | Mrak's Seismic line and Epicentre repeat; Stone Carapace and Rock Solid's This round substitution through two new source-card permissions read by the shared discard chokepoint and Defense offers, as MR-Q4-MR-Q6 settled it. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112c-compose-the-red-seismic-and-carapace-faces). | `milestone/8.112c` |
+
 ## Milestone 8.112b Mrak Fissure and Stone Grip evidence
 
 | Milestone | Outcome and definition | Commit |

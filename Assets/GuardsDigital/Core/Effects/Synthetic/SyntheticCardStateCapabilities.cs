@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -114,6 +115,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// restores the pause, so a card that left the hand in between is not discarded on the strength
         /// of an offer that has gone stale.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.112c. The resolved cards <paramref name="chooser"/> may discard instead of a card
+        /// in hand - Stone Carapace's and Rock Solid's This round grant, read from the live rule set.
+        /// </summary>
+        internal static CardInstanceId[] DiscardSubstitutes(
+            EffectCapabilityContext context, HeroId chooser) =>
+            context?.CardState == null || !chooser.IsDefined
+                ? Array.Empty<CardInstanceId>()
+                : SourceCardSubstitutionQuery.Substitutes(
+                        context.Modifications, chooser,
+                        RulePermissionKind.DiscardSourceCardInsteadOfHandCard,
+                        context.CardState.Instances)
+                    .Select(card => card.Id).ToArray();
+
         private sealed class DiscardChosenCardHandler
             : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
         {
@@ -195,6 +210,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // to the empty-hand arms below and is answered by this revision's own reading of them
                 // rather than discarded from wherever it has got to.
                 var restriction = Restriction(context);
+                var substitutes = Substitutes(context, chooser);
+                if (restriction.IsDefined && substitutes.Length > 0)
+                {
+                    // Milestone 8.112c. A named card and a resolved substitute are two legal answers,
+                    // so the sentence that named one card now asks which.
+                    return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.None,
+                        AnticipateCandidates(context).ToArray(),
+                        1, 1, chooser));
+                }
+
                 if (restriction.IsDefined)
                 {
                     return AnticipateCandidates(context).Any(candidate =>
@@ -214,7 +240,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     EffectChooserRole.None,
                     context.CardState.Definitions,
                     context.CardState.Instances,
-                    chooser);
+                    chooser,
+                    substitutes);
 
                 // Rulebook `if able`: a hero with no card to give does not give one, and the action
                 // goes on. This is deliberately not ImpossibleMandatory - that would stop the enclosing
@@ -264,7 +291,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Milestone 8.40f. A restricted node has exactly one legal answer, and an answer
                 // naming a different card against one is stale or tampered rather than a decision.
                 var restriction = Restriction(context);
-                if (restriction.IsDefined && !restriction.Equals(selected[0].CardInstanceId))
+                var substitutes = Substitutes(context, chooser);
+                if (restriction.IsDefined && !restriction.Equals(selected[0].CardInstanceId) &&
+                    !substitutes.Contains(selected[0].CardInstanceId))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -276,11 +305,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     Criteria(chooser, Color(context)),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
-                    context.CardState.Instances);
+                    context.CardState.Instances,
+                    substitutes);
 
                 if (!result.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // p.17: "An Active effect on your card is cancelled ... When the card changes state".
+                if (result.DiscardedASubstitute)
+                {
+                    context.Timing?.CancelForSourceCardStateChange(
+                        result.DiscardedCardId, context.RoundIndex, context.TurnIndex);
                 }
 
                 var facts = new List<EffectOutcomeFact>
@@ -305,7 +342,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Milestone 8.40f. A restricted node opens no choice on either arm, so reporting
                 // NeedsChoice here would be the probe describing a pause Execute never creates -
                 // exactly the offer/resolution divergence the probe-fidelity rule exists to stop.
-                if (Restriction(context).IsDefined)
+                if (Restriction(context).IsDefined && Substitutes(context, Chooser(context)).Length == 0)
                 {
                     return candidates.Count == 0
                         ? EffectExecutionResultKind.DeclinedOptional
@@ -340,8 +377,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     candidates = candidates.Where(card => card.Equals(restriction));
                 }
 
-                return candidates.Select(EffectValue.Card).ToArray();
+                // Milestone 8.112c. The same substitutes the offer and the answer read.
+                var substitutes = Substitutes(context, chooser);
+                return candidates
+                    .Concat(substitutes.Where(card => !candidates.Contains(card)))
+                    .Select(EffectValue.Card).ToArray();
             }
+
+            private static CardInstanceId[] Substitutes(EffectCapabilityContext context, HeroId chooser) =>
+                DiscardSubstitutes(context, chooser);
 
             /// <summary>One card, which is what the discard offer requests. Milestone 8.35l.</summary>
             public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;

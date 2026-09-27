@@ -847,6 +847,23 @@ namespace GuardsDigital.Tests.EditMode
                         RuleObject.ForHero(fixture.Red),
                         fixture),
                     fixture.ReadReachableDestinations),
+                // Milestone 8.112c. Mrak's Stone Carapace and Rock Solid grant their OWN resolved card
+                // as a substitute: the discard handlers read the first grant through the substitution
+                // query, and p.14's Defense window reads the second through its offer query.
+                new ConsumptionCase(
+                    "Permission/DiscardSourceCardInsteadOfHandCard",
+                    "SourceCardSubstitutionQuery.Substitutes (discard-chosen-card, discard-owned-card)",
+                    DeclaringFromCard(
+                        RuleModification.ForPermission(RulePermissionKind.DiscardSourceCardInsteadOfHandCard),
+                        blue, fixture),
+                    fixture.ReadDiscardSubstitutes),
+                new ConsumptionCase(
+                    "Permission/DefendWithSourceCardAsIfInHand",
+                    "DefenseOfferQuery.Offers",
+                    DeclaringFromCard(
+                        RuleModification.ForPermission(RulePermissionKind.DefendWithSourceCardAsIfInHand),
+                        blue, fixture),
+                    fixture.ReadDefenseOffers),
                 new ConsumptionCase(
                     "CountsAs/Minion",
                     "BattleZoneQuery.FindEffectiveMinionsInside",
@@ -1042,6 +1059,27 @@ namespace GuardsDigital.Tests.EditMode
         /// so a qualification about "heroes opposing the source" names the Red hero, who is the actor
         /// in every probe below.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.112c. A grant whose source is a resolved card of the affected hero's - the
+        /// shape a substitution permission is read in.
+        /// </summary>
+        private static RuleModificationSet DeclaringFromCard(
+            RuleModification modification, RuleObject affected, SeamFixture fixture) =>
+            new RuleModificationSet(
+                new[]
+                {
+                    AppliedRuleModification.FromActiveEffect(
+                        modification,
+                        affected,
+                        new ActiveEffectId("modification-seam-probe"),
+                        fixture.Blue,
+                        TeamSide.Blue,
+                        0,
+                        sourceCardInstanceId: fixture.ResolvedSubstitute.Id)
+                },
+                Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed);
+
         private static RuleModificationSet Declaring(
             RuleModification modification, RuleObject affected, SeamFixture fixture) =>
             new RuleModificationSet(
@@ -1167,6 +1205,54 @@ namespace GuardsDigital.Tests.EditMode
                         DefenseOffer(), Configuration.CardDefinitions, Blue, Participants, Board,
                         modifications, null)
                     .Total.ToString(CultureInfo.InvariantCulture);
+
+            /// <summary>
+            /// Milestone 8.112c. One resolved card of the Blue hero's with a printed secondary Defense,
+            /// the subject both substitution grants name.
+            /// </summary>
+            public CardInstance ResolvedSubstitute => resolvedSubstitute ?? (resolvedSubstitute = CreateResolvedSubstitute());
+
+            private CardInstance resolvedSubstitute;
+
+            private static readonly CardDefinition SubstituteDefinition = new CardDefinition(
+                new CardDefinitionId("modification-seam-substitute"), "rev-1", "TEST - Substitute",
+                new InitiativeValue(3), CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(new ActionDefinitionId("primary-movement"), ActionKind.Movement,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 2) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true)),
+                    new ActionDefinition(new ActionDefinitionId("secondary-defense"), ActionKind.Defense,
+                        ActionDefinitionOrigin.Reaction,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, 6) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
+                        AttackRangeKind.None,
+                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile))
+                });
+
+            private CardInstance CreateResolvedSubstitute()
+            {
+                var card = CardInstance.CreateInHand(
+                    new CardInstanceId("modification-seam-substitute-card"),
+                    SubstituteDefinition.Reference, Blue);
+                Assert.That(CardLifecycleAuthority.TryPlayFacedown(card), Is.True);
+                Assert.That(CardLifecycleAuthority.TryReveal(card), Is.True);
+                Assert.That(CardLifecycleAuthority.TryResolveAfterAction(card), Is.True);
+                return card;
+            }
+
+            public string ReadDiscardSubstitutes(RuleModificationSet modifications) =>
+                string.Join(",", SourceCardSubstitutionQuery.Substitutes(
+                        modifications, Blue, RulePermissionKind.DiscardSourceCardInsteadOfHandCard,
+                        new[] { ResolvedSubstitute })
+                    .Select(card => card.Id.Value));
+
+            public string ReadDefenseOffers(RuleModificationSet modifications) =>
+                string.Join(",", DefenseOfferQuery.Offers(
+                        new[] { SubstituteDefinition }, new[] { ResolvedSubstitute }, Blue, modifications)
+                    .Select(offer => offer.SourceCardInstanceId.Value + "/" + offer.ActionDefinitionId.Value));
 
             public string ReadReachableDestinations(RuleModificationSet modifications) =>
                 MovementReachabilityQuery.FindReachableDestinations(

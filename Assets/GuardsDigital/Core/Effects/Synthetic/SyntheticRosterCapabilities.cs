@@ -4037,7 +4037,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     EffectChooserRole.None,
                     context.CardState.Definitions,
                     context.CardState.Instances,
-                    chooser);
+                    chooser,
+                    SyntheticCardStateCapabilities.DiscardSubstitutes(context, chooser));
 
                 return offer != null
                     ? EffectExecutionResult.NeedsChoice(offer)
@@ -4062,7 +4063,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     HandCriteria(Chooser(context)),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
-                    context.CardState.Instances);
+                    context.CardState.Instances,
+                    SyntheticCardStateCapabilities.DiscardSubstitutes(context, Chooser(context)));
+
+                // Milestone 8.112c: p.17 cancels a substitute's This round grant once it is spent.
+                if (result.Accepted && result.DiscardedASubstitute)
+                {
+                    context.Timing?.CancelForSourceCardStateChange(
+                        result.DiscardedCardId, context.RoundIndex, context.TurnIndex);
+                }
 
                 return result.Accepted
                     ? EffectExecutionResult.Applied(new[]
@@ -4082,15 +4091,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context)
             {
                 var chooser = Chooser(context);
-                return chooser.IsDefined
-                    ? CardCharacteristicQuery
-                        .FindCandidates(
-                            HandCriteria(chooser),
-                            context.CardState.Definitions,
-                            context.CardState.Instances)
-                        .Select(EffectValue.Card)
-                        .ToArray()
-                    : Array.Empty<EffectValue>();
+                if (!chooser.IsDefined)
+                {
+                    return Array.Empty<EffectValue>();
+                }
+
+                var hand = CardCharacteristicQuery.FindCandidates(
+                    HandCriteria(chooser),
+                    context.CardState.Definitions,
+                    context.CardState.Instances);
+                return hand
+                    .Concat(SyntheticCardStateCapabilities.DiscardSubstitutes(context, chooser)
+                        .Where(card => !hand.Contains(card)))
+                    .Select(EffectValue.Card)
+                    .ToArray();
             }
 
             /// <summary>One card, which is what the discard offer requests. Milestone 8.35l.</summary>

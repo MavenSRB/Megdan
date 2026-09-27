@@ -26,20 +26,29 @@ namespace GuardsDigital.Core.Cards
         private ColorRestrictedDiscardResult(
             bool accepted,
             ColorRestrictedDiscardRejection rejection,
-            CardInstanceId discardedCardId)
+            CardInstanceId discardedCardId,
+            bool discardedASubstitute = false)
         {
             Accepted = accepted;
             Rejection = rejection;
             DiscardedCardId = discardedCardId;
+            DiscardedASubstitute = discardedASubstitute;
         }
 
         public bool Accepted { get; }
         public ColorRestrictedDiscardRejection Rejection { get; }
         public CardInstanceId DiscardedCardId { get; }
 
-        public static ColorRestrictedDiscardResult Accept(CardInstanceId discardedCardId) =>
+        /// <summary>
+        /// Milestone 8.112c. The discarded card was a resolved substitute rather than a card in hand,
+        /// so its source Active effect is owed p.17's cancellation by whoever holds the timeline.
+        /// </summary>
+        public bool DiscardedASubstitute { get; }
+
+        public static ColorRestrictedDiscardResult Accept(
+            CardInstanceId discardedCardId, bool discardedASubstitute = false) =>
             new ColorRestrictedDiscardResult(
-                true, ColorRestrictedDiscardRejection.None, discardedCardId);
+                true, ColorRestrictedDiscardRejection.None, discardedCardId, discardedASubstitute);
 
         public static ColorRestrictedDiscardResult Reject(ColorRestrictedDiscardRejection rejection)
         {
@@ -95,14 +104,15 @@ namespace GuardsDigital.Core.Cards
             EffectChooserRole chooser,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            HeroId chooserHeroId = default)
+            HeroId chooserHeroId = default,
+            IEnumerable<CardInstanceId> substitutes = null)
         {
             if (chooser == EffectChooserRole.None && !chooserHeroId.IsDefined)
             {
                 throw new ArgumentException("A discard choice requires a chooser.", nameof(chooser));
             }
 
-            var candidates = Candidates(criteria, definitions, instances);
+            var candidates = WithSubstitutes(Candidates(criteria, definitions, instances), substitutes);
             if (candidates.Count == 0)
             {
                 return null;
@@ -132,7 +142,8 @@ namespace GuardsDigital.Core.Cards
             CardCharacteristicCriteria criteria,
             CardInstanceId chosenCardId,
             IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances)
+            IEnumerable<CardInstance> instances,
+            IEnumerable<CardInstanceId> substitutes = null)
         {
             if (!chosenCardId.IsDefined)
             {
@@ -143,7 +154,9 @@ namespace GuardsDigital.Core.Cards
             var materializedInstances = (instances ?? throw new ArgumentNullException(nameof(instances)))
                 .Where(instance => instance != null)
                 .ToArray();
-            var candidates = Candidates(criteria, definitions, materializedInstances);
+            var substituteIds = (substitutes ?? Array.Empty<CardInstanceId>()).ToArray();
+            var candidates = WithSubstitutes(
+                Candidates(criteria, definitions, materializedInstances), substituteIds);
             if (candidates.Count == 0)
             {
                 return ColorRestrictedDiscardResult.Reject(ColorRestrictedDiscardRejection.NoCandidate);
@@ -156,6 +169,17 @@ namespace GuardsDigital.Core.Cards
             }
 
             var chosen = materializedInstances.First(instance => instance.Id.Equals(chosenCardId));
+
+            // Milestone 8.112c. A substitute rests in the turn area, resolved - it is discarded from
+            // there (p.10: "Cards in different states can be discarded"), not from a hand it is not in.
+            if (substituteIds.Contains(chosenCardId))
+            {
+                return CardLifecycleAuthority.TryDiscardResolvedCard(chosen)
+                    ? ColorRestrictedDiscardResult.Accept(chosenCardId, true)
+                    : ColorRestrictedDiscardResult.Reject(
+                        ColorRestrictedDiscardRejection.CardNotDiscardable);
+            }
+
             if (!CardLifecycleAuthority.TryDiscardFromHand(chosen))
             {
                 return ColorRestrictedDiscardResult.Reject(
@@ -164,6 +188,18 @@ namespace GuardsDigital.Core.Cards
 
             return ColorRestrictedDiscardResult.Accept(chosenCardId);
         }
+
+        /// <summary>
+        /// Milestone 8.112c. The substitutes stand beside the hand's candidates whatever the criteria
+        /// ask for - the user's MR-Q5 ruling, "Yes, always": the printed "discard this card instead"
+        /// answers any discard the effect demands.
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> WithSubstitutes(
+            IReadOnlyList<CardInstanceId> candidates, IEnumerable<CardInstanceId> substitutes) =>
+            substitutes == null
+                ? candidates
+                : candidates.Concat(substitutes.Where(id => id.IsDefined && !candidates.Contains(id)))
+                    .ToArray();
 
         private static IReadOnlyList<CardInstanceId> Candidates(
             CardCharacteristicCriteria criteria,

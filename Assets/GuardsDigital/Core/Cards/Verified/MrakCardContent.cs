@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Modifications;
@@ -222,6 +224,16 @@ namespace GuardsDigital.Core.Cards.Verified
             new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
             AttackRangeKind.None,
             new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
+
+        /// <summary>
+        /// Every Mrak definition composed so far - the list the corpus sweeps walk. A getter rather
+        /// than a stored field, so reading it never races the static initialisation of the face
+        /// classes it joins (the static-init cycle Tali's dealing met).
+        /// </summary>
+        public static IReadOnlyList<CardDefinition> AllDefinitions =>
+            new[] { FissureDefinition, StoneGripDefinition }
+                .Concat(MrakRedFaces.Definitions)
+                .ToArray();
 
         private static CardDefinitionId Id(string card) =>
             new CardDefinitionId(ContentSetId + "-" + card);

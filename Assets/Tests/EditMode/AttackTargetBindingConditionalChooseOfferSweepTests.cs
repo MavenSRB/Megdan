@@ -230,6 +230,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in IgnatiaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ignatia", d);
             foreach (var card in TrinketsCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("trinkets", d);
             foreach (var card in SnorriCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("snorri", d);
+            foreach (var card in MrakCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mrak", d);
         }
 
         /// <summary>

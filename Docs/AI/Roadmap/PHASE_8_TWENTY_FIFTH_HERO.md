@@ -61,13 +61,17 @@ Completed 2026-09-27. `MrakRockPlacementContent` adds four capabilities: p.18's 
 
 Historical evidence: [8.112b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112b-mrak-fissure-and-stone-grip-evidence).
 
-### [ ] 8.112c Compose the Red Seismic and Carapace faces
+### [x] 8.112c Compose the Red Seismic and Carapace faces
 
 Outcome: Seismic Slam, Seismic Assault and Epicentre select an enemy hero in Radius adjacent to terrain or a rock token who discards or is defeated, Epicentre repeating on a different target; Stone Carapace and Rock Solid move Mrak, Rock Solid may retrieve, and both create the This round substitution (MR-Q4) that ends when the card changes state.
 
 Acceptance: terrain-versus-rock-versus-neither boundaries, immunity, empty-hand defeat, different-target exhaustion; the substitution offered on every hand discard addressed to Mrak (enemy discard effects, own costs) and as a Defense card with its printed Defense, cancelled after one use, at round end and on defeat, restored from snapshot, and decided on Mrak's own network seat; all six secondary Attacks and Movements. T2 minimum.
 
 Non-goals: dealing.
+
+Completed 2026-09-27. `MrakRedFaces` composes the five Red faces. The Seismic line is 8.88's printed-Radius hero selection with terrain and rock-kind adjacency, then `discard-chosen-card@2` with its inability branch to defeat; Epicentre adds p.10's optional repeat on a different selection subject. Stone Carapace and Rock Solid are Movement 4 primaries whose text comes into effect before the movement (p.11), creating one This round effect that grants two new permissions naming the card itself: `DiscardSourceCardInsteadOfHandCard` and `DefendWithSourceCardAsIfInHand` (cancelled on defeat, retrieval and p.17's state change). Shared engine, with no card-name branch: `SourceCardSubstitutionQuery` reads the grants from the live rule set; the discard chokepoint (`ColorRestrictedDiscard`) and both discard handlers offer a granted resolved card beside the hand whatever the demand names (MR-Q5), including with an empty hand (MR-Q4), and cancel its effect when it is spent; `DefenseOfferQuery` offers the card's own printed Defense and the Defense backend pays it from the turn area, the turn authority raising p.17's cancellation; an ordinary Defense is unchanged (MR-Q6). Five substitution tests failed with the engine consumers reverted and pass with them. The block's full harness found what the focused runs of 8.112a and 8.112b could not: the reflective corpus sweeps require every verified content class to publish `AllDefinitions` and to be listed in the whole-corpus walks, and the modification-seam conformance requires a production consumer for every declarable modification - so `MrakCardContent.AllDefinitions`, the two corpus lines and the two consumption cases were added here, and those two blocks' reuse of an earlier full-harness total is recorded as mistaken. Unregistered until 8.112g. T3 (complete harness, Edit Mode and Play Mode) because shared discard and Defense resolution changed; evidence in the milestone commit.
+
+Historical evidence: [8.112c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112c-mrak-red-faces-and-carapace-substitution-evidence).
 
 ### [ ] 8.112d Compose the Blue push and stomp faces
 

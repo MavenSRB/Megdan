@@ -47,6 +47,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // takes every candidate, which is the same empty answer the kind-level gate gave.
             return Array.AsReadOnly(ActionOfferQuery
                 .GetAvailableOffers(definitions, instances, defenderId, ActionOfferWindow.Reaction)
+                .Concat(SubstituteOffers(definitions, instances, defenderId, modifications))
                 .Where(candidate => !ActionRestrictionQuery.IsRestrictedFrom(
                     defenderId,
                     ActionKind.Defense,
@@ -57,6 +58,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     candidate, definitions, incomingAttack))
                 .ToArray());
         }
+
+        /// <summary>
+        /// Milestone 8.112c. Stone Carapace's and Rock Solid's "you may discard this card to perform
+        /// its defense action, as if it was in your hand": each resolved card a live grant names offers
+        /// its own printed Defense exactly as it would from the hand - the same action, the same
+        /// value - and the backend pays it from where it rests.
+        /// </summary>
+        public static IEnumerable<ActionOffer> SubstituteOffers(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            HeroId defenderId,
+            RuleModificationSet modifications)
+        {
+            foreach (var card in SourceCardSubstitutionQuery.Substitutes(
+                         modifications, defenderId,
+                         RulePermissionKind.DefendWithSourceCardAsIfInHand, instances))
+            {
+                var definition = definitions.FirstOrDefault(value =>
+                    value.Reference.Equals(card.DefinitionReference));
+                if (definition == null) continue;
+                foreach (var action in definition.ActionDefinitions.Where(value =>
+                             value.Kind == ActionKind.Defense &&
+                             value.Origin == ActionDefinitionOrigin.Reaction))
+                {
+                    yield return new ActionOffer(
+                        card.Id,
+                        card.DefinitionReference,
+                        action.Id,
+                        defenderId,
+                        ActionInvocationContext.Reaction,
+                        true,
+                        action.AttackRange,
+                        action.SourceCardStateTransition);
+                }
+            }
+        }
+
+        /// <summary>Milestone 8.112c. Whether an offered Defense card is paid from the turn area.</summary>
+        public static bool IsSubstitute(
+            CardInstance card,
+            IReadOnlyList<CardInstance> instances,
+            HeroId defenderId,
+            RuleModificationSet modifications) =>
+            card != null && SourceCardSubstitutionQuery.Substitutes(
+                    modifications, defenderId,
+                    RulePermissionKind.DefendWithSourceCardAsIfInHand, instances)
+                .Any(value => value.Id.Equals(card.Id));
 
         private static bool IsForbiddenByIncomingAttack(
             ActionOffer defenseOffer,
