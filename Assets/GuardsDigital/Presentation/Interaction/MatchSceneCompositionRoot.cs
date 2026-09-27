@@ -1046,7 +1046,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedSnorri = 128,
 
         /// <summary>Wasp versus Snorri with Tier III hands and Rune Mastery faceup.</summary>
-        VerifiedTierThreeEngagedStagedSnorri = 129
+        VerifiedTierThreeEngagedStagedSnorri = 129,
+
+        /// <summary>Wasp versus Snorri with Arien as his Blue ally, unrestaged (8.93g).</summary>
+        VerifiedStagedSnorriWithAlly = 130,
+
+        /// <summary>Snorri on Red against Wasp and Arien on Blue (8.93g).</summary>
+        VerifiedStagedSnorriVersusTwo = 131
     }
 
     [ExecuteAlways]
@@ -1748,6 +1754,10 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedTierThreeEngagedStagedSnorri =>
                     MatchConfiguration.CreateStagedSnorriTierThreeForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedStagedSnorriWithAlly =>
+                    MatchConfiguration.CreateStagedSnorriWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedStagedSnorriVersusTwo =>
+                    MatchConfiguration.CreateStagedSnorriAgainstWaspWithAllyForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -2394,6 +2404,19 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusSnorriOneVsOne();
+                    }
+
+                    // Not restaged, like Hanu's ally arms: the Blue spawns already put Arien in
+                    // Snorri's Ancestral Radius.
+                    if (content == SceneCardContent.VerifiedStagedSnorriWithAlly)
+                    {
+                        return QuickGameSetupConfiguration
+                            .CreateStagedWaspVersusSnorriWithAllyOneVsTwo();
+                    }
+
+                    if (content == SceneCardContent.VerifiedStagedSnorriVersusTwo)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedSnorriVersusWaspAndArien();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

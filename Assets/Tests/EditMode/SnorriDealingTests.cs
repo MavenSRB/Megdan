@@ -79,6 +79,32 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void JourneyBoards_DealSnorriWithAFriendOrAgainstTwo()
+        {
+            var friend = MatchConfiguration.CreateStagedSnorriWithAllyForInternalTest(TeamSide.Red);
+            var versus = MatchConfiguration.CreateStagedSnorriAgainstWaspWithAllyForInternalTest(TeamSide.Red);
+            foreach (var configuration in new[] { friend, versus })
+                Assert.That(configuration.CardInstances.Count(card =>
+                    card.DefinitionReference.DefinitionId.Value.StartsWith("snorri-",
+                        StringComparison.Ordinal)), Is.EqualTo(18));
+            HeroId OwnerOf(MatchConfiguration configuration, CardDefinitionId face) =>
+                configuration.CardInstances.First(card =>
+                    card.DefinitionReference.DefinitionId.Equals(face)).OwnerId;
+            Assert.That(friend.Participants.GetTeamForHero(
+                    OwnerOf(friend, SnorriSilverFace.InscribeTheRunes)).Side,
+                Is.EqualTo(friend.Participants.GetTeamForHero(
+                    OwnerOf(friend, ArienCardContent.AllDefinitions[0].Id)).Side));
+            Assert.That(versus.Participants.GetTeamForHero(
+                    OwnerOf(versus, SnorriSilverFace.InscribeTheRunes)).Side,
+                Is.Not.EqualTo(versus.Participants.GetTeamForHero(
+                    OwnerOf(versus, ArienCardContent.AllDefinitions[0].Id)).Side));
+            Assert.That(QuickGameSetupConfiguration.CreateStagedSnorriVersusWaspAndArien().Heroes,
+                Has.Count.EqualTo(3));
+            Assert.That(QuickGameSetupConfiguration.CreateStagedWaspVersusSnorriWithAllyOneVsTwo().Heroes,
+                Has.Count.EqualTo(3));
+        }
+
+        [Test]
         public void TierThreeStaging_UnlocksRuneMasteryFaceUp()
         {
             var staged = MatchConfiguration.CreateStagedSnorriTierThreeForInternalTest(

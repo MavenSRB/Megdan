@@ -74,6 +74,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.95 | Skill starts now honor the same before-primary-action trigger and held-offer continuation as Attack and Movement. Focus, Discipline and Mastery each offer their free step on the next turn before a Skill; Discipline moves on the board and resumes the held Skill. Focused T2 rules/continuation and player-input checks green. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-895-misas-next-turn-green-movement-offer). | milestone/8.95 |
 
+## Milestone 8.93g Snorri player-path gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93g | Snorri passes the permanent player-path gate: every derived shape of eighteen dealt faces, the boxed Handicap and five components is proved by named real-input journeys (new shapes `RuneSlotAssignment` and `RuneGlyphChoice`), rune-gated faces played after a real Inscribe the Runes; network seats agree on rune slots. Complete Edit 5,706 passed (37 standing Explicit), Play 889/889 zero skips, harness 4,700/4,700. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893g-gate-snorri-through-the-complete-player-path). | milestone/8.93g |
+
 ## Milestone 8.93f Snorri dealing and artwork evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -240,6 +240,23 @@ namespace GuardsDigital.Tests.EditMode
             harness.Pump();
             Assert.That(host.Projection.MarkersHeldBy(snorri).Select(marker => marker.TurnSlotIndex),
                 Is.EquivalentTo(new int?[] { 2, 3, 4, 1 }));
+
+            // Milestone 8.93g: the runes are public board state, so every seat's owner-scoped
+            // projection draws the same four pieces in the same numbered slots.
+            harness.Pump();
+            foreach (var other in host.Seats.Seats)
+            {
+                var view = new NetworkMatchClient(
+                    harness.Client(harness.OrdinalOf(other.Id.Value)), host.Projection,
+                    MatchContentCatalogs.ForThisBuild()).Projection;
+                Assert.That(view.MarkersHeldBy(snorri)
+                        .Select(marker => (marker.Definition.Id.Value, marker.TurnSlotIndex))
+                        .OrderBy(pair => pair.Value),
+                    Is.EqualTo(host.Projection.MarkersHeldBy(snorri)
+                        .Select(marker => (marker.Definition.Id.Value, marker.TurnSlotIndex))
+                        .OrderBy(pair => pair.Value)),
+                    "Seat " + other.Id.Value + " agrees with the authority on every rune's slot.");
+            }
         }
 
         [Test]

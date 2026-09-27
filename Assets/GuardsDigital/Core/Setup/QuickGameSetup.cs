@@ -900,6 +900,57 @@ namespace GuardsDigital.Core.Setup
         public static QuickGameSetupConfiguration CreateStagedWaspVersusSnorriOneVsOne() =>
             CreateOneVsOne(new HeroContentId("snorri"), "Snorri");
 
+        /// <summary>Milestone 8.93g. Snorri on Red against Wasp and Arien on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedSnorriVersusWaspAndArien()
+        {
+            var mapId = new MapId("official-single-lane");
+            ConfiguredSpawnPointReference Spawn(string value) =>
+                new ConfiguredSpawnPointReference(mapId, new SpawnPointId(value));
+            ConfiguredSpaceReference Space(string value) =>
+                new ConfiguredSpaceReference(mapId, new SpaceId(value));
+            return new QuickGameSetupConfiguration(
+                new MapDefinitionReference(mapId, 1),
+                3,
+                4,
+                new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.RedHeroIdValue),
+                        new HeroContentId("snorri"), "Snorri",
+                        Spawn("red-hero-01"), Space("q-2_r-5")),
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueHeroIdValue),
+                        new HeroContentId("wasp"), "Wasp",
+                        Spawn("blue-hero-01"), Space("q-3_r10")),
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"), "Arien",
+                        Spawn("blue-hero-02"), Space("q-1_r10"))
+                },
+                CreateOfficialMinionPlacements(mapId));
+        }
+
+        /// <summary>Milestone 8.93g. Snorri with Arien as his Blue ally, on Hanu's ally board.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusSnorriWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("snorri"), "Snorri");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
         /// <summary>
         /// Milestone 8.75b. Wasp on Red against Ignatia and Arien on Blue - the shape
         /// <see cref="CreateStagedWaspVersusHanuWithAllyOneVsTwo"/> and

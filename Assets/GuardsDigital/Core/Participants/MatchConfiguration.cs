@@ -2137,6 +2137,42 @@ namespace GuardsDigital.Core.Participants
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.SnorriCardContent.CreateHand(ownerId, "blue"));
 
+        /// <summary>
+        /// Milestone 8.93g. Wasp on Red against Snorri with Arien as his Blue ally: Ancestral Boon
+        /// and Grace choose a friendly hero in Radius, which a one-versus-one board cannot offer.
+        /// </summary>
+        public static MatchConfiguration CreateStagedSnorriWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            return new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                Cards.Verified.SnorriCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue), "blue"),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(allyId, "blue-ally"));
+        }
+
+        /// <summary>
+        /// Milestone 8.93g. Snorri on Red against Wasp and Arien on Blue: his "different hero in
+        /// range" repeats and "enemy hero adjacent to the target's space" clauses need two enemies.
+        /// </summary>
+        public static MatchConfiguration CreateStagedSnorriAgainstWaspWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                Cards.Verified.SnorriCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue), "red"),
+                CreateVerifiedWaspHand(TeamSide.Blue)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
         public static MatchConfiguration CreateStagedSnorriTierThreeForInternalTest(
             TeamSide initialTieBreakerSide)
         {

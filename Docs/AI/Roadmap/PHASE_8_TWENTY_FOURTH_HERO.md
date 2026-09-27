@@ -94,10 +94,14 @@ Completed 2026-09-27. Snorri joins both selected formats with eighteen dealt fac
 
 Historical evidence: [8.93f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893f-snorri-dealing-and-artwork-evidence).
 
-### [~] 8.93g Gate Snorri through the complete player path
+### [x] 8.93g Gate Snorri through the complete player path
 
 Outcome: a content-derived matrix and real-input journeys cover every dealt face and the rune state, with no parked or skipped required journey.
 
 Acceptance: every declared interaction shape mapped to named journeys; slot and round transitions, rune/tray/card/Initiative presentation before commitment and after resolution, all rune-gated attacks/blocks/support, Ultimate, items, progression, defeat/respawn, stale input, snapshot/restore, retained-prefix Undo, network projection agreement and whole-face footprint; complete unfiltered Edit Mode and Play Mode suites green with zero new skips and no required skip, plus the permanent gate's zero-skip rule. T3.
 
 Non-goals: a package or the next hero.
+
+Completed 2026-09-27. `SnorriPlayerPathGateTests` maps every derived shape of all eighteen dealt faces, the boxed Rune Shards and five components (piece, session, footprint, items, turn-slot runes) to named real-input journeys; two new shapes were added to the permanent matrix - `RuneSlotAssignment` (the four-piece permutation) and `RuneGlyphChoice` (Rune Mastery's and Runebomb's one rune) - and Snorri's twelve capabilities were classified. Eighteen journeys in `SnorriUiJourneyPlayModeTests` play each rune-gated face the way a player reaches it: Inscribe the Runes in turn 1 with the needed rune under turn 2, then the face in turn 2, on three boards (one-versus-one, Arien as his friend, Wasp and Arien as two enemies). They cover every Attack, repeat, retrieval, pre- and post-Attack move, adjacent-hero discard, Passage effect, Ancestral swap, Oath Block and immunity, Runestone/Runebomb discard, Rune Mastery's pre-action choice, every secondary Movement and Defense, level-up items, defeat and respawn with the runes kept, the round boundary, restart, the rune window's snapshot/restore and retained-prefix Undo, spawn and footprint; the tray journey covers slot, turn and Initiative presentation. A network test proves every seat's projection agrees on each rune's slot. Complete unfiltered Unity Edit Mode 5,706 passed with the 37 standing Explicit diagnostics and no other skip; complete Play Mode 889/889 with zero skips; harness 4,700/4,700.
+
+Historical evidence: [8.93g completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893g-snorri-player-path-gate-evidence).

@@ -442,7 +442,20 @@ namespace GuardsDigital.Tests.PlayMode
         /// twice under one text, which is precisely the journey that cannot tell a working flip from
         /// no flip at all.</para>
         /// </summary>
-        TieBreakerCoinFlipReading
+        TieBreakerCoinFlipReading,
+
+        /// <summary>
+        /// Milestone 8.93g. Snorri's Inscribe the Runes: four physical rune pieces dragged (or
+        /// focus-assigned) onto four numbered turn slots in the decision window, committed by DONE.
+        /// A permutation, not a list of independent picks, and its result is read in the tray.
+        /// </summary>
+        RuneSlotAssignment,
+
+        /// <summary>
+        /// Milestone 8.93g. Choosing one printed rune glyph - Rune Mastery's inactive rune before
+        /// each action, Inscribed Runebomb's one active rune.
+        /// </summary>
+        RuneGlyphChoice
     }
 
     /// <summary>
@@ -926,6 +939,24 @@ namespace GuardsDigital.Tests.PlayMode
                 // the same grammar `presence-count@1` and `pre-consequence-adjacency@1` carry. What a
                 // player is asked comes from the selection it feeds, which declares its own shape.
                 ["synthetic-card-radius"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.93g. Snorri. Rune predicates read the marker register and ask nothing;
+                // his selections name a unit, a card, an item or a rune.
+                ["snorri-active-rune"] = Array.Empty<PlayerInteractionShape>(),
+                ["snorri-any-support-rune"] = Array.Empty<PlayerInteractionShape>(),
+                ["snorri-inscribe-runes"] = new[] { PlayerInteractionShape.RuneSlotAssignment },
+                ["snorri-choose-inactive-rune"] = new[] { PlayerInteractionShape.RuneGlyphChoice },
+                ["snorri-select-disruption-rune"] = new[] { PlayerInteractionShape.RuneGlyphChoice },
+                ["snorri-sigils-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["snorri-runeblaster-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["choose-owned-resolved-turn-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["choose-owned-swappable-item"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["swap-owned-resolved-card-with-hand"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["swap-owned-item-with-matching-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["retrieve-all-owned-discarded-cards"] = Array.Empty<PlayerInteractionShape>(),
+                ["snorri-oath-of-endurance-block-condition"] = Array.Empty<PlayerInteractionShape>(),
+                ["snorri-oath-of-fortitude-block-condition"] = Array.Empty<PlayerInteractionShape>(),
+                ["snorri-oath-of-perseverance-block-condition"] = Array.Empty<PlayerInteractionShape>(),
 
                 // Trinkets' Turret is an obstacle, never a token or a target. A placement
                 // asks for a board space; a selector asks for the chosen unit or token.
