@@ -33,3 +33,13 @@ How a printed word becomes a composed rule, stated once for every hero. A card's
 | Value changes | "+N" / "-N" to a value, "for each" | a roster value contribution, a value modifier, or the token or marker's own property | 9.3 |
 | Each | "each enemy/friendly/unit/hero/minion" | a batch, a per-subject publication or a count; every face read in a register | 9.3 |
 | Conditions | "if you do", "if", "each", "all" | 9.3 | 9.3 |
+
+## Required for a new hero
+
+A hero's composition milestone is not complete until each step below holds. The tests enforce the mechanical half on every hero the roster deals, so a hero added to `QuickGameSetupConfiguration` without them fails the harness; the reading half is the dealing agent's.
+
+1. **Read every face against this page before composing it.** For each printed "may", "up to", "if able", "repeat", "enemy", "friendly", "another/different/other", "in radius", "if you do", "+N ... if", "for each" and "each", compose the shape the families table names. A wording that does not fit W1-W5 or R1, or has two honest readings, goes to the user as a question before it is composed, and its answer is added here as the next W-ruling.
+2. **Run `PrintedWordingConformanceTests` and `RosterMoveLeashSweepTests`.** A new face that trips a family is corrected, or listed in that family's allow-list with the clause and the reading that settles it. Never list a face to make a red test green without that reason.
+3. **Register every new "each" face** in `EveryEachFace_IsReadWithTheShapeThatReachesEverySubject` with the shape that reaches every subject.
+4. **Every journey that answers a card's question reads what changed** (`JourneyOutcomeAuditTests`): the board, a hand, a pile, tokens, coins or a value, and after a decline, that nothing changed.
+5. **Behaviour behind a fix gets its own regression** at the Edit Mode tier (a staged board where the printed outcome is measured), failing on the old content and passing on the new.

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.5 Future hero evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.5 | The new-hero checklist in PRINTED_WORDING, carried lesson 17 for the next dealing, and a test holding the newest dealt hero to every family; dry run on Wuk. [Definition](../../Roadmap/PHASE_9.md#x-95-carry-it-to-every-future-hero). | `milestone/9.5` |
+
 ## Milestone 9.4 Journey outcome evidence
 
 | Milestone | Outcome and definition | Commit |

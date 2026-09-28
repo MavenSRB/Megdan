@@ -50,6 +50,29 @@ namespace GuardsDigital.Tests.EditMode
                 "Twenty-six heroes deal hundreds of faces; a corpus this small lost most of them.");
         }
 
+        /// <summary>
+        /// Milestone 9.5. The most recently dealt hero - whoever that is when this runs - is in the
+        /// corpus with transcribed faces and every body they compose, including an Active effect's own
+        /// trigger body where one is raised. This is the dry run a new dealing gets for free: the
+        /// families above see its cards the moment the roster offers it.
+        /// </summary>
+        [Test]
+        public void TheNewestDealtHero_IsHeldToEveryFamily()
+        {
+            var newest = QuickGameSetupConfiguration.DealtHeroes.Last().ContentId.Value;
+            var faces = PrintedWordingCorpus.All.Where(face => face.Hero == newest).ToArray();
+
+            Assert.That(faces, Is.Not.Empty, newest + " is dealt, so its faces are audited.");
+            Assert.That(faces.All(face => face.Text.Length > 0 || face.Card.SourceContent.Kind ==
+                GuardsDigital.Core.Cards.CardSourceContentKind.PrintsNoText), Is.True,
+                newest + "'s faces carry their printed words, which is what every family reads.");
+            Assert.That(faces.Where(face => face.RaisedEffects.Any(effect => effect.TriggeredEffect.HasValue))
+                    .All(face => face.Bodies.Count > face.Card.ActionDefinitions.Count(action =>
+                        action.EffectRoot != null)),
+                Is.True,
+                newest + "'s Active effects' trigger bodies are walked, not only their card text.");
+        }
+
         [Test]
         public void TheCorpus_WalksActiveEffectTriggerBodies()
         {

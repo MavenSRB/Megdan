@@ -40,6 +40,10 @@ Completed 2026-09-28. `JourneyOutcomeAuditTests` scans every player-path journey
 
 Historical evidence: [9.4 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-94-journey-outcome-evidence).
 
-### [~] 9.5 Carry it to every future hero
+### [x] 9.5 Carry it to every future hero
 
 Outcome: the intake procedure and the dealing checklist name the four families, the roster-derived corpus and the outcome rule as required steps of a new hero's composition milestone; the corpus and gate fail on a new hero without them. Closing check: a documented dry run against the most recent hero, and the living-documentation validation green.
+
+Completed 2026-09-28. [PRINTED_WORDING](../Rules/PRINTED_WORDING.md) now closes with "Required for a new hero": read every face against the families and rulings first (a wording outside W1-W5 and R1, or with two honest readings, goes to the user), run the conformance and leash-sweep tests, register every "each" face, make every journey read what changed, and give every behaviour fix its own regression. The newest carried-lessons list, which the next dealing binds, gains lesson 17 pointing there. The mechanical half needs no step from anybody: the corpus derives from the dealt roster, every family and the journey audit run over every dealt hero, and `TheNewestDealtHero_IsHeldToEveryFamily` checks whoever was dealt last. Dry run on Wuk, the newest: 18 dealt faces and 22 bodies in the corpus, both Dominance trigger bodies walked, and 9.2's W4 check is what caught his trample offering his own minions. T1; evidence in the milestone commit. The approved Phase 9 sequence is complete.
+
+Historical evidence: [9.5 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-95-future-hero-evidence).

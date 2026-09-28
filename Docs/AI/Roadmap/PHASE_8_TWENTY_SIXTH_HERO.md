@@ -18,6 +18,7 @@ On 2026-09-28, while Mrak's 8.112g was still in flight, the user named the next 
 14. **Placement-carrying faces own their reclaim node** (8.112g removed an unprinted standalone reclaim). No Tree capability is registered that no printed face names.
 15. **A rail layout the shine tooling has not seen is traced from a template and composited on every front** (8.112g). 8.114f composites every overlay before claiming coverage.
 16. **Journey lookups match whole names** (8.112h: "ROLLING STONE" inside "STROLLING STONE"; Wuk's "Mighty Throw" / "Monstrous Throw" and the two Dominance faces are the same trap).
+17. **Every face is held to its printed words** (Phase 9, 9.1-9.5). Before composing, read each face against [PRINTED_WORDING](../Rules/PRINTED_WORDING.md) and follow its "Required for a new hero" steps; the conformance, leash-sweep and journey-outcome tests run over every dealt hero automatically. Nineteen faces across eleven heroes had drifted from their printed words before this list existed.
 
 ### [x] 8.114 Inventory Wuk and map the implementation sequence
 
