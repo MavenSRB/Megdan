@@ -107,8 +107,12 @@ Completed 2026-09-28. `hero-wuk` joins the roster (three stars; Tokens, Pusher, 
 
 Historical evidence: [8.114f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114g Gate Wuk through the complete player path
+### [x] 8.114g Gate Wuk through the complete player path
 
 Outcome: the permanent player-path gate maps every shape derived from Wuk's content to a real-input journey; the staged boards are measured before journeys are written; network-seat tests cover every decision addressed to a seat other than Wuk's.
 
 Acceptance: every journey asserts a board, hand or battle change; complete harness, Edit Mode and Play Mode with zero unexplained skips; no package.
+
+Completed 2026-09-28. `WukPlayerPathGateTests` maps every shape derived from his eighteen dealt faces, the boxed Makeshift Weapon and five components (piece, session, footprint, items, Trees) to sixteen real-input journeys in `WukUiJourneyPlayModeTests`, measured first by a headless probe on the scene's own composition: Mystic Saplings plants beside Wuk on (-3, 1); Tree Slam's Tree bullet hits Wasp two away; the Nature's Attacks hit the adjacent hero; the trampling moves walk the file east through Wasp (who discards on her own seat) and his own minion (defeated, WU-Q4); the Blue faces take a Tree and retrieve for Wuk or Arien; Dominance turns a measured tie into a Red loss at the pre-battle moment; the throws and swaps; March of Nature after a Movement; every secondary Movement and Defense; a trample discard restored; a Saplings pause undone and replayed; Trees outliving Wuk's defeat and the round end (WU-Q2), then a restart; spawn, footprint and level-up. The matrix classifies his six capability ids and may walk an Active effect's own trigger body, which Dominance needs; opting every gate in was measured to add unproved shapes to five earlier heroes, so the walk is opt-in and 8.117 owes the rest. `WukNetworkSeatTests` (3) prove Wasp's discard (with snapshot restore), Arien's retrieval and Red's removal after the exclusion are each drawn and answered only on the addressed seat, every seat's projection agreeing. First focused Unity pass 23/25, both journey staging gaps (Arien's turn-two card, Treetop's optional first performance) corrected in scope. T3; evidence in the milestone commit.
+
+Historical evidence: [8.114g completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).

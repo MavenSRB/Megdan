@@ -1441,7 +1441,18 @@ namespace GuardsDigital.Tests.PlayMode
                 ["mrak-reclaim-rock-for-space"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["mrak-place-rocks-along-line"] = Array.Empty<PlayerInteractionShape>(),
                 ["mrak-place-rocks-farthest-adjacent"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
-                ["mrak-place-rock-in-space"] = Array.Empty<PlayerInteractionShape>()
+                ["mrak-place-rock-in-space"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.114g. Wuk. The Tree placement and its short-supply step ask for a board
+                // space; the paired swap selection asks for two spaces (the friendly unit's and the
+                // Tree's); Dominance's pre-battle exclusion and Trample's minion Defeat ask for up to N
+                // minions; the moved-through heroes are published, never asked.
+                ["wuk-place-tree-in-radius"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["wuk-reclaim-tree"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["wuk-choose-friendly-unit-and-tree"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["wuk-exclude-adjacent-enemy-minions"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["wuk-choose-trampled-minions"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["wuk-trampled-enemy-heroes"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1453,9 +1464,11 @@ namespace GuardsDigital.Tests.PlayMode
             IReadOnlyList<CardDefinitionId> returnedToBoxAtSetup,
             IEnumerable<IEffectCapabilityHandler> activeEffectHandlers,
             IReadOnlyList<EffectDefinition> ultimateTriggeredEffects,
-            IReadOnlyList<PlayerPathRow> rows)
+            IReadOnlyList<PlayerPathRow> rows,
+            bool walksActiveEffectTriggers = false)
         {
             triggeredEffects = ultimateTriggeredEffects;
+            this.walksActiveEffectTriggers = walksActiveEffectTriggers;
             HeroDisplayName = heroDisplayName;
             AllDefinitions = allDefinitions;
             ReturnedToBoxAtSetup = returnedToBoxAtSetup;
@@ -1823,6 +1836,9 @@ namespace GuardsDigital.Tests.PlayMode
             if (activeEffectsByCapability.TryGetValue(capabilityId, out var activeEffect))
             {
                 AddActiveEffectShapes(activeEffect, shapes);
+
+                // Milestone 8.114g. The effect's own trigger body, when the matrix was given it.
+                AddActiveEffectTriggerShapes(activeEffect, shapes);
                 return;
             }
 
@@ -1981,6 +1997,38 @@ namespace GuardsDigital.Tests.PlayMode
                 $"The batch Push at node '{node.Id.Value}' binds no literal '{parameterName}', so " +
                 "this gate cannot tell whether it offers a player a distance to pick.");
             return bound[0].Literal.IntegerValue;
+        }
+
+        /// <summary>
+        /// Milestone 8.114g. The shapes an Active effect's OWN trigger body asks for - Wuk's Claim and
+        /// Assert Dominance ask him for up to one (two) adjacent enemy minions at p.8's pre-battle
+        /// moment, a question nothing else on the face raises. Walked only by a gate that opts in and
+        /// supplies the bodies (Wuk's). Measured at 8.114g: turning it on for every gate adds shapes
+        /// to Min's, Misa's, Silverarrow's, Trinkets' and Xargatha's rows that their journeys have not
+        /// been shown to prove, so those gates stay as they were and milestone 8.117 owes the walk
+        /// for every hero rather than this one assuming the answer.
+        /// </summary>
+        private readonly bool walksActiveEffectTriggers;
+
+        private void AddActiveEffectTriggerShapes(
+            ActiveEffectDefinition activeEffect, ISet<PlayerInteractionShape> shapes)
+        {
+            if (!walksActiveEffectTriggers || !activeEffect.TriggeredEffect.HasValue)
+            {
+                return;
+            }
+
+            var body = triggeredEffects.FirstOrDefault(candidate =>
+                candidate.Reference.Equals(activeEffect.TriggeredEffect.Value));
+            if (body == null)
+            {
+                return;
+            }
+
+            foreach (var node in body.Nodes)
+            {
+                AddNodeShapes(node, body, shapes);
+            }
         }
 
         private static void AddActiveEffectShapes(

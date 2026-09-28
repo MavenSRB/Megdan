@@ -88,6 +88,18 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [ ] 8.116 Widget's Dragon Knight fires off Whisper's forced Movement action
+
+Queued 2026-09-28 on the user's ruling ("For Widget, yes it should"), to follow the Wuk sequence. Outcome: the 8.115 forced move, being the defender's Movement action, raises that hero's after-Movement-action triggers (Widget's Dragon Knight). Depends on 8.114g. Closing check: a failing-then-passing regression with Widget defending Swift Justice; Whisper's and Widget's gates still pass.
+
+### [ ] 8.117 Walk every hero's Active-effect trigger bodies in the player-path gate
+
+Queued 2026-09-28 by 8.114g, not authorized. `HeroPlayerPathMatrix` walks an Active effect's own trigger body only for a gate that opts in; Wuk's does. Measured at 8.114g, opting every gate in adds shapes to Min's grenades, Misa's Focus line, Silverarrow's Warning Shot and Treetop Sentinel, Trinkets' Disruptor line and Xargatha's Constrict and Final Embrace that their journeys have not been shown to prove; Bain, Hanu, Swift and Tali declare bodies their gates do not yet supply. Closing check: the walk made unconditional, each added shape proved by a real journey, and every gate green.
+
+### [ ] 8.118 Continue around-action minion Defeats held behind a removal-prevention question
+
+Queued 2026-09-28 by 8.114b1, not authorized. Text around a Movement (Trample, Angry Stampede) settles its minion Defeats in order; when one stops on a removal-prevention question, the ones after it are not continued. Closing check: a failing-then-passing regression defeating two trampled minions, the first protected by a prevention source.
+
 ### [x] 8.115 Whisper's forced move is a full-distance Movement action
 
 Authorized 2026-09-28 by the user's rulings on Swift Justice and Vile Accusation, given while Wuk's 8.114b1 was next: "It should force you to move 3 in a straight line, not less", "Yes but says if able...full distance", "For whispers gold its movement action that forces you to move as specified. Thats all." and then "Ok, fix that as well, dont just record it." This bounded corrective interrupts the approved Wuk sequence before 8.114b1 and returns to it after its own validation and commit.
