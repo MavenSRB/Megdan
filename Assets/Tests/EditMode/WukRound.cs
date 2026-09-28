@@ -31,6 +31,7 @@ namespace GuardsDigital.Tests.EditMode
         internal static readonly HeroId Wuk = new HeroId(StagedBoardParticipants.RedHeroIdValue);
         internal static readonly HeroId Enemy = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         internal static readonly HeroId EnemyAlly = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+        internal static readonly HeroId Ally = new HeroId("wuk-red-ally");
         private static readonly MapId Map = new MapId("wuk-round");
 
         internal static HexCoordinate H(int q, int r) => new HexCoordinate(q, r);
@@ -51,14 +52,15 @@ namespace GuardsDigital.Tests.EditMode
             HexCoordinate? wukAt = null,
             HexCoordinate? enemyAt = null,
             HexCoordinate? enemyAllyAt = null,
+            HexCoordinate? allyAt = null,
+            int wukDiscards = 0,
+            int allyDiscards = 0,
             IReadOnlyList<HexCoordinate> enemyMinionsAt = null,
             IReadOnlyList<HexCoordinate> friendlyMinionsAt = null,
             IReadOnlyList<HexCoordinate> treesAt = null,
             IReadOnlyList<HexCoordinate> enemyRocksAt = null)
         {
-            var participants = enemyAllyAt.HasValue
-                ? StagedBoardParticipants.CreateWithBlueAlly()
-                : StagedBoardParticipants.Create();
+            var participants = Participants(enemyAllyAt.HasValue, allyAt.HasValue);
             var spaces = (from q in Enumerable.Range(-5, 11)
                           from r in Enumerable.Range(-5, 11)
                           where Math.Abs(q + r) <= 5
@@ -69,6 +71,7 @@ namespace GuardsDigital.Tests.EditMode
                 new HeroOccupancy(Enemy, enemyAt ?? H(-5, 5))
             };
             if (enemyAllyAt.HasValue) heroes.Add(new HeroOccupancy(EnemyAlly, enemyAllyAt.Value));
+            if (allyAt.HasValue) heroes.Add(new HeroOccupancy(Ally, allyAt.Value));
 
             var placed = new List<QuickGameMinionSetupState>();
             var index = 0;
@@ -111,7 +114,30 @@ namespace GuardsDigital.Tests.EditMode
             var discardable = CardInstance.CreateInHand(new CardInstanceId("wuk-enemy-spare"),
                 EnemyWall.Reference, Enemy);
             definitions = new[] { face, EnemyHold, EnemyWall };
-            instances = new[] { source, hold, wall, discardable };
+            var all = new List<CardInstance> { source, hold, wall, discardable };
+            var holds = new List<(HeroId Hero, CardInstance Card)> { (Enemy, hold) };
+            foreach (var other in heroes.Select(value => value.HeroId)
+                         .Where(hero => !hero.Equals(Wuk) && !hero.Equals(Enemy)))
+            {
+                var otherHold = CardInstance.CreateInHand(
+                    new CardInstanceId($"wuk-hold-{other.Value}"), EnemyHold.Reference, other);
+                all.Add(otherHold);
+                holds.Add((other, otherHold));
+            }
+
+            for (var discard = 0; discard < wukDiscards; discard++)
+            {
+                all.Add(new CardInstance(new CardInstanceId($"wuk-discarded-{discard}"),
+                    EnemyWall.Reference, Wuk, CardStateFacts.DiscardedUnplayed()));
+            }
+
+            for (var discard = 0; discard < allyDiscards; discard++)
+            {
+                all.Add(new CardInstance(new CardInstanceId($"wuk-ally-discarded-{discard}"),
+                    EnemyWall.Reference, Ally, CardStateFacts.DiscardedUnplayed()));
+            }
+
+            instances = all.ToArray();
             catalogs = new MatchContentCatalogs(
                 SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.DeferredHandlers()),
                 new ComponentDefinitionCatalog(
@@ -125,9 +151,51 @@ namespace GuardsDigital.Tests.EditMode
                 new RoundResolutionComposition(actions, board, new ActiveEffectLifecycle(),
                     markers, null, null, null, null, null, null));
             Assert.That(round.TryCommitCard(Wuk, source.Id).Accepted, Is.True);
-            Assert.That(round.TryCommitCard(Enemy, hold.Id).Accepted, Is.True);
+            foreach (var (hero, card) in holds)
+            {
+                Assert.That(round.TryCommitCard(hero, card.Id).Accepted, Is.True, hero.Value + " commits");
+            }
+
             Assert.That(Turn.SelectedActor.ActorId, Is.EqualTo(Wuk));
         }
+
+        /// <summary>Red: Wuk and, when present, his friendly ally; Blue: the enemy and their ally.</summary>
+        private static MatchParticipants Participants(bool withEnemyAlly, bool withAlly)
+        {
+            var red = new TeamId(StagedBoardParticipants.RedTeamIdValue);
+            var blue = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
+            var players = new List<Player>
+            {
+                new Player(new PlayerId(StagedBoardParticipants.RedPlayerIdValue), red),
+                new Player(new PlayerId(StagedBoardParticipants.BluePlayerIdValue), blue)
+            };
+            var heroes = new List<Hero>
+            {
+                new Hero(Wuk, new PlayerId(StagedBoardParticipants.RedPlayerIdValue), HeroDashboard.RulebookLayout),
+                new Hero(Enemy, new PlayerId(StagedBoardParticipants.BluePlayerIdValue), HeroDashboard.RulebookLayout)
+            };
+            if (withEnemyAlly)
+            {
+                var player = new PlayerId(StagedBoardParticipants.BlueAllyPlayerIdValue);
+                players.Add(new Player(player, blue));
+                heroes.Add(new Hero(EnemyAlly, player, HeroDashboard.RulebookLayout));
+            }
+
+            if (withAlly)
+            {
+                var player = new PlayerId("wuk-red-ally-player");
+                players.Add(new Player(player, red));
+                heroes.Add(new Hero(Ally, player, HeroDashboard.RulebookLayout));
+            }
+
+            return new MatchParticipants(
+                new[] { new Team(red, TeamSide.Red), new Team(blue, TeamSide.Blue) }, players, heroes);
+        }
+
+        /// <summary>Where each of a hero's cards is now.</summary>
+        internal CardLocation[] LocationsOf(HeroId owner) =>
+            instances.Where(card => card.OwnerId.Equals(owner))
+                .Select(card => card.State.Location).ToArray();
 
         private static QuickGameMinionSetupState Minion(
             MinionId id, string team, TeamSide side, HexCoordinate at) =>
@@ -302,6 +370,32 @@ namespace GuardsDigital.Tests.EditMode
             ConfirmIfStillOpen(choice);
         }
 
+        internal CardInstanceId[] OfferedCards() =>
+            Turn.PendingEffectChoice.Candidates
+                .Where(candidate => candidate.Value.Kind == EffectValueKind.CardInstance)
+                .Select(candidate => candidate.Value.CardInstanceId).ToArray();
+
+        /// <summary>The hero the open effect question is addressed to.</summary>
+        internal HeroId Chooser => Turn.PendingEffectChoice.ChooserId;
+
+        internal void PickCard(CardInstanceId card)
+        {
+            var choice = Turn.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            Answer(choice.SelectInvocations.Single(invocation =>
+                invocation.Candidate.Value.Kind == EffectValueKind.CardInstance &&
+                invocation.Candidate.Value.CardInstanceId.Equals(card)));
+            ConfirmIfStillOpen(choice);
+        }
+
+        /// <summary>Takes an open "you may" step.</summary>
+        internal void Accept()
+        {
+            var choice = Turn.PendingEffectChoice;
+            Assert.That(choice?.ConfirmInvocation, Is.Not.Null, "an optional step can be taken");
+            Answer(choice.ConfirmInvocation);
+        }
+
         internal void Decline()
         {
             var choice = Turn.PendingEffectChoice;
@@ -346,6 +440,31 @@ namespace GuardsDigital.Tests.EditMode
             AnswerSpaces(prefix.Round, answer);
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(prefix.Round, prefix.Board),
                 Is.EqualTo(live), "re-executing from the retained prefix matches the forward result");
+        }
+
+        /// <summary>Restores at an open card question and requires the same pick to converge.</summary>
+        internal void AssertRestoreRepliesWithCard(CardInstanceId card)
+        {
+            var pending = Turn.PendingEffectChoice;
+            Assert.That(pending, Is.Not.Null);
+            var bytes = AuthoritativeSnapshotSerializer.Serialize(round, board);
+            var restored = Restore(bytes);
+            var resumed = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
+            Assert.That(resumed?.NodeId, Is.EqualTo(pending.NodeId));
+            Assert.That(resumed.ChooserId, Is.EqualTo(pending.ChooserId));
+            PickCard(card);
+            var command = resumed.SelectInvocations.Single(invocation =>
+                invocation.Candidate.Value.Kind == EffectValueKind.CardInstance &&
+                invocation.Candidate.Value.CardInstanceId.Equals(card));
+            Assert.That(restored.Round.TryAnswerEffectChoice(command).Accepted, Is.True);
+            var still = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
+            if (still != null && still.ChoiceId.Equals(resumed.ChoiceId) && still.ConfirmInvocation != null)
+            {
+                Assert.That(restored.Round.TryAnswerEffectChoice(still.ConfirmInvocation).Accepted, Is.True);
+            }
+
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(AuthoritativeSnapshotSerializer.Serialize(round, board)));
         }
 
         /// <summary>Restores at p.14's target question and requires the same answer to converge.</summary>

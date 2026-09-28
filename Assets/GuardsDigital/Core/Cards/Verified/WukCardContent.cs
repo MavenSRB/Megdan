@@ -122,6 +122,7 @@ namespace GuardsDigital.Core.Cards.Verified
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(
                 new[] { TreeSlamDefinition, MysticSaplingsDefinition }
                     .Concat(WukRedFaces.AttackDefinitions)
+                    .Concat(WukBlueFaces.RetrievalDefinitions)
                     .ToArray()));
 
         /// <summary>

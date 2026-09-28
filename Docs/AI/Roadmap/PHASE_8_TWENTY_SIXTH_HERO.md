@@ -4,7 +4,7 @@ Return to [roadmap](../ROADMAP.md). [The session brief](../SESSION_BRIEF.md) own
 
 ## Authorization and scope
 
-On 2026-09-28, while Mrak's 8.112g was still in flight, the user named the next hero: "so when the other agent finishes Mrak, you get to start working on Wuk ... ask me any question you have so you can keep going and work while i sleep." The user answered WU-Q1 to WU-Q4 the same night, before 8.114 began. This authorizes the bounded sequence **8.114 -> 8.114a -> 8.114b -> 8.114b1 -> 8.114c -> 8.114d -> 8.114e -> 8.114f -> 8.114g** (8.114b1 split from 8.114b by the amendment recorded there) through a fully selectable, artworked Wuk, every dealt printed face and the permanent player-path gate, starting after 8.112h (`6e29c555`). Execute one milestone at a time with its own validation and local commit. A reading outside the settled facts stops its block for the user; other blocks do not wait on it. No other hero, package, remote publication or rule invention is authorized.
+On 2026-09-28, while Mrak's 8.112g was still in flight, the user named the next hero: "so when the other agent finishes Mrak, you get to start working on Wuk ... ask me any question you have so you can keep going and work while i sleep." The user answered WU-Q1 to WU-Q4 the same night, before 8.114 began. This authorizes the bounded sequence **8.114 -> 8.114a -> 8.114b -> 8.114c -> 8.114d -> 8.114e -> 8.114b1 -> 8.114c1 -> 8.114f -> 8.114g** (8.114b1 and 8.114c1 split from their blocks and reordered by the amendments recorded there) through a fully selectable, artworked Wuk, every dealt printed face and the permanent player-path gate, starting after 8.112h (`6e29c555`). Execute one milestone at a time with its own validation and local commit. A reading outside the settled facts stops its block for the user; other blocks do not wait on it. No other hero, package, remote publication or rule invention is authorized.
 
 [Wuk's rules shard](../Rules/HERO_WUK.md) owns source facts, inventory, capability mapping and questions WU-Q1 to WU-Q4. Eighteen ordinary fronts are dealt; the nineteenth, Makeshift Weapon, is a p.20 Handicap and stays boxed at setup.
 
@@ -53,19 +53,17 @@ Completed 2026-09-28. `WukRedFaces` composes the three Nature's Attacks as p.10'
 
 Historical evidence: [8.114b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [!] 8.114b1 Implement the trampling moves
+### [x] 8.114c Implement the Blue retrieval faces
 
-Outcome: Trample and Angry Stampede: a Movement primary whose straight-line walk may ignore obstacles, then each enemy hero moved through discards or is defeated (immunity respected) and up to one (two) minions of any side moved through are defeated (WU-Q4).
+Outcome: Gifts of Nature, Tree of Plenty and Abundance: remove a Tree in radius, then retrieval for Wuk and/or a friendly hero in radius who decides.
 
-Acceptance: configured rounds prove straight versus curved walks, passing through units and tokens but never ending on one, the discard-or-defeat answered on the addressed seat, immune heroes skipped, zero/one/two minion defeats including a friendly one, Movement items applied, and restore of each pause. Unregistered until 8.114f.
+Acceptance: the removal is mandatory (no Tree: not offered, p.10); each retrieval form, the friendly hero's own choice, and Abundance's both. Unregistered until 8.114f.
 
-Paused 2026-09-28 on WU-Q5 ([his shard](../Rules/HERO_WUK.md#open-questions)): the two buildable readings differ in what counts as his Movement action, which is the user's call. 8.114c-8.114e do not depend on it and proceed; 8.114f cannot deal him until this step is complete.
+Amended 2026-09-28 before implementation finished, recording what the probe found: Dominance's exclusions are chosen at the pre-battle moment but read when the battle is planned, on a later command a snapshot can separate, and nothing persisted can hold which minions were chosen - a snapshot schema move, so it is its own step, 8.114c1, inside the approved sequence.
 
-### [ ] 8.114c Implement the Blue retrieval faces and Dominance
+Completed 2026-09-28. `WukBlueFaces` composes the three retrieval faces: the printed-Radius object selection narrowed to Wuk's Trees (8.88's `tokenKind` on the object arm) and `synthetic-remove@2`, then Rock Solid's optional self-retrieval and Silverarrow's Blessing composition for "a friendly hero in radius may retrieve" (the hero chosen on Wuk's side, never Wuk, retrieving from their own pile on their own choice); Tree of Plenty takes one bullet and Abundance one or both. The block found one defect in its own composition and one guard against the class: the Tree selection first left the object arm's required `includeSelf` unbound, which the offer walk reads as undecidable and therefore performable - Gifts of Nature was offered with no Tree in reach and ended having done nothing (carried lesson 4). `WukCompositionTests` now asserts that every node of every composed Wuk face binds every required parameter of its capability; it and the offer test failed with the binding removed. Unregistered until 8.114f. T2; evidence in the milestone commit.
 
-Outcome: Gifts of Nature, Tree of Plenty and Abundance (remove a Tree in radius, then retrieval for Wuk and/or a friendly hero in radius who decides), and Claim and Assert Dominance: a This round effect read at the round's minion battle, where Wuk chooses up to one (two) enemy minions adjacent to him then, which do not count, regardless of immunity (WU-Q3).
-
-Acceptance: the removal is mandatory (no Tree: not offered, p.10); each retrieval form, the friendly hero's own choice on its own seat, and Abundance's both; a minion battle whose result changes by the exclusion, a minion that moved away counting, the choice drawn for Wuk's seat, immune minions excludable, cleanup at round end; snapshot restore of the battle choice. Unregistered until 8.114f.
+Historical evidence: [8.114c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
 ### [ ] 8.114d Implement the throws and the Tree swaps
 
@@ -78,6 +76,22 @@ Acceptance: every subject kind (own Tree, another hero's token, enemy hero, enem
 Outcome: an after-you-resolve-a-card trigger for any card Wuk resolves, optionally placing one Tree in Radius 3 with the reclaim; the set reconciled (starting hand, deck, dealt definitions, p.15 upgrade list naming both Tier III successors per Tier II, every integer parameter's declared vocabulary).
 
 Acceptance: the trigger fires once per resolved card of every colour and not for a card only discarded or used to defend, is declinable, reclaims when short, and restores from its pause; the reconciled set asserts every face's printed values against the inventory. Unregistered until 8.114f.
+
+### [!] 8.114b1 Implement the trampling moves
+
+Outcome: Trample and Angry Stampede: a Movement primary whose straight-line walk may ignore obstacles, then each enemy hero moved through discards or is defeated (immunity respected) and up to one (two) minions of any side moved through are defeated (WU-Q4).
+
+Acceptance: configured rounds prove straight versus curved walks, passing through units and tokens but never ending on one, the discard-or-defeat answered on the addressed seat, immune heroes skipped, zero/one/two minion defeats including a friendly one, Movement items applied, and restore of each pause. Unregistered until 8.114f.
+
+Paused 2026-09-28 on WU-Q5 ([his shard](../Rules/HERO_WUK.md#open-questions)): the two buildable readings differ in what counts as his Movement action, which is the user's call. 8.114c-8.114e do not depend on it and proceed; 8.114f cannot deal him until this step is complete.
+
+### [ ] 8.114c1 Implement Claim and Assert Dominance
+
+Outcome: a This round effect whose pre-battle trigger lets Wuk choose up to one (two) enemy minions adjacent to him at that moment, regardless of immunity (WU-Q3); the chosen minions do not count towards the minion total when the battle is planned. The choice is persisted until the battle is planned (snapshot schema move).
+
+Acceptance: a minion battle whose result changes by the exclusion, a minion that moved away counting, the choice drawn for Wuk's seat, immune minions excludable, the exclusion gone after the round, snapshot restore between the choice and the battle, and the schema migration's corpus evidence. T3 (schema). Unregistered until 8.114f.
+
+Reordered 2026-09-28 within the approved sequence: 8.114b1 and 8.114c1 both need state persisted across a snapshot that nothing persists today, so they run together after 8.114e, where one snapshot schema move can serve both once WU-Q5 is answered.
 
 ### [ ] 8.114f Deal Wuk and present his artwork
 
