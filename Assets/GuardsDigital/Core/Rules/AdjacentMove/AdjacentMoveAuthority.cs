@@ -849,7 +849,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             BoardObjectReference mover,
             int allowance,
             RuleModificationSet modifications,
-            bool moveIgnoresObstacles)
+            bool moveIgnoresObstacles,
+            RuleActivity permittedActivity = RuleActivity.None)
         {
             if (!TryGetObjectCoordinate(mover, out var origin))
             {
@@ -861,7 +862,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             // written for effects would be a place for the two to disagree. A token's rules object is
             // the named absence, which the transit predicate already reads as holding no permission.
             return MovementReachabilityQuery.FindReachableDestinations(
-                origin, mover.AsRuleObject(), this, allowance, modifications, moveIgnoresObstacles);
+                origin, mover.AsRuleObject(), this, allowance, modifications, moveIgnoresObstacles,
+                permittedActivity);
         }
 
         public IReadOnlyList<ReachableMovementDestination> FindEmptyPathRoutes(

@@ -200,11 +200,17 @@ namespace GuardsDigital.Core.Components
         /// about a different movement than the card printed. A card text that says nothing about
         /// crossing passes <c>false</c>, which is p.18's own answer rather than a missing one.
         /// </summary>
+        /// <param name="permittedActivity">
+        /// Milestone 8.115. The activity the move is performed as, so an obstacle permission a card
+        /// scoped to that activity is read (RULING 47's shape). Unnamed, only an unqualified grant lets
+        /// the mover through, which is what every direct Move written before it asks.
+        /// </param>
         IReadOnlyList<GuardsDigital.Core.Rules.Movement.ReachableMovementDestination> FindDirectMoveDestinations(
             BoardObjectReference mover,
             int allowance,
             RuleModificationSet modifications,
-            bool moveIgnoresObstacles);
+            bool moveIgnoresObstacles,
+            RuleActivity permittedActivity = RuleActivity.None);
 
         /// <summary>
         /// The shortest routes of empty spaces from <paramref name="origin"/>, for milestone 6.4a's

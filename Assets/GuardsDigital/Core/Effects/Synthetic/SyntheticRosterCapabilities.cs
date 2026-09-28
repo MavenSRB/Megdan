@@ -629,9 +629,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <see cref="GuardsDigital.Core.Rules.CardResolution.MovementValueQuery"/>, so rulebook
         /// p.16's matching item raises it exactly as it raises any other printed Movement.</description></item>
         /// <item><description>"<b>moving full distance</b>" - p.11's "up to" is overridden, so the
-        /// only destinations offered are the furthest each direction reaches. The 2026-09-06 ruling
-        /// adds "as far as possible when blocked", which is why a direction that runs out early still
-        /// offers its last space rather than dropping out.</description></item>
+        /// only destinations offered lie EXACTLY the full distance away. Whisper Ruling 16a (user,
+        /// 2026-09-28, milestone 8.115): "If able" governs the whole sentence, so a direction stopped
+        /// short is not offered at all - superseding the "as far as possible when blocked" reading
+        /// shipped at 8.35z33.</description></item>
         /// <item><description>"<b>in a straight line</b>" - p.19's file, checked on the route and not
         /// only on the endpoint, so a walk that curves around an obstacle and happens to end in line
         /// is not one of these.</description></item>
@@ -641,11 +642,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <see cref="EffectFailurePolicy.IfAble"/> makes that a silent skip.</description></item>
         /// </list></para>
         ///
-        /// <para><b>It is a direct Move and not a Movement action</b>, under the 2026-09-06 rider: it
-        /// is reached from inside an Attack, so movement-action restrictions do not block it and
-        /// movement-action buffs do not widen it, and there is no Fast Travel to substitute because
-        /// there is no action being offered to anybody. The card's own Movement <em>value</em> is what
-        /// the sentence borrows; its Movement <em>action</em> is not performed.</para>
+        /// <para><b>It is the defending hero's Movement action</b> - Whisper Ruling 16b (user,
+        /// 2026-09-28, milestone 8.115): "its movement action that forces you to move as specified".
+        /// So a standing Movement restriction prevents it, a Movement limit below the full distance
+        /// leaves it unable, obstacle permissions scoped to Movement actions are read, and Movement
+        /// raises and items count. It is still performed here, at p.14's step 7 of Whisper's Attack,
+        /// as one committed straight-line displacement; there is no Fast Travel to substitute, because
+        /// the card fixes the move. Whether the defender's own after-Movement-action triggers fire off
+        /// it is not decided by this milestone.</para>
         /// </summary>
         public static EffectCapabilityReference DefendedCardForcedMoveV1 =>
             Reference("defended-card-forced-move", 1);
@@ -5471,11 +5475,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
+                // Milestone 8.115, Whisper Ruling 16b (user, 2026-09-28): "its movement action that
+                // forces you to move as specified". It is the defending hero's Movement ACTION, so a
+                // standing Movement restriction prevents it and a Movement limit below the full
+                // distance leaves it unable - and "If able" makes either a step not taken.
+                var moverRule = GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(attack.HeroTargetId);
+                if (context.Modifications != null &&
+                    (context.Modifications.IsRestricted(moverRule, RuleActivity.Movement) ||
+                        (context.Modifications.TryGetActivityLimit(
+                            moverRule, RuleActivity.Movement, out var limit) && limit < distance)))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                // Asked as the Movement action it is, so an obstacle permission scoped to Movement
+                // actions (RULING 47) is read.
                 var routes = components.Board
                     .FindDirectMoveDestinations(
-                        mover, distance, context.Modifications, moveIgnoresObstacles: false)
+                        mover, distance, context.Modifications, moveIgnoresObstacles: false,
+                        permittedActivity: RuleActivity.Movement)
                     .ToArray();
 
+                // Whisper Ruling 16a (user, 2026-09-28): "If able" governs the whole sentence, so only
+                // a straight line of EXACTLY the full distance is a destination; a direction stopped
+                // short is not offered, and with none the step does nothing. This supersedes the
+                // "furthest each direction reaches" reading shipped at 8.35z33.
                 var furthest = new List<HexCoordinate>();
                 foreach (var direction in Directions)
                 {
@@ -5483,7 +5507,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     var bestCost = 0;
                     foreach (var route in routes)
                     {
-                        if (route.Cost < 1 || route.Cost > distance ||
+                        if (route.Cost != distance ||
                             !StraightLineQuery.TryGetDirection(
                                 moverAt, route.Destination, out var walked, out var walkedDistance) ||
                             walked != direction || walkedDistance != route.Cost ||
