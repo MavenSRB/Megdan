@@ -268,9 +268,12 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PickWhere(root, value => value.Kind == EffectValueKind.Hero && value.HeroId.Equals(wasp),
                 "Epicentre names Wasp first.");
             yield return PickWhere(root, value => value.Kind == EffectValueKind.CardInstance, "Wasp discards.");
+            // Milestone 9.1, ruling W1: "Repeat once" prints no "may", so the repeat follows with no
+            // question - the next thing asked is the repeat's own target.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "Epicentre offers its repeat on a different target. " + Remaining(runtime));
-            yield return May(root, true);
+                "Epicentre repeats on a different target. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Null,
+                "W1: the repeat is not Mrak's to decline.");
             Assert.That(runtime.PendingEffectChoice.Candidates.Any(value =>
                 value.Value.Kind == EffectValueKind.Hero && value.Value.HeroId.Equals(wasp)), Is.False,
                 "The repeat excludes the hero already chosen.");

@@ -243,9 +243,9 @@ namespace GuardsDigital.Core.Cards.Verified
             };
             if (repeats)
             {
+                // Milestone 9.1, ruling W1: "Repeat once on a different target" prints no "may".
                 nodes.Add(new EffectNodeDefinition(
-                    repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
-                    chooser: EffectChooserRole.Actor,
+                    repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
                     maximumRepeats: 1,
                     repeatTargetBinding: RepeatTargetBinding.DifferentSelectionSubject,
                     boundSelectionNodeId: select));

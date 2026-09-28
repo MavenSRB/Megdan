@@ -32,7 +32,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// her two Gold basics, and the Ultimate, which p.16 UNLOCKS rather than upgrades into.</para>
     ///
     /// <para><b>The revision is real from this milestone on.</b> <see cref="ContentRevision"/> reads
-    /// <c>min-8-61i-rev-1</c> - every dealt hero's <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c>
+    /// <c>min-9-1-rev-1</c> - every dealt hero's <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c>
     /// spelling - and replaces the seven deliberately malformed placeholders the composition blocks
     /// carried. The project's placeholder rule is that a placeholder must not be a value that could be
     /// mistaken for a real one, which is why those strings are gone from the tree rather than left
@@ -58,7 +58,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, and the one string every effect body of hers is
         /// composed under. Minted at 8.61i, where the set became whole - see the type's own remarks.
         /// </summary>
-        public const string ContentRevision = "min-8-61i-rev-1";
+        public const string ContentRevision = "min-9-1-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

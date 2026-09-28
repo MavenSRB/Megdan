@@ -2,6 +2,8 @@
 
 Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md). [The implementation sequence](../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md) owns acceptance and status.
 
+> Milestone 9.1: Self-Destruct and Emergency Protocol hit every enemy hero in the Turret's radius, up to two, under the user's ruling **W3** ([PRINTED_WORDING](PRINTED_WORDING.md)), applied at milestone 9.1.
+
 ## Source and settled authority
 
 Trinkets the Scavenger is the approved twenty-third hero. The curated Tabletopia setup 799373 contains nineteen fronts and nineteen backs under `active-hero-cards/Trinkets/`; all nineteen fronts, the profile and dashboard were visually read on 2026-09-24. The enlarged profile shows **three stars** and **Sniper, Damager, Pusher, Tokens**. The dashboard gives the full title. The nineteen backs share one MD5 (`2a37aa67777c6d3ac6622ba54212de82`). The profile front SHA-256 is `02590861929e0f2a19d3a0c14849f263a7aaf4fc652d049edd08e0f34959971d`. These are source references, not distribution permission.

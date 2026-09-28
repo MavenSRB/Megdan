@@ -247,39 +247,6 @@ namespace GuardsDigital.Core.Cards.Verified
                 new EffectDefinitionId(card.Value + "-skill"), revision, GrenadeNode("root"), nodes);
         }
 
-        /// <summary>
-        /// Milestone 8.61f. What her Grenade decision controls say - the consequence in the printed
-        /// text's own words, never the mechanism.
-        ///
-        /// <para>Only the "up to" steps declare one, because only they open p.10's confirm-or-decline:
-        /// the presence branch is a predicate nobody answers, the placement's own question is a space
-        /// rather than a step, and the discard rides on the named hero's card prompt.</para>
-        ///
-        /// <para>They are not wired into <c>DecisionLabelCatalog</c>, for the reason nothing else of
-        /// hers is registered: the catalog is reachable content, and 8.61i and 8.61j are what make her
-        /// cards reachable.</para>
-        /// </summary>
-        public static IEnumerable<DecisionLabelDeclaration> GrenadeDecisionLabels()
-        {
-            yield return DecisionStep(MinCardContent.DeathGrenade,
-                GrenadePassNode(DeathGrenadePrefix, 0, "may").Value,
-                // Milestone 8.61j shortened these three. The dealing added her row to
-                // `DecisionLabelCoverageTests`, whose 60-character bound is the authoring
-                // discipline that keeps a label a consequence rather than a paraphrase of the whole
-                // card - and all three of these were 64, 64 and 70. What came out is the clause
-                // "a card", which the hero's own discard prompt says next anyway.
-                "An enemy hero beside the Grenade discards or is defeated",
-                "Leave them");
-            yield return DecisionStep(MinCardContent.HolyDeathGrenade,
-                GrenadePassNode(HolyDeathGrenadePrefix, 0, "may").Value,
-                "An enemy hero beside the Grenade discards or is defeated",
-                "Leave them");
-            yield return DecisionStep(MinCardContent.HolyDeathGrenade,
-                GrenadePassNode(HolyDeathGrenadePrefix, 1, "may").Value,
-                "A second enemy hero beside it discards or is defeated",
-                "Stop at one");
-        }
-
         /// <summary>The two Active-effect creations this block declares, both deferred.</summary>
         public static IEnumerable<IEffectCapabilityHandler> GrenadeActiveEffectHandlers() =>
             new IEffectCapabilityHandler[]
@@ -351,7 +318,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                     childNodeIds: new[]
                     {
-                        anchor, GrenadePassNode(prefix, 0, "may"), standing, remove
+                        anchor, GrenadePassNode(prefix, 0, "if-able"), standing, remove
                     }),
                 GrenadeSpaceNode(anchor),
                 GrenadeSpaceNode(standing),
@@ -380,7 +347,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 nodes.AddRange(GrenadeBlast(
                     prefix, pass, anchor,
                     pass + 1 < performances
-                        ? GrenadePassNode(prefix, pass + 1, "may")
+                        ? GrenadePassNode(prefix, pass + 1, "if-able")
                         : (EffectNodeId?)null));
             }
 
@@ -397,7 +364,7 @@ namespace GuardsDigital.Core.Cards.Verified
         private static IEnumerable<EffectNodeDefinition> GrenadeBlast(
             string prefix, int pass, EffectNodeId anchor, EffectNodeId? next)
         {
-            var may = GrenadePassNode(prefix, pass, "may");
+            var may = GrenadePassNode(prefix, pass, "if-able");
             var blast = GrenadePassNode(prefix, pass, "blast");
             var target = GrenadePassNode(prefix, pass, "target");
             var discard = GrenadePassNode(prefix, pass, "discard");
@@ -430,9 +397,12 @@ namespace GuardsDigital.Core.Cards.Verified
                     GrenadePassNode(prefix, pass - 1, "target"), "hero", EffectValueKind.Hero));
             }
 
+            // Milestone 9.1, ruling W3 (Rules/PRINTED_WORDING.md): "Up to N enemy heroes ...
+            // discard" hits every such hero present. The step is performed when a hero stands
+            // beside the token and skipped silently when none does; Min is not asked.
             yield return new EffectNodeDefinition(
-                may, EffectNodeKind.Optional, EffectFailurePolicy.May,
-                childNodeIds: new[] { blast }, chooser: EffectChooserRole.Actor);
+                may, EffectNodeKind.Optional, EffectFailurePolicy.IfAble,
+                childNodeIds: new[] { blast });
             yield return new EffectNodeDefinition(
                 blast, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                 childNodeIds: next.HasValue

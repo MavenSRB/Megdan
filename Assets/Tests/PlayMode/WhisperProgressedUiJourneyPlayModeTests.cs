@@ -778,9 +778,32 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>Six board clicks exercise the repeat bound, including retained-prefix
-        /// Undo and a snapshot restore during the third instance.</summary>
+        /// Undo and a snapshot restore during the third instance. Milestone 9.1, ruling W2: "repeat
+        /// UP TO five times" asks Whisper after each instance, and this journey keeps going.</summary>
         [UnityTest]
         public IEnumerator BloodFrenzy_PerformsFiveDistinctRepeatsAcrossUndoAndRestore()
+        {
+            yield return StageBloodFrenzyRing();
+            var runtime = Root().Runtime;
+            var whisperId = WhisperSeat(runtime).HeroId;
+            yield return RunBloodFrenzy(whisperId, stopAfter: 6);
+        }
+
+        /// <summary>
+        /// Milestone 9.1, ruling W2 (Rules/PRINTED_WORDING.md): "repeat up to five times" is the
+        /// player's count. Whisper keeps going once and then stops, with legal targets still standing -
+        /// two attacks, not six. Until 9.1 the chain was forced to run while any target remained.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator BloodFrenzy_StopsWhenWhisperDeclinesTheNextRepeat()
+        {
+            yield return StageBloodFrenzyRing();
+            var runtime = Root().Runtime;
+            var whisperId = WhisperSeat(runtime).HeroId;
+            yield return RunBloodFrenzy(whisperId, stopAfter: 2);
+        }
+
+        private static IEnumerator StageBloodFrenzyRing()
         {
             const SceneCardContent content = SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper;
             yield return LoadStagedScene(content);
@@ -806,9 +829,14 @@ namespace GuardsDigital.Tests.PlayMode
                 spawnedMinions: ring.Select((space, index) => new SandboxMinionStaging(
                     new MinionId("audit-frenzy-" + index), enemySide, StandardMinionType.Melee, space)));
             yield return LoadStagedScene(content);
+        }
+
+        private static IEnumerator RunBloodFrenzy(HeroId whisperId, int stopAfter)
+        {
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
+            var enemyId = OtherHeroId(runtime, whisperId);
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(runtime.Cards.Any(card => card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.DiscardPile), Is.True);
             CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.BloodFrenzy);
@@ -817,7 +845,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return StartActionThroughControl(root, ActionKind.Attack);
             yield return null;
             var taken = new List<AttackTarget>();
-            for (var index = 0; index < 6; index++)
+            for (var index = 0; index < stopAfter; index++)
             {
                 var pending = runtime.PendingAttackTargetChoice;
                 Assert.That(pending, Is.Not.Null, "Expected attack " + (index + 1) + ". " + Remaining(runtime));
@@ -848,9 +876,28 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(target.MinionId)), Is.False);
                 }
                 taken.Add(target);
+
+                // W2: after every instance but the fifth repeat, the chain is Whisper's to continue.
+                if (index < 5)
+                {
+                    Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                        "\"repeat up to five times\" asks after instance " + (index + 1) + ". " +
+                        Remaining(runtime));
+                    Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null);
+                    UiPlayer.ClickEffectControl(runtime, hud, index + 1 < stopAfter
+                        ? EffectChoiceCommandKind.Confirm
+                        : EffectChoiceCommandKind.Decline);
+                    yield return null;
+                    yield return null;
+                }
             }
-            Assert.That(runtime.PendingAttackTargetChoice, Is.Null, "There must be no seventh attack.");
-            Assert.That(taken.Distinct().Count(), Is.EqualTo(6));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                stopAfter == 6 ? "There must be no seventh attack." : "Declining ends the chain.");
+            Assert.That(taken.Distinct().Count(), Is.EqualTo(stopAfter));
+            Assert.That(runtime.Projection.Minions.Count(minion =>
+                    minion.MinionId.Value.StartsWith("audit-frenzy-", System.StringComparison.Ordinal)),
+                Is.EqualTo(6 - stopAfter),
+                "The ring's remaining minions are still standing, legal and untouched.");
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 

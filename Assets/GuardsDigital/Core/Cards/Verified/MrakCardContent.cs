@@ -29,7 +29,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MrakCardContent
     {
         /// <summary>The revision every Mrak definition carries.</summary>
-        public const string ContentRevision = "mrak-8-112-rev-1";
+        public const string ContentRevision = "mrak-9-1-rev-1";
 
         public const string ContentSetId = "mrak";
 

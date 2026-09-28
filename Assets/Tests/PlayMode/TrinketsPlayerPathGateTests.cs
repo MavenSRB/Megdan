@@ -59,8 +59,9 @@ namespace GuardsDigital.Tests.PlayMode
             { PrimarySkillControl, ConfirmOrDecline, BoardSpaceSelection };
         private static readonly PlayerInteractionShape[] PrototypeShapes =
             { PrimarySkillControl, BoardUnitSelection };
+        // Milestone 9.1, ruling W3: every enemy hero present is hit, so no confirm-or-decline.
         private static readonly PlayerInteractionShape[] DetonationShapes =
-            { PrimarySkillControl, ConfirmOrDecline, BoardUnitSelection, HandCardSelection };
+            { PrimarySkillControl, BoardUnitSelection, HandCardSelection };
 
         private static HeroPlayerPathMatrix Matrix() => new HeroPlayerPathMatrix(
             "Trinkets", TrinketsCardContent.AllDefinitions,

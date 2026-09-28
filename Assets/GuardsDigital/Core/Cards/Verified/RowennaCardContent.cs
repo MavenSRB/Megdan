@@ -30,7 +30,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Lance rather than upgrading into it.</para>
     ///
     /// <para><b>The revision is real from this milestone on.</b> <see cref="ContentRevision"/> reads
-    /// <c>rowenna-8-57f-rev-1</c> - every dealt hero's
+    /// <c>rowenna-9-1-rev-1</c> - every dealt hero's
     /// <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c> spelling - and replaces the deliberately
     /// malformed placeholder milestone 8.57a minted and the five composition blocks carried. The
     /// project's placeholder rule is that a placeholder must not be a value that could be mistaken for
@@ -67,7 +67,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, and the one string every effect body of hers is
         /// composed under. Minted at 8.57f, where the set became whole - see the type's own remarks.
         /// </summary>
-        public const string ContentRevision = "rowenna-8-57f-rev-1";
+        public const string ContentRevision = "rowenna-9-1-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

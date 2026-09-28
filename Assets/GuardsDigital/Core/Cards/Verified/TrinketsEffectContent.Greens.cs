@@ -205,9 +205,9 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 Sequence("root", "turret", "optional-first", "remove"),
                 TurretSpace("turret"),
+                // Milestone 9.1, ruling W3: every enemy hero in the Turret's radius is hit, up to two.
                 new EffectNodeDefinition(Id("optional-first"), EffectNodeKind.Optional,
-                    EffectFailurePolicy.UpTo, childNodeIds: new[] { Id("first") },
-                    chooser: EffectChooserRole.Actor),
+                    EffectFailurePolicy.IfAble, childNodeIds: new[] { Id("first") }),
                 Sequence("first", defeatIfUnable
                     ? new[] { "first-hero", "first-discard", "first-defeat-if-needed",
                         "optional-second" }
@@ -215,8 +215,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 SelectEnemyHero("first-hero"),
                 Discard("first-discard", "first-hero", defeatIfUnable),
                 new EffectNodeDefinition(Id("optional-second"), EffectNodeKind.Optional,
-                    EffectFailurePolicy.UpTo, childNodeIds: new[] { Id("second") },
-                    chooser: EffectChooserRole.Actor),
+                    EffectFailurePolicy.IfAble, childNodeIds: new[] { Id("second") }),
                 Sequence("second", defeatIfUnable
                     ? new[] { "second-hero", "second-discard", "second-defeat-if-needed" }
                     : new[] { "second-hero", "second-discard" }),

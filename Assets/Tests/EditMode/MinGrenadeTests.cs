@@ -258,23 +258,29 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
 
         /// <summary>
-        /// "Up to" makes the whole performance optional (p.10), and Min owns the decision because the
-        /// text assigns it to nobody else. Declining costs nothing and the turn still closes.
+        /// Milestone 9.1, ruling W3 (Rules/PRINTED_WORDING.md): "Up to 1 enemy hero adjacent to that
+        /// token discards a card, or is defeated" hits the hero standing there. Min is not asked
+        /// whether; she names which, and even a drive that declines every decline it is offered costs
+        /// the enemy a card, because none is offered. This replaces 8.61f's reading, in which the
+        /// performance was Min's to skip.
         /// </summary>
         [Test]
-        public void UpTo_IsMinsOwnOptionalStep_AndDecliningLeavesEveryHandAlone()
+        public void AnEnemyHeroBesideTheToken_IsAlwaysHit_AndNoStepIsMinsToSkip()
         {
             var drive = Drive(holy: false, enemiesBeside: 1);
 
             Assert.That(drive.Pauses, Is.Not.Empty);
+            Assert.That(drive.Pauses.Select(pause => pause.NodeId.Value),
+                Has.None.EndsWith("-may").And.None.EndsWith("-if-able"),
+                "W3: there is no whether-question, only which hero and which card.");
             Assert.That(drive.Pauses[0].ChooserId, Is.EqualTo(Min),
-                "p.10 gives an unassigned decision to the card's controller.");
-            Assert.That(drive.Pauses[0].NodeId.Value, Is.EqualTo("grenade-first-may"));
+                "p.10 gives the unassigned choice - which hero - to the card's controller.");
 
-            var declined = Drive(holy: false, enemiesBeside: 1, declineEveryStep: true);
-            Assert.That(declined.EnemyHandAfter, Is.EqualTo(declined.EnemyHandBefore));
-            Assert.That(declined.TurnEnded, Is.True);
-            Assert.That(declined.GrenadesOnBoard, Is.EqualTo(0),
+            var declining = Drive(holy: false, enemiesBeside: 1, declineEveryStep: true);
+            Assert.That(declining.EnemyHandAfter, Is.EqualTo(declining.EnemyHandBefore - 1),
+                "Nothing is offered to decline, so the hero beside the token discards.");
+            Assert.That(declining.TurnEnded, Is.True);
+            Assert.That(declining.GrenadesOnBoard, Is.EqualTo(0),
                 "\"Remove the Grenade token\" is the third sentence and runs either way.");
         }
 
@@ -366,27 +372,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The two passes NEST, and this block found the reason rather than chose it:
-        /// <c>EffectDefinitionValidator</c> refuses a binding whose producer is not guaranteed to have
-        /// run, so a second pass that must exclude the first pass's hero cannot be that pass's
-        /// declinable SIBLING. Declining the first therefore ends the sentence at one question.
-        ///
-        /// <para>Nothing reachable is lost, which is why the shape is right rather than merely legal:
-        /// taking the second after declining the first would be one hero out of the same candidates -
-        /// exactly what taking the first and declining the second already is.</para>
+        /// Milestone 9.1, ruling W3. "Up to 2 enemy heroes adjacent to that token discard a card, or
+        /// are defeated" hits both heroes standing there: the second pass follows the first without a
+        /// question, excluding the hero the first named - the nested shape
+        /// <c>EffectDefinitionValidator</c> requires so that exclusion is bindable at all.
         /// </summary>
         [Test]
-        public void DecliningHolysFirstPassEndsTheSentenceRatherThanAskingTheSameQuestionAgain()
+        public void HolyHitsBothHeroesBesideTheToken_WithoutAskingWhetherToGoOn()
         {
-            var declined = Drive(holy: true, enemiesBeside: 2, declineEveryStep: true);
+            var declining = Drive(holy: true, enemiesBeside: 2, declineEveryStep: true);
 
-            Assert.That(declined.Pauses.Count(pause => pause.NodeId.Value.EndsWith("-may")),
-                Is.EqualTo(1),
-                "One decline answers the whole of \"up to 2\".");
-            Assert.That(declined.SecondOffer, Is.Empty);
-            Assert.That(declined.EnemyHandAfter, Is.EqualTo(declined.EnemyHandBefore));
-            Assert.That(declined.OtherEnemyHandAfter, Is.EqualTo(declined.OtherEnemyHandBefore));
-            Assert.That(declined.GrenadesOnBoard, Is.EqualTo(0));
+            Assert.That(declining.Pauses.Select(pause => pause.NodeId.Value),
+                Has.None.EndsWith("-may").And.None.EndsWith("-if-able"));
+            Assert.That(declining.EnemyHandAfter, Is.EqualTo(declining.EnemyHandBefore - 1));
+            Assert.That(declining.OtherEnemyHandAfter, Is.EqualTo(declining.OtherEnemyHandBefore - 1),
+                "W3: both heroes present are hit, one card each.");
+            Assert.That(declining.GrenadesOnBoard, Is.EqualTo(0));
 
             var validation = EffectDefinitionValidator.Validate(
                 MinEffectContent.HolyDeathGrenadeTriggeredEffect.Definition, BoundedCapabilities());

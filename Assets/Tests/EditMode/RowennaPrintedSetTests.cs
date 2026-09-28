@@ -745,7 +745,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionAndEveryBody()
         {
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57f-rev-1"));
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-1-rev-1"));
             Assert.That(RowennaCardContent.ContentSetId, Is.EqualTo("rowenna"));
 
             Assert.That(
@@ -997,16 +997,14 @@ namespace GuardsDigital.Tests.EditMode
                 "The rider reads the card's own printed Radius 3 through RadiusValueQuery, which the " +
                 "Ultimate's Range does not touch - so the same ally is the same candidate.");
 
-            var repeat = world.Answer(
-                pick,
+            // Milestone 9.1, ruling W1: the repeat follows the coin without a question.
+            var finished = world.Submit(
                 pick.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.Kind == EffectValueKind.Hero &&
                     invocation.Candidate.Value.HeroId.Equals(Ally)));
 
+            Assert.That(finished.Accepted, Is.True);
             Assert.That(world.Coins(Ally), Is.EqualTo(1), "The coin is paid on a Ranged attack too.");
-            Assert.That(repeat.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
-
-            var finished = world.Submit(repeat.ConfirmInvocation);
 
             Assert.That(finished.IsComplete, Is.True);
             Assert.That(finished.RepeatRequested.IsRequested, Is.True);

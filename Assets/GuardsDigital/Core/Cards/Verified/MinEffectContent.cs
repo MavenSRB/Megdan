@@ -31,13 +31,12 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MinEffectContent
     {
         /// <summary>
-        /// Every decision window her set opens, in composition order: her five Stances' riders, both
-        /// Grenades' "up to N enemy heroes", Perfect Self's one-or-both modal, Flurry of Blows'
-        /// repeat and Ruse's optional re-place.
+        /// Every decision window her set opens, in composition order: her five Stances' riders,
+        /// Perfect Self's one-or-both modal, Flurry of Blows' repeat and Ruse's optional re-place.
+        /// Both Grenades' "up to N enemy heroes" open none since milestone 9.1 (ruling W3).
         /// </summary>
         public static IEnumerable<DecisionLabelDeclaration> DecisionLabels() =>
             StanceDecisionLabels()
-                .Concat(GrenadeDecisionLabels())
                 .Concat(DisciplineDecisionLabels())
                 // Milestone 8.61j. Ruse's optional re-place, the one window her three Block faces
                 // open - a debt 8.61b wrote down and the dealing pays, because a decision label is a

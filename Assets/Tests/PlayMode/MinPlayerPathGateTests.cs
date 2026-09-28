@@ -269,16 +269,14 @@ namespace GuardsDigital.Tests.PlayMode
                     Ordinary(
                         Grenade,
                         PrimarySkillControl, BoardSpaceSelection, ActiveEffectReading,
-                        RoundLongActiveEffectReading, ConfirmOrDecline, BoardUnitSelection,
-                        HandCardSelection),
+                        RoundLongActiveEffectReading, BoardUnitSelection, HandCardSelection),
                     Grenades),
                 Face(
                     MinCardContent.HolyDeathGrenade, "Holy Death Grenade",
                     Ordinary(
                         Holy,
                         PrimarySkillControl, BoardSpaceSelection, ActiveEffectReading,
-                        RoundLongActiveEffectReading, ConfirmOrDecline, BoardUnitSelection,
-                        HandCardSelection),
+                        RoundLongActiveEffectReading, BoardUnitSelection, HandCardSelection),
                     Grenades),
 
                 // ---------------------------------------------------------------------------------

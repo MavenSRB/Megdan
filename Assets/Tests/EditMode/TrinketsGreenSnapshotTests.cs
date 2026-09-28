@@ -94,8 +94,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(resumed.NodeId, Is.EqualTo(pending.NodeId));
             Assert.That(resumed.Candidates.Select(candidate => candidate.ToString()),
                 Is.EqualTo(pending.Candidates.Select(candidate => candidate.ToString())));
+            // Milestone 9.1, ruling W3: a detonation's first question names the enemy hero it hits.
             var invocation = index == 2 || index == 4
-                ? pending.DeclineInvocation
+                ? pending.SelectInvocations.Single(command =>
+                    command.Candidate.Value.Equals(EffectValue.Hero(enemy)))
                 : index == 3
                     ? pending.SelectInvocations.Single(command =>
                         command.Candidate.OptionNodeId.Value == "swap-arm")

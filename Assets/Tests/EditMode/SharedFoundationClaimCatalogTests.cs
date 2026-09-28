@@ -393,7 +393,7 @@ namespace GuardsDigital.Tests.EditMode
                     new FoundationEvidenceLocator(
                         new MemberLocator(typeof(RowennaRewardTests),
                             nameof(RowennaRewardTests
-                                .ParagonOfGrace_AsksForOneRepeatOnADifferentTarget_OnceTheCoinIsPaid),
+                                .ParagonOfGrace_RepeatsOnADifferentTargetWithoutAsking_OnceTheCoinIsPaid),
                             MemberTypes.Method),
                         SharedFoundationEvidenceKind.BoundaryFixture,
                         "a credited coin gates a repeat that binds nothing from the grant"),

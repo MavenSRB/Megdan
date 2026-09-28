@@ -918,24 +918,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// `if able` is untouched: it never asked, so there was never a prompt to withhold. It still
-        /// enters its branch and lets the step's own policy skip what cannot be taken, which is a
-        /// different record from the one an unasked `may` writes.
+        /// Milestone 9.1. `if able` never asks, and since 9.1 it reads its branch the way `may` and
+        /// `up to` do: a branch that can do nothing is skipped at the Optional, before it is entered.
+        /// Entering it first let a MANDATORY step inside it with nobody to name stop the whole text -
+        /// Min's Grenade stayed on the board when no enemy hero stood beside it (ruling W3).
         /// </summary>
         [Test]
-        public void AnIfAbleOptional_StillEntersItsBranchRatherThanBeingDeclinedForIt()
+        public void AnIfAbleOptionalWhoseBranchCannotApply_IsSkippedForTheSameReasonAMayIs()
         {
             var completed = Start(Optional(
                 EffectFailurePolicy.IfAble,
                 Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble)));
 
             Assert.That(completed.Frame, Is.Null);
-            Assert.That(Kinds(completed),
-                Is.EqualTo(new[] { "first-option=DeclinedOptional", "root=Applied" }),
-                "The branch was entered and its own step is what reported it could not be taken, so " +
-                "the Optional above it applied. An unoffered `may` writes that record on the " +
-                "Optional itself and never reaches the step at all - the same word on a different " +
-                "node, which is what tells a reader which of the two happened.");
+            Assert.That(Kinds(completed), Is.EqualTo(new[] { "root=DeclinedOptional" }),
+                "The Optional is skipped and its branch never entered - the record `may` and `up to` " +
+                "already write for a branch they cannot perform.");
         }
 
         /// <summary>

@@ -457,14 +457,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"End of turn:\" stops the page before the turn is handed on. " +
                 Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.NodeId.Value,
-                Is.EqualTo("holy-grenade-first-may"), Remaining(runtime));
-            UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
-            yield return null;
-            yield return null;
-
+            // Milestone 9.1, ruling W3: the heroes beside the Grenade are hit, so the first question
+            // is which hero, with nothing to decline.
             var firstTarget = runtime.PendingEffectChoice;
-            Assert.That(firstTarget.NodeId.Value, Is.EqualTo("holy-grenade-first-target"));
+            Assert.That(firstTarget.NodeId.Value, Is.EqualTo("holy-grenade-first-target"),
+                Remaining(runtime));
+            Assert.That(firstTarget.DeclineInvocation, Is.Null,
+                "W3: a hero beside the Grenade is hit; Min is not asked whether.");
             Assert.That(
                 firstTarget.Candidates.Select(candidate => candidate.Value.HeroId).ToArray(),
                 Is.EqualTo(new[] { enemy }).AsCollection,
@@ -483,18 +482,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "and it costs exactly one card out of the hand it was asked of. " +
                 Remaining(runtime));
 
-            var second = runtime.PendingEffectChoice;
-            if (second != null)
-            {
-                Assert.That(second.NodeId.Value, Is.EqualTo("holy-grenade-second-may"),
-                    "\"Up to 2\" asks again. " + Remaining(runtime));
-                Assert.That(second.DeclineInvocation, Is.Not.Null,
-                    "and the second pass can be stopped at one.");
-                UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Decline);
-                yield return null;
-                yield return null;
-                Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
-            }
+            // "Up to 2": with no second enemy hero beside the token, the second pass has nobody to
+            // hit and is skipped without a question - the sentence stops at one (W3).
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "Only one enemy hero stands beside the Grenade, so nothing more is asked. " +
+                Remaining(runtime));
 
             Assert.That(Tokens(runtime), Is.Empty,
                 "\"Remove the Grenade token\", either way. " + Remaining(runtime));

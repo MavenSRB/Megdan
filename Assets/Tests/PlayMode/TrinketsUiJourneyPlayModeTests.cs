@@ -563,9 +563,12 @@ namespace GuardsDigital.Tests.PlayMode
                 var turretId = OwnedObstacleIdentity.For(
                     TrinketsComponentContent.TurretKind, actor);
                 yield return Begin(root, face, ActionKind.Skill);
-                yield return May(root, true);
+                // Milestone 9.1, ruling W3: the enemy hero in the Turret's radius is hit - Trinkets
+                // is asked which hero, never whether.
                 Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                     face.Value + " must ask which enemy hero. " + Remaining(runtime));
+                Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Null,
+                    face.Value + ": W3 leaves nothing to decline. " + Remaining(runtime));
                 var target = runtime.PendingEffectChoice.Candidates.Single(candidate =>
                     candidate.Value.Kind == GuardsDigital.Core.Effects.EffectValueKind.Hero &&
                     candidate.Value.HeroId.Equals(enemy));
@@ -577,7 +580,9 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return Pick(root, runtime.PendingEffectChoice.Candidates.Single(candidate =>
                         candidate.Value.Kind ==
                             GuardsDigital.Core.Effects.EffectValueKind.CardInstance));
-                if (runtime.PendingEffectChoice != null) yield return May(root, false);
+                Assert.That(runtime.PendingEffectChoice, Is.Null,
+                    face.Value + ": one enemy hero stands in radius, so the second pass asks " +
+                    "nothing. " + Remaining(runtime));
                 Assert.That(runtime.Projection.Obstacles.Any(obstacle =>
                     obstacle.ObstacleId.Equals(turretId)), Is.False,
                     face.Value + " removes the Turret after the discard branch. " + Remaining(runtime));

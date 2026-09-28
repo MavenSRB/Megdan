@@ -11,6 +11,8 @@ open question affecting more than one hero stays in [RULES_LEDGER.md](../RULES_L
 being copied here. Nothing in the source assigns her a pronoun; this shard follows the project's
 convention for the dashboards' unnamed heroes and uses "she".
 
+> Milestone 9.1: Blood Frenzy's "repeat up to five times" is Whisper's to stop after any repeat under the user's ruling **W2** ([PRINTED_WORDING](PRINTED_WORDING.md)), applied at milestone 9.1; Blood Fury's plain "repeat once" stays automatic (W1).
+
 ## Whisper content ledger
 
 The pitch uses Whisper's complete progression. Its implementation-grade inventory contains the same fields

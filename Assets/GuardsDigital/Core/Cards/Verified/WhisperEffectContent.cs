@@ -71,6 +71,10 @@ namespace GuardsDigital.Core.Cards.Verified
                 "Discard a card, or be defeated");
             yield return DecisionArm(WhisperCardContent.GreaterGood, "modal-slaughter",
                 "Defeat up to 3 minions adjacent to Whisper");
+
+            // Milestone 9.1, ruling W2: "repeat UP TO five times" is hers to stop.
+            yield return DecisionStep(WhisperCardContent.BloodFrenzy, "after-repeat",
+                "Attack a different target", "Stop here");
         }
         /// <summary>The Ultimate's rule identity, named here because the card content references it.</summary>
         public const string GrimReaperRuleId = "whisper-grim-reaper";
@@ -652,10 +656,19 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding(
                                 SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
                         }),
-                    new EffectNodeDefinition(
-                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
-                        maximumRepeats: maximumRepeats,
-                        repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
+                    // Milestone 9.1, rulings W1 and W2 (Rules/PRINTED_WORDING.md). Blood Fury's
+                    // "repeat once" is automatic; Blood Frenzy's "repeat UP TO five times" is the
+                    // player's to stop after any instance.
+                    maximumRepeats > 1
+                        ? new EffectNodeDefinition(
+                            repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
+                            chooser: EffectChooserRole.Actor,
+                            maximumRepeats: maximumRepeats,
+                            repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
+                        : new EffectNodeDefinition(
+                            repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
+                            maximumRepeats: maximumRepeats,
+                            repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
                 });
         }
 

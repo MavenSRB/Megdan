@@ -156,6 +156,10 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ChainJourney =
             "BloodFrenzy_PerformsFiveDistinctRepeatsAcrossUndoAndRestore";
 
+        /// <summary>Milestone 9.1, ruling W2: "repeat up to five times" is Whisper's to stop.</summary>
+        private const string ChainStopJourney =
+            "BloodFrenzy_StopsWhenWhisperDeclinesTheNextRepeat";
+
         private const string SeedsJourney =
             "SeedsOfFear_MovesTheEnemyOffItsSpawnPointExactlyOneSpaceAndNotZero";
 
@@ -337,7 +341,7 @@ namespace GuardsDigital.Tests.PlayMode
                     new[]
                     {
                         "WhisperVerifiedContentTests" +
-                            ".BloodFuryAndBloodFrenzy_GateMandatoryRepeatsOnTheEnemyDiscard",
+                            ".BloodFuryRepeatsAutomatically_AndBloodFrenzyRepeatsUntilWhisperStops",
                         "WhisperVerifiedContentTests" +
                             ".TheTwoRedRepeaters_TakeThePagesOwnTargetQuestion"
                     }),
@@ -359,14 +363,16 @@ namespace GuardsDigital.Tests.PlayMode
                     }),
 
                 // The face RULING 34 is about, and the only one in the roster where "on different
-                // targets" can diverge from what the engine enforces. Its row is Blood Fury's exactly,
-                // because the divergence is a bound on the chain rather than a shape a player supplies.
+                // targets" can diverge from what the engine enforces. Its row is Blood Fury's plus one
+                // shape since milestone 9.1: "repeat UP TO five times" asks Whisper whether to go on
+                // (ruling W2), where Blood Fury's plain "repeat once" is automatic (W1).
                 Face(WhisperCardContent.BloodFrenzy, "Blood Frenzy", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, ChainJourney),
                         Prove(AfterAttackTextPause, ChainJourney),
                         Prove(RepeatDecision, ChainJourney),
+                        Prove(ConfirmOrDecline, ChainStopJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },

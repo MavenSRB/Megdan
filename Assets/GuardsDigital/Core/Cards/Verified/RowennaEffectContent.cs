@@ -203,11 +203,9 @@ namespace GuardsDigital.Core.Cards.Verified
         /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
         /// own words, never the mechanism.
         ///
-        /// <para>Only the two Paragons declare one at this block, because only a <c>RepeatAction</c>
-        /// on <c>may</c> opens rulebook p.10's confirm-or-decline among these five bodies -
-        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.OptionalStepQuery"/> is the rule, and
-        /// the retrieves' own <c>may</c> rides on the retrieving hero's card prompt rather than on a
-        /// pause of its own.</para>
+        /// <para>The five Red bodies declare none. The Paragons' repeat is automatic since milestone
+        /// 9.1 (ruling W1), so it opens no confirm-or-decline, and the retrieves' own <c>may</c> rides
+        /// on the retrieving hero's card prompt rather than on a pause of its own.</para>
         ///
         /// <para>They are not wired into <see cref="DecisionLabelCatalog"/> yet, for the same reason
         /// nothing else of hers is registered: the catalog is reachable content, and 8.57g is what
@@ -215,11 +213,6 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
         {
-            yield return DecisionStep(RowennaCardContent.ParagonOfGrace, RewardPrefix + "-repeat",
-                "Attack a different target", "Stop here");
-            yield return DecisionStep(RowennaCardContent.ParagonOfValor, RewardPrefix + "-repeat",
-                "Attack a different target", "Stop here");
-
             // Milestone 8.57d. Her three Green Movement faces each open p.10's confirm-or-decline once
             // per printed performance and then a modal per performance, so the labels are declared per
             // card AND per pass - Grand Melee asks the same two questions twice, and a player answering
@@ -673,8 +666,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// the unit THIS instance took rather than naming a selection node, because an Attack's target
         /// is the action's own state; that is milestone 8.10's
         /// <see cref="RepeatTargetBinding.DifferentTarget"/>, minted for Thunder Boomerang and declared
-        /// identically here. p.10 gives an unassigned decision to the card's controller, and "repeat
-        /// once" assigns none.</para>
+        /// identically here. No "may" is printed, so the repeat is performed whenever a different
+        /// target is legal: ruling W1 (Rules/PRINTED_WORDING.md, milestone 9.1).</para>
         ///
         /// <para>The repeated instance is an ordinary Attack: it chooses its own target out of the
         /// smaller set, takes its own Defense response, and applies this same rider again - which may
@@ -683,8 +676,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static EffectNodeDefinition Repeat(EffectNodeId id) =>
             new EffectNodeDefinition(
-                id, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
-                chooser: EffectChooserRole.Actor,
+                id, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
                 maximumRepeats: 1,
                 repeatTargetBinding: RepeatTargetBinding.DifferentTarget);
 

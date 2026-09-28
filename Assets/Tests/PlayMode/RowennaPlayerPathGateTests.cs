@@ -156,9 +156,10 @@ namespace GuardsDigital.Tests.PlayMode
                     Reward),
                 Face(
                     RowennaCardContent.ParagonOfGrace, "Paragon of Grace",
+                    // Milestone 9.1, ruling W1: the repeat is automatic, so no confirm-or-decline.
                     Ordinary(
                         Paragons,
-                        AdjacentAttackTarget, AfterAttackTextPause, ConfirmOrDecline, RepeatDecision,
+                        AdjacentAttackTarget, AfterAttackTextPause, RepeatDecision,
                         BoardUnitSelection),
                     Reward),
                 Face(

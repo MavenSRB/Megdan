@@ -632,7 +632,7 @@ namespace GuardsDigital.Tests.EditMode
                 "PlacementLineQualifierTests asserts the exact list, so this case states what these " +
                 "two faces owe rather than counting somebody else's deferrals.");
 
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57f-rev-1"),
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-1-rev-1"),
                 "Milestone 8.57f minted the real revision when her whole set moved together, " +
                 "replacing the deliberately malformed placeholder these composition blocks carried. " +
                 "Milestone 7.9's gate is unaffected and is asserted where it lives: nothing of hers " +

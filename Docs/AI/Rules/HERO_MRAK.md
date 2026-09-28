@@ -2,6 +2,8 @@
 
 Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md). [The twenty-fifth-hero sequence](../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md) owns acceptance and status.
 
+> Milestone 9.1: Epicentre's "Repeat once on a different target" is automatic under the user's ruling **W1** ([PRINTED_WORDING](PRINTED_WORDING.md)), applied at milestone 9.1.
+
 ## Source and rule authority
 
 Mrak the Rockshaper is the selected twenty-fifth hero. The curated Tabletopia source `Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Mrak/` holds nineteen byte-distinct fronts and nineteen backs sharing one MD5 (`faf716cbaa343936daab90cde2e2ed2f`). All nineteen fronts, the selection profile and the dashboard were read at full resolution on 2026-09-27. The profile (SHA-256 `1f478496cbe690ef549c5edc9e29624d22f43f1178e02386a8b122d5fc42ecc9`) shows **three stars** and **Melee, Tokens, Durable, Disabler, Tactician**. The dashboard (SHA-256 `0eff7446c6f8375e6f93ce5dd7f105231bdcfd25a209bc908d9966c313c0d7f4`) gives the title "Mrak the Rockshaper" and four ordinary turn slots. These are source references, not distribution permission.

@@ -588,29 +588,33 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Both repeats are gated on the live enemy-discard condition and neither is declinable,
-        /// because neither face prints "may".
+        /// Both repeats are gated on the live enemy-discard condition. Blood Fury's plain "repeat
+        /// once" is automatic (ruling W1); Blood Frenzy's "repeat UP TO five times" is Whisper's to stop
+        /// after any instance (ruling W2, milestone 9.1 - it was forced before).
         /// </summary>
         [Test]
-        public void BloodFuryAndBloodFrenzy_GateMandatoryRepeatsOnTheEnemyDiscard()
+        public void BloodFuryRepeatsAutomatically_AndBloodFrenzyRepeatsUntilWhisperStops()
         {
-            foreach (var pair in new[]
+            foreach (var (card, maximum, playerMayStop) in new[]
             {
-                (WhisperCardContent.BloodFury, 1),
-                (WhisperCardContent.BloodFrenzy, 5)
+                (WhisperCardContent.BloodFury, 1, false),
+                (WhisperCardContent.BloodFrenzy, 5, true)
             })
             {
-                var root = AttackRoot(pair.Item1, CardTextTiming.AfterTheAttack);
+                var root = AttackRoot(card, CardTextTiming.AfterTheAttack);
                 var gate = NodesOf(root).Single(node => node.Kind == EffectNodeKind.Conditional);
                 Assert.That(gate.Capability,
                     Is.EqualTo(SyntheticRosterCapabilities.EnemyHeroWithDiscardPresentV1));
 
                 var repeat = NodesOf(root).Single(node => node.Kind == EffectNodeKind.RepeatAction);
-                Assert.That(repeat.MaximumRepeats, Is.EqualTo(pair.Item2), pair.Item1.Value);
-                Assert.That(repeat.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
-                    "No printed \"may\": mandatory where a legal target exists, skipped where none is.");
-                Assert.That(repeat.Chooser, Is.EqualTo(EffectChooserRole.None),
-                    "An if-able repeat opens no decision, so it names no chooser.");
+                Assert.That(repeat.MaximumRepeats, Is.EqualTo(maximum), card.Value);
+                Assert.That(repeat.FailurePolicy,
+                    Is.EqualTo(playerMayStop ? EffectFailurePolicy.May : EffectFailurePolicy.IfAble),
+                    card.Value + (playerMayStop
+                        ? ": W2 - \"up to\" makes the count Whisper's."
+                        : ": W1 - no \"may\", so it is performed wherever a legal target exists."));
+                Assert.That(repeat.Chooser,
+                    Is.EqualTo(playerMayStop ? EffectChooserRole.Actor : EffectChooserRole.None));
                 Assert.That(repeat.RepeatTargetBinding, Is.EqualTo(RepeatTargetBinding.DifferentTarget));
             }
         }

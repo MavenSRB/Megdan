@@ -312,18 +312,13 @@ namespace GuardsDigital.Tests.PlayMode
                     continue;
                 }
 
-                var repeat = runtime.PendingEffectChoice;
-                Assert.That(repeat, Is.Not.Null,
-                    "The rider was performed, so \"repeat once\" is offered. " + Remaining(runtime));
-                Assert.That(repeat.NodeId.Value, Is.EqualTo("reward-repeat"));
-                Assert.That(repeat.ChooserId, Is.EqualTo(her),
-                    "and the repeat is HERS - \"you\" on a card is its controller.");
-                Assert.That(repeat.DeclineInvocation, Is.Not.Null,
-                    "\"may repeat\" carries a real decline.");
-                yield return May(root);
-
+                // Milestone 9.1, ruling W1: "repeat once" prints no "may", so the performed rider is
+                // followed straight by the repeat - no confirm-or-decline stands between them.
+                Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Is.Not.EqualTo("reward-repeat"),
+                    "W1: the Paragons' repeat is automatic. " + Remaining(runtime));
                 Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
-                    "and the repeat re-opens p.13's own target question. " + Remaining(runtime));
+                    "The rider was performed, so the repeat re-opens p.13's own target question. " +
+                    Remaining(runtime));
                 Assert.That(
                     runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Is.Empty,
                     "\"on a different target\" excludes the hero the first instance took. " +

@@ -294,7 +294,8 @@ namespace GuardsDigital.Tests.EditMode
         public void HerDecisionLabels_AreInTheCatalogPresentationAsks()
         {
             var declared = MinEffectContent.DecisionLabels().ToArray();
-            Assert.That(declared, Has.Length.EqualTo(11));
+            // Milestone 9.1: eight, the Grenades' three "up to N" passes no longer ask (ruling W3).
+            Assert.That(declared, Has.Length.EqualTo(8));
 
             var registered = DecisionLabelCatalog.Registered;
             foreach (var declaration in declared)

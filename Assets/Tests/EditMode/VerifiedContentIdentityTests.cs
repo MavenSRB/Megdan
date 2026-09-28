@@ -78,6 +78,10 @@ namespace GuardsDigital.Tests.EditMode
         // all keep the undefined default and their content revisions stay put; the reflection walk
         // below nevertheless includes the new property on each contribution. The nine digests
         // below are the complete measured set, not new card semantics or an inferred revision bump.
+        // Milestone 9.1 moved exactly five, each with a new `-9-1-rev-1` revision, for the user's
+        // printed-wording rulings (Rules/PRINTED_WORDING.md): Whisper's Blood Frenzy repeat is
+        // stoppable (W2); Rowenna's two Paragons and Mrak's Epicentre repeat automatically (W1); Min's
+        // two Grenades and Trinkets' two detonations hit every enemy hero present (W3).
         private static readonly IdentityPin[] Pins =
         {
             new IdentityPin("arien", "arien-8-35l-rev-1", "a980d139925f8bfe87fe6b501978697944d0a7473c0d42cf6df70ee85c1758a5"),
@@ -179,7 +183,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers was added in the same commit that
             // made her pickable, so the digest below is over her whole dealt set.
-            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "60939cbbb11bbaa3f5814f745973591d46d19f68efb1a7dfbdc87cd6d9a15706"),
+            new IdentityPin("whisper", "whisper-9-1-rev-1", "d49f3aa98bab62190b350ea02a3377d4c99b3d6f2ad7531e35b4190ded52411e"),
             // Milestone 8.37. THE TWELFTH AND LAST PIN of the package arc, arriving on exactly the
             // terms the seventh through eleventh did: a pin is a claim about content a configured
             // match loads, and milestone 8.35z32 composed Tali's Green line without dealing her.
@@ -254,7 +258,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: her staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "432284402e90e514d68757cd8d9bfa4b4674f8d5b65e6e18b2d0e96e3a854887"),
+            new IdentityPin("rowenna", "rowenna-9-1-rev-1", "fce7f0431601bb5378ca9d249d3458209564df2985499cbb385b6474e57f5f93"),
             // Milestone 8.61j. THE NINETEENTH PIN, on exactly the terms every pin from the seventh
             // on arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.61i composed Min's nineteen faces without dealing her.
@@ -263,7 +267,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for
             // and did not recur: her staged configuration went into EveryDealtDefinition below in
             // this same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("min", "min-8-61i-rev-1", "247084b1278a1b98a7e2915bd856a8beaf52109677d0ca0ba1376c32e019e530"),
+            new IdentityPin("min", "min-9-1-rev-1", "4c1afdda2ab251074e4e47a6a41436c4791cd5406bda5d8e02c8a08dd10c1f6c"),
             // Milestone 8.69g. THE TWENTIETH PIN, on exactly the terms every pin from the seventh on
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.69f composed Brynn's nineteen faces without dealing him.
@@ -307,9 +311,9 @@ namespace GuardsDigital.Tests.EditMode
             // 8.92d's generic object-selection vocabulary widened the canonical walk for eight
             // earlier owners above without changing their printed behavior; the measured pins move
             // with the shared contract. Trinkets is the newly dealt owner of its full graph.
-            new IdentityPin("trinkets", "trinkets-8-92e-complete", "951dacc88aaf860d2cbb696ec57441a9e51fc8220bf5c392915383339197e953"),
+            new IdentityPin("trinkets", "trinkets-9-1-rev-1", "151104c2486030a425a2177d10ebfcb24c2f3562cd40ee135e49105afb063695"),
             new IdentityPin("snorri", "snorri-8-93f-rev-1", "133f27b08c4e3f21853e200c6807ac162778587d0226d98d7de86248e3f46e93"),
-            new IdentityPin("mrak", "mrak-8-112-rev-1", "158830f695d6015f4b2b95894d931dd353c299c45412569c4157fa5adf4c31cc"),
+            new IdentityPin("mrak", "mrak-9-1-rev-1", "1398d39d034d44313c25a63fc101548fc9b044a1de82c07cf7e3e541e70de378"),
             new IdentityPin("wuk", "wuk-8-114-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc")
         };
 

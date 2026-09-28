@@ -55,7 +55,9 @@ namespace GuardsDigital.Tests.EditMode
             var result = Start(definition);
 
             Assert.That(result.IsComplete, Is.True, "`if able` never pauses for a decision.");
-            Assert.That(Kinds(result), Does.Contain("blocked=DeclinedOptional"),
+            // Milestone 9.1: a branch that cannot be performed is skipped at the Optional, before it
+            // is entered, so the record sits on the Optional rather than on the step inside it.
+            Assert.That(Kinds(result), Does.Contain("maybe=DeclinedOptional"),
                 "An `if able` step that cannot happen is skipped, not a failure.");
             Assert.That(Kinds(result), Does.Contain("after=Applied"),
                 "`if able` never stops the rest of the action.");

@@ -2,6 +2,8 @@
 
 Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
+> Milestone 9.1: The Paragons' "repeat once on a different target" is automatic under the user's ruling **W1** ([PRINTED_WORDING](PRINTED_WORDING.md)), applied at milestone 9.1; it was composed declinable at 8.57a.
+
 ## Rowenna content ledger
 
 Rowenna is the eighteenth playable hero. [The implementation series](../Roadmap/PHASE_8_EIGHTEENTH_HERO.md) owns acceptance. This shard records her nineteen printed definitions, the general rules they lean on, the capability map and the open readings. Nothing of hers is composed, registered or artworked yet; each later block updates the relevant row here.

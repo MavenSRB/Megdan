@@ -396,21 +396,17 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
                 }
 
-                var may = runtime.PendingEffectChoice;
-                Assert.That(may, Is.Not.Null,
+                // Milestone 9.1, ruling W3: "Up to 1 enemy hero ... discards" hits the hero there, so
+                // the first question is WHICH hero - Min is not asked whether.
+                var target = runtime.PendingEffectChoice;
+                Assert.That(target, Is.Not.Null,
                     "\"End of turn:\" stops the page before the turn is handed on. " +
                     Remaining(runtime));
-                Assert.That(may.NodeId.Value, Is.EqualTo("grenade-first-may"));
-                Assert.That(may.ChooserId, Is.EqualTo(her),
-                    "MI-Q4: Min chooses WHICH and HOW MANY, because p.10 gives her every choice " +
-                    "the text does not hand somebody else.");
-                Assert.That(may.DeclineInvocation, Is.Not.Null);
-                UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
-                yield return null;
-                yield return null;
-
-                var target = runtime.PendingEffectChoice;
                 Assert.That(target.NodeId.Value, Is.EqualTo("grenade-first-target"));
+                Assert.That(target.ChooserId, Is.EqualTo(her),
+                    "p.10 gives Min the choice the text hands nobody else: which hero.");
+                Assert.That(target.DeclineInvocation, Is.Null,
+                    "W3: a hero beside the Grenade is hit; there is nothing to decline.");
                 Assert.That(
                     target.Candidates.Select(candidate => candidate.Value.HeroId).ToArray(),
                     Is.EqualTo(new[] { enemy }).AsCollection,

@@ -773,7 +773,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionEveryBodyAndEveryTriggeredEffect()
         {
-            Assert.That(MinCardContent.ContentRevision, Is.EqualTo("min-8-61i-rev-1"));
+            Assert.That(MinCardContent.ContentRevision, Is.EqualTo("min-9-1-rev-1"));
             Assert.That(MinCardContent.ContentSetId, Is.EqualTo("min"));
 
             Assert.That(
@@ -937,9 +937,10 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(
-                MinEffectContent.DecisionLabels().Count(), Is.EqualTo(11),
-                "Her two swapping Stances and Dragon's step, Cobra's and Ruse's re-places, both " +
-                "Grenades' \"up to N\" passes and Perfect Self's one-or-both modal.");
+                MinEffectContent.DecisionLabels().Count(), Is.EqualTo(8),
+                "Her two swapping Stances and Dragon's step, Cobra's and Ruse's re-places and " +
+                "Perfect Self's one-or-both modal. Both Grenades' \"up to N\" passes asked until " +
+                "milestone 9.1; ruling W3 makes them hit, so their three labels went.");
             foreach (var declaration in MinEffectContent.DecisionLabels())
             {
                 Assert.That(

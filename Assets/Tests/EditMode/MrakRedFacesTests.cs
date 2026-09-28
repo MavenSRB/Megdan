@@ -125,10 +125,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(match.OfferedHeroes(), Is.EquivalentTo(new[] { Enemy, EnemyAlly }));
             match.PickHero(Enemy);
             match.PickCard(wall.Id);
-            match.AcceptRepeat();
 
+            // Milestone 9.1, ruling W1: no "may" is printed, so the repeat follows without a question.
             Assert.That(match.OfferedHeroes(), Is.EqualTo(new[] { EnemyAlly }),
-                "\"Repeat once on a different target\" - the first hero is taken out.");
+                "\"Repeat once on a different target\" - automatic, and the first hero is taken out.");
             match.PickHero(EnemyAlly);
             match.PickCard(allyWall.Id);
             Assert.That(allyWall.State.Location, Is.EqualTo(CardLocation.DiscardPile));

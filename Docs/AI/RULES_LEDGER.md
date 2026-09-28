@@ -83,6 +83,10 @@ Milestone 8.25 made that setup the configuration a player loads. Earlier synthet
 
 The per-system rule status table - primary source, current status, and required verification notes - is maintained in [Rules/RULE_SYSTEMS.md](Rules/RULE_SYSTEMS.md#rule-system-ledger). The systems that put something on the board, move it, or take it off keep their rows in [Rules/BOARD_OBJECT_SYSTEMS.md](Rules/BOARD_OBJECT_SYSTEMS.md#board-and-object-rule-systems), and the intrinsic-versus-effective unit-type declaration in [Rules/UNIT_TYPE_QUESTIONS.md](Rules/UNIT_TYPE_QUESTIONS.md#unit-type-question-ledger); both were split out at milestone 7.8e.
 
+## Printed wording readings
+
+How printed words ("may", "up to", "if able", "repeat", targeting and condition words) become composed rules for every hero, with the user's wording rulings W1-W3, is maintained in [Rules/PRINTED_WORDING.md](Rules/PRINTED_WORDING.md).
+
 ## Card architecture coverage
 
 The rule-pressure to architecture-seam map, with the milestone that proves each seam, is maintained in [Rules/CARD_COVERAGE.md](Rules/CARD_COVERAGE.md#card-architecture-coverage).

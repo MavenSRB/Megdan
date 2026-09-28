@@ -340,29 +340,23 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The repeat is asked for only after the coin actually moved, it is Rowenna's to decline, and
-        /// what it asks for is p.10's repeat of the whole Attack with the unit this instance took
-        /// excluded.
+        /// The repeat follows only after the coin actually moved, and it is automatic: "repeat once"
+        /// prints no "may", so it is not Rowenna's to decline (ruling W1, milestone 9.1 - it was
+        /// declinable before). What it requests is p.10's repeat of the whole Attack with the unit this
+        /// instance took excluded.
         /// </summary>
         [Test]
-        public void ParagonOfGrace_AsksForOneRepeatOnADifferentTarget_OnceTheCoinIsPaid()
+        public void ParagonOfGrace_RepeatsOnADifferentTargetWithoutAsking_OnceTheCoinIsPaid()
         {
             var world = World.WithHeroTarget(
                 RowennaCardContent.ParagonOfGrace, allyAt: Beside);
 
             var pick = world.RunToPause();
-            var repeat = world.Answer(pick, Pick(pick, Ally));
+            var finished = world.AnswerToCompletion(pick, Pick(pick, Ally));
 
             Assert.That(world.Coins(Ally), Is.EqualTo(1), "The coin is paid first.");
-            Assert.That(repeat.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline),
-                "and then 'repeat once' opens rulebook p.10's confirm-or-decline.");
-            Assert.That(repeat.ChooserId, Is.EqualTo(Rowenna),
-                "p.10 gives an unassigned decision to the card's controller, and 'repeat once' " +
-                "assigns none.");
-
-            var finished = world.Submit(repeat.ConfirmInvocation);
-
-            Assert.That(finished.IsComplete, Is.True);
+            Assert.That(finished.IsComplete, Is.True,
+                "W1: no confirm-or-decline stands between the coin and the repeat.");
             Assert.That(finished.RepeatRequested.IsRequested, Is.True);
             Assert.That(
                 finished.RepeatRequested.Binding, Is.EqualTo(RepeatTargetBinding.DifferentTarget),
@@ -401,10 +395,9 @@ namespace GuardsDigital.Tests.EditMode
                 RowennaCardContent.ParagonOfValor, allyAt: Beside);
             var pick = performed.RunToPause();
             var card = performed.Answer(pick, Pick(pick, Ally));
-            var repeat = performed.Answer(card, Pick(card, "ally-discard-a"));
+            var taken = performed.AnswerToCompletion(card, Pick(card, "ally-discard-a"));
 
-            Assert.That(repeat.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
-            var taken = performed.Submit(repeat.ConfirmInvocation);
+            Assert.That(taken.IsComplete, Is.True, "W1: the repeat follows without a question.");
             Assert.That(taken.RepeatRequested.IsRequested, Is.True);
             Assert.That(
                 taken.RepeatRequested.Binding, Is.EqualTo(RepeatTargetBinding.DifferentTarget));
@@ -422,24 +415,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Rowenna may decline her own repeat, which is what "may repeat" means and what separates it
-        /// from a second attack the card forces.
+        /// Ruling W1: the Paragons print "repeat once", not "may repeat once", so the repeat is not
+        /// Rowenna's to decline - no confirm-or-decline opens, and the repeat is requested wherever the
+        /// rider happened. (Milestone 8.57a composed it declinable; 9.1 corrected it.)
         /// </summary>
         [Test]
-        public void TheParagonsRepeat_IsHersToDecline()
+        public void TheParagonsRepeat_IsNotHersToDecline()
         {
             var world = World.WithHeroTarget(
                 RowennaCardContent.ParagonOfGrace, allyAt: Beside);
             var pick = world.RunToPause();
-            var repeat = world.Answer(pick, Pick(pick, Ally));
 
-            var finished = world.Submit(repeat.DeclineInvocation);
+            var finished = world.AnswerToCompletion(pick, Pick(pick, Ally));
 
-            Assert.That(finished.IsComplete, Is.True);
-            Assert.That(finished.RepeatRequested.IsRequested, Is.False);
-            Assert.That(world.Coins(Ally), Is.EqualTo(1),
-                "and the coin she already paid stays paid, which is p.10's rule that everything " +
-                "applied before a declined step stays applied.");
+            Assert.That(finished.IsComplete, Is.True, "Nothing is asked after the coin.");
+            Assert.That(finished.RepeatRequested.IsRequested, Is.True);
+            Assert.That(world.Coins(Ally), Is.EqualTo(1));
         }
 
         /// <summary>
@@ -491,8 +482,7 @@ namespace GuardsDigital.Tests.EditMode
             // snapshot carries and it is the only thing kept.
             world.RebindTrustedContent();
 
-            var repeat = world.Answer(card, Pick(card, "ally-discard-a"));
-            var finished = world.Submit(repeat.ConfirmInvocation);
+            var finished = world.AnswerToCompletion(card, Pick(card, "ally-discard-a"));
 
             Assert.That(world.InHand("ally-discard-a"), Is.True);
             Assert.That(finished.RepeatRequested.IsRequested, Is.True,
@@ -733,13 +723,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheContentRevision_IsTheRealOneMintedWhenHerSetBecameWhole()
         {
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57f-rev-1"));
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-1-rev-1"));
             Assert.That(RowennaCardContent.ContentRevision, Does.Contain("-rev-"),
                 "Every dealt hero's revision ends in '-rev-<n>', and hers now reads as one.");
             Assert.That(
                 RowennaCardContent.AllDefinitions.Select(definition => definition.ContentRevision)
                     .Distinct(),
-                Is.EqualTo(new[] { "rowenna-8-57f-rev-1" }),
+                Is.EqualTo(new[] { "rowenna-9-1-rev-1" }),
                 "and one string covers the set, so no face can be left on the placeholder.");
         }
 

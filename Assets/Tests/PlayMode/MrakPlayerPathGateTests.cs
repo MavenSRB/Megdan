@@ -105,9 +105,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Row(MrakRedFaces.Epicentre, "Epicentre",
                     "MrakRedFacesTests.Epicentre_RepeatsOnADifferentTarget",
                     Ribbon(attack: true),
+                    // Milestone 9.1, ruling W1: the repeat is automatic, so no confirm-or-decline.
                     Seismic_(Epicentre).Concat(new[]
                     {
-                        Prove(ConfirmOrDecline, Epicentre), Prove(RepeatDecision, Epicentre)
+                        Prove(RepeatDecision, Epicentre)
                     }).ToArray()),
                 Row(MrakRedFaces.RockSolid, "Rock Solid",
                     "MrakRedFacesTests.Carapace_DefendsWithItsOwnDefense_AndIsSpent",

@@ -1118,6 +1118,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             if (!OptionalStepQuery.OpensConfirmOrDecline(node))
                             {
                                 // `if able` never asks. It attempts, and a refusal is simply skipped.
+                                // Milestone 9.1: a branch that cannot be performed at all is skipped
+                                // here, before it is entered, exactly as `may` skips one below - a
+                                // mandatory selection inside it with nobody to name would otherwise
+                                // stop the whole text (Min's Grenade left on the board when no enemy
+                                // hero stood beside it, measured under ruling W3).
+                                if (!EffectOptionFeasibilityQuery.CanPerformOptionalBranch(
+                                        node, frame, outcomes, context))
+                                {
+                                    Pop(continuation);
+                                    Record(outcomes, events, node.Id,
+                                        EffectExecutionResultKind.DeclinedOptional);
+                                    continue;
+                                }
+
                                 AdvanceTop(continuation);
                                 continuation.Add(new EffectContinuationFrame(node.ChildNodeIds[0], 0));
                                 continue;

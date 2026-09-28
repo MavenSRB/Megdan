@@ -252,11 +252,11 @@ namespace GuardsDigital.Tests.EditMode
                 card.Reference, skill.Id, Trinkets, Trinkets,
                 ActionInvocationContext.PrintedPrimary, context);
             Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
-            Assert.That(step.Frame?.PendingChoice?.ConfirmInvocation, Is.Not.Null);
-            step = EffectResolutionSession.Answer(
-                step.Frame, step.Frame.PendingChoice.ConfirmInvocation, context);
-            Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
+            // Milestone 9.1, ruling W3: "Up to two enemy heroes ... discard" hits the heroes present,
+            // so the first question is WHICH hero, and it cannot be declined.
             Assert.That(step.Frame?.PendingChoice, Is.Not.Null);
+            Assert.That(step.Frame.PendingChoice.DeclineInvocation, Is.Null,
+                "W3: a hero in the Turret's radius is hit; the step is not Trinkets' to skip.");
             var select = step.Frame.PendingChoice.SelectInvocations.Single(command =>
                 command.Candidate.Value.Equals(EffectValue.Hero(Enemy)));
             var requested = new List<HeroId>();
@@ -270,11 +270,9 @@ namespace GuardsDigital.Tests.EditMode
                     step.Frame, step.Frame.PendingChoice.ConfirmInvocation, context);
             requested.AddRange(step.RequestedHeroDefeats.Select(value => value.HeroId));
             Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
-            Assert.That(step.Frame?.PendingChoice?.ConfirmInvocation, Is.Not.Null);
-            step = EffectResolutionSession.Answer(
-                step.Frame, step.Frame.PendingChoice.ConfirmInvocation, context);
-            Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
-            Assert.That(step.Frame?.PendingChoice, Is.Not.Null);
+            Assert.That(step.Frame?.PendingChoice, Is.Not.Null,
+                "W3: the second enemy hero present is hit too.");
+            Assert.That(step.Frame.PendingChoice.DeclineInvocation, Is.Null);
             Assert.That(step.Frame.PendingChoice.SelectInvocations.Any(command =>
                 command.Candidate.Value.Equals(EffectValue.Hero(Enemy))), Is.False);
             var second = step.Frame.PendingChoice.SelectInvocations.Single(command =>
