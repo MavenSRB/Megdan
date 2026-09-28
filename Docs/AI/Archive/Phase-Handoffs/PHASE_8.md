@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112h Mrak player-path gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112h | Mrak passes the permanent player-path gate: a content-derived table (three new shapes: the printed secondary Attack and the Carapace's two substitutions), 21 real-input journeys asserting board or hand changes, and four wire tests proving each decision on its addressed seat with every seat agreeing; complete harness, Edit Mode and Play Mode green. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112h-gate-mrak-through-the-complete-player-path). | `milestone/8.112h` |
+
 ## Milestone 8.112g Mrak dealt and artworked evidence
 
 | Milestone | Outcome and definition | Commit |

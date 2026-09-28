@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-27
+Last updated: 2026-09-28
 
 ## Purpose and authority
 
@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all twenty-five heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v46 persists turn-slot marker positions, temporary rune activation and held action selections; wire protocol is `guards-private-online/24`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. Twenty-four heroes pass the permanent player-path gate; Mrak's is 8.112h. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty-five heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v46 persists turn-slot marker positions, temporary rune activation and held action selections; wire protocol is `guards-private-online/24`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-five heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.113**.
+- Current completed milestone: **8.112h**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.112h**.
+- Next proposed milestone: **8.35z87**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
-On 2026-09-27 the user cleared the next hero ("be careful, look at all the recent bugs we found, learn from them"); the agent chose **Mrak the Rockshaper**, authorizing [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md), whose carried-lessons list binds each recent defect class to a block. **8.112** inventoried him ([his shard](Rules/HERO_MRAK.md)); MR-Q1-MR-Q4 are settled by the user; **8.112a** (rock token, secondary Attack), **8.112b** (Fissure, Stone Grip), **8.112c** (Red faces, Carapace substitution), **8.112d** (Blue pushes and stomps), **8.112e** (Green shifts and rolls), **8.112f** (Ultimate, set reconciled) and **8.112g** (dealt, artworked, pickable) are complete. The user's same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four and applied p.18's short-supply reclaim to her placements.
+On 2026-09-27 the user cleared the next hero ("be careful, look at all the recent bugs we found, learn from them"); the agent chose **Mrak the Rockshaper**, authorizing [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md), whose carried-lessons list binds each recent defect class to a block. **8.112** inventoried him ([his shard](Rules/HERO_MRAK.md)); MR-Q1-MR-Q4 are settled by the user; **8.112a** (rock token, secondary Attack), **8.112b** (Fissure, Stone Grip), **8.112c** (Red faces, Carapace substitution), **8.112d** (Blue pushes and stomps), **8.112e** (Green shifts and rolls), **8.112f** (Ultimate, set reconciled), **8.112g** (dealt, artworked, pickable) and **8.112h** (the permanent player-path gate) are complete, which ends that sequence; a package or another hero needs the user. The user's same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four and applied p.18's short-supply reclaim to her placements.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

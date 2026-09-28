@@ -455,7 +455,31 @@ namespace GuardsDigital.Tests.PlayMode
         /// Milestone 8.93g. Choosing one printed rune glyph - Rune Mastery's inactive rune before
         /// each action, Inscribed Runebomb's one active rune.
         /// </summary>
-        RuneGlyphChoice
+        RuneGlyphChoice,
+
+        /// <summary>
+        /// Milestone 8.112h. A printed SECONDARY Attack - Mrak's Seismic faces and Carapaces print the
+        /// swords in the secondary row, and p.10 lets the player perform that Attack instead of the
+        /// primary action. The input is p.14's adjacent target click, but it is reached from the
+        /// secondary control and resolves with the secondary's value and no card text, so a journey
+        /// proving the primary Attack proves nothing about it. Read off the action's own origin.
+        /// </summary>
+        SecondaryAttackTarget,
+
+        /// <summary>
+        /// Milestone 8.112h. A This round grant that lets its source card answer a discard demanded
+        /// of the hero's hand ("you may discard this card instead") - the discard prompt offers a
+        /// resolved card the hand does not hold. Read off
+        /// <c>RulePermissionKind.DiscardSourceCardInsteadOfHandCard</c>.
+        /// </summary>
+        SourceCardDiscardSubstitution,
+
+        /// <summary>
+        /// Milestone 8.112h. The same grant's second clause: the source card offers its own printed
+        /// Defense in p.14's window "as if it was in your hand", paid by discarding it from where it
+        /// rests. Read off <c>RulePermissionKind.DefendWithSourceCardAsIfInHand</c>.
+        /// </summary>
+        SourceCardDefenseSubstitution
     }
 
     /// <summary>
@@ -1406,7 +1430,18 @@ namespace GuardsDigital.Tests.PlayMode
 
                 // Milestone 8.113. p.18's short-supply step before each moon placement: the reclaim
                 // handler Tali's tokens use, over her magma, asking for a standing token's space.
-                ["ignatia-reclaim-magma"] = new[] { PlayerInteractionShape.BoardSpaceSelection }
+                ["ignatia-reclaim-magma"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Milestone 8.112h. Mrak's rocks. Each p.18 short-supply step asks which standing rocks
+                // come back when more stand than it needs; Stone Grip's placement asks among a
+                // distance tie that does not fit whole. Fissure's line and a stomp's vacated space are
+                // decided by the board and ask nothing.
+                ["mrak-reclaim-rocks-for-line"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mrak-reclaim-rocks-for-farthest-adjacent"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mrak-reclaim-rock-for-space"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mrak-place-rocks-along-line"] = Array.Empty<PlayerInteractionShape>(),
+                ["mrak-place-rocks-farthest-adjacent"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mrak-place-rock-in-space"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1575,6 +1610,11 @@ namespace GuardsDigital.Tests.PlayMode
                     break;
                 case ActionKind.Movement when isSecondary:
                     shapes.Add(PlayerInteractionShape.SecondaryMovementDestination);
+                    break;
+                // Milestone 8.112h. The first printed secondary Attack in the corpus. No other dealt
+                // hero declares one, so every earlier row is untouched.
+                case ActionKind.Attack when isSecondary:
+                    shapes.Add(PlayerInteractionShape.SecondaryAttackTarget);
                     break;
                 // p.14 prints two kinds of Defense in the primary slot and they resolve differently:
                 // a Defense Value is compared against the Attack Total, and a Block succeeds outright
@@ -1981,6 +2021,20 @@ namespace GuardsDigital.Tests.PlayMode
             if (stopsAnEnemyFromActing)
             {
                 shapes.Add(PlayerInteractionShape.OpponentRestrictionReading);
+            }
+
+            // Milestone 8.112h. Mrak's Carapace grants are the only content declaring these two
+            // permissions, and each puts a resolved card into a prompt the hand alone would fill.
+            if (activeEffect.Modifications.Any(modification =>
+                    modification.Permission == RulePermissionKind.DiscardSourceCardInsteadOfHandCard))
+            {
+                shapes.Add(PlayerInteractionShape.SourceCardDiscardSubstitution);
+            }
+
+            if (activeEffect.Modifications.Any(modification =>
+                    modification.Permission == RulePermissionKind.DefendWithSourceCardAsIfInHand))
+            {
+                shapes.Add(PlayerInteractionShape.SourceCardDefenseSubstitution);
             }
         }
 
