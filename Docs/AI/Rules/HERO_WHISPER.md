@@ -229,7 +229,7 @@ reading of each, and the two designer-tier answers her thread produced.
   move IS a Movement action of the defending hero, constrained to Ruling 16a's full distance in one
   straight line: Movement-action restrictions and raises and after-Movement-action triggers apply to it.
   This supersedes Ruling 16's "direct Move and not a Movement action"; who steers it (the defending
-  hero's seat) is unchanged. Built by milestone 8.115; whether the defender's after-Movement-action triggers fire off it is open with the user.
+  hero's seat) is unchanged. Built by milestone 8.115. The user added (2026-09-28): the defender's own after-Movement-action triggers DO fire off it ("For Widget, yes it should" - Dragon Knight); queued to follow Wuk's sequence, not yet built.
 - **Ruling 17 - the two-tier modal rule.** An option of a modal is refused only when a mandatory step of
   its branch cannot be taken; being able to apply nothing is not a reason. Lesser Evil's and Greater
   Good's opponent-chosen modals are the canonical case - the bullet that does nothing to the enemy is the
