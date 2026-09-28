@@ -55,6 +55,7 @@ namespace GuardsDigital.Tests.EditMode
             HexCoordinate? allyAt = null,
             int wukDiscards = 0,
             int allyDiscards = 0,
+            bool withUltimate = false,
             IReadOnlyList<HexCoordinate> enemyMinionsAt = null,
             IReadOnlyList<HexCoordinate> friendlyMinionsAt = null,
             IReadOnlyList<HexCoordinate> treesAt = null,
@@ -113,8 +114,17 @@ namespace GuardsDigital.Tests.EditMode
                 EnemyWall.Reference, Enemy);
             var discardable = CardInstance.CreateInHand(new CardInstanceId("wuk-enemy-spare"),
                 EnemyWall.Reference, Enemy);
-            definitions = new[] { face, EnemyHold, EnemyWall };
+            definitions = withUltimate
+                ? new[] { face, EnemyHold, EnemyWall, WukCardContent.MarchOfNatureDefinition }
+                : new[] { face, EnemyHold, EnemyWall };
             var all = new List<CardInstance> { source, hold, wall, discardable };
+            if (withUltimate)
+            {
+                var ultimate = CardInstance.CreateInDeck(new CardInstanceId("wuk-ultimate-card"),
+                    WukCardContent.MarchOfNatureDefinition.Reference, Wuk);
+                Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
+                all.Add(ultimate);
+            }
             var holds = new List<(HeroId Hero, CardInstance Card)> { (Enemy, hold) };
             foreach (var other in heroes.Select(value => value.HeroId)
                          .Where(hero => !hero.Equals(Wuk) && !hero.Equals(Enemy)))
@@ -143,7 +153,9 @@ namespace GuardsDigital.Tests.EditMode
                 new ComponentDefinitionCatalog(
                     WukComponentContent.Tokens().Concat(MrakComponentContent.Tokens()),
                     Array.Empty<MarkerDefinition>()),
-                new TriggeredEffectCatalog(Array.Empty<EffectDefinition>()));
+                new TriggeredEffectCatalog(withUltimate
+                    ? WukCardContent.TriggeredEffects()
+                    : (IReadOnlyList<EffectDefinition>)Array.Empty<EffectDefinition>()));
             var markers = new MarkerAttachmentRegister();
             var actions = new CardActionResolutionAuthority(catalogs, board, markers);
             round = new RoundResolutionAuthority(

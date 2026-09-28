@@ -60,6 +60,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
+| 8.114e | March of Nature on the new `AfterControllerResolvesCard` condition and `PerformedCardResolution` fact; the set reconciled with the four owed rows named; twenty-two decision labels. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114e-implement-march-of-nature-and-reconcile-the-set). | `milestone/8.114e` |
 | 8.114d | Wuk's three throws and two Tree swaps; the friendly swap's two-selection offer defect and `wuk-choose-friendly-unit-and-tree@1`. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114d-implement-the-throws-and-the-tree-swaps). | `milestone/8.114d` |
 | 8.114c | Wuk's three Blue retrieval faces (Tree removal in radius, self and friendly-hero retrieval); the `includeSelf` defect and `WukCompositionTests` guard; Dominance split to 8.114c1. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114c-implement-the-blue-retrieval-faces). | `milestone/8.114c` |
 | 8.114b | Wuk's three Nature's Attacks over two `attack-sequence@1` bullets, the second narrowed by the new `AdjacentToATokenTheActorOwns` member; the trampling moves split to 8.114b1. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114b-implement-the-red-tree-attacks). | `milestone/8.114b` |

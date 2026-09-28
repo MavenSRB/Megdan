@@ -3994,6 +3994,13 @@ namespace GuardsDigital.Core.Cards
             var primaryAction = PrimaryActionQuery.ForCompletedAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, invocationContext);
 
+            // Milestone 8.114e. Whether this completion RESOLVED its card, whatever the card is - the
+            // same classification the basic fact above carries for Gold and Silver alone. Wuk's March of
+            // Nature is the first printed sentence to ask it of every card.
+            var cardResolution = PerformedCardResolution.ForCompletedAction(
+                actorId, sourceCardInstanceId, actionDefinitionId,
+                BasicActionQuery.IsCardResolution(invocationContext));
+
             AddTiming(
                 events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction,
                 completedAttackTarget, primaryAction,
@@ -4006,7 +4013,8 @@ namespace GuardsDigital.Core.Cards
                 // discipline `PerformedBasicAction` records for itself.
                 PerformedAttackAction.ForCompletedAction(
                     actorId, sourceCardInstanceId, actionDefinitionId, kind,
-                    invocationContext == ActionInvocationContext.Repeated));
+                    invocationContext == ActionInvocationContext.Repeated),
+                cardResolution);
         }
 
         private void AddTiming(
@@ -4018,7 +4026,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
             PerformedPrimaryAction primaryAction = default,
             PerformedMovementAction movementAction = default,
-            PerformedAttackAction attackAction = default)
+            PerformedAttackAction attackAction = default,
+            PerformedCardResolution cardResolution = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -4040,7 +4049,8 @@ namespace GuardsDigital.Core.Cards
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),
-                    ContinuousTriggersFor(basicAction, primaryAction, movementAction, attackAction),
+                    ContinuousTriggersFor(
+                        basicAction, primaryAction, movementAction, attackAction, cardResolution),
                     basicAction,
                     completedAttackTarget,
                     attackAction,
@@ -4081,7 +4091,8 @@ namespace GuardsDigital.Core.Cards
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction = default,
             PerformedMovementAction movementAction = default,
-            PerformedAttackAction attackAction = default)
+            PerformedAttackAction attackAction = default,
+            PerformedCardResolution cardResolution = default)
         {
             if (cardActions == null)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
@@ -4091,7 +4102,7 @@ namespace GuardsDigital.Core.Cards
                 ultimates,
                 GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
                     ultimates, cardActions.Board, participants, basicAction, primaryAction,
-                    movementAction, attackAction),
+                    movementAction, attackAction, cardResolution),
                 consumedTurnScopedKeys);
         }
 

@@ -188,7 +188,22 @@ namespace GuardsDigital.Core.Cards
         /// trigger and the trigger finds nothing to offer, which is the reading that keeps
         /// "each time" true without letting the repeat repeat itself.</para>
         /// </summary>
-        AfterControllerPerformsAttackAction = 10
+        AfterControllerPerformsAttackAction = 10,
+
+        /// <summary>
+        /// Milestone 8.114e. Wuk's March of Nature, "Each time after you resolve a card, you may place a
+        /// Tree token in radius."
+        ///
+        /// <para><b>An eleventh condition because <see cref="AfterControllerResolvesBasicCard"/> cannot
+        /// see a coloured card</b> - it reads <see cref="GuardsDigital.Core.Cards.PerformedBasicAction"/>,
+        /// which is absent for every card that is not Gold or Silver - and this sentence names every card
+        /// he resolves. It reads <see cref="GuardsDigital.Core.Cards.PerformedCardResolution"/>, produced
+        /// at the same single completion site from the same invocation classification, so "resolved"
+        /// means one thing for both. It is unbounded: "each time" prints no frequency, and a card
+        /// resolves once a turn however many actions the turn performs, so a repeat or a grant performed
+        /// off a card already resolved does not fire it again.</para>
+        /// </summary>
+        AfterControllerResolvesCard = 11
     }
 
     /// <summary>

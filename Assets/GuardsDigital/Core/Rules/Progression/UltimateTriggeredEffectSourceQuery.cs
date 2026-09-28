@@ -23,25 +23,26 @@ namespace GuardsDigital.Core.Rules.Progression
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction = default,
             PerformedMovementAction movementAction = default,
-            PerformedAttackAction attackAction = default)
+            PerformedAttackAction attackAction = default,
+            PerformedCardResolution cardResolution = default)
         {
             if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             if (!basicAction.IsDefined && !primaryAction.IsDefined && !movementAction.IsDefined &&
-                !attackAction.IsDefined)
+                !attackAction.IsDefined && !cardResolution.IsDefined)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
 
             return ultimates.Ultimates
                 .Where(ultimate =>
                     Applies(
                         ultimate.Rule.TriggerCondition,
-                        basicAction, primaryAction, movementAction, attackAction) &&
+                        basicAction, primaryAction, movementAction, attackAction, cardResolution) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
                     ultimate.OwnerId.Equals(
                         ActorOf(
                             ultimate.Rule.TriggerCondition,
-                            basicAction, primaryAction, movementAction, attackAction)))
+                            basicAction, primaryAction, movementAction, attackAction, cardResolution)))
                 .Select((ultimate, index) =>
                     ultimate.TriggeredSource(
                         participants, index, basicAction, attackAction, primaryAction))
@@ -148,7 +149,11 @@ namespace GuardsDigital.Core.Rules.Progression
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction,
             PerformedMovementAction movementAction,
-            PerformedAttackAction attackAction) =>
+            PerformedAttackAction attackAction,
+            PerformedCardResolution cardResolution) =>
+            // Milestone 8.114e. Wuk's March of Nature reads the fifth fact: a coloured card resolving
+            // is absent from the basic fact, which is the only other one carrying resolution.
+            condition == UltimateTriggerCondition.AfterControllerResolvesCard ? cardResolution.IsDefined :
             // Milestone 8.61h. Min's Flurry of Blows reads the fourth fact, for the reason
             // `AfterControllerPerformsAttackAction` records: her Red Stances are not basic cards, so
             // the basic fact is absent for most of the Attacks the clause is about.
@@ -169,7 +174,9 @@ namespace GuardsDigital.Core.Rules.Progression
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction,
             PerformedMovementAction movementAction,
-            PerformedAttackAction attackAction) =>
+            PerformedAttackAction attackAction,
+            PerformedCardResolution cardResolution) =>
+            condition == UltimateTriggerCondition.AfterControllerResolvesCard ? cardResolution.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsAttackAction ? attackAction.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsMovementAction ? movementAction.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
@@ -239,6 +246,10 @@ namespace GuardsDigital.Core.Rules.Progression
                 // rather than left to the default for the reason the two lines above are: the switch
                 // stays exhaustive and the negative is a decision rather than an omission.
                 case UltimateTriggerCondition.AfterControllerPerformsAttackAction:
+
+                // Milestone 8.114e. Wuk's March of Nature reads `PerformedCardResolution`, a fact this
+                // method is not given, and is answered by `Applies` before it reaches here.
+                case UltimateTriggerCondition.AfterControllerResolvesCard:
                     return false;
                 default:
                     return false;

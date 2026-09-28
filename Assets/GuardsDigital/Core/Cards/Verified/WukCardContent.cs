@@ -32,7 +32,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <para>Nothing here is registered: Wuk sits behind milestone 7.9's gate until 8.114f deals
     /// him.</para>
     /// </summary>
-    public static class WukCardContent
+    public static partial class WukCardContent
     {
         /// <summary>The revision every Wuk definition carries.</summary>
         public const string ContentRevision = "wuk-8-114-rev-1";
@@ -114,17 +114,6 @@ namespace GuardsDigital.Core.Cards.Verified
                     Defense(4)
                 },
                 null, CardSourceContent.Transcribed(MysticSaplingsText)));
-
-        /// <summary>Every face composed so far, in his shard's inventory order.</summary>
-        public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAll.Value;
-
-        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAll =
-            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(
-                new[] { TreeSlamDefinition, MysticSaplingsDefinition }
-                    .Concat(WukRedFaces.AttackDefinitions)
-                    .Concat(WukBlueFaces.RetrievalDefinitions)
-                    .Concat(WukGreenFaces.Definitions)
-                    .ToArray()));
 
         /// <summary>
         /// Tree Slam's two bullets. The first is Throwing Axe's adjacent bullet narrowed to minions;

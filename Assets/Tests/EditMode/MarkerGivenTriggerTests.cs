@@ -615,7 +615,11 @@ namespace GuardsDigital.Tests.EditMode
 
                     // Milestone 8.61h. Min's Flurry of Blows declares the attack-action condition;
                     // it names ActionEnded like the six, which the case below keeps true.
-                    UltimateTriggerCondition.AfterControllerPerformsAttackAction
+                    UltimateTriggerCondition.AfterControllerPerformsAttackAction,
+
+                    // Milestone 8.114e. Wuk's March of Nature declares the any-card resolution
+                    // condition; it names ActionEnded like the six, which the case below keeps true.
+                    UltimateTriggerCondition.AfterControllerResolvesCard
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
                 "were; Bain adds marker-given, Garrus resolved-card-discarded, Widget actual Movement, " +

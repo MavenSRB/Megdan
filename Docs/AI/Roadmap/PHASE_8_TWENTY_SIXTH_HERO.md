@@ -75,11 +75,15 @@ Completed 2026-09-28. `WukGreenFaces` composes the throws as Mrak's Boulder subj
 
 Historical evidence: [8.114d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114e Implement March of Nature and reconcile the set
+### [x] 8.114e Implement March of Nature and reconcile the set
 
 Outcome: an after-you-resolve-a-card trigger for any card Wuk resolves, optionally placing one Tree in Radius 3 with the reclaim; the set reconciled (starting hand, deck, dealt definitions, p.15 upgrade list naming both Tier III successors per Tier II, every integer parameter's declared vocabulary).
 
 Acceptance: the trigger fires once per resolved card of every colour and not for a card only discarded or used to defend, is declinable, reclaims when short, and restores from its pause; the reconciled set asserts every face's printed values against the inventory. Unregistered until 8.114f.
+
+Completed 2026-09-28. `UltimateTriggerCondition.AfterControllerResolvesCard` (value 11) reads a new transient fact, `PerformedCardResolution`, produced at the turn's one action-completion site from the same invocation classification the basic fact's resolution flag uses - so "resolved" means one thing for Swift's basic-card condition and Wuk's any-card one - and threaded to the Ultimate source query beside the primary, Movement and Attack facts. March of Nature is a triggered ability at `ActionEnded` carrying its printed Radius 3: p.18's short-supply step and one optional Tree placement, Mystic Saplings' pair. `WukCardContent.Set` reconciles the set against the shard's nineteen rows - inventory order, starting hand (p.6), the thirteen-card deck, Makeshift Weapon boxed with every Handicap's deferred text (p.20) - and names the four rows still owed (`NotYetComposed`: Trample, Angry Stampede, Claim and Assert Dominance, owed to 8.114b1 and 8.114c1; the dealing requires none). `WukCardContent.Labels` declares words for the twenty-two controls his composed faces raise, asserted equal to `DecisionLabelRequirementQuery`'s derivation, joining the catalog at the dealing. Eleven tests cover the trigger after a coloured card and after a basic card that placed nothing, declining, the reclaim, a locked Ultimate, restore/replay of its pause, the resolution fact false for a Defense, a repeat and a grant, the set's lists, every composed face's Initiative, secondary Defense and Movement and item read against the inventory, both successors on every upgrade line, and the labels. The five trigger tests failed with the new condition disabled. Unregistered until 8.114f. T2; evidence in the milestone commit.
+
+Historical evidence: [8.114e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
 ### [!] 8.114b1 Implement the trampling moves
 

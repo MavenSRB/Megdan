@@ -220,7 +220,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(10),
+            Assert.That(conditions.Length, Is.EqualTo(11),
+                "Eleven since 8.114e adds Wuk's any-card resolution, proved by WukUltimateAndSetTests. " +
                 "Ten since 8.61h adds the completed Attack action, proved by MinItemAndFlurryTests. " +
                 "A new condition is classified in UltimateTriggeredEffectSourceQuery and proved in " +
                 "its own fixture.");

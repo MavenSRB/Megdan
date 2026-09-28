@@ -320,8 +320,9 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(
-                conditions.Length, Is.EqualTo(10),
-                "Min adds the distinct Attack-action condition beside Widget's Movement one.");
+                conditions.Length, Is.EqualTo(11),
+                "Min adds the distinct Attack-action condition beside Widget's Movement one; Wuk " +
+                "(8.114e) adds the any-card resolution beside Swift's basic-card one.");
             Assert.That(
                 conditions,
                 Does.Contain(UltimateTriggerCondition.AfterControllerPerformsPrimaryAction));
