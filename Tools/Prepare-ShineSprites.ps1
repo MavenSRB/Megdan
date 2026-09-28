@@ -270,8 +270,108 @@ namespace GuardsDigital.Tools
 
         private static SlotTrace TraceRail(byte[] rgba, bool upper, int bannerDistance)
         {
-            int y0 = upper ? UpperY0 : LowerY0;
-            int y1 = upper ? UpperY1 : LowerY1;
+            return TraceRailWindow(rgba, upper ? UpperY0 : LowerY0, upper ? UpperY1 : LowerY1,
+                upper ? "rail-upper" : "rail-lower", bannerDistance);
+        }
+
+        // Milestone 8.112g. Mrak's Red faces print a THIRD rail badge - the crossed swords of his
+        // printed secondary Attack - below the boot, packed tighter and higher than an ordinary pair
+        // (8.112a measured the boot's value at y=179..207 and the swords' at y=241..269 against
+        // y=210..238 for an ordinary boot). The swords are traced from each card like a Defense
+        // shield, in the band that holds them; Stone Carapace and Rock Solid print the swords in the
+        // ordinary LOWER window, where no boot is.
+        public const int ThreeBadgeSwordsY0 = 224, ThreeBadgeSwordsY1 = 292;
+        public const int ThreeBadgeBootShift = -31;
+
+        // Outline-and-digit only: on these rails the banner-colour sample (y=108..120) lands on the
+        // shield that three badges push upward, and the swords' band runs past the banner's point
+        // into the artwork - either makes "far from the banner" select the whole window. The black
+        // outline and the white digit are what every printed badge shares.
+        public static SlotTrace TraceRailOutline(byte[] rgba, bool upper)
+        {
+            return TraceRail(rgba, upper, -1);
+        }
+
+        // The three-badge rail's shield and swords are the same glyphs on all three Seismic faces,
+        // so - exactly as the boot is - each is traced ONCE from an audited reference face and reused:
+        // per-card tracing measured wrong on two of them (Seismic Slam prints a grey shield whose
+        // outline window also holds the boot's top; Epicentre's swords traced as a sliver).
+        private static SlotTrace threeBadgeShieldTemplate;
+        private static SlotTrace threeBadgeSwordsTemplate;
+
+        public static string SetThreeBadgeTemplates(byte[] rgba)
+        {
+            var shield = TraceRail(rgba, true, -1);
+            var swords = TraceRailWindow(rgba, ThreeBadgeSwordsY0, ThreeBadgeSwordsY1, "rail-band", -1);
+            if (shield.Status != "ok" || swords.Status != "ok")
+            {
+                return "three-badge templates: shield " + shield.Status + ", swords " + swords.Status;
+            }
+
+            threeBadgeShieldTemplate = shield;
+            threeBadgeSwordsTemplate = swords;
+            return "ok three-badge templates " + shield.Area + "/" + swords.Area;
+        }
+
+        public static SlotTrace TraceThreeBadgeShield()
+        {
+            return CloneTemplate(threeBadgeShieldTemplate, "rail-three-badge-shield");
+        }
+
+        public static SlotTrace TraceThreeBadgeSwords()
+        {
+            return CloneTemplate(threeBadgeSwordsTemplate, "rail-three-badge-swords");
+        }
+
+        private static SlotTrace CloneTemplate(SlotTrace template, string slot)
+        {
+            if (template == null)
+            {
+                return new SlotTrace { Slot = slot, Status = "missing-three-badge-template" };
+            }
+
+            return new SlotTrace
+            {
+                Slot = slot,
+                Status = "ok-template",
+                X0 = template.X0, Y0 = template.Y0, X1 = template.X1, Y1 = template.Y1,
+                Area = template.Area,
+                Sprite = (byte[])template.Sprite.Clone()
+            };
+        }
+
+        // The audited boot, moved to where a three-badge rail prints it: the same glyph and the same
+        // bytes, translated whole, so the canonical-silhouette check still holds for the shape.
+        public static SlotTrace TraceMovementRailShifted(int dy)
+        {
+            var template = TraceMovementRail();
+            if (template.Status != "ok-template")
+            {
+                return template;
+            }
+
+            var shifted = new byte[template.Sprite.Length];
+            int stride = CardWidth * 4;
+            for (int y = 0; y < CardHeight; y++)
+            {
+                int from = y - dy;
+                if (from < 0 || from >= CardHeight)
+                {
+                    continue;
+                }
+
+                Buffer.BlockCopy(template.Sprite, from * stride, shifted, y * stride, stride);
+            }
+
+            template.Sprite = shifted;
+            template.Y0 += dy;
+            template.Y1 += dy;
+            template.Slot = "rail-three-badge-boot";
+            return template;
+        }
+
+        private static SlotTrace TraceRailWindow(byte[] rgba, int y0, int y1, string slotName, int bannerDistance)
+        {
             int bannerR, bannerG, bannerB;
             SampleAverage(rgba, 22, 108, 66, 120, out bannerR, out bannerG, out bannerB);
             int bannerSat = Math.Max(bannerR, Math.Max(bannerG, bannerB)) -
@@ -325,11 +425,11 @@ namespace GuardsDigital.Tools
             var component = LargestComponent(closed, w, h, int.MaxValue, 20, 64, 20, 80);
             if (component == null)
             {
-                return new SlotTrace { Slot = upper ? "rail-upper" : "rail-lower", Status = "none" };
+                return new SlotTrace { Slot = slotName, Status = "none" };
             }
 
             FillHoles(component, w, h);
-            return Finish(rgba, upper ? "rail-upper" : "rail-lower", component, w, h, RailX0, y0, 250, 9000);
+            return Finish(rgba, slotName, component, w, h, RailX0, y0, 250, 9000);
         }
 
         // ---- Glyph family templates (voted from hand-audited clean per-card traces). ----
@@ -2212,6 +2312,18 @@ if ($movementRailStatus -notlike 'ok*') {
 }
 Write-Output $movementRailStatus
 
+# Milestone 8.112g. The three-badge rail's shield and swords, from the audited Seismic Assault face.
+$threeBadgeReference = [System.IO.Path]::Combine($cardsRoot, 'mrak', 'seismic-assault.png')
+if (Test-Path -LiteralPath $threeBadgeReference) {
+    $threeBadgeStatus = [GuardsDigital.Tools.ShineTracer]::SetThreeBadgeTemplates(
+        [GuardsDigital.Tools.ShineTracer]::LoadCard($threeBadgeReference))
+    if ($threeBadgeStatus -notlike 'ok*') {
+        throw "Three-badge rail templates failed: $threeBadgeStatus"
+    }
+
+    Write-Output $threeBadgeStatus
+}
+
 $reportRows = New-Object System.Collections.Generic.List[string]
 $reportRows.Add('hero,card,slot,status,x0,y0,x1,y1,area,file')
 $written = 0; $skipped = 0; $missing = 0; $stale = 0; $stray = 0; $traced = 0; $failed = 0
@@ -2240,7 +2352,22 @@ Get-ChildItem -Path $cardsRoot -Directory | Sort-Object Name | ForEach-Object {
 
         $hasDefense = $typed.railChannels -match 'Defense'
         $hasMovement = $typed.railChannels -match 'Movement'
-        if ($hasDefense -and $hasMovement) {
+        $hasAttack = $typed.railChannels -match 'Attack'
+        if ($hasAttack -and $hasDefense -and $hasMovement) {
+            # Milestone 8.112g. The three-badge rail (Mrak's Seismic faces): shield traced from the
+            # card, the audited boot moved up to its tighter position, the swords traced in the band
+            # below it.
+            $slots.Add(@{ name = 'secondary-defense'; trace = [GuardsDigital.Tools.ShineTracer]::TraceThreeBadgeShield() })
+            $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceMovementRailShifted([GuardsDigital.Tools.ShineTracer]::ThreeBadgeBootShift) })
+            $slots.Add(@{ name = 'secondary-attack'; trace = [GuardsDigital.Tools.ShineTracer]::TraceThreeBadgeSwords() })
+        }
+        elseif ($hasAttack -and $hasDefense) {
+            # Milestone 8.112g. Shield above swords where no boot is printed (Stone Carapace, Rock
+            # Solid): both traced from the card, the swords in the ordinary lower window.
+            $slots.Add(@{ name = 'secondary-defense'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRailOutline($rgba, $true) })
+            $slots.Add(@{ name = 'secondary-attack'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRailOutline($rgba, $false) })
+        }
+        elseif ($hasDefense -and $hasMovement) {
             $slots.Add(@{ name = 'secondary-defense'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRail($rgba, $true) })
             $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceMovementRail() })
         }

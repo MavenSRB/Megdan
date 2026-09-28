@@ -381,7 +381,9 @@ namespace GuardsDigital.Tests.EditMode
             // Snorri's dealing adds twelve concrete types at 8.93f (the rune predicates, slot
             // inscription, rune-gated targets, Passage and Oath effects, support swaps and Rune
             // Mastery), each proved by the focused 8.93a-8.93e fixtures.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(119),
+            // Mrak's dealing adds four at 8.112g: his three placements and the p.18 short-supply step
+            // they share, each proved by the focused 8.112b and 8.112d fixtures.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(123),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

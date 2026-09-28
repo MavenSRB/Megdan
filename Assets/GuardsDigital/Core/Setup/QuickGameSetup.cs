@@ -422,6 +422,9 @@ namespace GuardsDigital.Core.Setup
 
         public const string SnorriHeroIdValue = "hero-snorri";
 
+        /// <summary>Milestone 8.112g. Mrak the Rockshaper, the TWENTY-FIFTH hero.</summary>
+        public const string MrakHeroIdValue = "hero-mrak";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -548,7 +551,14 @@ namespace GuardsDigital.Core.Setup
                 (SnorriHeroIdValue, "snorri", "Snorri the Runescribe",
                     HeroComplexity.Wizard,
                     HeroRole.Sniper | HeroRole.Farming | HeroRole.Durable |
-                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer)
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer),
+                // Milestone 8.112g. His selection front prints THREE stars and the roles Melee,
+                // Tokens, Durable, Disabler and Tactician (inventory 8.112); the dashboard names him
+                // "Mrak the Rockshaper".
+                (MrakHeroIdValue, "mrak", "Mrak the Rockshaper",
+                    HeroComplexity.VeryComplex,
+                    HeroRole.Melee | HeroRole.Tokens | HeroRole.Durable |
+                    HeroRole.Disabler | HeroRole.Tactician)
             };
 
         /// <summary>
@@ -899,6 +909,28 @@ namespace GuardsDigital.Core.Setup
 
         public static QuickGameSetupConfiguration CreateStagedWaspVersusSnorriOneVsOne() =>
             CreateOneVsOne(new HeroContentId("snorri"), "Snorri");
+
+        /// <summary>Milestone 8.112g. Wasp on Red against Mrak on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusMrakOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("mrak"), "Mrak");
+
+        /// <summary>
+        /// Milestone 8.112g. Mrak on Red against Wasp and Arien on Blue - the board on which Stone
+        /// Grip and Rock and a Hard Place can reach two enemy heroes at once.
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedMrakVersusWaspAndArien()
+        {
+            var snorri = CreateStagedSnorriVersusWaspAndArien();
+            return new QuickGameSetupConfiguration(
+                snorri.RequiredMap,
+                snorri.WaveCount,
+                snorri.LifeCountPerTeam,
+                snorri.Heroes.Select(hero => hero.ContentId.Value == "snorri"
+                    ? new QuickGameHeroPlacementDefinition(
+                        hero.HeroId, new HeroContentId("mrak"), "Mrak", hero.SpawnPoint, hero.OccupiedSpace)
+                    : hero),
+                snorri.Minions);
+        }
 
         /// <summary>Milestone 8.93g. Snorri on Red against Wasp and Arien on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedSnorriVersusWaspAndArien()

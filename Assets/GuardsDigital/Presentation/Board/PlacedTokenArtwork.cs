@@ -61,7 +61,10 @@ namespace GuardsDigital.Presentation.Board
                 // them on one file and three stacked captions is a board a player reads slower than
                 // the art.
                 [new TokenDefinitionId("ignatia-magma")] = string.Empty,
-                [new TokenDefinitionId("trinkets-barrier")] = string.Empty
+                [new TokenDefinitionId("trinkets-barrier")] = string.Empty,
+
+                // Milestone 8.112g. Mrak's rock: the prepared hex prints the rock itself, so no caption.
+                [new TokenDefinitionId("mrak-rock")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

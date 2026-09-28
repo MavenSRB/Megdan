@@ -23,7 +23,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var snorri = RegisteredHeroRoster.ForThisBuild.Single(hero =>
                 hero.ContentId.Value == "snorri");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(24));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(25));
             Assert.That(snorri.HeroIdValue,
                 Is.EqualTo(QuickGameSetupConfiguration.SnorriHeroIdValue));
             Assert.That(snorri.DisplayName, Is.EqualTo("Snorri the Runescribe"));

@@ -712,6 +712,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.93f. Snorri's dealt faces; Rune Mastery's body arrives through the
                 // triggered-effect walk below.
                 .Concat(SnorriCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.112g. Mrak's dealt faces; Rock and a Hard Place's discard arrives through
+                // the triggered-effect walk below.
+                .Concat(MrakCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -757,6 +760,10 @@ namespace GuardsDigital.Tests.EditMode
                     "InscribeRunesHandler",
                     "ObstacleSpaceHandler",
                     "PlaceAdjacentObstacleHandler",
+                    "PlaceAlongLineHandler",
+                    "PlaceFarthestAdjacentHandler",
+                    "PlaceInSpaceHandler",
+                    "ReclaimHandler",
                     "RemoveObstacleHandler",
                     "RetrieveAllDiscardedHandler",
                     "RuneTargetHandler",
@@ -764,6 +771,8 @@ namespace GuardsDigital.Tests.EditMode
                     "SwapItemWithCardHandler",
                     "SwapResolvedWithHandHandler"
                 }),
+                "Mrak's three rock placements and their shared short-supply step (8.112g), each proved by " +
+                "the focused 8.112b and 8.112d fixtures, and " +
                 "Snorri's twelve rune, slot, Oath, support-swap and Rune Mastery handlers (8.93f), each " +
                 "proved by the focused 8.93a-8.93e fixtures, join " +
                 "the 8.13 pair and 8.92a's three generic obstacle operations plus Trinkets' " +

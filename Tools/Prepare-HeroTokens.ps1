@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -261,6 +261,8 @@ $declaredHeroes = @{
     ignatia = @{ ElementId = 8597496; ElementName = 'Ignatia'; DisplayName = 'Ignatia' }
     trinkets = @{ ElementId = 8597497; ElementName = 'Kobold'; DisplayName = 'Trinkets' }
     snorri = @{ ElementId = 8596253; ElementName = 'Snorri'; DisplayName = 'Snorri' }
+    # Milestone 8.112g. The `Mrak` VerticalTokens element (MR-02).
+    mrak = @{ ElementId = 8629814; ElementName = 'Mrak'; DisplayName = 'Mrak' }
 }
 
 $declared = $declaredHeroes[$Hero]

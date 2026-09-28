@@ -154,7 +154,12 @@ namespace GuardsDigital.Tests.EditMode
                     HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens),
                 ["hero-snorri"] = (HeroComplexity.Wizard,
                     HeroRole.Sniper | HeroRole.Farming | HeroRole.Durable |
-                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer)
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer),
+                // Milestone 8.112g. Mrak's selection front: three stars; Melee, Tokens, Durable,
+                // Disabler and Tactician.
+                ["hero-mrak"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Melee | HeroRole.Tokens | HeroRole.Durable | HeroRole.Disabler |
+                        HeroRole.Tactician)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

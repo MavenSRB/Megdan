@@ -1052,7 +1052,16 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedStagedSnorriWithAlly = 130,
 
         /// <summary>Snorri on Red against Wasp and Arien on Blue (8.93g).</summary>
-        VerifiedStagedSnorriVersusTwo = 131
+        VerifiedStagedSnorriVersusTwo = 131,
+
+        /// <summary>Wasp versus Mrak with his p.6 starting hand (8.112g).</summary>
+        VerifiedEngagedStagedMrak = 132,
+
+        /// <summary>Wasp versus Mrak with Tier III hands and Rock and a Hard Place faceup (8.112g).</summary>
+        VerifiedTierThreeEngagedStagedMrak = 133,
+
+        /// <summary>Mrak on Red against Wasp and Arien on Blue (8.112g).</summary>
+        VerifiedStagedMrakVersusTwo = 134
     }
 
     [ExecuteAlways]
@@ -1758,6 +1767,12 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedSnorriWithAllyForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedStagedSnorriVersusTwo =>
                     MatchConfiguration.CreateStagedSnorriAgainstWaspWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedMrak =>
+                    MatchConfiguration.CreateStagedMrakForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedMrak =>
+                    MatchConfiguration.CreateStagedMrakTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedStagedMrakVersusTwo =>
+                    MatchConfiguration.CreateStagedMrakAgainstWaspWithAllyForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1844,7 +1859,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedTrinkets ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets ||
                 content == SceneCardContent.VerifiedEngagedStagedSnorri ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri ||
+                content == SceneCardContent.VerifiedEngagedStagedMrak ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedMrak)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2417,6 +2434,20 @@ namespace GuardsDigital.Presentation.Interaction
                     if (content == SceneCardContent.VerifiedStagedSnorriVersusTwo)
                     {
                         return QuickGameSetupConfiguration.CreateStagedSnorriVersusWaspAndArien();
+                    }
+
+                    // Milestone 8.112g. Mrak's staged boards, written in the same change as his
+                    // SceneCardContent members (8.38f's lesson: without an arm the scene deals his cards
+                    // to an `arien`-identity seat).
+                    if (content == SceneCardContent.VerifiedEngagedStagedMrak ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedMrak)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusMrakOneVsOne();
+                    }
+
+                    if (content == SceneCardContent.VerifiedStagedMrakVersusTwo)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedMrakVersusWaspAndArien();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

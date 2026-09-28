@@ -42,26 +42,35 @@ namespace GuardsDigital.Core.Cards.Verified
             Array.Empty<TokenPropertyDefinition>(),
             TokenRemovalCondition.EndOfRoundCleanup);
 
-        /// <summary>p.18's short-supply step over his rocks, for every face that places them.</summary>
-        public static EffectCapabilityReference ReclaimRockV1 =>
-            new EffectCapabilityReference(new EffectCapabilityId("mrak-reclaim-rock"), 1);
-
         public static IEnumerable<TokenDefinition> Tokens() => new[] { Rock };
 
+        /// <summary>
+        /// The rock's own capabilities. EMPTY since 8.112g: 8.112a declared a standalone
+        /// `mrak-reclaim-rock@1`, but every face that places rocks carries p.18's short-supply step as
+        /// its own node (8.112b's `MrakRockPlacementContent` reclaim steps, which measure the demand of
+        /// the placement that follows), so no printed card names the standalone one - and the dealing's
+        /// registration gate refuses a registered capability no card reaches. Kept as the list fixtures
+        /// compose, so a later rock operation has one home.
+        /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                SyntheticTokenCapabilities.ReclaimHandler(ReclaimRockV1, Rock)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
-        /// Milestone 8.112f. Every capability Mrak's composed set names that milestone 7.9's gate holds
-        /// out of the registration list until 8.112g deals him - the list a composition validator reads
-        /// beside the registered catalog, as every earlier hero's was before his dealing.
+        /// Milestone 8.112g. Every capability Mrak's dealt set names that the roster does not already
+        /// own: the six placement steps (three p.18 short-supply steps and three placements) and the two
+        /// Carapace grants. The one list the build registers.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             Handlers()
                 .Concat(MrakRockPlacementContent.Handlers())
                 .Concat(MrakRedFaces.Handlers());
+
+        /// <summary>
+        /// Milestone 8.112f held his contracts here until the dealing. 8.112g DEALT HIM, so it is empty and
+        /// they arrive through <see cref="RegisteredHandlers"/> - an empty list is what a discharged
+        /// deferral looks like.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
     }
 }

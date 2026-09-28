@@ -121,7 +121,9 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // earlier three - and p.18's short-supply step takes standing magma back when a
                     // placement needs more than the pile holds.
                     .Concat(GuardsDigital.Core.Cards.Verified.IgnatiaMagmaContent.MagmaTokens())
-                    .Concat(GuardsDigital.Core.Cards.Verified.TrinketsComponentContent.Tokens()),
+                    .Concat(GuardsDigital.Core.Cards.Verified.TrinketsComponentContent.Tokens())
+                    // Milestone 8.112g. Mrak the Rockshaper's one token, the three-rock pile (MR-Q1).
+                    .Concat(GuardsDigital.Core.Cards.Verified.MrakComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

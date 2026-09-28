@@ -438,6 +438,24 @@
     { "definitionId": "snorri-charged-runestone", "contentRevision": "snorri-8-93f-rev-1", "sourcePath": "active-hero-cards/Snorri/snorri15__7728045__front.png" },
     { "definitionId": "snorri-oath-of-perseverance", "contentRevision": "snorri-8-93f-rev-1", "sourcePath": "active-hero-cards/Snorri/snorri16__7728046__front.png" },
     { "definitionId": "snorri-inscribed-runebomb", "contentRevision": "snorri-8-93f-rev-1", "sourcePath": "active-hero-cards/Snorri/snorri17__7728048__front.png" },
-    { "definitionId": "snorri-rune-mastery", "contentRevision": "snorri-8-93f-rev-1", "sourcePath": "active-hero-cards/Snorri/snorri18__7730144__front.png" }
+    { "definitionId": "snorri-rune-mastery", "contentRevision": "snorri-8-93f-rev-1", "sourcePath": "active-hero-cards/Snorri/snorri18__7730144__front.png" },
+    { "definitionId": "mrak-fissure", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak__7430505__front.png" },
+    { "definitionId": "mrak-stone-grip", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak2__7430510__front.png" },
+    { "definitionId": "mrak-seismic-slam", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak3__7596606__front.png" },
+    { "definitionId": "mrak-seismic-assault", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak4__7596607__front.png" },
+    { "definitionId": "mrak-stone-carapace", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak5__8176070__front.png" },
+    { "definitionId": "mrak-epicentre", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak6__7596611__front.png" },
+    { "definitionId": "mrak-rock-solid", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak7__8176071__front.png" },
+    { "definitionId": "mrak-boulder-rush", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak8__7430502__front.png" },
+    { "definitionId": "mrak-boulder-blitz", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak9__7430515__front.png" },
+    { "definitionId": "mrak-stomping-step", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak10__7583415__front.png" },
+    { "definitionId": "mrak-boulderdozer", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak11__7430509__front.png" },
+    { "definitionId": "mrak-ground-shaker", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak12__7583417__front.png" },
+    { "definitionId": "mrak-treacherous-ground", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak13__7572600__front.png" },
+    { "definitionId": "mrak-rockslide", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak14__7583411__front.png" },
+    { "definitionId": "mrak-rolling-stone", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak15__7583412__front.png" },
+    { "definitionId": "mrak-avalanche", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak16__7583413__front.png" },
+    { "definitionId": "mrak-strolling-stone", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak17__7583414__front.png" },
+    { "definitionId": "mrak-rock-and-a-hard-place", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak18__7659508__front.png" }
   ]
 }

@@ -235,6 +235,10 @@ namespace GuardsDigital.Core.Cards
                     // reads.
                     IgnatiaEffectContent.TriggeredEffects(IgnatiaCardContent.ContentRevision))
                 .Concat(new[] { SnorriUltimateContent.TriggeredEffect })
+                // Milestone 8.112g, the milestone that deals Mrak the Rockshaper as the TWENTY-FIFTH
+                // hero. ONE: Rock and a Hard Place's discard, which its after-tokens-placed declaration
+                // names BY REFERENCE (8.112f).
+                .Concat(MrakCardContent.TriggeredEffects())
                 .Concat(new[]
                 {
                     TrinketsEffectContent.DisruptorTrigger(
@@ -498,6 +502,8 @@ namespace GuardsDigital.Core.Cards
                     new SnorriGreenEffectContent.SelectRuneHandler()
                 })
                 .Concat(SnorriUltimateContent.Handlers())
+                // Milestone 8.112g. Mrak's six placement steps and two Carapace grants.
+                .Concat(MrakComponentContent.RegisteredHandlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

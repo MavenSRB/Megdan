@@ -109,13 +109,17 @@ Completed 2026-09-28. `MrakCardContent.Set` adds Rock and a Hard Place (an `afte
 
 Historical evidence: [8.112f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112f-mrak-ultimate-and-set-reconciliation-evidence).
 
-### [ ] 8.112g Deal Mrak and present his artwork
+### [x] 8.112g Deal Mrak and present his artwork
 
 Outcome: register the eighteen playable definitions, the rock token and handlers; add Mrak to legal pickers and configurations with three stars and Melee, Tokens, Durable, Disabler, Tactician; prepare card fronts, profile, standee, rock token art and hover catalog.
 
 Acceptance: stable identities, setup, hand and upgrades, selection/filter/spawn and both seat projections; contact sheet of catalog filename against printed title; the rock token's rendered face toward the camera in a captured frame; the secondary Attack ribbon control reachable on a real hand, its CLEAR chip beside the badge, and a captured frame of both three-badge and Defense-and-Attack rails; `Tools/Prepare-ShineSprites.ps1` traces the three-badge rail's boot and the swords badge (its Movement trace assumes the two-badge position today); private art boundaries; content-revision and artwork-catalog agreement; focused Unity input and visual checks plus the affected regression tier. T2 minimum.
 
 Non-goals: a package or another hero.
+
+Completed 2026-09-28. Mrak is registered and pickable: his eight capabilities (`MrakComponentContent.RegisteredHandlers`; the 8.112f deferral is discharged), the rock token and Rock and a Hard Place's discard join the build's catalogs; `hero-mrak` joins the roster with three stars and Melee, Tokens, Durable, Disabler, Tactician; `MatchConfiguration` deals his eighteen faces in either format with Lesser Fissure boxed, and three staged scenes (starting hand, Tier III with Rock Solid and the Ultimate faceup, versus two) each get their setup arm in the same change. 8.112a's standalone `mrak-reclaim-rock@1` was removed: no printed face reaches it, because each placement carries its own short-supply step, and the registration gate refuses a registered capability that no card reaches. Private art (card fronts, selection front, red and blue standees, the rock hex) was prepared by the four scripts; the contact sheet of front against mapped title was inspected for all eighteen; the rock's two manifest faces print one picture. `Prepare-ShineSprites.ps1` now handles three-badge rails (the audited boot moved 31 rows up; the shield and swords traced once from Seismic Assault) and Defense-and-Attack rails (shield and swords traced per card), because per-card tracing measured wrong on Seismic Slam's grey shield and Epicentre's swords; every overlay was inspected composited on its front. Registration moved these pins: four handler types, the hero-only list, catalog composition, the reachability walk, roster counts from 24 to 25, both corpora (MIGRATE, +293 bytes on all sixteen captures) and Mrak's identity pin. Play Mode proves the rocks face the camera with their prepared face, Epicentre's secondary Attack is a real control with CLEAR beside the swords, and the lobby picks him through all five printed roles; the captured frames were inspected. T2; evidence in the milestone commit.
+
+Historical evidence: [8.112g completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8112g-mrak-dealt-and-artworked-evidence).
 
 ### [ ] 8.112h Gate Mrak through the complete player path
 

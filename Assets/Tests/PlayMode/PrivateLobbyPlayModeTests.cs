@@ -1847,6 +1847,65 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.112g. Mrak's roster row carries three stars and Melee, Tokens, Durable,
+        /// Disabler, Tactician; the rendered star and role buttons keep him visible through all
+        /// five, a role he does not print hides him, and his button picks him.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator MrakIsPickedThroughThreeStarsAndAllFivePrintedRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var stars = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roles = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => stars.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roles.Single(button =>
+                button.userData is HeroRole role && role == value);
+            bool Visible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-mrak");
+
+            Assert.That(Visible(), Is.True);
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(Visible(), Is.True);
+            foreach (var role in new[]
+            {
+                HeroRole.Melee, HeroRole.Tokens, HeroRole.Durable, HeroRole.Disabler,
+                HeroRole.Tactician
+            })
+            {
+                UiPlayer.Click(Role(role));
+                yield return null;
+                Assert.That(Visible(), Is.True, role.ToString());
+            }
+
+            var mrak = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-mrak");
+            UiPlayer.Click(mrak);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-mrak"));
+            UiPlayer.PointAt(mrak.parent ?? mrak);
+            UiPlayer.PointAt(mrak);
+            yield return null;
+            Assert.That(UiPlayer.IsShown(Element(driver,
+                PrivateLobbyUnityView.HeroOverviewName)), Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/8112g-mrak-pick-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            Assert.That(Visible(), Is.False);
+        }
+
+        /// <summary>
         /// Milestone 8.75b. Ignatia the Mad's roster row carries FOUR stars and five roles - Sniper,
         /// Damager, Tokens, Tactician, Pusher - and this case drives the RENDERED star and role
         /// buttons over her button to prove the picker reads them.

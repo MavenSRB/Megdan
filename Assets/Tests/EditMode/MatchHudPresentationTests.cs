@@ -4447,7 +4447,9 @@ namespace GuardsDigital.Tests.EditMode
                 // joined that bijection here.
                 .Concat(IgnatiaCardContent.DealtDefinitions)
                 .Concat(TrinketsCardContent.DealtDefinitions)
-                .Concat(SnorriCardContent.DealtDefinitions).ToArray();
+                .Concat(SnorriCardContent.DealtDefinitions)
+                // Milestone 8.112g. The twenty-fifth, on the terms the lines above state.
+                .Concat(MrakCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");
@@ -4472,6 +4474,7 @@ namespace GuardsDigital.Tests.EditMode
                 "..", "tmp", "shine-content-manifest.csv"), manifest);
             var missing = new List<string>();
             var movementMasks = new List<string>();
+            var threeBadgeBoots = new List<string>();
             var resolved = 0;
             var expectedSlots = 0;
             foreach (var definition in all)
@@ -4509,6 +4512,12 @@ namespace GuardsDigital.Tests.EditMode
                     slots.Add(CardShineSlot.SecondaryMovement);
                 }
 
+                // Milestone 8.112g. Mrak's printed secondary Attack owns the swords' slot.
+                if (railChannels.Contains(PrintedValueChannel.Attack))
+                {
+                    slots.Add(CardShineSlot.SecondaryAttack);
+                }
+
                 foreach (var slot in slots)
                 {
                     expectedSlots++;
@@ -4518,7 +4527,13 @@ namespace GuardsDigital.Tests.EditMode
                             System.IO.Path.Combine(resourcesRoot, resourcePath + ".png")))
                     {
                         resolved++;
-                        if (slot == CardShineSlot.SecondaryMovement)
+                        if (slot == CardShineSlot.SecondaryMovement &&
+                            railChannels.Contains(PrintedValueChannel.Attack))
+                        {
+                            threeBadgeBoots.Add(System.IO.Path.Combine(
+                                resourcesRoot, resourcePath + ".png"));
+                        }
+                        else if (slot == CardShineSlot.SecondaryMovement)
                         {
                             movementMasks.Add(System.IO.Path.Combine(
                                 resourcesRoot, resourcePath + ".png"));
@@ -4544,6 +4559,48 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(System.IO.File.ReadAllBytes(movementMask), Is.EqualTo(canonicalBoot),
                     $"{movementMask} must use the audited full-boot silhouette; per-card colour " +
                     "classification previously collapsed some masks around the numeral.");
+            }
+
+            // Milestone 8.112g. A three-badge rail (Mrak's Seismic faces) prints the same boot 31
+            // source rows higher, so its mask is the audited boot TRANSLATED - identical pixels,
+            // moved - rather than identical bytes.
+            Assert.That(threeBadgeBoots, Has.Count.EqualTo(3), "Seismic Slam, Seismic Assault, Epicentre");
+            var canonicalPixels = LoadMaskPixels(canonicalBoot);
+            foreach (var boot in threeBadgeBoots)
+            {
+                var pixels = LoadMaskPixels(System.IO.File.ReadAllBytes(boot));
+                Assert.That(pixels.Length, Is.EqualTo(canonicalPixels.Length));
+                const int width = 372, height = 520, shift = 31;
+                for (var row = 0; row < height; row++)
+                {
+                    // Texture rows run bottom-up, so "31 rows higher" is 31 rows further up the
+                    // array: row r of the three-badge mask is row r - 31 of the audited boot.
+                    for (var x = 0; x < width; x++)
+                    {
+                        var expected = row >= shift
+                            ? canonicalPixels[((row - shift) * width) + x].a
+                            : (byte)0;
+                        if (pixels[(row * width) + x].a != expected)
+                        {
+                            Assert.Fail($"{boot} is not the audited boot moved up {shift} rows " +
+                                $"(first difference at x={x}, texture row={row}).");
+                        }
+                    }
+                }
+            }
+        }
+
+        private static Color32[] LoadMaskPixels(byte[] png)
+        {
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.That(ImageConversion.LoadImage(texture, png), Is.True);
+                return texture.GetPixels32();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
             }
         }
 

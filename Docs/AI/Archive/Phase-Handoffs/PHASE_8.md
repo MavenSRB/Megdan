@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.112g Mrak dealt and artworked evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.112g | Mrak registered, pickable (three stars; Melee, Tokens, Durable, Disabler, Tactician) and dealt in both formats with staged scenes; private fronts, selection art, standees, rock hex and shine sprites prepared (three-badge and Defense-and-Attack rails); registration pins, both corpora (MIGRATE +293 bytes) and his identity pinned; rocks, the secondary Attack control and the pick proved in Play Mode. [Definition](../../Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md#x-8112g-deal-mrak-and-present-his-artwork). | `milestone/8.112g` |
+
 ## Milestone 8.112f Mrak Ultimate and set reconciliation evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -624,6 +624,8 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.TrinketsCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.SnorriHeroIdValue:
                     return Cards.Verified.SnorriCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.MrakHeroIdValue:
+                    return Cards.Verified.MrakCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2186,6 +2188,50 @@ namespace GuardsDigital.Core.Participants
                     Cards.Verified.WaspCardContent.HighVoltage) ||
                 card.DefinitionReference.DefinitionId.Equals(
                     Cards.Verified.SnorriUltimateContent.RuneMastery)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
+        /// <summary>Milestone 8.112g. Wasp on Red against Mrak with his p.6 starting hand.</summary>
+        public static MatchConfiguration CreateStagedMrakForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.MrakCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 8.112g. Mrak on Red against Wasp and Arien on Blue: Stone Grip and Rock and a Hard
+        /// Place can concern two enemy heroes at once only here.
+        /// </summary>
+        public static MatchConfiguration CreateStagedMrakAgainstWaspWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                Cards.Verified.MrakCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue), "red"),
+                CreateVerifiedWaspHand(TeamSide.Blue)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>Milestone 8.112g. Wasp against Mrak, both on Tier III, Rock and a Hard Place faceup.</summary>
+        public static MatchConfiguration CreateStagedMrakTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.MrakProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.MrakCardContent.RockAndAHardPlace)))
                 if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
                     throw new InvalidOperationException(
                         "The staged Tier III match could not unlock a dealt Ultimate.");

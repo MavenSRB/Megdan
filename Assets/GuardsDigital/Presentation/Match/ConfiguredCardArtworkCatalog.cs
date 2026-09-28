@@ -162,7 +162,10 @@ namespace GuardsDigital.Presentation.Match
                 // `MatchContentCatalogs` knows about it.
                 { "ignatia", "Ignatia" },
                 { "trinkets", "Trinkets" },
-                { "snorri", "Snorri" }
+                { "snorri", "Snorri" },
+                // Milestone 8.112g. The standee element is `Mrak` and the dashboard prints "Mrak the
+                // Rockshaper" (inventory MR-02).
+                { "mrak", "Mrak" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -500,6 +503,7 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(IgnatiaCardContent.DealtDefinitions)
                 .Concat(TrinketsCardContent.DealtDefinitions)
                 .Concat(SnorriCardContent.DealtDefinitions)
+                .Concat(MrakCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 
