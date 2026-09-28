@@ -282,8 +282,8 @@ namespace GuardsDigital.Tests.PlayMode
                     HanuCardContent.SafeTravels, "Safe Travels",
                     Ordinary(
                         SafeTravels,
-                        PrimarySkillControl, BoardUnitSelection, ActiveEffectReading,
-                        RoundLongActiveEffectReading),
+                        PrimarySkillControl, BoardUnitSelection, BoardSpaceSelection,
+                        ActiveEffectReading, RoundLongActiveEffectReading),
                     JourneyScenarios),
 
                 Face(

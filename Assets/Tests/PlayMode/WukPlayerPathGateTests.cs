@@ -177,9 +177,7 @@ namespace GuardsDigital.Tests.PlayMode
                     Prove(BoardSpaceSelection, Saplings),
                     Prove(PresentationRebuild, Lifecycle)
                 }, new[] { "WukBasicFacesTests.Tree_IsAThreeTokenSupplyThatNoRoundEndRemoves" })
-            },
-            // Dominance asks its question from the Active effect's own pre-battle trigger (8.114g).
-            walksActiveEffectTriggers: true);
+            });
 
         [Test] public void EveryFaceHasExactlyOneRow() => Matrix().AssertEveryFaceHasExactlyOneRow();
         [Test] public void EveryRowMatchesTheShapesDerivedFromContent() => Matrix().AssertEveryRowDeclaresTheShapesItsContentIntroduces();

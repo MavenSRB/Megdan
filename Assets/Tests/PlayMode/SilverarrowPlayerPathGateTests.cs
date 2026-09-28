@@ -314,7 +314,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(ActiveEffectReading, EndOfTurnDiscard),
                         Prove(RoundLongActiveEffectReading, EndOfTurnDiscard),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardUnitSelection, EndOfTurnDiscard),
+                        Prove(HandCardSelection, EndOfTurnDiscard)
                     },
                     new[]
                     {
@@ -344,7 +346,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(ActiveEffectReading, EndOfTurnDiscard),
                         Prove(RoundLongActiveEffectReading, EndOfTurnDiscard),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardUnitSelection, EndOfTurnDefeat),
+                        Prove(HandCardSelection, EndOfTurnDiscard)
                     },
                     new[]
                     {

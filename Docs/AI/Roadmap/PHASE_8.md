@@ -96,13 +96,17 @@ Completed 2026-09-28. When card text's answered question is `defended-card-force
 
 Historical evidence: [8.116 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8116-dragon-knight-forced-move-evidence).
 
-### [ ] 8.117 Walk every hero's Active-effect trigger bodies in the player-path gate
+### [x] 8.117 Walk every hero's Active-effect trigger bodies in the player-path gate
 
-Queued 2026-09-28 by 8.114g, not authorized. `HeroPlayerPathMatrix` walks an Active effect's own trigger body only for a gate that opts in; Wuk's does. Measured at 8.114g, opting every gate in adds shapes to Min's grenades, Misa's Focus line, Silverarrow's Warning Shot and Treetop Sentinel, Trinkets' Disruptor line and Xargatha's Constrict and Final Embrace that their journeys have not been shown to prove; Bain, Hanu, Swift and Tali declare bodies their gates do not yet supply. Closing check: the walk made unconditional, each added shape proved by a real journey, and every gate green.
+Queued 2026-09-28 by 8.114g. Authorized 2026-09-28 with 8.118 as the bounded sequence 8.117 -> 8.118 ("Go for both"), each with its own validation and commit. `HeroPlayerPathMatrix` walks an Active effect's own trigger body only for a gate that opts in; Wuk's does. Measured at 8.114g, opting every gate in adds shapes to Min's grenades, Misa's Focus line, Silverarrow's Warning Shot and Treetop Sentinel, Trinkets' Disruptor line and Xargatha's Constrict and Final Embrace that their journeys have not been shown to prove; Bain, Hanu, Swift and Tali declare bodies their gates do not yet supply. Closing check: the walk made unconditional, each added shape proved by a real journey, and every gate green.
 
-### [ ] 8.118 Continue around-action minion Defeats held behind a removal-prevention question
+Completed 2026-09-28. The walk is unconditional: a body the gate does not supply is read from this build's triggered-effect catalog, and a named body neither supplies fails the gate. Sixteen rows gained shapes (Hanu's Safe Travels, both Min Grenades, Misa's Focus, Discipline and Mastery, Silverarrow's Warning Shot and Treetop Sentinel, Swift's Delayed Jump and Mobile Scout, Tali's Blizzard, the three Disruptors, Xargatha's Constrict and Final Embrace); Bain's supplied nothing new. Existing journeys already answer most trigger questions; three journeys were added or extended where none did: Mobile Scout's End-of-turn placement and its "if able" Fast Travel (measured to be offered on the (-4,0) landing), Final Embrace's pre-battle minion choice, and Focus and Mastery's free step now taken rather than only offered. Treetop Sentinel's discard and Constrict's minion choice are proved by the sibling face's journey running the same composed trigger sentence. T2; evidence in the milestone commit.
 
-Queued 2026-09-28 by 8.114b1, not authorized. Text around a Movement (Trample, Angry Stampede) settles its minion Defeats in order; when one stops on a removal-prevention question, the ones after it are not continued. Closing check: a failing-then-passing regression defeating two trampled minions, the first protected by a prevention source.
+Historical evidence: [8.117 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8117-trigger-body-gate-evidence).
+
+### [~] 8.118 Continue around-action minion Defeats held behind a removal-prevention question
+
+Queued 2026-09-28 by 8.114b1; authorized the same day as the second step of 8.117 -> 8.118. Text around a Movement (Trample, Angry Stampede) settles its minion Defeats in order; when one stops on a removal-prevention question, the ones after it are not continued. Closing check: a failing-then-passing regression defeating two trampled minions, the first protected by a prevention source.
 
 ### [x] 8.115 Whisper's forced move is a full-distance Movement action
 

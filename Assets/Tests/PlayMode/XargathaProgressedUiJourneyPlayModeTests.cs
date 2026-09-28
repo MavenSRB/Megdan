@@ -438,6 +438,91 @@ namespace GuardsDigital.Tests.PlayMode
             yield return CaptureGameView("metamorphosis-on-her-rail-and-in-her-walk");
         }
 
+        /// <summary>
+        /// Final Embrace: "End of round: Defeat an enemy ranged or melee minion adjacent to you."
+        ///
+        /// <para><b>Milestone 8.117.</b> The question this face asks is asked by its Active effect's own
+        /// trigger body at p.8's pre-battle moment, not while the card resolves - so it is met on the
+        /// round's close, with the Skill long finished. The staging leaves one enemy Ranged minion
+        /// beside her, which is the class Constrict's narrower sentence refuses and this one admits;
+        /// Constrict's pre-battle question is the same composed node table with the class narrowed,
+        /// and its refusal of that minion is the Edit Mode tier's.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator FinalEmbrace_AsksHerAtThePreBattleMomentWhichAdjacentMinionFalls()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedXargatha);
+            var root = Root();
+            var runtime = root.Runtime;
+            var xargathaId = XargathaSeat(runtime).HeroId;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.FinalEmbrace);
+            yield return YieldUntilTheNamedSeatActs(runtime, xargathaId);
+            yield return PointTrayAt(root, xargathaId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "\"End of round:\" asks nothing while the Skill resolves. " + Remaining(runtime));
+
+            var herSpace = runtime.Heroes.Single(hero => hero.HeroId.Equals(xargathaId)).Coordinate;
+            var beside = runtime.BoardView.Model.Minions
+                .Where(minion => minion.TeamSide != TeamSideOf(runtime, xargathaId) &&
+                    HexDistanceQuery.Calculate(minion.Coordinate, herSpace) == 1)
+                .Select(minion => minion.Coordinate)
+                .ToArray();
+            Assert.That(beside, Has.Length.EqualTo(1),
+                "The staging leaves one enemy Ranged minion beside her. " + Remaining(runtime));
+            var doomed = MinionsAt(beside).Single().Occupancy.MinionId;
+
+            // The round's remaining turns are filler, played through the same controls, until p.8's
+            // end of round reaches the pre-battle moment.
+            var round = runtime.RoundIndex;
+            for (var budget = 0; budget < 200 && runtime.RoundIndex == round; budget++)
+            {
+                var standing = runtime.PendingEffectChoice;
+                if (standing != null && standing.NodeId.Value == "xargatha-final-embrace-defeat-subject")
+                {
+                    break;
+                }
+
+                Assert.That(runtime.PendingMinionBattleChoice, Is.Null,
+                    "The Minion Battle came before the pre-battle question. " + Remaining(runtime));
+                if (standing != null)
+                {
+                    Assert.That(MisaUiJourneyPlayModeTests.AnswerStandingChoiceHeadlessly(runtime), Is.True,
+                        "A filler turn's own question must be answerable. " + Remaining(runtime));
+                    yield return null;
+                    continue;
+                }
+
+                yield return GarrusLifecycleJourneyTests.NextRoundDecision(root);
+            }
+
+            var question = runtime.PendingEffectChoice;
+            Assert.That(question, Is.Not.Null,
+                "p.8's pre-battle moment stops for the trigger's question. " + Remaining(runtime));
+            Assert.That(question.NodeId.Value, Is.EqualTo("xargatha-final-embrace-defeat-subject"),
+                Remaining(runtime));
+            Assert.That(question.ChooserId, Is.EqualTo(xargathaId),
+                "p.10 gives the unassigned choice to the card's controller.");
+            Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),
+                "It is asked on the round's close, not on her turn.");
+
+            var selection = StandingNode(runtime);
+            Assert.That(UiPlayer.ClickBoard(
+                    pointerInput, root.Hud, MinionView(doomed).transform.position), Is.True,
+                "The minion is named by clicking the miniature where it stands.");
+            yield return null;
+            yield return ConfirmIfStillStanding(root, selection);
+            yield return null;
+
+            Assert.That(runtime.BoardView.Model.Minions.Any(minion => minion.Coordinate.Equals(beside[0]) &&
+                    minion.TeamSide != TeamSideOf(runtime, xargathaId)), Is.False,
+                "\"Defeat\" - the minion she named has left the board before the Minion Battle. " +
+                Remaining(runtime));
+        }
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------

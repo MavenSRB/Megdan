@@ -37,12 +37,12 @@ namespace GuardsDigital.Tests.PlayMode
     /// (MI-Q1), so there is never a second candidate to pick between and the only question a player
     /// meets is the printed "you may". A row claiming a selection there would name a control that does
     /// not exist.</description></item>
-    /// <item><description><b>The mine trap and both Grenade bodies contribute no shape to any
-    /// row.</b> They are triggered effects in the build's catalog rather than card-text bodies, and the
-    /// derivation walks an Ultimate's triggered effect alone - so the enemy hero's own discard, on the
-    /// enemy's own seat, is not a claim any Blue row makes. It is journeyed all the same and asserted
-    /// there, which is where milestone 8.40f's ruling puts a different chooser answering the same kind
-    /// of control.</description></item>
+    /// <item><description><b>Both Grenade bodies contribute their shapes to their own rows, and the
+    /// mine trap to none.</b> Milestone 8.117 made the derivation walk every Active effect's own
+    /// trigger body, so the End-of-turn "may", the adjacent enemy hero and that hero's discard - on the
+    /// enemy's own seat, where milestone 8.40f's ruling puts a different chooser answering the same
+    /// kind of control - are claims each Grenade row makes and its journey drives. The mine trap is a
+    /// token's triggered effect rather than an Active effect's, so no face raises it.</description></item>
     /// <item><description><b>The Smoke bomb's screen is a TOKEN PROPERTY, not an Active
     /// effect</b>, so the Silver face declares no <c>OpponentRestrictionReading</c>. p.17's restriction
     /// reading is derived from an <c>ActiveEffectDefinition</c> the hero raises, and MI-Q2's screen is
@@ -269,14 +269,16 @@ namespace GuardsDigital.Tests.PlayMode
                     Ordinary(
                         Grenade,
                         PrimarySkillControl, BoardSpaceSelection, ActiveEffectReading,
-                        RoundLongActiveEffectReading),
+                        RoundLongActiveEffectReading, ConfirmOrDecline, BoardUnitSelection,
+                        HandCardSelection),
                     Grenades),
                 Face(
                     MinCardContent.HolyDeathGrenade, "Holy Death Grenade",
                     Ordinary(
                         Holy,
                         PrimarySkillControl, BoardSpaceSelection, ActiveEffectReading,
-                        RoundLongActiveEffectReading),
+                        RoundLongActiveEffectReading, ConfirmOrDecline, BoardUnitSelection,
+                        HandCardSelection),
                     Grenades),
 
                 // ---------------------------------------------------------------------------------

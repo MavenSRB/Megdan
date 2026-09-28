@@ -1464,11 +1464,9 @@ namespace GuardsDigital.Tests.PlayMode
             IReadOnlyList<CardDefinitionId> returnedToBoxAtSetup,
             IEnumerable<IEffectCapabilityHandler> activeEffectHandlers,
             IReadOnlyList<EffectDefinition> ultimateTriggeredEffects,
-            IReadOnlyList<PlayerPathRow> rows,
-            bool walksActiveEffectTriggers = false)
+            IReadOnlyList<PlayerPathRow> rows)
         {
             triggeredEffects = ultimateTriggeredEffects;
-            this.walksActiveEffectTriggers = walksActiveEffectTriggers;
             HeroDisplayName = heroDisplayName;
             AllDefinitions = allDefinitions;
             ReturnedToBoxAtSetup = returnedToBoxAtSetup;
@@ -2000,29 +1998,31 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.114g. The shapes an Active effect's OWN trigger body asks for - Wuk's Claim and
-        /// Assert Dominance ask him for up to one (two) adjacent enemy minions at p.8's pre-battle
-        /// moment, a question nothing else on the face raises. Walked only by a gate that opts in and
-        /// supplies the bodies (Wuk's). Measured at 8.114g: turning it on for every gate adds shapes
-        /// to Min's, Misa's, Silverarrow's, Trinkets' and Xargatha's rows that their journeys have not
-        /// been shown to prove, so those gates stay as they were and milestone 8.117 owes the walk
-        /// for every hero rather than this one assuming the answer.
+        /// Milestones 8.114g and 8.117. The shapes an Active effect's OWN trigger body asks for - Wuk's
+        /// Claim and Assert Dominance ask him for up to one (two) adjacent enemy minions at p.8's
+        /// pre-battle moment, a question nothing else on the face raises. Walked for every hero: the
+        /// body is the one the gate supplies, else the one this build's triggered-effect catalog runs,
+        /// and a trigger the build names but cannot resolve fails the gate rather than contributing
+        /// nothing.
         /// </summary>
-        private readonly bool walksActiveEffectTriggers;
+        private static readonly TriggeredEffectCatalog BuildTriggeredEffects =
+            MatchContentCatalogs.ForThisBuild().TriggeredEffects;
 
         private void AddActiveEffectTriggerShapes(
             ActiveEffectDefinition activeEffect, ISet<PlayerInteractionShape> shapes)
         {
-            if (!walksActiveEffectTriggers || !activeEffect.TriggeredEffect.HasValue)
+            if (!activeEffect.TriggeredEffect.HasValue)
             {
                 return;
             }
 
-            var body = triggeredEffects.FirstOrDefault(candidate =>
-                candidate.Reference.Equals(activeEffect.TriggeredEffect.Value));
-            if (body == null)
+            var reference = activeEffect.TriggeredEffect.Value;
+            var body = triggeredEffects.FirstOrDefault(candidate => candidate.Reference.Equals(reference));
+            if (body == null && !BuildTriggeredEffects.TryGet(reference, out body))
             {
-                return;
+                Assert.Fail(
+                    $"{HeroDisplayName}'s Active effect names trigger body '{reference}', which neither " +
+                    "the gate nor this build's triggered-effect catalog supplies.");
             }
 
             foreach (var node in body.Nodes)

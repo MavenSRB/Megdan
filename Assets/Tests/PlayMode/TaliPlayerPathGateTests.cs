@@ -321,7 +321,8 @@ namespace GuardsDigital.Tests.PlayMode
                         // cells are split between them rather than doubled onto one. They differ in
                         // the only way a one-shot offer can: one takes the repeat and one refuses it,
                         // which no single journey can do.
-                        Prove(RoundLongActiveEffectReading, BlizzardDeclineJourney)
+                        Prove(RoundLongActiveEffectReading, BlizzardDeclineJourney),
+                        Prove(ConfirmOrDecline, BlizzardJourney)
                     },
                     new[]
                     {

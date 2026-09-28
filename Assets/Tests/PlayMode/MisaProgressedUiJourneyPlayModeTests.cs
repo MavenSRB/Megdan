@@ -597,6 +597,39 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.EqualTo(expectedNode),
                     "Each Green tier must offer its own next-turn free step before a Skill. " +
                     Remaining(runtime));
+
+                // Milestone 8.117: the step is TAKEN, not only offered. Focus prints an exact "move 1
+                // space" behind its "you may", so its refusal stands beside the offer; the "up to"
+                // tiers carry their nought inside the offer instead.
+                if (greenCard.Equals(MisaCardContent.Focus))
+                {
+                    Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null,
+                        "\"you may move 1 space\" - a May a player cannot refuse is not a May. " +
+                        Remaining(runtime));
+                }
+
+                var destinations = LitDestinations(runtime);
+                if (destinations.Length == 0)
+                {
+                    UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
+                    yield return null;
+                    destinations = LitDestinations(runtime);
+                }
+
+                var from = runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate;
+                var away = destinations.Where(space => !space.Equals(from)).ToArray();
+                Assert.That(away, Is.Not.Empty,
+                    "The step offers a space she is not already on. " + Remaining(runtime));
+                var chosen = away[0];
+                Assert.That(UiPlayer.ClickBoard(
+                    Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud,
+                    Tile(chosen).transform.position), Is.True);
+                yield return null;
+                yield return null;
+                Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate,
+                    Is.EqualTo(chosen), greenCard.Value + "'s free step changes the board.");
+                Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Is.Not.EqualTo(expectedNode),
+                    "and answering it resumes the held Skill rather than offering it again.");
             }
         }
 

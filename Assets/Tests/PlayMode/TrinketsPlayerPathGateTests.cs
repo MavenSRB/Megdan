@@ -52,8 +52,9 @@ namespace GuardsDigital.Tests.PlayMode
         private static readonly PlayerInteractionShape[] RepeatRedShapes =
             { RangedAttackTarget, BeforeAttackTextPause, BoardUnitSelection,
                 AfterAttackTextPause, ConfirmOrDecline, RepeatDecision };
+        // Milestone 8.117: the enemy's own discard is the Active effect's trigger body's question.
         private static readonly PlayerInteractionShape[] DisruptorShapes =
-            { PrimarySkillControl, ActiveEffectReading };
+            { PrimarySkillControl, ActiveEffectReading, HandCardSelection };
         private static readonly PlayerInteractionShape[] BarrierShapes =
             { PrimarySkillControl, ConfirmOrDecline, BoardSpaceSelection };
         private static readonly PlayerInteractionShape[] PrototypeShapes =

@@ -56,6 +56,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.113 | Ignatia's magma supply corrected to four and p.18's short-supply reclaim applied to her moon placements and sun wake; revision `ignatia-8-113-rev-1`, corpus MIGRATE (+26 bytes), gate classification and a Chaos Incarnate reclaim journey. [Definition](../../Roadmap/PHASE_8.md#x-8113-correct-ignatias-magma-supply-to-four-tokens-and-apply-p18s-short-supply). | `milestone/8.113` |
 
+## Milestone 8.117 Trigger-body gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.117 | Every hero's player-path gate walks its Active effects' own trigger bodies, read from the build catalog when the gate supplies none; sixteen rows' added shapes are each proved by a journey that answers the trigger's question. [Definition](../../Roadmap/PHASE_8.md#x-8117-walk-every-heros-active-effect-trigger-bodies-in-the-player-path-gate). | `milestone/8.117` |
+
 ## Milestone 8.116 Dragon Knight forced move evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -81,6 +81,10 @@ namespace GuardsDigital.Tests.PlayMode
         private const string DelayedJumpJourney =
             "DelayedJumpStandsItsPromise_AndPlacesHerWhenTheTurnEnds";
 
+        // Milestone 8.117: the only Fast Travel in her set, asked by the End-of-turn trigger body.
+        private const string MobileScoutJourney = nameof(SwiftProgressedUiJourneyPlayModeTests
+            .MobileScoutPlacesHerAtTheTurnsCloseAndThenOffersItsFastTravel);
+
         private const string MarkForDeathJourney =
             "MarkForDeathMovesAMinion_ThenPaysItsCountedBountyNextTurn";
 
@@ -325,7 +329,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
                         Prove(ActiveEffectReading, DelayedJumpJourney),
-                        Prove(RoundLongActiveEffectReading, DelayedJumpJourney)
+                        Prove(RoundLongActiveEffectReading, DelayedJumpJourney),
+                        Prove(BoardSpaceSelection, DelayedJumpJourney)
                     },
                     new[]
                     {
@@ -341,7 +346,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
                         Prove(ActiveEffectReading, DelayedJumpJourney),
-                        Prove(RoundLongActiveEffectReading, DelayedJumpJourney)
+                        Prove(RoundLongActiveEffectReading, DelayedJumpJourney),
+                        Prove(BoardSpaceSelection, MobileScoutJourney),
+                        Prove(ConfirmOrDecline, MobileScoutJourney)
                     },
                     new[]
                     {

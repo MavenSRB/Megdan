@@ -1045,6 +1045,84 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Mobile Scout: "End of turn: Place yourself into a space in radius not in a straight line
+        /// from you. You may then fast travel once, if able."
+        ///
+        /// <para><b>Milestone 8.117, and the only Fast Travel in her set.</b> Both questions belong to
+        /// the Active effect's own trigger body, so both are met at the turn's close. "If able" is the
+        /// board's to answer: measured headlessly on this staging, the landings inside the Battle Zone
+        /// leave an enemy in her Zone and nothing is asked, while (-4,0) is in her own approach Zone,
+        /// where p.11 admits the Fast Travel - so the journey lands there and is offered the printed
+        /// "may" beside the lit Zone spaces, and takes it.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator MobileScoutPlacesHerAtTheTurnsCloseAndThenOffersItsFastTravel()
+        {
+            yield return LoadStagedScene(
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift);
+            var root = Root();
+            var runtime = root.Runtime;
+            var swiftId = SwiftSeat(runtime).HeroId;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var quietLanding = new HexCoordinate(-4, 0);
+
+            yield return HerTurnOn(root, swiftId, SwiftCardContent.MobileScout);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "\"End of turn:\" asks nothing while the Skill resolves. " + Remaining(runtime));
+
+            PendingEffectChoice placement = null;
+            for (var step = 0; step < 12; step++)
+            {
+                placement = runtime.PendingEffectChoice;
+                if (placement != null)
+                {
+                    break;
+                }
+
+                if (runtime.IsTurnActive || runtime.PendingTurnRelease != null)
+                {
+                    runtime.SubmitEndTurn();
+                }
+
+                yield return null;
+            }
+
+            Assert.That(placement, Is.Not.Null,
+                "Ending the turn is what the promise was waiting for. " + Remaining(runtime));
+            Assert.That(placement.NodeId.Value, Is.EqualTo("late-place"), Remaining(runtime));
+            Assert.That(LitDestinations(runtime), Contains.Item(quietLanding),
+                "The measured landing is inside the printed Radius 2 and off every file from her. " +
+                Remaining(runtime));
+            Assert.That(UiPlayer.ClickBoard(
+                pointerInput, root.Hud, Tile(quietLanding).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
+                Is.EqualTo(quietLanding), "She stands where the promise placed her.");
+
+            var travel = runtime.PendingEffectChoice;
+            Assert.That(travel, Is.Not.Null,
+                "\"You may then fast travel once, if able\" - and on this landing she is able. " +
+                Remaining(runtime));
+            Assert.That(travel.NodeId.Value, Is.EqualTo("late-travel"), Remaining(runtime));
+            Assert.That(travel.ChooserId, Is.EqualTo(swiftId));
+            Assert.That(travel.DeclineInvocation, Is.Not.Null,
+                "A \"may\" a player cannot refuse is not a May. " + Remaining(runtime));
+
+            var destination = LitDestinations(runtime)
+                .First(space => !space.Equals(quietLanding));
+            Assert.That(UiPlayer.ClickBoard(
+                pointerInput, root.Hud, Tile(destination).transform.position), Is.True);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, travel.NodeId);
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
+                Is.EqualTo(destination), "The Fast Travel moved her. " + Remaining(runtime));
+            Assert.That(HeroView(swiftId).Coordinate, Is.EqualTo(destination));
+        }
+
+        /// <summary>
         /// Hunting Season: "Move up to two enemy minions in radius up to 3 spaces to spaces in
         /// radius. **Next turn:** The first two times an enemy minion in radius is defeated, gain 1
         /// coin."

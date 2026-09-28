@@ -422,7 +422,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(RoundLongActiveEffectReading, StepJourney),
                         Prove(RoundLongActiveEffectReading, StepBeforeSkillJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardSpaceSelection, StepBeforeSkillJourney),
+                        Prove(ConfirmOrDecline, StepBeforeSkillJourney)
                     },
                     new[]
                     {
@@ -437,7 +439,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(ActiveEffectReading, StepTierTwoJourney),
                         Prove(RoundLongActiveEffectReading, StepTierTwoJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardSpaceSelection, StepTierTwoJourney)
                     },
                     new[]
                     {
@@ -471,7 +474,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(RoundLongActiveEffectReading, StepTierTwoJourney),
                         Prove(RoundLongActiveEffectReading, StepBeforeSkillJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardSpaceSelection, StepBeforeSkillJourney)
                     },
                     new[]
                     {

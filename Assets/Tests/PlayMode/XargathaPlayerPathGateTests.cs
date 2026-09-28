@@ -86,6 +86,12 @@ namespace GuardsDigital.Tests.PlayMode
         private const string StoneGazeJourney =
             "StoneGaze_IsDormantOnTheTurnItIsPlayedAndStandsOnHerNext";
 
+        // Milestone 8.117: the pre-battle question both end-of-round Defeats' trigger bodies ask. The
+        // staging's adjacent enemy minion is Ranged, which Final Embrace admits; Constrict's body is the
+        // same composed node table with the class narrowed to Melee.
+        private const string PreBattleDefeatJourney = nameof(XargathaProgressedUiJourneyPlayModeTests
+            .FinalEmbrace_AsksHerAtThePreBattleMomentWhichAdjacentMinionFalls);
+
         private const string CharmJourney =
             "Charm_AsksWhichSideOfHerMovementItRunsOnAndWalksTheRangedMinion";
 
@@ -392,7 +398,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(ActiveEffectReading, StoneGazeJourney),
                         Prove(RoundLongActiveEffectReading, StoneGazeJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardUnitSelection, PreBattleDefeatJourney)
                     },
                     new[]
                     {
@@ -425,7 +432,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(ActiveEffectReading, StoneGazeJourney),
                         Prove(RoundLongActiveEffectReading, StoneGazeJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(BoardUnitSelection, PreBattleDefeatJourney)
                     },
                     new[]
                     {
