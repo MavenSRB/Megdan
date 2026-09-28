@@ -4,7 +4,7 @@ Return to [roadmap](../ROADMAP.md). [The session brief](../SESSION_BRIEF.md) own
 
 ## Authorization and scope
 
-On 2026-09-28, while Mrak's 8.112g was still in flight, the user named the next hero: "so when the other agent finishes Mrak, you get to start working on Wuk ... ask me any question you have so you can keep going and work while i sleep." The user answered WU-Q1 to WU-Q4 the same night, before 8.114 began. This authorizes the bounded sequence **8.114 -> 8.114a -> 8.114b -> 8.114c -> 8.114d -> 8.114e -> 8.114f -> 8.114g** through a fully selectable, artworked Wuk, every dealt printed face and the permanent player-path gate, starting after 8.112h (`6e29c555`). Execute one milestone at a time with its own validation and local commit. A reading outside the settled facts stops its block for the user; other blocks do not wait on it. No other hero, package, remote publication or rule invention is authorized.
+On 2026-09-28, while Mrak's 8.112g was still in flight, the user named the next hero: "so when the other agent finishes Mrak, you get to start working on Wuk ... ask me any question you have so you can keep going and work while i sleep." The user answered WU-Q1 to WU-Q4 the same night, before 8.114 began. This authorizes the bounded sequence **8.114 -> 8.114a -> 8.114b -> 8.114b1 -> 8.114c -> 8.114d -> 8.114e -> 8.114f -> 8.114g** (8.114b1 split from 8.114b by the amendment recorded there) through a fully selectable, artworked Wuk, every dealt printed face and the permanent player-path gate, starting after 8.112h (`6e29c555`). Execute one milestone at a time with its own validation and local commit. A reading outside the settled facts stops its block for the user; other blocks do not wait on it. No other hero, package, remote publication or rule invention is authorized.
 
 [Wuk's rules shard](../Rules/HERO_WUK.md) owns source facts, inventory, capability mapping and questions WU-Q1 to WU-Q4. Eighteen ordinary fronts are dealt; the nineteenth, Makeshift Weapon, is a p.20 Handicap and stays boxed at setup.
 
@@ -41,11 +41,23 @@ Completed 2026-09-28. `WukComponentContent` defines the three-Tree `wuk-tree` to
 
 Historical evidence: [8.114a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114b Implement the Red Tree Attacks and the trampling moves
+### [x] 8.114b Implement the Red Tree Attacks
 
-Outcome: Nature's Protector, Guardian and Champion ("a unit in range adjacent to a Tree token" through 8.88's adjacency arm; Champion's one-or-both on different targets), and Trample and Angry Stampede: a Movement primary whose straight-line path unlocks ignoring obstacles, then each enemy hero moved through discards or is defeated (immunity respected) and up to one (two) minions of any side moved through are defeated (WU-Q4).
+Outcome: Nature's Protector, Guardian and Champion ("a unit in range adjacent to a Tree token" as a bullet narrowing; Champion's one-or-both on different targets).
 
-Acceptance: configured rounds prove both bullets' boundaries, Champion's two sequences and different-target rule, straight versus curved paths, passing through units and tokens but never ending on one, the discard-or-defeat answered on the addressed seat, immune heroes skipped, zero/one/two minion defeats including a friendly one, and restore of each pause. Unregistered until 8.114f.
+Acceptance: configured rounds prove both bullets' boundaries, the printed Ranges, Champion's two sequences and different-target rule, the greyed bullet that names nobody, and restore of a paused target question. Unregistered until 8.114f.
+
+Amended 2026-09-28 before implementation finished, recording what the probe found: the trampling moves need a Movement action whose walk may ignore obstacles only on a straight line and consequences over the units it crossed - an engine seam no earlier face has - so they are their own step, 8.114b1, inside the approved sequence rather than a rider on the Attacks.
+
+Completed 2026-09-28. `WukRedFaces` composes the three Nature's Attacks as p.10's modal over two `attack-sequence@1` bullets (Brynn's Familiar Ground and Bain's Hunter-Seeker shape): "a hero adjacent to you" and "a unit in range adjacent to a Tree token", Champion taking one or both on different targets. The second bullet is `AttackSequenceSubjectNarrowing.AdjacentToATokenTheActorOwns` (value 7), milestone 8.88's ownership reading of "a Tree token", evaluated per candidate at the bullet's own sequence start. Five configured-round tests cover both bullets, a rock of another hero's excluded, Protector's Range 2 against Guardian's 3, Champion's two sequences with the first target excluded from the second, and restore of the target question; two of them failed with the narrowing admitting everyone. Unregistered until 8.114f. T2; evidence in the milestone commit.
+
+Historical evidence: [8.114b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
+
+### [ ] 8.114b1 Implement the trampling moves
+
+Outcome: Trample and Angry Stampede: a Movement primary whose straight-line walk may ignore obstacles, then each enemy hero moved through discards or is defeated (immunity respected) and up to one (two) minions of any side moved through are defeated (WU-Q4).
+
+Acceptance: configured rounds prove straight versus curved walks, passing through units and tokens but never ending on one, the discard-or-defeat answered on the addressed seat, immune heroes skipped, zero/one/two minion defeats including a friendly one, Movement items applied, and restore of each pause. Unregistered until 8.114f.
 
 ### [ ] 8.114c Implement the Blue retrieval faces and Dominance
 

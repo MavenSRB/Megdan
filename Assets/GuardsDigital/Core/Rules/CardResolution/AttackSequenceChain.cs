@@ -186,7 +186,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ///
         /// <para>Its value is 6 and the six members above keep theirs.</para>
         /// </summary>
-        AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor = 6
+        AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor = 6,
+
+        /// <summary>
+        /// "Target a unit in range <b>adjacent to a Tree token</b>" - the second bullet of Wuk the
+        /// Grove Keeper's Nature's Protector, Nature's Guardian and Nature's Champion, milestone 8.114b.
+        ///
+        /// <para><b>Ownership names the kind</b>, the reading milestone 8.88 recorded for every token
+        /// clause of an undealt hero: this vocabulary is a closed enum and carries no token definition,
+        /// and Wuk owns exactly one kind of token, so "a token the actor owns" and "a Tree token" select
+        /// the same pieces for him (his shard records the equivalence). Like member 5 it says nothing
+        /// about which kind of unit it is about - the noun is the bullet's own
+        /// <see cref="GuardsDigital.Core.Cards.AttackTargetableUnits"/>.</para>
+        ///
+        /// <para>Standing beside a token is not something done to it, so no immunity is asked of the
+        /// token (p.19), and it reads the board per candidate at the bullet's own sequence start, so a
+        /// Tree removed by an earlier bullet has changed the answer for a later one.</para>
+        ///
+        /// <para>Its value is 7 and the seven members above keep theirs.</para>
+        /// </summary>
+        AdjacentToATokenTheActorOwns = 7
     }
 
     /// <summary>

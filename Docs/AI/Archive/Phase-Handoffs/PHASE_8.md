@@ -60,6 +60,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
+| 8.114b | Wuk's three Nature's Attacks over two `attack-sequence@1` bullets, the second narrowed by the new `AdjacentToATokenTheActorOwns` member; the trampling moves split to 8.114b1. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114b-implement-the-red-tree-attacks). | `milestone/8.114b` |
 | 8.114a | Wuk's three-Tree token retained at every round end, Mystic Saplings' up-to-three placement with p.18's short supply, and Tree Slam's two bullets; `synthetic-choose-target@4` gains an optional `tokenKind`. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114a-implement-the-tree-token-mystic-saplings-and-the-gold-tree-bullet). | `milestone/8.114a` |
 | 8.114 | Wuk's nineteen fronts, both back variants, profile, stat bars, dashboard, standee (element 8597495, named `Hanu`) and three `Sapling` Tree faces inventoried; Tree bullet, trampling move, battle-time minion exclusion and any-card after-resolve trigger mapped as new contracts; WU-Q1-WU-Q4 settled by the user; 8.114a-8.114g sequence with carried lessons recorded. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114-inventory-wuk-and-map-the-implementation-sequence). | `milestone/8.114` |
 

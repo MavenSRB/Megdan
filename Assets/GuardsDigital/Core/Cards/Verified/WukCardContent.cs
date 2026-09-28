@@ -119,11 +119,10 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAll.Value;
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAll =
-            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
-            {
-                TreeSlamDefinition,
-                MysticSaplingsDefinition
-            }));
+            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(
+                new[] { TreeSlamDefinition, MysticSaplingsDefinition }
+                    .Concat(WukRedFaces.AttackDefinitions)
+                    .ToArray()));
 
         /// <summary>
         /// Tree Slam's two bullets. The first is Throwing Axe's adjacent bullet narrowed to minions;
@@ -313,12 +312,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 .BoundByCardText();
         }
 
-        private static ActionDefinition Movement(int value) => new ActionDefinition(
+        internal static ActionDefinition Movement(int value) => new ActionDefinition(
             SecondaryMovement, ActionKind.Movement, ActionDefinitionOrigin.PrintedSecondary,
             new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, value) },
             new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
 
-        private static ActionDefinition Defense(int value) => new ActionDefinition(
+        internal static ActionDefinition Defense(int value) => new ActionDefinition(
             SecondaryDefense, ActionKind.Defense, ActionDefinitionOrigin.Reaction,
             new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, value) },
             new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),

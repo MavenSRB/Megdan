@@ -222,8 +222,12 @@ namespace GuardsDigital.Tests.EditMode
                     (int)AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles,
                     (int)AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor,
                     (int)AttackSequenceSubjectNarrowing
-                        .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor
+                        .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor,
+                    (int)AttackSequenceSubjectNarrowing.AdjacentToATokenTheActorOwns
                 }.OrderBy(value => value).ToArray()),
+                "EIGHT members as of milestone 8.114b, whose EIGHTH is Wuk the Grove Keeper's " +
+                "Nature's faces, \"a unit in range adjacent to a Tree token\" - named by ownership, " +
+                "milestone 8.88's reading, and appended at 7 so every value above keeps its meaning. " +
                 "SEVEN members as of milestone 8.71c. The second printed clause - " +
                 "Whisper's Swift Justice prints the COMPLEMENT, \"a hero in range with an EMPTY " +
                 "discard\" - arrived as exactly the member and nothing more this comment predicted, " +

@@ -14,15 +14,15 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.114a**.
+- Current completed milestone: **8.114b**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.114b**.
+- Next proposed milestone: **8.114b1**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
 On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rockshaper**: [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md) ([shard](Rules/HERO_MRAK.md), MR-Q1-MR-Q6 settled by the user) are complete - dealt, artworked, pickable and gated. The same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four with p.18's short-supply reclaim.
 
-On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. **8.114** inventoried him ([his shard](Rules/HERO_WUK.md)); **8.114a** (Tree token, Mystic Saplings, Tree Slam) is complete. No package is authorized.
+On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g, with 8.114b1](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. **8.114** inventoried him ([his shard](Rules/HERO_WUK.md)); **8.114a** (Tree token, Mystic Saplings, Tree Slam) and **8.114b** (Red Attacks) are complete. No package is authorized.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
@@ -210,6 +211,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             switch (bullet.SubjectNarrowing)
             {
                 case AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles:
+                case AttackSequenceSubjectNarrowing.AdjacentToATokenTheActorOwns:
                     return spaces != null;
                 case AttackSequenceSubjectNarrowing.HoldsTheActorsMarker:
                     return markers != null;
@@ -354,6 +356,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     .Where(target => StandsBesideAFriendlyHeroOfTheActor(
                         target, attackerId, participants, board, modifications,
                         excludesTheActorsOwnRing))
+                    .ToArray();
+            }
+
+            // Milestone 8.114b. Wuk's Nature's faces, bullet 2: "Target a unit in range adjacent to a
+            // Tree token" - a token the attacker owns on one of the candidate's six neighbours.
+            if (bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing.AdjacentToATokenTheActorOwns)
+            {
+                if (spaces == null || board == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
+                        $"'{bullet.SubjectNarrowing}', which is a predicate about the tokens around " +
+                        "the candidate, and this target derivation was given no token register or no " +
+                        "board to read. Supply both at the call site rather than letting the narrowing " +
+                        "silently admit or silently exclude every candidate.");
+                }
+
+                var owned = spaces.PlacedTokens
+                    .Where(token => token.OwnerHeroId.Equals(attackerId))
+                    .Select(token => token.Coordinate)
+                    .ToArray();
+                return admitted
+                    .Where(target => board.TryGetObjectCoordinate(
+                            target.Kind == AttackTargetKind.Hero
+                                ? BoardObjectReference.ForHero(target.HeroId)
+                                : BoardObjectReference.ForMinion(target.MinionId),
+                            out var at) &&
+                        owned.Any(token => HexDistanceQuery.Calculate(token, at) == 1))
                     .ToArray();
             }
 
