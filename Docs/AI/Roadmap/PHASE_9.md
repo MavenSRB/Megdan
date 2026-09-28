@@ -24,11 +24,15 @@ Completed 2026-09-28. Four targeting families join `PrintedWordingConformanceTes
 
 Historical evidence: [9.2 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-92-targeting-wording-evidence).
 
-### [~] 9.3 Repeat and condition family
+### [x] 9.3 Repeat and condition family
 
 Outcome: "repeat" (a repeat node, its once/count and its target narrowing), "if you do" / "if" / "if this card is" (the gate reads the fact the sentence names), "each" / "all" (every subject, not one). Closing check as 9.1.
 
-### [ ] 9.4 Journeys assert outcomes, not prompts
+Completed 2026-09-28. Three condition families join `PrintedWordingConformanceTests`: "if you do" (a skippable step followed by a mandatory one that reads none of its output is flagged unless listed with its reading), printed value changes (each "+N"/"-N" is a declared contribution, a value modifier, or the token or marker's own property), and "each" (every face that prints it is read in a register with the shape that reaches every subject). Repeats were settled at 9.1 (W1/W2). All nineteen "if you do" faces were read; every one is gated by a mandatory predecessor, the earlier step's own output, a nested Optional or a removal-prevention cost - except Garrus's Blunt Force and Send Flying, where a 0-space "up to" move still pushes. The user settled that as ruling W5: "up to" makes 0 a real choice, so the build stands. All forty value changes and eleven "each" faces are declared. A stale note in Silverarrow's Fae Healing (that its "may" went to Silverarrow) was corrected: a May capability's decline rides on the retrieving hero's own card prompt. No card content changed. T1; evidence in the milestone commit.
+
+Historical evidence: [9.3 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-93-condition-wording-evidence).
+
+### [~] 9.4 Journeys assert outcomes, not prompts
 
 Outcome: every hero's player-path journeys are audited for the 8.82 shape - a question asserted and its consequence never read. Each journey that answers a card-text question asserts the board, hand, tokens or coins the printed sentence changes, including after a decline. Closing check: the audit table recorded, every prompt-only journey extended, the affected Play Mode fixtures green.
 

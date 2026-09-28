@@ -593,11 +593,10 @@ namespace GuardsDigital.Core.Cards.Verified
                         }),
                     new EffectNodeDefinition(
                         // The card choice belongs to the retrieving hero and the capability names them
-                        // as its own chooser; the enclosing `may` opens its confirm-or-decline to the
-                        // card's controller, because a Capability node may name no chooser of its own.
-                        // Recorded as a bounded fidelity note rather than papered over: the printed
-                        // "may" is the retrieving hero's, and directing an enclosing policy's decline
-                        // to a bound hero is vocabulary this build does not have.
+                        // as its own chooser. The `may` rides on that same card prompt as its decline
+                        // (a May capability's choice is declinable whatever its minimum), so the printed
+                        // "may" is the retrieving hero's, as printed. (Milestone 9.3 corrected a note
+                        // here that said the decline went to Silverarrow.)
                         retrieve, EffectNodeKind.Capability, EffectFailurePolicy.May,
                         SyntheticRosterCapabilities.RetrieveCardV1,
                         inputs: new[]

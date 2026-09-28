@@ -395,6 +395,143 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Conditions (milestone 9.3)
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// "if you do" / "if they do": the later step cannot happen when the earlier did not. In a face
+        /// that prints it, a skippable step followed in the same Sequence by a mandatory step that reads
+        /// nothing it published is the shape where the later step runs regardless. A skippable step
+        /// that is its own sentence, or a reading the user settled, is listed with its reason.
+        /// </summary>
+        [Test]
+        public void IfYouDo_TheLaterStepCannotHappenWithoutTheEarlier()
+        {
+            var flagged = new List<string>();
+            foreach (var face in PrintedWordingCorpus.All.Where(face =>
+                Words(face, @"\bif (you|they|he|she) do\b")))
+            {
+                foreach (var body in face.Bodies)
+                {
+                    var byId = body.Nodes.ToDictionary(node => node.Id);
+                    foreach (var sequence in body.Nodes.Where(node => node.Kind == EffectNodeKind.Sequence))
+                    {
+                        var children = sequence.ChildNodeIds.Select(id => byId[id]).ToArray();
+                        for (var earlier = 0; earlier < children.Length; earlier++)
+                        {
+                            var first = children[earlier];
+                            if (first.Kind != EffectNodeKind.Capability ||
+                                first.FailurePolicy == EffectFailurePolicy.Mandatory) continue;
+                            foreach (var later in children.Skip(earlier + 1).Where(node =>
+                                node.Kind == EffectNodeKind.Capability &&
+                                node.FailurePolicy == EffectFailurePolicy.Mandatory &&
+                                !node.Capability.CapabilityId.Value.Contains("actor-space") &&
+                                !node.Inputs.Any(input =>
+                                    input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                                    input.SourceNodeId.Equals(first.Id))))
+                            {
+                                flagged.Add($"{face} | {first.Id.Value} -> {later.Id.Value}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            var unexplained = flagged.Where(row => !IfYouDoReadings.Keys.Any(key =>
+                row.StartsWith(key + " |", StringComparison.Ordinal))).Distinct().ToArray();
+            Assert.That(unexplained, Is.Empty,
+                "A skippable step is followed by a mandatory one that does not read it, in a face that " +
+                "prints \"if you do\". Gate the later step on the earlier's output or a Conditional, or " +
+                "list the face with the reading that makes the two steps independent.");
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> IfYouDoReadings =
+            new Dictionary<string, string>
+            {
+                ["tigerclaw | tigerclaw-light-fingered"] = "\"You may move 1 space.\" is its own sentence; \"if you do\" follows the mandatory theft, which stops the text when there is nobody to rob.",
+                ["tigerclaw | tigerclaw-pick-pocket"] = "\"Move up to 2 spaces.\" is its own sentence; \"if you do\" follows the mandatory theft.",
+                ["tigerclaw | tigerclaw-master-thief"] = "\"Move up to 2 spaces.\" is its own sentence; \"if you do\" follows the mandatory theft.",
+                ["bain | bain-another-one"] = "\"End of turn: May repeat once\" is its own sentence; the arm does not depend on the retrieval.",
+                ["garrus | garrus-blunt-force"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28).",
+                ["garrus | garrus-send-flying"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28)."
+            };
+
+        /// <summary>
+        /// A printed "+N" or "-N" to a value is declared: a roster value contribution on the action, a
+        /// value modifier on an effect it raises, or a property of the token or marker the card puts in
+        /// play (listed).
+        /// </summary>
+        [Test]
+        public void EveryPrintedValueChange_IsDeclared()
+        {
+            var flagged = PrintedWordingCorpus.All
+                .Where(face => Words(face, @"[+-]\d+ (\[\w+\] )?(Attack|Defense|Initiative|Movement|Range|Radius)\b"))
+                .Where(face =>
+                    face.Card.ActionDefinitions.Sum(action =>
+                        action.RosterValueContributions == null ? 0 : action.RosterValueContributions.Count) == 0 &&
+                    !face.Modifications.Any(modification =>
+                        modification.Kind == RuleModificationKind.ValueModifier))
+                .Select(face => face.ToString())
+                .Except(ValueChangeCarriedByAPiece.Keys)
+                .ToArray();
+
+            Assert.That(flagged, Is.Empty,
+                "These faces print a value change and declare no contribution or modifier.");
+            AssertAllowListIsLive(ValueChangeCarriedByAPiece.Keys, face =>
+                Words(face, @"[+-]\d+ (\[\w+\] )?(Attack|Defense|Initiative|Movement|Range|Radius)\b") &&
+                face.Card.ActionDefinitions.Sum(action =>
+                    action.RosterValueContributions == null ? 0 : action.RosterValueContributions.Count) == 0 &&
+                !face.Modifications.Any(modification => modification.Kind == RuleModificationKind.ValueModifier));
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> ValueChangeCarriedByAPiece =
+            new Dictionary<string, string>
+            {
+                ["tigerclaw | tigerclaw-poisoned-dagger"] = "The Poison marker's own value modifier (its MarkerDefinition).",
+                ["tigerclaw | tigerclaw-poisoned-dart"] = "The Poison marker's own value modifier, at -2.",
+                ["dodger | dodger-darkest-ritual"] = "\"+1 Attack item\" is an item grant, not a value change.",
+                ["tali | tali-glacial-barrier"] = "The Ice token's Initiative aura (its TokenDefinition).",
+                ["tali | tali-wall-of-frost"] = "The Ice token's Initiative aura.",
+                ["tali | tali-pack-ice"] = "The Ice token's Initiative aura.",
+                ["trinkets | trinkets-deployable-barrier"] = "The Barrier token's Defense aura (its TokenDefinition).",
+                ["trinkets | trinkets-deployable-bastion"] = "The Barrier token's Defense aura."
+            };
+
+        /// <summary>
+        /// "each" reaches every subject, not one. Every face that prints it for a unit is read here with
+        /// the shape that does so, so a newly dealt hero's "each" cannot pass unread.
+        /// </summary>
+        [Test]
+        public void EveryEachFace_IsReadWithTheShapeThatReachesEverySubject()
+        {
+            var printed = PrintedWordingCorpus.All
+                .Where(face => Words(face, @"\beach (other )?(enemy|friendly|unit|hero|minion)"))
+                .Select(face => face.ToString())
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(printed, Is.EqualTo(EachReadings.Keys.OrderBy(value => value, StringComparer.Ordinal)),
+                "A face printing \"each\" was added or removed. Read it and record the shape that " +
+                "reaches every subject.");
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> EachReadings =
+            new Dictionary<string, string>
+            {
+                ["xargatha | xargatha-dangerous-slash"] = "A roster value contribution counting every other adjacent enemy unit.",
+                ["xargatha | xargatha-deadly-swipe"] = "A roster value contribution counting every other adjacent enemy unit.",
+                ["xargatha | xargatha-lethal-spin"] = "A roster value contribution counting every other adjacent enemy unit.",
+                ["xargatha | xargatha-long-thrust"] = "A Range contribution counting every adjacent enemy unit.",
+                ["xargatha | xargatha-rapid-thrusts"] = "A Range contribution counting every adjacent enemy unit.",
+                ["xargatha | xargatha-metamorphosis"] = "The Ultimate's value modifiers counting every adjacent enemy unit.",
+                ["tali | tali-cold-snap"] = "synthetic-batch-direct-move moves every enemy unit in radius.",
+                ["tali | tali-snowstorm"] = "synthetic-batch-direct-move moves every enemy unit in radius.",
+                ["tali | tali-blizzard"] = "synthetic-batch-direct-move moves every enemy unit in radius.",
+                ["wuk | wuk-trample"] = "wuk-trampled-enemy-heroes publishes every enemy hero moved through, one slot each.",
+                ["wuk | wuk-angry-stampede"] = "wuk-trampled-enemy-heroes publishes every enemy hero moved through, one slot each."
+            };
+
+        // -------------------------------------------------------------------------------------------
         // Recognisers
         // -------------------------------------------------------------------------------------------
 

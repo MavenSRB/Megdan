@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.3 Condition wording evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.3 | "If you do", printed value changes and "each" held to their declarations; every such face read; ruling W5 for "up to" moves; no content change needed. [Definition](../../Roadmap/PHASE_9.md#x-93-repeat-and-condition-family). | `milestone/9.3` |
+
 ## Milestone 9.2 Targeting wording evidence
 
 | Milestone | Outcome and definition | Commit |

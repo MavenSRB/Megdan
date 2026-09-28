@@ -12,6 +12,7 @@ How a printed word becomes a composed rule, stated once for every hero. A card's
 - **W2 (user, 2026-09-28): "repeat up to N times" lets the player stop.** The count is the player's choice (p.10), with or without a printed "may". Composed `RepeatAction` / `May` with the actor choosing. Applies to Whisper's Blood Frenzy (previously forced to repeat while able), matching "May repeat up to two times" on Wasp, Sabina, Garrus and Trinkets.
 - **W3 (user, 2026-09-28): "Up to N enemy heroes ... discard a card[, or are defeated]" hits every such hero present, up to N.** The attacker does not choose to skip a hero who is there; when more than N stand there, the player chooses which N. Composed as an `IfAble` Optional (no chooser) around each hero's step. Applies to Arien's Dangerous Current, Raging Stream and Violent Torrent (already so), and to Min's Death Grenade and Holy Death Grenade and Trinkets' Self-Destruct and Emergency Protocol (previously skippable).
 - **W4 (rulebook, confirmed by the user 2026-09-28): "defeat a minion" is an enemy minion.** The rulebook's Defeat entry and p.13 forbid defeating a friendly unit with no exceptions, so a card that prints "Defeat a minion" without "enemy" offers enemy minions only. Applies to Whisper's Lesser Evil and Greater Good (previously either side) and replaces Wuk's WU-Q4 for Trample and Angry Stampede (previously either side), matching Misa's Watch How I Soar, Swift's Reload, Cutter's Walk the Plank and Trinkets' Rapid Redeployment.
+- **W5 (user, 2026-09-28): under "up to N", moving 0 spaces is doing it.** "You may move up to 1 space to a space adjacent to an enemy hero; if you do, push that hero" - the printed "up to" only means something if 0 is a real choice, so Garrus standing beside an enemy hero may move 0 and push. Garrus's Blunt Force and Send Flying are built this way already; 9.3 records it so no later audit changes it.
 
 ## Rulebook readings the audit enforces
 
@@ -28,4 +29,7 @@ How a printed word becomes a composed rule, stated once for every hero. A card's
 | Targeting | "enemy", "friendly", "defeat a minion" (W4) | the declared `relation`; attack targets are enemies by p.13; a side named in a condition is read off that condition | 9.2 |
 | Exclusion | "another", "different", "other" | an `exclude*` input, `distinctTargets` or a `Different*` repeat binding; counting and reminder uses are allow-listed with their reading | 9.2 |
 | Reach | "in radius", or a Radius icon with no number in the text | `measuresPrintedRadius` (R1); a literal `reach` only where the sentence writes the number | 9.2 (moves: 8.83) |
+| If you do | "if you do", "if they do" | the later step reads the earlier's output, sits after it in a mandatory Sequence, or is gated by a Conditional; W5 for "up to" moves | 9.3 |
+| Value changes | "+N" / "-N" to a value, "for each" | a roster value contribution, a value modifier, or the token or marker's own property | 9.3 |
+| Each | "each enemy/friendly/unit/hero/minion" | a batch, a per-subject publication or a count; every face read in a register | 9.3 |
 | Conditions | "if you do", "if", "each", "all" | 9.3 | 9.3 |

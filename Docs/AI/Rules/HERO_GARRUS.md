@@ -2,6 +2,8 @@
 
 Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
+> Milestone 9.3: Blunt Force's and Send Flying's "move up to N ...; if you do, push" push after a 0-space move under the user's ruling **W5** ([PRINTED_WORDING](PRINTED_WORDING.md)).
+
 ## Garrus content ledger
 
 Garrus the Gladiator is the selected sixteenth hero. [The implementation series](../Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, inventory and capability mapping; an inventory is not an implemented-content claim.
