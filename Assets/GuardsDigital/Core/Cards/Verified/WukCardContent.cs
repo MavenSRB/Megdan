@@ -35,7 +35,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class WukCardContent
     {
         /// <summary>The revision every Wuk definition carries.</summary>
-        public const string ContentRevision = "wuk-8-114-rev-1";
+        public const string ContentRevision = "wuk-9-2-rev-1";
 
         public const string ContentSetId = "wuk";
 

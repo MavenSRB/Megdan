@@ -82,6 +82,11 @@ namespace GuardsDigital.Tests.EditMode
         // printed-wording rulings (Rules/PRINTED_WORDING.md): Whisper's Blood Frenzy repeat is
         // stoppable (W2); Rowenna's two Paragons and Mrak's Epicentre repeat automatically (W1); Min's
         // two Grenades and Trinkets' two detonations hit every enemy hero present (W3).
+        // Milestone 9.2 moved two revisions to `-9-2-rev-1` for ruling W4 ("defeat a minion" is an
+        // enemy minion): Whisper's digest moved with Lesser Evil's and Greater Good's relation; Wuk's
+        // digest did not, because Trample's narrowing lives inside his minion-choice handler.
+        // It also moved Sabina and Cutter to `-9-2-rev-1`: six selections that wrote their printed
+        // Radius as a literal reach now measure the icon, so p.16's Radius items raise them.
         private static readonly IdentityPin[] Pins =
         {
             new IdentityPin("arien", "arien-8-35l-rev-1", "a980d139925f8bfe87fe6b501978697944d0a7473c0d42cf6df70ee85c1758a5"),
@@ -100,7 +105,7 @@ namespace GuardsDigital.Tests.EditMode
             // as the literal 2 / 3 / 3 while the SELECTION above it read her printed icon, so a
             // Radius item widened who she could command and not where she could put them. The leash
             // is 8.82's printed member now and declares no number at all.
-            new IdentityPin("sabina", "sabina-8-83-rev-1", "4c8f80dfc6f1f39ef4afe25d8df5fd5addf86e70c1967d195862fd5f1345c0a1"),
+            new IdentityPin("sabina", "sabina-9-2-rev-1", "1fb63a966c17a743744c6cf749a21d28a922205c6d6da9c81e1c325267518478"),
             // Milestone 8.35z20 corrected Blend Into Shadows' secondary icon (Defense 2, not Movement
             // 2 - the one-icon slot-position trap; see Docs/AI/Rules/HERO_TIGERCLAW.md's
             // settled-corrections block), which is the whole reason this digest moved.
@@ -183,7 +188,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers was added in the same commit that
             // made her pickable, so the digest below is over her whole dealt set.
-            new IdentityPin("whisper", "whisper-9-1-rev-1", "d49f3aa98bab62190b350ea02a3377d4c99b3d6f2ad7531e35b4190ded52411e"),
+            new IdentityPin("whisper", "whisper-9-2-rev-1", "9dfb89cf73055d69a98c80c58d8744b027a415b3b0e4666b67b1d65814fabc7f"),
             // Milestone 8.37. THE TWELFTH AND LAST PIN of the package arc, arriving on exactly the
             // terms the seventh through eleventh did: a pin is a claim about content a configured
             // match loads, and milestone 8.35z32 composed Tali's Green line without dealing her.
@@ -237,7 +242,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("cutter", "cutter-8-39h-rev-1", "682224dca67fecd4983d4887b8bfb3da5aee10570725f1a5b44bd6e007a13bc5"),
+            new IdentityPin("cutter", "cutter-9-2-rev-1", "a7056d2e695f7f07ff58f86f944962a48f7ab357c17f7b40c47437a5c0966bd7"),
             // Milestone 8.40j. THE FIFTEENTH PIN, on exactly the terms the seventh through fourteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.40i composed Bain's eighteen faces without dealing him.
@@ -314,7 +319,7 @@ namespace GuardsDigital.Tests.EditMode
             new IdentityPin("trinkets", "trinkets-9-1-rev-1", "151104c2486030a425a2177d10ebfcb24c2f3562cd40ee135e49105afb063695"),
             new IdentityPin("snorri", "snorri-8-93f-rev-1", "133f27b08c4e3f21853e200c6807ac162778587d0226d98d7de86248e3f46e93"),
             new IdentityPin("mrak", "mrak-9-1-rev-1", "1398d39d034d44313c25a63fc101548fc9b044a1de82c07cf7e3e541e70de378"),
-            new IdentityPin("wuk", "wuk-8-114-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc")
+            new IdentityPin("wuk", "wuk-9-2-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc")
         };
 
         [Test]

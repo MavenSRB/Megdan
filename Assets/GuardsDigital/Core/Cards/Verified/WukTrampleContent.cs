@@ -296,7 +296,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 EffectExecutionResult.ImpossibleMandatory();
         }
 
-        /// <summary>"defeat up to one (two) minion(s) you moved through" - any minion, Wuk's choice.</summary>
+        /// <summary>
+        /// "defeat up to one (two) minion(s) you moved through" - an ENEMY minion, Wuk's choice. The
+        /// rulebook's Defeat entry forbids defeating a friendly unit with no exceptions (ruling W4,
+        /// milestone 9.2, replacing WU-Q4's either-side reading).
+        /// </summary>
         private sealed class ChooseTrampledMinionsHandler : IEffectCapabilityHandler
         {
             public EffectCapabilityReference Reference => ChooseTrampledMinionsV1;
@@ -366,7 +370,9 @@ namespace GuardsDigital.Core.Cards.Verified
 
             private static IReadOnlyList<MinionId> Candidates(EffectCapabilityContext context) =>
                 Trampled(context)
-                    .Where(unit => unit.Kind == BoardObjectKind.Minion)
+                    .Where(unit => unit.Kind == BoardObjectKind.Minion && TargetQuery.StandsInRelationTo(
+                        SourceTeamRelation.OpposingSource, unit, context.ActorId, context.Participants,
+                        context.Components.Board))
                     .Select(unit => unit.MinionId)
                     .ToArray();
         }

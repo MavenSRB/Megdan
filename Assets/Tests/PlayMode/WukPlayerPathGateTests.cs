@@ -110,7 +110,7 @@ namespace GuardsDigital.Tests.PlayMode
                     "WukRedFacesTests.Champion_TakesBothBulletsOnDifferentTargets",
                     Ribbon(), Nature()),
                 Row(WukRedFaces.AngryStampede, "Angry Stampede",
-                    "WukTrampleTests.AngryStampede_DefeatsUpToTwo",
+                    "WukTrampleTests.AngryStampede_OffersOnlyEnemyMinions_UpToTwo",
                     Ribbon(movement: false), Trampling()),
                 Row(WukBlueFaces.GiftsOfNature, "Gifts of Nature",
                     "WukBlueFacesTests.Gifts_RemovesATreeInItsPrintedRadiusThenWukMayRetrieve",

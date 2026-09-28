@@ -92,7 +92,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         internal static IEnumerator Stage(SceneCardContent scene, CardDefinitionId[] hand,
             HexCoordinate? wuk = null, HexCoordinate? wasp = null, HexCoordinate? arien = null,
-            HexCoordinate? wuksMinion = null, int? coins = null)
+            HexCoordinate? wuksMinion = null, int? coins = null, bool minionIsEnemy = false)
         {
             yield return LoadStagedScene(scene);
             var runtime = Root().Runtime;
@@ -120,12 +120,16 @@ namespace GuardsDigital.Tests.PlayMode
 
             if (wuksMinion.HasValue) occupied.Add(wuksMinion.Value);
             var wukSide = runtime.Setup.Heroes.Single(hero => hero.HeroId.Equals(wukId)).TeamSide;
+            // Milestone 9.2: an enemy minion where the case needs one Wuk may defeat (W4).
+            var minionSide = minionIsEnemy
+                ? runtime.Setup.Heroes.Single(hero => hero.HeroId.Equals(waspId)).TeamSide
+                : wukSide;
             MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
                 heroes: heroes,
                 spawnedMinions: wuksMinion.HasValue
                     ? new[]
                     {
-                        new SandboxMinionStaging(StagedMinion, wukSide, StandardMinionType.Melee,
+                        new SandboxMinionStaging(StagedMinion, minionSide, StandardMinionType.Melee,
                             wuksMinion.Value)
                     }
                     : null,
@@ -324,7 +328,8 @@ namespace GuardsDigital.Tests.PlayMode
             foreach (var face in new[] { WukRedFaces.Trample, WukRedFaces.AngryStampede })
             {
                 yield return Stage(SceneCardContent.VerifiedEngagedStagedWuk,
-                    new[] { face, WukCardContent.MysticSaplings }, wuksMinion: TwoAwaySpace);
+                    new[] { face, WukCardContent.MysticSaplings }, wuksMinion: TwoAwaySpace,
+                    minionIsEnemy: true);
                 var root = Root();
                 var runtime = root.Runtime;
                 var wuk = Wuk(runtime);
@@ -340,7 +345,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return PickWhere(root, value => value.Kind == EffectValueKind.CardInstance, "Wasp's hand.");
                 Assert.That(HandOfCount(runtime, wasp), Is.EqualTo(before - 1), face.Value);
                 yield return PickWhere(root, value => value.Kind == EffectValueKind.Minion &&
-                    value.MinionId.Equals(StagedMinion), "Wuk's own minion, moved through (WU-Q4).");
+                    value.MinionId.Equals(StagedMinion), "The enemy minion moved through (W4, milestone 9.2).");
                 Assert.That(runtime.Projection.Minions.Any(value => value.MinionId.Equals(StagedMinion)),
                     Is.False, face.Value + " defeats the minion it crossed. " + Remaining(runtime));
                 Healthy(runtime);

@@ -766,6 +766,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// vocabulary look like a subject of that rule the moment the build registered it.</para>
         /// </summary>
         public const string DistanceParameter = "reach";
+
+        /// <summary>
+        /// Milestone 9.2. Bound true in place of <see cref="DistanceParameter"/> where the sentence
+        /// says "in radius" or the card's Radius icon bounds the action without a number in its text:
+        /// p.9 makes that the printed icon, and p.16's items raise it. A literal reach is a number the
+        /// sentence writes down, which no item raises - binding the icon's number as a literal was
+        /// milestone 8.82/8.83's defect, found on Sabina's and Cutter's selections by 9.2's audit.
+        /// Read inside the selection itself so the offer check stays exact about who can be named.
+        /// </summary>
+        public const string MeasuresPrintedRadiusParameter = "measuresPrintedRadius";
         public const string UnitKindParameter = "unitKind";
         public const string RelationParameter = "relation";
         public const string ChosenHeroOutput = "chosenHero";
@@ -1864,7 +1874,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         OriginParameter,
                         EffectValueKind.Integer,
                         integerDomain: EffectIntegerDomain.AllExcept(RosterQueryOrigin.None)),
-                    new EffectCapabilityParameter(DistanceParameter, EffectValueKind.Integer),
+                    // Milestone 9.2: exactly one of a written reach and the printed Radius is bound.
+                    new EffectCapabilityParameter(DistanceParameter, EffectValueKind.Integer, isRequired: false),
+                    new EffectCapabilityParameter(
+                        MeasuresPrintedRadiusParameter, EffectValueKind.Boolean, isRequired: false),
                     new EffectCapabilityParameter(
                         UnitKindParameter,
                         EffectValueKind.Integer,
@@ -1994,11 +2007,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return Targets(
                     context,
                     (RosterQueryOrigin)context.Input(OriginParameter).IntegerValue,
-                    context.Input(DistanceParameter).IntegerValue,
+                    DeclaredReach(context),
                     (RosterUnitKind)context.Input(UnitKindParameter).IntegerValue,
                     (SourceTeamRelation)context.Input(RelationParameter).IntegerValue,
                     activity,
                     context.Input(ExcludeTargetParameter).BooleanValue);
+            }
+
+            /// <summary>
+            /// Milestone 9.2. The written reach, or the card's printed Radius with p.16's items where
+            /// the selection measures it. A card printing no Radius has no disk: nobody is in it.
+            /// </summary>
+            internal static int DeclaredReach(EffectCapabilityContext context)
+            {
+                var measuresRadius = context.Inputs.TryGetValue(MeasuresPrintedRadiusParameter, out var flag) &&
+                    flag.BooleanValue;
+                var writesReach = context.Inputs.ContainsKey(DistanceParameter);
+                if (measuresRadius == writesReach)
+                {
+                    throw new InvalidOperationException(
+                        "A roster selection binds exactly one of a written reach and the printed Radius.");
+                }
+
+                if (writesReach)
+                {
+                    return context.Input(DistanceParameter).IntegerValue;
+                }
+
+                if (!context.CardState.IsAvailable)
+                {
+                    return -1;
+                }
+
+                var radius = RadiusValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems,
+                    context.Modifications);
+                return radius.Total <= 0 ? -1 : radius.Total;
             }
 
             protected static EffectValue AsValue(BoardObjectReference target) =>
@@ -3342,7 +3391,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static int Count(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
-                var distance = context.Input(DistanceParameter).IntegerValue;
+                var distance = TargetingHandler.DeclaredReach(context);
                 var kind = (RosterUnitKind)context.Input(UnitKindParameter).IntegerValue;
                 var relation = (SourceTeamRelation)context.Input(RelationParameter).IntegerValue;
                 if (board == null || context.Participants == null || distance < 0 ||

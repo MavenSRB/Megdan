@@ -229,8 +229,192 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Targeting (milestone 9.2)
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// W4 (the rulebook's Defeat entry, "No exceptions."): every minion a card-text Defeat can
+        /// reach is an enemy minion. A selection feeding a minion Defeat never admits a friendly one.
+        /// </summary>
+        [Test]
+        public void EveryMinionDefeat_NamesAnEnemyMinion()
+        {
+            var flagged = new List<string>();
+            foreach (var face in PrintedWordingCorpus.All)
+            {
+                var nodes = face.Nodes.ToArray();
+                foreach (var defeat in nodes.Where(node => node.Kind == EffectNodeKind.Capability &&
+                    node.Capability.CapabilityId.Value == "synthetic-defeat-minion"))
+                {
+                    foreach (var source in defeat.Inputs
+                        .Where(input => input.SourceKind == EffectBindingSourceKind.NodeOutput)
+                        .Select(input => nodes.FirstOrDefault(node => node.Id.Equals(input.SourceNodeId)))
+                        .Where(node => node != null))
+                    {
+                        var relation = Literal(source, "relation");
+                        if (relation.HasValue && relation != (int)SourceTeamRelation.OpposingSource &&
+                            relation != (int)SourceTeamRelation.OpposingSourceOrUnaligned)
+                        {
+                            flagged.Add($"{face} | {source.Id.Value} relation={(SourceTeamRelation)relation}");
+                        }
+                    }
+                }
+            }
+
+            Assert.That(flagged, Is.Empty,
+                "W4: \"You can never defeat a friendly unit. No exceptions.\" A card that prints " +
+                "\"defeat a minion\" without \"enemy\" still offers enemy minions only.");
+        }
+
+        /// <summary>
+        /// "enemy" and "friendly" name the side a selection may pick from. A selection admitting only
+        /// enemies where no "enemy" is printed narrows the card; one admitting friendlies where no
+        /// "friendly" is printed widens it. Attack targets are enemies by p.13 and minion Defeats by
+        /// W4, so neither needs the word; a word naming a side inside a condition ("adjacent to an
+        /// enemy hero") is read off the condition's own parameter.
+        /// </summary>
+        [Test]
+        public void EnemyAndFriendlyWords_MatchTheDeclaredRelations()
+        {
+            var flagged = new List<string>();
+            foreach (var face in PrintedWordingCorpus.All)
+            {
+                var nodes = face.Nodes.ToArray();
+                var attackBound = new HashSet<string>(nodes
+                    .Where(node => node.Kind == EffectNodeKind.Capability &&
+                        node.Capability.CapabilityId.Value == "set-attack-target")
+                    .SelectMany(node => node.Inputs
+                        .Where(input => input.SourceKind == EffectBindingSourceKind.NodeOutput)
+                        .Select(input => input.SourceNodeId.Value)), StringComparer.Ordinal);
+                var selections = nodes.Where(node => node.Kind == EffectNodeKind.Capability &&
+                    Literal(node, "relation").HasValue).ToArray();
+                var chosen = selections.Where(node =>
+                    Literal(node, "activity") != (int)RuleActivity.Attack &&
+                    !attackBound.Contains(node.Id.Value)).ToArray();
+                var enemyWord = Words(face, @"\benem(y|ies)\b") ||
+                    Words(face, @"\bdefeat (a|up to \w+) minions?\b");
+                var friendlyWord = Words(face, @"\bfriendly\b|\ball(y|ies)\b");
+                var sideNamedInACondition = nodes.Any(node =>
+                    node.Inputs.Any(input =>
+                        input.ParameterName.IndexOf("Enemy", StringComparison.Ordinal) >= 0 ||
+                        input.ParameterName.IndexOf("Friendly", StringComparison.Ordinal) >= 0) ||
+                    (node.Kind == EffectNodeKind.Capability &&
+                        node.Capability.CapabilityId.Value.IndexOf("enemy", StringComparison.Ordinal) >= 0));
+
+                if (chosen.Any(node => Literal(node, "relation") == (int)SourceTeamRelation.OpposingSource) &&
+                    !enemyWord)
+                    flagged.Add(face + " | admits only enemies where no \"enemy\" is printed");
+                if (chosen.Any(node => Literal(node, "relation") == (int)SourceTeamRelation.AlliedWithSource) &&
+                    !friendlyWord)
+                    flagged.Add(face + " | admits only friendlies where no \"friendly\" is printed");
+                if (selections.Length > 0 && Words(face, @"\benem(y|ies)\b") && !sideNamedInACondition &&
+                    !selections.Any(node =>
+                        Literal(node, "relation") == (int)SourceTeamRelation.OpposingSource ||
+                        Literal(node, "relation") == (int)SourceTeamRelation.OpposingSourceOrUnaligned))
+                    flagged.Add(face + " | prints \"enemy\" and declares no enemy selection");
+                if (selections.Length > 0 && Words(face, @"\bfriendly\b") && !sideNamedInACondition &&
+                    !selections.Any(node => Literal(node, "relation") == (int)SourceTeamRelation.AlliedWithSource))
+                    flagged.Add(face + " | prints \"friendly\" and declares no friendly selection");
+            }
+
+            var unexplained = flagged.Where(row => !RelationWordingExceptions.Keys.Any(key =>
+                row.StartsWith(key + " |", StringComparison.Ordinal))).ToArray();
+            Assert.That(unexplained, Is.Empty,
+                "These faces' enemy/friendly words and declared relations disagree. Correct the " +
+                "relation, or add the face with the clause that settles it.");
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> RelationWordingExceptions =
+            new Dictionary<string, string>
+            {
+                ["rowenna | rowenna-glorious-triumph"] = "\"your friendly heroes gain triple assist coins\" is the Defeat's assist multiplier, not a selection."
+            };
+
+        /// <summary>
+        /// "another", "different" and "other" exclude something a selection would otherwise admit.
+        /// Where the word counts, compares or reminds rather than excludes, the face is listed with the
+        /// reading that makes it so.
+        /// </summary>
+        [Test]
+        public void AnotherDifferentOther_DeclareAnExclusion()
+        {
+            var flagged = PrintedWordingCorpus.All
+                .Where(face => Words(face, @"\banother\b|\bdifferent\b|\bother\b") && !HasExclusion(face))
+                .Select(face => face.ToString())
+                .Except(ExclusionWordingExceptions.Keys)
+                .ToArray();
+
+            Assert.That(flagged, Is.Empty,
+                "These faces print another/different/other and declare no exclusion.");
+            AssertAllowListIsLive(ExclusionWordingExceptions.Keys,
+                face => Words(face, @"\banother\b|\bdifferent\b|\bother\b") && !HasExclusion(face));
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> ExclusionWordingExceptions =
+            new Dictionary<string, string>
+            {
+                ["cutter | cutter-walk-the-plank"] = "\"pushed into another zone\" is a condition on the push, not a selection.",
+                ["silverarrow | silverarrow-clear-shot"] = "\"not adjacent to any other unit\" is the target predicate, which leaves the target out of its own neighbourhood.",
+                ["silverarrow | silverarrow-opportunity-shot"] = "\"not adjacent to any other unit\" is the target predicate, which leaves the target out of its own neighbourhood.",
+                ["silverarrow | silverarrow-snap-shot"] = "\"not adjacent to any other unit\" is the target predicate, which leaves the target out of its own neighbourhood.",
+                ["min | min-smoke-bomb"] = "\"you or another unit\" is the Smoke bomb's screen, a token property.",
+                ["xargatha | xargatha-dangerous-slash"] = "\"each other enemy unit\" is the Attack value count (XargathaPrintedSetTests.DangerousSlash_CountsEveryOtherAdjacentEnemy_AndNotItsTarget).",
+                ["xargatha | xargatha-deadly-swipe"] = "\"each other enemy unit\" is the Attack value count, Dangerous Slash's rule at +2.",
+                ["xargatha | xargatha-lethal-spin"] = "\"each other enemy unit\" is the Attack value count, Dangerous Slash's rule at +3.",
+                ["tigerclaw | tigerclaw-backstab"] = "Reminder text defining \"friendly unit\" as another hero or minion on your team.",
+                ["arien | arien-spell-break"] = "Reminder text: \"Other action types are unaffected.\"",
+                ["misa | misa-power-overwhelming"] = "\"two different options\" is the modal ceiling; p.10 already forbids one option twice."
+            };
+
+        /// <summary>
+        /// p.9: the Radius icon is the maximum reach of the action, and "in radius" refers to it; p.16's
+        /// items raise it. A roster selection that writes the icon's number as a literal reach loses the
+        /// items (8.82/8.83's shape, found on six selections at 9.2). A literal reach is legal only
+        /// where the sentence writes the number down.
+        /// </summary>
+        [Test]
+        public void EverySelectionReach_IsThePrintedRadiusOrAWrittenNumber()
+        {
+            var flagged = new List<string>();
+            foreach (var face in PrintedWordingCorpus.All)
+            {
+                foreach (var node in face.Nodes.Where(node => node.Kind == EffectNodeKind.Capability &&
+                    Literal(node, "relation").HasValue))
+                {
+                    var reach = Literal(node, "reach");
+                    if (!reach.HasValue || reach.Value <= 1) continue;
+                    var written = Words(face, @"\b" + reach.Value + @"\b") ||
+                        Words(face, @"\b" + NumberWord(reach.Value) + @"\b");
+                    if (!written) flagged.Add($"{face} | {node.Id.Value} reach={reach}");
+                }
+            }
+
+            Assert.That(flagged, Is.Empty,
+                "These selections write a reach the sentence does not print. Where the card means its " +
+                "Radius, bind measuresPrintedRadius so p.16's items raise it.");
+        }
+
+        // -------------------------------------------------------------------------------------------
         // Recognisers
         // -------------------------------------------------------------------------------------------
+
+        private static int? Literal(EffectNodeDefinition node, string parameter)
+        {
+            var bound = node.Inputs.Where(input => input.ParameterName == parameter &&
+                input.SourceKind == EffectBindingSourceKind.Literal).ToArray();
+            return bound.Length == 0 ? (int?)null : bound[0].Literal.IntegerValue;
+        }
+
+        private static string NumberWord(int value) =>
+            new[] { "zero", "one", "two", "three", "four", "five", "six" }[Math.Min(value, 6)];
+
+        private static bool HasExclusion(PrintedFace face) =>
+            face.Nodes.Any(node =>
+                node.Inputs.Any(input =>
+                    input.ParameterName.StartsWith("exclude", StringComparison.Ordinal) ||
+                    input.ParameterName == "distinctTargets") ||
+                (node.Kind == EffectNodeKind.RepeatAction &&
+                    node.RepeatTargetBinding.ToString().StartsWith("Different", StringComparison.Ordinal)));
 
         private static bool Words(PrintedFace face, string pattern) =>
             Regex.IsMatch(face.Text, pattern, RegexOptions.IgnoreCase);

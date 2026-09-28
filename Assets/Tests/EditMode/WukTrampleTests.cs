@@ -145,8 +145,13 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False, "the ordinary walk cannot reach the far side of the hero in two");
         }
 
+        /// <summary>
+        /// Milestone 9.2, ruling W4 (replacing WU-Q4): "defeat up to one minion you moved through"
+        /// offers the ENEMY minions he moved through - the rulebook forbids defeating a friendly unit,
+        /// "No exceptions." His own minion is walked through and left standing.
+        /// </summary>
         [Test]
-        public void UpToOneMinionMovedThrough_OfEitherSide_IsDefeated()
+        public void UpToOneEnemyMinionMovedThrough_IsDefeated_AndHisOwnIsNotOffered()
         {
             var round = new WukRound(Trample,
                 friendlyMinionsAt: new[] { H(1, 0) }, enemyMinionsAt: new[] { H(2, 0) });
@@ -155,18 +160,17 @@ namespace GuardsDigital.Tests.EditMode
             round.StopMoving();
 
             Assert.That(round.PendingNode, Is.EqualTo(WukTrampleContent.MinionSelectNode));
-            Assert.That(round.OfferedMinions(), Is.EquivalentTo(new[] { FriendlyMinion(0), EnemyMinion(0) }),
-                "any minion, his own included (WU-Q4)");
-            Assert.That(round.Turn.PendingEffectChoice.MaximumSelections, Is.EqualTo(1));
-            round.PickMinions(FriendlyMinion(0));
+            Assert.That(round.OfferedMinions(), Is.EqualTo(new[] { EnemyMinion(0) }),
+                "W4: only the enemy minion he moved through");
+            round.PickMinions(EnemyMinion(0));
 
-            Assert.That(round.Stands(FriendlyMinion(0)), Is.False);
-            Assert.That(round.Stands(EnemyMinion(0)), Is.True);
+            Assert.That(round.Stands(EnemyMinion(0)), Is.False);
+            Assert.That(round.Stands(FriendlyMinion(0)), Is.True);
             Assert.That(round.ActionEnded, Is.True);
         }
 
         [Test]
-        public void AngryStampede_DefeatsUpToTwo()
+        public void AngryStampede_OffersOnlyEnemyMinions_UpToTwo()
         {
             var round = new WukRound(Stampede,
                 friendlyMinionsAt: new[] { H(1, 0) }, enemyMinionsAt: new[] { H(2, 0) });
@@ -174,10 +178,14 @@ namespace GuardsDigital.Tests.EditMode
             round.MoveTo(H(3, 0));
             round.StopMoving();
 
-            Assert.That(round.Turn.PendingEffectChoice.MaximumSelections, Is.EqualTo(2));
-            round.PickMinions(FriendlyMinion(0), EnemyMinion(0));
+            Assert.That(round.OfferedMinions(), Is.EqualTo(new[] { EnemyMinion(0) }),
+                "W4: his own minion is not offered.");
+            Assert.That(round.Turn.PendingEffectChoice.MaximumSelections, Is.EqualTo(1),
+                "\"up to two\", bounded by the one enemy minion he moved through");
+            round.PickMinions(EnemyMinion(0));
 
-            Assert.That(round.Stands(FriendlyMinion(0)) || round.Stands(EnemyMinion(0)), Is.False);
+            Assert.That(round.Stands(EnemyMinion(0)), Is.False);
+            Assert.That(round.Stands(FriendlyMinion(0)), Is.True);
         }
 
         /// <summary>

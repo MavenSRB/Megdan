@@ -971,8 +971,9 @@ namespace GuardsDigital.Core.Cards.Verified
                         SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
                     EffectInputBinding.FromClosedVocabulary(
                         SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Minion),
+                    // Milestone 9.2, ruling W4: "defeat" never reaches a friendly unit.
                     EffectInputBinding.FromClosedVocabulary(
-                        SyntheticRosterCapabilities.RelationParameter, SourceTeamRelation.AnyTeam),
+                        SyntheticRosterCapabilities.RelationParameter, SourceTeamRelation.OpposingSource),
 
                     // "up to 3", floored at nothing: the count is Whisper's and zero is an answer.
                     EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(0)),
@@ -1344,8 +1345,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 });
 
         /// <summary>
-        /// "a minion adjacent to you" - every side of the board, because the face prints no adjective
-        /// and Whisper's own vocabulary prints "enemy" five times elsewhere.
+        /// "a minion adjacent to you" - an enemy minion: the face prints no adjective, but the
+        /// rulebook's Defeat entry forbids defeating a friendly unit with no exceptions (ruling W4,
+        /// milestone 9.2; it admitted every side before).
         /// </summary>
         private static EffectNodeDefinition AdjacentMinionSelectionNode(EffectNodeId nodeId) =>
             new EffectNodeDefinition(
@@ -1360,7 +1362,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     EffectInputBinding.FromClosedVocabulary(
                         SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Minion),
                     EffectInputBinding.FromClosedVocabulary(
-                        SyntheticRosterCapabilities.RelationParameter, SourceTeamRelation.AnyTeam)
+                        SyntheticRosterCapabilities.RelationParameter, SourceTeamRelation.OpposingSource)
                 },
                 outputs: new[]
                 {

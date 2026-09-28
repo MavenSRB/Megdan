@@ -323,6 +323,11 @@ namespace GuardsDigital.Tests.EditMode
                     .ToArray(),
                 Is.EqualTo(new[]
                 {
+                    // Milestone 9.2. A written reach and the printed Radius are now alternatives,
+                    // exactly one bound, so both sit here - at the head, because `reach` was already
+                    // the schema's second parameter and only its optionality moved.
+                    SyntheticRosterCapabilities.DistanceParameter,
+                    SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter,
                     "activity",
                     SyntheticRosterCapabilities.AdmittedMinionClassParameter,
                     SyntheticRosterCapabilities.ExcludeTargetParameter,
@@ -404,7 +409,11 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.57c. Rowenna's two Blue Defeats bind the empty-hand narrowing, so
                     // the corpus now contains it - and 8.40c's marker narrowing is still bound by
                     // nobody, which is what this case is about.
-                    SyntheticRosterCapabilities.RequiresEmptyHandParameter
+                    SyntheticRosterCapabilities.RequiresEmptyHandParameter,
+
+                    // Milestone 9.2. Sabina's and Cutter's six Radius-bounded selections measure the
+                    // printed icon in place of a written reach.
+                    SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter
                 }.OrderBy(name => name, StringComparer.Ordinal).ToArray()),
                 "and the parameter this milestone added is bound by none of them, which is the whole " +
                 "of what \"every declaration keeps its exact candidate set\" means for a filter that " +

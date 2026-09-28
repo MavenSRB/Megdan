@@ -16,11 +16,15 @@ Completed 2026-09-28. `PrintedWordingCorpus` derives every dealt face from `Quic
 
 Historical evidence: [9.1 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-91-wording-corpus-and-optionality-evidence).
 
-### [~] 9.2 Targeting-wording family
+### [x] 9.2 Targeting-wording family
 
 Outcome: on the same corpus, "another" / "different" / "other" (an exclusion is declared), "in radius" / "in range" (bound to the card's printed icon with items, not a literal), "adjacent", "enemy" / "friendly" / "any" (the declared relation), "hero" / "minion" / "unit" (the declared kind). Closing check as 9.1.
 
-### [ ] 9.3 Repeat and condition family
+Completed 2026-09-28. Four targeting families join `PrintedWordingConformanceTests`: every minion Defeat names an enemy minion (W4); "enemy" and "friendly" match the declared relation (attack targets are enemies by p.13, and a side named inside a condition is read off that condition); "another", "different" and "other" declare an exclusion or are allow-listed with their counting or reminder reading; and a selection's reach is the printed Radius or a number the sentence writes. `RosterMoveLeashSweepTests` now walks `PrintedWordingCorpus`, which surfaced two move bodies it had never seen (Living Tsunami, Focus's step), both correct. Asked what the rulebook says, the user confirmed W4 from the Defeat entry ("No exceptions."): Whisper's Lesser Evil and Greater Good and Wuk's Trample and Angry Stampede no longer offer friendly minions, WU-Q4 is replaced, and the engine refuses a friendly minion Defeat loudly. Rulebook reading R1 (p.9, p.16): six selections wrote their printed Radius as a literal, so a Radius item did not widen them; `choose-target` gains `measuresPrintedRadius`, read inside the selection so the offer stays exact (a separate radius node had made Close Support offerable with nobody to name). Sabina's, Cutter's, Whisper's and Wuk's revisions moved to `-9-2-rev-1`. T3; evidence in the milestone commit.
+
+Historical evidence: [9.2 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-92-targeting-wording-evidence).
+
+### [~] 9.3 Repeat and condition family
 
 Outcome: "repeat" (a repeat node, its once/count and its target narrowing), "if you do" / "if" / "if this card is" (the gate reads the fact the sentence names), "each" / "all" (every subject, not one). Closing check as 9.1.
 

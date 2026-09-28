@@ -11,6 +11,8 @@ S-01 on 2026-08-25 by selecting the rulebook's `Sabina the Gunslinger`**, so tha
 the dashboard's `SABINA THE COMMANDER` is recorded below as the source disagreement it is. The stable
 content identity is `sabina` and no rule or capability branches on either epithet.
 
+> Milestone 9.2: Close Support's and Covering Fire's "in radius" measures the printed Radius with p.16's items (rulebook reading **R1** in [PRINTED_WORDING](PRINTED_WORDING.md)); it was a literal 3 before, which a Radius item did not raise.
+
 ## Sabina content ledger
 
 The pitch requires Sabina's complete progression. Before verified Sabina definitions or effects are implemented, the inventory must be implementation-grade, containing at least:

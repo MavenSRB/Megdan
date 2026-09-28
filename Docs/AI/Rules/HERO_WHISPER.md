@@ -13,6 +13,8 @@ convention for the dashboards' unnamed heroes and uses "she".
 
 > Milestone 9.1: Blood Frenzy's "repeat up to five times" is Whisper's to stop after any repeat under the user's ruling **W2** ([PRINTED_WORDING](PRINTED_WORDING.md)), applied at milestone 9.1; Blood Fury's plain "repeat once" stays automatic (W1).
 
+> Milestone 9.2: Lesser Evil's and Greater Good's "defeat ... minion(s) adjacent to you" offer enemy minions only under ruling **W4** ([PRINTED_WORDING](PRINTED_WORDING.md)); they admitted either side before.
+
 ## Whisper content ledger
 
 The pitch uses Whisper's complete progression. Its implementation-grade inventory contains the same fields

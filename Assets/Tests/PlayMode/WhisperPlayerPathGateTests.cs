@@ -488,7 +488,7 @@ namespace GuardsDigital.Tests.PlayMode
                             ".GreaterGood_EscalatesToADefeat_WhereLesserEvilSkipsSilently",
                         "WhisperVerifiedContentTests" +
                             ".GreaterGood_ChoosesUpToThreeMinions_AndZeroIsAnAnswer",
-                        "WhisperVerifiedContentTests.BothOpponentChosenFaces_AdmitMinionsOfEitherTeam"
+                        "WhisperVerifiedContentTests.BothOpponentChosenFaces_AdmitOnlyEnemyMinions"
                     }),
 
                 // The Green Place family. One click on a space, and what differs between the three is

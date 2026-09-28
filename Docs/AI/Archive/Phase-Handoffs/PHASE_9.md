@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.2 Targeting wording evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.2 | Targeting words held to their declarations (W4 minion Defeats, enemy/friendly relations, exclusions, printed-Radius reach); eight faces corrected across Whisper, Wuk, Sabina and Cutter; the 8.83 sweep moved onto the roster-derived corpus. [Definition](../../Roadmap/PHASE_9.md#x-92-targeting-wording-family). | `milestone/9.2` |
+
 ## Milestone 9.1 Wording corpus and optionality evidence
 
 | Milestone | Outcome and definition | Commit |

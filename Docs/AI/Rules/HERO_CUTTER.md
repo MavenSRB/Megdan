@@ -12,6 +12,8 @@ the source assigns her a pronoun; this shard follows the project's convention fo
 unnamed heroes and uses "she", as Misa's, Silverarrow's, Swift's and Whisper's shards each do for
 the same reason.
 
+> Milestone 9.2: Bombardment, Barrage, Broadside and X Marks the Spot measure the printed Radius with p.16's items (rulebook reading **R1** in [PRINTED_WORDING](PRINTED_WORDING.md)); each was the icon's number written as a literal before, which a Radius item did not raise.
+
 ## Cutter content ledger
 
 Her printed set is inventoried at milestone 8.39. Composition, registration, dealing and the permanent

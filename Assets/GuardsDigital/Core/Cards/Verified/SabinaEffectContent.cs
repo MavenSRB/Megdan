@@ -230,13 +230,13 @@ namespace GuardsDigital.Core.Cards.Verified
             if (cardId.Equals(SabinaCardContent.CloseSupport))
             {
                 return CreateSupportedDiscard(
-                    cardId, contentRevision, radius: 3, escalatesToDefeat: false);
+                    cardId, contentRevision, escalatesToDefeat: false);
             }
 
             if (cardId.Equals(SabinaCardContent.CoveringFire))
             {
                 return CreateSupportedDiscard(
-                    cardId, contentRevision, radius: 3, escalatesToDefeat: true);
+                    cardId, contentRevision, escalatesToDefeat: true);
             }
 
             return null;
@@ -953,7 +953,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// hero's own cards to that hero.</para>
         /// </summary>
         private static EffectDefinition CreateSupportedDiscard(
-            CardDefinitionId cardId, string contentRevision, int radius, bool escalatesToDefeat)
+            CardDefinitionId cardId, string contentRevision, bool escalatesToDefeat)
         {
             var root = new EffectNodeId("support-root");
             var select = new EffectNodeId("supported-enemy");
@@ -976,9 +976,10 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.OriginParameter,
                             RosterQueryOrigin.Actor),
+                        // Milestone 9.2: "in radius" is the printed Radius with p.16's items (p.9), not a number.
                         EffectInputBinding.FromLiteral(
-                            SyntheticRosterCapabilities.DistanceParameter,
-                            EffectValue.Integer(radius)),
+                            SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter,
+                            EffectValue.Boolean(true)),
                         // "An enemy hero", which is p.19's hero and not its unit.
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.UnitKindParameter,

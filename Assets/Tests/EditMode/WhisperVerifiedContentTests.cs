@@ -818,11 +818,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The 2026-09-06 ruling on WH-08: "a minion" and "3 minions" name no side, and Whisper's own
-        /// vocabulary prints "enemy" five times elsewhere, so the omission is the definition.
+        /// Milestone 9.2, ruling W4: "a minion" and "3 minions" name no side, but "defeat" never
+        /// reaches a friendly unit - the rulebook's Defeat entry, "No exceptions." (The 2026-09-06
+        /// reading admitted either team; the user confirmed the rulebook on 2026-09-28.)
         /// </summary>
         [Test]
-        public void BothOpponentChosenFaces_AdmitMinionsOfEitherTeam()
+        public void BothOpponentChosenFaces_AdmitOnlyEnemyMinions()
         {
             foreach (var cardId in new[]
             {
@@ -838,9 +839,8 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(
                     Vocabulary<SourceTeamRelation>(
                         selection, SyntheticRosterCapabilities.RelationParameter),
-                    Is.EqualTo(SourceTeamRelation.AnyTeam),
-                    cardId.Value + " - friendly minions included, which is what makes the opponent's " +
-                    "choice of that bullet a real play.");
+                    Is.EqualTo(SourceTeamRelation.OpposingSource),
+                    cardId.Value + " - W4: a Defeat never reaches a friendly minion.");
                 Assert.That(
                     Vocabulary<RosterUnitKind>(
                         selection, SyntheticRosterCapabilities.UnitKindParameter),

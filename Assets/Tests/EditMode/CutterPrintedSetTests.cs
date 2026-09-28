@@ -812,9 +812,19 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var subject = NodeOf(Primary(pair.Card).EffectRoot, "bombard-subject");
 
+                // Milestone 9.2: the disk is the card's printed Radius (pair.Radius) with p.16's
+                // items, read by the selection itself rather than written as a literal.
                 Assert.That(
-                    IntegerInput(subject, SyntheticRosterCapabilities.DistanceParameter),
-                    Is.EqualTo(pair.Radius), pair.Card.Value);
+                    BooleanInput(subject, SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter),
+                    Is.True, pair.Card.Value + ": Radius " + pair.Radius + " is the icon, not a number.");
+                Assert.That(
+                    subject.Inputs.Any(input =>
+                        input.ParameterName == SyntheticRosterCapabilities.DistanceParameter),
+                    Is.False, pair.Card.Value + ": no written reach beside it.");
+                Assert.That(
+                    Primary(pair.Card).BaseValues.Any(value =>
+                        value.Channel == PrintedValueChannel.Radius && value.Amount == pair.Radius),
+                    Is.True, pair.Card.Value + " prints Radius " + pair.Radius + ".");
                 Assert.That(
                     BooleanInput(
                         subject, SyntheticRosterCapabilities.AdjacentToAnotherEnemyUnitParameter),

@@ -352,6 +352,12 @@ namespace GuardsDigital.Tests.EditMode
                     "Sidestep: \"Block a ranged attack. You may move 1 space\"",
                 ["tigerclaw-evade-defense-text | evade-move"] =
                     "Evade: \"Block a ranged attack. You may move 1 space\"",
+                // Milestone 9.2: two rows the sweep could not see until it walked Active-effect
+                // trigger bodies through PrintedWordingCorpus.
+                ["arien-living-tsunami-effect | tsunami-move"] =
+                    "Living Tsunami: \"before performing an Attack action, you may move 1 space\"",
+                ["misa-focus-step-move | focus-step-move"] =
+                    "Focus: \"Before you perform a primary action, you may move 1 space\"",
                 ["tigerclaw-light-fingered-skill | theft-opening-move"] =
                     "Light-Fingered: \"You may move 1 space\"",
                 ["tigerclaw-light-fingered-skill | theft-follow-up-move"] =
@@ -453,51 +459,15 @@ namespace GuardsDigital.Tests.EditMode
         // The corpus - every hero's composed content, dealt or not. One hero, one AllDefinitions call.
         // -------------------------------------------------------------------------------------------
 
-        private static IEnumerable<(string Owner, EffectDefinition Definition)> WholeCorpus()
-        {
-            foreach (var card in ArienCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("arien", d);
-            foreach (var card in BroganCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("brogan", d);
-            foreach (var card in SabinaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("sabina", d);
-            foreach (var card in TigerclawCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tigerclaw", d);
-            foreach (var card in WaspCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("wasp", d);
-            foreach (var card in XargathaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("xargatha", d);
-            foreach (var card in DodgerCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("dodger", d);
-            foreach (var card in MisaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("misa", d);
-            foreach (var card in SilverarrowCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("silverarrow", d);
-            foreach (var card in UrsafarCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ursafar", d);
-            foreach (var card in TaliCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tali", d);
-            foreach (var card in WhisperCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("whisper", d);
-            foreach (var card in SwiftCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("swift", d);
-            foreach (var card in CutterCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("cutter", d);
-            foreach (var card in BainCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("bain", d);
-            foreach (var card in GarrusCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("garrus", d);
-            foreach (var card in WidgetCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("widget", d);
-            foreach (var card in RowennaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("rowenna", d);
-            foreach (var card in MinCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("min", d);
-            foreach (var card in BrynnCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("brynn", d);
-            foreach (var card in HanuCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("hanu", d);
-            foreach (var card in IgnatiaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ignatia", d);
-            foreach (var card in TrinketsCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("trinkets", d);
-            foreach (var card in SnorriCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("snorri", d);
-            foreach (var card in MrakCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mrak", d);
-            foreach (var card in WukCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("wuk", d);
-        }
-
-        /// <summary>Every `EffectDefinition` one printed card composes, across all of its actions.</summary>
-        private static IEnumerable<EffectDefinition> EffectRoots(CardDefinition card)
-        {
-            foreach (var action in card.ActionDefinitions)
-            {
-                if (action.EffectRoot != null)
-                {
-                    yield return action.EffectRoot;
-                }
-
-                if (action.SecondCardTextRoot != null)
-                {
-                    yield return action.SecondCardTextRoot;
-                }
-            }
-        }
+        /// <summary>
+        /// Milestone 9.2. Every body every dealt face runs, from the roster-derived
+        /// <see cref="PrintedWordingCorpus"/> - which walks Active-effect trigger bodies too, and takes
+        /// in a newly dealt hero without anybody adding a line here (8.83 listed its heroes by hand).
+        /// </summary>
+        private static IEnumerable<(string Owner, EffectDefinition Definition)> WholeCorpus() =>
+            PrintedWordingCorpus.All
+                .SelectMany(face => face.Bodies.Select(body => (face.Hero, body)))
+                .GroupBy(row => row.body.Reference)
+                .Select(group => group.First());
     }
 }

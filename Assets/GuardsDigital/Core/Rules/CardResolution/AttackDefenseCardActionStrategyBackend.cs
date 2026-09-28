@@ -2022,14 +2022,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 0);
             if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
 
-            // Milestone 8.114b1. Card text may defeat a minion of the actor's own side - Wuk's Trample,
-            // "defeat up to one minion you moved through", any minion (WU-Q4). p.13 pays for enemy
-            // minions only and the ledger refuses a friendly target, so that Defeat pays nothing
-            // rather than being refused.
-            var friendly = participants.GetTeamForHero(actorId).Id.Equals(target.TeamId);
-            var reward = friendly
-                ? DefeatRewardResult.Accept(Array.Empty<CoinResourceOperation>())
-                : coinLedger.Award(outcome);
+            // Milestone 9.2, ruling W4. The rulebook's Defeat entry: "You can never defeat a friendly
+            // unit. No exceptions." A selection that offered one is a composition defect, refused
+            // loudly here rather than paid nothing (8.114b1 had admitted it for WU-Q4, since replaced).
+            if (participants.GetTeamForHero(actorId).Id.Equals(target.TeamId))
+                throw new InvalidOperationException(
+                    "Card text asked to defeat a friendly minion; the rulebook forbids defeating a " +
+                    "friendly unit with no exceptions (ruling W4).");
+
+            var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)
                 throw new InvalidOperationException("A triggered minion Defeat could not award its declared reward.");
 

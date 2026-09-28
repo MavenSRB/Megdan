@@ -179,17 +179,17 @@ namespace GuardsDigital.Core.Cards.Verified
 
             if (cardId.Equals(CutterCardContent.Bombardment))
             {
-                return CreateBombardment(cardId, contentRevision, radius: 3, repeats: false);
+                return CreateBombardment(cardId, contentRevision, repeats: false);
             }
 
             if (cardId.Equals(CutterCardContent.Barrage))
             {
-                return CreateBombardment(cardId, contentRevision, radius: 4, repeats: false);
+                return CreateBombardment(cardId, contentRevision, repeats: false);
             }
 
             if (cardId.Equals(CutterCardContent.Broadside))
             {
-                return CreateBombardment(cardId, contentRevision, radius: 4, repeats: true);
+                return CreateBombardment(cardId, contentRevision, repeats: true);
             }
 
             if (cardId.Equals(CutterCardContent.XMarksTheSpot))
@@ -954,7 +954,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// unassigned decision to the card's controller, and "may repeat once" assigns none.</para>
         /// </summary>
         private static EffectDefinition CreateBombardment(
-            CardDefinitionId cardId, string contentRevision, int radius, bool repeats)
+            CardDefinitionId cardId, string contentRevision, bool repeats)
         {
             var root = new EffectNodeId("bombard-root");
             var subject = new EffectNodeId("bombard-subject");
@@ -975,9 +975,12 @@ namespace GuardsDigital.Core.Cards.Verified
                     {
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.OriginParameter, RosterQueryOrigin.Actor),
+                        // p.9: the Radius icon bounds the action even where the sentence names no
+                        // radius, and the icon is what p.16's items raise.
+                        // Milestone 9.2: "in radius" is the printed Radius with p.16's items (p.9), not a number.
                         EffectInputBinding.FromLiteral(
-                            SyntheticRosterCapabilities.DistanceParameter,
-                            EffectValue.Integer(radius)),
+                            SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter,
+                            EffectValue.Boolean(true)),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Hero),
                         EffectInputBinding.FromClosedVocabulary(
@@ -1087,8 +1090,10 @@ namespace GuardsDigital.Core.Cards.Verified
                     {
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.OriginParameter, RosterQueryOrigin.Actor),
+                        // Milestone 9.2: "in radius" is the printed Radius with p.16's items (p.9), not a number.
                         EffectInputBinding.FromLiteral(
-                            SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(3)),
+                            SyntheticRosterCapabilities.MeasuresPrintedRadiusParameter,
+                            EffectValue.Boolean(true)),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Hero),
                         EffectInputBinding.FromClosedVocabulary(
