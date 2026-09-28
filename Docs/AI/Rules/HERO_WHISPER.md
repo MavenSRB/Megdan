@@ -218,6 +218,12 @@ reading of each, and the two designer-tier answers her thread produced.
   direct Move and not a Movement action, so no Fast Travel substitutes and no movement-action restriction
   or buff touches it; the Movement VALUE is the defended card's own, through the ordinary value pipeline,
   so p.16's +1 Movement item raises it.
+- **Ruling 16a - full distance or not at all (user, 2026-09-28).** "If able" governs the whole sentence:
+  the hero moves exactly the defended card's Movement value (items included) in one straight line, and a
+  direction that an obstacle or the board edge stops short is not offered. When no direction reaches the
+  full distance the hero does not move. This supersedes the "as far as possible when blocked" reading the
+  shipped `defended-card-forced-move@1` attributes to 2026-09-06, which no rules document recorded as a
+  user ruling. The correction is queued, not yet built; its timing is the user's to set.
 - **Ruling 17 - the two-tier modal rule.** An option of a modal is refused only when a mandatory step of
   its branch cannot be taken; being able to apply nothing is not a reason. Lesser Evil's and Greater
   Good's opponent-chosen modals are the canonical case - the bullet that does nothing to the enemy is the
