@@ -88,6 +88,9 @@ $sources = [ordered]@{
     # Milestone 8.112g. SHA-256-identical to active-hero-cards/_selection-cards/Mrak__front.png
     # (1f478496...c9, the profile hash recorded in HERO_MRAK.md).
     mrak = 'randomizers-tt29__7723696__front.png'
+    # Milestone 8.114f. SHA-256-identical to active-hero-cards/_selection-cards/Wuk__front.png
+    # (3231da35...23): the front his three stars and six role icons were read off (inventory 8.114).
+    wuk = 'randomizers-tt11__7723684__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

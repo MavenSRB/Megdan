@@ -23,7 +23,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryWukNode_BindsEveryRequiredParameterOfItsCapability()
         {
-            var catalog = SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.DeferredHandlers());
+            var catalog = SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.RegisteredHandlers());
             var missing = new List<string>();
             foreach (var card in WukCardContent.AllDefinitions)
             {

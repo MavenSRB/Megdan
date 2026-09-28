@@ -159,7 +159,12 @@ namespace GuardsDigital.Tests.EditMode
                 // Disabler and Tactician.
                 ["hero-mrak"] = (HeroComplexity.VeryComplex,
                     HeroRole.Melee | HeroRole.Tokens | HeroRole.Durable | HeroRole.Disabler |
-                        HeroRole.Tactician)
+                        HeroRole.Tactician),
+                // Milestone 8.114f. Wuk's selection front: three stars; Tokens, Pusher, Durable,
+                // Sniper, Tactician and Healer.
+                ["hero-wuk"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Tokens | HeroRole.Pusher | HeroRole.Durable | HeroRole.Sniper |
+                        HeroRole.Tactician | HeroRole.Healer)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

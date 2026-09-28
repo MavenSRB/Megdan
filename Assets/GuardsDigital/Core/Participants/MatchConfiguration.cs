@@ -626,6 +626,8 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.SnorriCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.MrakHeroIdValue:
                     return Cards.Verified.MrakCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.WukHeroIdValue:
+                    return Cards.Verified.WukCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2218,6 +2220,50 @@ namespace GuardsDigital.Core.Participants
                 SetupRandomnessSeed.Unrecorded,
                 allyHand: Cards.Verified.ArienCardContent.CreateHand(
                     new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>Milestone 8.114f. Wasp on Red against Wuk with his p.6 starting hand.</summary>
+        public static MatchConfiguration CreateStagedWukForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.WukCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 8.114f. Wasp on Red against Wuk with Arien as his Blue ally: his friendly-hero
+        /// retrieval and friendly-unit swaps need a friend who is not Wuk.
+        /// </summary>
+        public static MatchConfiguration CreateStagedWukWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                Cards.Verified.WukCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue), "blue"),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>Milestone 8.114f. Wasp against Wuk, both on Tier III, March of Nature faceup.</summary>
+        public static MatchConfiguration CreateStagedWukTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.WukProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WukCardContent.MarchOfNature)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
 
         /// <summary>Milestone 8.112g. Wasp against Mrak, both on Tier III, Rock and a Hard Place faceup.</summary>
         public static MatchConfiguration CreateStagedMrakTierThreeForInternalTest(

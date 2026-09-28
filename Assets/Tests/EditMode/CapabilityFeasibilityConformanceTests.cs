@@ -383,7 +383,11 @@ namespace GuardsDigital.Tests.EditMode
             // Mastery), each proved by the focused 8.93a-8.93e fixtures.
             // Mrak's dealing adds four at 8.112g: his three placements and the p.18 short-supply step
             // they share, each proved by the focused 8.112b and 8.112d fixtures.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(123),
+            // Wuk's dealing adds four at 8.114f: the paired friendly-unit-and-Tree selection (8.114d),
+            // Dominance's battle-time exclusion and Trample's two moved-through readers (8.114b1),
+            // each proved by the focused Wuk fixtures. His Tree steps reuse PlaceHandler and
+            // ReclaimHandler, and his Dominance and Trample sources ActiveEffectCreationHandler.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(127),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

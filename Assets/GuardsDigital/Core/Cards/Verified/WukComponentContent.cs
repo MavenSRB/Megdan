@@ -74,11 +74,20 @@ namespace GuardsDigital.Core.Cards.Verified
             };
 
         /// <summary>
-        /// Every capability Wuk's composed faces name that the roster does not already own. Milestone
-        /// 8.114a starts it with the Tree's two; later blocks add theirs.
+        /// Every capability Wuk's printed faces name that the roster does not already own - the Tree's
+        /// two (8.114a), the paired swap selection (8.114d), Dominance and the trampling moves
+        /// (8.114b1) - registered in the match catalog since milestone 8.114f dealt him.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             Handlers().Concat(WukTreeSwapContent.Handlers()).Concat(WukDominanceContent.Handlers())
                 .Concat(WukTrampleContent.Handlers()).ToArray();
+
+        /// <summary>
+        /// Held his contracts until the dealing. 8.114f DEALT HIM, so it is empty and they arrive
+        /// through <see cref="RegisteredHandlers"/> - an empty list is what a discharged deferral
+        /// looks like.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
     }
 }

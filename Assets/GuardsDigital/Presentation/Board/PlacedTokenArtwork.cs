@@ -64,7 +64,10 @@ namespace GuardsDigital.Presentation.Board
                 [new TokenDefinitionId("trinkets-barrier")] = string.Empty,
 
                 // Milestone 8.112g. Mrak's rock: the prepared hex prints the rock itself, so no caption.
-                [new TokenDefinitionId("mrak-rock")] = string.Empty
+                [new TokenDefinitionId("mrak-rock")] = string.Empty,
+
+                // Milestone 8.114f. Wuk's Tree: the prepared hex prints the tree itself, so no caption.
+                [new TokenDefinitionId("wuk-tree")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

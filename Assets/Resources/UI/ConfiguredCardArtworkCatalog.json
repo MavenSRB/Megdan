@@ -456,6 +456,24 @@
     { "definitionId": "mrak-rolling-stone", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak15__7583412__front.png" },
     { "definitionId": "mrak-avalanche", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak16__7583413__front.png" },
     { "definitionId": "mrak-strolling-stone", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak17__7583414__front.png" },
-    { "definitionId": "mrak-rock-and-a-hard-place", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak18__7659508__front.png" }
+    { "definitionId": "mrak-rock-and-a-hard-place", "contentRevision": "mrak-8-112-rev-1", "sourcePath": "active-hero-cards/Mrak/mrak18__7659508__front.png" },
+    { "definitionId": "wuk-tree-slam", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk__7721594__front.png" },
+    { "definitionId": "wuk-mystic-saplings", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk2__7721586__front.png" },
+    { "definitionId": "wuk-natures-protector", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk3__7721582__front.png" },
+    { "definitionId": "wuk-natures-guardian", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk4__7721585__front.png" },
+    { "definitionId": "wuk-trample", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk5__7721580__front.png" },
+    { "definitionId": "wuk-natures-champion", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk6__7721592__front.png" },
+    { "definitionId": "wuk-angry-stampede", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk7__7721589__front.png" },
+    { "definitionId": "wuk-gifts-of-nature", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk8__7721587__front.png" },
+    { "definitionId": "wuk-tree-of-plenty", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk9__7721588__front.png" },
+    { "definitionId": "wuk-claim-dominance", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk10__7721579__front.png" },
+    { "definitionId": "wuk-abundance", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk11__7721581__front.png" },
+    { "definitionId": "wuk-assert-dominance", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk12__7721591__front.png" },
+    { "definitionId": "wuk-toss-away", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk13__7721584__front.png" },
+    { "definitionId": "wuk-mighty-throw", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk14__7721596__front.png" },
+    { "definitionId": "wuk-into-the-canopy", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk15__7721590__front.png" },
+    { "definitionId": "wuk-monstrous-throw", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk16__7721597__front.png" },
+    { "definitionId": "wuk-treetop-ride", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk17__7721595__front.png" },
+    { "definitionId": "wuk-march-of-nature", "contentRevision": "wuk-8-114-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk18__7721593__front.png" }
   ]
 }

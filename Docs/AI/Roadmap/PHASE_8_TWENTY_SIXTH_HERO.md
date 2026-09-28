@@ -97,11 +97,15 @@ Completed 2026-09-28. Trample and Angry Stampede are Movement 4 primaries printi
 
 Historical evidence: [8.114b1 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114f Deal Wuk and present his artwork
+### [x] 8.114f Deal Wuk and present his artwork
 
 Outcome: Wuk joins the roster (three stars; Tokens, Pusher, Durable, Sniper, Tactician, Healer) with eighteen dealt faces and Makeshift Weapon boxed; staged configurations whose setup and engagement arms land together; card fronts, selection art, the standee (element 8597495) and the Tree token faces prepared privately; shine sprites for any new rail layout.
 
 Acceptance: the contact sheet of every front beside its mapped title is inspected; the stat bars re-checked against the dashboard; the Tree token's rendered face normal asserted against the camera and a captured frame inspected; complete harness and Unity Edit Mode; every moved pin carries its measured cause.
+
+Completed 2026-09-28. `hero-wuk` joins the roster (three stars; Tokens, Pusher, Durable, Sniper, Tactician, Healer); `MatchConfiguration.CreateHand` deals his eighteen with Makeshift Weapon boxed; `WukComponentContent.RegisteredHandlers`, his three triggered effects and the Tree token join the match catalogs, discharging the deferral. Staged boards (starting hand, Tier III with March of Nature unlocked, and Arien as his Blue ally for the friendly retrieval and swaps) land with their `SceneCardContent` members and both composition arms. Private art prepared and never staged: eighteen card fronts from the contact-sheet-verified rows, the selection front (`randomizers-tt11`, SHA-identical to his named profile), the standee (element 8597495, the second element named `Hanu`, cropped and inspected), and the `Sapling` Tree face with no caption; shine sprites 65 written, 0 failed, composited on the fronts and inspected. The dashboard's bars read Attack 5, Defense 8, Initiative 1 and Movement 3 plus 1 brighter pip on enlargement, confirming WU-01. Pins moved with causes: roster 25 -> 26, handler types 123 -> 127 and the hero-only list (four new Wuk types), catalog composition, the reachability walk, artwork catalog 450 -> 468, corpus MIGRATE +267 bytes on all sixteen captures, the aggregate digests, and his identity pin. Carried limitation from 8.114b1: a second trampled-minion Defeat standing behind a pending removal-prevention question is not continued. T2; evidence in the milestone commit.
+
+Historical evidence: [8.114f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
 ### [ ] 8.114g Gate Wuk through the complete player path
 

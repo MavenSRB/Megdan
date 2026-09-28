@@ -239,6 +239,9 @@ namespace GuardsDigital.Core.Cards
                 // hero. ONE: Rock and a Hard Place's discard, which its after-tokens-placed declaration
                 // names BY REFERENCE (8.112f).
                 .Concat(MrakCardContent.TriggeredEffects())
+                // Milestone 8.114f, the milestone that deals Wuk the Grove Keeper as the TWENTY-SIXTH
+                // hero: March of Nature's placement and Dominance's two pre-battle exclusions.
+                .Concat(WukCardContent.TriggeredEffects())
                 .Concat(new[]
                 {
                     TrinketsEffectContent.DisruptorTrigger(
@@ -504,6 +507,8 @@ namespace GuardsDigital.Core.Cards
                 .Concat(SnorriUltimateContent.Handlers())
                 // Milestone 8.112g. Mrak's six placement steps and two Carapace grants.
                 .Concat(MrakComponentContent.RegisteredHandlers())
+                // Milestone 8.114f. Wuk's Tree, paired swap, Dominance and trampling contracts.
+                .Concat(WukComponentContent.RegisteredHandlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

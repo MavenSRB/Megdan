@@ -66,6 +66,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
+| 8.114f | Wuk dealt as the twenty-sixth hero: roster row, registration, staged boards with both scene arms, private fronts, selection front, standee, Tree face and shine sprites; corpus MIGRATE +267 bytes. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114f-deal-wuk-and-present-his-artwork). | `milestone/8.114f` |
 | 8.114b1 | Trample and Angry Stampede as Wuk's own Movement (straight-line crossing permission, persisted completed walk, moved-through discard-or-defeat and up-to-N minion Defeats); Claim and Assert Dominance as board-held Minion-Battle exclusions chosen before the battle; schema v47; two shipped Defeat-settlement gaps fixed. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114b1-implement-the-trampling-moves-and-dominance-on-one-snapshot-migration). | `milestone/8.114b1` |
 | 8.114e | March of Nature on the new `AfterControllerResolvesCard` condition and `PerformedCardResolution` fact; the set reconciled with the four owed rows named; twenty-two decision labels. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114e-implement-march-of-nature-and-reconcile-the-set). | `milestone/8.114e` |
 | 8.114d | Wuk's three throws and two Tree swaps; the friendly swap's two-selection offer defect and `wuk-choose-friendly-unit-and-tree@1`. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114d-implement-the-throws-and-the-tree-swaps). | `milestone/8.114d` |

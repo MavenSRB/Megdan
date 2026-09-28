@@ -170,15 +170,16 @@ namespace GuardsDigital.Tests.EditMode
             // `RegisteredHeroRoster.ForThisBuild` and is EXPECTED RED until the dealing adds her
             // roster row. That is recorded here rather than worked around: the guard is asking
             // exactly the right question and the answer is not yet yes.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(450));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(450));
+            // Milestone 8.114f: 450 -> 468, Wuk's eighteen dealt faces (Makeshift Weapon boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(468));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(468));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(450),
+                Is.EqualTo(468),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -193,7 +194,7 @@ namespace GuardsDigital.Tests.EditMode
                     ("sabina", 18),
                     ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("trinkets", 18), ("ursafar", 18), ("wasp", 18),
-                    ("whisper", 18), ("widget", 18), ("xargatha", 18)
+                    ("whisper", 18), ("widget", 18), ("wuk", 18), ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

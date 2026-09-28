@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -263,6 +263,10 @@ $declaredHeroes = @{
     snorri = @{ ElementId = 8596253; ElementName = 'Snorri'; DisplayName = 'Snorri' }
     # Milestone 8.112g. The `Mrak` VerticalTokens element (MR-02).
     mrak = @{ ElementId = 8629814; ElementName = 'Mrak'; DisplayName = 'Mrak' }
+    # Milestone 8.114f. Wuk's standee is the SECOND element named `Hanu` - 8597495 (publicElementId
+    # 1024393), the ape-faced hero Hanu's row above says must never be taken for Hanu. Inventory 8.114
+    # matched it to Tabletopia's own rendering of Wuk's standee; the crop decides, never the name.
+    wuk = @{ ElementId = 8597495; ElementName = 'Hanu'; DisplayName = 'Wuk' }
 }
 
 $declared = $declaredHeroes[$Hero]

@@ -326,7 +326,7 @@ namespace GuardsDigital.Tests.EditMode
                 definitions = new[] { face, EnemyHold, EnemyWall };
                 instances = new[] { source, hold, wall };
                 catalogs = new MatchContentCatalogs(
-                    SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.DeferredHandlers()),
+                    SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.RegisteredHandlers()),
                     new ComponentDefinitionCatalog(
                         WukComponentContent.Tokens(), Array.Empty<MarkerDefinition>()),
                     new TriggeredEffectCatalog(Array.Empty<EffectDefinition>()));

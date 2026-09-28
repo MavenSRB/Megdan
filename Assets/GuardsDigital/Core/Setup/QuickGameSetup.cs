@@ -425,6 +425,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 8.112g. Mrak the Rockshaper, the TWENTY-FIFTH hero.</summary>
         public const string MrakHeroIdValue = "hero-mrak";
 
+        /// <summary>Milestone 8.114f. Wuk the Grove Keeper, the TWENTY-SIXTH hero.</summary>
+        public const string WukHeroIdValue = "hero-wuk";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -558,7 +561,14 @@ namespace GuardsDigital.Core.Setup
                 (MrakHeroIdValue, "mrak", "Mrak the Rockshaper",
                     HeroComplexity.VeryComplex,
                     HeroRole.Melee | HeroRole.Tokens | HeroRole.Durable |
-                    HeroRole.Disabler | HeroRole.Tactician)
+                    HeroRole.Disabler | HeroRole.Tactician),
+                // Milestone 8.114f. His selection front prints THREE stars and the roles Tokens,
+                // Pusher, Durable, Sniper, Tactician and Healer (inventory 8.114); the dashboard names
+                // him "Wuk the Grove Keeper".
+                (WukHeroIdValue, "wuk", "Wuk the Grove Keeper",
+                    HeroComplexity.VeryComplex,
+                    HeroRole.Tokens | HeroRole.Pusher | HeroRole.Durable |
+                    HeroRole.Sniper | HeroRole.Tactician | HeroRole.Healer)
             };
 
         /// <summary>
@@ -930,6 +940,35 @@ namespace GuardsDigital.Core.Setup
                         hero.HeroId, new HeroContentId("mrak"), "Mrak", hero.SpawnPoint, hero.OccupiedSpace)
                     : hero),
                 snorri.Minions);
+        }
+
+        /// <summary>Milestone 8.114f. Wasp on Red against Wuk on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusWukOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("wuk"), "Wuk");
+
+        /// <summary>
+        /// Milestone 8.114f. Wuk with Arien as his Blue ally, on Hanu's ally board: Tree of Plenty's
+        /// and Abundance's "a friendly hero in radius may retrieve" and the swaps' "a friendly unit"
+        /// have a hero candidate only here (p.17: Friendly never includes Wuk).
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusWukWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("wuk"), "Wuk");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
         }
 
         /// <summary>Milestone 8.93g. Snorri on Red against Wasp and Arien on Blue.</summary>

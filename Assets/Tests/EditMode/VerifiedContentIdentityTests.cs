@@ -309,7 +309,8 @@ namespace GuardsDigital.Tests.EditMode
             // with the shared contract. Trinkets is the newly dealt owner of its full graph.
             new IdentityPin("trinkets", "trinkets-8-92e-complete", "951dacc88aaf860d2cbb696ec57441a9e51fc8220bf5c392915383339197e953"),
             new IdentityPin("snorri", "snorri-8-93f-rev-1", "133f27b08c4e3f21853e200c6807ac162778587d0226d98d7de86248e3f46e93"),
-            new IdentityPin("mrak", "mrak-8-112-rev-1", "158830f695d6015f4b2b95894d931dd353c299c45412569c4157fa5adf4c31cc")
+            new IdentityPin("mrak", "mrak-8-112-rev-1", "158830f695d6015f4b2b95894d931dd353c299c45412569c4157fa5adf4c31cc"),
+            new IdentityPin("wuk", "wuk-8-114-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc")
         };
 
         [Test]
@@ -490,6 +491,9 @@ namespace GuardsDigital.Tests.EditMode
                     .CardDefinitions)
                 // Milestone 8.112g. Mrak's staged configuration, added in the same change as his pin.
                 .Concat(MatchConfiguration.CreateStagedMrakForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.114f. Wuk's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedWukForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

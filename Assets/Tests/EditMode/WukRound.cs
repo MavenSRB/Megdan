@@ -155,7 +155,7 @@ namespace GuardsDigital.Tests.EditMode
 
             instances = all.ToArray();
             catalogs = new MatchContentCatalogs(
-                SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.DeferredHandlers()),
+                SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.RegisteredHandlers()),
                 new ComponentDefinitionCatalog(
                     WukComponentContent.Tokens().Concat(MrakComponentContent.Tokens()),
                     Array.Empty<MarkerDefinition>()),

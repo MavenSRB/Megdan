@@ -4449,7 +4449,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(TrinketsCardContent.DealtDefinitions)
                 .Concat(SnorriCardContent.DealtDefinitions)
                 // Milestone 8.112g. The twenty-fifth, on the terms the lines above state.
-                .Concat(MrakCardContent.DealtDefinitions).ToArray();
+                .Concat(MrakCardContent.DealtDefinitions)
+                // Milestone 8.114f. The twenty-sixth, on the same terms.
+                .Concat(WukCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

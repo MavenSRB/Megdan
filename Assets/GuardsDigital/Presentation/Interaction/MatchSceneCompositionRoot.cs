@@ -1061,7 +1061,16 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedTierThreeEngagedStagedMrak = 133,
 
         /// <summary>Mrak on Red against Wasp and Arien on Blue (8.112g).</summary>
-        VerifiedStagedMrakVersusTwo = 134
+        VerifiedStagedMrakVersusTwo = 134,
+
+        /// <summary>Wasp versus Wuk with his p.6 starting hand (8.114f).</summary>
+        VerifiedEngagedStagedWuk = 135,
+
+        /// <summary>Wasp versus Wuk with Tier III hands and March of Nature faceup (8.114f).</summary>
+        VerifiedTierThreeEngagedStagedWuk = 136,
+
+        /// <summary>Wasp versus Wuk with Arien as his Blue ally (8.114f).</summary>
+        VerifiedStagedWukWithAlly = 137
     }
 
     [ExecuteAlways]
@@ -1773,6 +1782,12 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedMrakTierThreeForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedStagedMrakVersusTwo =>
                     MatchConfiguration.CreateStagedMrakAgainstWaspWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedWuk =>
+                    MatchConfiguration.CreateStagedWukForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedWuk =>
+                    MatchConfiguration.CreateStagedWukTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedStagedWukWithAlly =>
+                    MatchConfiguration.CreateStagedWukWithAllyForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1861,7 +1876,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedSnorri ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedSnorri ||
                 content == SceneCardContent.VerifiedEngagedStagedMrak ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedMrak)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedMrak ||
+                content == SceneCardContent.VerifiedEngagedStagedWuk ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedWuk)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2448,6 +2465,18 @@ namespace GuardsDigital.Presentation.Interaction
                     if (content == SceneCardContent.VerifiedStagedMrakVersusTwo)
                     {
                         return QuickGameSetupConfiguration.CreateStagedMrakVersusWaspAndArien();
+                    }
+
+                    // Milestone 8.114f. Wuk's staged boards, in the same change as his members.
+                    if (content == SceneCardContent.VerifiedEngagedStagedWuk ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedWuk)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusWukOneVsOne();
+                    }
+
+                    if (content == SceneCardContent.VerifiedStagedWukWithAlly)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusWukWithAllyOneVsTwo();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

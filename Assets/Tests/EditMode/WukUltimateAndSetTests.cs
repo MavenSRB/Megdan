@@ -132,7 +132,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var catalogs = new MatchContentCatalogs(
                 GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities.CreateCatalog(
-                    WukComponentContent.DeferredHandlers()),
+                    WukComponentContent.RegisteredHandlers()),
                 new GuardsDigital.Core.Components.ComponentDefinitionCatalog(
                     WukComponentContent.Tokens(), System.Array.Empty<GuardsDigital.Core.Components.MarkerDefinition>()),
                 new GuardsDigital.Core.Effects.TriggeredEffectCatalog(WukCardContent.TriggeredEffects()));
