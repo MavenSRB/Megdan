@@ -53,11 +53,13 @@ Completed 2026-09-28. `WukRedFaces` composes the three Nature's Attacks as p.10'
 
 Historical evidence: [8.114b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114b1 Implement the trampling moves
+### [!] 8.114b1 Implement the trampling moves
 
 Outcome: Trample and Angry Stampede: a Movement primary whose straight-line walk may ignore obstacles, then each enemy hero moved through discards or is defeated (immunity respected) and up to one (two) minions of any side moved through are defeated (WU-Q4).
 
 Acceptance: configured rounds prove straight versus curved walks, passing through units and tokens but never ending on one, the discard-or-defeat answered on the addressed seat, immune heroes skipped, zero/one/two minion defeats including a friendly one, Movement items applied, and restore of each pause. Unregistered until 8.114f.
+
+Paused 2026-09-28 on WU-Q5 ([his shard](../Rules/HERO_WUK.md#open-questions)): the two buildable readings differ in what counts as his Movement action, which is the user's call. 8.114c-8.114e do not depend on it and proceed; 8.114f cannot deal him until this step is complete.
 
 ### [ ] 8.114c Implement the Blue retrieval faces and Dominance
 
