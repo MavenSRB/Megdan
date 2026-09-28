@@ -85,6 +85,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Twenty-third-hero dealing: Trinkets the Scavenger](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md)
 - [Phase 8 - Twenty-fourth-hero dealing: Snorri the Runescribe](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md)
 - [Phase 8 - Twenty-fifth-hero dealing: Mrak the Rockshaper](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md)
+- [Phase 8 - Twenty-sixth-hero dealing: Wuk the Grove Keeper](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md)
 - [Phase 8 - Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)
 - [Phase 8 - The decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)

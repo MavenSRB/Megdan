@@ -56,6 +56,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.113 | Ignatia's magma supply corrected to four and p.18's short-supply reclaim applied to her moon placements and sun wake; revision `ignatia-8-113-rev-1`, corpus MIGRATE (+26 bytes), gate classification and a Chaos Incarnate reclaim journey. [Definition](../../Roadmap/PHASE_8.md#x-8113-correct-ignatias-magma-supply-to-four-tokens-and-apply-p18s-short-supply). | `milestone/8.113` |
 
+## Milestone 8.114 Wuk inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.114 | Wuk's nineteen fronts, both back variants, profile, stat bars, dashboard, standee (element 8597495, named `Hanu`) and three `Sapling` Tree faces inventoried; Tree bullet, trampling move, battle-time minion exclusion and any-card after-resolve trigger mapped as new contracts; WU-Q1-WU-Q4 settled by the user; 8.114a-8.114g sequence with carried lessons recorded. [Definition](../../Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md#x-8114-inventory-wuk-and-map-the-implementation-sequence). | `milestone/8.114` |
+
 ## Milestone 8.112 Mrak inventory evidence
 
 | Milestone | Outcome and definition | Commit |
