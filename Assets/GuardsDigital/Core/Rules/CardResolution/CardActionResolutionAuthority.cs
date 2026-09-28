@@ -2167,6 +2167,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return result;
             }
 
+            // Milestone 8.114b1. Card text applied after the movement (Wuk's Trample) asks what this
+            // walk moved through, possibly on a later command, so the board keeps the whole route.
+            board.RecordCompletedMovementWalk(mover, walked);
             var crossed = MoveThroughTrapQuery.SpacesMovedThrough(walked);
             if (crossed.Count == 0)
             {
@@ -4133,7 +4136,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             var action = ActionOfferQuery.FindActionDefinition(heldOffer, materializedDefinitions);
-            if (action.CardTextTiming != CardTextTiming.AfterTheMovement || action.EffectRoot == null)
+            // Milestone 8.114b1. Asked of the moment, not of the first body: Wuk's Trample prints text
+            // before its walk AND after it, and the after body is then its second.
+            if (action.Kind != ActionKind.Movement || action.CardTextAt(CardTextTiming.AfterTheMovement) == null)
             {
                 return CardActionResolutionResult.Reject(
                     CardActionResolutionRejectionReason.UnsupportedInvocationContext, null, null);
@@ -4180,8 +4185,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // 8.19a's ordering question puts the work in the root sequence's second child, because the
             // first child is the question; a card that states its own side never asks one, so its root
             // IS the work - the same reading StartBeforeMovementText takes of the other side.
-            var entryNodeId = action.CardTextTiming == CardTextTiming.AfterTheMovement
-                ? action.EffectRoot.RootNodeId
+            var afterBody = action.CardTextAt(CardTextTiming.AfterTheMovement);
+            var entryNodeId = afterBody != null
+                ? afterBody.RootNodeId
                 : AroundActionShape.WorkNode(action.EffectRoot);
             return StartAroundActionEntry(
                 entryNodeId,
@@ -4197,7 +4203,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 roundIndex,
                 turnIndex,
-                owed.HeldActionHasStarted);
+                owed.HeldActionHasStarted,
+                afterBody);
         }
 
         private CardActionResolutionResult StartAroundActionEntry(
@@ -4214,10 +4221,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex,
-            bool heldActionHasStarted)
+            bool heldActionHasStarted,
+            EffectDefinition body = null)
         {
             var context = new EffectResolutionContext(
-                action.EffectRoot,
+                body ?? action.EffectRoot,
                 ContentCatalogs.Capabilities,
                 participants,
                 timing,
@@ -4249,13 +4257,74 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             pendingPreAction = ContinuationAfterAroundEntry(
                 result, isWorkEntry, placement, heldResolutionId, heldOffer, heldActionHasStarted);
+            var facts = new List<ResolutionStep>(PreActionFacts(
+                result, heldOffer.SourceCardInstanceId, action.Id, heldOffer.ActorId,
+                CardTextTiming.AroundTheAction));
+
+            // Milestone 8.114b1. Text around a Movement that defeats - Wuk's Trample, the first - is
+            // settled here when it finishes without a question, exactly as an answered one is below.
+            var frameId = new ActionResolutionId(
+                $"around-action-{heldOffer.SourceCardInstanceId.Value}-{entryNodeId.Value}");
+            AppendRequestedHeroDefeats(result,
+                EffectInvokedDefeatSource.FromSkill(
+                    frameId, heldOffer.SourceCardInstanceId, action.Id, heldOffer.ActorId),
+                definitions, instances, participants, modifications, facts);
+            SettleAroundActionMinionDefeats(
+                result, frameId, heldOffer.SourceCardInstanceId, heldOffer.SourceDefinitionReference,
+                action.Id, heldOffer.ActorId, participants, modifications, definitions, instances, facts);
             return CardActionResolutionResult.Accept(
                 pendingPreAction == null || pendingPreAction.OwesWork,
                 null,
                 null,
-                PreActionFacts(
-                    result, heldOffer.SourceCardInstanceId, action.Id, heldOffer.ActorId,
-                    CardTextTiming.AroundTheAction));
+                facts);
+        }
+
+        /// <summary>
+        /// Milestone 8.114b1. The minion Defeats a finished piece of around-action text asked for, run
+        /// through the effect-invoked Defeat every other card text uses (p.13's reward, removal
+        /// prevention, p.8's last-minion push). A prevention source that stops to ask holds the rest,
+        /// as it does for a triggered effect's Defeats.
+        /// </summary>
+        private void SettleAroundActionMinionDefeats(
+            EffectResolutionStepResult step,
+            ActionResolutionId frameId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            ICollection<ResolutionStep> steps)
+        {
+            if (!step.IsComplete || step.RequestedMinionDefeats.Count == 0)
+            {
+                return;
+            }
+
+            var materializedInstances = instances as IReadOnlyList<CardInstance> ?? instances.ToArray();
+            foreach (var minionId in step.RequestedMinionDefeats)
+            {
+                var defeat = attackDefenseBackend.ResolveEffectInvokedMinionDefeat(
+                    frameId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId, actorId,
+                    minionId, participants, modifications, definitions, materializedInstances,
+                    out var identity);
+                if (defeat == null)
+                {
+                    steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.RemovalPreventionRequested(
+                        identity, attackDefenseBackend.PendingRemovalPrevention)));
+                    return;
+                }
+
+                foreach (var fact in defeat.Facts)
+                {
+                    steps.Add(ResolutionStep.FromFact(
+                        CardActionResolutionEvent.MinionDefeatFact(identity, defeat, fact)));
+                }
+
+                RecordImmediateLanePush(defeat.LanePush.Cause, frameId, participants, modifications);
+            }
         }
 
         /// <summary>
@@ -4392,6 +4461,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     paused.Frame.SourceCardInstanceId,
                     paused.Frame.ActionDefinitionId, paused.Frame.ActorId),
                 materializedDefinitions, instances, participants, modifications, facts);
+            SettleAroundActionMinionDefeats(
+                step, new ActionResolutionId(paused.Frame.ResolutionId.Value),
+                paused.Frame.SourceCardInstanceId, paused.Frame.SourceDefinitionReference,
+                paused.Frame.ActionDefinitionId, paused.Frame.ActorId, participants, modifications,
+                materializedDefinitions, instances, facts);
 
             if (!step.IsComplete)
             {

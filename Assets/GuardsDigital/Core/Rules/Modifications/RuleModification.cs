@@ -503,7 +503,15 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// defense action, as if it was in your hand." The grant's source card offers its own printed
         /// Defense in p.14's Defense window, paid by discarding it from where it rests.
         /// </summary>
-        DefendWithSourceCardAsIfInHand = 3
+        DefendWithSourceCardAsIfInHand = 3,
+
+        /// <summary>
+        /// Milestone 8.114b1. Wuk's Trample and Angry Stampede: "If you move in a straight line: You
+        /// may ignore obstacles". Read by <c>StraightLineCrossingQuery</c> on a Movement action's own
+        /// walk and nowhere else; unlike <see cref="MoveThroughObstacles"/> it grants nothing to a walk
+        /// that bends.
+        /// </summary>
+        MoveThroughObstaclesInAStraightLine = 4
     }
 
     /// <summary>

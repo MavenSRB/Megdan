@@ -2006,7 +2006,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 coins,
                 0);
             if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
-            var reward = coinLedger.Award(outcome);
+
+            // Milestone 8.114b1. Card text may defeat a minion of the actor's own side - Wuk's Trample,
+            // "defeat up to one minion you moved through", any minion (WU-Q4). p.13 pays for enemy
+            // minions only and the ledger refuses a friendly target, so that Defeat pays nothing
+            // rather than being refused.
+            var friendly = participants.GetTeamForHero(actorId).Id.Equals(target.TeamId);
+            var reward = friendly
+                ? DefeatRewardResult.Accept(Array.Empty<CoinResourceOperation>())
+                : coinLedger.Award(outcome);
             if (!reward.Accepted)
                 throw new InvalidOperationException("A triggered minion Defeat could not award its declared reward.");
 

@@ -433,11 +433,27 @@ namespace GuardsDigital.Core.Cards
                     nameof(SecondCardTextTiming));
             }
 
+            // Milestone 8.114b1. Wuk's Trample and Angry Stampede are the one other shape verified
+            // content prints: a Movement primary whose text changes the walk - p.11's default moment,
+            // before it - and names what the walk "moved through", which exists only after it.
+            if (Kind == ActionKind.Movement)
+            {
+                if (CardTextTiming != CardTextTiming.BeforeTheMovement ||
+                    SecondCardTextTiming != CardTextTiming.AfterTheMovement)
+                {
+                    throw new ArgumentException(
+                        "A Movement prints text at two moments only as before and after its walk.",
+                        nameof(SecondCardTextTiming));
+                }
+
+                return;
+            }
+
             if (Kind != ActionKind.Attack)
             {
                 throw new ArgumentException(
-                    "Only an Attack prints text at two moments; p.14's numbered order is the " +
-                    "Attack's alone.",
+                    "Only an Attack or a Movement prints text at two moments; p.14's numbered order " +
+                    "is the Attack's alone.",
                     nameof(SecondCardTextRoot));
             }
 

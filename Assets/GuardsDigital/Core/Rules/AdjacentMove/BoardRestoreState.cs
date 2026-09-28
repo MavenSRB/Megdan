@@ -40,7 +40,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<ObstacleOccupancy> obstacleOccupancies,
             IEnumerable<RestoredMinionPosition> remainingMinions,
             IEnumerable<PlacedToken> placedTokens,
-            ZoneId? currentBattleZoneId)
+            ZoneId? currentBattleZoneId,
+            IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
+            CompletedMovementWalk lastCompletedMovementWalk)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
@@ -48,6 +50,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
 
             CurrentBattleZoneId = currentBattleZoneId;
+            MinionBattleExclusions = (minionBattleExclusions ??
+                throw new ArgumentNullException(nameof(minionBattleExclusions))).Distinct().ToArray();
+            LastCompletedMovementWalk = lastCompletedMovementWalk;
             HeroOccupancies = heroOccupancies.ToArray();
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
@@ -82,18 +87,28 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         // one; restoring one as anything else would invent a lane the map does not have.
         public ZoneId? CurrentBattleZoneId { get; }
 
+        /// <summary>Milestone 8.114b1, schema v47. This round's Minion-Battle exclusions (Dominance).</summary>
+        public IReadOnlyList<GuardsDigital.Core.Setup.MinionId> MinionBattleExclusions { get; }
+
+        /// <summary>Milestone 8.114b1, schema v47. The last completed Movement action walk, or null.</summary>
+        public CompletedMovementWalk LastCompletedMovementWalk { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
             out IReadOnlyList<RestoredMinionPosition> remainingMinions,
             out IReadOnlyList<PlacedToken> placedTokens,
-            out ZoneId? currentBattleZoneId)
+            out ZoneId? currentBattleZoneId,
+            out IReadOnlyList<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
+            out CompletedMovementWalk lastCompletedMovementWalk)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
             remainingMinions = RemainingMinions;
             placedTokens = PlacedTokens;
             currentBattleZoneId = CurrentBattleZoneId;
+            minionBattleExclusions = MinionBattleExclusions;
+            lastCompletedMovementWalk = LastCompletedMovementWalk;
         }
     }
 }

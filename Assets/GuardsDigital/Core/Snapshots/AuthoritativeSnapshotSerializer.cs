@@ -392,7 +392,11 @@ namespace GuardsDigital.Core.Snapshots
         // distinct runes persist through round end and defeat, so their assignment is match-wide
         // rules state, not presentation placement. v44 lacks that association and is rejected.
         // v46: a turn-slot marker can count as active until its holder's next action.
-        public const int CurrentSchemaVersion = 46;
+        // v47 (milestone 8.114b1): the board carries this round's Minion-Battle exclusions (Wuk's
+        // Dominance) and the last completed Movement action walk (Trample). v46 lacks both and is
+        // rejected: a v46 payload taken between Dominance's choice and the battle would restore a
+        // battle that counts the excluded minion.
+        public const int CurrentSchemaVersion = 47;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -300,7 +300,8 @@ namespace GuardsDigital.Tests.EditMode
                 () => AdjacentMoveAuthority.Restore(
                     new BoardRestoreState(
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
-                        captured.RemainingMinions, captured.PlacedTokens, new ZoneId("top-jungle")),
+                        captured.RemainingMinions, captured.PlacedTokens, new ZoneId("top-jungle"),
+                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException,
@@ -311,7 +312,8 @@ namespace GuardsDigital.Tests.EditMode
                 () => AdjacentMoveAuthority.Restore(
                     new BoardRestoreState(
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
-                        captured.RemainingMinions, captured.PlacedTokens, null),
+                        captured.RemainingMinions, captured.PlacedTokens, null,
+                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException);

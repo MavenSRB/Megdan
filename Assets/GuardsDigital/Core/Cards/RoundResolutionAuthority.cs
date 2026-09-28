@@ -2095,6 +2095,9 @@ namespace GuardsDigital.Core.Cards
 
             if (board != null)
             {
+                // Milestone 8.114b1. The Minion Battle is over, so what Dominance excluded from its
+                // count is excluded no longer.
+                board.ClearMinionBattleExclusions();
                 foreach (var token in GuardsDigital.Core.Components.ComponentCleanupRules
                              .TokensRemovedAtEndOfRound(board.PlacedTokens))
                 {

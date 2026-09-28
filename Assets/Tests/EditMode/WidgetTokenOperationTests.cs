@@ -202,7 +202,8 @@ namespace GuardsDigital.Tests.EditMode
             var state = probe.Board.CaptureRestoreState();
             var withoutOwner = AdjacentMoveAuthority.Restore(new BoardRestoreState(
                 state.HeroOccupancies.Where(h => !h.HeroId.Equals(Actor)), state.ObstacleOccupancies,
-                state.RemainingMinions, state.PlacedTokens, state.CurrentBattleZoneId),
+                state.RemainingMinions, state.PlacedTokens, state.CurrentBattleZoneId,
+                state.MinionBattleExclusions, state.LastCompletedMovementWalk),
                 probe.Board.MapDefinition, Array.Empty<QuickGameMinionSetupState>());
             Assert.That(withoutOwner.PlacedTokens.Single().Id, Is.EqualTo(new TokenInstanceId("pyro")));
             Assert.That(ComponentCleanupRules.TokensRemovedAtEndOfRound(withoutOwner.PlacedTokens), Is.Empty);

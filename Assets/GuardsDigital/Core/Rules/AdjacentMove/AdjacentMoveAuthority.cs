@@ -18,8 +18,38 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 {
     public sealed class AdjacentMoveAuthority :
         ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority,
-        IBoardObjectExchangeAuthority, ILaneAdvanceAuthority, IObstaclePlacementAuthority
+        IBoardObjectExchangeAuthority, ILaneAdvanceAuthority, IObstaclePlacementAuthority,
+        IMinionBattleExclusionAuthority, ICompletedMovementWalkRecord
     {
+        // Milestone 8.114b1, schema v47. See IMinionBattleExclusionAuthority and CompletedMovementWalk.
+        private readonly HashSet<MinionId> minionBattleExclusions = new HashSet<MinionId>();
+        private CompletedMovementWalk lastCompletedMovementWalk;
+
+        public IReadOnlyCollection<MinionId> MinionsExcludedFromMinionBattle =>
+            minionBattleExclusions.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray();
+
+        public void ExcludeFromMinionBattle(IEnumerable<MinionId> excluded)
+        {
+            foreach (var minion in excluded ?? throw new ArgumentNullException(nameof(excluded)))
+            {
+                if (!minion.IsDefined)
+                {
+                    throw new ArgumentException("An exclusion names a minion.", nameof(excluded));
+                }
+
+                minionBattleExclusions.Add(minion);
+            }
+        }
+
+        /// <summary>p.8: the battle is over, so nothing it excluded is excluded any longer.</summary>
+        public void ClearMinionBattleExclusions() => minionBattleExclusions.Clear();
+
+        public CompletedMovementWalk LastCompletedMovementWalk => lastCompletedMovementWalk;
+
+        /// <summary>Records the whole route a Movement action just walked, replacing the last one.</summary>
+        public void RecordCompletedMovementWalk(HeroId mover, IEnumerable<HexCoordinate> route) =>
+            lastCompletedMovementWalk = new CompletedMovementWalk(mover, route);
+
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
         private readonly List<HeroOccupancy> occupancies;
@@ -320,6 +350,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             minions = new List<MinionOccupancy>(source.minions);
             reserveMinions = new List<MinionOccupancy>(source.reserveMinions);
             tokens = new List<PlacedToken>(source.tokens);
+            minionBattleExclusions = new HashSet<MinionId>(source.minionBattleExclusions);
+            lastCompletedMovementWalk = source.lastCompletedMovementWalk;
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
@@ -437,7 +469,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 obstacleOccupancies,
                 minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)),
                 tokens,
-                CurrentBattleZoneId);
+                CurrentBattleZoneId,
+                minionBattleExclusions,
+                lastCompletedMovementWalk);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -522,6 +556,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 restored.CurrentBattleZoneId = zoneId;
             }
 
+            // Milestone 8.114b1, schema v47.
+            restored.ExcludeFromMinionBattle(state.MinionBattleExclusions);
+            restored.lastCompletedMovementWalk = state.LastCompletedMovementWalk;
             return restored;
         }
 
@@ -581,7 +618,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public AdjacentMoveRouteResult TryCommitRoute(
             HeroId heroId,
             IReadOnlyList<HexCoordinate> route,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            bool moverIgnoresObstacles = false)
         {
             if (route == null)
             {
@@ -623,7 +661,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     // MovementReachabilityQuery's hero overload made when it offered the route.
                     : ObstacleQuery.BlocksTransit(
                         this, space, mover, modifications,
-                        moverIgnoresObstacles: false,
+                        moverIgnoresObstacles: moverIgnoresObstacles,
                         permittedActivity: RuleActivity.Movement);
                 if (refused)
                 {

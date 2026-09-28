@@ -580,8 +580,19 @@ namespace GuardsDigital.Core.Cards
                 .ToArray();
             var red = effective.Where(value => value.TeamSide == TeamSide.Red).ToArray();
             var blue = effective.Where(value => value.TeamSide == TeamSide.Blue).ToArray();
+
+            // Milestone 8.114b1. Wuk's Claim and Assert Dominance: the chosen minions "do not count
+            // towards the minion total". They change the COUNT and nothing else - WU-Q6 (user,
+            // 2026-09-28): an excluded minion still stands in the Battle Zone and may still be one of
+            // the losing team's removals - so the totals below are the only numbers they touch.
+            var excluded = new HashSet<MinionId>(board.MinionsExcludedFromMinionBattle);
+            bool Counts(EffectiveBattleZoneMinion value) =>
+                IntrinsicKindQuery.Of(value.Unit) != RuleObjectKind.Minion ||
+                !excluded.Contains(value.Unit.MinionId);
+            var redTotal = red.Count(Counts);
+            var blueTotal = blue.Count(Counts);
             var resolutionId = new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle");
-            if (red.Length == blue.Length)
+            if (redTotal == blueTotal)
             {
                 return new MinionBattlePlan(
                     resolutionId,
@@ -594,12 +605,12 @@ namespace GuardsDigital.Core.Cards
                     null);
             }
 
-            var winningSide = red.Length > blue.Length ? TeamSide.Red : TeamSide.Blue;
+            var winningSide = redTotal > blueTotal ? TeamSide.Red : TeamSide.Blue;
             var losingSide = winningSide == TeamSide.Red ? TeamSide.Blue : TeamSide.Red;
             var winning = participants.Teams.Single(value => value.Side == winningSide);
             var losing = participants.Teams.Single(value => value.Side == losingSide);
             var losingMinions = losingSide == TeamSide.Red ? red : blue;
-            var required = Math.Min(Math.Abs(red.Length - blue.Length), losingMinions.Length);
+            var required = Math.Min(Math.Abs(redTotal - blueTotal), losingMinions.Length);
             if (required == 0)
             {
                 return new MinionBattlePlan(

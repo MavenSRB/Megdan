@@ -45,6 +45,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static ActionDefinitionId PrimaryRangedAttack { get; } =
             new ActionDefinitionId("primary-ranged-attack");
         public static ActionDefinitionId PrimarySkill { get; } = new ActionDefinitionId("primary-skill");
+        public static ActionDefinitionId PrimaryMovement { get; } = new ActionDefinitionId("primary-movement");
         public static ActionDefinitionId SecondaryMovement { get; } =
             new ActionDefinitionId("secondary-movement");
         public static ActionDefinitionId SecondaryDefense { get; } =

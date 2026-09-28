@@ -123,10 +123,15 @@ namespace GuardsDigital.Core.Rules.Movement
         /// The session state after each space, in order, so a caller that narrates one fact per space
         /// keeps the exact per-space identities the walk produced. Empty on refusal.
         /// </param>
+        /// <param name="crossesInAStraightLine">
+        /// Milestone 8.114b1. The route continues this walk along one straight line under
+        /// <see cref="StraightLineCrossingQuery"/>'s permission, so it may pass through obstacles.
+        /// </param>
         public MovementSessionStepResult TryCommitRoute(
             IReadOnlyList<HexCoordinate> routeSpaces,
             RuleModificationSet modifications,
-            out IReadOnlyList<MovementSessionState> committedStepStates)
+            out IReadOnlyList<MovementSessionState> committedStepStates,
+            bool crossesInAStraightLine = false)
         {
             committedStepStates = Array.Empty<MovementSessionState>();
             if (routeSpaces == null)
@@ -148,8 +153,15 @@ namespace GuardsDigital.Core.Rules.Movement
                     stepEvents);
             }
 
+            if (crossesInAStraightLine && !StraightLineQuery.IsStraightLine(
+                    route.Concat(routeSpaces).ToArray()))
+            {
+                throw new InvalidOperationException(
+                    "A straight-line crossing was asked of a walk that is not one straight line.");
+            }
+
             var routeResult = adjacentMoveAuthority.TryCommitRoute(
-                CurrentOccupancy.HeroId, routeSpaces, modifications);
+                CurrentOccupancy.HeroId, routeSpaces, modifications, crossesInAStraightLine);
             if (!routeResult.Accepted)
             {
                 return MovementSessionStepResult.Reject(

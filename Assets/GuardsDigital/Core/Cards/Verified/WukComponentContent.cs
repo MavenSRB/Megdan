@@ -78,6 +78,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// 8.114a starts it with the Tree's two; later blocks add theirs.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Handlers().Concat(WukTreeSwapContent.Handlers()).ToArray();
+            Handlers().Concat(WukTreeSwapContent.Handlers()).Concat(WukDominanceContent.Handlers())
+                .Concat(WukTrampleContent.Handlers()).ToArray();
     }
 }

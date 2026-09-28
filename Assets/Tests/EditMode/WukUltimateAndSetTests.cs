@@ -152,17 +152,14 @@ namespace GuardsDigital.Tests.EditMode
         // --- The set --------------------------------------------------------------------------------
 
         [Test]
-        public void TheSetIsTheShardsNineteenRows_WithTheFourStillOwedNamed()
+        public void TheSetIsTheShardsNineteenRows_AllComposed()
         {
             Assert.That(WukCardContent.InventoryOrder.Count, Is.EqualTo(19));
-            Assert.That(WukCardContent.NotYetComposed, Is.EqualTo(new[]
-            {
-                WukRedFaces.Trample, WukRedFaces.AngryStampede,
-                WukBlueFaces.ClaimDominance, WukBlueFaces.AssertDominance
-            }), "8.114b1 owes the trampling moves and 8.114c1 Dominance; the dealing requires none.");
+            Assert.That(WukCardContent.NotYetComposed, Is.Empty,
+                "8.114b1 composed the trampling moves and Dominance; the dealing requires none owed.");
             Assert.That(WukCardContent.AllDefinitions.Select(definition => definition.Id),
-                Is.EqualTo(WukCardContent.InventoryOrder.Except(WukCardContent.NotYetComposed)),
-                "every composed face, in the shard's order.");
+                Is.EqualTo(WukCardContent.InventoryOrder),
+                "every face, in the shard's order.");
             Assert.That(WukCardContent.StartingHand, Is.EqualTo(new[]
             {
                 WukCardContent.TreeSlam, WukCardContent.MysticSaplings, WukRedFaces.NaturesProtector,

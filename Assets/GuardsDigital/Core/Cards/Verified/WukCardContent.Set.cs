@@ -92,7 +92,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>Every triggered effect Wuk's content declares.</summary>
         public static IReadOnlyList<EffectDefinition> TriggeredEffects() =>
-            Array.AsReadOnly(new[] { MarchOfNatureTriggeredEffect });
+            Array.AsReadOnly(new[] { MarchOfNatureTriggeredEffect }
+                .Concat(WukDominanceContent.TriggeredEffects()).ToArray());
 
         // -------------------------------------------------------------------------------------------
         // Makeshift Weapon - p.20's boxed Handicap
@@ -154,10 +155,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinitionId> ReturnedToBoxAtSetup => LazyReturnedToBoxAtSetup.Value;
 
         /// <summary>
-        /// Every printed face composed so far, in inventory order - the list the corpus sweeps walk.
-        /// Until 8.114b1 and 8.114c1 compose the trampling moves and Dominance it holds fifteen of the
-        /// nineteen; <see cref="NotYetComposed"/> names the four still owed rather than letting the set
-        /// pass as whole.
+        /// Every printed face, in inventory order - the list the corpus sweeps walk. Milestone 8.114b1
+        /// composed the last four (the trampling moves and Dominance), so it holds all nineteen.
         /// </summary>
         public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
 
@@ -165,9 +164,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> DealtDefinitions => LazyDealtDefinitions.Value;
 
         /// <summary>
-        /// The inventory rows no block has composed yet. Milestone 8.114e: Trample and Angry Stampede,
-        /// owed to 8.114b1 (paused on WU-Q5), and Claim and Assert Dominance, owed to 8.114c1. The
-        /// dealing (8.114f) requires this to be empty.
+        /// The inventory rows no block has composed yet - empty since milestone 8.114b1. The dealing
+        /// (8.114f) requires it to stay empty.
         /// </summary>
         public static IReadOnlyList<CardDefinitionId> NotYetComposed => LazyNotYetComposed.Value;
 
@@ -255,14 +253,16 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// The composed faces in inventory order, refused if any is not in the inventory table - a face
         /// composed but never inventoried is a load-time error. Inventoried faces not yet composed are
-        /// reported by <see cref="NotYetComposed"/> instead of refused, because 8.114b1 is paused and the
-        /// sweeps must still walk every face that exists.
+        /// reported by <see cref="NotYetComposed"/> instead of refused, so a partly composed set still
+        /// lets the sweeps walk every face that exists.
         /// </summary>
         private static IReadOnlyList<CardDefinition> Compose()
         {
             var composed = new[] { TreeSlamDefinition, MysticSaplingsDefinition }
                 .Concat(WukRedFaces.AttackDefinitions)
+                .Concat(WukRedFaces.TrampleDefinitions)
                 .Concat(WukBlueFaces.RetrievalDefinitions)
+                .Concat(WukBlueFaces.DominanceDefinitions)
                 .Concat(WukGreenFaces.Definitions)
                 .Concat(new[] { MarchOfNatureDefinition, MakeshiftWeaponDefinition })
                 .ToDictionary(definition => definition.Id);

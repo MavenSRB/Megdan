@@ -11,7 +11,10 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
@@ -45,6 +48,7 @@ namespace GuardsDigital.Tests.EditMode
         private readonly MatchContentCatalogs catalogs;
         private readonly AdjacentMoveAuthority board;
         private readonly RoundResolutionAuthority round;
+        private readonly CardActionResolutionAuthority actions;
         private readonly QuickGameMinionSetupState[] minions;
 
         internal WukRound(
@@ -59,7 +63,9 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyList<HexCoordinate> enemyMinionsAt = null,
             IReadOnlyList<HexCoordinate> friendlyMinionsAt = null,
             IReadOnlyList<HexCoordinate> treesAt = null,
-            IReadOnlyList<HexCoordinate> enemyRocksAt = null)
+            IReadOnlyList<HexCoordinate> enemyRocksAt = null,
+            bool battleZone = false,
+            IReadOnlyList<(HeroId Hero, TeamSide Side, RuleModification Modification)> standingEffects = null)
         {
             var participants = Participants(enemyAllyAt.HasValue, allyAt.HasValue);
             var spaces = (from q in Enumerable.Range(-5, 11)
@@ -91,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
 
             minions = placed.ToArray();
             board = new AdjacentMoveAuthority(
-                BoardMapDefinition.CreateSynthetic(Map, 1, spaces), heroes,
+                battleZone ? BattleZoneMap(spaces) : BoardMapDefinition.CreateSynthetic(Map, 1, spaces), heroes,
                 Array.Empty<ObstacleOccupancy>(), minions);
             foreach (var at in treesAt ?? Array.Empty<HexCoordinate>())
             {
@@ -153,15 +159,32 @@ namespace GuardsDigital.Tests.EditMode
                 new ComponentDefinitionCatalog(
                     WukComponentContent.Tokens().Concat(MrakComponentContent.Tokens()),
                     Array.Empty<MarkerDefinition>()),
-                new TriggeredEffectCatalog(withUltimate
-                    ? WukCardContent.TriggeredEffects()
-                    : (IReadOnlyList<EffectDefinition>)Array.Empty<EffectDefinition>()));
+                new TriggeredEffectCatalog(WukCardContent.TriggeredEffects()));
+            // Milestone 8.114b1. Effects already standing when the round's first action starts - an
+            // immunity or a Movement raise - built as the match builds one, active from that start.
+            var timing = new ActiveEffectLifecycle();
+            var standing = 0;
+            foreach (var (hero, side, modification) in
+                     standingEffects ?? Array.Empty<(HeroId, TeamSide, RuleModification)>())
+            {
+                var id = "wuk-standing-" + standing++;
+                timing.Create(new ActiveEffectId(id),
+                    new ActiveEffectDefinition(id + "-effect", ActiveEffectAffectedScopeKind.ControllerHero,
+                        ActiveEffectDurationKind.ThisRound, TimingCheckpoint.ActionStarted,
+                        TimingCheckpoint.ActionStarted, TimingCheckpoint.RoundEnd,
+                        new[] { ActiveEffectCancellationCondition.CardsRetrieved }, false,
+                        "WukStanding", id, Array.Empty<TimingCheckpoint>(), new[] { modification }),
+                    hero, side, default, new CardInstanceId(id + "-card"),
+                    new ActionDefinitionId(id + "-action"), 1, 1);
+            }
+
             var markers = new MarkerAttachmentRegister();
-            var actions = new CardActionResolutionAuthority(catalogs, board, markers);
+            actions = new CardActionResolutionAuthority(catalogs, board, markers);
             round = new RoundResolutionAuthority(
                 definitions, instances, participants, new TieBreakerState(TeamSide.Red), 1,
-                new RoundResolutionComposition(actions, board, new ActiveEffectLifecycle(),
-                    markers, null, null, null, null, null, null));
+                new RoundResolutionComposition(actions, board, timing,
+                    markers, null, null, null, null, null, null,
+                    startingCoins: new HeroCoinLedger(participants).CaptureRestoreState()));
             Assert.That(round.TryCommitCard(Wuk, source.Id).Accepted, Is.True);
             foreach (var (hero, card) in holds)
             {
@@ -170,6 +193,95 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(Turn.SelectedActor.ActorId, Is.EqualTo(Wuk));
         }
+
+        /// <summary>
+        /// Milestone 8.114b1. The same board with every space in one starting Battle Zone, so p.8's
+        /// Minion Battle counts every minion placed.
+        /// </summary>
+        private static BoardMapDefinition BattleZoneMap(IEnumerable<HexCoordinate> spaces)
+        {
+            var zone = new BoardMapZone(new ZoneId("wuk-battle-zone"), "Wuk Battle Zone", "lane", null, false, true);
+            return new BoardMapDefinition(Map, 1, Map.Value,
+                spaces.Select(at => new BoardMapSpace(
+                    new SpaceId($"q{at.Q}_r{at.R}"), at, BoardMapSpaceKind.Playable, zone.Id)),
+                new[] { zone }, Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
+        }
+
+        internal AdjacentMoveAuthority Board => board;
+
+        internal RoundResolutionAuthority Round => round;
+
+        /// <summary>The question an end-of-round trigger stopped on, or null.</summary>
+        internal PendingEffectChoice EndOfRoundChoice => actions.PendingEffectChoice;
+
+        /// <summary>
+        /// Milestone 8.114b1. Ends the turn Wuk just acted in, holds every later actor of turn one,
+        /// passes turns two to four, and offers p.8's Minion Battle stage once - which stops on a
+        /// pre-battle trigger's question when there is one.
+        /// </summary>
+        internal RoundResolutionResult RunToMinionBattle()
+        {
+            var heroes = instances.Select(card => card.OwnerId).Distinct().ToArray();
+            for (var guard = 0; round.Phase != RoundResolutionPhase.EndOfRound && guard < 64; guard++)
+            {
+                if (round.Phase == RoundResolutionPhase.ResolvingTurn)
+                {
+                    if (round.CurrentTurnAuthority.PendingTurnRelease != null)
+                    {
+                        Assert.That(round.TryReleaseTurn().Accepted, Is.True);
+                        continue;
+                    }
+
+                    Assert.That(round.TryPerformHold(
+                        round.CurrentTurnAuthority.SelectedActor.CardInstanceId).Accepted, Is.True);
+                    continue;
+                }
+
+                // p.7: a hero with a card to commit commits one; a hero with none passes.
+                foreach (var hero in heroes)
+                {
+                    if (round.Phase != RoundResolutionPhase.AwaitingCommitments) break;
+                    if (round.TryPass(hero).Accepted) continue;
+                    foreach (var card in instances.Where(card =>
+                                 card.OwnerId.Equals(hero) && card.State.Location == CardLocation.Hand))
+                    {
+                        if (round.TryCommitCard(hero, card.Id).Accepted) break;
+                    }
+                }
+            }
+
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
+            Assert.That(round.CurrentEndOfRoundStage, Is.EqualTo(EndOfRoundStage.MinionBattle));
+            return round.TryAdvanceEndOfRound();
+        }
+
+        /// <summary>Answers the pre-battle question with exactly these minions (none is an answer).</summary>
+        internal void AnswerEndOfRound(params MinionId[] chosen) => AnswerEndOfRound(round, actions, chosen);
+
+        internal static void AnswerEndOfRound(
+            RoundResolutionAuthority target, CardActionResolutionAuthority targetActions, MinionId[] chosen)
+        {
+            var asked = targetActions.PendingEffectChoice;
+            Assert.That(asked, Is.Not.Null, "a pre-battle trigger is asking");
+            foreach (var minion in chosen)
+            {
+                var open = targetActions.PendingEffectChoice;
+                Assert.That(target.TryAnswerEndOfRoundTriggerChoice(open.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Minion &&
+                    invocation.Candidate.Value.MinionId.Equals(minion))).Accepted, Is.True);
+            }
+
+            var still = targetActions.PendingEffectChoice;
+            if (still != null && still.ChoiceId.Equals(asked.ChoiceId) && still.ConfirmInvocation != null)
+            {
+                Assert.That(target.TryAnswerEndOfRoundTriggerChoice(still.ConfirmInvocation).Accepted, Is.True);
+            }
+        }
+
+        /// <summary>Snapshot bytes of the live match, and a match restored from them.</summary>
+        internal string Snapshot() => AuthoritativeSnapshotSerializer.Serialize(round, board);
+
+        internal RestoredAuthoritativeMatch RestoreFrom(string bytes) => Restore(bytes);
 
         /// <summary>Red: Wuk and, when present, his friendly ally; Blue: the enemy and their ally.</summary>
         private static MatchParticipants Participants(bool withEnemyAlly, bool withAlly)
@@ -321,6 +433,48 @@ namespace GuardsDigital.Tests.EditMode
         internal void StartPrimarySkill() =>
             Assert.That(round.TryStartSkill(new ActionResolutionId("wuk-skill"),
                 Offer(WukCardContent.PrimarySkill)).Accepted, Is.True);
+
+        internal void StartPrimaryMovement() =>
+            Assert.That(round.TryStartMovement(new ActionResolutionId("wuk-move"),
+                Offer(WukCardContent.PrimaryMovement)).Accepted, Is.True);
+
+        /// <summary>The open Movement question's destinations, each with the route it walks.</summary>
+        internal ReachableMovementDestination[] Destinations() =>
+            Turn.PendingMovementChoice?.LegalDestinations.ToArray() ?? Array.Empty<ReachableMovementDestination>();
+
+        internal void MoveTo(HexCoordinate space)
+        {
+            var choice = Turn.PendingMovementChoice;
+            Assert.That(choice, Is.Not.Null, "a Movement question is open");
+            Assert.That(round.TryAnswerMovementChoice(MovementChoiceCommand.SelectDestination(
+                choice.ResolutionId, choice.ChoiceId, space)).Accepted, Is.True);
+        }
+
+        internal void StopMoving()
+        {
+            var choice = Turn.PendingMovementChoice;
+            Assert.That(choice, Is.Not.Null, "a Movement question is open");
+            Assert.That(round.TryAnswerMovementChoice(MovementChoiceCommand.Stop(
+                choice.ResolutionId, choice.ChoiceId)).Accepted, Is.True);
+        }
+
+        /// <summary>Answers the open question with exactly these minions (none is an answer).</summary>
+        internal void PickMinions(params MinionId[] chosen)
+        {
+            var asked = Turn.PendingEffectChoice;
+            Assert.That(asked, Is.Not.Null);
+            foreach (var minion in chosen)
+            {
+                Answer(Turn.PendingEffectChoice.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Minion &&
+                    invocation.Candidate.Value.MinionId.Equals(minion)));
+            }
+
+            ConfirmIfStillOpen(asked);
+        }
+
+        internal bool OnBoard(HeroId hero) =>
+            board.TryGetObjectCoordinate(BoardObjectReference.ForHero(hero), out _);
 
         /// <summary>Answers the open modal with the named bullets, then confirms if the window asks.</summary>
         internal void TakeBullets(params string[] optionNodes)

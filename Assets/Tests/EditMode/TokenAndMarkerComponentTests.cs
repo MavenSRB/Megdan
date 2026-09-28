@@ -120,7 +120,9 @@ namespace GuardsDigital.Tests.EditMode
                     captured.ObstacleOccupancies,
                     captured.RemainingMinions,
                     captured.PlacedTokens,
-                    captured.CurrentBattleZoneId),
+                    captured.CurrentBattleZoneId,
+                    captured.MinionBattleExclusions,
+                    captured.LastCompletedMovementWalk),
                 board.MapDefinition,
                 Array.Empty<QuickGameMinionSetupState>());
 

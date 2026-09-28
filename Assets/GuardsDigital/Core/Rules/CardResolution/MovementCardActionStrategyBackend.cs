@@ -71,16 +71,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private void RecordCompletedWalk(MovementSession movementSession)
         {
-            var route = movementSession.Route;
-            if (route.Count <= 2)
-            {
-                // A walk of one space, or none at all, entered and left nothing: both ends of a route
-                // are spaces the hero stood on. So there is nothing for p.18's token effects to be
-                // about, and this records nothing rather than a walk with no middle.
-                return;
-            }
-
-            completedWalkRoute = route;
+            // Milestone 8.114b1. Every completed walk is handed over, a walk of one space or none
+            // included: p.18's token effects read only its middle (empty for these), and the board's
+            // record of the last completed walk must not keep an earlier action's route.
+            completedWalkRoute = movementSession.Route;
             completedWalkHeroId = movementSession.CurrentOccupancy.HeroId;
         }
 
@@ -467,7 +461,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // exactly what the former per-space walk emitted.
             var routeSpaces = selectedDestination.Route.Skip(1).ToArray();
             var routeResult = movementSession.TryCommitRoute(
-                routeSpaces, modifications, out var committedStepStates);
+                routeSpaces, modifications, out var committedStepStates,
+                CrossesInAStraightLine(movementSession, selectedDestination, modifications));
             if (!routeResult.Accepted)
             {
                 throw new InvalidOperationException(
@@ -570,8 +565,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications)
         {
             var currentOccupancy = movementSession.CurrentOccupancy;
-            var legalDestinations = MovementReachabilityQuery.FindReachableDestinations(
-                currentOccupancy,
+            var legalDestinations = StraightLineCrossingQuery.Widen(
+                MovementReachabilityQuery.FindReachableDestinations(
+                    currentOccupancy,
+                    adjacentMoveAuthority,
+                    movementSession.RemainingAllowance,
+                    modifications),
+                movementSession.Route,
+                currentOccupancy.HeroId,
                 adjacentMoveAuthority,
                 movementSession.RemainingAllowance,
                 modifications);
@@ -587,6 +588,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 legalDestinations);
         }
 
+        /// <summary>
+        /// Milestone 8.114b1. Whether this destination's route continues the walk along one straight
+        /// line under the Trample permission - the one case its transit may pass through obstacles.
+        /// </summary>
+        private static bool CrossesInAStraightLine(
+            MovementSession session,
+            ReachableMovementDestination destination,
+            RuleModificationSet modifications) =>
+            StraightLineCrossingQuery.Permits(session.CurrentOccupancy.HeroId, modifications) &&
+            StraightLineCrossingQuery.IsStraightWalk(session.Route, destination.Route);
+
         private bool TryValidateDestinationRoute(
             MovementSessionState movementState,
             ReachableMovementDestination destination,
@@ -600,7 +612,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var validationAuthority = adjacentMoveAuthority.CreateValidationFork();
             var validationSession = new MovementSession(validationAuthority, movementState);
             var stepResult = validationSession.TryCommitRoute(
-                destination.Route.Skip(1).ToArray(), modifications);
+                destination.Route.Skip(1).ToArray(), modifications, out _,
+                CrossesInAStraightLine(validationSession, destination, modifications));
             if (!stepResult.Accepted)
             {
                 rejectedStep = stepResult;

@@ -27,8 +27,9 @@ namespace GuardsDigital.Core.Cards.Verified
     /// bullet; Abundance's "Choose one or both" takes one or both, and the two bullets name
     /// different heroes by construction.</para>
     ///
-    /// <para>Claim and Assert Dominance are composed by this block's second half. Nothing here is
-    /// registered until 8.114f deals him.</para>
+    /// <para>Claim and Assert Dominance (milestone 8.114b1) are Skills with no printed value whose
+    /// text creates <see cref="WukDominanceContent"/>'s This Round effect. Nothing here is registered
+    /// until 8.114f deals him.</para>
     /// </summary>
     public static class WukBlueFaces
     {
@@ -49,6 +50,14 @@ namespace GuardsDigital.Core.Cards.Verified
             "Remove a Tree token in radius. Choose one or both - • You may retrieve a discarded card. " +
             "• A friendly hero in radius may retrieve a discarded card.";
 
+        public const string ClaimDominanceText =
+            "This round: Up to 1 enemy minion adjacent to you does not count towards the minion " +
+            "total during minion battle, regardless of immunity.";
+
+        public const string AssertDominanceText =
+            "This round: Up to 2 enemy minions adjacent to you do not count towards the minion " +
+            "total during minion battle, regardless of immunity.";
+
         public const string TreeNode = "blue-tree";
         public const string ModalNode = "blue-modal";
         public const string SelfBulletNode = "blue-self-bullet";
@@ -68,6 +77,41 @@ namespace GuardsDigital.Core.Cards.Verified
                 Face(Abundance, "Abundance", CardTier.III, 9, 6, 4, PrintedValueChannel.Range,
                     Array.Empty<CardDefinitionId>(), 2, AbundanceText)
             }));
+
+        /// <summary>Claim and Assert Dominance, in inventory order.</summary>
+        public static IReadOnlyList<CardDefinition> DominanceDefinitions => LazyDominance.Value;
+
+        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyDominance =
+            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
+            {
+                DominanceFace(ClaimDominance, "Claim Dominance", CardTier.II, PrintedValueChannel.Initiative,
+                    new[] { Abundance, AssertDominance }, WukDominanceContent.ClaimDominanceV1,
+                    ClaimDominanceText),
+                DominanceFace(AssertDominance, "Assert Dominance", CardTier.III, PrintedValueChannel.Movement,
+                    Array.Empty<CardDefinitionId>(), WukDominanceContent.AssertDominanceV1,
+                    AssertDominanceText)
+            }));
+
+        /// <summary>Initiative 9, Defense 6, Movement 2; a Skill with no printed Radius.</summary>
+        private static CardDefinition DominanceFace(
+            CardDefinitionId card, string title, CardTier tier, PrintedValueChannel item,
+            IReadOnlyList<CardDefinitionId> next, EffectCapabilityReference capability, string text) =>
+            new CardDefinition(
+                card, WukCardContent.ContentRevision, title, new InitiativeValue(9),
+                CardContentAuthority.VerifiedOfficial,
+                CardProgressionProfile.NonBasicCard(CardColor.Blue, tier, item, next),
+                new[]
+                {
+                    new ActionDefinition(
+                        WukCardContent.PrimarySkill, ActionKind.Skill, ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None, default,
+                        WukDominanceContent.SkillText(card, capability)),
+                    WukCardContent.Movement(2),
+                    WukCardContent.Defense(6)
+                },
+                null, CardSourceContent.Transcribed(text));
 
         /// <param name="bullets">0 for Gifts' single sentence, else the modal's most selections.</param>
         private static CardDefinition Face(

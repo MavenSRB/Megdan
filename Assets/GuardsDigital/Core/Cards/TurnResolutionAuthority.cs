@@ -1278,8 +1278,8 @@ namespace GuardsDigital.Core.Cards
 
         private bool DeclaresTextAfterTheMovement(ActionOffer offer) =>
             ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
-            action.CardTextTiming == CardTextTiming.AfterTheMovement &&
-            action.EffectRoot != null;
+            action.Kind == ActionKind.Movement &&
+            action.CardTextAt(CardTextTiming.AfterTheMovement) != null;
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
         {

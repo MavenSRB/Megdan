@@ -20,8 +20,9 @@ namespace GuardsDigital.Core.Cards.Verified
     /// around the candidate within the printed Range with p.16's items. Champion's two sequences
     /// are two full p.14 Attacks on different targets - Dodger's D-06 and Bain's composition.</para>
     ///
-    /// <para><b>The trampling moves</b> - Trample and Angry Stampede - are composed by this block's
-    /// second half.</para>
+    /// <para><b>The trampling moves</b> - Trample and Angry Stampede (milestone 8.114b1) - are
+    /// Movement 4 primaries printing text either side of the walk; <see cref="WukTrampleContent"/>
+    /// states both bodies.</para>
     ///
     /// <para>Nothing here is registered until 8.114f deals him.</para>
     /// </summary>
@@ -40,6 +41,49 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string ChampionText =
             "Choose one, or both, on different targets - • Target a hero adjacent to you. • Target a " +
             "unit in range adjacent to a Tree token.";
+
+        public const string TrampleText =
+            "If you move in a straight line: You may ignore obstacles; each enemy hero you moved " +
+            "through discards a card, or is defeated; defeat up to one minion you moved through.";
+
+        public const string AngryStampedeText =
+            "If you move in a straight line: You may ignore obstacles; each enemy hero you moved " +
+            "through discards a card, or is defeated; defeat up to two minions you moved through.";
+
+        /// <summary>Trample and Angry Stampede, in inventory order.</summary>
+        public static IReadOnlyList<CardDefinition> TrampleDefinitions => LazyTrample.Value;
+
+        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyTrample =
+            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
+            {
+                Trampling(Trample, "Trample", CardTier.II, 7, PrintedValueChannel.Defense,
+                    new[] { NaturesChampion, AngryStampede }, 1, TrampleText),
+                Trampling(AngryStampede, "Angry Stampede", CardTier.III, 8, PrintedValueChannel.Radius,
+                    Array.Empty<CardDefinitionId>(), 2, AngryStampedeText)
+            }));
+
+        /// <summary>Defense 7 on the ribbon and no secondary Movement: the Movement is the primary.</summary>
+        private static CardDefinition Trampling(
+            CardDefinitionId card, string title, CardTier tier, int initiative, PrintedValueChannel item,
+            IReadOnlyList<CardDefinitionId> next, int mostMinions, string text) =>
+            new CardDefinition(
+                card, WukCardContent.ContentRevision, title, new InitiativeValue(initiative),
+                CardContentAuthority.VerifiedOfficial,
+                CardProgressionProfile.NonBasicCard(CardColor.Red, tier, item, next),
+                new[]
+                {
+                    new ActionDefinition(
+                        WukCardContent.PrimaryMovement, ActionKind.Movement, ActionDefinitionOrigin.PrintedPrimary,
+                        new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 4) },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None, default,
+                        WukTrampleContent.BeforeText(card),
+                        cardTextTiming: CardTextTiming.BeforeTheMovement,
+                        secondCardTextRoot: WukTrampleContent.AfterText(card, mostMinions),
+                        secondCardTextTiming: CardTextTiming.AfterTheMovement),
+                    WukCardContent.Defense(7)
+                },
+                null, CardSourceContent.Transcribed(text));
 
         public const string NatureModalNode = "nature-modal";
         public const string NatureAdjacentBulletNode = "nature-adjacent-bullet";

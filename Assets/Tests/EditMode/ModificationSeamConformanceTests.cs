@@ -847,6 +847,17 @@ namespace GuardsDigital.Tests.EditMode
                         RuleObject.ForHero(fixture.Red),
                         fixture),
                     fixture.ReadReachableDestinations),
+                // Milestone 8.114b1. Wuk's Trample: obstacles are crossed only along a straight walk,
+                // read on the Movement action's offered destinations.
+                new ConsumptionCase(
+                    "Permission/MoveThroughObstaclesInAStraightLine",
+                    "StraightLineCrossingQuery.Widen",
+                    Declaring(
+                        RuleModification.ForPermission(
+                            RulePermissionKind.MoveThroughObstaclesInAStraightLine, RuleActivity.Movement),
+                        RuleObject.ForHero(fixture.Red),
+                        fixture),
+                    fixture.ReadStraightLineDestinations),
                 // Milestone 8.112c. Mrak's Stone Carapace and Rock Solid grant their OWN resolved card
                 // as a substitute: the discard handlers read the first grant through the substitution
                 // query, and p.14's Defense window reads the second through its offer query.
@@ -1257,6 +1268,13 @@ namespace GuardsDigital.Tests.EditMode
             public string ReadReachableDestinations(RuleModificationSet modifications) =>
                 MovementReachabilityQuery.FindReachableDestinations(
                         RedAt, RuleObject.ForHero(Red), Board, 3, modifications)
+                    .Count.ToString(CultureInfo.InvariantCulture);
+
+            public string ReadStraightLineDestinations(RuleModificationSet modifications) =>
+                StraightLineCrossingQuery.Widen(
+                        MovementReachabilityQuery.FindReachableDestinations(
+                            RedAt, RuleObject.ForHero(Red), Board, 3, modifications),
+                        new[] { RedAt }, Red, Board, 3, modifications)
                     .Count.ToString(CultureInfo.InvariantCulture);
 
             public string ReadEffectiveBattleZoneMinions(RuleModificationSet modifications) =>

@@ -885,17 +885,20 @@ namespace GuardsDigital.Tests.EditMode
         // 8.112g re-pins all nine for dealing Mrak: his eight capabilities and rock token definition
         // join the recorded registration lists - the same +293 bytes the sibling corpus measures on all
         // sixteen captures. No scenario plays Mrak; the three groups still hold.
+        // 8.114b1 re-pins all nine for schema v47: the board section now writes its Minion-Battle
+        // exclusions and its last completed Movement walk. No scenario plays Wuk; the moved bytes are
+        // that section's, and the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "e9f1ee71e7e3664de8483280428730a30428f315a9614f3753a78b4e1237f969", "f80fe26efa64eabe9177b10644bbe71d1126088ef60a3c6e1dc9f35c79d0e52c"),
-            new ScenarioDigest("rejected", "e9f1ee71e7e3664de8483280428730a30428f315a9614f3753a78b4e1237f969", "f80fe26efa64eabe9177b10644bbe71d1126088ef60a3c6e1dc9f35c79d0e52c"),
-            new ScenarioDigest("stale", "e9f1ee71e7e3664de8483280428730a30428f315a9614f3753a78b4e1237f969", "f80fe26efa64eabe9177b10644bbe71d1126088ef60a3c6e1dc9f35c79d0e52c"),
-            new ScenarioDigest("restored", "e9f1ee71e7e3664de8483280428730a30428f315a9614f3753a78b4e1237f969", "f80fe26efa64eabe9177b10644bbe71d1126088ef60a3c6e1dc9f35c79d0e52c"),
-            new ScenarioDigest("replayed", "e9f1ee71e7e3664de8483280428730a30428f315a9614f3753a78b4e1237f969", "f80fe26efa64eabe9177b10644bbe71d1126088ef60a3c6e1dc9f35c79d0e52c"),
-            new ScenarioDigest("undo-truncated", "73926cef8c5317f4a4d8b0800832d01fc3a1a999ded0296013efc69f6a91709c", "05f85e57b2832e37b040133974c3b52c7e5756ddf4f2a747677e0957791492fa"),
-            new ScenarioDigest("defense-discarded", "2bcb895e532de6ebc85661a64e18c0525c84b8631b49b7850ab87eccd9dc3dab", "d828f0f97e95890dbf96dd5d7e3d31f010b3d317aaee6e41be10c1636795ef4a"),
-            new ScenarioDigest("defense-discarded-restored", "2bcb895e532de6ebc85661a64e18c0525c84b8631b49b7850ab87eccd9dc3dab", "d828f0f97e95890dbf96dd5d7e3d31f010b3d317aaee6e41be10c1636795ef4a"),
-            new ScenarioDigest("defense-discarded-replayed", "2bcb895e532de6ebc85661a64e18c0525c84b8631b49b7850ab87eccd9dc3dab", "d828f0f97e95890dbf96dd5d7e3d31f010b3d317aaee6e41be10c1636795ef4a"),
+            new ScenarioDigest("accepted", "073b0c3307f330dc82cb3c4b9744828a4eca4f18967c0657821709efb03ca5ae", "4be2d39e3bcd75d6fbd6f0a02c5fddf9d80750081137b4ad9944a7b744ce301a"),
+            new ScenarioDigest("rejected", "073b0c3307f330dc82cb3c4b9744828a4eca4f18967c0657821709efb03ca5ae", "4be2d39e3bcd75d6fbd6f0a02c5fddf9d80750081137b4ad9944a7b744ce301a"),
+            new ScenarioDigest("stale", "073b0c3307f330dc82cb3c4b9744828a4eca4f18967c0657821709efb03ca5ae", "4be2d39e3bcd75d6fbd6f0a02c5fddf9d80750081137b4ad9944a7b744ce301a"),
+            new ScenarioDigest("restored", "073b0c3307f330dc82cb3c4b9744828a4eca4f18967c0657821709efb03ca5ae", "4be2d39e3bcd75d6fbd6f0a02c5fddf9d80750081137b4ad9944a7b744ce301a"),
+            new ScenarioDigest("replayed", "073b0c3307f330dc82cb3c4b9744828a4eca4f18967c0657821709efb03ca5ae", "4be2d39e3bcd75d6fbd6f0a02c5fddf9d80750081137b4ad9944a7b744ce301a"),
+            new ScenarioDigest("undo-truncated", "4793facea6a2dbe817e2e3ade829809bf039715050e8e45f03f3a6fad2ffdd2d", "6b2c9aae2bf2013a1595c1de37bb66f4fad355f9a8461bc54393f6347c70ea99"),
+            new ScenarioDigest("defense-discarded", "a548dfa6f332403d6222240dc1cf713cd2b9909ff8843c2436a90052b06bddcb", "21f020fe32d3be146696e971d9c7033dfcf51e8bee42e751a86d0e49c103cddc"),
+            new ScenarioDigest("defense-discarded-restored", "a548dfa6f332403d6222240dc1cf713cd2b9909ff8843c2436a90052b06bddcb", "21f020fe32d3be146696e971d9c7033dfcf51e8bee42e751a86d0e49c103cddc"),
+            new ScenarioDigest("defense-discarded-replayed", "a548dfa6f332403d6222240dc1cf713cd2b9909ff8843c2436a90052b06bddcb", "21f020fe32d3be146696e971d9c7033dfcf51e8bee42e751a86d0e49c103cddc"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

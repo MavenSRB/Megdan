@@ -287,7 +287,7 @@ namespace GuardsDigital.Core.Snapshots
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
             var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
-                currentBattleZoneId) = board.CaptureRestoreState();
+                currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
 
@@ -331,6 +331,26 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(token.ControllerHeroId.Value ?? string.Empty);
                 writer.Write(token.SourceCardInstanceId.Value ?? string.Empty);
                 WriteCoordinate(writer, token.Coordinate);
+            }
+
+            // Milestone 8.114b1, schema v47. This round's Minion-Battle exclusions (Wuk's Dominance)
+            // and the last completed Movement action walk (Trample's "moved through"). Both are board
+            // facts a later command reads, so both ride the board rather than a card's own state.
+            writer.Write(minionBattleExclusions.Count);
+            foreach (var minion in minionBattleExclusions.OrderBy(value => value.Value, StringComparer.Ordinal))
+            {
+                writer.Write(minion.Value);
+            }
+
+            writer.Write(lastCompletedMovementWalk != null);
+            if (lastCompletedMovementWalk != null)
+            {
+                writer.Write(lastCompletedMovementWalk.Mover.Value);
+                writer.Write(lastCompletedMovementWalk.Route.Count);
+                foreach (var space in lastCompletedMovementWalk.Route)
+                {
+                    WriteCoordinate(writer, space);
+                }
             }
         }
 
@@ -407,9 +427,30 @@ namespace GuardsDigital.Core.Snapshots
                     sourceCard,
                     ReadCoordinate(reader));
             });
+            var exclusions = ReadMany(reader, "minion battle exclusions", () => new MinionId(reader.ReadString()));
+            if (exclusions.Distinct().Count() != exclusions.Length ||
+                exclusions.Any(value => availableMinions.Count(minion => minion.MinionId.Equals(value)) != 1))
+            {
+                throw Malformed("Snapshot minion-battle exclusions do not name distinct configured minions.");
+            }
+
+            GuardsDigital.Core.Rules.AdjacentMove.CompletedMovementWalk lastWalk = null;
+            if (reader.ReadBoolean())
+            {
+                var mover = new HeroId(reader.ReadString());
+                var route = ReadMany(reader, "completed movement walk", () => ReadCoordinate(reader));
+                if (!mover.IsDefined || route.Length < 1)
+                {
+                    throw Malformed("Snapshot completed movement walk must name a hero and at least one space.");
+                }
+
+                lastWalk = new GuardsDigital.Core.Rules.AdjacentMove.CompletedMovementWalk(mover, route);
+            }
+
             return AdjacentMoveAuthority.Restore(
                 new BoardRestoreState(
-                    heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId),
+                    heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId,
+                    exclusions, lastWalk),
                 mapDefinition,
                 availableMinions);
         }

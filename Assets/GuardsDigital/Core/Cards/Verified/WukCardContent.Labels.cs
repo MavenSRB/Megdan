@@ -9,7 +9,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="DecisionLabelRequirementQuery"/> over his dealt faces (the test asserts the two sets are
     /// equal), and joined to <see cref="DecisionLabelCatalog"/> at the dealing (8.114f), on the rule every
     /// hero's table follows: a table is for a window over a card a match deals. The trampling moves
-    /// (8.114b1) and Dominance (8.114c1) add theirs when they are composed.
+    /// and Dominance (8.114b1) raise no control that needs words: their questions are selections.
     /// </summary>
     public static partial class WukCardContent
     {
