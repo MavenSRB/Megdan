@@ -93,13 +93,15 @@ Acceptance: configured rounds prove straight versus curved walks, passing throug
 
 Paused 2026-09-28 on WU-Q5 ([his shard](../Rules/HERO_WUK.md#open-questions)): the two buildable readings differ in what counts as his Movement action, which is the user's call. 8.114c-8.114e do not depend on it and proceed; 8.114f cannot deal him until this step is complete.
 
-### [ ] 8.114c1 Implement Claim and Assert Dominance
+### [!] 8.114c1 Implement Claim and Assert Dominance
 
 Outcome: a This round effect whose pre-battle trigger lets Wuk choose up to one (two) enemy minions adjacent to him at that moment, regardless of immunity (WU-Q3); the chosen minions do not count towards the minion total when the battle is planned. The choice is persisted until the battle is planned (snapshot schema move).
 
 Acceptance: a minion battle whose result changes by the exclusion, a minion that moved away counting, the choice drawn for Wuk's seat, immune minions excludable, the exclusion gone after the round, snapshot restore between the choice and the battle, and the schema migration's corpus evidence. T3 (schema). Unregistered until 8.114f.
 
 Reordered 2026-09-28 within the approved sequence: 8.114b1 and 8.114c1 both need state persisted across a snapshot that nothing persists today, so they run together after 8.114e, where one snapshot schema move can serve both once WU-Q5 is answered.
+
+Paused 2026-09-28 on WU-Q6 ([his shard](../Rules/HERO_WUK.md#open-questions)) and on the shared migration: the last schema move (8.93e, v45 to v46) also moved the private protocol and a dozen pinned fixtures, so doing it for 8.114c1 alone and again for 8.114b1's reading (A) would be the same migration twice. Both steps resume together once WU-Q5 and WU-Q6 are answered.
 
 ### [ ] 8.114f Deal Wuk and present his artwork
 
