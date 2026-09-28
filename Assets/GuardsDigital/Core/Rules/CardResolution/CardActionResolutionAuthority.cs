@@ -3769,6 +3769,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     roundIndex,
                     turnIndex),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
+            // Milestone 8.116. Whether this answer is the defender's forced Movement action (Whisper
+            // Ruling 16b), and where that hero stood before it - read before the answer moves them.
+            var forcedMove = ForcedMovementBeingAnswered(pendingCardText, effectRoot, materializedDefinitions);
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {
@@ -3872,6 +3875,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
                     materializedDefinitions, instances, participants, timing, tieBreaker,
                     roundIndex, turnIndex, facts))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
+
+            // Milestone 8.116, Whisper Ruling 16c: the forced mover's own after-Movement-action
+            // triggers run right after the move, before the rest of the attacker's page.
+            if (forcedMove.Mover.IsDefined && step.IsComplete &&
+                RunCardTextForcedMovementTrigger(
+                    forcedMove, paused.Frame.SourceCardInstanceId, paused.Frame.ActionDefinitionId,
+                    paused.Moment, paused.Attack, paused.Outcome, materializedDefinitions,
+                    materializedInstances, participants, timing, tieBreaker, roundIndex, turnIndex, facts))
             {
                 return CardActionResolutionResult.Accept(false, null, null, facts);
             }
@@ -5493,6 +5507,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CardActionResolutionResult.Accept(false, null, null, steps);
             }
 
+            if (standing.Kind == EffectInterruptKind.AfterForcedMovementTrigger && step.BorrowRequested.IsRequested)
+            {
+                // Milestone 8.116. The moved hero took Dragon Knight's "may": their borrowed primary is
+                // owed now, performed on their own seat, while the attacker's page stays parked behind
+                // it (pendingCardTextAwaitingInterrupt) until it finishes.
+                RecordOwedBorrowedAction(step.BorrowRequested, standing.Frame.ActorId);
+                owedBorrowedActionGrantSourceId = standing.Frame.ActionDefinitionId.Value;
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
             if (standing.Kind == EffectInterruptKind.AfterResolvedCardDiscardTrigger && step.BorrowRequested.IsRequested)
             {
                 // The trigger is finished; the ordinary borrow stack now suspends the interrupted
@@ -5506,20 +5530,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // p.14's card text, so what it interrupted is the rest of the page. It is handed back
             // through the same generator that emits it when nothing paused at all, which is what keeps
             // a page stopped by a trigger and a page never stopped producing the one same order.
-            var owedRemainder = pendingCardTextAwaitingInterrupt;
-            if (owedRemainder != null)
+            if (pendingCardTextAwaitingInterrupt != null)
             {
-                pendingCardTextAwaitingInterrupt = null;
-                steps.AddRange(
-                    owedRemainder.Moment == CardTextTiming.BeforeTheAttack
-                        ? ResumeAttackAfterBeforeText(
-                            default, null, boundary.Definitions, boundary.Instances,
-                            boundary.Participants,
-                            CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
-                        : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                            owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome,
-                            theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(
-                                owedRemainder.Attack)));
+                steps.AddRange(ResumeParkedCardTextPage(boundary));
                 return CardActionResolutionResult.Accept(true, null, null, steps);
             }
 
@@ -5694,6 +5707,178 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ? null
                 : new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
             return pendingCardTextAwaitingInterrupt != null;
+        }
+
+        /// <summary>
+        /// Hands back the rest of rulebook p.14's page a card-text trigger parked, through the same
+        /// generator that emits it when nothing paused. Milestone 8.116 lets the turn call it too,
+        /// once a borrowed action performed between the trigger and the page has finished.
+        /// </summary>
+        internal IReadOnlyList<ResolutionStep> ResumeParkedCardTextPage(ActionBoundaryContext boundary)
+        {
+            var owedRemainder = pendingCardTextAwaitingInterrupt;
+            if (owedRemainder == null)
+            {
+                return Array.Empty<ResolutionStep>();
+            }
+
+            pendingCardTextAwaitingInterrupt = null;
+            return (owedRemainder.Moment == CardTextTiming.BeforeTheAttack
+                    ? ResumeAttackAfterBeforeText(
+                        default, null, boundary.Definitions, boundary.Instances,
+                        boundary.Participants,
+                        CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
+                    : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
+                        owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome,
+                        theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(
+                            owedRemainder.Attack)))
+                .ToArray();
+        }
+
+        /// <summary>Milestone 8.116. The forced mover and their defended card, or default.</summary>
+        private readonly struct ForcedMovement
+        {
+            public ForcedMovement(HeroId mover, CardInstanceId defendedCard, HexCoordinate from)
+            {
+                Mover = mover;
+                DefendedCard = defendedCard;
+                From = from;
+            }
+
+            public HeroId Mover { get; }
+            public CardInstanceId DefendedCard { get; }
+            public HexCoordinate From { get; }
+        }
+
+        /// <summary>
+        /// Milestone 8.116. Whether the question card text is standing on is the defender's forced
+        /// Movement action (<c>defended-card-forced-move@1</c>), read off the node itself - never off
+        /// which card is printing it.
+        /// </summary>
+        private ForcedMovement ForcedMovementBeingAnswered(
+            PendingAttackCardTextResolution standing, EffectDefinition effectRoot,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var node = standing?.Frame?.PendingChoice?.NodeId ?? default;
+            if (!node.IsDefined || board == null || !effectRoot.TryGetNode(node, out var definition) ||
+                !definition.Capability.IsDefined ||
+                !definition.Capability.Equals(
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities.DefendedCardForcedMoveV1))
+            {
+                return default;
+            }
+
+            var attack = EnclosingAttackOf(standing.Attack, definitions, board);
+            if (!attack.HeroTargetId.IsDefined || !attack.DefenseCardInstanceId.IsDefined ||
+                !board.TryGetHeroCoordinate(attack.HeroTargetId, out var from))
+            {
+                return default;
+            }
+
+            return new ForcedMovement(attack.HeroTargetId, attack.DefenseCardInstanceId, from);
+        }
+
+        /// <summary>
+        /// Milestone 8.116, Whisper Rulings 16b-16c. The forced move is the defending hero's Movement
+        /// action, so that hero's "each time after you perform a movement action" Ultimate (Widget's
+        /// Dragon Knight) runs right after it - as an interrupt of the attacker's page, which stays
+        /// parked until the trigger (and any action it grants) has finished.
+        /// </summary>
+        /// <returns>Whether the page is parked behind a standing trigger or an owed borrowed action.</returns>
+        private bool RunCardTextForcedMovementTrigger(
+            ForcedMovement forced,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            CardTextTiming moment,
+            PendingAttackResolution remainderAttack,
+            AttackResolutionOutcome remainderOutcome,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
+            List<ResolutionStep> steps)
+        {
+            if (pendingCardText != null || board == null || remainderAttack == null ||
+                !board.TryGetHeroCoordinate(forced.Mover, out var now) || now.Equals(forced.From))
+            {
+                return false;
+            }
+
+            var defended = instances.SingleOrDefault(card => card.Id.Equals(forced.DefendedCard));
+            var movementAction = defended == null
+                ? null
+                : definitions.SingleOrDefault(definition => definition.Reference.Equals(defended.DefinitionReference))?
+                    .ActionDefinitions.FirstOrDefault(action => action.Kind == ActionKind.Movement);
+            if (movementAction == null)
+            {
+                return false;
+            }
+
+            var boundary = new ActionBoundaryContext(
+                definitions, instances, participants, timing, tieBreaker, roundIndex, turnIndex);
+            var sources = GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances),
+                board, participants, default,
+                movementAction: PerformedMovementAction.ForCompletedAction(
+                    forced.Mover, forced.DefendedCard, movementAction.Id, ActionKind.Movement));
+            var interrupted = new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                $"card-text-{sourceCardInstanceId.Value}-{actionDefinitionId.Value}-{moment}");
+            foreach (var source in sources)
+            {
+                if (!ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect))
+                {
+                    throw new InvalidOperationException(
+                        $"After-movement trigger effect '{source.TriggeredEffect}' is not configured.");
+                }
+
+                var context = new EffectResolutionContext(
+                    effect, ContentCatalogs.Capabilities, participants, timing, roundIndex, turnIndex,
+                    CurrentModificationsFor(boundary, source.ControllerHeroId),
+                    EffectCardState.Of(definitions, instances), ActionKind.Skill,
+                    components: components, heroItems: skillBackend.HeroItems, rosterState: rosterState,
+                    tieBreakerRevealedSide: LiveTieBreakerSide);
+                var step = EffectResolutionSession.Start(
+                    new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                        interrupted.Value + ":forced-movement:" + source.SourceId),
+                    source.SourceCardInstanceId, source.SourceDefinitionReference,
+                    source.SourceActionDefinitionId, source.ControllerHeroId, source.ControllerHeroId,
+                    ActionInvocationContext.PrintedPrimary, context);
+                if (!step.Accepted)
+                {
+                    throw new InvalidOperationException(
+                        "A configured after-movement trigger was refused by its own effect frame.");
+                }
+
+                steps.AddRange(PreActionFacts(step, source.SourceCardInstanceId,
+                    source.SourceActionDefinitionId, source.ControllerHeroId, CardTextTiming.None));
+                if (step.IsComplete)
+                {
+                    if (!step.BorrowRequested.IsRequested)
+                    {
+                        continue;
+                    }
+
+                    RecordOwedBorrowedAction(step.BorrowRequested, source.ControllerHeroId);
+                    owedBorrowedActionGrantSourceId = source.SourceActionDefinitionId.Value;
+                }
+                else
+                {
+                    pendingEffectInterrupt = new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                        step.Frame,
+                        GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind.AfterForcedMovementTrigger,
+                        RuleObject.ForHero(forced.Mover),
+                        interrupted);
+                }
+
+                pendingCardTextAwaitingInterrupt =
+                    new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

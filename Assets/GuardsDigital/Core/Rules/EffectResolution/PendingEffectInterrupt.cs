@@ -64,7 +64,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         // Milestone 8.112f. Subject is the enemy hero this run of an after-tokens-placed Ultimate
         // concerns; the heroes still owed a run by the same placing step are RemainingSubjects.
-        AfterTokensPlacedTrigger = 5
+        AfterTokensPlacedTrigger = 5,
+
+        /// <summary>
+        /// Milestone 8.116, Whisper Rulings 16b-16c. A hero was forced to perform a Movement action by
+        /// the Attack card text standing (Swift Justice's step-7 move), and that hero's own
+        /// after-Movement-action Ultimate (Widget's Dragon Knight) is running right after the move,
+        /// before the rest of the attacker's page. Subject is the moved hero.
+        /// </summary>
+        AfterForcedMovementTrigger = 6
     }
 
     /// <summary>

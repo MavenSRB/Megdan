@@ -56,6 +56,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.113 | Ignatia's magma supply corrected to four and p.18's short-supply reclaim applied to her moon placements and sun wake; revision `ignatia-8-113-rev-1`, corpus MIGRATE (+26 bytes), gate classification and a Chaos Incarnate reclaim journey. [Definition](../../Roadmap/PHASE_8.md#x-8113-correct-ignatias-magma-supply-to-four-tokens-and-apply-p18s-short-supply). | `milestone/8.113` |
 
+## Milestone 8.116 Dragon Knight forced move evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.116 | Whisper's forced move raises the defender's after-Movement-action Ultimate right after the move (Ruling 16c): Widget's Dragon Knight asks on his seat and his borrowed Skill runs inside Whisper's turn before her page resumes. [Definition](../../Roadmap/PHASE_8.md#x-8116-widgets-dragon-knight-fires-off-whispers-forced-movement-action). | `milestone/8.116` |
+
 ## Milestone 8.115 Whisper forced move evidence
 
 | Milestone | Outcome and definition | Commit |

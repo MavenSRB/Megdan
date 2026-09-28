@@ -1382,6 +1382,10 @@ namespace GuardsDigital.Core.Cards
 
             var offer = cardActions.TakeOwedBorrowedAction(
                 definitions, instances, out var resolution, out var grantSourceId, out var excludedTarget);
+            if (initiative.SelectedActor.IsDefined && !offer.ActorId.Equals(initiative.SelectedActor.ActorId))
+            {
+                consumedTurnScopedKeys.Add(OffTurnBorrowPrefix + offer.ActorId.Value);
+            }
             if (excludedTarget.IsDefined)
                 consumedTurnScopedKeys.Add(BorrowedSkillTargetScope.Key(offer.ActorId, excludedTarget));
 
@@ -2869,6 +2873,22 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
 
+            // Milestone 8.116. Another hero's granted primary has finished inside this turn: its grant
+            // stops, and the attacker's page it was parked behind is handed back and finished.
+            if (IsOffTurnBorrowRunning)
+            {
+                consumedTurnScopedKeys.RemoveWhere(key => key != null &&
+                    key.StartsWith(OffTurnBorrowPrefix, StringComparison.Ordinal));
+                ClearRunningGrant();
+                events.AddRange(MaterializeSteps(
+                    cardActions.ResumeParkedCardTextPage(new ActionBoundaryContext(
+                        definitions, instances, participants, timing, TieBreakerState, roundIndex, turnIndex)),
+                    TurnResolutionEvent.FromAttackAction));
+                return TheAttackIsOver()
+                    ? CompleteAttackOrStartItsRepeat(events)
+                    : TurnResolutionResult.Accept(events);
+            }
+
             // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
             // where it would have handed one back, so this is where its grant stops running.
             ClearRunningGrant();
@@ -3437,10 +3457,27 @@ namespace GuardsDigital.Core.Cards
         }
 
         private bool IsSelectedActionSource(CardInstanceId card, HeroId actor, ActionInvocationContext invocation) =>
-            initiative.SelectedActor.IsDefined && actor.Equals(initiative.SelectedActor.ActorId) &&
-            (card.Equals(initiative.SelectedActor.CardInstanceId) ||
-                ((invocation == ActionInvocationContext.TextGranted || invocation == ActionInvocationContext.Repeated) &&
-                    (cardActions.HasBorrowedSkillParent || HasRunningGrant)));
+            initiative.SelectedActor.IsDefined &&
+            ((actor.Equals(initiative.SelectedActor.ActorId) &&
+                (card.Equals(initiative.SelectedActor.CardInstanceId) ||
+                    ((invocation == ActionInvocationContext.TextGranted || invocation == ActionInvocationContext.Repeated) &&
+                        (cardActions.HasBorrowedSkillParent || HasRunningGrant)))) ||
+             // Milestone 8.116. The one action another hero performs inside this turn: the primary
+             // their own Ultimate granted after a forced Movement action (Whisper Ruling 16c).
+             (invocation == ActionInvocationContext.TextGranted && IsOffTurnBorrowRunningFor(actor)));
+
+        /// <summary>
+        /// Milestone 8.116. The turn-scoped key naming the hero whose granted primary is running
+        /// inside another hero's turn - kept in the shared key set so a snapshot taken while it asks a
+        /// question restores a turn that still knows whose action it is.
+        /// </summary>
+        private const string OffTurnBorrowPrefix = "off-turn-borrow:";
+
+        private bool IsOffTurnBorrowRunningFor(HeroId actor) =>
+            actor.IsDefined && consumedTurnScopedKeys.Contains(OffTurnBorrowPrefix + actor.Value);
+
+        private bool IsOffTurnBorrowRunning =>
+            consumedTurnScopedKeys.Any(key => key != null && key.StartsWith(OffTurnBorrowPrefix, StringComparison.Ordinal));
 
         /// <summary>
         /// Keeps a non-basic Movement source unresolved while its after-action trigger is waiting.
