@@ -198,9 +198,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null, "Selecting the borrowed card must actually start its action. " + Remaining(runtime));
             yield return UrsafarAuditStaging.FinishMovement();
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, "The borrowed card still applies its swap text.");
+            var afterTheMove = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
             var decline = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
             UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            // Milestone 9.4: the declined swap changes nothing - he stands where the borrowed move put him.
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate, Is.EqualTo(afterTheMove),
+                "A declined swap moves nobody. " + Remaining(runtime));
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 

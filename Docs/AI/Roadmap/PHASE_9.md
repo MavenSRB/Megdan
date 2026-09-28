@@ -32,10 +32,14 @@ Completed 2026-09-28. Three condition families join `PrintedWordingConformanceTe
 
 Historical evidence: [9.3 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-93-condition-wording-evidence).
 
-### [~] 9.4 Journeys assert outcomes, not prompts
+### [x] 9.4 Journeys assert outcomes, not prompts
 
 Outcome: every hero's player-path journeys are audited for the 8.82 shape - a question asserted and its consequence never read. Each journey that answers a card-text question asserts the board, hand, tokens or coins the printed sentence changes, including after a decline. Closing check: the audit table recorded, every prompt-only journey extended, the affected Play Mode fixtures green.
 
-### [ ] 9.5 Carry it to every future hero
+Completed 2026-09-28. `JourneyOutcomeAuditTests` scans every player-path journey (532 across the twenty-six heroes' fixtures): after its first card-text answer, some assertion must read game state - the board, a hand, a pile, tokens, coins or a value. The audit table, measured before any change: four journeys answered without reading anything. Tali's Reign of Winter journey named the first colour offered and never saw a discard; it now names a colour the enemy holds and asserts that card of that colour reached the discard pile on the enemy's own choice. Ursafar's Angry Roar and Unbound Fury journeys walked the borrowed move and then declined its text without reading the board; both now assert the declined text moved nobody. Ignatia's undo-and-replay journey is listed: its claim is the reproduced offers, and its faces' outcomes are their own journeys'. The scan is a floor, not a proof that the right state is read; the face journeys' own assertions carry that. T2; evidence in the milestone commit.
+
+Historical evidence: [9.4 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-94-journey-outcome-evidence).
+
+### [~] 9.5 Carry it to every future hero
 
 Outcome: the intake procedure and the dealing checklist name the four families, the roster-derived corpus and the outcome rule as required steps of a new hero's composition milestone; the corpus and gate fail on a new hero without them. Closing check: a documented dry run against the most recent hero, and the living-documentation validation green.

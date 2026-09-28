@@ -975,23 +975,48 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(colorCandidates, Has.Length.EqualTo(6),
                 "All six of p.9's colours are offered, RULING 21's Purple included. " +
                 Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(colorCandidates[0].Command), Is.True);
+            // Milestone 9.4: the journey names a colour the enemy really holds, so the sentence's
+            // last step - "discards a card of that colour" - is performed and read off the hand,
+            // rather than the first colour offered, which could leave nothing to discard.
+            var enemyHand = runtime.Cards
+                .Where(card => card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand)
+                .ToArray();
+            var held = enemyHand
+                .Select(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Progression.Color)
+                .Where(color => color != CardColor.None)
+                .ToArray();
+            Assert.That(held, Is.Not.Empty, "The enemy holds a coloured card to be named. " + Remaining(runtime));
+            var named = colorCandidates.First(value =>
+                (CardColor)value.Command.EffectChoice.Candidate.Value.IntegerValue == held[0]);
+            Assert.That(runtime.SubmitProjectedCommand(named.Command), Is.True);
             yield return null;
             yield return ConfirmIfStillStanding(root, StandingNode(runtime));
 
             // Question three is THEIRS: it is their hand the clause empties, and a decision owned by
             // another seat is what milestone 8.37b's narration correction is about.
-            if (runtime.PendingEffectChoice != null)
-            {
-                Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(enemyId),
-                    "\"[They] discard a card\" - it is their hand, so it is their choice. " +
-                    Remaining(runtime));
-            }
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The enemy holds a card of the named colour, so \"discards a card of that colour\" " +
+                "asks which. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(enemyId),
+                "\"[They] discard a card\" - it is their hand, so it is their choice. " +
+                Remaining(runtime));
+            var discard = runtime.RoundView.Model.EffectChoices.First(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            var discardedId = discard.Command.EffectChoice.Candidate.Value.CardInstanceId;
+            Assert.That(runtime.SubmitProjectedCommand(discard.Command), Is.True);
+            yield return null;
+            yield return null;
 
-            // "Discards a card of that colour, IF ABLE" is the mandatory final step, and this journey
-            // does not force a specific outcome: fizzling for want of a card of the named colour is
-            // exactly as correct a reading of the printed sentence as finding one. What it does force
-            // is everything above it, which is what milestone 8.37 could not reach at all.
+            var discarded = runtime.Cards.Single(card => card.Id.Equals(discardedId));
+            Assert.That(discarded.State.Location, Is.EqualTo(CardLocation.DiscardPile),
+                "The card they named left their hand for the discard pile. " + Remaining(runtime));
+            Assert.That(
+                runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(discarded.DefinitionReference)).Progression.Color,
+                Is.EqualTo(held[0]),
+                "and it is a card of the colour Tali named.");
         }
     }
 }

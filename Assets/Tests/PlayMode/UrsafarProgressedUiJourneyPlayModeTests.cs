@@ -84,9 +84,13 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
             yield return UrsafarAuditStaging.FinishMovement();
+            var afterTheMove = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
             var decline = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
             UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            // Milestone 9.4: the borrowed expired card's move happened, and its declined text changed nothing.
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate, Is.EqualTo(afterTheMove),
+                "A declined swap moves nobody. " + Remaining(runtime));
             Assert.That(runtime.PendingMovementChoice, Is.Null);
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.4 Journey outcome evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.4 | Every player-path journey that answers a card's question reads what it changed, enforced by a source scan; Tali's Reign of Winter and Ursafar's two Angry Roar journeys extended. [Definition](../../Roadmap/PHASE_9.md#x-94-journeys-assert-outcomes-not-prompts). | `milestone/9.4` |
+
 ## Milestone 9.3 Condition wording evidence
 
 | Milestone | Outcome and definition | Commit |
