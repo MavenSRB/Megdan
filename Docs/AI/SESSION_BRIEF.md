@@ -16,13 +16,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 - Current completed milestone: **8.114e**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.114f**.
+- Next proposed milestone: **8.114b1**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
 On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rockshaper**: [8.112-8.112h](Roadmap/PHASE_8_TWENTY_FIFTH_HERO.md) ([shard](Rules/HERO_MRAK.md), MR-Q1-MR-Q6 settled by the user) are complete - dealt, artworked, pickable and gated. The same-day corrective **[8.113](Roadmap/PHASE_8.md)** set Ignatia's magma supply to four with p.18's short-supply reclaim.
 
-On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g, with 8.114b1 and 8.114c1](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. **8.114** inventoried him ([his shard](Rules/HERO_WUK.md)); **8.114a** (Tree token, Mystic Saplings, Tree Slam) and **8.114b** (Red Attacks), **8.114c** (Blue retrieval), **8.114d** (Green throws and swaps) and **8.114e** (March of Nature, set reconciled) are complete; **8.114b1** (the trampling moves) and **8.114c1** (Dominance) are paused on the open WU-Q5 and WU-Q6 and resume together, sharing one snapshot schema and protocol migration; 8.114f cannot deal him until both are complete. The user settled WU-Q5 as reading (A) the same day. Also queued, not authorized: Whisper's forced move must be full distance or nothing (Ruling 16a in [her shard](Rules/HERO_WHISPER.md)); the shipped move goes as far as it can. No package is authorized.
+On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g, with 8.114b1](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. **8.114** inventoried him ([his shard](Rules/HERO_WUK.md)); **8.114a** (Tree token, Mystic Saplings, Tree Slam) and **8.114b** (Red Attacks), **8.114c** (Blue retrieval), **8.114d** (Green throws and swaps) and **8.114e** (March of Nature, set reconciled) are complete; **8.114b1** now carries the trampling moves and Dominance on one snapshot migration (WU-Q5 reading A and WU-Q6 settled by the user); 8.114f cannot deal him until it is complete. Also queued, not authorized: Whisper's forced move must be full distance or nothing (Ruling 16a in [her shard](Rules/HERO_WHISPER.md)); the shipped move goes as far as it can. No package is authorized.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
