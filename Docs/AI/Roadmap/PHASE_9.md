@@ -47,3 +47,15 @@ Outcome: the intake procedure and the dealing checklist name the four families, 
 Completed 2026-09-28. [PRINTED_WORDING](../Rules/PRINTED_WORDING.md) now closes with "Required for a new hero": read every face against the families and rulings first (a wording outside W1-W5 and R1, or with two honest readings, goes to the user), run the conformance and leash-sweep tests, register every "each" face, make every journey read what changed, and give every behaviour fix its own regression. The newest carried-lessons list, which the next dealing binds, gains lesson 17 pointing there. The mechanical half needs no step from anybody: the corpus derives from the dealt roster, every family and the journey audit run over every dealt hero, and `TheNewestDealtHero_IsHeldToEveryFamily` checks whoever was dealt last. Dry run on Wuk, the newest: 18 dealt faces and 22 bodies in the corpus, both Dominance trigger bodies walked, and 9.2's W4 check is what caught his trample offering his own minions. T1; evidence in the milestone commit. The approved Phase 9 sequence is complete.
 
 Historical evidence: [9.5 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-95-future-hero-evidence).
+
+## Offer against outcome, approved 2026-09-28
+
+Authorized 2026-09-28 by the user ("do it!") after the review of which playtest bugs 9.1-9.5 would have caught: the largest remaining family is an offer that disagrees with what the action can do - Whisper's Crimson Trail not offered when legal (8.104), Ursafar's Angry Roar offering a dormant card and fizzling (8.97), Misa's free step not offered before a Skill (8.95), Bounce's repeat never offered through Reload! (8.48). Bounded sequence 9.6 -> 9.7, one at a time with separate validation and commits.
+
+### [~] 9.6 Every offered action does something
+
+Outcome: a seeded self-play check over matches whose line-ups are drawn from every dealt hero. At each turn it copies the game once per available primary action, performs the action with a policy that takes every offered step, and records an action that leaves the board, every hand and pile, tokens, coins and Active effects exactly as they were; it also records every command the projection offered and the rules refused. Each finding is corrected with a failing-then-passing regression or listed with the printed clause that makes it legitimately empty. Closing check: the check green over its fixed seeds, every dealt hero exercised, the affected suites green.
+
+### [ ] 9.7 Every legal action is offered
+
+Outcome: the converse over the same states - an action the offer greys out is performed anyway through a test-only path, and one that can change the game is a greyed-out legal play (8.104's shape). Closing check as 9.6.
