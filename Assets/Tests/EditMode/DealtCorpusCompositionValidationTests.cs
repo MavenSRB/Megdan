@@ -159,6 +159,10 @@ namespace GuardsDigital.Tests.EditMode
                     // whole at that block, and validating him against the registered list alone reported
                     // his rock faces as naming unregistered capabilities. 8.112g discharges it.
                     .Concat(MrakComponentContent.DeferredHandlers())
+
+                    // Milestone 8.114a widens it for the TWENTY-SIXTH hero on the same terms: his
+                    // Tree placements name capabilities the gate still holds back until 8.114f.
+                    .Concat(WukComponentContent.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

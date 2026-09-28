@@ -29,13 +29,17 @@ Non-goals: gameplay code, art import or a package.
 
 Completed 2026-09-28. The nineteen fronts, both back variants, profile (three stars; Tokens, Pusher, Durable, Sniper, Tactician, Healer), stat bars, dashboard, the standee (element 8597495, filed under the name `Hanu`) and the three `Sapling` Tree faces are inventoried in [his rules shard](../Rules/HERO_WUK.md); items, Range/Radius and ribbon glyphs were verified by montage against Wasp's recorded icons. The probe found retained tokens, reclaim, up-to-N radius placement, removal, adjacency-to-kind selection, one-or-both and up-to-two-times modals, delegated retrieval, swaps, token-or-unit placement, moved-through spaces and the Minion-Battle rule catalog already in the engine; the new contracts are the Tree bullet, straight-line-conditional trampling, a battle-time minion exclusion and an any-card after-resolve trigger. WU-Q1-WU-Q4 were settled by the user before the block began. T0; no executable content or Unity run.
 
-Historical evidence: [8.114 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-inventory-evidence).
+Historical evidence: [8.114 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114a Implement the Tree token, Mystic Saplings and the Gold Tree bullet
+### [x] 8.114a Implement the Tree token, Mystic Saplings and the Gold Tree bullet
 
 Outcome: a Tree token definition (obstacle, supply 3 per WU-Q1, p.18 reclaim, retained at every round end per WU-Q2, Clear), Mystic Saplings placing up to three in Radius 3 (each face owning its reclaim node), and Tree Slam's and Makeshift Weapon's "Remove a Tree token adjacent to you. Target a unit (hero) in range" bullet beside their adjacent bullet.
 
 Acceptance: a configured round places 0-3 Trees, reclaims when short, keeps every Tree across the round end, removes one for the Gold bullet and resolves the Attack at Range 2; the Tree bullet is not offered with no adjacent Tree and the adjacent bullet still is; a paused placement restores and replays; offer and answer agree. Unregistered until 8.114f.
+
+Completed 2026-09-28. `WukComponentContent` defines the three-Tree `wuk-tree` token (bare obstacle, `RetainedAtEndOfRound` per WU-Q2) and binds the milestone 8.37 hero-token Place and short-supply handlers to it (`wuk-place-tree-in-radius@1`, `wuk-reclaim-tree@1`). `WukCardContent` composes Mystic Saplings as three optional [reclaim, place] pairs in its printed Radius 3 (Ignatia's 8.113 shape) and Tree Slam as p.10's modal bound by card text before the attack (Brogan's Throwing Axe shape): an adjacent enemy minion, or a Tree beside Wuk removed by `synthetic-remove@2` and then an enemy unit in the printed Range 2. `synthetic-choose-target@4` gains an optional `tokenKind` literal that admits tokens of that kind alone, judged as the printed-icon family judges it; unbound, every earlier selection keeps its candidates. Makeshift Weapon, the boxed Handicap, keeps every Handicap's deferred text (p.20) and joins the set at 8.114e. Twelve configured-round tests cover supply and retention, placement reach and emptiness, declining, both short-supply branches, restore/replay of a placement pause and of the Tree bullet's Defense, the greyed Tree bullet, the minion-only adjacent bullet, Tree-only removal beside a minion and another hero's token (failing with the new filter disabled), and the face withheld when the Tree bullet could name nobody in Range. Unregistered until 8.114f. T2; evidence in the milestone commit.
+
+Historical evidence: [8.114a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
 ### [ ] 8.114b Implement the Red Tree Attacks and the trampling moves
 

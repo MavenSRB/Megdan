@@ -356,7 +356,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(80),
+            Assert.That(nodes.Length, Is.EqualTo(81),
+                "RE-MEASURED at 8.114a: 80 plus Wuk's Tree Slam, whose first bullet is 'Target a minion adjacent to you'. " +
                 "RE-MEASURED at 8.93f: 76 plus Snorri the Runescribe's four - the adjacent-unit Attack target Runic Hammer and Runic Battleaxe bind before the Attack, and the enemy hero adjacent to the target's space that Runecaster and Runeblaster ask to discard after it. " +
                 "Trinkets' Rapid Redeployment adds one adjacent-minion choice. " +
                 "RE-MEASURED at 8.75a: the 8.69 wave's 71 plus Ignatia the Mad's four, which are " +

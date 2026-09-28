@@ -1715,6 +1715,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     isRequired: false,
                     integerDomain: EffectIntegerDomain.All<SourceTeamRelation>()));
 
+                // Milestone 8.114a. Wuk's Tree Slam and Makeshift Weapon, "Remove a Tree token
+                // adjacent to you" - the object selection narrowed to tokens of one kind, judged the
+                // way the printed-icon family's own `tokenKind` judges it (a piece hiding its kind
+                // shows its facedown face to everyone but its owner). A bound kind admits tokens
+                // alone, because the sentence names a token. Optional and unbound everywhere else, so
+                // every selection written before it keeps its exact candidate set.
+                parameters.Add(new EffectCapabilityParameter(
+                    TokenKindParameterName,
+                    EffectValueKind.TokenKind,
+                    isRequired: false));
+
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
                     new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
@@ -1860,6 +1871,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
+                // Milestone 8.114a. An unbound kind reads as no value and narrows nothing.
+                var tokenKind = context.Input(TokenKindParameterName);
+                var narrowsToKind = tokenKind.Kind == EffectValueKind.TokenKind;
+
                 var spaces = new List<HexCoordinate>(targets.Count);
                 foreach (var target in targets)
                 {
@@ -1870,8 +1885,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         continue;
                     }
 
+                    if (narrowsToKind && target.Kind != BoardObjectKind.Token)
+                    {
+                        continue;
+                    }
+
                     if (board.TryGetObjectCoordinate(target, out var at))
                     {
+                        if (narrowsToKind &&
+                            !PrintedIconSpaceClauses.HoldsTokenOfKind(
+                                context, at, tokenKind.TokenKindId))
+                        {
+                            continue;
+                        }
+
                         spaces.Add(at);
                     }
                 }
