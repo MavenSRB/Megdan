@@ -648,6 +648,13 @@ namespace GuardsDigital.Core.Snapshots
             }
 
             WriteAttackResolution(writer, pending.Resolution);
+
+            // Milestone 8.118, schema v48. The Defeats the same text still owes, in order.
+            writer.Write(pending.OwedMinionDefeats.Count);
+            foreach (var minion in pending.OwedMinionDefeats)
+            {
+                writer.Write(minion.Value);
+            }
         }
 
         private static PendingRemovalPreventionDecision ReadRemovalPrevention(BinaryReader reader)
@@ -667,20 +674,25 @@ namespace GuardsDigital.Core.Snapshots
             var operations = ReadMany(
                 reader, "removal-prevention reward operations", () => ReadCoinOperation(reader));
             var resolution = ReadAttackResolution(reader);
+            var owed = ReadMany(
+                reader, "removal-prevention owed minion defeats", () => new MinionId(reader.ReadString()));
 
             if (origin == RemovalPreventionOrigin.None ||
                 activity == RuleActivity.None ||
                 !subjectMinionId.IsDefined ||
                 !decidingHeroId.IsDefined ||
                 !defeat.HasRewardAmounts ||
-                operations.Any(operation => !operation.SourceOutcomeId.Equals(defeat.Id)))
+                operations.Any(operation => !operation.SourceOutcomeId.Equals(defeat.Id)) ||
+                owed.Any(minion => !minion.IsDefined || minion.Equals(subjectMinionId)) ||
+                owed.Distinct().Count() != owed.Length ||
+                (owed.Length > 0 && origin != RemovalPreventionOrigin.EffectInvokedMinionDefeat))
             {
                 throw Malformed(
                     "Snapshot removal-prevention decision describes a shape this engine cannot be in.");
             }
 
             return new PendingRemovalPreventionDecision(
-                origin, resolution, subjectMinionId, defeat, operations, decidingHeroId, activity);
+                origin, resolution, subjectMinionId, defeat, operations, decidingHeroId, activity, owed);
         }
 
         /// <summary>

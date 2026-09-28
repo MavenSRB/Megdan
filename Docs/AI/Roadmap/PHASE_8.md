@@ -104,9 +104,13 @@ Completed 2026-09-28. The walk is unconditional: a body the gate does not supply
 
 Historical evidence: [8.117 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8117-trigger-body-gate-evidence).
 
-### [~] 8.118 Continue around-action minion Defeats held behind a removal-prevention question
+### [x] 8.118 Continue around-action minion Defeats held behind a removal-prevention question
 
 Queued 2026-09-28 by 8.114b1; authorized the same day as the second step of 8.117 -> 8.118. Text around a Movement (Trample, Angry Stampede) settles its minion Defeats in order; when one stops on a removal-prevention question, the ones after it are not continued. Closing check: a failing-then-passing regression defeating two trampled minions, the first protected by a prevention source.
+
+Completed 2026-09-28. A removal-prevention decision now carries the further minion Defeats the same text still owes, in order (`OwedMinionDefeats`, persisted - schema v47 -> v48, v47 rejected); answering it settles them through the same effect-invoked Defeat, and one that stops again carries the rest on. Fixing it exposed a second shipped defect: every Defeat one around-action text asked for shared a single outcome id, so Angry Stampede naming two enemy minions was refused p.13's second reward and threw; each Defeat now names its minion. `WukTrampleTests` gained four cases (a paid and a declined guard each defeat the second minion, a restored question converges on the same bytes, two unguarded enemy minions both fall), all failing before. Limitation: a triggered effect's own minion Defeats (the 8.19c1 path) still drop what follows a prevention question; no printed face has been shown to reach it. T3; evidence in the milestone commit.
+
+Historical evidence: [8.118 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8118-held-trample-defeats-evidence).
 
 ### [x] 8.115 Whisper's forced move is a full-distance Movement action
 

@@ -656,7 +656,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(EffectInterruptKind.AfterMoveThroughTrapTrigger));
             }
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(47),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(48),
                 "A fourth reason an effect frame can be standing costs no schema version: the " +
                 "card-action payload has written the kind as an int since milestone 8.19c1." +
                 "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +

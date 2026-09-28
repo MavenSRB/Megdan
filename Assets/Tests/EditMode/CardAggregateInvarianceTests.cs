@@ -891,17 +891,20 @@ namespace GuardsDigital.Tests.EditMode
         // 8.114f re-pins all nine for dealing Wuk: his capabilities and Tree token definition join the
         // recorded registration lists - the same +267 bytes the sibling corpus measures on all sixteen
         // captures. No scenario plays Wuk; the three groups still hold.
+        // 8.118 re-pins all nine for schema v48: a removal-prevention decision now writes the Defeats
+        // held behind it. No scenario stands on that question, so only the version moved, and the three
+        // groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "34822e6137f1e11cde8c45796f79de8461230edf700e2125bbfbb7202499af58", "f8482e60bdc66724dc583d003f2c99233784dc471ae709d68a8a84688c10c4ce"),
-            new ScenarioDigest("rejected", "34822e6137f1e11cde8c45796f79de8461230edf700e2125bbfbb7202499af58", "f8482e60bdc66724dc583d003f2c99233784dc471ae709d68a8a84688c10c4ce"),
-            new ScenarioDigest("stale", "34822e6137f1e11cde8c45796f79de8461230edf700e2125bbfbb7202499af58", "f8482e60bdc66724dc583d003f2c99233784dc471ae709d68a8a84688c10c4ce"),
-            new ScenarioDigest("restored", "34822e6137f1e11cde8c45796f79de8461230edf700e2125bbfbb7202499af58", "f8482e60bdc66724dc583d003f2c99233784dc471ae709d68a8a84688c10c4ce"),
-            new ScenarioDigest("replayed", "34822e6137f1e11cde8c45796f79de8461230edf700e2125bbfbb7202499af58", "f8482e60bdc66724dc583d003f2c99233784dc471ae709d68a8a84688c10c4ce"),
-            new ScenarioDigest("undo-truncated", "bb85c6be9edc9848130a29854bdb728e90fa4a529e0070a0b83885c89e5be49b", "013baa221d11c4524d8acb2f03894dc3a2a2bc50fa2772f45eb6452bf13a1517"),
-            new ScenarioDigest("defense-discarded", "81e6021ac3b5737b62bcd952cca89d797e72f0f60a7f66c9ae0e3e8d05b2e859", "bb5a901ade9ea17e1e937f04c0c1d6ddc279b7b3e1f43d366d708ac98e6cb4ed"),
-            new ScenarioDigest("defense-discarded-restored", "81e6021ac3b5737b62bcd952cca89d797e72f0f60a7f66c9ae0e3e8d05b2e859", "bb5a901ade9ea17e1e937f04c0c1d6ddc279b7b3e1f43d366d708ac98e6cb4ed"),
-            new ScenarioDigest("defense-discarded-replayed", "81e6021ac3b5737b62bcd952cca89d797e72f0f60a7f66c9ae0e3e8d05b2e859", "bb5a901ade9ea17e1e937f04c0c1d6ddc279b7b3e1f43d366d708ac98e6cb4ed"),
+            new ScenarioDigest("accepted", "7f6869555213f3bf02f157eccff79670dea380aa66cb140c560e2c12d7aea5f5", "024828efbcaf4b59d22e6fe16e7d3e31ae8e8d5752a209ebbfd19b2cc574dbb5"),
+            new ScenarioDigest("rejected", "7f6869555213f3bf02f157eccff79670dea380aa66cb140c560e2c12d7aea5f5", "024828efbcaf4b59d22e6fe16e7d3e31ae8e8d5752a209ebbfd19b2cc574dbb5"),
+            new ScenarioDigest("stale", "7f6869555213f3bf02f157eccff79670dea380aa66cb140c560e2c12d7aea5f5", "024828efbcaf4b59d22e6fe16e7d3e31ae8e8d5752a209ebbfd19b2cc574dbb5"),
+            new ScenarioDigest("restored", "7f6869555213f3bf02f157eccff79670dea380aa66cb140c560e2c12d7aea5f5", "024828efbcaf4b59d22e6fe16e7d3e31ae8e8d5752a209ebbfd19b2cc574dbb5"),
+            new ScenarioDigest("replayed", "7f6869555213f3bf02f157eccff79670dea380aa66cb140c560e2c12d7aea5f5", "024828efbcaf4b59d22e6fe16e7d3e31ae8e8d5752a209ebbfd19b2cc574dbb5"),
+            new ScenarioDigest("undo-truncated", "f492be2c2267c95186cadc5c92cbc988990d18860c4ad6fe66e1779f85aeaec4", "8c2dcfb831d3045c66b9e8c75859a7b60a6826582e9a82f3e58d815a6740170d"),
+            new ScenarioDigest("defense-discarded", "6eabe9919d3a71bd88242767c5acabaf7975a0a21269dc98daa4ba0b5cca7c8a", "e68db3b899aed4414697e591fed2d6aeba6bb6ffb4a82da051357bfcbdfacc58"),
+            new ScenarioDigest("defense-discarded-restored", "6eabe9919d3a71bd88242767c5acabaf7975a0a21269dc98daa4ba0b5cca7c8a", "e68db3b899aed4414697e591fed2d6aeba6bb6ffb4a82da051357bfcbdfacc58"),
+            new ScenarioDigest("defense-discarded-replayed", "6eabe9919d3a71bd88242767c5acabaf7975a0a21269dc98daa4ba0b5cca7c8a", "e68db3b899aed4414697e591fed2d6aeba6bb6ffb4a82da051357bfcbdfacc58"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

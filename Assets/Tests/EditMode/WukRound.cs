@@ -65,7 +65,8 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyList<HexCoordinate> treesAt = null,
             IReadOnlyList<HexCoordinate> enemyRocksAt = null,
             bool battleZone = false,
-            IReadOnlyList<(HeroId Hero, TeamSide Side, RuleModification Modification)> standingEffects = null)
+            IReadOnlyList<(HeroId Hero, TeamSide Side, RuleModification Modification)> standingEffects = null,
+            IReadOnlyList<(HeroId Hero, TeamSide Side, ActiveEffectDefinition Definition)> standingDefinitions = null)
         {
             var participants = Participants(enemyAllyAt.HasValue, allyAt.HasValue);
             var spaces = (from q in Enumerable.Range(-5, 11)
@@ -155,7 +156,11 @@ namespace GuardsDigital.Tests.EditMode
 
             instances = all.ToArray();
             catalogs = new MatchContentCatalogs(
-                SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.RegisteredHandlers()),
+                SyntheticEffectCapabilities.CreateCatalog(WukComponentContent.RegisteredHandlers()
+                    .Concat((standingDefinitions ?? Array.Empty<(HeroId, TeamSide, ActiveEffectDefinition)>())
+                        .Select((standing, at) => (IEffectCapabilityHandler)new ActiveEffectCreationHandler(
+                            new EffectCapabilityReference(new EffectCapabilityId("wuk-test-standing-" + at), 1),
+                            standing.Item3)))),
                 new ComponentDefinitionCatalog(
                     WukComponentContent.Tokens().Concat(MrakComponentContent.Tokens()),
                     Array.Empty<MarkerDefinition>()),
@@ -176,6 +181,16 @@ namespace GuardsDigital.Tests.EditMode
                         "WukStanding", id, Array.Empty<TimingCheckpoint>(), new[] { modification }),
                     hero, side, default, new CardInstanceId(id + "-card"),
                     new ActionDefinitionId(id + "-action"), 1, 1);
+            }
+
+            // Milestone 8.118. A whole standing definition - a guard over minions in a disk - built the
+            // same way, for effects whose scope is not the controller alone.
+            foreach (var (hero, side, definition) in
+                     standingDefinitions ?? Array.Empty<(HeroId, TeamSide, ActiveEffectDefinition)>())
+            {
+                var id = "wuk-standing-" + standing++;
+                timing.Create(new ActiveEffectId(id), definition, hero, side, default,
+                    new CardInstanceId(id + "-card"), new ActionDefinitionId(id + "-action"), 1, 1);
             }
 
             var markers = new MarkerAttachmentRegister();
@@ -471,6 +486,19 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             ConfirmIfStillOpen(asked);
+        }
+
+        /// <summary>Milestone 8.118. The standing removal-prevention question, as a player is shown it.</summary>
+        internal RemovalPreventionPrompt Prevention =>
+            Turn.DescribeRemovalPrevention(Turn.CurrentModifications());
+
+        /// <summary>Milestone 8.118. Pays the first offered price, or declines it.</summary>
+        internal void AnswerPrevention(bool pay)
+        {
+            var prompt = Prevention;
+            Assert.That(prompt, Is.Not.Null, "a removal-prevention question is standing");
+            Assert.That(round.TryAnswerRemovalPrevention(
+                pay ? prompt.Payments.First().Invocation : prompt.DeclineInvocation).Accepted, Is.True);
         }
 
         internal bool OnBoard(HeroId hero) =>

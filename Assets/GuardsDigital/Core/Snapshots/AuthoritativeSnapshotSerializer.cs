@@ -396,7 +396,11 @@ namespace GuardsDigital.Core.Snapshots
         // Dominance) and the last completed Movement action walk (Trample). v46 lacks both and is
         // rejected: a v46 payload taken between Dominance's choice and the battle would restore a
         // battle that counts the excluded minion.
-        public const int CurrentSchemaVersion = 47;
+        // v48 (milestone 8.118): a removal-prevention decision carries the further minion Defeats the
+        // same text still owes behind it (Wuk's Angry Stampede naming two minions, the first guarded).
+        // v47 lacks the list and is rejected: a v47 payload taken on that question would restore a
+        // match that never defeats the second minion.
+        public const int CurrentSchemaVersion = 48;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

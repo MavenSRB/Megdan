@@ -4296,8 +4296,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>
         /// Milestone 8.114b1. The minion Defeats a finished piece of around-action text asked for, run
         /// through the effect-invoked Defeat every other card text uses (p.13's reward, removal
-        /// prevention, p.8's last-minion push). A prevention source that stops to ask holds the rest,
-        /// as it does for a triggered effect's Defeats.
+        /// prevention, p.8's last-minion push). A prevention source that stops to ask holds the rest
+        /// behind its question (milestone 8.118), and its answer settles them.
         /// </summary>
         private void SettleAroundActionMinionDefeats(
             EffectResolutionStepResult step,
@@ -4317,15 +4317,43 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return;
             }
 
+            SettleMinionDefeatsInOrder(
+                step.RequestedMinionDefeats, frameId, sourceCardInstanceId, sourceDefinitionReference,
+                actionDefinitionId, actorId, participants, modifications, definitions, instances, steps);
+        }
+
+        /// <summary>
+        /// Milestone 8.118. Effect-invoked minion Defeats, one after another. The first whose removal
+        /// stops on a prevention question ends the pass and carries the ones after it on that question,
+        /// so its answer - and a snapshot taken before it - still owes them.
+        /// </summary>
+        private void SettleMinionDefeatsInOrder(
+            IReadOnlyList<MinionId> minionIds,
+            ActionResolutionId frameId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            ICollection<ResolutionStep> steps)
+        {
             var materializedInstances = instances as IReadOnlyList<CardInstance> ?? instances.ToArray();
-            foreach (var minionId in step.RequestedMinionDefeats)
+            for (var index = 0; index < minionIds.Count; index++)
             {
+                var minionId = minionIds[index];
+                // Milestone 8.118. Each Defeat is its own outcome: one text naming two enemy minions
+                // pays p.13's reward twice, and an outcome id shared between them refused the second.
                 var defeat = attackDefenseBackend.ResolveEffectInvokedMinionDefeat(
                     frameId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId, actorId,
                     minionId, participants, modifications, definitions, materializedInstances,
-                    out var identity);
+                    out var identity, outcomeDiscriminator: minionId.Value);
                 if (defeat == null)
                 {
+                    attackDefenseBackend.HoldMinionDefeatsBehindPendingPrevention(
+                        minionIds.Skip(index + 1));
                     steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.RemovalPreventionRequested(
                         identity, attackDefenseBackend.PendingRemovalPrevention)));
                     return;
@@ -6151,6 +6179,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     new ActionResolutionId(answered.Resolution.ResolutionId.Value),
                     boundary.Participants,
                     modifications);
+
+                // Milestone 8.118. The Defeats the same text asked for after this one.
+                if (answered.OwedMinionDefeats.Count > 0)
+                {
+                    SettleMinionDefeatsInOrder(
+                        answered.OwedMinionDefeats,
+                        new ActionResolutionId(answered.Resolution.ResolutionId.Value),
+                        answered.Resolution.SourceCardInstanceId,
+                        answered.Resolution.SourceDefinitionReference,
+                        answered.Resolution.ActionDefinitionId,
+                        answered.Resolution.ActorId,
+                        boundary.Participants,
+                        modifications,
+                        boundary.Definitions,
+                        boundary.Instances,
+                        steps);
+                }
+
                 triggeredResolutionSteps.AddRange(steps);
                 return CardActionResolutionResult.Accept(
                     true, null, null, Array.Empty<ResolutionStep>());

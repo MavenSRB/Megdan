@@ -56,6 +56,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.113 | Ignatia's magma supply corrected to four and p.18's short-supply reclaim applied to her moon placements and sun wake; revision `ignatia-8-113-rev-1`, corpus MIGRATE (+26 bytes), gate classification and a Chaos Incarnate reclaim journey. [Definition](../../Roadmap/PHASE_8.md#x-8113-correct-ignatias-magma-supply-to-four-tokens-and-apply-p18s-short-supply). | `milestone/8.113` |
 
+## Milestone 8.118 Held trample Defeats evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.118 | Minion Defeats around-action text asks for after one stopped on a removal-prevention question are held on that question (schema v48) and settled by its answer; each Defeat is its own outcome, so two enemy minions both pay. [Definition](../../Roadmap/PHASE_8.md#x-8118-continue-around-action-minion-defeats-held-behind-a-removal-prevention-question). | `milestone/8.118` |
+
 ## Milestone 8.117 Trigger-body gate evidence
 
 | Milestone | Outcome and definition | Commit |

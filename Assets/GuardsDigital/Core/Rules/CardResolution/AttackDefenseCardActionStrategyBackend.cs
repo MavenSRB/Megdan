@@ -1778,6 +1778,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
         }
 
+        /// <summary>
+        /// Milestone 8.118. Holds the further minion Defeats an effect's text asked for behind the
+        /// removal-prevention question the Defeat before them stopped on.
+        /// </summary>
+        internal void HoldMinionDefeatsBehindPendingPrevention(IEnumerable<MinionId> owed)
+        {
+            if (pendingRemovalPrevention == null)
+            {
+                throw new InvalidOperationException(
+                    "Defeats are held behind a removal-prevention question only while one stands.");
+            }
+
+            pendingRemovalPrevention = pendingRemovalPrevention.HoldingMinionDefeats(owed);
+        }
+
         internal void RestorePendingRemovalPrevention(PendingRemovalPreventionDecision decision)
         {
             pendingRemovalPrevention = decision;

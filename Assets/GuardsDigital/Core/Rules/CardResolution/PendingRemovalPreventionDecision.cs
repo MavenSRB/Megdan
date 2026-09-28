@@ -57,7 +57,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatOutcome defeat,
             IEnumerable<CoinResourceOperation> rewardOperations,
             HeroId decidingHeroId,
-            GuardsDigital.Core.Rules.Modifications.RuleActivity activity)
+            GuardsDigital.Core.Rules.Modifications.RuleActivity activity,
+            IEnumerable<MinionId> owedMinionDefeats = null)
         {
             if (origin == RemovalPreventionOrigin.None ||
                 !Enum.IsDefined(typeof(RemovalPreventionOrigin), origin))
@@ -120,6 +121,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RewardOperations = new ReadOnlyCollection<CoinResourceOperation>(operations);
             DecidingHeroId = decidingHeroId;
             Activity = activity;
+
+            var owed = (owedMinionDefeats ?? Enumerable.Empty<MinionId>()).ToArray();
+            if (owed.Any(minion => !minion.IsDefined || minion.Equals(subjectMinionId)) ||
+                owed.Distinct().Count() != owed.Length)
+            {
+                throw new ArgumentException(
+                    "The Defeats held behind a removal-prevention question name other miniatures, each once.",
+                    nameof(owedMinionDefeats));
+            }
+
+            if (owed.Length > 0 && origin != RemovalPreventionOrigin.EffectInvokedMinionDefeat)
+            {
+                throw new ArgumentException(
+                    "Only an effect-invoked Defeat can hold further Defeats its text asked for.",
+                    nameof(owedMinionDefeats));
+            }
+
+            OwedMinionDefeats = new ReadOnlyCollection<MinionId>(owed);
         }
 
         public RemovalPreventionOrigin Origin { get; }
@@ -152,5 +171,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>The reward as the ledger reported it, rebuilt from the operations it performed.</summary>
         public DefeatRewardResult Reward => DefeatRewardResult.Accept(RewardOperations);
+
+        /// <summary>
+        /// Milestone 8.118. The further minion Defeats the same text asked for, in order, which wait
+        /// behind this question because a second removal stage cannot stand inside the first. The
+        /// answer settles them, and one that stops on its own question carries the rest after it.
+        /// </summary>
+        public IReadOnlyList<MinionId> OwedMinionDefeats { get; }
+
+        /// <summary>Milestone 8.118. This decision, holding the given Defeats behind it.</summary>
+        public PendingRemovalPreventionDecision HoldingMinionDefeats(IEnumerable<MinionId> owed) =>
+            new PendingRemovalPreventionDecision(
+                Origin, Resolution, SubjectMinionId, Defeat, RewardOperations, DecidingHeroId, Activity,
+                owed);
     }
 }

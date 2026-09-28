@@ -5,6 +5,8 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 using static GuardsDigital.Tests.EditMode.WukRound;
@@ -178,6 +180,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.Stands(FriendlyMinion(0)) || round.Stands(EnemyMinion(0)), Is.False);
         }
 
+        /// <summary>
+        /// Milestone 8.118. Two ENEMY minions named by one Stampede are two Defeats, each paying p.13's
+        /// reward - the pair used to share one outcome and the second award was refused.
+        /// </summary>
+        [Test]
+        public void AngryStampede_DefeatsTwoEnemyMinions_AndPaysForEach()
+        {
+            var round = new WukRound(Stampede, enemyMinionsAt: new[] { H(1, 0), H(2, 0) });
+            round.StartPrimaryMovement();
+            round.MoveTo(H(3, 0));
+            round.StopMoving();
+            round.PickMinions(EnemyMinion(0), EnemyMinion(1));
+
+            Assert.That(round.Stands(EnemyMinion(0)) || round.Stands(EnemyMinion(1)), Is.False);
+            Assert.That(round.ActionEnded, Is.True);
+        }
+
         [Test]
         public void ChoosingNoMinion_DefeatsNone()
         {
@@ -217,6 +236,87 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(round.ActionEnded, Is.True);
             Assert.That(round.SpaceOf(Wuk), Is.EqualTo(H(0, 0)));
+        }
+
+        /// <summary>
+        /// Milestone 8.118. A guard over the enemy minions within one space of their hero: "When any
+        /// friendly minion in radius is defeated, you may discard a card; if you do, the minion is not
+        /// removed" - Brogan's Shield sentence at any card's price, so the fixture's own hand can pay.
+        /// </summary>
+        private static ActiveEffectDefinition Guard { get; } = new ActiveEffectDefinition(
+            "wuk-test-guard-effect",
+            ActiveEffectAffectedScopeKind.MinionsInRadius,
+            ActiveEffectDurationKind.ThisRound,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.RoundEnd,
+            new[] { ActiveEffectCancellationCondition.CardsRetrieved },
+            false,
+            "WukTestGuard",
+            "wuk-test-guard",
+            System.Array.Empty<TimingCheckpoint>(),
+            new[] { RuleModification.ForRemovalPrevention(
+                RemovalPreventionCost.DiscardOwnedCard(CardLocation.Hand)) },
+            null,
+            DeclaredRadius.PrintedIcon(1),
+            SourceTeamRelation.AlliedWithSource);
+
+        /// <summary>
+        /// Wuk stampedes through two enemy minions and names both; the enemy hero at (1,-1) guards the
+        /// first, at (1,0), and not the second, at (2,0), two spaces from them.
+        /// </summary>
+        private static WukRound TwoTrampledMinionsTheFirstGuarded()
+        {
+            var round = new WukRound(Stampede, enemyAt: H(1, -1),
+                enemyMinionsAt: new[] { H(1, 0), H(2, 0) },
+                standingDefinitions: new[] { (Enemy, Core.Participants.TeamSide.Blue, Guard) });
+            round.StartPrimaryMovement();
+            round.MoveTo(H(3, 0));
+            round.StopMoving();
+            round.PickMinions(EnemyMinion(0), EnemyMinion(1));
+            Assert.That(round.Prevention, Is.Not.Null,
+                "The guarded minion's removal stops on its controller's question.");
+            Assert.That(round.Prevention.SubjectMinionId, Is.EqualTo(EnemyMinion(0)));
+            return round;
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void AGuardedTrampledMinion_HoldsTheRest_UntilItsQuestionIsAnswered(bool pay)
+        {
+            var round = TwoTrampledMinionsTheFirstGuarded();
+            Assert.That(round.Stands(EnemyMinion(1)), Is.True,
+                "The second Defeat waits behind the question the first one stopped on.");
+
+            round.AnswerPrevention(pay);
+
+            Assert.That(round.Stands(EnemyMinion(0)), Is.EqualTo(pay),
+                pay ? "a paid guard keeps its minion" : "a declined guard lets the removal finish");
+            Assert.That(round.Stands(EnemyMinion(1)), Is.False,
+                "and the unguarded minion Wuk also named is then defeated too.");
+            Assert.That(round.Prevention, Is.Null);
+            Assert.That(round.PendingNode, Is.Null);
+            Assert.That(round.ActionEnded, Is.True);
+        }
+
+        [Test]
+        public void AGuardedTrampledMinionsQuestion_RestoresAndStillOwesTheRest()
+        {
+            var round = TwoTrampledMinionsTheFirstGuarded();
+            var restored = round.RestoreFrom(round.Snapshot());
+            var restoredTurn = restored.Round.CurrentTurnAuthority;
+            var prompt = restoredTurn.DescribeRemovalPrevention(restoredTurn.CurrentModifications());
+            Assert.That(prompt, Is.Not.Null);
+            Assert.That(restored.Round.TryAnswerRemovalPrevention(prompt.DeclineInvocation).Accepted,
+                Is.True);
+
+            round.AnswerPrevention(pay: false);
+
+            Assert.That(round.Stands(EnemyMinion(1)), Is.False);
+            Assert.That(
+                AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(round.Snapshot()),
+                "The restored match owes the same remaining Defeat and converges on the same bytes.");
         }
 
         /// <summary>A copy of one offered destination's route and cost, for readable assertions.</summary>
