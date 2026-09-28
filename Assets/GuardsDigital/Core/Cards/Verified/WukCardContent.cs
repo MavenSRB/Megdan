@@ -123,6 +123,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 new[] { TreeSlamDefinition, MysticSaplingsDefinition }
                     .Concat(WukRedFaces.AttackDefinitions)
                     .Concat(WukBlueFaces.RetrievalDefinitions)
+                    .Concat(WukGreenFaces.Definitions)
                     .ToArray()));
 
         /// <summary>

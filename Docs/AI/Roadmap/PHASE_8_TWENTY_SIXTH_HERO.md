@@ -65,11 +65,15 @@ Completed 2026-09-28. `WukBlueFaces` composes the three retrieval faces: the pri
 
 Historical evidence: [8.114c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
-### [ ] 8.114d Implement the throws and the Tree swaps
+### [x] 8.114d Implement the throws and the Tree swaps
 
 Outcome: Toss Away, Mighty Throw and Monstrous Throw (place a token of any owner, or an enemy unit, adjacent to Wuk into an empty space in Range; Monstrous repeats once, the same subject allowed) and Into the Canopy and Treetop Ride (swap Wuk, or a friendly unit in radius, with a Tree in radius; Treetop up to two times, either bullet each time).
 
 Acceptance: every subject kind (own Tree, another hero's token, enemy hero, enemy minion, immune enemy refused), Range and emptiness boundaries, a minion thrown out of its Battle Zone returned, the repeat, both swap forms and the two-times modal, each with restore. Unregistered until 8.114f.
+
+Completed 2026-09-28. `WukGreenFaces` composes the throws as Mrak's Boulder subject (`synthetic-choose-target@4` at distance one, "an enemy unit or a token") consumed by Arien's `synthetic-place-in-range@1` from Wuk, Monstrous Throw adding p.10's repeat with the same subject allowed; and the swaps as p.10's modal over "swap with a Tree token in radius" (Trinkets' swap-with-actor over the Tree-narrowed Radius object selection) and "swap a friendly unit in radius with a Tree token in radius", Treetop Ride's two performances in Rowenna's Grand Melee shape. The block found one offer defect in its own first composition: with the friendly unit and the Tree chosen by two selections, the offer walk judged the bullet by the first selection alone and offered it with a friendly unit and no Tree - either order leaves the same hole, because a selection is narrowed only by a consumer it can decide. `WukTreeSwapContent`'s `wuk-choose-friendly-unit-and-tree@1` chooses both pieces in one question (both halves asked of the printed-icon family's one derivation), impossible when either half is empty, feeding `synthetic-swap@2`; the bullet now greys correctly. Twelve configured-round tests cover every subject kind including a friendly unit refused, both printed Ranges, a thrown minion's destination, the repeat on the same minion, restore of a destination pause, both swap forms, the friendly swap greyed with no friendly unit or no Tree, the face withheld with no Tree, the same bullet twice and stopping after one. The immune-enemy and out-of-Battle-Zone rows are p.19's shared rules the Place and selection already apply, not re-proved here. Unregistered until 8.114f. T2; evidence in the milestone commit.
+
+Historical evidence: [8.114d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8114-wuk-series-evidence).
 
 ### [ ] 8.114e Implement March of Nature and reconcile the set
 

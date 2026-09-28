@@ -256,6 +256,12 @@ namespace GuardsDigital.Tests.EditMode
             return at;
         }
 
+        internal HexCoordinate SpaceOf(MinionId minion)
+        {
+            Assert.That(board.TryGetObjectCoordinate(BoardObjectReference.ForMinion(minion), out var at), Is.True);
+            return at;
+        }
+
         internal HexCoordinate[] OfferedSpaces() =>
             Turn.PendingEffectChoice.Candidates
                 .Where(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
