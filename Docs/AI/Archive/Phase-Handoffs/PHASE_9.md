@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.17 Charged Runestone evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.17 | The live round-2 Charged Runestone was a legal do-nothing play under rune 3 (the card prints no clause for it); a whole-match regression pins the round-2 rune reading; no engine change; OQ-9.17 for the user. [Definition](../../Roadmap/PHASE_9.md#x-917-charged-runestone-asks-for-its-target-when-a-rune-is-active). | `milestone/9.17` |
+
 ## Milestone 9.13 Expected-outcome pilot evidence
 
 | Milestone | Outcome and definition | Commit |
