@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13 Expected-outcome pilot evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13 | The expected-outcome table format, its harness-runnable executor, and 168 blind-reader cases over Mortimer, Mrak and Wuk each ending in one recorded disposition; two engine defects fixed (double hero Defeat reward fault, box-granted item fault); one content finding and one diagnostic gap queued; six open questions for the user. [Definition](../../Roadmap/PHASE_9.md#x-913-independent-expected-outcome-corpus-the-format-the-executor-and-the-three-hero-pilot). | `milestone/9.13` |
+
 ## Milestone 9.12 Playtest package evidence
 
 | Milestone | Outcome and definition | Commit |
