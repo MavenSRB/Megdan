@@ -309,8 +309,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         /// <summary>A pure predicate over one Boolean input, for Conditional branching.</summary>
-        private sealed class IsFlaggedHandler : IEffectCapabilityHandler
+        private sealed class IsFlaggedHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => IsFlaggedV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(

@@ -1,0 +1,345 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
+using NUnit.Framework;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 9.6. Every printed primary a hero is offered does something.
+    ///
+    /// <para><b>Why the check is an outcome and not a reading of the card.</b> The printed-wording audit
+    /// (9.1-9.5) holds each composition to its words, and it would not have caught most of what the
+    /// playtests found: an action offered in a position where it could only spend the card. Rules
+    /// 6.5af, 7.8a1 and 8.35z15 say such an action is not offered, and nothing measured whether the
+    /// offer set obeyed them across real positions. This does, the way a player would find out:
+    /// whole six-hero matches are played from fixed seeds, and at every turn each offered printed
+    /// primary is taken on a copy of the match and every sequence of answers is tried. If every one of
+    /// them leaves the match exactly as Holding the same card would - the authoritative snapshot,
+    /// byte for byte, after the turn is released - the offer was a card spent on nothing.</para>
+    ///
+    /// <para><b>RULING 53 is the one legitimate empty offer.</b> A play whose printed "If" gate is
+    /// false is offered as a legal do-nothing play (user, 2026-09-08, superseding RULING 42), so a face
+    /// that opens a sentence with "If" and changes nothing is counted rather than flagged. Every other
+    /// empty offer is a card the walk failed to read.</para>
+    ///
+    /// <para><b>Hold is the comparison because p.12 makes it the "do nothing" of this game.</b> The
+    /// card is spent either way, so the two positions differ in exactly what the action did. No
+    /// hand-listed fingerprint is involved, which is why this sees a Next-turn effect, a rewritten
+    /// Initiative and a rune marker as readily as a moved unit.</para>
+    ///
+    /// <para>The line-ups rotate through every dealt hero, so a newly dealt hero is played here the
+    /// moment it is dealt, and <see cref="EveryDealtHero_HadAPrimaryOffered"/> fails if the matches stop
+    /// reaching one. Reaching is all it asks: random play keeps heroes apart, so a hero whose every
+    /// face needs a target or a spawn point nearby (Dodger) can see each one greyed, and whether a
+    /// greyed action really could not be taken is milestone 9.7's check, not this one's.</para>
+    /// </summary>
+    public sealed class OfferOutcomeTests
+    {
+        private const int SeedsPerLineup = 2;
+        private const int CommandsPerMatch = 300;
+        private const int AnswerPathsPerOffer = 60;
+
+        private static readonly Lazy<Survey> Surveyed = new Lazy<Survey>(Run);
+
+        /// <summary>
+        /// Faces whose answers can do real things that cancel out. The comparison is with where the
+        /// match ends, so these would read as empty; each is listed with the sequence that does it.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, string> CancelsOut =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["tali-commune-with-spirits"] =
+                    "Tali discards a Spirit of the named colour and performs its primary, which retrieves " +
+                    "the Spirit to her hand: a discard and a retrieval, ending where Hold does."
+            };
+
+        [Test]
+        public void EveryOfferedPrintedPrimary_DoesSomething()
+        {
+            Assert.That(Surveyed.Value.Empty.Where(entry => !CancelsOut.ContainsKey(entry.Split(' ')[0])),
+                Is.Empty,
+                "These printed primaries were offered in a position where every answer left the match " +
+                "exactly as Holding the card would. Rules 6.5af, 7.8a1 and 8.35z15 grey an action that " +
+                "can do nothing, so the offer walk is failing to read something the action depends on.");
+        }
+
+        [Test]
+        public void EveryOfferedCommand_IsAccepted()
+        {
+            Assert.That(Surveyed.Value.Refused, Is.Empty,
+                "The projection offered these commands and the rules refused them. An offer is a " +
+                "promise that the command is legal where it is offered.");
+        }
+
+        [Test]
+        public void EveryDealtHero_HadAPrimaryOffered()
+        {
+            var missing = QuickGameSetupConfiguration.DealtHeroes
+                .Select(hero => hero.ContentId.Value)
+                .Except(Surveyed.Value.HeroesOffered)
+                .ToArray();
+            Assert.That(missing, Is.Empty,
+                "The rotation no longer reaches every dealt hero's printed primaries; lengthen the " +
+                "matches or add a seed so each one is played.");
+        }
+
+        [Test]
+        public void TheSurvey_ExploresEveryOfferToTheEnd()
+        {
+            Assert.That(Surveyed.Value.Undecided, Is.Empty,
+                "An offer's answers outgrew the exploration budget, so it was neither proved to do " +
+                "something nor reported; raise the budget rather than let it pass unread.");
+            Assert.That(Surveyed.Value.Tried, Is.GreaterThan(400),
+                "A survey trying few offers is not reading the matches it plays.");
+        }
+
+        private sealed class Survey
+        {
+            public readonly List<string> Empty = new List<string>();
+            public readonly List<string> Undecided = new List<string>();
+            public readonly List<string> Refused = new List<string>();
+            public int LegalDoNothing;
+            public readonly HashSet<string> HeroesOffered = new HashSet<string>(StringComparer.Ordinal);
+            public int Tried;
+        }
+
+        private static Survey Run()
+        {
+            var survey = new Survey();
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            // Two rotations, the second in reverse, so every hero plays in two different line-ups.
+            var dealt = QuickGameSetupConfiguration.DealtHeroes.ToArray();
+            foreach (var heroes in new[] { dealt, dealt.Reverse().ToArray() })
+            {
+                var lineups = (heroes.Length + 5) / 6;
+                for (var lineup = 0; lineup < lineups; lineup++)
+                {
+                    var picked = Enumerable.Range(0, 6)
+                        .Select(offset => heroes[(lineup * 6 + offset) % heroes.Length])
+                        .ToArray();
+                    for (var seed = 1; seed <= SeedsPerLineup; seed++)
+                    {
+                        Play(survey, map, picked, seed);
+                    }
+                }
+            }
+
+            return survey;
+        }
+
+        private static void Play(Survey survey, BoardMapDefinition map, RegisteredHero[] picked, int seed)
+        {
+            var initial = Compose(map, picked);
+            var live = new MatchSession(initial);
+            var random = new MatchLoopRandom(seed);
+            var names = string.Join(",", picked.Select(hero => hero.ContentId.Value));
+            for (var step = 0; step < CommandsPerMatch &&
+                 live.Projection.Phase != RoundResolutionPhase.GameEnded; step++)
+            {
+                var projection = live.Projection;
+                if (projection.IsTurnActive && projection.SelectedActor.IsDefined &&
+                    projection.DecisionContract == null && projection.PendingTurnRelease == null)
+                {
+                    TryEveryOffer(survey, initial, live, $"{names} seed {seed} step {step}");
+                }
+
+                var legal = DeterministicMatchLoop.EnumerateLegalCommands(live.Projection);
+                if (legal.Count == 0)
+                {
+                    break;
+                }
+
+                var chosen = legal[random.Next(legal.Count)];
+                var result = live.Execute(chosen);
+                if (!result.Accepted)
+                {
+                    survey.Refused.Add($"{chosen.Kind} ({names} seed {seed} step {step}): {result.Detail}");
+                }
+            }
+        }
+
+        private static MatchSessionInitialState Compose(BoardMapDefinition map, RegisteredHero[] picked)
+        {
+            var lineup = new HeroLineup(picked.Take(3), picked.Skip(3));
+            var format = MatchFormat.ThreeVersusThreeQuick;
+            var configuration = MatchConfiguration.CreateForLineupForInternalTest(format, lineup, TeamSide.Red);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(format, lineup),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                configuration.SetupSeed,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<Core.Obstacles.ObstacleOccupancy>());
+            return new MatchSessionInitialState(scenario, setup, new[] { map });
+        }
+
+        private static void TryEveryOffer(
+            Survey survey, MatchSessionInitialState initial, MatchSession live, string where)
+        {
+            var projection = live.Projection;
+            var snapshot = live.CaptureSnapshot();
+            foreach (var offer in projection.AvailableTurnActions)
+            {
+                var definition = projection.Definitions.Single(
+                    candidate => candidate.Reference.Equals(offer.SourceDefinitionReference));
+                var action = definition.ActionDefinitions.Single(
+                    candidate => candidate.Id.Equals(offer.ActionDefinitionId));
+                if (action.Origin != ActionDefinitionOrigin.PrintedPrimary)
+                {
+                    continue;
+                }
+
+                // Reached, whether or not it is available: a greyed offer is 9.7's question.
+                survey.HeroesOffered.Add(definition.Id.Value.Split('-')[0]);
+                if (!offer.IsAvailable)
+                {
+                    continue;
+                }
+
+                survey.Tried++;
+
+                var hold = Restored(initial, snapshot);
+                Assert.That(hold.Execute(DirectorCommand.PerformHold(offer.SourceCardInstanceId)).Accepted,
+                    Is.True, $"p.12: any card can Hold ({definition.Id.Value}, {where}).");
+                var held = Settled(hold);
+
+                var taken = Restored(initial, snapshot);
+                var actor = taken.Projection.SelectedActor.ActorId;
+                var started = taken.Execute(
+                    DirectorCommand.StartAction(offer.SourceCardInstanceId, offer.ActionDefinitionId));
+                Assert.That(started.Accepted, Is.True,
+                    $"An offered action must start ({definition.Id.Value}, {where}): {started.Detail}");
+
+                var budget = AnswerPathsPerOffer;
+                if (DoesSomething(survey, initial, taken, actor, held, 0, ref budget, definition.Id.Value))
+                {
+                    continue;
+                }
+
+                if (budget > 0 && OpensWithAnIf(definition))
+                {
+                    // RULING 53 (user, 2026-09-08): a play whose "If" gate is false is offered as a
+                    // legal do-nothing play - "it's a Hold". Counted, not flagged.
+                    survey.LegalDoNothing++;
+                    continue;
+                }
+
+                (budget <= 0 ? survey.Undecided : survey.Empty).Add($"{definition.Id.Value} ({where})");
+            }
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex IfGate =
+            new System.Text.RegularExpressions.Regex(@"(^|[.;:]\s*)If\b");
+
+        /// <summary>
+        /// Whether the face's printed text opens a sentence with "If" - the gate RULING 53 speaks to.
+        /// "if able" and "if you do" are lower-case clauses inside a sentence and are not it.
+        /// </summary>
+        private static bool OpensWithAnIf(CardDefinition definition) =>
+            IfGate.IsMatch(definition.SourceContent?.PrintedText ?? string.Empty);
+
+        /// <summary>Whether some sequence of answers ends anywhere other than where Hold does.</summary>
+        private static bool DoesSomething(
+            Survey survey, MatchSessionInitialState initial, MatchSession session, HeroId actor, string held,
+            int depth, ref int budget, string card)
+        {
+            var projection = session.Projection;
+            var stillActing = projection.SelectedActor.IsDefined &&
+                projection.SelectedActor.ActorId.Equals(actor) &&
+                projection.Phase == RoundResolutionPhase.ResolvingTurn &&
+                projection.DecisionContract != null &&
+                projection.PendingTurnRelease == null &&
+                depth < 12;
+            if (!stillActing)
+            {
+                budget--;
+                return Settled(session) != held;
+            }
+
+            var here = session.CaptureSnapshot();
+            foreach (var answer in projection.DecisionContract.Commands.OrderBy(Doing))
+            {
+                if (budget <= 0)
+                {
+                    return false;
+                }
+
+                var branch = Restored(initial, here);
+                var answered = branch.Execute(answer);
+                if (!answered.Accepted)
+                {
+                    survey.Refused.Add($"{answer.Kind} inside {card}: {answered.Detail}");
+                    continue;
+                }
+
+                if (DoesSomething(survey, initial, branch, actor, held, depth + 1, ref budget, card))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Answers that act before answers that decline, so a doing path is found early.</summary>
+        private static int Doing(DirectorCommand command)
+        {
+            switch (command.Kind)
+            {
+                case DirectorCommandKind.AnswerEffectChoice:
+                    switch (command.EffectChoice.Kind)
+                    {
+                        case EffectChoiceCommandKind.Select: return 0;
+                        case EffectChoiceCommandKind.Confirm: return 1;
+                        case EffectChoiceCommandKind.Decline: return 9;
+                        default: return 8;
+                    }
+                case DirectorCommandKind.ChooseMovementDestination:
+                case DirectorCommandKind.ChooseAttackTarget:
+                case DirectorCommandKind.DeclineDefense:
+                    return 0;
+                case DirectorCommandKind.ChooseDefenseCard: return 5;
+                case DirectorCommandKind.StopMovement: return 7;
+                default: return 4;
+            }
+        }
+
+        private static MatchSession Restored(MatchSessionInitialState initial, string snapshot)
+        {
+            var session = new MatchSession(initial);
+            Assert.That(session.RestoreSnapshot(snapshot).Accepted, Is.True);
+            return session;
+        }
+
+        /// <summary>The authoritative state once the turn is released, without the event log.</summary>
+        private static string Settled(MatchSession session)
+        {
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                session.Execute(DirectorCommand.ReleaseTurn());
+            }
+
+            Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(session.CaptureSnapshot(), out var envelope),
+                Is.True);
+            return envelope.AuthoritativePayload;
+        }
+    }
+}

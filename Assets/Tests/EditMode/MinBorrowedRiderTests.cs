@@ -577,8 +577,14 @@ namespace GuardsDigital.Tests.EditMode
             // The borrowed shape here moves nobody: Crane's push would carry the target three spaces
             // out of Range 1, and the second instance would then have no legal target at all - which is
             // a true fact about the board rather than about the borrow.
+            //
+            // Milestone 9.6. The second enemy hero stands inside the borrowed Radius. The offer walk now
+            // reads that Radius, so a "may" whose only step is a hero target with nobody in reach is
+            // no longer opened (8.29e) - and with the far enemy six away, the second instance had
+            // nobody left to name. Each instance borrowing is the claim, so each is given someone.
             var turn = new RiderTurn(
-                Pool.Resolved, StanceShape.ViperRadiusReach, repeatTheAttack: true);
+                Pool.Resolved, StanceShape.ViperRadiusReach, farEnemyAt: new HexCoordinate(0, 4),
+                repeatTheAttack: true);
 
             turn.Drive();
 

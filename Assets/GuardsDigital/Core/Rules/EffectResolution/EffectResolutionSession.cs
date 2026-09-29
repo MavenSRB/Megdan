@@ -407,8 +407,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool stagesHeroDefeats = false,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
             bool watchesTieBreakerFlips = false,
-            bool watchesTokenPlacements = false)
+            bool watchesTokenPlacements = false,
+            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
         {
+            BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
             WatchesTokenPlacements = watchesTokenPlacements;
             WatchesTieBreakerFlips = watchesTieBreakerFlips;
             TieBreakerRevealedSide = tieBreakerRevealedSide;
@@ -473,6 +475,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// before her.
         /// </summary>
         public TeamSide TieBreakerRevealedSide { get; }
+
+        /// <summary>Milestone 9.6. See <see cref="EffectCapabilityContext.BorrowedPrimaryCanAct"/>.</summary>
+        public Func<CardInstanceId, HeroId, bool> BorrowedPrimaryCanAct { get; }
 
         /// <summary>
         /// Milestone 8.75a. Whether an authority holding the match's coin is standing behind this
@@ -1857,7 +1862,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 invocationContext: frame.InvocationContext,
                 // Milestone 8.75. Ignatia the Mad's coin-selected card text reads the revealed Tie
                 // Breaker face here; it is TeamSide.None for every resolution that did not carry one.
-                tieBreakerRevealedSide: context.TieBreakerRevealedSide);
+                tieBreakerRevealedSide: context.TieBreakerRevealedSide,
+                borrowedPrimaryCanAct: context.BorrowedPrimaryCanAct);
         }
 
         /// <summary>

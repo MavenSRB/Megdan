@@ -865,7 +865,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// read in one place and an item that widens her Range widens this line with it.</para>
         /// </summary>
         private sealed class RangeObstacleTargetHandler
-            : IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
+            : IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler,
+                IEffectSelectionCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
             private static readonly HexDirection[] Directions =
             {
@@ -894,7 +895,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // Milestone 8.40e. See ExcludeTerrainParameterName: a narrowing of what may be
                         // named, never of what blocks the file, optional and default-off.
                         new EffectCapabilityParameter(
-                            ExcludeTerrainParameterName, EffectValueKind.Boolean, isRequired: false)
+                            ExcludeTerrainParameterName, EffectValueKind.Boolean, isRequired: false),
+
+                        // Milestone 9.6. The Move the target is chosen FOR, so a target it would move
+                        // nobody for - one already adjacent - is not offered (user ruling 2026-09-28).
+                        new EffectCapabilityParameter(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValueKind.Node,
+                            isRequired: false)
                     },
                     new[]
                     {
@@ -925,16 +933,40 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                var chosen = selected != null && selected.Count == 1 &&
-                    selected[0].Kind == EffectValueKind.Coordinate
-                        ? Options(context).FirstOrDefault(
-                            option => option.Obstacle.Equals(selected[0].Coordinate))
-                        : null;
+                var chosen = Chosen(context, selected);
                 if (chosen == null)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                return EffectExecutionResult.Applied(Facts(context, chosen));
+            }
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Options(context).Select(option => EffectValue.Space(option.Obstacle)).ToArray();
+
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var option = Chosen(context, chosen);
+                return option == null ? Array.Empty<EffectOutcomeFact>() : Facts(context, option);
+            }
+
+            private static GrappleOption Chosen(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                selected != null && selected.Count == 1 &&
+                    selected[0].Kind == EffectValueKind.Coordinate
+                    ? Options(context).FirstOrDefault(
+                        option => option.Obstacle.Equals(selected[0].Coordinate))
+                    : null;
+
+            private static IReadOnlyList<EffectOutcomeFact> Facts(
+                EffectCapabilityContext context, GrappleOption chosen)
+            {
                 var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact(
@@ -958,7 +990,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         ActorApproachSpaceOutputName, EffectValue.Space(chosen.ActorApproach)));
                 }
 
-                return EffectExecutionResult.Applied(facts);
+                return facts;
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>

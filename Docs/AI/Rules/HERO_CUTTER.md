@@ -14,6 +14,8 @@ the same reason.
 
 > Milestone 9.2: Bombardment, Barrage, Broadside and X Marks the Spot measure the printed Radius with p.16's items (rulebook reading **R1** in [PRINTED_WORDING](PRINTED_WORDING.md)); each was the icon's number written as a literal before, which a Radius item did not raise.
 
+> Milestone 9.6: Grappling Bolt offers only an obstacle she would move towards - one she already stands beside is not offered (user ruling **W6**, [PRINTED_WORDING](PRINTED_WORDING.md), Get over here!'s mirror).
+
 ## Cutter content ledger
 
 Her printed set is inventoried at milestone 8.39. Composition, registration, dealing and the permanent

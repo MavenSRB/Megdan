@@ -85,8 +85,18 @@ namespace GuardsDigital.Tests.EditMode
         /// found seed 75 ends on the Life counters after 5 rounds and 389 commands - 16% of budget,
         /// which is the same shape seed 25 itself was chosen for (5 rounds, 17%), so the selection
         /// rule this block has followed since 8.35z5 is unchanged rather than relaxed.</para>
+        /// <para>Milestone 9.6 re-derived it again: the offer walk now greys actions that can do
+        /// nothing (Kinetic Blast with no adjacent enemy, Blend Into Shadows away from terrain, Steady
+        /// Advance short of two minions), so a seeded walk - a pure function of what it is offered -
+        /// reroutes from the first such turn. Seed 75 no longer ends inside the budget. A scan of seeds
+        /// 1-80 on this match's own engaged fixture (re-run once RULING 53 kept false-"If" plays
+        /// offered) found eighteen life-counter endings that reach a hero respawn; seed 59 ends after
+        /// 15 rounds and 1,257 commands (52% of budget) and walks through the Minion Battle, a Defense
+        /// and the respawn - the part of p.8's round the page-coverage case below needs from this
+        /// match. It is the same seed the six-seat corpus's "life" scenario plays on the same
+        /// fixture.</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 75;
+        private const int LifeCounterMatchSeed = 59;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
@@ -111,8 +121,14 @@ namespace GuardsDigital.Tests.EditMode
         /// rounds and still going). An offline scan of seeds 1-60 found seed 6 ends after 953 commands
         /// (40% of budget, matching the headroom this constant has always preferred), and no seed
         /// below it does better: seeds 1-4 either miss FinalWaveFlipped or run 58-77% of budget.</para>
+        /// <para>Milestone 9.6 re-derived it again: the offer walk now greys actions that can do
+        /// nothing (Kinetic Blast with no adjacent enemy, Blend Into Shadows away from terrain, Steady
+        /// Advance short of two minions), so a seeded walk - a pure function of what it is offered -
+        /// reroutes from the first such turn. Seed 6 no longer ends inside the budget. The 80-seed scan
+        /// found seed 21 ending on the final Wave after 10 rounds and 841 commands (35% of budget),
+        /// the headroom this constant prefers.</para>
         /// </summary>
-        private const int FinalWaveMatchSeed = 6;
+        private const int FinalWaveMatchSeed = 21;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push

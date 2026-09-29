@@ -288,15 +288,15 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = ModalBoard.ForSpiritModal(oneBulletOnly, standTheEnemyBeside: false);
 
-            Assert.That(board.GreyedBullets(), Is.EqualTo(new[] { "spirit-adjacent-hero" }),
-                "\"Target a hero adjacent to you\" names nobody with the enemy two spaces off.");
-            Assert.That(board.OfferedBullets(), Is.EqualTo(new[] { "spirit-not-in-discard-gate" }),
-                "THE RANGED ARM IS OFFERED AND ITS BULLET IS NOT ASKED. Tali's first bullet sits " +
-                "inside a Conditional - \"if this card is not in the discard\" - and the " +
-                "option-feasibility walk has never let a Conditional report Blocked, because an " +
-                "unevaluated predicate could have taken the harmless path. So an arm behind one stays " +
-                "offered however empty its bullet is. That is the shared walk's rule rather than this " +
-                "contract's, it predates this milestone, and it is measured here rather than changed.");
+            // Milestone 9.6. The walk used to leave an arm behind a Conditional offered however empty
+            // its bullet was, because it never evaluated the predicate. "If this card is not in the
+            // discard" is now read - the card is not - so the ranged arm is judged by its bullet, and
+            // with the enemy five spaces off (past every printed Range) it names nobody either.
+            Assert.That(board.GreyedBullets(),
+                Is.EquivalentTo(new[] { "spirit-adjacent-hero", "spirit-not-in-discard-gate" }),
+                "\"Target a hero adjacent to you\" names nobody with the enemy five spaces off, and " +
+                "neither does \"target a unit in range\".");
+            Assert.That(board.OfferedBullets(), Is.Empty);
         }
 
         [Test]

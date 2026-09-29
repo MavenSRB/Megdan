@@ -11,6 +11,8 @@ alone. A rule system that spans heroes stays in the
 than one hero stays in [RULES_LEDGER.md](../RULES_LEDGER.md) rather than being copied here. The rulebook
 refers to Arien as "he"; this shard follows the source.
 
+> Milestone 9.6: Living Tsunami's step to a space from which the Attack reaches nobody is taken, and the Attack then ends without a target (RULING 45's dead end is p.10's stop); it used to be refused and rolled back.
+
 ## Arien content ledger
 
 The pitch uses Arien's complete progression. Its implementation-grade inventory contains:

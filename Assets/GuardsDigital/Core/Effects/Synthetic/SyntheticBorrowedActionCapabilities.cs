@@ -279,8 +279,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .ToArray();
         }
 
-        private sealed class FriendlyHeroInPlayHandler : IEffectCapabilityHandler
+        private sealed class FriendlyHeroInPlayHandler : IEffectCapabilityHandler,
+            IEffectSelectionCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                FriendlyHeroesInPlay(context).Select(EffectValue.Hero).ToArray();
+
+            // Milestone 9.6. What each answer would publish, so an offer can follow every answer
+            // to what the card does after it - the answers themselves are never narrowed here.
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Resume(context, chosen);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => FriendlyHeroInPlayV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
@@ -326,8 +345,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.NeedsChoice;
         }
 
-        private sealed class NameColorHandler : IEffectCapabilityHandler
+        private sealed class NameColorHandler : IEffectCapabilityHandler,
+            IEffectSelectionCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Chooser(context).IsDefined
+                    ? Offered(context).Select(color => EffectValue.Integer((int)color)).ToArray()
+                    : Array.Empty<EffectValue>();
+
+            // Milestone 9.6. What each answer would publish, so an offer can follow every answer
+            // to what the card does after it - the answers themselves are never narrowed here.
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Resume(context, chosen);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => NameColorV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
@@ -668,10 +708,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return EffectExecutionResult.Applied(outcomes);
             }
 
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Candidates(context).Count == 0
-                    ? EffectExecutionResultKind.ImpossibleMandatory
-                    : EffectExecutionResultKind.NeedsChoice;
+            /// <summary>
+            /// Milestone 9.6: where the turn says whether a borrowed primary could act, a pool whose
+            /// every card would do nothing is a borrow that performs nothing - answered as declined,
+            /// so a bullet offering it stays selectable (8.35z35) while an action it is the only
+            /// hope of is greyed (6.5af; user ruling 2026-09-28 on Reload!).
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                if (candidates.Count == 0)
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                return context.BorrowedPrimaryCanAct == null ||
+                    candidates.Any(card => context.BorrowedPrimaryCanAct(card.Id, context.ActorId))
+                    ? EffectExecutionResultKind.NeedsChoice
+                    : EffectExecutionResultKind.DeclinedOptional;
+            }
         }
     }
 }

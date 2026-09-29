@@ -60,8 +60,13 @@ namespace GuardsDigital.Tests.EditMode
                 });
             var enemySource = CardInstance.CreateInHand(
                 new CardInstanceId("enemy-hold"), hold.Reference, enemy);
+            // Milestone 9.6. A card left in the enemy's hand after it commits: "discard a card, if
+            // able" with an empty hand can do nothing and is no longer asked, and this case is about
+            // restoring the question, so the question has to exist.
+            var enemySpare = CardInstance.CreateInHand(
+                new CardInstanceId("enemy-spare"), hold.Reference, enemy);
             var definitions = new[] { face, hold };
-            var instances = new[] { source, enemySource };
+            var instances = new[] { source, enemySource, enemySpare };
             var catalogs = new MatchContentCatalogs(
                 SyntheticEffectCapabilities.CreateCatalog(
                     TrinketsComponentContent.ObstacleHandlers()),

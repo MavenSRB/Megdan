@@ -75,13 +75,25 @@ namespace GuardsDigital.Tests.EditMode
         public void ASelectionThatNamesNoConsumer_KeepsTheConservativeReading()
         {
             // Acceptance check 4, first half. The consumer parameter is optional, so a definition that
-            // says nothing about what its choice is for is judged exactly as it was before this
-            // milestone - offered, because the walk cannot read it.
-            var paused = StartChoose(consumer: default, accepted: default);
+            // says nothing about what its choice is for is not narrowed: while any answer could still
+            // lead somewhere, the mode is offered.
+            var paused = StartChoose(consumer: default, accepted: Other);
 
             Assert.That(paused.Frame.PendingChoice.UnavailableCandidates, Is.Empty,
                 "This milestone narrows what can be read; it does not start disabling what merely " +
                 "might fail.");
+        }
+
+        [Test]
+        public void ASelectionThatNamesNoConsumer_WhoseEveryAnswerIsRefused_GreysItsMode()
+        {
+            // Milestone 9.6. A single-answer selection of six or fewer is followed answer by answer,
+            // so a mode whose every answer ends at a mandatory step that refuses it is proven blocked
+            // rather than merely unread - and a blocked mode is refused (8.35z35).
+            var paused = StartChoose(consumer: default, accepted: default);
+
+            Assert.That(paused.Frame.PendingChoice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { Branch }));
         }
 
         [Test]

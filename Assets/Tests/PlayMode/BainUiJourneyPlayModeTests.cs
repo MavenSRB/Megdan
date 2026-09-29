@@ -693,12 +693,14 @@ namespace GuardsDigital.Tests.PlayMode
             var shape = string.Join(", ", offer.Select(value =>
                 value + "/d" + HexDistanceQuery.Calculate(from, value)));
 
-            Assert.That(offer, Is.EqualTo(new[]
-                {
-                    new HexCoordinate(-4, 2), new HexCoordinate(-3, 2), pulled
-                }.OrderBy(value => value.Q).ThenBy(value => value.R).ToArray()).AsCollection,
-                "Each of p.19's six files offers at most the FIRST obstacle along it, and nothing " +
-                "behind one. Offer was: " + shape);
+            // Milestone 9.6, the user's ruling W6: a target the pull would move nowhere is not offered.
+            // The first obstacles on two files, (-4,2) and (-3,2), already stand beside him, so of
+            // the three first-on-their-file pieces only the one two spaces off remains.
+            Assert.That(offer, Is.EqualTo(new[] { pulled }).AsCollection,
+                "Each of p.19's six files offers at most the FIRST obstacle along it, nothing " +
+                "behind one, and nothing already beside him (W6). Offer was: " + shape);
+            Assert.That(offer, Has.No.Member(new HexCoordinate(-4, 2)),
+                "W6: the first obstacle on its file, but adjacent - a pull would take no step.");
             Assert.That(offer, Has.No.Member(BehindAt),
                 "The unit the sandbox stands one step behind (-4,2) is inside the printed Range 4 " +
                 "and on the same straight line, and it is not offered - which is what \"with no " +

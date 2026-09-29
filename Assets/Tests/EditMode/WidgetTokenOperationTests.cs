@@ -271,12 +271,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var probe = new Probe(WidgetEffectContent.DragonBond(Card, "rev-1"), At(1),
                 spaces: new[] { At(0), At(1), At(-4) });
-            // The existing feasibility contract conservatively offers a conditional branch.
-            // Its mandatory Place still has to refuse a full board without reclaiming Pyro.
-            probe.Option("place-pyro");
-            Assert.That(probe.Step.IsComplete, Is.True);
+            // Milestone 9.6. The walk now reads "if Pyro is in play" instead of offering the branch
+            // blind, so the place bullet is judged by its mandatory Place: a full board has nowhere to
+            // put Pyro, and the bullet is refused (8.35z35) rather than taken and stopped. Pyro stays.
+            Assert.That(probe.Choice.SelectInvocations.Any(c => c.Candidate.OptionNodeId.Value == "place-pyro"),
+                Is.False, "A bullet whose mandatory Place has no space cannot be taken.");
             Assert.That(probe.PyroAt, Is.EqualTo(At(1)));
-            probe.Start();
             probe.Option("move-both"); probe.Option("hero-first");
             // Single zero-distance candidates may be applied automatically by the shared Move.
             while (probe.Choice != null) probe.Pick(probe.Choices.Single());

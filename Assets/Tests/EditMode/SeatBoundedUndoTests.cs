@@ -225,7 +225,13 @@ namespace GuardsDigital.Tests.EditMode
                 // scanned, 3 is the lowest that presses at least one rewind and resolves at least one
                 // Attack (two, in fact), so 3 is the lowest of a healthy set rather than a lucky
                 // singleton.
-            }, 3);
+                //
+                // Milestone 9.6 re-derived it again, 3 -> 2: the offer walk now greys actions that can
+                // do nothing, so this walk reroutes and seed 3 resolves no Attack in 1,600 commands.
+                // Tried against this same undo-interleaved sweep, seeds 2, 4, 5, 7, 10, 12, 13, 15,
+                // 17, 18, 21, 24, 25, 26, 28 and 30 press rewinds and resolve at least one Attack;
+                // 2 is the lowest of that healthy set.
+            }, 2);
 
             Assert.That(rewinds, Is.GreaterThan(0),
                 "The walk pressed no rewind in " + walked + " commands, so the property is vacuous.");

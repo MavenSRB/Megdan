@@ -107,8 +107,21 @@ namespace GuardsDigital.Core.Cards.Verified
             yield return SyntheticTokenCapabilities.ReclaimHandler(ReclaimBarrierV1, Barrier);
         }
 
-        private sealed class ActorInTurretRadiusHandler : IEffectCapabilityHandler
+        private sealed class ActorInTurretRadiusHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a read of where the Turret stands, which changes nothing.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var inside = Read(context);
+                return inside.HasValue
+                    ? new[] { new EffectOutcomeFact("inside", EffectValue.Boolean(inside.Value)) }
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => ActorInTurretRadiusV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -126,10 +139,15 @@ namespace GuardsDigital.Core.Cards.Verified
                 if (board == null || obstacles == null ||
                     !board.TryGetObjectCoordinate(
                         BoardObjectReference.ForHero(
-                            context.ActorId), out var actorAt) ||
-                    !obstacles.TryGetObstacleCoordinate(
-                        OwnedObstacleIdentity.For(TurretKind, context.ActorId), out var turretAt))
+                            context.ActorId), out var actorAt))
                     return null;
+
+                // Milestone 9.6. No Turret on the board is "not in radius of the Turret": the printed
+                // "if" is simply false, which RULING 53 makes a legal do-nothing play rather than a
+                // step that cannot start.
+                if (!obstacles.TryGetObstacleCoordinate(
+                        OwnedObstacleIdentity.For(TurretKind, context.ActorId), out var turretAt))
+                    return false;
                 return HexDistanceQuery.Calculate(actorAt, turretAt) <=
                     context.Input("radius").IntegerValue;
             }

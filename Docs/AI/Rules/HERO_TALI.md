@@ -10,6 +10,8 @@ card asks about *itself*, and the first above one star on p.21's complexity scal
 content inventory, source-verification status, and any deviation or open question scoped to Tali
 alone.
 
+> Milestone 9.6: Cold Snap, Snowstorm and Blizzard compose the batch move as the printed "if able"; Cold Snap and Snowstorm are greyed when no enemy unit in radius could step in any direction, and every direction stays selectable otherwise. Blizzard stays playable on an empty disk, because it also arms its End-of-turn repeat.
+
 ## Tali content ledger
 
 Hero pack: **Devoted Hero pack** (user-approved, PLAN.md TWENTY-FIRST AMENDMENT), fifth and last

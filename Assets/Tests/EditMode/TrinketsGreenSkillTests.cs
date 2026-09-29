@@ -252,6 +252,28 @@ namespace GuardsDigital.Tests.EditMode
                 card.Reference, skill.Id, Trinkets, Trinkets,
                 ActionInvocationContext.PrintedPrimary, context);
             Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
+            if (!defeats)
+            {
+                // Milestone 9.6. Nobody here holds a card, so "discard a card, if able" can do nothing
+                // to either hero: a hero step that would do nothing is skipped (9.1's if-able rule, now
+                // able to see past the hero choice), and whatever is still asked leads to no discard.
+                var discards = new List<HeroId>();
+                for (var guard = 0; guard < 8 && step.Frame?.PendingChoice != null; guard++)
+                {
+                    var pending = step.Frame.PendingChoice;
+                    step = EffectResolutionSession.Answer(step.Frame,
+                        pending.SelectInvocations.FirstOrDefault() ?? pending.ConfirmInvocation, context);
+                    Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
+                    discards.AddRange(step.RequestedHeroDefeats.Select(value => value.HeroId));
+                }
+
+                Assert.That(step.IsComplete, Is.True);
+                Assert.That(discards, Is.Empty, "Discard-only text defeats nobody.");
+                Assert.That(board.TryGetObstacleCoordinate(turret, out _), Is.False,
+                    "Remove the Turret still happens.");
+                return;
+            }
+
             // Milestone 9.1, ruling W3: "Up to two enemy heroes ... discard" hits the heroes present,
             // so the first question is WHICH hero, and it cannot be declined.
             Assert.That(step.Frame?.PendingChoice, Is.Not.Null);

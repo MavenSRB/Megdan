@@ -424,7 +424,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchComponents components,
             int roundIndex,
             int turnIndex,
-            out AppliedRuleModification blocking)
+            out AppliedRuleModification blocking,
+            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
         {
             blocking = null;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
@@ -438,7 +439,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                borrowedPrimaryCanAct: borrowedPrimaryCanAct);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),

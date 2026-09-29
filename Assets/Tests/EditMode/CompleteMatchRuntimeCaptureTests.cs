@@ -578,7 +578,11 @@ namespace GuardsDigital.Tests.EditMode
         // FinalWaveMatchSeed moved (same session, same seed history): correcting Blend Into Shadows'
         // secondary rerouted this trajectory and seed 5 no longer ends inside budget. Seed 6 ends after
         // 953 commands, comfortably above the 128-command floor this constant needs.
-        private const int CaptureSeed = 6;
+        //
+        // Milestone 9.6 re-derived it again, 6 -> 21, with CompleteCoreMatchLoopTests' FinalWaveMatchSeed
+        // (same session, same seed history): the offer walk now greys actions that can do nothing, so
+        // seed 6 no longer ends inside budget. Seed 21 ends on the final Wave after 841 commands.
+        private const int CaptureSeed = 21;
         private const int CaptureBudget = 2400;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>

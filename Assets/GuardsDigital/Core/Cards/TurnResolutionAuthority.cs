@@ -2290,7 +2290,53 @@ namespace GuardsDigital.Core.Cards
             return cardActions == null ||
                 cardActions.CanSkillApplyAnything(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
-                    roundIndex, turnIndex, out blocking);
+                    roundIndex, turnIndex, out blocking, BorrowedPrimaryCanAct);
+        }
+
+        private int borrowedPrimaryProbeDepth;
+
+        /// <summary>
+        /// Milestone 9.6: whether <paramref name="cardId"/>'s printed primary, taken by
+        /// <paramref name="actorId"/> as a borrowed instance, could do anything now - the offer rules
+        /// this authority applies to its own actions (6.5af's Skill, 7.8a1's Attack), asked of the
+        /// offer the borrow would mint. An Attack whose own text binds its target starts regardless,
+        /// as the borrowed start does, and every other kind is judged able. A borrow judged from
+        /// inside another is judged able, so the question cannot recurse.
+        /// </summary>
+        private bool BorrowedPrimaryCanAct(CardInstanceId cardId, HeroId actorId)
+        {
+            var card = instances.SingleOrDefault(value => value.Id.Equals(cardId));
+            var definition = card == null
+                ? null
+                : definitions.SingleOrDefault(value => value.Reference.Equals(card.DefinitionReference));
+            var primary = definition?.ActionDefinitions.SingleOrDefault(
+                value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            if (primary == null || borrowedPrimaryProbeDepth > 0)
+            {
+                return true;
+            }
+
+            var offer = new ActionOffer(card.Id, definition.Reference, primary.Id, actorId,
+                ActionInvocationContext.TextGranted, true, primary.AttackRange,
+                primary.SourceCardStateTransition);
+            borrowedPrimaryProbeDepth++;
+            try
+            {
+                switch (primary.Kind)
+                {
+                    case ActionKind.Skill:
+                        return CanStartSkill(offer);
+                    case ActionKind.Attack:
+                        return primary.AttackTargetPolicy?.TargetIsBoundByCardText == true ||
+                            CanStartAttack(offer);
+                    default:
+                        return true;
+                }
+            }
+            finally
+            {
+                borrowedPrimaryProbeDepth--;
+            }
         }
 
         /// <summary>
@@ -2769,6 +2815,26 @@ namespace GuardsDigital.Core.Cards
 
             var heldKind = ActionOfferQuery
                 .FindActionDefinition(paused.HeldOffer, definitions).Kind;
+
+            // Milestone 9.6. A before-attack ability that moved the attacker ("before performing an
+            // Attack action, you may move 1 space" - Arien's Living Tsunami) can leave the Attack with
+            // nobody to target. RULING 45 offers every destination and makes that dead end p.10's
+            // stop: the move stands, the Attack ends with no outcome and the card is spent - as the
+            // backend's own StopAttackWithoutATarget does - rather than the offered answer being
+            // refused and the move rolled back.
+            if (heldKind == ActionKind.Attack &&
+                ActionOfferQuery.FindActionDefinition(paused.HeldOffer, definitions)
+                    .AttackTargetPolicy?.TargetIsBoundByCardText != true &&
+                !cardActions.CanAttackFindTarget(
+                    paused.HeldOffer, definitions, instances, participants, timing,
+                    CurrentModifications(), roundIndex, turnIndex))
+            {
+                AddCompletedAction(events, paused.HeldOffer.SourceCardInstanceId,
+                    paused.HeldOffer.ActionDefinitionId, paused.HeldOffer.ActorId, ActionKind.Attack,
+                    paused.HeldOffer.InvocationContext);
+                return CompleteTheActionTheTurnHeldOpen(events);
+            }
+
             return heldKind == ActionKind.Attack
                 ? StartAttackCore(paused.HeldResolutionId, paused.HeldOffer, events)
                 : heldKind == ActionKind.Skill

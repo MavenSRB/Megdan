@@ -589,8 +589,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(move.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble));
             Assert.That(
                 ChildOrder(root, "grapple-root"),
-                Is.EqualTo(new[] { "grapple-obstacle", "grapple-actor-space", "grapple-move" }),
-                "The sentence targets, then moves.");
+                Is.EqualTo(new[] { "grapple-actor-space", "grapple-obstacle", "grapple-move" }),
+                "The sentence targets, then moves. Milestone 9.6 reads her own space first - it applies " +
+                "nothing - so the Move can judge each obstacle and one she stands beside is not offered (W6).");
         }
 
         // -------------------------------------------------------------------------------------------

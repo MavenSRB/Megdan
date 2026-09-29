@@ -592,7 +592,14 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
                             EffectInputBinding.FromLiteral(
                                 SyntheticTargetingCapabilities.ExcludeTerrainParameterName,
-                                EffectValue.Boolean(true))
+                                EffectValue.Boolean(true)),
+
+                            // Milestone 9.6, user ruling 2026-09-28: only a target the Move would
+                            // bring closer is offered. One already adjacent moves nowhere, and a board
+                            // holding no other target greys the card.
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
                         },
                         outputs: new[]
                         {

@@ -453,8 +453,11 @@ namespace GuardsDigital.Tests.EditMode
         public void AHeroRespawn_IsTheDockedQuestionWithTheResolveWithoutControlInItsCorner()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            // Milestone 9.6 re-derived the seed, 23 -> 27: the offer walk now greys actions that can do
+            // nothing, so the walk reroutes and seed 23 reaches no respawn in 1,200 commands. Of seeds
+            // 1-40 only 27 does (at command 337).
             OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 1200, projection => projection.PendingHeroRespawnChoice != null, seed: 23);
+                host, 1200, projection => projection.PendingHeroRespawnChoice != null, seed: 27);
             var projection = host.Projection;
             Assert.That(projection.PendingHeroRespawnChoice, Is.Not.Null,
                 "The seeded walk must reach a respawn, or this case proves nothing.");

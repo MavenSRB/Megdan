@@ -295,8 +295,16 @@ namespace GuardsDigital.Tests.EditMode
             // rather than seeded around silently - and forty-eight that end honestly. Seed 2 ends at
             // 45 completed rounds and 3,538 commands: five rounds of margin above the floor and 84%
             // of budget, the same shape every re-pin above records.
+            //
+            // Milestone 9.6 re-derived it again, 2 -> 36. The offer walk now reads what each action
+            // can do, so this walk reroutes and seed 2 ends early. The same scan closed the open
+            // question above: seeds 5, 31 and 40 stopped on an offered Living Tsunami step the rules
+            // refused, and that step is now taken (RULING 45's dead end is p.10's stop) - no seed of
+            // 1-40 stops on a refusal any more. Seed 36 ends at 43 completed rounds and 3,726
+            // commands - three rounds of margin and 88% of budget, the shape every re-pin above
+            // records.
             var submitted = OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 4200, projection => { Measure(); return false; }, seed: 2);
+                host, 4200, projection => { Measure(); return false; }, seed: 36);
             Measure();
 
             var playedRounds = host.Projection.RoundIndex - 1;

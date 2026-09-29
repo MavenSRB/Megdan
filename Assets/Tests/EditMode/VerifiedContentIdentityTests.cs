@@ -87,6 +87,11 @@ namespace GuardsDigital.Tests.EditMode
         // digest did not, because Trample's narrowing lives inside his minion-choice handler.
         // It also moved Sabina and Cutter to `-9-2-rev-1`: six selections that wrote their printed
         // Radius as a literal reach now measure the icon, so p.16's Radius items raise them.
+        // Milestone 9.6 moved four to `-9-6-rev-1`, the four whose compositions changed so an offer
+        // can read what they do: Tali's batch move is the printed "if able" behind a direction that
+        // names its consumer; Swift's subject excludes a hero beside terrain; Bain's and Cutter's line
+        // targets name their Move (W6), and Cutter reads her own space first. Every other pin is
+        // byte-identical, which is the measurement that the engine's new reading changed no content.
         private static readonly IdentityPin[] Pins =
         {
             new IdentityPin("arien", "arien-8-35l-rev-1", "a980d139925f8bfe87fe6b501978697944d0a7473c0d42cf6df70ee85c1758a5"),
@@ -199,7 +204,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("tali", "tali-8-37a-rev-1", "cfebb9c9af6c7514468c4869efa91f107443d4ff7187712b531621b06f8d9e86"),
+            new IdentityPin("tali", "tali-9-6-rev-1", "3f1bb083d93addb88ffe3c5aefb1f4bc0c95defc4e6458b61d77a85e39426490"),
             // Milestone 8.38e. THE THIRTEENTH PIN, and the first added after the package arc closed.
             // It arrives on exactly the terms the seventh through twelfth did: a pin is a claim about
             // content a configured match loads, and milestone 8.38d composed Swift without dealing
@@ -231,7 +236,7 @@ namespace GuardsDigital.Tests.EditMode
             // composed one, so half its own sentence was unreachable), and her three jump Skills'
             // push declares `up to` rather than `may`, which had made "up to 1 / 2 spaces" an exact
             // distance and Drop Trooper's "up to TWO enemy units" a forced both.
-            new IdentityPin("swift", "swift-8-83-rev-1", "32485fcbc44d924b79bfae9808f336015385a412407f218cc164f99730a3e1d3"),
+            new IdentityPin("swift", "swift-9-6-rev-1", "237b99fb616201508264a0811ef1838843772947016c52329cf760be71d639a6"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.
@@ -242,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("cutter", "cutter-9-2-rev-1", "a7056d2e695f7f07ff58f86f944962a48f7ab357c17f7b40c47437a5c0966bd7"),
+            new IdentityPin("cutter", "cutter-9-6-rev-1", "fd2983678b27f58bf89ac56c322026838fd1ef85dbab59f254a27cb668c63257"),
             // Milestone 8.40j. THE FIFTEENTH PIN, on exactly the terms the seventh through fourteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.40i composed Bain's eighteen faces without dealing him.
@@ -252,7 +257,7 @@ namespace GuardsDigital.Tests.EditMode
             // did not recur: a pin added WITHOUT its staged configuration measures the hero as
             // contributing ZERO cards, and his went in beside the row in EveryDealtDefinition below,
             // in one change.
-            new IdentityPin("bain", "bain-8-40i-rev-1", "fac85b0e5052e2ea714c20aeef91aa0c18bb2e424eafe6d7e5bbcad022de44f7"),
+            new IdentityPin("bain", "bain-9-6-rev-1", "c4c608de12b41e59840aa98b7616cd7adc6e7b98c78ce9b5441c473c59c037d9"),
             new IdentityPin("garrus", "garrus-8-41d-rev-1", "b222004923fee801bdb2bf46c2d780a31f8377e2a84162190c2c9b9ef57cc793"),
             new IdentityPin("widget", "widget-8-43d-rev-1", "5aa8887cf06a4c9111385818ee9a2e92b584057a1876d1b57d6c5072517c9ac2"),
             // Milestone 8.57g. THE EIGHTEENTH PIN, on exactly the terms every pin from the seventh on

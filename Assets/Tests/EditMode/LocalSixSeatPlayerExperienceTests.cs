@@ -517,7 +517,13 @@ namespace GuardsDigital.Tests.EditMode
                 // them after 15 rounds and 1,281 commands - 53% of the budget, and the closest match
                 // in length to what seed 7 used to give (14 rounds), so the Minion Battle, the
                 // Defense and the respawn this scenario owes all stay well inside the walk.
-                "life", 12, MatchVictoryCause.LifeCountersExhausted,
+                // Milestone 9.6 re-derived it again, 12 -> 59: the offer walk now reads what each
+                // action can do, so the walk reroutes. An offline scan of seeds 1-80 on this
+                // scenario's OWN fixture found eighteen Life-counter endings that reach a hero
+                // respawn; seed 59 - 15 rounds and 1,257 commands, the length seed 12 had - walks
+                // through the Minion Battle, a Defense and the respawn this corpus needs from this
+                // scenario, with a Fast Travel at its halfway index.
+                "life", 59, MatchVictoryCause.LifeCountersExhausted,
                 () => ConfiguredMatchFixtures.CreateEngagedOfficialSixPlayerSession(2));
             yield return new RecordedScenario(
                 // Same re-derivation, same requirement as before: this is the scenario that owes the

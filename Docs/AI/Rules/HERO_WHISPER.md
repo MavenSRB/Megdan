@@ -259,9 +259,10 @@ reading of each, and the two designer-tier answers her thread produced.
   card's.
 - **Ruling 34 - "on different targets" is pairwise distinct.** No unit is attacked twice anywhere in a
   chain. See the open questions below for the measured shortfall.
-- **Ruling 42 - a card that cannot be played on round 1's first turn.** Death Seeker's gate is false for
-  every seat at p.6's setup, so rule 14 refuses it and the control is greyed. That is accepted product
-  behaviour rather than a defect to route around.
+- **Ruling 42, superseded by RULING 53 on 2026-09-08.** Death Seeker's gate is false for every seat at
+  p.6's setup. Ruling 42 greyed it; RULING 53 offers it as a legal do-nothing play ("it's a Hold"), and
+  her journey `DeathSeeker_IsOfferedOnTheFirstTurnOfRoundOne_AndResolvesAsALegalDoNothingPlay` asserts
+  both halves. The shard carried the superseded wording until 9.6 found the gap.
 - **The reminder-text answer (designer, 2026-08-19).** Italic parenthetical text holds no rules weight
   anywhere and is printed only on the lowest-tier card of a branch. So Greater Good, which omits Lesser
   Evil's parenthesis, behaves in exactly the same way.

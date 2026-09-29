@@ -1147,15 +1147,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// "Choose a direction" - always all six, unconditionally, because nothing about the board or
         /// the actor's own state can make one of p.17's six directions illegal to name.
         /// </summary>
-        private sealed class ChooseDirectionHandler : IEffectCapabilityHandler
+        private sealed class ChooseDirectionHandler : IEffectCapabilityHandler,
+            IEffectSelectionCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => ChooseDirectionV1;
 
+            // Milestone 9.6. The step the direction is chosen FOR may be declared, so an offer can ask
+            // it whether any direction lets it do anything - Cold Snap with no enemy unit in radius.
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                outputs: new[]
+                new[]
+                {
+                    new EffectCapabilityParameter(
+                        EffectSelectionDeclaration.ConsumerParameterName,
+                        EffectValueKind.Node,
+                        isRequired: false)
+                },
+                new[]
                 {
                     new EffectOutputBinding(ChosenDirectionOutput, EffectValueKind.Integer)
                 });
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                AllDirections.Select(direction => EffectValue.Integer((int)direction)).ToArray();
+
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                chosen != null && chosen.Count == 1 && chosen[0].Kind == EffectValueKind.Integer &&
+                    AllDirections.Contains((HexDirection)chosen[0].IntegerValue)
+                    ? new[] { new EffectOutcomeFact(ChosenDirectionOutput, chosen[0]) }
+                    : Array.Empty<EffectOutcomeFact>();
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -1222,42 +1246,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var board = context.Components?.Board;
-                var radius = context.Input(BatchRadiusParameterName).IntegerValue;
-                var direction = (HexDirection)context.Input(BatchDirectionParameterName).IntegerValue;
-                if (board == null || context.Participants == null || radius < 0 ||
-                    !AllDirections.Contains(direction) ||
-                    !board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                if (!TryReadBatch(context, out var board, out var direction, out var candidates) ||
+                    !AnyCanStep(context, board, candidates))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                // p.18's "at the same time": every candidate's own coordinate is read once, up front,
-                // before any of this batch's own moves can change what a later candidate's destination
-                // check would see. Order is stable rather than incidental, so a genuine collision - two
-                // units approaching one empty space from different directions - commits deterministically
-                // through the board's own validated displacement rather than by iteration accident.
-                var candidates = RosterPresenceQuery.FindUnitsWithin(
-                        actorAt, radius, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource,
-                        context.ActorId, board, context.Participants, context.Modifications)
-                    .Where(target => !TargetQuery.IsPrevented(
-                        target.AsRuleObject(), context.EnclosingActivity,
-                        RuleObject.ForHero(context.ActorId), board, context.Participants,
-                        context.Modifications, context.ImmunityOverrides))
-                    .OrderBy(RosterPresenceQuery.Identity, StringComparer.Ordinal)
-                    .Select(target => (target, at: board.TryGetObjectCoordinate(target, out var at) ? at : (HexCoordinate?)null))
-                    .Where(pair => pair.at.HasValue)
-                    .Select(pair => (pair.target, at: pair.at.Value))
-                    .ToArray();
-
                 var moved = 0;
                 foreach (var (target, at) in candidates)
                 {
-                    var destination = StraightLineQuery.Step(at, direction, 1);
-                    if (!board.MapDefinition.PlayableCoordinates.Contains(destination) ||
-                        board.TryGetObjectAt(destination, out _) ||
-                        context.Modifications.AnyOverlayMakesAnObstacleOf(destination))
+                    if (!CanStep(context, board, at, direction))
                     {
                         // "if able": a unit with nowhere to go simply does not move, and the batch
                         // continues to the next one rather than stopping - the same reading p.18 gives a
@@ -1265,7 +1263,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         continue;
                     }
 
-                    var committed = board.CommitValidatedDisplacement(target, destination);
+                    var committed = board.CommitValidatedDisplacement(
+                        target, StraightLineQuery.Step(at, direction, 1));
                     if (committed.Accepted)
                     {
                         moved++;
@@ -1283,21 +1282,79 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 throw new InvalidOperationException("This capability never requests a choice.");
 
             /// <summary>
-            /// Always applies. Zero eligible units is a legitimate outcome of "each enemy unit in
-            /// radius" over an empty disk, not a failure - the same reading p.18's own unbounded Push
-            /// batch gives a pusher standing alone.
+            /// Milestone 9.6: impossible exactly when no enemy unit in the disk could take a step in ANY
+            /// direction - nobody there, or everybody hemmed in - which is when the sentence can move
+            /// nobody whichever direction is named. A direction that moves nobody while another would is
+            /// still a direction the card lets the actor choose, so the answer never depends on the
+            /// chosen one: Cold Snap is greyed on an empty disk and offers all six directions otherwise.
             /// </summary>
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                TryReadBatch(context, out var board, out _, out var candidates) &&
+                    AnyCanStep(context, board, candidates)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+
+            private static bool TryReadBatch(
+                EffectCapabilityContext context,
+                out IBoardDisplacementAuthority board,
+                out HexDirection direction,
+                out (BoardObjectReference target, HexCoordinate at)[] candidates)
             {
-                var board = context.Components?.Board;
-                var direction = (HexDirection)context.Input(BatchDirectionParameterName).IntegerValue;
-                return board == null || context.Participants == null ||
-                    context.Input(BatchRadiusParameterName).IntegerValue < 0 ||
+                board = context.Components?.Board;
+                var radius = context.Input(BatchRadiusParameterName).IntegerValue;
+                direction = (HexDirection)context.Input(BatchDirectionParameterName).IntegerValue;
+                candidates = null;
+                if (board == null || context.Participants == null || radius < 0 ||
                     !AllDirections.Contains(direction) ||
                     !board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out _)
-                    ? EffectExecutionResultKind.ImpossibleMandatory
-                    : EffectExecutionResultKind.Applied;
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return false;
+                }
+
+                // p.18's "at the same time": every candidate's own coordinate is read once, up front,
+                // before any of this batch's own moves can change what a later candidate's destination
+                // check would see. Order is stable rather than incidental, so a genuine collision - two
+                // units approaching one empty space from different directions - commits deterministically
+                // through the board's own validated displacement rather than by iteration accident.
+                var reading = board;
+                candidates = RosterPresenceQuery.FindUnitsWithin(
+                        actorAt, radius, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource,
+                        context.ActorId, board, context.Participants, context.Modifications)
+                    .Where(target => !TargetQuery.IsPrevented(
+                        target.AsRuleObject(), context.EnclosingActivity,
+                        RuleObject.ForHero(context.ActorId), reading, context.Participants,
+                        context.Modifications, context.ImmunityOverrides))
+                    .OrderBy(RosterPresenceQuery.Identity, StringComparer.Ordinal)
+                    .Select(target => (target, at: reading.TryGetObjectCoordinate(target, out var at) ? at : (HexCoordinate?)null))
+                    .Where(pair => pair.at.HasValue)
+                    .Select(pair => (pair.target, at: pair.at.Value))
+                    .ToArray();
+                return true;
+            }
+
+            /// <summary>
+            /// Whether anybody in the batch has a free space one step away in some direction. When
+            /// nobody has, nobody moves whichever direction is named: a space only opens when a unit
+            /// has already stepped out of it, and none can take the first step.
+            /// </summary>
+            private static bool AnyCanStep(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                (BoardObjectReference target, HexCoordinate at)[] candidates) =>
+                candidates.Any(candidate =>
+                    AllDirections.Any(direction => CanStep(context, board, candidate.at, direction)));
+
+            private static bool CanStep(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                HexCoordinate at,
+                HexDirection direction)
+            {
+                var destination = StraightLineQuery.Step(at, direction, 1);
+                return board.MapDefinition.PlayableCoordinates.Contains(destination) &&
+                    !board.TryGetObjectAt(destination, out _) &&
+                    !context.Modifications.AnyOverlayMakesAnObstacleOf(destination);
             }
         }
 

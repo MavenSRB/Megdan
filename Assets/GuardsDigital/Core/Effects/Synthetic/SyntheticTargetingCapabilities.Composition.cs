@@ -148,6 +148,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string AdjacentAtLeastParameterName = "adjacentAtLeast";
 
         /// <summary>
+        /// Milestone 9.6. The adjacency clause read as its complement - Swift's "an enemy hero in
+        /// radius, who is NOT adjacent to terrain". A candidate qualifies when fewer of its neighbours
+        /// satisfy the declared adjacency kinds than <see cref="AdjacentAtLeastParameterName"/> asks.
+        /// It narrows nothing on its own, like the count: with no adjacency kind declared there is
+        /// nothing to negate.
+        /// </summary>
+        public const string NotAdjacentParameterName = "notAdjacent";
+
+        /// <summary>
         /// Milestone 8.88. Which kinds an OBJECT selection offers, as <see cref="PrintedIconObjectKind"/>.
         /// Only the object arms declare it: every other arm's kind is its identity.
         /// </summary>
@@ -198,6 +207,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AdjacentToUnitKindParameterName,
                 AdjacentToUnitRelationParameterName,
                 AdjacentAtLeastParameterName,
+                NotAdjacentParameterName,
                 AdmittedObjectKindParameterName,
                 OwnTokensOnlyParameterName,
                 TokenKindParameterName
@@ -842,7 +852,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AdjacentToTokenKindParameterName,
                 AdjacentToUnitKindParameterName,
                 AdjacentToUnitRelationParameterName,
-                AdjacentAtLeastParameterName
+                AdjacentAtLeastParameterName,
+                NotAdjacentParameterName
             });
 
         /// <summary>
@@ -885,6 +896,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly RosterUnitKind adjacentToUnitKind;
             private readonly SourceTeamRelation adjacentToUnitRelation;
             private readonly int adjacentAtLeast;
+            private readonly bool notAdjacent;
 
             public PrintedIconSpaceClauses(
                 EffectCapabilityContext context,
@@ -910,6 +922,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 adjacentToUnitRelation =
                     (SourceTeamRelation)context.Input(AdjacentToUnitRelationParameterName).IntegerValue;
                 adjacentAtLeast = Math.Max(1, context.Input(AdjacentAtLeastParameterName).IntegerValue);
+                notAdjacent = context.Input(NotAdjacentParameterName).BooleanValue;
             }
 
             public bool Admit(HexCoordinate at)
@@ -941,7 +954,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                return !DeclaresAdjacency || QualifyingNeighbours(at) >= adjacentAtLeast;
+                return !DeclaresAdjacency || (QualifyingNeighbours(at) >= adjacentAtLeast) != notAdjacent;
             }
 
             private bool DeclaresAdjacency =>

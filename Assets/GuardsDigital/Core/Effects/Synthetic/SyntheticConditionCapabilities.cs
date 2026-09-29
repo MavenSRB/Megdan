@@ -173,8 +173,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// A pure predicate over the card state the resolution was given: it mutates nothing, asks
         /// nobody, and publishes one boolean read from the source card's own current location.
         /// </summary>
-        private sealed class SourceCardInDiscardHandler : IEffectCapabilityHandler
+        private sealed class SourceCardInDiscardHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => SourceCardInDiscardV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -260,8 +274,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// A pure predicate over the match's own timing state: it mutates nothing, asks nobody, and
         /// publishes one boolean.
         /// </summary>
-        private sealed class HeroConditionHandler : IEffectCapabilityHandler
+        private sealed class HeroConditionHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => HeroConditionV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =

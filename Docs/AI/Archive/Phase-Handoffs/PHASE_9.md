@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.6 Offer against outcome evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.6 | Every offered printed primary does something, checked by whole-match self-play against Holding the same card; the offer walk now reads predicates, pure value reads, unbound inputs and followable selections; rulings W6 and W7; Swift's terrain narrowing and Tali's "if able" batch composed as printed. [Definition](../../Roadmap/PHASE_9.md#x-96-every-offered-action-does-something). | `milestone/9.6` |
+
 ## Milestone 9.5 Future hero evidence
 
 | Milestone | Outcome and definition | Commit |

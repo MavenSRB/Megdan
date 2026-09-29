@@ -248,8 +248,10 @@ namespace GuardsDigital.Core.Effects
             EffectCapabilityCatalog capabilities = null,
             HexCoordinate? prospectiveActorSpace = null,
             ActionInvocationContext invocationContext = ActionInvocationContext.None,
-            TeamSide tieBreakerRevealedSide = TeamSide.None)
+            TeamSide tieBreakerRevealedSide = TeamSide.None,
+            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
         {
+            BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
             TieBreakerRevealedSide = tieBreakerRevealedSide;
             InvocationContext = invocationContext;
             ProspectiveActorSpace = prospectiveActorSpace;
@@ -527,6 +529,15 @@ namespace GuardsDigital.Core.Effects
         public ActionInvocationContext InvocationContext { get; }
 
         /// <summary>
+        /// Milestone 9.6: whether a card's printed primary, performed by a hero as a borrowed
+        /// instance, could do anything now - the same answer the turn gives its own offers (6.5af,
+        /// 7.8a1). Only the turn's offer walk supplies it, so Reload! is greyed when the card it would
+        /// borrow can do nothing and nothing else on it can either (user ruling 2026-09-28).
+        /// <c>null</c> everywhere else, where a borrow is judged as able.
+        /// </summary>
+        public Func<CardInstanceId, HeroId, bool> BorrowedPrimaryCanAct { get; }
+
+        /// <summary>
         /// This same context, asked as if the acting hero already stood on <paramref name="space"/>.
         ///
         /// <para>Everything else is carried across unchanged, because nothing else about the question
@@ -560,7 +571,8 @@ namespace GuardsDigital.Core.Effects
                 DeclaredOutputs,
                 Capabilities,
                 space,
-                InvocationContext);
+                InvocationContext,
+                borrowedPrimaryCanAct: BorrowedPrimaryCanAct);
 
         /// <summary>
         /// Milestone 8.88. This same context with <paramref name="clauses"/> added to its inputs, each
@@ -613,7 +625,8 @@ namespace GuardsDigital.Core.Effects
                 Capabilities,
                 ProspectiveActorSpace,
                 InvocationContext,
-                TieBreakerRevealedSide);
+                TieBreakerRevealedSide,
+                BorrowedPrimaryCanAct);
         }
 
         public EffectValue Input(string parameterName) =>

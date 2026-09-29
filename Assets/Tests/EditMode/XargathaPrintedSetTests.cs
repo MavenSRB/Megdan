@@ -221,11 +221,15 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// "If able" skips only the move when every space beside Xargatha is occupied. The already
-        /// legal target choice remains legal and no empty movement prompt is exposed.
+        /// "If able" skips the move when every space beside Xargatha is occupied - and with every
+        /// space beside her full, no target could be moved at all, so the card can do nothing.
+        ///
+        /// <para>Milestone 9.6: such a card is greyed (6.5af) rather than offered, targeted, and spent
+        /// with nothing moved - the same reading as the user's ruling W6 for a target the step would
+        /// do nothing to.</para>
         /// </summary>
         [Test]
-        public void SirensCall_WithNoLegalAdjacentLanding_SilentlySkipsTheMove()
+        public void SirensCall_WithNoLegalAdjacentLanding_IsNotOffered()
         {
             var fixture = Create(
                 minionPlacements: new Dictionary<string, HexCoordinate>
@@ -239,14 +243,9 @@ namespace GuardsDigital.Tests.EditMode
                 clearHerNeighbourhood: false);
             var called = fixture.MinionAt(TwoAway);
 
-            fixture.StartPrimary(XargathaCardContent.SirensCall);
-            fixture.Select(called);
-            fixture.ConfirmIfStillOwed();
-
-            Assert.That(fixture.Choice, Is.Null,
-                "An impossible if-able move is skipped without asking the player an empty question.");
-            Assert.That(fixture.SpaceOf(called), Is.EqualTo(TwoAway),
-                "Skipping the infeasible move leaves the selected target where it stood.");
+            Assert.That(fixture.IsPrimaryAvailable(XargathaCardContent.SirensCall), Is.False,
+                "No space beside her is free, so no target can be moved and the card can do nothing.");
+            Assert.That(fixture.SpaceOf(called), Is.EqualTo(TwoAway));
         }
 
         // -----------------------------------------------------------------------------------------

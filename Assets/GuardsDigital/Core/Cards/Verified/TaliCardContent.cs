@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="UrsafarCardContent.ContentRevision"/> has: it moves when Tali's content does.
         /// </summary>
-        public const string ContentRevision = "tali-8-37a-rev-1";
+        public const string ContentRevision = "tali-9-6-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

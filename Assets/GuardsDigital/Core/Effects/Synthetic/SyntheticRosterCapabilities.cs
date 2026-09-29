@@ -3279,8 +3279,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }
 
-        private sealed class HeroDefeatedThisRoundHandler : IEffectCapabilityHandler
+        private sealed class HeroDefeatedThisRoundHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => HeroDefeatedThisRoundV1;
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
@@ -3357,8 +3371,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
         }
 
-        private sealed class PresenceCountHandler : IEffectCapabilityHandler
+        private sealed class PresenceCountHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => PresenceCountV1;
             public EffectCapabilityParameterSchema Schema { get; } = TargetSchema(
                 new[]
@@ -3747,8 +3775,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// conditional can read. Nothing about the board is consulted: p.19's adjacency is a property
         /// of two coordinates, and both arrive bound from earlier nodes.
         /// </summary>
-        private sealed class SpacesAdjacentHandler : IEffectCapabilityHandler
+        private sealed class SpacesAdjacentHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => SpacesAdjacentV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -4323,8 +4365,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// `ultimate-unlocked@1`. Whether the acting hero's Ultimate card sits in the Ultimate area,
         /// which is p.16's whole definition of having one. Milestone 8.35z28.
         /// </summary>
-        private sealed class UltimateUnlockedHandler : IEffectCapabilityHandler
+        private sealed class UltimateUnlockedHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => UltimateUnlockedV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -5635,8 +5691,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>
         /// Milestone 8.35z33. The handler behind <see cref="EnemyHeroWithDiscardPresentV1"/>.
         /// </summary>
-        private sealed class EnemyHeroWithDiscardPresentHandler : IEffectCapabilityHandler
+        private sealed class EnemyHeroWithDiscardPresentHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>Milestone 9.6: a predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>Milestone 9.6: what the predicate would publish, so the offer reads its branch.</summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => EnemyHeroWithDiscardPresentV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =

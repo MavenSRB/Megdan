@@ -426,13 +426,15 @@ namespace GuardsDigital.Tests.PlayMode
             var shape = string.Join(", ", offered.Select(value =>
                 value + "/d" + HexDistanceQuery.Calculate(from, value)));
 
+            // Milestone 9.6, the user's ruling W6 (Get over here!'s mirror): an obstacle she already
+            // stands beside would reel her nowhere, so the two first-on-their-file pieces adjacent to
+            // her, (-4,2) and (-3,2), are not offered.
             Assert.That(offered, Is.EqualTo(new[]
                 {
-                    new HexCoordinate(-4, 2), new HexCoordinate(-3, -2),
-                    new HexCoordinate(-3, 2), new HexCoordinate(-1, -1)
+                    new HexCoordinate(-3, -2), new HexCoordinate(-1, -1)
                 }.OrderBy(value => value.Q).ThenBy(value => value.R).ToArray()).AsCollection,
-                "Each of p.19's six files offers at most the FIRST obstacle along it, and nothing " +
-                "behind one. Offer was: " + shape);
+                "Each of p.19's six files offers at most the FIRST obstacle along it, nothing " +
+                "behind one, and nothing already beside her (W6). Offer was: " + shape);
             Assert.That(offered, Has.No.Member(new HexCoordinate(-3, 3)),
                 "The terrain two along the file a minion already blocks is not offered, which is " +
                 "what \"with no obstacles between you\" means. Offer was: " + shape);

@@ -52,10 +52,28 @@ Historical evidence: [9.5 completion index](../Archive/Phase-Handoffs/PHASE_9.md
 
 Authorized 2026-09-28 by the user ("do it!") after the review of which playtest bugs 9.1-9.5 would have caught: the largest remaining family is an offer that disagrees with what the action can do - Whisper's Crimson Trail not offered when legal (8.104), Ursafar's Angry Roar offering a dormant card and fizzling (8.97), Misa's free step not offered before a Skill (8.95), Bounce's repeat never offered through Reload! (8.48). Bounded sequence 9.6 -> 9.7, one at a time with separate validation and commits.
 
-### [~] 9.6 Every offered action does something
+### [x] 9.6 Every offered action does something
 
 Outcome: a seeded self-play check over matches whose line-ups are drawn from every dealt hero. At each turn it copies the game once per available primary action, performs the action with a policy that takes every offered step, and records an action that leaves the board, every hand and pile, tokens, coins and Active effects exactly as they were; it also records every command the projection offered and the rules refused. Each finding is corrected with a failing-then-passing regression or listed with the printed clause that makes it legitimately empty. Closing check: the check green over its fixed seeds, every dealt hero exercised, the affected suites green.
 
-### [ ] 9.7 Every legal action is offered
+Result: `OfferOutcomeTests` compares each offered primary against Holding the same card (the authoritative snapshot after the turn is released), so no hand-listed fingerprint can miss a Next-turn effect or a rewritten Initiative. On the committed code it found the offer walk blind in five places, each corrected in the engine rather than per card:
+- **Conditional predicates were never read.** A predicate declaring `IEffectAnticipatedOutcomeCapabilityHandler` is now read, and only its branch is judged. Seven predicate and value handlers declare it, including the card-radius read, which alone had made every "in radius" gate performable. Reading the gate greys what cannot start: Claws That Catch, Unstable Portal and Dread Razor with nobody to bind. It also closes "may" prompts and modal options that lead nowhere.
+- **RULING 53 bounds that reading** (user, 2026-09-08, superseding RULING 42; until now recorded only in Whisper's journeys). A play whose printed "If" gate is false is offered as a legal do-nothing play ("it's a Hold"), because rule 14 greys only what cannot start. So when the question is whether the whole action is offered, a false gate with nothing printed for the other case keeps it offered. The first build of this milestone greyed those faces, and the full Play Mode suite caught it. `OfferOutcomeTests` now counts them rather than flagging them: Dark and Darker Ritual, Hold Ground, Steady Advance, Death Seeker, Blend into Shadows, Ancestral Boon, Fresh Converts, Early Prototype and Updated Design (an absent Turret is simply "not in radius").
+- **A step whose input an earlier, skipped step never published was treated as unreadable.** It is now asked what the resolver will ask it (Suppress, Pin Down).
+- **A single-answer selection of six or fewer is followed answer by answer** (Commune with Spirits, Blizzard).
+- **Selections declaring a consumer.** Tali's direction (Cold Snap and Snowstorm, whose batch is now the printed "if able"), Bain's and Cutter's line targets (W6), and Swift's subject, which now excludes a hero beside terrain as SW-11 recorded.
+- **A borrowed primary is judged by the turn's own offer rules** (Reload!, W7).
+
+The seat-driven sweep also measured the one command the projection offered and the rules refused: Arien's Living Tsunami step to a space from which his Attack reaches nobody. It was refused as TargetUnavailable and the step rolled back. This is the family the 8.35l worker reported on seeds 12 and 20 and left unclaimed. RULING 45 makes that dead end p.10's stop, so the step is now taken, the Attack ends without a target and the card is spent (regression in `LivingTsunamiEmptyAnswerTests`).
+
+Seeded walks reroute when offers change, so the seeds these fixtures pin were re-derived by their own recorded rules. Each constant records its scan and its choice.
+
+The one listed face is Commune with Spirits, where discarding a Spirit and performing its self-retrieval ends where Hold does. Across 84 random six-hero matches, 128 distinct faces were taken, all 26 heroes appeared, and nothing else was flagged.
+
+Completed 2026-09-29.
+
+Historical evidence: [9.6 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-96-offer-against-outcome-evidence).
+
+### [~] 9.7 Every legal action is offered
 
 Outcome: the converse over the same states - an action the offer greys out is performed anyway through a test-only path, and one that can change the game is a greyed-out legal play (8.104's shape). Closing check as 9.6.

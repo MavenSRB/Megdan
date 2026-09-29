@@ -49,7 +49,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling every verified set has:
         /// it moves when Swift's content does.
         /// </summary>
-        public const string ContentRevision = "swift-8-83-rev-1";
+        public const string ContentRevision = "swift-9-6-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

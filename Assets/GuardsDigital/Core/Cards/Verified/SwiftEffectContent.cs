@@ -707,7 +707,17 @@ namespace GuardsDigital.Core.Cards.Verified
                     EffectValue.Boolean(false)),
                 EffectInputBinding.FromLiteral(
                     SyntheticTargetingCapabilities.IncludeSelfParameterName,
-                    EffectValue.Boolean(false))
+                    EffectValue.Boolean(false)),
+
+                // Milestone 9.6. "who is not adjacent to terrain" describes the hero, so a hero beside
+                // terrain is not one the card can name. The gate below only read it after the pick,
+                // so such a hero was offered, chosen, and the card spent on nothing.
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.AdjacentToTerrainParameterName,
+                    EffectValue.Boolean(true)),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.NotAdjacentParameterName,
+                    EffectValue.Boolean(true))
             };
             if (!escalates)
             {

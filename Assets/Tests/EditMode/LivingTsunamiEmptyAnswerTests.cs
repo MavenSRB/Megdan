@@ -96,6 +96,46 @@ namespace GuardsDigital.Tests.EditMode
                 "answer, not the complete one.");
         }
 
+        /// <summary>
+        /// Milestone 9.6, found by the offer-against-outcome sweep (the seat walk on the official
+        /// six-player fixture, seeds 5, 31 and 40 - the same family the 8.35l worker reported on seeds
+        /// 12 and 20 and left unclaimed): a destination that walks Arien away from the only unit his
+        /// Attack could take was offered, and naming it was REFUSED as TargetUnavailable with the move
+        /// rolled back. RULING 45 offers every destination the move allows and makes the dead end
+        /// p.10's stop, so the step is taken, the Attack ends with no target, and the card is spent.
+        /// </summary>
+        [Test]
+        public void TsunamiStepAwayFromTheOnlyTarget_IsTaken_AndTheAttackEndsWithoutOne()
+        {
+            var board = ArienBoard.Create(
+                tier: 3,
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["red-melee-01"] = StagedHeroBoard.FirstAdjacent
+                },
+                heroPlacements: StagedHeroBoard.At("primitive-hero", new HexCoordinate(2, 0)),
+                banishedMinions: AllMinions.Where(minion => minion != "red-melee-01").ToArray());
+
+            board.StartPrimary(ArienCardContent.ViolentTorrent);
+
+            var away = board.CandidateSpaces(board.Choice)
+                .First(space => HexDistanceQuery.Calculate(space, StagedHeroBoard.FirstAdjacent) > 1);
+
+            board.Select(away);
+
+            Assert.That(board.HeroSpace(board.Hero), Is.EqualTo(away),
+                "The step is kept: the dead end it leads to is p.10's stop, not a refusal.");
+            Assert.That(board.Choice, Is.Null);
+            Assert.That(board.Session.Projection.PendingAttackResolution, Is.Null,
+                "\"Target a unit adjacent to you\" names nobody from there, so the Attack ends.");
+            Assert.That(board.Session.Projection.Cards
+                    .Single(card => card.OwnerId.Equals(board.Hero) &&
+                        card.DefinitionReference.DefinitionId.Equals(ArienCardContent.ViolentTorrent))
+                    .State.ResolutionStatus,
+                Is.EqualTo(GuardsDigital.Core.Cards.CardResolutionStatus.Resolved),
+                "and the card is spent.");
+        }
+
         private static readonly string[] AllMinions =
         {
             "red-melee-01", "red-melee-02", "red-melee-03", "red-melee-04",

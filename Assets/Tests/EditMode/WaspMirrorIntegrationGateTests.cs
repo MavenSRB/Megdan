@@ -70,15 +70,28 @@ namespace GuardsDigital.Tests.EditMode
         /// 27, 29, 33 and 38 all exhaust the Life counters inside a single round, several in under
         /// twenty commands. Seed 12 takes 33 rounds and 1,009 commands to get there, which is the
         /// longest honest candidate rather than the first one found.</para>
+        /// <para>Milestone 9.6 re-derived it again: the offer walk now greys actions that can do
+        /// nothing (Kinetic Blast with no adjacent enemy, Blend Into Shadows away from terrain, Steady
+        /// Advance short of two minions), so a seeded walk - a pure function of what it is offered -
+        /// reroutes from the first such turn. Seed 12 now ends on the final Wave. A scan of seeds
+        /// 1-40 found life-counter endings at 1, 3, 4, 7, 8, 10, 11, 14, 15, 19, 24, 25, 26, 27, 29,
+        /// 30, 33, 34 and 38; most end inside one or two rounds, and seed 24 - 49 rounds and 1,493
+        /// commands - is again the longest honest candidate.</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 12;
+        private const int LifeCounterMatchSeed = 24;
 
         /// <summary>
         /// Ends by p.8's last Wave counter on the engaged mirror carrying two Life counters a side
         /// - enough that the Wave runs out before the heroes do. Milestone 8.35g re-derived it from
         /// 16 to 1, now 38 rounds and 1,244 commands.
+        /// <para>Milestone 9.6 re-derived it again: the offer walk now greys actions that can do
+        /// nothing (Kinetic Blast with no adjacent enemy, Blend Into Shadows away from terrain, Steady
+        /// Advance short of two minions), so a seeded walk - a pure function of what it is offered -
+        /// reroutes from the first such turn. Seed 1 no longer ends inside the budget. The 40-seed
+        /// scan found final-Wave endings from 890 to 2,390 commands; seed 35 takes 27 rounds and 890
+        /// commands (37% of budget), the headroom the six-player constant has always preferred.</para>
         /// </summary>
-        private const int FinalWaveMatchSeed = 1;
+        private const int FinalWaveMatchSeed = 35;
 
         /// <summary>
         /// Ends by p.8's Throne capture on the uncontested-push mirror, after 35 rounds and 1,102

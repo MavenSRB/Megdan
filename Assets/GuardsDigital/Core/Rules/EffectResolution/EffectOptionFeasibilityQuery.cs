@@ -175,7 +175,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var budget = MaximumNodesPerOption;
-            var explanation = new RefusalExplanation();
+            var explanation = new RefusalExplanation(judgesTheWholeAction: true);
             var verdict = Walk(
                 context.Definition.RootNodeId,
                 prospectiveFrame,
@@ -197,6 +197,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         private sealed class RefusalExplanation
         {
+            public RefusalExplanation(bool judgesTheWholeAction = false)
+            {
+                JudgesTheWholeAction = judgesTheWholeAction;
+            }
+
+            /// <summary>
+            /// Milestone 9.6: whether this walk is deciding if a whole action is offered - the one
+            /// question RULING 53 speaks to - rather than whether a prompt opens or an option may be
+            /// selected.
+            /// </summary>
+            public bool JudgesTheWholeAction { get; }
+
             public AppliedRuleModification Blocking { get; private set; }
 
             public void RecordFirst(AppliedRuleModification blocking)
@@ -384,8 +396,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     var carried = outcomes;
                     foreach (var child in node.ChildNodeIds)
                     {
+                        // Milestone 9.6. A Conditional is the one child handed the carried facts: its
+                        // predicate reads an earlier step's count ("adjacent to an empty spawn point"),
+                        // and without it Dread Razor's range bullet was judged reachable on a board
+                        // where the "if" was false. Every other child reads what it always read.
+                        var given = context.Definition.TryGetNode(child, out var childNode) &&
+                            childNode.Kind == EffectNodeKind.Conditional
+                            ? carried
+                            : outcomes;
                         var verdict = WalkToAttackTargetBinding(
-                            child, frame, outcomes, context, ref budget, spaces, explanation);
+                            child, frame, given, context, ref budget, spaces, explanation);
                         if (verdict != BindingVerdict.Continue)
                         {
                             return verdict;
@@ -926,7 +946,7 @@ RefusalExplanation explanation = null)
             switch (node.Kind)
             {
                 case EffectNodeKind.Capability:
-                    return Judge(node, frame, outcomes, context, explanation);
+                    return Judge(node, frame, outcomes, context, explanation, earlierStepsAppliedNothing: true);
 
                 case EffectNodeKind.Sequence:
                     // Milestone 8.35l. The sequence carries forward what an earlier step would publish,
@@ -937,21 +957,7 @@ RefusalExplanation explanation = null)
                     // and performable. `actor-space@1` is the whole reason: a Place reading the actor's
                     // own space was undecidable to this walk, so Blend Into Shadows was offered against
                     // a standing restriction that would refuse it, drew no prompt, and spent the card.
-                    var carried = outcomes;
-                    foreach (var child in node.ChildNodeIds)
-                    {
-                        var verdict = Walk(child, frame, carried, context, ref budget, explanation);
-                        if (verdict != Verdict.Empty)
-                        {
-                            // Performable ends the walk; blocked ends the sequence, because the
-                            // resolution stops at a mandatory step it cannot take.
-                            return verdict;
-                        }
-
-                        carried = WithAnticipatedOutputs(child, frame, carried, context);
-                    }
-
-                    return Verdict.Empty;
+                    return WalkSequenceFrom(node, 0, frame, outcomes, context, ref budget, explanation);
 
                 case EffectNodeKind.Optional:
                     // Declining is always available and always does nothing, so an optional step is
@@ -978,10 +984,36 @@ RefusalExplanation explanation = null)
                         : Verdict.Empty;
 
                 case EffectNodeKind.Conditional:
-                    // Which branch runs could only be learned by executing the predicate, which this
-                    // walk may not do. Both branches are therefore judged, and the node counts as
-                    // performable when either is; when neither is, execution still continues, because
-                    // an unevaluated predicate could have taken the harmless path.
+                    // Milestone 9.6. A predicate that declares it only reads the state is read, and
+                    // only the branch it picks is judged - the one the resolver would take. Without
+                    // this "If there are 2 or more empty spawn points in radius, gain 1 coin" was
+                    // offered on a board where the "if" was false, and the card was spent on nothing.
+                    if (TryReadPredicate(node, frame, outcomes, context, out var holds, out var read))
+                    {
+                        // RULING 53 (user, 2026-09-08, superseding RULING 42): a play whose "If" gate
+                        // is false is OFFERED as a legal do-nothing play - "it's a Hold". So when the
+                        // question is whether the whole action is offered, a false "if" with nothing
+                        // printed for the other case keeps the action offered; rule 14 greys only what
+                        // cannot start. Every other question - whether a "may" prompt opens, which
+                        // options a modal may carry, whether an Attack can bind - reads the gate.
+                        if (!holds && node.ChildNodeIds.Count == 1 &&
+                            explanation?.JudgesTheWholeAction == true)
+                        {
+                            return Verdict.Performable;
+                        }
+
+                        var branch = holds
+                            ? node.ChildNodeIds[0]
+                            : node.ChildNodeIds.Count > 1 ? node.ChildNodeIds[1] : default;
+                        return branch.IsDefined
+                            ? Walk(branch, frame, read, context, ref budget, explanation)
+                            : Verdict.Empty;
+                    }
+
+                    // Otherwise which branch runs could only be learned by executing the predicate,
+                    // which this walk may not do. Both branches are therefore judged, and the node
+                    // counts as performable when either is; when neither is, execution still
+                    // continues, because an unevaluated predicate could have taken the harmless path.
                     foreach (var child in node.ChildNodeIds)
                     {
                         if (Walk(child, frame, outcomes, context, ref budget, explanation) == Verdict.Performable)
@@ -1005,6 +1037,194 @@ RefusalExplanation explanation = null)
         }
 
         /// <summary>
+        /// A sequence's children from <paramref name="start"/> on, each judged with what the earlier
+        /// ones would publish carried forward.
+        /// </summary>
+        private static Verdict WalkSequenceFrom(
+            EffectNodeDefinition sequence,
+            int start,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            ref int budget,
+            RefusalExplanation explanation)
+        {
+            var carried = outcomes;
+            for (var index = start; index < sequence.ChildNodeIds.Count; index++)
+            {
+                var child = sequence.ChildNodeIds[index];
+                if (TryAnswerEachWay(child, frame, carried, context, out var answers) &&
+                    budget > MaximumNodesPerOption / 4)
+                {
+                    return JudgeEachAnswer(
+                        sequence, index, answers, frame, carried, context, ref budget, explanation);
+                }
+
+                var verdict = Walk(child, frame, carried, context, ref budget, explanation);
+                if (verdict != Verdict.Empty)
+                {
+                    // Performable ends the walk; blocked ends the sequence, because the
+                    // resolution stops at a mandatory step it cannot take.
+                    return verdict;
+                }
+
+                carried = WithAnticipatedOutputs(child, frame, carried, context);
+            }
+
+            return Verdict.Empty;
+        }
+
+        /// <summary>
+        /// Milestone 9.6. The most answers a selection may have for the walk to follow each one.
+        /// Six is a direction, a colour, or the heroes of one side - the questions whose answer is only
+        /// a name, which is where "it asked, and then nothing could follow" hides.
+        /// </summary>
+        private const int LargestFollowedSelection = 6;
+
+        /// <summary>
+        /// Milestone 9.6: a single-answer selection this walk can follow answer by answer - one that
+        /// says what it would offer and what each answer would publish, and offers no more than
+        /// <see cref="LargestFollowedSelection"/>. Asking the question is not doing anything, so such a
+        /// step is worth offering only if what stands after it is for some answer. Commune with Spirits
+        /// was offered where no colour a friend could name led to a card to discard or to borrow.
+        /// </summary>
+        private static bool TryAnswerEachWay(
+            EffectNodeId nodeId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out IReadOnlyList<IReadOnlyList<EffectNodeOutcome>> answers)
+        {
+            answers = null;
+            if (!context.Definition.TryGetNode(nodeId, out var node) ||
+                node.Kind != EffectNodeKind.Capability ||
+                !context.Catalog.TryLoad(node.Capability, out var handler) ||
+                !(handler is IEffectSelectionCapabilityHandler selection) ||
+                !(handler is IEffectAnticipatedOutcomeCapabilityHandler publisher) ||
+                !publisher.PublishesWithoutApplying ||
+                // Only an answer a later step of this definition reads is followed. One nobody here
+                // reads is published for something outside it - an enclosing Attack, a repeat, a
+                // borrowing rider - so asking the question is itself the effect, and stays performable.
+                // Asked last: it scans the definition, and every check above is a lookup.
+                !context.Definition.Nodes.Any(other => other.Inputs.Any(input =>
+                    input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                    input.SourceNodeId.Equals(nodeId))))
+            {
+                return false;
+            }
+
+            var capabilityContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+            if (!IsDecidable(handler, capabilityContext) ||
+                selection.AnticipateMinimumSelections(capabilityContext) != 1 ||
+                EffectSelectionEligibilityQuery.JudgeSelection(
+                    handler.Anticipate(capabilityContext), handler, node, capabilityContext, frame,
+                    outcomes, context) != EffectExecutionResultKind.NeedsChoice)
+            {
+                return false;
+            }
+
+            var candidates = EffectSelectionEligibilityQuery.EligibleCandidates(
+                node, selection.AnticipateCandidates(capabilityContext), frame, outcomes, context);
+            if (candidates.Count == 0 || candidates.Count > LargestFollowedSelection)
+            {
+                return false;
+            }
+
+            var followed = new List<IReadOnlyList<EffectNodeOutcome>>();
+            foreach (var candidate in candidates)
+            {
+                var published = publisher.AnticipateOutcomes(capabilityContext, new[] { candidate });
+                if (published == null || published.Count == 0)
+                {
+                    // An answer this walk cannot follow leaves the step unread, as before.
+                    return false;
+                }
+
+                var carried = new List<EffectNodeOutcome>(outcomes);
+                carried.Add(new EffectNodeOutcome(node.Id, EffectExecutionResultKind.Applied, published));
+                followed.Add(carried);
+            }
+
+            answers = followed;
+            return true;
+        }
+
+        /// <summary>
+        /// The rest of the sequence judged once per answer: performable where any answer leads to
+        /// something, blocked where every answer is stopped, and empty otherwise.
+        /// </summary>
+        private static Verdict JudgeEachAnswer(
+            EffectNodeDefinition sequence,
+            int selectionIndex,
+            IReadOnlyList<IReadOnlyList<EffectNodeOutcome>> answers,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            ref int budget,
+            RefusalExplanation explanation)
+        {
+            var everyAnswerBlocked = true;
+            foreach (var answer in answers)
+            {
+                var verdict = WalkSequenceFrom(
+                    sequence, selectionIndex + 1, frame, answer, context, ref budget, explanation);
+                if (verdict == Verdict.Performable)
+                {
+                    return Verdict.Performable;
+                }
+
+                everyAnswerBlocked &= verdict == Verdict.Blocked;
+            }
+
+            return everyAnswerBlocked ? Verdict.Blocked : Verdict.Empty;
+        }
+
+        /// <summary>
+        /// Milestone 9.6: the answer a Conditional's predicate would give, where reading it mutates
+        /// nothing. Only a handler declaring <see cref="IEffectAnticipatedOutcomeCapabilityHandler"/>
+        /// with <see cref="IEffectAnticipatedOutcomeCapabilityHandler.PublishesWithoutApplying"/> is
+        /// read, only when its inputs resolve and it would apply, and "true" is the resolver's own
+        /// reading - any Boolean fact that holds. Anything else stays unread and both branches are
+        /// judged as before. <paramref name="carried"/> adds the facts the predicate publishes, so a
+        /// branch bound to them can be judged.
+        /// </summary>
+        private static bool TryReadPredicate(
+            EffectNodeDefinition node,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out bool holds,
+            out IReadOnlyList<EffectNodeOutcome> carried)
+        {
+            holds = false;
+            carried = outcomes;
+            if (!context.Catalog.TryLoad(node.Capability, out var handler) ||
+                !(handler is IEffectAnticipatedOutcomeCapabilityHandler publisher) ||
+                !publisher.PublishesWithoutApplying)
+            {
+                return false;
+            }
+
+            var capabilityContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+            if (!IsDecidable(handler, capabilityContext) ||
+                handler.Anticipate(capabilityContext) != EffectExecutionResultKind.Applied)
+            {
+                return false;
+            }
+
+            var published = publisher.AnticipateOutcomes(capabilityContext, Array.Empty<EffectValue>()) ??
+                Array.Empty<EffectOutcomeFact>();
+            holds = published.Any(fact =>
+                fact.Value.Kind == EffectValueKind.Boolean && fact.Value.BooleanValue);
+            var withFacts = new List<EffectNodeOutcome>(outcomes);
+            withFacts.Add(new EffectNodeOutcome(node.Id, EffectExecutionResultKind.Applied, published));
+            carried = withFacts;
+            return true;
+        }
+
+        /// <summary>
         /// One capability node's verdict: what its handler says it would report, read through the
         /// node's own failure policy, which is where p.10's mandatory-versus-optional distinction
         /// already lives.
@@ -1020,7 +1240,8 @@ RefusalExplanation explanation = null)
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context,
             RefusalExplanation explanation = null,
-            HexCoordinate? prospectiveActorSpace = null)
+            HexCoordinate? prospectiveActorSpace = null,
+            bool earlierStepsAppliedNothing = false)
         {
             if (!context.Catalog.TryLoad(node.Capability, out var handler))
             {
@@ -1036,7 +1257,11 @@ RefusalExplanation explanation = null)
                     capabilityContext.AsIfTheActorStoodAt(prospectiveActorSpace.Value);
             }
 
-            if (!IsDecidable(handler, capabilityContext))
+            // StaysUnbound's premise - every earlier step of the sequence applied nothing - holds only
+            // for the whole-action walk, which stops at the first step that does something. The Attack
+            // binding walk steps past a performable Move, so it keeps the conservative reading.
+            if (!IsDecidable(handler, capabilityContext) &&
+                !(earlierStepsAppliedNothing && StaysUnbound(handler, node, capabilityContext, context)))
             {
                 return Verdict.Performable;
             }
@@ -1204,6 +1429,84 @@ RefusalExplanation explanation = null)
             carried.Add(new EffectNodeOutcome(
                 node.Id, EffectExecutionResultKind.Applied, published));
             return carried;
+        }
+
+        /// <summary>
+        /// Milestone 9.6: whether every required input this node is missing is bound to an earlier
+        /// step of an enclosing sequence - one the walk has already passed, because it only reaches
+        /// this node when every earlier step applied nothing. Such a step published nothing the walk
+        /// did not carry, so the resolver will hand this node the same missing input, and the handler
+        /// can be asked now exactly what it will be asked then. "An enemy hero in radius, who is not
+        /// adjacent to terrain, discards a card, if able" was offered with no enemy hero there: the
+        /// selection had nobody to name, and the terrain read after it looked unreadable rather than
+        /// certain to stop.
+        /// </summary>
+        private static bool StaysUnbound(
+            IEffectCapabilityHandler handler,
+            EffectNodeDefinition node,
+            EffectCapabilityContext capabilityContext,
+            EffectResolutionContext context)
+        {
+            foreach (var parameter in handler.Schema.Parameters.Where(parameter =>
+                         parameter.IsRequired && !capabilityContext.Input(parameter.Name).IsDefined))
+            {
+                var binding = node.Inputs.FirstOrDefault(input =>
+                    string.Equals(input.ParameterName, parameter.Name, StringComparison.Ordinal));
+                if (binding.SourceKind != EffectBindingSourceKind.NodeOutput ||
+                    !context.Definition.TryGetNode(binding.SourceNodeId, out var source) ||
+                    source.Kind != EffectNodeKind.Capability ||
+                    !PrecedesInASequence(source.Id, node.Id, context.Definition))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool PrecedesInASequence(
+            EffectNodeId earlier, EffectNodeId later, EffectDefinition definition)
+        {
+            var parents = new Dictionary<EffectNodeId, EffectNodeDefinition>();
+            foreach (var candidate in definition.Nodes)
+            {
+                foreach (var child in candidate.ChildNodeIds)
+                {
+                    parents[child] = candidate;
+                }
+            }
+
+            var at = later;
+            while (parents.TryGetValue(at, out var parent))
+            {
+                if (parent.Kind == EffectNodeKind.Sequence)
+                {
+                    var children = parent.ChildNodeIds;
+                    var here = IndexOf(children, at);
+                    var there = IndexOf(children, earlier);
+                    if (there >= 0 && there < here)
+                    {
+                        return true;
+                    }
+                }
+
+                at = parent.Id;
+            }
+
+            return false;
+        }
+
+        private static int IndexOf(IReadOnlyList<EffectNodeId> ids, EffectNodeId id)
+        {
+            for (var index = 0; index < ids.Count; index++)
+            {
+                if (ids[index].Equals(id))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>

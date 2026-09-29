@@ -747,7 +747,7 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer)
                         }),
                     new EffectNodeDefinition(
-                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
                         SyntheticDisplacementCapabilities.BatchDirectMoveV1,
                         inputs: new[]
                         {
@@ -781,9 +781,13 @@ namespace GuardsDigital.Core.Cards.Verified
             // Milestone 8.37a. Blizzard's second sentence is armed here and asked at the turn's end;
             // Cold Snap and Snowstorm print no such sentence and take the three-node root unchanged,
             // so their own composition is byte-for-byte what it was.
+            // Milestone 9.6. The radius is read first, so the direction can be judged by the batch that
+            // consumes it: Cold Snap and Snowstorm are not offered when no enemy unit in radius could
+            // move in any direction. Blizzard's direction names no consumer, because Blizzard also arms
+            // its End-of-turn repeat and is worth playing on an empty disk.
             var children = armsEndOfTurnRepeat
-                ? new[] { chooseDirection, radius, move, arm }
-                : new[] { chooseDirection, radius, move };
+                ? new[] { radius, chooseDirection, move, arm }
+                : new[] { radius, chooseDirection, move };
             var armNode = armsEndOfTurnRepeat
                 ? new[]
                 {
@@ -810,6 +814,14 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         chooseDirection, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticDisplacementCapabilities.ChooseDirectionV1,
+                        inputs: armsEndOfTurnRepeat
+                            ? Array.Empty<EffectInputBinding>()
+                            : new[]
+                            {
+                                EffectInputBinding.FromLiteral(
+                                    EffectSelectionDeclaration.ConsumerParameterName,
+                                    EffectValue.Node(move))
+                            },
                         outputs: new[]
                         {
                             new EffectOutputBinding(
@@ -824,8 +836,10 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding(
                                 SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer)
                         }),
+                    // Milestone 9.6. "if able", as printed: a batch nobody can take a step in is
+                    // skipped, and Blizzard's repeat is still armed after it.
                     new EffectNodeDefinition(
-                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
                         SyntheticDisplacementCapabilities.BatchDirectMoveV1,
                         inputs: new[]
                         {

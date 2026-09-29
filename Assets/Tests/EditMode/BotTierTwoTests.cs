@@ -563,8 +563,16 @@ namespace GuardsDigital.Tests.EditMode
         /// instead is the assertion, down to what eight matches genuinely support: at least a quarter
         /// of the decided matches. A bot whose true rate is 0.55 falls below that about 1.6% of the
         /// time, so this still trips loudly on an outright break while no longer firing on noise.</para>
+        ///
+        /// <para>Milestone 9.6 declared its ceiling, for the reason BotBrainTests'
+        /// TheMovedGreedyPassStillBeatsRandomLegal records: under the Unity runtime this case already
+        /// ran 161-171 s against the framework's unstated 180 s default, and the offer walk that now
+        /// reads what each action can do took it to 200 s (the offline harness measures 82 s before
+        /// and 86 s after). Nothing else about the case moves - seeds, sides, floor and gate are as
+        /// they were; a timeout guards against a hung test, and this one is not hung.</para>
         /// </remarks>
         [Test]
+        [Timeout(600000)]
         public void TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn()
         {
             var report = BotTierTwoBench.Measure(

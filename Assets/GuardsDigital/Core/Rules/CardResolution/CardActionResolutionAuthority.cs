@@ -1227,10 +1227,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex,
-            out AppliedRuleModification blocking) =>
+            out AppliedRuleModification blocking,
+            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null) =>
             skillBackend.CanApplyAnything(
                 offer, definitions, instances, participants, timing, modifications, components,
-                roundIndex, turnIndex, out blocking);
+                roundIndex, turnIndex, out blocking, borrowedPrimaryCanAct);
 
         /// <summary>
         /// Milestone 7.8a1: whether an Attack offer has a legal target, asked of the same backend that

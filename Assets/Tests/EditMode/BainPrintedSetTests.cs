@@ -1332,19 +1332,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The third pull position, which is the one the <c>if able</c> policy exists for: a target
-        /// already adjacent is published its own space, and the Move then takes no step rather than
-        /// stopping the Skill.
+        /// The third pull position: a target already adjacent would be pulled nowhere.
+        ///
+        /// <para>Milestone 9.6, user ruling W6: such a target is not offered at all. The selection
+        /// names the Move as its consumer, so only a target the Move would bring closer is a
+        /// candidate - the adjacent ally is not, and the enemy two spaces down the file is.</para>
         /// </summary>
         [Test]
-        public void ThePull_TakesNoStepForATargetAlreadyAdjacent()
+        public void ThePull_DoesNotOfferATargetAlreadyAdjacent()
         {
             var board = new BainBoard();
 
-            var step = board.RunPull(BainBoard.AllySpace);
+            var offered = board.PullCandidates();
 
-            Assert.That(step.IsComplete, Is.True,
-                "The clause resolves rather than stopping on a Move with nowhere to go.");
+            Assert.That(offered, Has.No.Member(BainBoard.AllySpace),
+                "A target already beside Bain would take no step.");
+            Assert.That(offered, Has.Member(BainBoard.EnemySpace));
             Assert.That(board.SpaceOf(BainBoard.Ally), Is.EqualTo(BainBoard.AllySpace));
         }
 

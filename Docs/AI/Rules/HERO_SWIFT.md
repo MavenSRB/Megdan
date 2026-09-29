@@ -11,6 +11,8 @@ than one hero stays in [RULES_LEDGER.md](../RULES_LEDGER.md) rather than being c
 the source assigns her a pronoun; this shard follows the project's convention for the dashboards' unnamed
 heroes and uses "she".
 
+> Milestone 9.6: Suppress, Pin Down and Killing Ground now offer only an enemy hero who is not adjacent to terrain - the narrowing SW-11 recorded, which the build had applied as a gate after the pick. Reload! is greyed when neither its borrowed primary nor its minion bullet can do anything (user ruling **W7**, [PRINTED_WORDING](PRINTED_WORDING.md)).
+
 ## Swift content ledger
 
 Her printed set is inventoried at milestone 8.38. Composition, registration, dealing and the permanent

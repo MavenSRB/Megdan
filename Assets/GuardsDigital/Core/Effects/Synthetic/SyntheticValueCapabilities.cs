@@ -48,8 +48,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// a zero would silently bound a consumer to the actor's own space, which is a smaller answer
         /// rather than an absent one, and p.16 does not invent an icon a card does not print.
         /// </summary>
-        private sealed class CardRadiusHandler : IEffectCapabilityHandler
+        private sealed class CardRadiusHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>
+            /// Milestone 9.6: reading the printed radius changes nothing, so an offer is judged by the
+            /// step that uses it - "If there are at least two enemy heroes in radius" was offered with
+            /// nobody there because this read alone counted as doing something.
+            /// </summary>
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var total = Total(context);
+                return total <= 0
+                    ? Array.Empty<EffectOutcomeFact>()
+                    : new[] { new EffectOutcomeFact(RadiusOutput, EffectValue.Integer(total)) };
+            }
+
             public EffectCapabilityReference Reference => CardRadiusV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(

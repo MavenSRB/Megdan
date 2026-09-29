@@ -603,13 +603,19 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { obstacle, actorSpace, move }),
+                        // Milestone 9.6. Her own space is read first so the Move can judge the
+                        // obstacle: one she already stands beside moves her nowhere and is not
+                        // offered - the mirror of Get over here!'s ruling (user, 2026-09-28).
+                        childNodeIds: new[] { actorSpace, obstacle, move }),
                     new EffectNodeDefinition(
                         obstacle, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticTargetingCapabilities.RangeObstacleTargetV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.All)
+                            EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.All),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(move))
                         },
                         outputs: new[]
                         {
