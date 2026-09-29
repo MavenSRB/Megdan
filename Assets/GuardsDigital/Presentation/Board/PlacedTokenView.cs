@@ -57,6 +57,15 @@ namespace GuardsDigital.Presentation.Board
         private BoardTargetRing targetRing;
         private Mesh ownedMesh;
         private Material ownedMaterial;
+        private GameObject outline;
+        private Mesh outlineMesh;
+        private Material outlineMaterial;
+
+        /// <summary>Milestone 9.18. The child that draws the piece's thin black outline.</summary>
+        public const string OutlineName = "Placed Token Outline";
+
+        /// <summary>How far the outline's top sits under the piece's, so the two never z-fight.</summary>
+        private const float OutlineDrop = 0.004f;
 
         /// <summary>The projected instance this view last drew, or <c>null</c> before its first bind.</summary>
         public PlacedToken Token => token;
@@ -183,6 +192,7 @@ namespace GuardsDigital.Presentation.Board
                 meshRenderer.sharedMaterial = ownedMaterial;
             }
 
+            EnsureOutline();
             EnsureTargetRing();
 
             if (nameLabel != null)
@@ -249,6 +259,43 @@ namespace GuardsDigital.Presentation.Board
             return true;
         }
 
+        /// <summary>
+        /// Milestone 9.18, the user's direction on the 9.16 captures: "all of our tokens need some
+        /// sort of thin black outline to pop out more." Every token this view draws - whatever its
+        /// kind, printed face or generated disc - stands on a black hex one
+        /// <see cref="BoardPieceOutline"/> width wider on every side than the piece, so the line has
+        /// the same thickness at play scale for every kind and for the Turret's cut figure. Its top
+        /// sits just under the piece's top, so from the match camera only the rim shows; nothing is
+        /// baked into the private art.
+        /// </summary>
+        private void EnsureOutline()
+        {
+            if (outline != null) return;
+            var pieceRadius = outerRadius * DiscRadiusFraction;
+            // Widening a hex's circumradius by w / cos30 moves each of its edges out by exactly w.
+            var outlineRadius = pieceRadius +
+                (BoardPieceOutline.WorldWidth(outerRadius) / Mathf.Cos(30f * Mathf.Deg2Rad));
+            outline = new GameObject(OutlineName);
+            outline.transform.SetParent(transform, false);
+            outlineMesh = FlatHexMeshBuilder.CreateSolid(outlineRadius, BoardPieceDepth.Standard - OutlineDrop);
+            outlineMesh.name = OutlineName;
+            outline.AddComponent<MeshFilter>().sharedMesh = outlineMesh;
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                throw new System.InvalidOperationException(
+                    "The placed token outline requires the URP Lit shader.");
+            }
+
+            outlineMaterial = new Material(shader)
+            {
+                name = OutlineName,
+                color = BoardPieceOutline.Colour
+            };
+            outlineMaterial.SetFloat("_Smoothness", 0f);
+            outline.AddComponent<MeshRenderer>().sharedMaterial = outlineMaterial;
+        }
+
         private static Material CreateDiscMaterial()
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit");
@@ -274,8 +321,12 @@ namespace GuardsDigital.Presentation.Board
 
             DestroyOwnedResource(ownedMesh);
             DestroyOwnedResource(ownedMaterial);
+            DestroyOwnedResource(outlineMesh);
+            DestroyOwnedResource(outlineMaterial);
             ownedMesh = null;
             ownedMaterial = null;
+            outlineMesh = null;
+            outlineMaterial = null;
         }
 
         private static void DestroyOwnedResource(Object resource)

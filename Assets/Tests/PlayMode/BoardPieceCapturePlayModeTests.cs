@@ -65,6 +65,60 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.18. Every token kind this build's catalog registers, plus the Turret, staged in
+        /// one cluster on the board. Derived from the catalog, never hand-listed, so a kind a later
+        /// hero registers appears on the sheet without an edit here. Written to
+        /// <c>tmp/9-18-tokens-capture[-close].png</c>; the before and after sheets are copies of it.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator EveryTokenKindAndTheTurret()
+        {
+            yield return LoadTheMatch();
+            var view = Root().Runtime.BoardView;
+            var original = view.Model;
+            var catalog = MatchContentCatalogs.ForThisBuild().Components;
+            var kinds = catalog.RegisteredTokens.Select(catalog.LoadToken).ToArray();
+            Assert.That(kinds, Is.Not.Empty);
+            var owner = original.Heroes.First().HeroId;
+            var free = FreeSpacesNearest(view, original, OpenestSpace(view, original), kinds.Length + 1);
+            var tokens = original.PlacedTokens.Concat(kinds.Select((kind, index) =>
+                Token(kind.Id.Value, kind, owner, free[index + 1]))).ToArray();
+            try
+            {
+                view.Render(Staged(original, tokens, new[]
+                {
+                    new ObstacleOccupancy(new ObstacleId("trinkets-turret:capture"), free[0])
+                }));
+                for (var frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(Object.FindObjectsByType<PlacedTokenView>(FindObjectsInactive.Exclude)
+                    .Count(piece => piece.Token != null && piece.Token.Id.Value.StartsWith("capture-",
+                        StringComparison.Ordinal)), Is.EqualTo(kinds.Length));
+                Debug.Log("GUARDS_9_18 staged " + string.Join(", ", kinds.Select(kind => kind.Id.Value)));
+                yield return Capture(view, "tmp/9-18-tokens-capture", free);
+            }
+            finally
+            {
+                view.Render(original);
+            }
+        }
+
+        /// <summary>The free playable space with the most free playable spaces around it.</summary>
+        private static HexCoordinate OpenestSpace(BoardInteractionUnityView view, BoardInteractionViewModel model)
+        {
+            var radius = view.TileViews[0].OuterRadius;
+            var occupied = new HashSet<HexCoordinate>(model.Heroes.Select(value => value.Coordinate)
+                .Concat(model.Minions.Select(value => value.Coordinate))
+                .Concat(model.PlacedTokens.Select(value => value.Coordinate)));
+            var free = view.TileViews.Where(tile => tile.IsPlayable && !occupied.Contains(tile.Coordinate))
+                .Select(tile => (tile.Coordinate, At: HexWorldLayout.ToWorld(tile.Coordinate, radius)))
+                .ToArray();
+            var reach = 2.6f * Mathf.Sqrt(3f) * radius;
+            return free.OrderByDescending(space => free.Count(other => Vector3.Distance(other.At, space.At) <= reach))
+                .ThenBy(space => space.Coordinate.Q).ThenBy(space => space.Coordinate.R)
+                .First().Coordinate;
+        }
+
         private static IEnumerator LoadTheMatch()
         {
             UiPlayer.EnsurePlayerViewport();

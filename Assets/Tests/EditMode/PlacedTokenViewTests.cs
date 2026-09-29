@@ -31,6 +31,53 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HeroId Owner = new HeroId("token-owner-hero");
         private static readonly CardInstanceId Source = new CardInstanceId("token-source-card");
 
+        /// <summary>
+        /// Milestone 9.18: "i think all of our tokens need some sort of thin black outline to pop out
+        /// more." Every token kind this build's catalog registers - read from the catalog, never
+        /// listed here - is drawn standing on a black outline exactly one
+        /// <see cref="BoardPieceOutline"/> width wider than the piece on every side, with its top
+        /// under the piece's so only the rim shows.
+        /// </summary>
+        [Test]
+        public void EveryCatalogTokenKind_IsDrawnWithTheThinBlackOutline()
+        {
+            var catalog = MatchContentCatalogs.ForThisBuild().Components;
+            var kinds = catalog.RegisteredTokens.Select(catalog.LoadToken).ToArray();
+            Assert.That(kinds, Is.Not.Empty, "The catalog registered no token kind, so this would pass vacuously.");
+            const float radius = 1.25f;
+            var expectedWidth = BoardPieceOutline.WorldWidth(radius);
+            foreach (var kind in kinds)
+            {
+                var gameObject = new GameObject("Outline " + kind.Id.Value);
+                try
+                {
+                    var view = gameObject.AddComponent<PlacedTokenView>();
+                    view.Configure(new PlacedToken(new TokenInstanceId("outline-" + kind.Id.Value), kind,
+                        Owner, Owner, Source, new HexCoordinate(0, 0)), radius);
+                    var outline = gameObject.transform.Find("Placed Token Outline");
+                    Assert.That(outline, Is.Not.Null, kind.Id.Value + " is drawn with no outline.");
+                    var renderer = outline.GetComponent<MeshRenderer>();
+                    Assert.That(outline.gameObject.activeInHierarchy && renderer.enabled, Is.True,
+                        kind.Id.Value + "'s outline is not drawn.");
+                    Assert.That(renderer.sharedMaterial.color, Is.EqualTo((Color)BoardPieceOutline.Colour),
+                        kind.Id.Value + "'s outline is not black.");
+
+                    var piece = gameObject.GetComponent<MeshFilter>().sharedMesh.bounds;
+                    var rim = outline.GetComponent<MeshFilter>().sharedMesh.bounds;
+                    // A pointy-top hex's flat-to-flat width runs along x: the outline adds exactly
+                    // one line width on each side, the same for every kind.
+                    Assert.That(rim.extents.x - piece.extents.x, Is.EqualTo(expectedWidth).Within(0.0005f),
+                        kind.Id.Value + "'s outline is not the board's one line width.");
+                    Assert.That(rim.max.y, Is.LessThan(piece.max.y),
+                        kind.Id.Value + "'s outline would cover its own face.");
+                }
+                finally
+                {
+                    Object.DestroyImmediate(gameObject);
+                }
+            }
+        }
+
         [Test]
         public void TalisFiveGreenCardsRenderThePreparedIceAndTotemFaces()
         {
