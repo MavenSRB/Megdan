@@ -1056,7 +1056,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "PlacedToken.PropertySources", "derived from the trusted token definition; no token the walks place prints a property" },
                 // Not reached by the walks: a drop here would go unseen until a walk or fixture reaches it.
                 { "AttackTarget.HeroId", NotReached("an Attack target choice naming a hero") },
-                { "BoardObjectReference.TokenInstanceId", NotReached("an effect-choice preview naming a token") },
                 { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
                 { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
                 { "DefenseChoicePreviewProjection.BlockResult", NotReached("a Defense preview whose choice blocks") },
