@@ -130,6 +130,17 @@ Completed 2026-09-29.
 
 Historical evidence: [9.9a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-99a-direction-bound-targets-and-standing-effect-steps-evidence).
 
-### [ ] 9.12 Package the 2026-09-29 playtest build
+### [x] 9.12 Package the 2026-09-29 playtest build
 
 Outcome: the Windows playtest package cut on main after 9.9-9.11 have landed and, if it has landed by then, Mortimer's gate (9.8g); otherwise cut without him, with the roster count and the "what is new" section saying so. Recipe as the 8.111 package: version stamp first, `Tools/Invoke-PlayerBuildSmoke.ps1`, copy without logs or debug information, launchers and README, ZIP inspected, packaged exe launched from its own folder, content digest measured. Closing check: the T3 pre-build gate (full harness, full Edit Mode, full Play Mode) green on the packaged revision; package folder, ZIP and archive row recorded. T3.
+
+Result: `Builds/Playtest-9.12-bugnet` and its ZIP, cut from main `e92318e6` with stamp `1.0-9.12-bugnet+20260929164834-72f7de21`, protocol `/25`, schema 48, digest `57cb64d9...` and 27 heroes (Mortimer included: 9.8g was on main before the gate started at 17:50 and its journeys ran inside it). Cut at 18:50 on 2026-09-29, after everything queued had landed and before the user's 20:00 cut-off. The T3 pre-build gate ran at the root on the packaged source: offline harness 5134/5134 (on 098d9494, whose only difference from the packaged tree is 9.8g's Play Mode fixtures, which the harness does not compile), Unity Edit Mode 6170 passed with the 37 established Explicit diagnostics skipped and zero failures, Unity Play Mode 982/982; then the build-and-launch smoke, the copy without logs or debug information, the launcher, read-me, manifest and identity, a ZIP inspected for logs and DoNotShip content and size-matched to the folder, and the packaged executable launched from its own folder. Not re-run: the six-client network rehearsal (the wire moved to /25 under 9.11's round-trip and completeness checks, and the lobby is unchanged since 8.110). No macOS package. Nothing is published.
+
+Completed 2026-09-29.
+
+Historical evidence: [9.12 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-912-playtest-package-evidence).
+## Proposed, not authorized
+
+### [ ] 9.13 Independent expected-outcome corpus
+
+Proposed 2026-09-29 by the agent after the audit of which playtest bugs 9.9-9.11 would have caught: the class none of them reaches is a card that does something other than its printed text says (8.49's lives by tier, 8.83's second minion, 8.82's Radius item, 8.118's held Defeats, 8.96's Totem), because every journey so far was written by the agent that implemented the card, reading the text the same way. Outcome: a second reader, shown only the card image and the rulebook page and never the implementation, writes expected-outcome tables ("from this position, after this play, the board is X") for every dealt face, and those tables execute against the engine as fixtures; each numbered rulebook rule that changes lives, coins or levels becomes one invariant read from the page. Closing check: every dealt face has at least one executed table; every disagreement is either a corrected engine defect with a failing-then-passing regression or a recorded ruling; T2. Queued only: recording does not authorize implementation.

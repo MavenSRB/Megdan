@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.8g**.
+- Current completed milestone: **9.12**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **9.12**.
+- Next proposed milestone: **9.13**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -26,7 +26,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
-On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** packages the playtest build.
+On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50 behind the full T3 gate.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
@@ -48,7 +48,7 @@ The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the sa
 
 On 2026-09-21 the user opened the TWENTY-FIRST hero and chose **Hanu the Trickster**: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** ([his shard](Rules/HERO_HANU.md)) are COMPLETE the same day (picker row three stars; Tactician, Sniper, Pusher; schema v44 and wire `/20` since 8.71a), and HA-Q15i was built as **[8.72](Roadmap/PHASE_8.md)** (the deciding seat's HUD draws the delegated card's controls). His set carries four mechanisms no earlier hero had: a rewritten Initiative, a delegated next action, an end-of-turn swap-back behind immunity, and a coupled move whose distance a teammate chooses. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package.
 
-Current package: [8.111](Roadmap/PHASE_8.md)'s Windows `Builds/Playtest-8.110-lobby` (twenty-four heroes, protocol `/24`, schema 46); earlier packages cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
+Current package: [9.12](Roadmap/PHASE_9.md)'s Windows `Builds/Playtest-9.12-bugnet` (twenty-seven heroes, protocol `/25`, schema 48, stamp `...72f7de21`); earlier packages cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) is complete, with the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) (Defense-window attacker card, wire `/21`; minion leashes; the roster move sweep; the Movement-primary hit surface; journeys that assert the board changed; the immunity ruling). **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 

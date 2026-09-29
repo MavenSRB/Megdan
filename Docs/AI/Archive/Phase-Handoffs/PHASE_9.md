@@ -2,6 +2,11 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.12 Playtest package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.12 | `Builds/Playtest-9.12-bugnet` (Windows, stamp `1.0-9.12-bugnet+20260929164834-72f7de21`, protocol `/25`, schema 48, 27 heroes) cut from `e92318e6` behind the full harness, Edit Mode and Play Mode gate, the build-and-launch smoke and a packaged-folder launch. [Definition](../../Roadmap/PHASE_9.md#x-912-package-the-2026-09-29-playtest-build). | `milestone/9.12` |
 ## Milestone 9.9a Direction-bound targets and standing-effect steps evidence
 
 | Milestone | Outcome and definition | Commit |
