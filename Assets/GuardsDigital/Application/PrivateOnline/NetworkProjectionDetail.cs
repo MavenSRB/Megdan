@@ -837,7 +837,8 @@ namespace GuardsDigital.Application
             bool hasConfirmInvocation,
             bool hasDeclineInvocation,
             bool hasStopInvocation,
-            int valueVocabulary)
+            int valueVocabulary,
+            bool declinableRegardlessOfMinimum)
         {
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
@@ -853,6 +854,7 @@ namespace GuardsDigital.Application
             HasDeclineInvocation = hasDeclineInvocation;
             HasStopInvocation = hasStopInvocation;
             ValueVocabulary = valueVocabulary;
+            DeclinableRegardlessOfMinimum = declinableRegardlessOfMinimum;
         }
 
         public string ResolutionId { get; }
@@ -877,6 +879,15 @@ namespace GuardsDigital.Application
         /// moves the wire version and leaves the schema alone.
         /// </summary>
         public int ValueVocabulary { get; }
+
+        /// <summary>
+        /// Milestone 9.11 (wire /25). The node's own "a Decline stands whatever the minimum" flag,
+        /// carried as itself. <see cref="HasDeclineInvocation"/> is its CONSEQUENCE together with
+        /// the minimum and the kind, so a client that passed the offer as the flag read true on
+        /// every choice whose Decline stands for a zero minimum - a field the completeness walk
+        /// found half-carried.
+        /// </summary>
+        public bool DeclinableRegardlessOfMinimum { get; }
     }
 
     public sealed class NetworkEffectChoicePreviewRow
@@ -1163,7 +1174,8 @@ namespace GuardsDigital.Application
             int level,
             int paidCoins,
             int remainingCoins,
-            IReadOnlyList<NetworkSystemTransitionOptionRow> options)
+            IReadOnlyList<NetworkSystemTransitionOptionRow> options,
+            string itemId)
         {
             Kind = kind;
             HeroId = heroId;
@@ -1171,6 +1183,7 @@ namespace GuardsDigital.Application
             PaidCoins = paidCoins;
             RemainingCoins = remainingCoins;
             Options = options;
+            ItemId = itemId;
         }
 
         public int Kind { get; }
@@ -1182,6 +1195,13 @@ namespace GuardsDigital.Application
         public int PaidCoins { get; }
         public int RemainingCoins { get; }
         public IReadOnlyList<NetworkSystemTransitionOptionRow> Options { get; }
+
+        /// <summary>
+        /// Milestone 9.11 (wire /25). The open item this description is about, or null where the
+        /// host's description names none (a pause that stands once for itself). Carried rather than
+        /// read back off the pause, because only the host knows whether its description named one.
+        /// </summary>
+        public string ItemId { get; }
     }
 
     public sealed class NetworkRemovalPaymentRow

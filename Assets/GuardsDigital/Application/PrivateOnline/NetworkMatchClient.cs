@@ -754,10 +754,11 @@ namespace GuardsDigital.Application
                 // card at all. It now reads the RECORD the wire delivered, exactly as the Skill slot
                 // above it already did - the resolving card id has ridden its own row since 8.32.
                 //
-                // The Movement slot is deliberately left on the (always null) property: its row
-                // carries the same id, but no surface of this build reads this member during a
-                // Movement, so correcting it is a change no test could see and this milestone does
-                // not make it.
+                // Milestone 9.11 (finding F1) reads the Movement slot from its row too. 8.80 left it
+                // on the (always null) property on the reasoning that no surface read this member
+                // during a Movement; the wire completeness walk showed a client inside Tigerclaw's
+                // Blink Strike Movement answering "no card" where the host's view of the same seat
+                // named it - the same half-carried field 8.80 closed for the Attack slot.
                 var skill = Detail?.PendingSkillResolution?.SourceCardInstanceId;
                 if (!string.IsNullOrWhiteSpace(skill))
                 {
@@ -770,10 +771,15 @@ namespace GuardsDigital.Application
                     return new CardInstanceId(attack);
                 }
 
-                return PendingMovementResolution?.SourceCardInstanceId ??
-                    (PendingEffectChoice != null && SelectedActor.IsDefined
-                        ? SelectedActor.CardInstanceId
-                        : default);
+                var movement = Detail?.PendingMovementResolution?.SourceCardInstanceId;
+                if (!string.IsNullOrWhiteSpace(movement))
+                {
+                    return new CardInstanceId(movement);
+                }
+
+                return PendingEffectChoice != null && SelectedActor.IsDefined
+                    ? SelectedActor.CardInstanceId
+                    : default;
             }
         }
         public PendingEffectChoice PendingEffectChoice
@@ -890,7 +896,9 @@ namespace GuardsDigital.Application
                     row.HeroId == null ? default : new HeroId(row.HeroId),
                     row.Options.Select(value => ToTransitionOption(
                         (SystemTransitionPromptKind)row.Kind, value)),
-                    row.Level, row.PaidCoins, row.RemainingCoins);
+                    row.Level, row.PaidCoins, row.RemainingCoins,
+                    // Milestone 9.11 (wire /25): the host's own item, never guessed from the kind.
+                    row.ItemId == null ? default : new SystemTransitionItemId(row.ItemId));
             }
         }
         public RemovalPreventionPrompt PendingRemovalPrevention
@@ -937,11 +945,11 @@ namespace GuardsDigital.Application
 
             // Milestone 8.35z5. A `may` node's Decline no longer follows from
             // `MinimumSelections` alone - the host derives it from the node's own `EffectFailurePolicy`,
-            // which this client never loaded any content to read. `row.HasDeclineInvocation` is that
-            // same bit, written by the host's own authoritative choice
-            // (`NetworkProjectionDetailCodec` copies it from `DeclineInvocation != null` directly), so
-            // it is the wire's ground truth rather than something reconstructed a second way that could
-            // disagree with it.
+            // which this client never loaded any content to read. Until 9.11 this passed
+            // `row.HasDeclineInvocation` - the OFFER - as that flag, which reproduced the offer but
+            // not the flag; since wire /25 the row carries the node's own
+            // `DeclinableRegardlessOfMinimum`, and the offer bits are still checked against the typed
+            // choice below as the wire's ground truth.
             var result = new PendingEffectChoice(
                 new EffectResolutionId(row.ResolutionId),
                 new EffectChoiceId(row.ChoiceId),
@@ -954,7 +962,10 @@ namespace GuardsDigital.Application
                 row.SelectedCandidates.Select(ToEffectCandidate),
                 row.UnavailableCandidates.Select(ToEffectCandidate),
                 row.HasStopInvocation,
-                row.HasDeclineInvocation,
+                // Milestone 9.11 (wire /25): the node's own flag. Passing HasDeclineInvocation here
+                // reproduced the offer but misreported the flag wherever a zero minimum is what
+                // offers the Decline; the agreement check below still proves the offer matches.
+                row.DeclinableRegardlessOfMinimum,
                 (EffectChoiceValueVocabulary)row.ValueVocabulary);
             if ((result.ConfirmInvocation != null) != row.HasConfirmInvocation ||
                 (result.DeclineInvocation != null) != row.HasDeclineInvocation ||

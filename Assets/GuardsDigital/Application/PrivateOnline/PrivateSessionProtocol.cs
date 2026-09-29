@@ -361,7 +361,14 @@ namespace GuardsDigital.Application
         // v24 (milestone 8.108): the seat claim and every roster row carry the player's name. A v23
         // reader would take the name's length prefix as the next field, so v23 peers are refused
         // from the header. Lobby-only: no projection, match-log, snapshot or schema field moves.
-        public const int Version = 24;
+        // v25 (milestone 9.11): two fields the completeness walk found dropped are carried. The
+        // system-transition description row gains the item it describes (a level-up description
+        // named `hero:level:upgrade` on the host and nothing on a client), and the effect-choice row
+        // gains the node's own DeclinableRegardlessOfMinimum (a client had passed the Decline OFFER
+        // as that flag). A v24 reader would take the new trailing bytes as the next row, so v24
+        // peers are refused from the header. Projection-only: no snapshot or schema field moves
+        // (v48 stands) - both facts are derived afresh every time a projection is built.
+        public const int Version = 25;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

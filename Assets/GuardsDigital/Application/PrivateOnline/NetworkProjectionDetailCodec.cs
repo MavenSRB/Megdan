@@ -1288,6 +1288,8 @@ namespace GuardsDigital.Application
             writer.Write(choice.DeclineInvocation != null);
             writer.Write(choice.StopInvocation != null);
             writer.Write((int)choice.ValueVocabulary);
+            // Milestone 9.11 (wire /25): the node's own flag, not the Decline offer it helps derive.
+            writer.Write(choice.DeclinableRegardlessOfMinimum);
         }
 
         private static bool TryReadEffectChoice(BinaryReader reader, out NetworkEffectChoiceRow row)
@@ -1326,10 +1328,11 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            var declinableRegardlessOfMinimum = reader.ReadBoolean();
             row = new NetworkEffectChoiceRow(
                 resolutionId, choiceId, nodeId, chooserId, kind, minimum, maximum,
                 candidates, selected, unavailable,
-                hasConfirm, hasDecline, hasStop, vocabulary);
+                hasConfirm, hasDecline, hasStop, vocabulary, declinableRegardlessOfMinimum);
             return true;
         }
 
@@ -1776,6 +1779,9 @@ namespace GuardsDigital.Application
                 WriteOptional(writer, !string.IsNullOrWhiteSpace(option.DestinationSpaceId.Value),
                     option.DestinationSpaceId.Value);
             }
+
+            // Milestone 9.11 (wire /25): the item this description names, or none.
+            WriteOptional(writer, description.ItemId.IsDefined, description.ItemId.Value);
         }
 
         private static bool TryReadSystemTransitionDescription(
@@ -1844,9 +1850,14 @@ namespace GuardsDigital.Application
                     itemIcon, itemSlot, destinationQ, destinationR, destinationSpaceId));
             }
 
+            if (!TryReadOptional(reader, out var itemId))
+            {
+                return false;
+            }
+
             row = new NetworkSystemTransitionDescriptionRow(
                 kind, heroId, level, paidCoins, remainingCoins,
-                Array.AsReadOnly(options.ToArray()));
+                Array.AsReadOnly(options.ToArray()), itemId);
             return true;
         }
 
