@@ -12,6 +12,7 @@ This compact index routes to the exact active validation policy, reusable launch
 - [Turn, round, snapshot, and replay test recipes](Testing/RECIPES_TURNS.md)
 - [Combat and card-Movement test recipes](Testing/RECIPES_COMBAT_AND_MOVEMENT.md)
 - [Play Mode, complete suites, and test ownership](Testing/PLAYMODE_AND_SUITES.md)
+- [Expected-outcome tables: writing, running, and reading them](Testing/EXPECTED_OUTCOME_TABLES.md)
 
 ## Historical recipes
 

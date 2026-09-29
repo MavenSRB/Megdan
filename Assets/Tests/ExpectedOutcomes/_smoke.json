@@ -1,0 +1,419 @@
+{
+  "hero": "Wasp",
+  "reader": "executor smoke table, milestone 9.13 - self-authored against the executor, not a blind reading; it proves every phrase is staged, answered and read, not the rules",
+  "cases": [
+    {
+      "id": "wasp-shock-defeats-a-defended-hero",
+      "card": "Shock",
+      "action": "Attack",
+      "source": ["Wasp Shock face", "rulebook p.13-14 attack, defense, Defeat"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [ { "ref": "enemy-hero-1", "where": "adjacent to actor" } ],
+        "enemy-hero-1": { "defends-with": 2 }
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "actor", "coins": 1 },
+        { "enemy-team-lives": 4 },
+        { "team-lives": 5 },
+        { "card": "Shock", "state": "resolved" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "actor", "level": 1 }
+      ]
+    },
+    {
+      "id": "wasp-shock-minion-then-a-discard-if-able",
+      "card": "Shock",
+      "action": "Attack",
+      "source": ["Wasp Shock face"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-2", "where": "distance 2 from actor off every straight line" },
+          { "ref": "enemy-hero-3", "where": "distance 4 from actor in a straight line" }
+        ],
+        "enemy-hero-3": { "hand": [], "discard": ["Listen Up"] }
+      },
+      "answers": [ "enemy-minion-1", "enemy-hero-2", "enemy-hero-2: discard Brutal Jab" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-minion-1", "targetable": true },
+        { "ref": "enemy-hero-3", "targetable": false },
+        { "card": "Listen Up", "state": "discarded" },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "ref": "enemy-hero-2", "chose": "discard" },
+        { "ref": "enemy-hero-2", "is": "not defeated" },
+        { "ref": "enemy-hero-3", "hand": 0 },
+        { "card": "Brutal Jab", "state": "discarded" }
+      ]
+    },
+    {
+      "id": "wasp-electroblast-level-five-item-then-discard-or-be-defeated",
+      "card": "Electroblast",
+      "action": "Attack",
+      "source": ["Wasp Electroblast face", "rulebook p.15-16 levels and items"],
+      "setup": {
+        "actor": { "level": 5, "items": ["Attack +1"] },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-2", "where": "distance 2 from actor in a straight line" }
+        ],
+        "enemy-hero-1": { "defends-with": "Noble Blade" }
+      },
+      "answers": [ "enemy-hero-1", "enemy-hero-2", "enemy-hero-2: discard Brutal Jab" ],
+      "expect": [
+        { "ref": "actor", "attack": 7 },
+        { "ref": "actor", "level": 5 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "enemy-hero-2", "chose": "discard" },
+        { "ref": "enemy-hero-2", "is": "not defeated" }
+      ]
+    },
+    {
+      "id": "wasp-shock-movement-distance-toward",
+      "card": "Shock",
+      "action": "Movement",
+      "source": ["Wasp Shock face, Movement 4"],
+      "setup": { "pieces": [ { "ref": "enemy-hero-1", "where": "distance 4 from actor in a straight line" } ] },
+      "answers": [ "distance 2", "toward enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 2 },
+        { "ref": "actor", "at": "distance 2 from enemy-hero-1 in a straight line" },
+        { "card": "Shock", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "wasp-shock-movement-away-and-toward-alone",
+      "card": "Shock",
+      "action": "Movement",
+      "source": ["Wasp Shock face, Movement 4"],
+      "setup": { "pieces": [ { "ref": "enemy-hero-1", "where": "distance 3 from actor in a straight line" } ] },
+      "answers": [ "toward enemy-hero-1" ],
+      "expect": [
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "actor", "moved": 2 }
+      ]
+    },
+    {
+      "id": "wasp-shock-movement-away-from",
+      "card": "Shock",
+      "action": "Movement",
+      "source": ["Wasp Shock face, Movement 4"],
+      "setup": { "pieces": [ { "ref": "enemy-hero-1", "where": "adjacent to actor" } ] },
+      "answers": [ "distance 1", "away from enemy-hero-1" ],
+      "expect": [
+        { "ref": "actor", "at": "distance 2 from enemy-hero-1" },
+        { "ref": "actor", "moved": 1 }
+      ]
+    },
+    {
+      "id": "wasp-lift-up-moves-a-minion-then-declines-the-repeat",
+      "card": "Lift Up",
+      "action": "Skill",
+      "source": ["Wasp Lift Up face"],
+      "setup": { "pieces": [ { "ref": "enemy-minion-1", "where": "distance 2 from actor in a straight line" } ] },
+      "answers": [ "enemy-minion-1", "space: distance 2 from actor off every straight line", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "at": "distance 2 from actor off every straight line" },
+        { "ref": "actor", "moved": 0 }
+      ]
+    },
+    {
+      "id": "wasp-lift-up-moves-a-staged-token",
+      "card": "Lift Up",
+      "action": "Skill",
+      "source": ["Wasp Lift Up face"],
+      "setup": {
+        "pieces": [ { "ref": "token-1", "kind": "rock", "owner": "enemy", "where": "distance 2 from actor in a straight line" } ]
+      },
+      "answers": [ "token-1", "space: distance 2 from actor off every straight line", "decline" ],
+      "expect": [
+        { "ref": "token-1", "at": "distance 2 from actor off every straight line" },
+        { "ref": "token-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 1 }
+      ]
+    },
+    {
+      "id": "wasp-hold-on-a-staged-board",
+      "card": "Shock",
+      "action": "Hold",
+      "source": ["rulebook p.12 Hold"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "enemy-minion-1", "where": "on the straight line through actor and enemy-hero-1" },
+          { "ref": "friendly-minion-1", "where": "distance 4 from actor in a straight line through enemy-hero-1" },
+          { "ref": "friendly-minion-2", "type": "ranged", "where": "distance 1 beyond friendly-minion-1 from actor" },
+          { "ref": "enemy-minion-2", "type": "heavy", "where": "adjacent to actor and adjacent to enemy-hero-1" },
+          { "ref": "friendly-hero-1", "where": "distance 3 from actor off every straight line" },
+          { "ref": "obstacle-1", "where": "adjacent to actor" },
+          { "ref": "obstacle-2", "kind": "terrain", "where": "distance 3 from actor" },
+          { "ref": "obstacle-3", "kind": "rock", "owner": "enemy", "where": "adjacent to friendly-hero-1" },
+          { "ref": "token-1", "kind": "ice", "owner": "enemy", "where": "adjacent to obstacle-1 and adjacent to actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "at": "distance 3 from actor in a straight line through enemy-hero-1" },
+        { "ref": "friendly-minion-1", "at": "distance 1 beyond enemy-minion-1 from actor" },
+        { "ref": "friendly-minion-2", "at": "on the straight line through enemy-hero-1 and friendly-minion-1" },
+        { "ref": "enemy-minion-2", "at": "adjacent to actor and adjacent to enemy-hero-1" },
+        { "ref": "friendly-hero-1", "at": "distance 3 from actor off every straight line" },
+        { "ref": "obstacle-2", "at": "distance 3 from actor" },
+        { "ref": "obstacle-3", "at": "adjacent to friendly-hero-1" },
+        { "ref": "token-1", "at": "adjacent to obstacle-1 and adjacent to actor" },
+        { "tokens": "rock", "on-board": 1 },
+        { "tokens": "ice", "on-board": 1 },
+        { "card": "Shock", "state": "played" },
+        { "ref": "actor", "hand": 0 },
+        { "ref": "actor", "moved": 0 }
+      ]
+    },
+    {
+      "id": "wasp-static-barrier-then-high-voltage-at-level-eight",
+      "card": "Static Barrier",
+      "action": "Skill",
+      "source": ["Wasp Static Barrier face", "Wasp High Voltage face", "rulebook p.16 Ultimate"],
+      "setup": {
+        "actor": { "level": 8 },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to enemy-minion-1" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "card: Noble Blade" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "card": "Noble Blade", "state": "discarded" },
+        { "ref": "actor", "coins": 2 }
+      ]
+    },
+    {
+      "id": "wasp-defends-with-a-named-card",
+      "card": "Lift Up",
+      "action": "Defend",
+      "source": ["rulebook p.14 defense"],
+      "setup": {
+        "attack": { "by": "enemy-hero-1", "value": 4 },
+        "pieces": [ { "ref": "enemy-hero-1", "where": "adjacent to actor" } ]
+      },
+      "answers": [ "defense: Lift Up" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "is": "not defeated" },
+        { "card": "Lift Up", "state": "discarded" },
+        { "ref": "actor", "hand": -1 }
+      ]
+    },
+    {
+      "id": "wasp-defends-by-defense-value",
+      "card": "Lift Up",
+      "action": "Defend",
+      "source": ["rulebook p.14 defense"],
+      "setup": {
+        "attack": { "by": "enemy-hero-1", "value": 4 },
+        "pieces": [ { "ref": "enemy-hero-1", "where": "adjacent to actor" } ]
+      },
+      "answers": [ "defense: 5" ],
+      "expect": [
+        { "ref": "actor", "is": "not defeated" },
+        { "card": "Lift Up", "state": "discarded" }
+      ]
+    },
+    {
+      "id": "wasp-defends-with-nothing",
+      "card": "Lift Up",
+      "action": "Defend",
+      "source": ["rulebook p.14 defense"],
+      "setup": {
+        "attack": { "by": "enemy-hero-1", "value": 4 },
+        "pieces": [ { "ref": "enemy-hero-1", "where": "adjacent to actor" } ]
+      },
+      "answers": [ "defense: none" ],
+      "expect": [
+        { "ref": "actor", "is": "defeated" },
+        { "team-lives": 4 },
+        { "card": "Lift Up", "state": "hand" }
+      ]
+    },
+    {
+      "id": "wasp-skill-greyed-under-a-spell-break-this-turn",
+      "card": "Lift Up",
+      "action": "Skill",
+      "source": ["Arien Spell Break face"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" }
+        ],
+        "standing": [ "enemy-hero-1 played Spell Break this turn" ]
+      },
+      "expect": [ { "offered": false } ]
+    },
+    {
+      "id": "misa-watch-how-i-soar-defeats-a-minion",
+      "hero": "Misa",
+      "card": "Watch How I Soar",
+      "action": "Skill",
+      "source": ["Misa Watch How I Soar face"],
+      "setup": {
+        "actor": { "coins": 2 },
+        "pieces": [ { "ref": "enemy-minion-1", "where": "adjacent to actor" } ]
+      },
+      "answers": [ "option: Defeat a minion adjacent to you.", "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "bullet": "Defeat a minion adjacent to you.", "offered": true },
+        { "ref": "actor", "coins": 4 }
+      ]
+    },
+    {
+      "id": "misa-watch-how-i-soar-places-herself-at-maximum-range",
+      "hero": "Misa",
+      "card": "Watch How I Soar",
+      "action": "Skill",
+      "source": ["Misa Watch How I Soar face"],
+      "setup": { "pieces": [ { "ref": "enemy-hero-1", "where": "distance 5 from actor in a straight line" } ] },
+      "answers": [ "option: Place yourself into a space at maximum range.", "space: distance 4 from actor toward enemy-hero-1" ],
+      "expect": [
+        { "bullet": "Defeat a minion adjacent to you.", "offered": false },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "actor", "moved": 4 }
+      ]
+    },
+    {
+      "id": "misa-focus-last-turn-moves-before-the-attack",
+      "hero": "Misa",
+      "card": "Challenge Accepted",
+      "action": "Attack",
+      "source": ["Misa Focus face", "Misa Challenge Accepted face"],
+      "setup": {
+        "pieces": [ { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" } ],
+        "standing": [ "actor played Focus last turn" ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "toward enemy-hero-1", "enemy-hero-1" ],
+      "expect": [
+        { "ref": "actor", "moved": 1 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "card": "Focus", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "misa-swoop-in-retrieves-a-discarded-card",
+      "hero": "Misa",
+      "card": "Swoop In",
+      "action": "Skill",
+      "source": ["Misa Swoop In face"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "enemy-minion-2", "where": "distance 2 from enemy-minion-1 in a straight line" }
+        ],
+        "hand": [ "Watch How I Soar", "Challenge Accepted", "Sudden Breeze" ],
+        "discard": [ "Focus" ]
+      },
+      "answers": [ "place: adjacent to enemy-minion-1 and adjacent to enemy-minion-2", "card: Focus" ],
+      "expect": [
+        { "ref": "actor", "at": "adjacent to enemy-minion-1 and adjacent to enemy-minion-2" },
+        { "card": "Focus", "state": "retrieved" },
+        { "ref": "actor", "hand": 1 }
+      ]
+    },
+    {
+      "id": "brogan-brutal-jab-declines-the-move-and-pushes",
+      "hero": "Brogan",
+      "card": "Brutal Jab",
+      "action": "Skill",
+      "source": ["Brogan Brutal Jab face"],
+      "setup": { "pieces": [ { "ref": "enemy-minion-1", "where": "adjacent to actor" } ] },
+      "answers": [ "decline", "enemy-minion-1", "distance 1" ],
+      "expect": [
+        { "ref": "actor", "moved": 0 },
+        { "ref": "enemy-minion-1", "pushed": "distance 2 from actor in a straight line" }
+      ]
+    },
+    {
+      "id": "tali-glacial-barrier-places-an-ice-token-on-a-spawn-point",
+      "hero": "Tali",
+      "card": "Glacial Barrier",
+      "action": "Skill",
+      "source": ["Tali Glacial Barrier face", "rulebook p.18 tokens"],
+      "setup": {},
+      "answers": [ "place: empty spawn point within distance 3 of actor" ],
+      "expect": [
+        { "tokens": "ice", "on-board": 1 },
+        { "ref": "token-1", "at": "empty spawn point within distance 3 of actor" }
+      ]
+    },
+    {
+      "id": "tali-glacial-barrier-then-the-round-end",
+      "hero": "Tali",
+      "card": "Glacial Barrier",
+      "action": "Skill",
+      "source": ["Tali Glacial Barrier face", "rulebook p.8 end of round"],
+      "setup": {
+        "pieces": [
+          { "ref": "friendly-minion-1", "battle-zone": true, "where": "distance 2 from actor" },
+          { "ref": "friendly-minion-2", "battle-zone": true, "where": "distance 3 from actor" },
+          { "ref": "enemy-minion-1", "battle-zone": true, "where": "distance 4 from actor" }
+        ]
+      },
+      "answers": [ "space: distance 2 from actor" ],
+      "expect": [
+        { "tokens": "ice", "on-board": 1 },
+        { "tokens": "ice", "supply": 2 },
+        { "tokens": "ice", "on-board-after-round-end": 0 },
+        { "minion-battle": "friendly" },
+        { "lane-pushed": true }
+      ]
+    },
+    {
+      "id": "tali-cold-snap-direction-toward",
+      "hero": "Tali",
+      "card": "Cold Snap",
+      "action": "Skill",
+      "source": ["Tali Cold Snap face"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "friendly-hero-1", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "toward friendly-hero-1" ],
+      "expect": [
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "at": "distance 2 from friendly-hero-1" }
+      ]
+    },
+    {
+      "id": "ignatia-abrupt-combustion-removes-a-minion",
+      "hero": "Ignatia",
+      "card": "Abrupt Combustion",
+      "action": "Skill",
+      "source": ["Ignatia Abrupt Combustion face"],
+      "setup": {
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "ref": "enemy-minion-1", "is": "removed" }
+      ]
+    }
+  ]
+}
