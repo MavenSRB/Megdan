@@ -103,7 +103,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "The staged board has to leave a unit beside him for the printed targeting to have " +
                 "anything to name. " + Remaining(runtime));
             var victim = StandingNode(runtime);
-            var takenId = beside[0].MinionId;
+            // Milestone 9.10 orders the projection's minions by id, so "the first beside him" is no
+            // longer the one the staging happened to place first: name one the selection offers.
+            var offeredBeside = beside.Where(minion => runtime.PendingEffectChoice.Candidates
+                .Any(candidate => candidate.Value.MinionId.Equals(minion.MinionId))).ToArray();
+            Assert.That(offeredBeside, Is.Not.Empty,
+                "The printed targeting offers a unit beside him. " + Remaining(runtime));
+            var takenId = offeredBeside[0].MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(
                     pointerInput, hud, MinionView(takenId).transform.position),
