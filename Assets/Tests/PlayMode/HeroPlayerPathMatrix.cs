@@ -1452,7 +1452,13 @@ namespace GuardsDigital.Tests.PlayMode
                 ["wuk-choose-friendly-unit-and-tree"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["wuk-exclude-adjacent-enemy-minions"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["wuk-choose-trampled-minions"] = new[] { PlayerInteractionShape.BoardUnitSelection },
-                ["wuk-trampled-enemy-heroes"] = Array.Empty<PlayerInteractionShape>()
+                ["wuk-trampled-enemy-heroes"] = Array.Empty<PlayerInteractionShape>(),
+                // Milestone 9.8g. Mortimer. Awaken!'s placement and p.18's short-supply step before it
+                // ask for a board space, as Wuk's Tree family does; the Replace acts on the minion its
+                // preceding printed-icon selection named, so it asks nothing itself.
+                ["mortimer-place-zombie"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mortimer-reclaim-zombie"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["mortimer-replace-minion-with-zombie"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
