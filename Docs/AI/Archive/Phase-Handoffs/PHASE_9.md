@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.16 Turret piece evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.16 | Trinkets' Turret drawn as its outlined cut-out figure on the token footprint, upright and camera-facing, with the baked white ring, the opaque-material black square and the roll defect gone; the user picked treatment A with a thin black outline from four captured treatments. [Definition](../../Roadmap/PHASE_9.md#x-916-trinkets-turret-piece-reads-as-a-turret). | `milestone/9.16` |
+
 ## Milestone 9.17 Charged Runestone evidence
 
 | Milestone | Outcome and definition | Commit |

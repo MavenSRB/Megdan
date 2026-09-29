@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.17**.
-- Active authorized milestone: **9.16**.
-- Next proposed milestone: **9.16**.
+- Current completed milestone: **9.16**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **9.18**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -26,7 +26,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
-On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50. **9.13** (expected-outcome corpus: format, executor, blind-reader pilot on Mortimer, Mrak and Wuk; two engine faults fixed) is complete; 9.13a-e, 9.14-9.15 queued; OQ-9.13 (does one decline end an "up to N"?) awaits the user. **9.17** (Charged Runestone, OQ-9.17) is complete. **9.16** (the Turret piece redrawn) is active.
+On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50. **9.13** (expected-outcome corpus: format, executor, blind-reader pilot on Mortimer, Mrak and Wuk; two engine faults fixed) is complete; 9.13a-e, 9.14-9.15 queued; OQ-9.13 (does one decline end an "up to N"?) awaits the user. **9.17** (Charged Runestone, OQ-9.17) is complete. **9.16** (the Turret piece redrawn as the user picked) is complete; **9.18** (a thin black outline on every token) awaits the user's approval of its sheet.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
@@ -46,7 +46,7 @@ The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap
 
 The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby and gated at Play Mode 744 with zero skips; BR-Q4, BR-Q13 and BR-Q19h were settled by the user, the last built as **[8.70](Roadmap/PHASE_8.md)** (an empty modal bullet greyed at the choice for every face sharing the contract).
 
-On 2026-09-21 the user opened the TWENTY-FIRST hero and chose **Hanu the Trickster**: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** ([his shard](Rules/HERO_HANU.md)) are COMPLETE the same day (picker row three stars; Tactician, Sniper, Pusher; schema v44 and wire `/20` since 8.71a), and HA-Q15i was built as **[8.72](Roadmap/PHASE_8.md)** (the deciding seat's HUD draws the delegated card's controls). His set carries four mechanisms no earlier hero had: a rewritten Initiative, a delegated next action, an end-of-turn swap-back behind immunity, and a coupled move whose distance a teammate chooses. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package.
+On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
 Current package: [9.12](Roadmap/PHASE_9.md)'s Windows `Builds/Playtest-9.12-bugnet` (twenty-seven heroes, protocol `/25`, schema 48, stamp `...72f7de21`); earlier packages cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
 
