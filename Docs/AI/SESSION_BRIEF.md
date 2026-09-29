@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.10**.
+- Current completed milestone: **9.9a**.
 - Active authorized milestone: **9.8g**.
 - Next proposed milestone: **9.8g**.
 
@@ -28,7 +28,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8f are complete: he is dealt, artworked and pickable, and 9.8g gates him.
 
-On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)** beside Mortimer's dealing; **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) are complete. **9.12** packages the playtest build, with Mortimer if 9.8g has landed.
+On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)** beside Mortimer's dealing; **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (Cutter's direction-bound over-offer; standing-effect steps swept) are complete. **9.12** packages the playtest build, with Mortimer if 9.8g has landed.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

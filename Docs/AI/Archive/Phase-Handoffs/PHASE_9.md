@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.9a Direction-bound targets and standing-effect steps evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.9a | Cutter's "in the direction of the move" Attacks greyed when no answer reaches a target, by following the direction-bound selection through the move; Misa's Next-turn step and Trinkets' Disruptor effects derived and staged as a fourth before-action shape, no finding. [Definition](../../Roadmap/PHASE_9.md#x-99a-the-three-items-99-recorded-direction-bound-targets-and-standing-effect-steps). | `milestone/9.9a` |
+
 ## Milestone 9.10 Random line-up soak evidence
 
 | Milestone | Outcome and definition | Commit |
