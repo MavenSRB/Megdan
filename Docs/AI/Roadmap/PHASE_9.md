@@ -139,8 +139,32 @@ Result: `Builds/Playtest-9.12-bugnet` and its ZIP, cut from main `e92318e6` with
 Completed 2026-09-29.
 
 Historical evidence: [9.12 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-912-playtest-package-evidence).
-## Proposed, not authorized
+## Independent expected-outcome corpus, authorized 2026-09-29
 
-### [ ] 9.13 Independent expected-outcome corpus
+Authorized 2026-09-29 by the user ("start 9.13") after the 9.12 cut; 9.13 alone is authorized, the batches 9.13a-9.13e are queued and each needs its own go.
+
+### [~] 9.13 Independent expected-outcome corpus: the format, the executor and the three-hero pilot
 
 Proposed 2026-09-29 by the agent after the audit of which playtest bugs 9.9-9.11 would have caught: the class none of them reaches is a card that does something other than its printed text says (8.49's lives by tier, 8.83's second minion, 8.82's Radius item, 8.118's held Defeats, 8.96's Totem), because every journey so far was written by the agent that implemented the card, reading the text the same way. Outcome: a second reader, shown only the card image and the rulebook page and never the implementation, writes expected-outcome tables ("from this position, after this play, the board is X") for every dealt face, and those tables execute against the engine as fixtures; each numbered rulebook rule that changes lives, coins or levels becomes one invariant read from the page. Closing check: every dealt face has at least one executed table; every disagreement is either a corrected engine defect with a failing-then-passing regression or a recorded ruling; T2. Queued only: recording does not authorize implementation.
+
+Scope of 9.13 itself: (1) a table format a blind reader can write without knowing the board - references (actor, enemy-hero-N, friendly-minion-N, token-N), placements relative to the actor ("adjacent", "distance 2 in a straight line", "adjacent to enemy-hero-1"), the play (printed card name, action, the answers in the order the card asks them) and expectations (defeated, at, moved, pushed, tokens on board, coins, lives, card state, offered); (2) a harness-runnable executor in Assets/Tests/EditMode that stages each table on the official map through the staged-board seam, plays it through Director commands, answers from the table, and compares, reporting an unsupported phrase by name rather than guessing; (3) the reader protocol: a reader sees only the Tabletopia card images and the rulebook text, never Assets/ or Docs/AI/, and cites the card and page for every expectation; (4) the pilot: tables for every face of Mortimer, Mrak and Wuk, executed, with every disagreement dispositioned as engine defect (failing-then-passing regression), reader misreading (corrected with the printed clause) or open question for the user. Closing check: the three pilot heroes' faces each have at least one executed table; the disagreement list is dispositioned; harness green; Unity Edit Mode for the new fixture. T2.
+
+### [ ] 9.13a Tables for Wasp, Arien, Brogan, Sabina and Tigerclaw
+
+Queued: the pilot format applied by blind readers to the first five dealt heroes; same closing check per hero. T2.
+
+### [ ] 9.13b Tables for Xargatha, Dodger, Misa, Silverarrow and Ursafar
+
+Queued as 9.13a. T2.
+
+### [ ] 9.13c Tables for Whisper, Tali, Swift, Cutter and Bain
+
+Queued as 9.13a. T2.
+
+### [ ] 9.13d Tables for Garrus, Widget, Rowenna, Min and Brynn
+
+Queued as 9.13a. T2.
+
+### [ ] 9.13e Tables for Hanu, Ignatia, Trinkets and Snorri, and the rulebook ledger invariants
+
+Queued: the last four heroes, plus one invariant per numbered rulebook rule that changes lives, coins or levels, read from the page rather than the code. T2.
