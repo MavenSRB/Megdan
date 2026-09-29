@@ -74,6 +74,14 @@ Completed 2026-09-29.
 
 Historical evidence: [9.6 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-96-offer-against-outcome-evidence).
 
-### [~] 9.7 Every legal action is offered
+### [x] 9.7 Every legal action is offered
 
 Outcome: the converse over the same states - an action the offer greys out is performed anyway through a test-only path, and one that can change the game is a greyed-out legal play (8.104's shape). Closing check as 9.6.
+
+Result: `OfferOutcomeTests.EveryGreyedPrintedPrimary_CouldNotHaveChangedTheGame` covers every grey that names no standing restriction. It takes the action through `MatchSession.StartActionIgnoringFeasibilityForInternalTest`, which skips only 6.5af's and 7.8a1's "cannot do anything" judgements, and tries every answer. A Skill counts as a denied play if some answer ends anywhere but where Hold does. An Attack counts only if some answer reaches a target, because card text can move the attacker or spend a Tree before the targeting step stops it: Combat Reflexes and Tree Slam, both correctly greyed.
+
+The first run found one disagreement, in the rules rather than the offer. Arien's Spell Break greyed Xargatha's Stone Gaze, yet a start command naming it was performed: action restrictions (8.7, `ActorMayPerform`) were asked of the offer and never at the start, and the method meant to ask both, `CanStart`, had no caller. Movement, Skill and Attack starts now refuse a restricted action with `ActionRestricted` (regression `ASkillASpellBreakForbids_IsRefusedAtItsStart_AsWellAsGreyed`, failing on 9.6 and passing here). After the fix no greyed printed primary in the survey could have changed the game.
+
+Completed 2026-09-29.
+
+Historical evidence: [9.7 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-97-legal-action-evidence).

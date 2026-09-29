@@ -92,7 +92,13 @@ namespace GuardsDigital.Core.Cards
         /// release to release. It covers a turn still being resolved, a turn already released, and
         /// a seat pressing the control twice.
         /// </summary>
-        NoTurnAwaitsRelease = 30
+        NoTurnAwaitsRelease = 30,
+
+        /// <summary>
+        /// Milestone 9.7. A standing rule forbids this hero this kind of action - the same answer the
+        /// offer set greys the action for.
+        /// </summary>
+        ActionRestricted = 31
     }
 
     public enum TurnResolutionEventKind
@@ -1109,6 +1115,15 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
+            // Milestone 9.7. A standing rule that forbids this hero this kind of action (Arien's
+            // Spell Break, 8.7's restriction family) greyed the offer and was never asked again at
+            // the start, so a start command naming the barred action was performed. The offer set
+            // and the rules now give one answer, as they do for 6.5af and 8.4.
+            if (!ActorMayPerform(offer))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionRestricted);
+            }
+
             // Milestone 8.19a, in the order rulebook p.17 implies: a trigger that precedes the action
             // runs before anything the action's own card says, because the action has not started.
             var intercepted = TryInterceptWithBeforeActionTrigger(
@@ -2077,11 +2092,20 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
+            // Milestone 9.7. A standing rule that forbids this hero this kind of action (Arien's
+            // Spell Break, 8.7's restriction family) greyed the offer and was never asked again at
+            // the start, so a start command naming the barred action was performed. The offer set
+            // and the rules now give one answer, as they do for 6.5af and 8.4.
+            if (!ActorMayPerform(offer))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionRestricted);
+            }
+
             // Milestone 6.5af: refused here rather than only left out of the projection, because the
             // dispatcher revalidates a start against the card-state offer query, which cannot see the
             // board and so cannot know this. A start naming an inert Skill is rejected before any
             // frame exists, so nothing to roll back was created.
-            if (!CanStartSkill(offer))
+            if (!SkipsFeasibilityJudgementForInternalTest && !CanStartSkill(offer))
             {
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.SkillCannotApplyAnything);
@@ -2279,6 +2303,16 @@ namespace GuardsDigital.Core.Cards
         /// this refuses an action proven empty and never one that merely could not be judged.
         /// </summary>
         private bool CanStartSkill(ActionOffer offer) => CanStartSkill(offer, out _);
+
+        /// <summary>
+        /// Milestone 9.7. TEST ONLY: while set, a start command skips the two judgements that grey an
+        /// action for being unable to do anything - 6.5af's Skill that applies nothing and 7.8a1's
+        /// Attack with no target - so a check can take a greyed action anyway and see whether it
+        /// could, after all, change the game. Nothing in the build sets it; it is not persisted, and
+        /// every other refusal (a standing restriction, uncomposed text, an action already under way)
+        /// still applies. The offer set is never affected: it is what is being checked.
+        /// </summary>
+        public bool SkipsFeasibilityJudgementForInternalTest { get; set; }
 
         /// <summary>
         /// Milestone 8.35l: the same statement, keeping the standing modification behind a refusal so
@@ -3018,6 +3052,15 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
+            // Milestone 9.7. A standing rule that forbids this hero this kind of action (Arien's
+            // Spell Break, 8.7's restriction family) greyed the offer and was never asked again at
+            // the start, so a start command naming the barred action was performed. The offer set
+            // and the rules now give one answer, as they do for 6.5af and 8.4.
+            if (!ActorMayPerform(offer))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionRestricted);
+            }
+
             // Milestone 8.19a. A rule source may have declared that it runs before an Attack begins.
             // If one has, it runs first and this offer is held exactly as it was validated - the whole
             // point of the altitude, because the trigger's own effect can move the hero who is about to
@@ -3039,7 +3082,8 @@ namespace GuardsDigital.Core.Cards
             IReadOnlyList<GuardsDigital.Core.Rules.CardResolution.AttackTarget> excludedTargets = null,
             bool skipTargetPrecheck = false)
         {
-            if (!skipTargetPrecheck && !cardActions.CanAttackFindTarget(
+            if (!skipTargetPrecheck && !SkipsFeasibilityJudgementForInternalTest &&
+                !cardActions.CanAttackFindTarget(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
                     roundIndex, turnIndex))
             {

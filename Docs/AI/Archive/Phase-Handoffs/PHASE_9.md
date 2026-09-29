@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.7 Legal action evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.7 | Every greyed printed primary is taken anyway through a test-only path; none could have changed the game once starts refuse a restricted action as the offer does (Spell Break had been enforced on offers only). [Definition](../../Roadmap/PHASE_9.md#x-97-every-legal-action-is-offered). | `milestone/9.7` |
+
 ## Milestone 9.6 Offer against outcome evidence
 
 | Milestone | Outcome and definition | Commit |

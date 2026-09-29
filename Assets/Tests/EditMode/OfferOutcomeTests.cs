@@ -6,6 +6,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -74,6 +75,62 @@ namespace GuardsDigital.Tests.EditMode
                 "can do nothing, so the offer walk is failing to read something the action depends on.");
         }
 
+        /// <summary>
+        /// Milestone 9.7, the converse. Every printed primary the offer set greys for being unable to
+        /// do anything (6.5af, 7.8a1 - a grey with no standing restriction named) is taken anyway,
+        /// through <c>StartActionIgnoringFeasibilityForInternalTest</c>, and every answer is tried.
+        /// A greyed action that could have ended anywhere but where Hold does was a legal play the
+        /// player was denied - Crimson Trail's shape (8.104).
+        /// </summary>
+        [Test]
+        public void EveryGreyedPrintedPrimary_CouldNotHaveChangedTheGame()
+        {
+            Assert.That(Surveyed.Value.GreyedButEffective, Is.Empty,
+                "These printed primaries were greyed as unable to do anything, yet taken anyway some " +
+                "answer left the match somewhere Hold does not. The offer walk is refusing a legal play.");
+            Assert.That(Surveyed.Value.GreyedTried, Is.GreaterThan(50),
+                "A survey forcing few greyed offers is not reading the matches it plays.");
+        }
+
+        /// <summary>
+        /// Milestone 9.7, found by the forced sweep: Arien's Spell Break ("This turn: Enemy heroes in
+        /// radius cannot perform Skill actions, except on the gold cards") greyed Xargatha's Stone Gaze,
+        /// yet a start command naming it was performed - the restriction was asked of the offer and
+        /// never of the start. Seed 2 of the first rotation's line-up reaches that turn at command 110.
+        /// </summary>
+        [Test]
+        public void ASkillASpellBreakForbids_IsRefusedAtItsStart_AsWellAsGreyed()
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var picked = new[] { "wasp", "xargatha", "tigerclaw", "arien", "brogan", "sabina" }
+                .Select(name => QuickGameSetupConfiguration.DealtHeroes.Single(hero => hero.ContentId.Value == name))
+                .ToArray();
+            var session = new MatchSession(Compose(map, picked));
+            var random = new MatchLoopRandom(2);
+            for (var step = 0; step < 110; step++)
+            {
+                var legal = DeterministicMatchLoop.EnumerateLegalCommands(session.Projection);
+                session.Execute(legal[random.Next(legal.Count)]);
+            }
+
+            var projection = session.Projection;
+            var stoneGaze = projection.AvailableTurnActions.SingleOrDefault(offer =>
+                offer.SourceCardInstanceId.Value.EndsWith("xargatha-stone-gaze", StringComparison.Ordinal) &&
+                offer.ActionDefinitionId.Value == "primary-skill");
+            Assert.That(stoneGaze.ActionDefinitionId.IsDefined, Is.True,
+                "The seeded walk must reach Xargatha's Stone Gaze turn; if a later change reroutes it, " +
+                "find the Spell Break position again rather than weakening this case.");
+            Assert.That(projection.ActiveEffectSourceCardInstanceIds.Any(id =>
+                id.Value.EndsWith("arien-spell-break", StringComparison.Ordinal)), Is.True,
+                "and Spell Break must be standing over her.");
+            Assert.That(stoneGaze.IsAvailable, Is.False, "The offer greys the barred Skill.");
+
+            var started = session.Execute(
+                DirectorCommand.StartAction(stoneGaze.SourceCardInstanceId, stoneGaze.ActionDefinitionId));
+            Assert.That(started.Accepted, Is.False,
+                "and the rules refuse to start it - one answer, asked in both places.");
+        }
+
         [Test]
         public void EveryOfferedCommand_IsAccepted()
         {
@@ -109,6 +166,8 @@ namespace GuardsDigital.Tests.EditMode
             public readonly List<string> Empty = new List<string>();
             public readonly List<string> Undecided = new List<string>();
             public readonly List<string> Refused = new List<string>();
+            public readonly List<string> GreyedButEffective = new List<string>();
+            public int GreyedTried;
             public int LegalDoNothing;
             public readonly HashSet<string> HeroesOffered = new HashSet<string>(StringComparer.Ordinal);
             public int Tried;
@@ -211,6 +270,7 @@ namespace GuardsDigital.Tests.EditMode
                 survey.HeroesOffered.Add(definition.Id.Value.Split('-')[0]);
                 if (!offer.IsAvailable)
                 {
+                    TryTheGreyedOffer(survey, initial, snapshot, offer, action.Kind, definition.Id.Value, where);
                     continue;
                 }
 
@@ -255,6 +315,97 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static bool OpensWithAnIf(CardDefinition definition) =>
             IfGate.IsMatch(definition.SourceContent?.PrintedText ?? string.Empty);
+
+        /// <summary>
+        /// Milestone 9.7. A grey that names a standing restriction is a rule the offer was told, not a
+        /// judgement it made, so it is left alone; every other grey is taken anyway.
+        /// </summary>
+        private static void TryTheGreyedOffer(
+            Survey survey, MatchSessionInitialState initial, string snapshot, ActionOffer offer,
+            ActionKind kind, string card, string where)
+        {
+            if (offer.Unavailability.IsStated)
+            {
+                return;
+            }
+
+            survey.GreyedTried++;
+            var hold = Restored(initial, snapshot);
+            if (!hold.Execute(DirectorCommand.PerformHold(offer.SourceCardInstanceId)).Accepted)
+            {
+                return;
+            }
+
+            var held = Settled(hold);
+            var forced = Restored(initial, snapshot);
+            var actor = forced.Projection.SelectedActor.ActorId;
+            if (!forced.StartActionIgnoringFeasibilityForInternalTest(
+                    offer.SourceCardInstanceId, offer.ActionDefinitionId).Accepted)
+            {
+                // The rules refuse it too: nothing to perform, and the grey was right.
+                return;
+            }
+
+            var budget = AnswerPathsPerOffer;
+
+            // An Attack is legal only if it can take a target (p.13). Its card text may move the
+            // attacker or spend a token before the targeting step stops it (RULING 45's dead end,
+            // 8.35z42's per-space proof), so "something changed" is not the question for it -
+            // "some answer reaches a target" is.
+            var legal = kind == ActionKind.Attack
+                ? ReachesATarget(initial, forced, actor, 0, ref budget)
+                // A refusal met inside an action the offer never made is not an offered command refused.
+                : DoesSomething(new Survey(), initial, forced, actor, held, 0, ref budget, card);
+            if (legal)
+            {
+                survey.GreyedButEffective.Add($"{card} ({where})");
+            }
+        }
+
+        /// <summary>Whether some sequence of answers brings a forced Attack to a target.</summary>
+        private static bool ReachesATarget(
+            MatchSessionInitialState initial, MatchSession session, HeroId actor, int depth, ref int budget)
+        {
+            var projection = session.Projection;
+            if (projection.PendingAttackResolution != null &&
+                projection.PendingAttackResolution.Target.Kind != AttackTargetKind.None ||
+                projection.PendingAttackTargetChoice != null &&
+                projection.PendingAttackTargetChoice.LegalTargets.Count > 0 ||
+                projection.PendingDefenseChoice != null)
+            {
+                return true;
+            }
+
+            var stillActing = projection.SelectedActor.IsDefined &&
+                projection.SelectedActor.ActorId.Equals(actor) &&
+                projection.Phase == RoundResolutionPhase.ResolvingTurn &&
+                projection.DecisionContract != null &&
+                projection.PendingTurnRelease == null &&
+                depth < 12;
+            if (!stillActing)
+            {
+                budget--;
+                return false;
+            }
+
+            var here = session.CaptureSnapshot();
+            foreach (var answer in projection.DecisionContract.Commands.OrderBy(Doing))
+            {
+                if (budget <= 0)
+                {
+                    return false;
+                }
+
+                var branch = Restored(initial, here);
+                if (branch.Execute(answer).Accepted &&
+                    ReachesATarget(initial, branch, actor, depth + 1, ref budget))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Whether some sequence of answers ends anywhere other than where Hold does.</summary>
         private static bool DoesSomething(

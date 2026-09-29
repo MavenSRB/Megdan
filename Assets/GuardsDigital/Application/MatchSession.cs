@@ -281,6 +281,36 @@ namespace GuardsDigital.Application
             return aggregate.CaptureSnapshot();
         }
 
+        /// <summary>
+        /// Milestone 9.7. TEST ONLY: starts the named action even where the offer set greyed it for
+        /// being unable to do anything, through the ordinary command path so the attempt is atomic and
+        /// recorded like any other. See
+        /// <see cref="TurnResolutionAuthority.SkipsFeasibilityJudgementForInternalTest"/>.
+        /// </summary>
+        internal MatchCommandResult StartActionIgnoringFeasibilityForInternalTest(
+            CardInstanceId sourceCardInstanceId, ActionDefinitionId actionDefinitionId)
+        {
+            var turn = round.CurrentTurnAuthority;
+            if (turn == null)
+            {
+                return Execute(DirectorCommand.StartAction(sourceCardInstanceId, actionDefinitionId));
+            }
+
+            turn.SkipsFeasibilityJudgementForInternalTest = true;
+            try
+            {
+                return Execute(DirectorCommand.StartAction(sourceCardInstanceId, actionDefinitionId));
+            }
+            finally
+            {
+                turn.SkipsFeasibilityJudgementForInternalTest = false;
+                if (round.CurrentTurnAuthority != null)
+                {
+                    round.CurrentTurnAuthority.SkipsFeasibilityJudgementForInternalTest = false;
+                }
+            }
+        }
+
         private DispatchResult Dispatch(DirectorCommand command)
         {
             switch (command.Kind)
