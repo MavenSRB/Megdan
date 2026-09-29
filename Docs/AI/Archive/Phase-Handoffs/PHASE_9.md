@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.18 Token outline evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.18 | Every catalog token kind drawn with one thin black outline of the shared width, proven by a content-derived view regression and approved by the user on the before/after sheet. [Definition](../../Roadmap/PHASE_9.md#x-918-every-token-piece-carries-a-thin-black-outline). | `milestone/9.18` |
+
 ## Milestone 9.17a Runestone binding evidence
 
 | Milestone | Outcome and definition | Commit |

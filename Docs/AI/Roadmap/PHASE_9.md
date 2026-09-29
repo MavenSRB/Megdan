@@ -211,9 +211,15 @@ Completed 2026-09-29.
 
 Historical evidence: [9.16 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-916-turret-piece-evidence).
 
-### [ ] 9.18 Every token piece carries a thin black outline
+### [x] 9.18 Every token piece carries a thin black outline
 
 Authorized 2026-09-29 by the user on the 9.16 captures: "i think all of our tokens need some sort of thin black outline to pop out more." Outcome: every board piece drawn from prepared token or obstacle art (Mrak's rock, Wuk's Trees, Mortimer's Zombies, Tali's Ice and Totem, Ignatia's magma and pyro, Trinkets' Barriers and Turret, Snorri's runes where they stand on the board, and any other token kind the catalog draws) gets one thin black outline around its figure, the same thickness at play scale for every kind, applied by the shared piece builder rather than baked into the private art; hero standees and cards are untouched. A capture sheet of every token kind before and after, at play scale and close, goes to the user before it lands. Closing check: one view regression proving the outline is drawn for each token kind from the catalog (content-derived, no kind hand-listed) failing on the base and passing after; the token and obstacle view fixtures, the board visual smoke and the affected Play Mode journeys green; the user's approval of the sheet. T2 with a visual inspection.
+
+Result: `PlacedTokenView`, which draws every placed token, now stands each one on a black hex one outline width wider than the token on every side, its top just under the token's top so only the rim shows; the width is `BoardPieceOutline`'s one value (0.05 of the hex radius, about 1.5 px at the default match camera), the same the Turret uses. Kinds covered are read from `MatchContentCatalogs.ForThisBuild().Components`: ignatia-magma, min-grenade, min-mine-blast, min-mine-dud, min-mine-facedown, min-smoke-bomb-token, mortimer-zombie, mrak-rock, synthetic-hazard-token, synthetic-ward-token, tali-ice, tali-totem-ancestral, tali-totem-venerated, trinkets-barrier, widget-pyro, wuk-tree; the Turret is an obstacle covered by 9.16; Snorri's runes never stand on the board. Regression `PlacedTokenViewTests.EveryCatalogTokenKind_IsDrawnWithTheThinBlackOutline` walks the catalog and fails on the base ("ignatia-magma is drawn with no outline"). The user approved the before/after sheet (`tmp/9-18-tokens-before-after-close-sheet.png`) on 2026-09-30. Noted, not changed: the staged capture board's generated captions read mirrored, before and after.
+
+Completed 2026-09-30.
+
+Historical evidence: [9.18 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-918-token-outline-evidence).
 
 ### [x] 9.17a The Runestone's target and discard are visible when they happen
 
