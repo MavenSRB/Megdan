@@ -106,38 +106,53 @@ namespace GuardsDigital.Presentation.Board
             }
             if (artFace == null)
             {
+                // Milestone 9.16, the user's pick of the three captured treatments: the prepared
+                // disc's figure alone, cut out of its whitened standee ring and field, outlined in
+                // the board's thin black line, and as wide as the hex tokens (Mrak's rock, Wuk's
+                // Trees) - no ring, no base. It is drawn through the shipped blended Unlit
+                // template, so the texture's alpha is honoured: the opaque Unlit material this
+                // replaces drew the file's transparent corners as a black square.
+                var faceWidth = FaceWidth(outerRadius);
+                var face = PreparedObstacleCutout.CutWithOutline(
+                    texture, BoardPieceOutline.WorldWidth(outerRadius) / faceWidth);
                 artFace = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 artFace.name = "Obstacle Standee";
                 artFace.transform.SetParent(transform, false);
-                artFace.transform.localPosition = new Vector3(0f, 0.42f, 0f);
-                artFace.transform.localScale = new Vector3(0.86f, 0.86f, 1f);
+                artFace.transform.localPosition = new Vector3(0f,
+                    PlacedTokenView.DefaultVerticalOffset - verticalOffset + BoardPieceDepth.Standard, 0f);
+                artFace.transform.localScale =
+                    new Vector3(faceWidth, faceWidth * face.height / face.width, 1f);
                 var collider = artFace.GetComponent<Collider>();
                 if (collider != null) DestroyOwnedResource(collider);
-                var shader = Shader.Find("Universal Render Pipeline/Unlit");
-                if (shader == null)
-                    throw new System.InvalidOperationException(
-                        "The prepared obstacle standee requires the URP Unlit shader.");
-                artMaterial = new Material(shader)
-                {
-                    name = "Prepared Obstacle Standee",
-                    mainTexture = texture,
-                    color = Color.white
-                };
+                artMaterial = BoardOverlayMaterial.CreateUnlitBlended("Prepared Obstacle Standee", Color.white);
+                artMaterial.mainTexture = face;
                 artFace.GetComponent<MeshRenderer>().sharedMaterial = artMaterial;
             }
             artFace.SetActive(true);
             if (block != null) block.enabled = false;
         }
 
+        /// <summary>
+        /// Milestone 9.16. The prepared face's width: the flat-to-flat width of the hex tokens,
+        /// which are pointy-top solid hexes of <see cref="PlacedTokenView.DiscRadiusFraction"/> of
+        /// the tile, so the Turret stands on the footprint the rock and the Trees do.
+        /// </summary>
+        public static float FaceWidth(float outerRadius) =>
+            2f * outerRadius * PlacedTokenView.DiscRadiusFraction * Mathf.Cos(30f * Mathf.Deg2Rad);
+
         private void LateUpdate()
         {
             if (artFace == null || !artFace.activeSelf || Camera.main == null) return;
-            var towardCamera = Camera.main.transform.position - artFace.transform.position;
+            var camera = Camera.main.transform;
+            var towardCamera = camera.position - artFace.transform.position;
             if (towardCamera.sqrMagnitude > 0.0001f)
                 // Unity's Quad primitive renders its local -Z face. Aim that normal at the
                 // camera; aiming +Z at it turns the prepared face away and back-face culls the
-                // Turret while the fallback block is disabled.
-                artFace.transform.rotation = Quaternion.LookRotation(-towardCamera, Vector3.up);
+                // Turret while the fallback block is disabled. Milestone 9.16: roll by the
+                // camera's own up. Under the straight-down match camera world up is almost
+                // parallel to that normal, so rolling by it turned the figure's top away from
+                // the frame's centre - the Turret was drawn upside down on the lower board.
+                artFace.transform.rotation = Quaternion.LookRotation(-towardCamera, camera.up);
         }
 
         private static Mesh CreateBlockMesh(float blockWidth, float blockHeight)
