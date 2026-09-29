@@ -196,3 +196,9 @@ Result: no engine defect. The host log only fits rune 3 below slot 1 (Rune Sigil
 Completed 2026-09-29.
 
 Historical evidence: [9.17 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-917-charged-runestone-evidence).
+
+## Turret piece, authorized 2026-09-29
+
+### [~] 9.16 Trinkets' Turret piece reads as a turret
+
+Authorized 2026-09-29 by the user from the playtest build, with a screenshot: "This is very ugly, this is supposed to be trinkets turret, make this nicer." The prepared art (`Resources/Private/Tokens/trinkets-turret.png`, a clean 302x302 cutout of the Koboldturret standee sprite) is drawn by `PlaceholderObstacleView` through the neutral standee route, so on the board it is a small dark shape inside a white ring. Outcome: the Turret is drawn as a board piece that reads as a turret at play scale - the sprite cropped to its silhouette and filling the piece, no white ring, on the same footprint and perimeter treatment the hex tokens (Mrak's rock, Wuk's Trees) use, still facing the camera as 8.102 settled, still an obstacle with no rules, wire or snapshot change. Candidate treatments are captured with the board visual capture driver and the user picks; nothing lands before that pick. Closing check: the chosen treatment's view regression (footprint, face normal toward the camera, no ring) failing on the base and passing after; the obstacle view fixtures and the Rapid Redeployment Play Mode journey green; a capture of the chosen treatment approved by the user. T2 with a visual inspection.
