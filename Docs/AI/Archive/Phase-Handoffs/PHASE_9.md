@@ -26,6 +26,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.9 | 154 content-derived faces with a before-the-action step staged in 770 positions and read at the rules, seat and HUD layers; a standing before-action ability no longer greys the play it exists for. [Definition](../../Roadmap/PHASE_9.md#x-99-a-play-reached-only-through-its-own-before-the-action-step-is-offered-at-every-layer). | `milestone/9.9` |
 
+## Milestone 9.8g Player-path gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8g | Mortimer gated on the player path: seventeen real-input journeys for eighteen faces and five components, on a headlessly measured board. The twenty-seventh hero series is complete. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98g-gate-mortimer-on-the-player-path). | `milestone/9.8g` |
+
 ## Milestone 9.8f Dealing evidence
 
 | Milestone | Outcome and definition | Commit |

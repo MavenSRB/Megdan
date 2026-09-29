@@ -165,6 +165,29 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8f completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98f-dealing-evidence).
 
-### [~] 9.8g Gate Mortimer on the player path
+### [x] 9.8g Gate Mortimer on the player path
 
 Outcome: the permanent player-path gate passes for him, with every face's journey reading what its answer changed.
+
+Completed 2026-09-29.
+- `MortimerPlayerPathGateTests` maps every shape derived from his content (eighteen dealt faces, the boxed Shallow Graves, and five components: piece, session, footprint, items, Zombies) to seventeen real-input journeys in `MortimerUiJourneyPlayModeTests`. `HeroPlayerPathMatrix` classifies his three capability ids.
+- **Board measured first.** A headless probe composed the scene's own staging and drove every face group with DirectorCommands before any journey was written. Mortimer stands on (-3, 1) and Wasp on (-2, 1). The staging clears the Blue minion from (-3, 2), so Awaken! puts a Zombie on each of the two spaces beside both. The gate's seven checks then passed offline against journey stubs.
+- **Journeys**, each asserting a board, hand, coin or standing-effect change:
+  - Awaken! places two Zombies and declines the rest; discarded to defend, it still places one.
+  - Knife removes a Zombie beside Wasp (+1 Attack standing) and defeats her.
+  - The Dead faces hit a minion, then Wasp, beside a Zombie, discards on her own choice.
+  - The Brains faces retrieve before the Attack.
+  - The Slam faces push Wasp directly away from a Zombie that moved 0 (W5).
+  - The Robbing faces gain a coin.
+  - The Dive faces swap Mortimer with a Zombie.
+  - The Horde faces replace an enemy minion beside two Zombies.
+  - Master of Puppets shows on the rail and opens a fourth and fifth pass.
+  - Every secondary Movement and Defense.
+  - A Crawling discard restored at Wasp's question.
+  - An Awaken! placement undone and replayed.
+  - Zombies outlast his defeat and the round end (MO-Q4) before a restart.
+  - Spawn, footprint and level-up.
+- Corrected in scope, all in the new journeys: the lifecycle case staged Wasp out of reach, and the respawn left the turn controls over the Director drawer; the level-up case keeps the Blue minion, so its round end asks for no removal. First focused pass 24/26, then 26/26.
+- T3; evidence in the milestone commit.
+
+Historical evidence: [9.8g completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98g-player-path-gate-evidence).

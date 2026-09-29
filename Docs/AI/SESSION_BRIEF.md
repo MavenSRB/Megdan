@@ -8,15 +8,15 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all twenty-seven heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v48 persists turn-slot marker positions, temporary rune activation, held action selections, Minion-Battle exclusions, the last completed Movement walk and minion Defeats held behind a removal-prevention question; wire protocol is `guards-private-online/25`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. Twenty-six heroes pass the permanent player-path gate; Mortimer is gated at 9.8g. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty-seven heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v48 persists turn-slot marker positions, temporary rune activation, held action selections, Minion-Battle exclusions, the last completed Movement walk and minion Defeats held behind a removal-prevention question; wire protocol is `guards-private-online/25`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All twenty-seven heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.9a**.
-- Active authorized milestone: **9.8g**.
-- Next proposed milestone: **9.8g**.
+- Current completed milestone: **9.8g**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **9.12**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -24,13 +24,11 @@ On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rocksha
 
 On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.114-8.114g](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) is complete ([his shard](Rules/HERO_WUK.md); schema v47). **[8.116](Roadmap/PHASE_8.md)** then made Whisper's forced move fire Widget's Dragon Knight right after the move (Ruling 16c). **8.117** (every gate walks its Active effects' trigger bodies) and **8.118** (Defeats held behind a removal-prevention question are settled by its answer; schema v48) are complete. The user then closed Phase 8 and started **[Phase 9](Roadmap/PHASE_9.md)**, the printed-wording audit **9.1 -> 9.2 -> 9.3 -> 9.4 -> 9.5**; the earlier presentation plan is retired. **9.1** (optionality, W1-W3), **9.2** (targeting, W4, R1) **9.3** (conditions, W5), **9.4** (journeys read outcomes) and **9.5** (the new-hero checklist) are complete; the user then authorized **9.6 -> 9.7** (offer against outcome) ([PRINTED_WORDING](Rules/PRINTED_WORDING.md)). **9.6** and **9.7** are complete: offers checked against outcomes both ways; restrictions refused at start. **[8.115](Roadmap/PHASE_8.md)** is complete: Whisper's forced move is a full-distance Movement action (Rulings 16a-16b, [her shard](Rules/HERO_WHISPER.md)). W8 (2026-09-29, Boulder Rush) was ruled during 9.8f.
 
-On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8f are complete: he is dealt, artworked and pickable, and 9.8g gates him.
+On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
 On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** packages the playtest build.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
-
-On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 
 On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
 
