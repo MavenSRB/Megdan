@@ -114,6 +114,141 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new ReclaimHeroTokenHandler(reference, definition);
 
         /// <summary>
+        /// Milestone 9.8e. p.19's Replace of the minion standing on <c>subject</c> with one token of
+        /// <paramref name="definition"/> from its supply - Mortimer's "Replace an enemy minion ... with
+        /// a Zombie token". Which minion is the selection's question; this handler performs the
+        /// substitution through <see cref="Rules.BoardObjects.ReplaceOperation.ReplaceMinion"/> and
+        /// publishes where it happened and whether it is p.8's Lane-Push cause, as a Remove does. A
+        /// supply with nothing left is the short-supply step's to fix, composed before this node.
+        /// </summary>
+        public static IEffectCapabilityHandler ReplaceMinionHandler(
+            EffectCapabilityReference reference, TokenDefinition definition) =>
+            new ReplaceMinionWithTokenHandler(reference, definition);
+
+        /// <summary>The space a minion-to-token Replace happened in.</summary>
+        public const string ReplacedOutput = "replaced";
+
+        private sealed class ReplaceMinionWithTokenHandler : IEffectCapabilityHandler
+        {
+            private static readonly Rules.BoardObjects.ReplacePolicy Policy = new Rules.BoardObjects.ReplacePolicy(
+                Rules.BoardObjects.ReplaceIncomingSource.Supply,
+                Rules.BoardObjects.ReplaceOutgoingDestination.Supply,
+                Rules.BoardObjects.ReplacePropertyTransferPolicy.NoTransfer,
+                Rules.BoardObjects.ReplaceObservationPolicy.ReplacementOnly);
+
+            private readonly TokenDefinition definition;
+
+            internal ReplaceMinionWithTokenHandler(EffectCapabilityReference reference, TokenDefinition definition)
+            {
+                if (!reference.IsDefined) throw new ArgumentException("A handler names its capability.", nameof(reference));
+                Reference = reference;
+                this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter("subject", EffectValueKind.Coordinate) },
+                new[]
+                {
+                    new EffectOutputBinding(ReplacedOutput, EffectValueKind.Coordinate),
+                    new EffectOutputBinding(
+                        Rules.EffectResolution.RecordedLanePushQuery.OutcomeFactName, EffectValueKind.Boolean)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (!TryResolve(context, out var minion, out var at))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var components = context.Components;
+                var outcome = Rules.BoardObjects.ReplaceOperation.ReplaceMinion(
+                    Policy,
+                    components.Exchange,
+                    components.Board,
+                    components.Tokens,
+                    components.Catalog,
+                    minion,
+                    new PlacedToken(
+                        new TokenInstanceId(
+                            $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
+                            $":{definition.Id.Value}:r{context.RoundIndex}t{context.TurnIndex}:{at.Q}:{at.R}"),
+                        definition,
+                        context.ActorId,
+                        context.ControllerId,
+                        context.SourceCardInstanceId,
+                        at),
+                    Stage(context));
+                if (!outcome.Accepted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(ReplacedOutput, EffectValue.Space(outcome.Coordinate)),
+                    new EffectOutcomeFact(
+                        Rules.EffectResolution.RecordedLanePushQuery.OutcomeFactName,
+                        EffectValue.Boolean(outcome.QualifiesForLanePush))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// The same reading <see cref="Execute"/> makes, without the substitution - except that a
+            /// token is obtainable while one stands on the board as well as in the supply. p.18's
+            /// short-supply step ("take one from the board") is composed before every such Replace,
+            /// so asked before that step, an empty pile beside a placed token is not a refusal.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                TryResolve(context, out var minion, out _) &&
+                (context.Components.Catalog.CountAvailableTokens(
+                        definition.Reference, context.Components.Tokens.PlacedTokens) > 0 ||
+                    context.Components.Tokens.PlacedTokens.Any(token =>
+                        token.Definition.Reference.Equals(definition.Reference))) &&
+                !Stage(context).IsPrevented(BoardObjectReference.ForMinion(minion))
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+
+            private static bool TryResolve(
+                EffectCapabilityContext context, out Setup.MinionId minion, out HexCoordinate at)
+            {
+                minion = default;
+                at = default;
+                var components = context.Components;
+                var subject = context.Input("subject");
+                if (components == null || !components.IsLive || subject.Kind != EffectValueKind.Coordinate ||
+                    !components.Board.TryGetObjectAt(subject.Coordinate, out var occupant) ||
+                    occupant.Kind != BoardObjectKind.Minion)
+                {
+                    return false;
+                }
+
+                minion = occupant.MinionId;
+                at = subject.Coordinate;
+                return true;
+            }
+
+            private static Rules.BoardObjects.RemovalStageDecision Stage(EffectCapabilityContext context) =>
+                new Rules.BoardObjects.RemovalStageDecision(
+                    context.EnclosingActivity,
+                    Rules.Modifications.RuleObject.ForHero(context.ActorId),
+                    context.Components.Board,
+                    context.Components.Units,
+                    context.Participants,
+                    context.Modifications,
+                    GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.Removal);
+        }
+
+        /// <summary>
         /// Places one token from the supply into an empty playable space within the placing card's
         /// printed reach of the acting hero (rulebook p.18's Place).
         ///

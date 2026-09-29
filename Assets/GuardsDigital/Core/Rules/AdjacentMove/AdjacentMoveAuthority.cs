@@ -1401,6 +1401,38 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return BoardObjectReplacementCommitResult.Accept(replaced, incoming);
         }
 
+        public BoardObjectRemovalCommitResult CommitValidatedMinionReplacement(
+            MinionId outgoing,
+            PlacedToken incoming)
+        {
+            if (incoming == null) throw new ArgumentNullException(nameof(incoming));
+
+            var index = minions.FindIndex(minion => minion.MinionId.Equals(outgoing));
+            if (index < 0)
+            {
+                return BoardObjectRemovalCommitResult.Reject(BoardObjectRemovalRejectionReason.UnknownObject);
+            }
+
+            var replaced = minions[index];
+            if (!replaced.Coordinate.Equals(incoming.Coordinate) ||
+                tokens.Any(token => token.Id.Equals(incoming.Id)) ||
+                tokens.Count(token => token.Definition.Reference.Equals(incoming.Definition.Reference)) >=
+                    incoming.Definition.SupplyCount)
+            {
+                return BoardObjectRemovalCommitResult.Reject(BoardObjectRemovalRejectionReason.UnknownObject);
+            }
+
+            // One transaction in one space, as the token-for-token arm: the index is substituted rather
+            // than emptied and refilled, and the miniature rejoins the reserve by the one route every
+            // removal takes.
+            minions.RemoveAt(index);
+            reserveMinions.Add(replaced);
+            occupancyIndex.Substitute(replaced.Coordinate, BoardOccupant.ForToken(incoming.Id));
+            tokens.Add(incoming);
+            return BoardObjectRemovalCommitResult.Accept(
+                BoardObjectReference.ForMinion(outgoing), replaced.Coordinate);
+        }
+
         /// <summary>
         /// Records an already exchanged object's new space in its own occupancy list. It never touches
         /// the index, because <see cref="BoardOccupancyIndex.Exchange"/> has already moved both at once.

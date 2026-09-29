@@ -411,6 +411,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ExcludeTheAttackTargetParameterName = "excludeTheAttackTarget";
 
         /// <summary>
+        /// Milestone 9.8e. "Once per turn:" on one bullet of a repeated modal - Mortimer's Gathering
+        /// Horde and Army of Darkness. The bullet's selection joins a
+        /// <see cref="EffectSelectionDeclaration.DistinctAcrossParameterName"/> group with the same
+        /// bullet on every other pass, and this clause empties the offer once any member of that group
+        /// has been answered in this resolution, so the bullet is performed at most once. The action is
+        /// the whole of Mortimer's turn that could reach it (p.12: one primary action, which these
+        /// cards cannot repeat), so once in the resolution is once in the turn.
+        /// </summary>
+        public const string OnceAcrossTheGroupParameterName = "onceAcrossTheGroup";
+
+        /// <summary>
         /// The side-of-the-board parameter's name, carrying a <see cref="SourceTeamRelation"/>.
         /// Milestone 8.10.
         /// </summary>

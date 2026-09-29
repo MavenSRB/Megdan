@@ -407,6 +407,36 @@ namespace GuardsDigital.Tests.EditMode
                     "Stalking Scalpers: \"Move 1 space\" (Master of Puppets' extra pass)",
                 ["mortimer-stalking-scalpers-skill | rob-5-step-move"] =
                     "Stalking Scalpers: \"Move 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-stage-dive-skill | dive-1-move-step"] =
+                    "Stage Dive: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-drift-skill | dive-1-move-step"] =
+                    "Crowd Drift: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-drift-skill | dive-2-move-step"] =
+                    "Crowd Drift: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-gathering-horde-skill | horde-1-move-step"] =
+                    "Gathering Horde: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-gathering-horde-skill | horde-2-move-step"] =
+                    "Gathering Horde: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-surf-skill | dive-1-move-step"] =
+                    "Crowd Surf: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-surf-skill | dive-2-move-step"] =
+                    "Crowd Surf: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-surf-skill | dive-3-move-step"] =
+                    "Crowd Surf: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-crowd-surf-skill | dive-4-move-step"] =
+                    "Crowd Surf: \"Move a Zombie token in range 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-crowd-surf-skill | dive-5-move-step"] =
+                    "Crowd Surf: \"Move a Zombie token in range 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-army-of-darkness-skill | horde-1-move-step"] =
+                    "Army of Darkness: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-army-of-darkness-skill | horde-2-move-step"] =
+                    "Army of Darkness: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-army-of-darkness-skill | horde-3-move-step"] =
+                    "Army of Darkness: \"Move a Zombie token in range 1 space\"",
+                ["mortimer-army-of-darkness-skill | horde-4-move-step"] =
+                    "Army of Darkness: \"Move a Zombie token in range 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-army-of-darkness-skill | horde-5-move-step"] =
+                    "Army of Darkness: \"Move a Zombie token in range 1 space\" (Master of Puppets' extra pass)",
 
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",

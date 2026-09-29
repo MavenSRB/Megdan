@@ -226,5 +226,16 @@ namespace GuardsDigital.Core.Components
         BoardObjectReplacementCommitResult CommitValidatedTokenReplacement(
             TokenInstanceId outgoing,
             PlacedToken incoming);
+
+        /// <summary>
+        /// Milestone 9.8e. p.19's Replace with a minion miniature going out and a token coming in -
+        /// Mortimer's "Replace an enemy minion ... with a Zombie token". The same one transaction in one
+        /// space: the miniature returns to the reserve p.19's Respawn requires, exactly as a Remove
+        /// returns it, and the token takes its space without it ever standing empty. The result names
+        /// the minion and the space it left.
+        /// </summary>
+        BoardObjectRemovalCommitResult CommitValidatedMinionReplacement(
+            GuardsDigital.Core.Setup.MinionId outgoing,
+            PlacedToken incoming);
     }
 }

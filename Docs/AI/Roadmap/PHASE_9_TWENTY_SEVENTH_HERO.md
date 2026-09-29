@@ -123,11 +123,21 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98d-blue-skills-evidence).
 
-### [~] 9.8e Implement the five Green Skills
+### [x] 9.8e Implement the five Green Skills
 
 Outcome: a Zombie in range moves 1 space. Also swap with a Zombie in range, and "once per turn" Replace an enemy minion in range adjacent to two or more Zombies with a Zombie.
 
-### [ ] 9.8f Deal Mortimer with his artwork
+Completed 2026-09-29.
+- `MortimerGreenFaces` composes the five Ranged Skills (Range 4). The Zombie move is exactly one space, and the swap is `synthetic-swap-actor@1`.
+- **The Replace.** The minion selection is the printed-icon minion arm (enemy, `adjacentToTokenKind` Zombie, `adjacentAtLeast` 2), then p.18's short-supply step, then the new `mortimer-replace-minion-with-zombie@1`. That handler (`SyntheticTokenCapabilities.ReplaceMinionHandler`) performs `ReplaceOperation.ReplaceMinion` over the new board commit `IBoardObjectExchangeAuthority.CommitValidatedMinionReplacement`. The commit is one transaction in one space: the miniature goes to the reserve and a Zombie comes from the supply.
+- **Replace rules.** Immunity is asked as a Remove asks it. The minion is removed, not defeated, so no coins. It publishes the Lane-Push cause a Remove publishes.
+- **The empty pile.** A Zombie standing on the board counts as obtainable when the offer is judged, because p.18's reclaim is composed before the Replace. Without that, the bullet greyed whenever all four Zombies were out.
+- **"Once per turn."** Every pass's minion selection joins one `distinctAcross` group with the new `onceAcrossTheGroup` clause, which empties the offer after the first Replace. One resolution is the whole turn that can reach it.
+- `CapabilityFeasibilityConformanceTests` names the two new board-mutating members (18 to 20). `RosterMoveLeashSweepTests` lists the 15 new exact Zombie moves. `MortimerGreenFacesTests` (7) cover it.
+
+Historical evidence: [9.8e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98e-green-skills-evidence).
+
+### [~] 9.8f Deal Mortimer with his artwork
 
 Outcome: he is pickable with his profile, standee, card art and Zombie token art, and the corpus, conformance and offer checks cover him.
 

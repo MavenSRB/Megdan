@@ -88,7 +88,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheNamedMembers_Resolve()
         {
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(18),
+            // Milestone 9.8e moves it by two: p.19's Replace gains a minion-to-token arm
+            // (`ReplaceOperation.ReplaceMinion`) over a new board commit
+            // (`IBoardObjectExchangeAuthority.CommitValidatedMinionReplacement`), and both mutate the
+            // board, so both are members no probe may reach.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(20),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -550,6 +554,11 @@ namespace GuardsDigital.Tests.EditMode
             ILConformanceScanner.Method(
                 typeof(IBoardObjectExchangeAuthority),
                 nameof(IBoardObjectExchangeAuthority.CommitValidatedTokenReplacement)),
+            ILConformanceScanner.Method(
+                typeof(IBoardObjectExchangeAuthority),
+                nameof(IBoardObjectExchangeAuthority.CommitValidatedMinionReplacement)),
+            ILConformanceScanner.Method(
+                typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceMinion)),
             ILConformanceScanner.Method(typeof(SwapOperation), nameof(SwapOperation.Swap)),
             ILConformanceScanner.Method(
                 typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceToken)),

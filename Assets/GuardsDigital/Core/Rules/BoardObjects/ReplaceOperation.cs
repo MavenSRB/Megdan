@@ -1,6 +1,7 @@
 using System;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.AdjacentMove;
 
 namespace GuardsDigital.Core.Rules.BoardObjects
 {
@@ -155,5 +156,90 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 ? ReplaceOutcome.Accept(replaced, incoming, replaced.Coordinate)
                 : ReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
         }
+
+        /// <summary>
+        /// Milestone 9.8e. The minion arm: a minion miniature out, a token from its supply in, in the
+        /// minion's one space. p.18's immunity is asked of the minion first, as a Remove asks it,
+        /// because a Replace takes the miniature off the board. The minion is removed, not defeated:
+        /// nothing is awarded, and <paramref name="removalStage"/> answers whether the removal
+        /// qualifies for p.8's Lane Push, which is the same question a Remove's answer carries.
+        /// </summary>
+        public static MinionReplaceOutcome ReplaceMinion(
+            ReplacePolicy policy,
+            IBoardObjectExchangeAuthority exchange,
+            IBoardDisplacementAuthority board,
+            ITokenPlacementAuthority spaces,
+            ComponentDefinitionCatalog catalog,
+            GuardsDigital.Core.Setup.MinionId outgoing,
+            PlacedToken incoming,
+            RemovalStageDecision removalStage)
+        {
+            if (policy == null) throw new ArgumentNullException(nameof(policy));
+            if (exchange == null) throw new ArgumentNullException(nameof(exchange));
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            if (spaces == null) throw new ArgumentNullException(nameof(spaces));
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            if (incoming == null) throw new ArgumentNullException(nameof(incoming));
+            if (removalStage == null) throw new ArgumentNullException(nameof(removalStage));
+
+            if (policy.Observation != ReplaceObservationPolicy.ReplacementOnly)
+            {
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.UnsupportedObservation);
+            }
+
+            var subject = BoardObjectReference.ForMinion(outgoing);
+            if (!board.TryGetObjectCoordinate(subject, out var at))
+            {
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.OutgoingNotOnBoard);
+            }
+
+            if (!incoming.Coordinate.Equals(at))
+            {
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
+            }
+
+            if (catalog.CountAvailableTokens(incoming.Definition.Reference, spaces.PlacedTokens) < 1)
+            {
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.SupplyEmpty);
+            }
+
+            if (removalStage.IsPrevented(subject))
+            {
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
+            }
+
+            var committed = exchange.CommitValidatedMinionReplacement(outgoing, incoming);
+            return committed.Accepted
+                ? MinionReplaceOutcome.Accept(at, removalStage.QualifyLanePush(subject, at).Qualifies)
+                : MinionReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
+        }
+    }
+
+    /// <summary>Milestone 9.8e. The typed outcome of one minion-to-token Replace.</summary>
+    public readonly struct MinionReplaceOutcome
+    {
+        private MinionReplaceOutcome(
+            bool accepted, ReplaceRejectionReason rejectionReason, HexCoordinate coordinate, bool lanePush)
+        {
+            Accepted = accepted;
+            RejectionReason = rejectionReason;
+            Coordinate = coordinate;
+            QualifiesForLanePush = lanePush;
+        }
+
+        public bool Accepted { get; }
+        public ReplaceRejectionReason RejectionReason { get; }
+
+        /// <summary>The space the minion left and the token now stands on.</summary>
+        public HexCoordinate Coordinate { get; }
+
+        /// <summary>Whether taking the miniature off the board is p.8's Lane-Push cause.</summary>
+        public bool QualifiesForLanePush { get; }
+
+        internal static MinionReplaceOutcome Accept(HexCoordinate coordinate, bool lanePush) =>
+            new MinionReplaceOutcome(true, ReplaceRejectionReason.None, coordinate, lanePush);
+
+        internal static MinionReplaceOutcome Reject(ReplaceRejectionReason reason) =>
+            new MinionReplaceOutcome(false, reason, default, false);
     }
 }

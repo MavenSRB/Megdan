@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8e Green Skills evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8e | Mortimer's five Green Skills: an exact Zombie move, a Swap with a Zombie, and "once per turn" Replace of an enemy minion beside two Zombies with a Zombie. It adds p.19's minion-to-token Replace (removed, no coins, Lane-Push cause) and the `onceAcrossTheGroup` clause. Unregistered until 9.8f. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98e-implement-the-five-green-skills). | `milestone/9.8e` |
+
 ## Milestone 9.8d Blue Skills evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -198,6 +198,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 ExcludeTheAttackerParameterName,
                 ExcludeTheAttackTargetParameterName,
                 EffectSelectionDeclaration.DistinctAcrossParameterName,
+                OnceAcrossTheGroupParameterName,
                 ExcludedHeroParameterName,
                 ExcludedMinionParameterName,
                 AdmittedMinionClassParameterName,
@@ -703,7 +704,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Milestone 8.57d. Rowenna's own half of "both you and an enemy hero ... have no cards
                 // in the discard" is a fact about her and not about any candidate, so it is asked once
                 // and a card in her pile empties the whole offer.
-                EmptiesTheOffer = requiresBothDiscardsEmpty &&
+                EmptiesTheOffer = (context.Input(OnceAcrossTheGroupParameterName).BooleanValue &&
+                        chosenAcrossTheGroup.Count > 0) ||
+                    requiresBothDiscardsEmpty &&
                     HeroDiscardPileQuery.HasAnyCard(context.CardState.Instances, context.ActorId);
 
                 // Milestone 8.35z28. The qualifying points are a property of the board and the map,

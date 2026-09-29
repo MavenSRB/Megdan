@@ -49,7 +49,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> AllDefinitions =>
             new[] { AwakenDefinition, MasterOfPuppetsDefinition }
                 .Concat(MortimerAttackFaces.Definitions)
-                .Concat(MortimerBlueFaces.Definitions).ToArray();
+                .Concat(MortimerBlueFaces.Definitions)
+                .Concat(MortimerGreenFaces.Definitions).ToArray();
 
         public static CardDefinitionId MasterOfPuppets { get; } = Id("master-of-puppets");
 

@@ -71,10 +71,19 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceZombieV1, Zombie, PrintedValueChannel.Radius),
-                SyntheticTokenCapabilities.ReclaimHandler(ReclaimZombieV1, Zombie)
+                SyntheticTokenCapabilities.ReclaimHandler(ReclaimZombieV1, Zombie),
+                SyntheticTokenCapabilities.ReplaceMinionHandler(ReplaceMinionWithZombieV1, Zombie)
             }.Concat(Enumerable.Range(1, MortimerRepeatedChoice.MasterOfPuppetsPasses)
                 .Select(pass => (IEffectCapabilityHandler)new ActiveEffectCreationHandler(
                     GainAttackForPass(pass), GainedAttackDefinition(pass))));
+
+        /// <summary>
+        /// Milestone 9.8e. Gathering Horde's and Army of Darkness's "Replace an enemy minion ... with a
+        /// Zombie token": p.19's Replace of the minion on the named space with a Zombie from the
+        /// supply, after p.18's short-supply step.
+        /// </summary>
+        public static EffectCapabilityReference ReplaceMinionWithZombieV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("mortimer-replace-minion-with-zombie"), 1);
 
         /// <summary>
         /// Milestone 9.8c. Knife of the Living Dead's "if you do, gain +1 Attack", for the Remove
