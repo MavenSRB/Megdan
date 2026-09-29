@@ -774,14 +774,18 @@ namespace GuardsDigital.Presentation.Match
                     : BuildEmptyMiniCard("gd-turn-slot", slot.AssistiveLabel);
 
                 outline.Add(element);
-                var turnMarker = BuildTurnSlotMarker(slot.TurnSlotMarker, "gd-turn-slot-marker");
+                var turnMarker = BuildTurnSlotMarker(
+                    slot.TurnSlotMarker, "gd-turn-slot-marker", true);
                 if (turnMarker != null)
                 {
+                    // Milestone 9.20: centred on the slot, across and down, over the card that may
+                    // stand in it - the user's "center them on card slots". The frame's padding and
+                    // border are even on every side, so its centre is the card's.
                     turnMarker.style.position = Position.Absolute;
-                    // Centred over the slot's top edge, above the card that may stand in it.
-                    turnMarker.style.top = -TurnSlotMarkerHeight / 2f;
                     turnMarker.style.left = Length.Percent(50f);
-                    turnMarker.style.marginLeft = -TurnSlotMarkerWidth / 2f;
+                    turnMarker.style.top = Length.Percent(50f);
+                    turnMarker.style.marginLeft = -turnMarker.style.width.value.value / 2f;
+                    turnMarker.style.marginTop = -turnMarker.style.height.value.value / 2f;
                     outline.Add(turnMarker);
                 }
                 column.Add(outline);
@@ -1386,7 +1390,7 @@ namespace GuardsDigital.Presentation.Match
             VisualElement slot, HeroOverviewViewModel hero)
         {
             var currentTurnMarker = BuildTurnSlotMarker(
-                hero.CurrentTurnMarker, "gd-current-turn-marker");
+                hero.CurrentTurnMarker, "gd-current-turn-marker", false);
             if (currentTurnMarker != null)
             {
                 currentTurnMarker.style.position = Position.Absolute;
@@ -1404,16 +1408,39 @@ namespace GuardsDigital.Presentation.Match
         private const float TurnSlotMarkerWidth = 30f;
         private const float TurnSlotMarkerHeight = 24f;
 
+        // Milestone 9.20. A tray glyph's size: the UI units one prepared source pixel is drawn at,
+        // the same for every glyph so the four read at their printed relative sizes - about one
+        // screen pixel per source pixel at 1920x1080, as the printed tile was drawn before.
+        private const float TrayGlyphUnitsPerSourcePixel = 1.2f;
+
+        /// <summary>
+        /// A turn-slot marker as its printed glyph alone (milestone 9.20): cut off the prepared
+        /// tile's card stock by <see cref="PrintedGlyphCutout"/>, transparent around it and outlined.
+        /// <paramref name="glyphSized"/> sizes the element to the glyph at the tray's one scale;
+        /// otherwise the glyph is fitted into the fixed live-turn footprint. The prepared tile, and
+        /// failing that the slot's number, still stand in when no glyph can be cut. The marker takes
+        /// no pointer, so the card under it keeps its own hover.
+        /// </summary>
         private static VisualElement BuildTurnSlotMarker(
-            TurnSlotMarkerViewModel marker, string elementName)
+            TurnSlotMarkerViewModel marker, string elementName, bool glyphSized)
         {
             if (marker == null) return null;
-            var icon = new VisualElement { name = elementName };
+            var icon = new VisualElement { name = elementName, pickingMode = PickingMode.Ignore };
             icon.style.width = TurnSlotMarkerWidth;
             icon.style.height = TurnSlotMarkerHeight;
             icon.style.flexShrink = 0f;
             icon.tooltip = marker.AssistiveLabel;
-            var texture = Resources.Load<Texture2D>(marker.ResourcePath);
+            var tile = Resources.Load<Texture2D>(marker.ResourcePath);
+            var glyph = tile == null ? null : PrintedGlyphCutout.Cut(tile);
+            var texture = glyph != null ? glyph : tile;
+            if (glyph != null && glyphSized)
+            {
+                const float unitsPerTexel =
+                    TrayGlyphUnitsPerSourcePixel / PrintedGlyphCutout.Magnification;
+                icon.style.width = glyph.width * unitsPerTexel;
+                icon.style.height = glyph.height * unitsPerTexel;
+            }
+
             if (texture != null)
             {
                 icon.style.backgroundImage = new StyleBackground(texture);

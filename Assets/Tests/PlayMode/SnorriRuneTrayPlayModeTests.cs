@@ -124,6 +124,101 @@ namespace GuardsDigital.Tests.PlayMode
             Healthy(runtime);
         }
 
+
+        /// <summary>
+        /// Milestone 9.20, the user's "center them on card slots, and just have like a picture of
+        /// hammer sigil anvil hook". Each tray rune is drawn centred on the numbered slot its
+        /// <c>TurnSlotIndex</c> names, and what it draws is its ordinal's printed glyph cut off the
+        /// card stock - a transparent ground, not the opaque printed tile.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator InscribedRunes_AreTheirPrintedGlyphsCentredOnTheirTraySlots()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedSnorri);
+            var root = Root();
+            var runtime = root.Runtime;
+            var snorri = Snorri(runtime);
+            var hud = root.Hud.RootElement;
+
+            yield return CommitEverySeat(root, snorri,
+                NameOf(runtime, SnorriSilverFace.InscribeTheRunes));
+            yield return WaitForActor(root, snorri);
+            yield return PointTrayAt(root, snorri);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var slotFor = new[] { 0, 3, 1, 4, 2 };
+            for (var rune = 1; rune <= 4; rune++)
+            {
+                UiPlayer.Click(hud.Q<Button>("gd-rune-piece-" + rune));
+                yield return null;
+                UiPlayer.Click(hud.Q<Button>("gd-rune-turn-slot-" + slotFor[rune]));
+                yield return null;
+            }
+            UiPlayer.Click(hud.Q<Button>("gd-rune-slot-done"));
+            yield return null;
+            yield return null;
+            Assert.That(runtime.ReadModel.MarkersHeldBy(snorri).Count(), Is.EqualTo(4),
+                UiPlayer.Describe(root.Hud));
+            // Let the resolved card's flight into the tray finish before the photograph.
+            yield return new UnityEngine.WaitForSecondsRealtime(2f);
+            yield return UiPlayer.CaptureScreen("tmp/9-20-runes-tray-1920x1080.png");
+
+            var slotMarkers = Named(hud, "gd-turn-slot-marker").Where(UiPlayer.IsShown).ToArray();
+            Assert.That(slotMarkers, Has.Length.EqualTo(4));
+            // Every rune is checked before anything is reported, so one reading names every miss.
+            var misses = new System.Collections.Generic.List<string>();
+            for (var rune = 1; rune <= 4; rune++)
+            {
+                var marker = slotMarkers.Single(value =>
+                    value.tooltip == "Rune " + rune + " assigned to turn " + slotFor[rune]);
+                var slot = marker.parent.Q("gd-turn-slot");
+                if (slot == null)
+                {
+                    misses.Add("rune " + rune + " stands outside its slot's frame");
+                    continue;
+                }
+
+                var centre = marker.worldBound.center;
+                var slotCentre = slot.worldBound.center;
+                if (UnityEngine.Mathf.Abs(centre.x - slotCentre.x) > 0.75f ||
+                    UnityEngine.Mathf.Abs(centre.y - slotCentre.y) > 0.75f)
+                    misses.Add("rune " + rune + " is centred at " + centre + ", turn slot " +
+                        slotFor[rune] + " at " + slotCentre);
+
+                var resource = GuardsDigital.Presentation.Match.TurnSlotMarkerViewModel
+                    .RuneGlyphResourcePath(rune);
+                var texture = marker.resolvedStyle.backgroundImage.texture;
+                var glyph = System.IO.Path.GetFileName(resource) + " (glyph)";
+                if (texture == null || texture.name != glyph)
+                {
+                    misses.Add("rune " + rune + " draws " +
+                        (texture == null ? "no picture" : "'" + texture.name + "'") +
+                        ", not '" + glyph + "'");
+                    continue;
+                }
+
+                if (!texture.isReadable)
+                {
+                    misses.Add("rune " + rune + " draws an unreadable texture");
+                    continue;
+                }
+
+                var pixels = texture.GetPixels32();
+                var width = texture.width;
+                var corners = new[]
+                {
+                    pixels[0], pixels[width - 1],
+                    pixels[pixels.Length - width], pixels[pixels.Length - 1]
+                };
+                if (!corners.All(pixel => pixel.a == 0))
+                    misses.Add("rune " + rune + "'s ground is not transparent");
+                if (pixels.Count(pixel => pixel.a == 255) <= pixels.Length / 8)
+                    misses.Add("rune " + rune + "'s glyph is not drawn solid");
+            }
+
+            Assert.That(misses, Is.Empty, string.Join("; ", misses));
+            Healthy(runtime);
+        }
+
         private static VisualElement[] Named(VisualElement root, string name) =>
             UiPlayer.Descendants(root).Where(element => element.name == name).ToArray();
     }

@@ -265,7 +265,9 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
-        private static Color32[] ReadBack(Texture2D source)
+        // Milestone 9.20: shared with `PrintedGlyphCutout`, which reads a non-readable prepared tile
+        // back the same way.
+        internal static Color32[] ReadBack(Texture2D source)
         {
             if (source.isReadable) return source.GetPixels32();
             var target = RenderTexture.GetTemporary(source.width, source.height, 0,
