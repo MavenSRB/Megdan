@@ -1281,6 +1281,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex,
+            out AppliedRuleModification blocking) =>
+            CanAttackFindTargetOn(
+                offer, definitions, instances, participants, timing, modifications, roundIndex,
+                turnIndex, null, out blocking);
+
+        private bool CanAttackFindTargetOn(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            MatchComponents probe,
             out AppliedRuleModification blocking)
         {
             blocking = null;
@@ -1292,7 +1307,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 !(action.AttackTargetPolicy?.TargetIsBoundByCardText ?? false))
             {
                 return attackDefenseBackend.CanFindLegalTarget(
-                    offer, materializedDefinitions, participants, modifications);
+                    offer, materializedDefinitions, participants, modifications,
+                    probe?.Board);
             }
 
             var cardText = action.CardTextAt(CardTextTiming.BeforeTheAttack);
@@ -1308,7 +1324,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // every bullet reaches nobody is greyed here, which is 8.35z15's rule - judge the offer
             // against what the answer could perform - applied to the modal shape.
             var declaredBullets = RequestedAttackSequenceQuery.Declared(cardText);
-            if (declaredBullets.Count > 0 &&
+            if (probe == null && declaredBullets.Count > 0 &&
                 !attackDefenseBackend.CanAnyDeclaredBulletFindATarget(
                     offer, declaredBullets, materializedDefinitions, participants, modifications,
                     instances))
@@ -1326,7 +1342,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 EffectCardState.Of(materializedDefinitions, instances),
                 ActionKind.Attack,
-                components: components,
+                components: probe ?? components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState,
                 tieBreakerRevealedSide: LiveTieBreakerSide);
@@ -1344,6 +1360,112 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     context),
                 context,
                 out blocking);
+        }
+
+        /// <summary>
+        /// Milestone 9.9. Whether the action <paramref name="heldOffer"/> names, judged unable to act
+        /// from the square its hero stands on, could act from a square the before-action step that
+        /// will fire first can leave him on - Arien's Living Tsunami ("before performing an Attack
+        /// action, you may move 1 space"), Silverarrow's Wild Hunt ("each time before you perform an
+        /// action you may move 2 spaces in a straight line").
+        ///
+        /// <para><b>Why the square he stands on was the wrong question.</b> The step runs before the
+        /// action starts and the action's target is chosen after it (8.19a's altitude), so an Attack
+        /// with nobody in reach now but somebody one step away is a legal play - and 7.8a1's judgement,
+        /// asked from the current square alone, greyed it. The bug-net sweep found every such face
+        /// greyed in exactly the position the ability exists for. This asks the same two judgements
+        /// the offer already makes (7.8a1's target, 6.5af's Skill that applies nothing) once per space
+        /// the step can leave him on, on a validation fork of the board with him standing there, so
+        /// nothing is re-derived and nothing on the live board moves.</para>
+        ///
+        /// <para>A step whose destinations this build cannot anticipate answers <c>false</c> - the
+        /// judgement from the current square stands, exactly as before this milestone.</para>
+        /// </summary>
+        public bool CanActAfterBeforeActionStep(
+            GuardsDigital.Core.Rules.Progression.BeforeActionTriggerSource source,
+            ActionOffer heldOffer,
+            ActionKind heldKind,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (source == null || board == null || components == null ||
+                !ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect) ||
+                !board.TryGetHeroCoordinate(heldOffer.ActorId, out var standing))
+            {
+                return false;
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+            var sourceReference = source.SourceDefinitionReference.IsDefined
+                ? source.SourceDefinitionReference
+                : materializedInstances.Single(card =>
+                    card.Id.Equals(source.SourceCardInstanceId)).DefinitionReference;
+            var context = new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, materializedInstances),
+                ActionKind.Skill,
+                opposingHeroId: source.ControllerId.Equals(heldOffer.ActorId)
+                    ? default : heldOffer.ActorId,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
+            var frame = EffectResolutionSession.BuildStartFrame(
+                new EffectResolutionId($"probe-before-action-{source.SourceId}"),
+                source.SourceCardInstanceId,
+                sourceReference,
+                source.SourceActionDefinitionId,
+                source.ControllerId,
+                source.ControllerId,
+                ActionInvocationContext.PrintedPrimary,
+                context);
+            var spaces = EffectOptionFeasibilityQuery.WhereTheActorCouldStandAfter(frame, context);
+            if (spaces == null)
+            {
+                return false;
+            }
+
+            foreach (var space in spaces.Where(space => !space.Equals(standing)))
+            {
+                var fork = board.CreateValidationFork();
+                if (!fork.CommitValidatedDisplacement(
+                        BoardObjectReference.ForHero(heldOffer.ActorId), space).Accepted)
+                {
+                    continue;
+                }
+
+                var probe = new MatchComponents(
+                    components.Catalog, components.Tokens, components.Markers, fork,
+                    components.Units, components.Exchange, components.Lanes, components.Obstacles);
+                var acts = heldKind == ActionKind.Attack
+                    ? CanAttackFindTargetOn(
+                        heldOffer, materializedDefinitions, materializedInstances, participants, timing,
+                        modifications, roundIndex, turnIndex, probe, out _)
+                    : heldKind == ActionKind.Skill &&
+                        skillBackend.CanApplyAnything(
+                            heldOffer, materializedDefinitions, materializedInstances, participants,
+                            timing, modifications, probe, roundIndex, turnIndex, out _);
+                if (acts)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public CardActionResolutionResult AnswerEffectChoice(

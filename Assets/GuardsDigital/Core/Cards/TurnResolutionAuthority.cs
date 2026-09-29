@@ -2321,10 +2321,21 @@ namespace GuardsDigital.Core.Cards
         private bool CanStartSkill(ActionOffer offer, out AppliedRuleModification blocking)
         {
             blocking = null;
-            return cardActions == null ||
+            if (cardActions == null ||
                 cardActions.CanSkillApplyAnything(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
-                    roundIndex, turnIndex, out blocking, BorrowedPrimaryCanAct);
+                    roundIndex, turnIndex, out blocking, BorrowedPrimaryCanAct))
+            {
+                return true;
+            }
+
+            if (ABeforeActionStepReachesWhatThisSquareCannot(offer, ActionKind.Skill))
+            {
+                blocking = null;
+                return true;
+            }
+
+            return false;
         }
 
         private int borrowedPrimaryProbeDepth;
@@ -2394,10 +2405,48 @@ namespace GuardsDigital.Core.Cards
         private bool CanStartAttack(ActionOffer offer, out AppliedRuleModification blocking)
         {
             blocking = null;
-            return cardActions == null ||
+            if (cardActions == null ||
                 cardActions.CanAttackFindTarget(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
-                    roundIndex, turnIndex, out blocking);
+                    roundIndex, turnIndex, out blocking))
+            {
+                return true;
+            }
+
+            if (ABeforeActionStepReachesWhatThisSquareCannot(offer, ActionKind.Attack))
+            {
+                blocking = null;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Milestone 9.9, found by the bug-net sweep: an action whose hero has a before-action step
+        /// standing - Living Tsunami's one space, Wild Hunt's two in a straight line - was judged
+        /// only from the square he stands on, so an Attack whose target is one step away was greyed
+        /// in exactly the position the ability exists for. The step that will fire first
+        /// (<see cref="TryInterceptWithBeforeActionTrigger"/> fires the first source the query
+        /// derives, so that is the one asked here) is asked where it could leave him, and the same
+        /// judgement is made from each of those squares. Only a turn's own printed start is asked:
+        /// a borrowed or repeated instance never passes through that interception.
+        /// </summary>
+        private bool ABeforeActionStepReachesWhatThisSquareCannot(ActionOffer offer, ActionKind kind)
+        {
+            if (cardActions?.Board == null || borrowedPrimaryProbeDepth > 0 ||
+                offer.InvocationContext != ActionInvocationContext.PrintedPrimary)
+            {
+                return false;
+            }
+
+            var triggers = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery.Derive(
+                CurrentUltimates(), cardActions.Board, participants, offer, kind,
+                consumedTurnScopedKeys, timing, heroItems);
+            return triggers.Count > 0 &&
+                cardActions.CanActAfterBeforeActionStep(
+                    triggers[0], offer, kind, definitions, instances, participants, timing,
+                    CurrentModifications(), roundIndex, turnIndex);
         }
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)

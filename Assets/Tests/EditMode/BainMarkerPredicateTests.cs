@@ -966,7 +966,9 @@ namespace GuardsDigital.Tests.EditMode
                         "bain-probe-bullet",
                         PrintedAttackTargetPolicy.ForClassification(AttackRangeKind.NonRanged),
                         narrowing),
-                    configuration.CardInstances
+                    configuration.CardInstances,
+                    // Milestone 9.9: the board to read, null for the live one.
+                    null
                 });
 
                 return admitted

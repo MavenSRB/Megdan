@@ -3432,8 +3432,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            // Milestone 9.9. A validation fork with the attacker standing where a before-action step
+            // could leave him, or null for the live board.
+            IBoardDisplacementAuthority onBoard = null)
         {
+            var board = onBoard ?? adjacentMoveAuthority;
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
@@ -3447,14 +3451,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // wrong one - the text moves the attacker first. The full card-action authority probes
                 // that typed continuation separately; this backend therefore leaves it undecided here.
                 (action.AttackTargetPolicy?.TargetIsBoundByCardText ?? false) ||
-                !adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                !board.Occupancies.Any(occupancy =>
                     occupancy.HeroId.Equals(offer.ActorId)))
             {
                 return true;
             }
 
             return FindLegalAttackTargets(
-                offer.ActorId, offer, materializedDefinitions, participants, modifications).Count > 0;
+                offer.ActorId, offer, materializedDefinitions, participants, modifications,
+                board: board).Count > 0;
         }
 
         /// <summary>
@@ -3573,7 +3578,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             AttackSequenceBullet sequenceBullet = default,
-            IEnumerable<CardInstance> cardInstances = null)
+            IEnumerable<CardInstance> cardInstances = null,
+            IBoardDisplacementAuthority board = null)
         {
             // Milestone 8.35z27. A modal Attack's bullets each print their own targeting
             // sentence - Middlefinger of Death's are "a unit adjacent to you" and "a hero in range
@@ -3642,7 +3648,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     modifications),
                 rangeTotal,
                 participants,
-                adjacentMoveAuthority,
+                board ?? adjacentMoveAuthority,
                 modifications);
         }
 

@@ -47,9 +47,9 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class OfferOutcomeTests
     {
-        private const int SeedsPerLineup = 2;
-        private const int CommandsPerMatch = 300;
-        private const int AnswerPathsPerOffer = 60;
+        internal const int SeedsPerLineup = 2;
+        internal const int CommandsPerMatch = 300;
+        internal const int AnswerPathsPerOffer = 60;
 
         private static readonly Lazy<Survey> Surveyed = new Lazy<Survey>(Run);
 
@@ -131,6 +131,20 @@ namespace GuardsDigital.Tests.EditMode
                 "and the rules refuse to start it - one answer, asked in both places.");
         }
 
+        /// <summary>
+        /// Milestone 9.9. At every step of every walk, the seat that decides the acting hero's action
+        /// is projected exactly the rules' offers - each one's availability and named blocker - and is
+        /// authorized to start exactly the available ones; every other seat is offered nothing.
+        /// </summary>
+        [Test]
+        public void EverySeat_IsOfferedExactlyWhatTheRulesOffer_AtEveryStep()
+        {
+            Assert.That(Surveyed.Value.SeatDisagreements, Is.Empty,
+                "A seat's projection disagreed with the rules offer at these steps.");
+            Assert.That(Surveyed.Value.SeatReadings, Is.GreaterThan(1000),
+                "The walks compared few seat readings; they are not reading the matches they play.");
+        }
+
         [Test]
         public void EveryOfferedCommand_IsAccepted()
         {
@@ -167,6 +181,8 @@ namespace GuardsDigital.Tests.EditMode
             public readonly List<string> Undecided = new List<string>();
             public readonly List<string> Refused = new List<string>();
             public readonly List<string> GreyedButEffective = new List<string>();
+            public readonly List<string> SeatDisagreements = new List<string>();
+            public int SeatReadings;
             public int GreyedTried;
             public int LegalDoNothing;
             public readonly HashSet<string> HeroesOffered = new HashSet<string>(StringComparer.Ordinal);
@@ -213,6 +229,10 @@ namespace GuardsDigital.Tests.EditMode
                     TryEveryOffer(survey, initial, live, $"{names} seed {seed} step {step}");
                 }
 
+                // Milestone 9.9. At every step, what each seat's own projection offers and authorizes
+                // is what the rules offer: the seat surface is built from these two readings.
+                CompareEverySeat(survey, live, $"{names} seed {seed} step {step}");
+
                 var legal = DeterministicMatchLoop.EnumerateLegalCommands(live.Projection);
                 if (legal.Count == 0)
                 {
@@ -228,7 +248,48 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static MatchSessionInitialState Compose(BoardMapDefinition map, RegisteredHero[] picked)
+        /// <summary>
+        /// Milestone 9.9. Every seat's reading of the turn's offers against the rules' own.
+        /// </summary>
+        private static void CompareEverySeat(Survey survey, MatchSession live, string where)
+        {
+            var rules = live.Projection;
+            var host = new MatchHost(live);
+            var offering = rules.IsTurnActive && rules.SelectedActor.IsDefined &&
+                rules.DecisionContract == null && rules.Phase != RoundResolutionPhase.GameEnded;
+            var deciding = offering ? SeatProjectionFactory.DecidingActor(rules) : default;
+            foreach (var seat in host.Seats.Seats)
+            {
+                survey.SeatReadings++;
+                var projection = host.ProjectionForSeat(seat.Id);
+                var owns = offering && seat.Owns(deciding);
+                var expected = owns ? rules.AvailableTurnActions : Array.Empty<ActionOffer>();
+                if (!projection.AvailableTurnActions.SequenceEqual(expected))
+                {
+                    survey.SeatDisagreements.Add(
+                        $"{seat.HeroId.Value} ({where}): projected {projection.AvailableTurnActions.Count} " +
+                        $"offers, the rules offer {expected.Count}");
+                    continue;
+                }
+
+                var starts = projection.AuthorizedCommands
+                    .Where(command => command.Kind == DirectorCommandKind.StartAction)
+                    .ToArray();
+                var available = expected.Where(offer => offer.IsAvailable)
+                    .Select(offer => DirectorCommand.StartAction(
+                        offer.SourceCardInstanceId, offer.ActionDefinitionId))
+                    .ToArray();
+                if (!starts.OrderBy(command => command.ToString(), StringComparer.Ordinal)
+                        .SequenceEqual(available.OrderBy(command => command.ToString(), StringComparer.Ordinal)))
+                {
+                    survey.SeatDisagreements.Add(
+                        $"{seat.HeroId.Value} ({where}): authorized {starts.Length} starts, the rules " +
+                        $"make {available.Length} available");
+                }
+            }
+        }
+
+        internal static MatchSessionInitialState Compose(BoardMapDefinition map, RegisteredHero[] picked)
         {
             var lineup = new HeroLineup(picked.Take(3), picked.Skip(3));
             var format = MatchFormat.ThreeVersusThreeQuick;
@@ -313,7 +374,7 @@ namespace GuardsDigital.Tests.EditMode
         /// Whether the face's printed text opens a sentence with "If" - the gate RULING 53 speaks to.
         /// "if able" and "if you do" are lower-case clauses inside a sentence and are not it.
         /// </summary>
-        private static bool OpensWithAnIf(CardDefinition definition) =>
+        internal static bool OpensWithAnIf(CardDefinition definition) =>
             IfGate.IsMatch(definition.SourceContent?.PrintedText ?? string.Empty);
 
         /// <summary>
@@ -363,7 +424,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>Whether some sequence of answers brings a forced Attack to a target.</summary>
-        private static bool ReachesATarget(
+        internal static bool ReachesATarget(
             MatchSessionInitialState initial, MatchSession session, HeroId actor, int depth, ref int budget)
         {
             var projection = session.Projection;
@@ -406,6 +467,15 @@ namespace GuardsDigital.Tests.EditMode
 
             return false;
         }
+
+        /// <summary>
+        /// Milestone 9.9. <see cref="DoesSomething"/> for an action forced past the offer, where a
+        /// refusal met inside it is not an offered command refused.
+        /// </summary>
+        internal static bool ForcedDoesSomething(
+            MatchSessionInitialState initial, MatchSession session, HeroId actor, string held,
+            ref int budget, string card) =>
+            DoesSomething(new Survey(), initial, session, actor, held, 0, ref budget, card);
 
         /// <summary>Whether some sequence of answers ends anywhere other than where Hold does.</summary>
         private static bool DoesSomething(
@@ -473,7 +543,7 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static MatchSession Restored(MatchSessionInitialState initial, string snapshot)
+        internal static MatchSession Restored(MatchSessionInitialState initial, string snapshot)
         {
             var session = new MatchSession(initial);
             Assert.That(session.RestoreSnapshot(snapshot).Accepted, Is.True);
@@ -481,7 +551,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>The authoritative state once the turn is released, without the event log.</summary>
-        private static string Settled(MatchSession session)
+        internal static string Settled(MatchSession session)
         {
             if (session.Projection.PendingTurnRelease != null)
             {

@@ -637,6 +637,146 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
+        /// Milestone 9.9. Every space the acting hero could be standing on once a whole effect has
+        /// run - a before-action step such as Arien's Living Tsunami ("before performing an Attack
+        /// action, you may move 1 space") or Silverarrow's Wild Hunt ("you may move 2 spaces in a
+        /// straight line") - or <c>null</c> where the effect does not move him or this walk cannot
+        /// say where it would.
+        ///
+        /// <para>It is the same anticipation <see cref="WhereHeCouldStandAfter"/> gives the binding
+        /// walk, asked of the effect's top-level steps in printed order. One shape is added, and only
+        /// here: a Move whose destination is bound to an earlier step's QUESTION ("move 2 spaces in a
+        /// straight line" composes the line's end as a question and the Move as its consumer). The
+        /// question's own candidates are the answers the player could give, so the Move is asked once
+        /// per candidate, with that candidate standing in for the answer - the handler still decides
+        /// where each answer leaves him, and nothing here re-derives reachability. A question that
+        /// would apply anything before asking is not read: only a step whose anticipation is
+        /// "needs a choice" is executed to read its candidates.</para>
+        /// </summary>
+        public static IReadOnlyList<HexCoordinate> WhereTheActorCouldStandAfter(
+            PendingResolution frame,
+            EffectResolutionContext context)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var root = context.Definition.RootNodeId;
+            if (!ContainsActorRelocation(root, context) ||
+                !context.Definition.TryGetNode(root, out var rootNode))
+            {
+                return null;
+            }
+
+            var steps = rootNode.Kind == EffectNodeKind.Sequence
+                ? rootNode.ChildNodeIds
+                : (IReadOnlyList<EffectNodeId>)new[] { root };
+            IReadOnlyList<EffectNodeOutcome> carried = Array.Empty<EffectNodeOutcome>();
+            IReadOnlyList<HexCoordinate> spaces = null;
+            foreach (var step in steps)
+            {
+                if (ContainsActorRelocation(step, context))
+                {
+                    if (spaces != null)
+                    {
+                        // A second Move after a first starts from a hypothesis.
+                        return null;
+                    }
+
+                    // A Move waiting on an earlier question is asked through that question first: asked
+                    // directly, the handler reads the missing answer as "he stays where he is".
+                    if (TryAnticipateThroughAnEarlierQuestion(step, frame, carried, context, out var anticipated) ||
+                        TryAnticipateActorRelocationClause(step, frame, carried, context, out anticipated))
+                    {
+                        spaces = anticipated;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                carried = WithAnticipatedOutputs(step, frame, carried, context);
+            }
+
+            return spaces;
+        }
+
+        private static bool TryAnticipateThroughAnEarlierQuestion(
+            EffectNodeId moveId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> carried,
+            EffectResolutionContext context,
+            out IReadOnlyList<HexCoordinate> spaces)
+        {
+            spaces = Array.Empty<HexCoordinate>();
+            if (!context.Definition.TryGetNode(moveId, out var move) ||
+                move.Kind != EffectNodeKind.Capability)
+            {
+                return false;
+            }
+
+            var bound = move.Inputs.Where(input =>
+                    input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                    input.ValueKind == EffectValueKind.Coordinate &&
+                    !carried.Any(outcome => outcome.NodeId.Equals(input.SourceNodeId)))
+                .ToArray();
+            if (bound.Length != 1 ||
+                !context.Definition.TryGetNode(bound[0].SourceNodeId, out var question) ||
+                question.Kind != EffectNodeKind.Capability ||
+                !context.Catalog.TryLoad(question.Capability, out var asking))
+            {
+                return false;
+            }
+
+            var questionContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, question, carried, context);
+            if (!IsDecidable(asking, questionContext) ||
+                asking.Anticipate(questionContext) != EffectExecutionResultKind.NeedsChoice)
+            {
+                return false;
+            }
+
+            var asked = asking.Execute(questionContext);
+            if (asked.Kind != EffectExecutionResultKind.NeedsChoice || asked.Choice == null)
+            {
+                return false;
+            }
+
+            var reached = new List<HexCoordinate>();
+            foreach (var candidate in asked.Choice.Candidates.Where(value =>
+                value.Kind == EffectValueKind.Coordinate))
+            {
+                var answered = new List<EffectNodeOutcome>(carried)
+                {
+                    new EffectNodeOutcome(
+                        question.Id,
+                        EffectExecutionResultKind.Applied,
+                        new[] { new EffectOutcomeFact(bound[0].SourceOutputName, candidate) })
+                };
+                if (!TryAnticipateActorRelocationClause(moveId, frame, answered, context, out var from))
+                {
+                    return false;
+                }
+
+                reached.AddRange(from.Where(space => !reached.Contains(space)));
+            }
+
+            // Declining the question leaves him where he stands, and so does a Move that could not be
+            // taken; the handler already adds his own space wherever its node can be declined.
+            if (question.FailurePolicy != EffectFailurePolicy.Mandatory &&
+                context.Components?.Board != null &&
+                context.Components.Board.TryGetObjectCoordinate(
+                    GuardsDigital.Core.Components.BoardObjectReference.ForHero(frame.ActorId), out var here) &&
+                !reached.Contains(here))
+            {
+                reached.Add(here);
+            }
+
+            spaces = reached;
+            return true;
+        }
+
+        /// <summary>
         /// Milestone 8.35p: whether this step will put a piece somewhere this walk cannot know, so
         /// that the board every later step reads is not the board in front of it.
         ///

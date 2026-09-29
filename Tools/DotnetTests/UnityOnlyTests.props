@@ -73,6 +73,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/RuntimeTooltipLayerTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SabinaAfterAttackRemovalTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SceneAssetInspection.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatHudAgreementTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatScopedMatchHudTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatScopedPresenterBindingTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StandardMinionViewTests.cs" />
