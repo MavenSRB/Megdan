@@ -45,7 +45,36 @@ namespace GuardsDigital.Core.Cards.Verified
         /// Every face composed so far - Awaken! alone at 9.8a - so the corpus sweeps that read the
         /// content classes cover Mortimer from his first block. Each later block adds its faces here.
         /// </summary>
-        public static IReadOnlyList<CardDefinition> AllDefinitions => new[] { AwakenDefinition };
+        public static IReadOnlyList<CardDefinition> AllDefinitions =>
+            new[] { AwakenDefinition, MasterOfPuppetsDefinition };
+
+        public static CardDefinitionId MasterOfPuppets { get; } = Id("master-of-puppets");
+
+        public const string MasterOfPuppetsText =
+            "Whenever you would choose up to three times, you may choose up to five times instead.";
+
+        /// <summary>The standing declaration Master of Puppets supplies while it is unlocked.</summary>
+        public const string MasterOfPuppetsRuleId = "mortimer-master-of-puppets";
+
+        public const string MasterOfPuppetsRuleKind = "mortimer-choose-up-to-five-times";
+
+        /// <summary>
+        /// Milestone 9.8b. Purple, Tier IV: p.16's permanent Ultimate ability, declared rather than
+        /// modelled as a modification - it changes no value, permission or object type. The faces it
+        /// reaches read p.16's own question (<see cref="SyntheticRosterCapabilities.UltimateUnlockedV1"/>)
+        /// behind their extra passes (<see cref="MortimerRepeatedChoice"/>), so only faces printing
+        /// "up to three times" change.
+        /// </summary>
+        public static CardDefinition MasterOfPuppetsDefinition => LazyMasterOfPuppets.Value;
+
+        private static readonly Lazy<CardDefinition> LazyMasterOfPuppets = new Lazy<CardDefinition>(() =>
+            new CardDefinition(
+                MasterOfPuppets, ContentRevision, "Master of Puppets", default,
+                CardContentAuthority.VerifiedOfficial,
+                CardProgressionProfile.UltimateCard(),
+                Array.Empty<ActionDefinition>(),
+                UltimateRuleDefinition.PermanentDeclaration(MasterOfPuppetsRuleId, MasterOfPuppetsRuleKind),
+                CardSourceContent.Transcribed(MasterOfPuppetsText)));
 
         /// <summary>Silver, Basic: Initiative 6, Basic Defense 3, Basic Skill, Radius 4.</summary>
         public static CardDefinition AwakenDefinition => LazyAwaken.Value;

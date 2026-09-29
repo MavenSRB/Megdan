@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8b Repeated choice and Master of Puppets evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8b | Mortimer's "choose one / up to two / up to three times" composition, with Master of Puppets raising only "up to three times" to five behind an unlock gate whose explicit else keeps RULING 53's exemption from applying; Master of Puppets as a permanent declaration. Unregistered until 9.8f. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98b-implement-choose-up-to-n-times-and-master-of-puppets). | `milestone/9.8b` |
+
 ## Milestone 9.8a Zombie token and Awaken! evidence
 
 | Milestone | Outcome and definition | Commit |

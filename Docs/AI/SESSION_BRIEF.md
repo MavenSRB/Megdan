@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.8a**.
-- Active authorized milestone: **9.8b**.
-- Next proposed milestone: **9.8b**.
+- Current completed milestone: **9.8b**.
+- Active authorized milestone: **9.8c**.
+- Next proposed milestone: **9.8c**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -24,7 +24,7 @@ On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rocksha
 
 On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g, with 8.114b1](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. The Wuk sequence **8.114-8.114g** is complete ([his shard](Rules/HERO_WUK.md); schema v47 at 8.114b1). **[8.116](Roadmap/PHASE_8.md)** then made Whisper's forced move fire Widget's Dragon Knight right after the move (Ruling 16c). The user then authorized 8.117 -> 8.118 ("Go for both"); **8.117** is complete: every gate walks its Active effects' trigger bodies; **8.118** is complete: Defeats held behind a removal-prevention question are settled by its answer (schema v48). The user then closed Phase 8 and started **[Phase 9](Roadmap/PHASE_9.md)**, the printed-wording audit **9.1 -> 9.2 -> 9.3 -> 9.4 -> 9.5**; the earlier presentation plan is retired. **9.1** (optionality, W1-W3), **9.2** (targeting, W4, R1) **9.3** (conditions, W5), **9.4** (journeys read outcomes) and **9.5** (the new-hero checklist) are complete; the user then authorized **9.6 -> 9.7** (offer against outcome) ([PRINTED_WORDING](Rules/PRINTED_WORDING.md)). **9.6** and **9.7** are complete: offers checked against outcomes both ways; restrictions refused at start. The user then authorized **[8.115](Roadmap/PHASE_8.md)**, complete: Whisper's forced move is a full-distance Movement action (Rulings 16a-16b in [her shard](Rules/HERO_WHISPER.md)); the user ruled it also fires the defender's after-Movement triggers (Widget's Dragon Knight) - queued as 8.116. No package is authorized.
 
-On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md); 9.8 inventoried him ([his shard](Rules/HERO_MORTIMER.md)); 9.8a built his Zombie token and Awaken! (unregistered until 9.8f).
+On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md); 9.8 inventoried him ([his shard](Rules/HERO_MORTIMER.md)); 9.8a built his Zombie token and Awaken!; 9.8b his repeated modal and Master of Puppets (all unregistered until 9.8f).
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

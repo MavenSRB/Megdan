@@ -64,13 +64,27 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98a-zombie-token-and-awaken-evidence).
 
-### [~] 9.8b Implement "choose up to N times" and Master of Puppets
+### [x] 9.8b Implement "choose up to N times" and Master of Puppets
 
 Outcome: the modal that repeats a bullet up to N times, with each choice made against the board the last one left, and the Ultimate raising three to five.
 
 Acceptance: the counts hold, a bullet may repeat, stopping early is allowed, and the Ultimate changes only "up to three times" faces. Restore and replay mid-chain.
 
-### [ ] 9.8c Implement Knife of the Living Dead and the five Red Attacks
+Completed 2026-09-29.
+- `MortimerRepeatedChoice.Compose` builds every Mortimer modal from a face's own bullets. "Choose one" is the bare modal. Each pass of "up to two/three times" is a p.10 `UpTo` over a one-of `Choose` (Treetop Ride's reading).
+- On "up to three times" only, passes 4 and 5 sit behind a `Conditional` on `ultimate-unlocked@1`. Each is its own "up to", so he may keep three.
+- The gate has an explicit read-only else-child. RULING 53's offer exemption is shaped for a single-child printed "If", and Master of Puppets' gate is not printed on the face. Without the else-child, a locked face whose three passes can do nothing would stay offered. The walk judges the else leaf as doing nothing, so the face is judged by its printed passes alone.
+- `MortimerCardContent.MasterOfPuppetsDefinition` is a p.16 permanent declaration (no modification). The faces read the unlock itself.
+- `MortimerRepeatedChoiceTests` (14) prove it on a two-bullet fixture face (place / remove a Zombie beside him), because the printed faces arrive at 9.8c-9.8e:
+  - the counts for one, two and three passes;
+  - a bullet repeating, stopping early, and each pass reading the board the last one left;
+  - five passes only on "up to three times" and only when unlocked;
+  - the boxed-in offer, locked and unlocked;
+  - restore and replay inside the fourth pass.
+
+Historical evidence: [9.8b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98b-repeated-choice-and-master-of-puppets-evidence).
+
+### [~] 9.8c Implement Knife of the Living Dead and the five Red Attacks
 
 Outcome: the before-attack and after-attack Zombie moves in radius. Also:
 - Remove a Zombie adjacent to the target for +1 Attack.
