@@ -157,6 +157,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string NotAdjacentParameterName = "notAdjacent";
 
         /// <summary>
+        /// Milestone 9.8a. A placement clause: the space is a spawn point (any of p.19's, minion or
+        /// hero, in any zone) or a space adjacent to the acting hero - Mortimer's Awaken!, "into spawn
+        /// points in radius, counting spaces adjacent to you as spaces with spawn points" (MO-Q2). The
+        /// printed reach still bounds the space; this clause narrows which spaces inside it qualify.
+        /// Unbound, it narrows nothing.
+        /// </summary>
+        public const string SpawnPointOrAdjacentParameterName = "spawnPointOrAdjacent";
+
+        /// <summary>
         /// Milestone 8.88. Which kinds an OBJECT selection offers, as <see cref="PrintedIconObjectKind"/>.
         /// Only the object arms declare it: every other arm's kind is its identity.
         /// </summary>
@@ -853,7 +862,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AdjacentToUnitKindParameterName,
                 AdjacentToUnitRelationParameterName,
                 AdjacentAtLeastParameterName,
-                NotAdjacentParameterName
+                NotAdjacentParameterName,
+                SpawnPointOrAdjacentParameterName
             });
 
         /// <summary>
@@ -897,6 +907,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly SourceTeamRelation adjacentToUnitRelation;
             private readonly int adjacentAtLeast;
             private readonly bool notAdjacent;
+            private readonly bool spawnPointOrAdjacent;
 
             public PrintedIconSpaceClauses(
                 EffectCapabilityContext context,
@@ -923,6 +934,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     (SourceTeamRelation)context.Input(AdjacentToUnitRelationParameterName).IntegerValue;
                 adjacentAtLeast = Math.Max(1, context.Input(AdjacentAtLeastParameterName).IntegerValue);
                 notAdjacent = context.Input(NotAdjacentParameterName).BooleanValue;
+                spawnPointOrAdjacent = context.Input(SpawnPointOrAdjacentParameterName).BooleanValue;
             }
 
             public bool Admit(HexCoordinate at)
@@ -954,8 +966,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
+                if (spawnPointOrAdjacent && !IsSpawnPointOrBesideTheActor(at))
+                {
+                    return false;
+                }
+
                 return !DeclaresAdjacency || (QualifyingNeighbours(at) >= adjacentAtLeast) != notAdjacent;
             }
+
+            private bool IsSpawnPointOrBesideTheActor(HexCoordinate at) =>
+                board != null &&
+                (StandsOnASpawnPoint(board, at) ||
+                    board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt) &&
+                    HexDistanceQuery.Calculate(actorAt, at) == 1);
 
             private bool DeclaresAdjacency =>
                 adjacentToTerrain || adjacentToOwnToken || adjacentToSpace.HasValue || adjacentToAnyToken ||

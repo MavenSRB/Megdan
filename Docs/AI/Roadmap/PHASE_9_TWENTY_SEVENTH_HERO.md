@@ -44,7 +44,7 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98-mortimer-inventory-evidence).
 
-### [~] 9.8a Implement the Zombie token and Awaken!
+### [x] 9.8a Implement the Zombie token and Awaken!
 
 Outcome: a Zombie token definition (an obstacle; supply 4 per MO-Q1; p.19 reclaim; retained at every round end per MO-Q4), and Awaken! placing up to four into empty spawn points in radius or spaces adjacent to him (MO-Q2).
 
@@ -55,7 +55,16 @@ Acceptance:
 
 Unregistered until 9.8f.
 
-### [ ] 9.8b Implement "choose up to N times" and Master of Puppets
+Completed 2026-09-29.
+- `MortimerComponentContent` declares the Zombie (four, retained at every round end, no properties) and binds the hero-token place and reclaim handlers to it.
+- `MortimerCardContent.AwakenDefinition` composes Awaken! as four optional reclaim-then-place pairs, Mystic Saplings' shape, each place declaring the new `spawnPointOrAdjacent` clause.
+- The clause is a shared placement clause on the printed-icon space family: unbound it narrows nothing, so no other face changes.
+- `MortimerCardContent.AllDefinitions` grows block by block, so the corpus sweeps that read content classes cover him before he is dealt. `RosterMoveLeashSweepTests` read only the dealt roster (a 9.2 change no undealt hero had met), so its corpus now adds an undealt content class's own faces.
+- `MortimerAwakenTests` (14) prove the offered spaces, 0-4 placements, the short-supply reclaim, retention, restore/replay, and that Awaken! is greyed only when every placement could do nothing.
+
+Historical evidence: [9.8a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98a-zombie-token-and-awaken-evidence).
+
+### [~] 9.8b Implement "choose up to N times" and Master of Puppets
 
 Outcome: the modal that repeats a bullet up to N times, with each choice made against the board the last one left, and the Ultimate raising three to five.
 

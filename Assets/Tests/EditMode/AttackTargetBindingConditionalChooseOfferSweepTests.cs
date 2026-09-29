@@ -232,6 +232,10 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in SnorriCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("snorri", d);
             foreach (var card in MrakCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mrak", d);
             foreach (var card in WukCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("wuk", d);
+            // Milestone 9.8a. The twenty-seventh hero's line is owed the moment a
+            // `MortimerCardContent` exists, dealt or not. Awaken! is a Skill of token placements and
+            // binds no Attack target, so he adds no at-risk gate yet.
+            foreach (var card in MortimerCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mortimer", d);
         }
 
         /// <summary>

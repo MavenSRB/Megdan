@@ -103,7 +103,7 @@ New contracts, each owned by one block:
 
 | Need | Faces | Block |
 | --- | --- | --- |
-| Zombie token definition; "onto a spawn point in radius or a space adjacent to you" placement clause (every p.19 spawn point via `IUnitSpawnAuthority.FindSpawnPointSpaces()`, or distance 1 from the actor), placed four times with reclaim | Awaken! | 9.8a |
+| Zombie token definition; "onto a spawn point in radius or a space adjacent to you" placement clause, placed four times with reclaim. **Built at 9.8a:** `MortimerComponentContent.Zombie` (supply 4, `RetainedAtEndOfRound`), the family place/reclaim handlers bound to it, and the `spawnPointOrAdjacent` placement clause on the printed-icon space family (every p.19 spawn point in the map definition, minion or hero, any zone, or distance 1 from where the actor stands; the printed Radius still bounds both) | Awaken! | 9.8a |
 | Five passes when Master of Puppets is unlocked: passes 4-5 behind a `Conditional` over `ultimate-unlocked@1` on the seven "up to three times" faces (`ChoiceCardinality` raises one modal's distinct-option count and is not this) | Ultimate and seven faces | 9.8b |
 | One selection clause that both excludes the Attack's target and reads adjacency to a token kind (today `choose-target@2` has the first and the printed-icon hero arm the second) | Crawling, Walking, Racing Dead | 9.8c |
 | "Each enemy hero can only be targeted once" across up to five passes: an exclusion set accumulated over the card's passes (the single-value `excludeHero` and one-target repeat bindings cannot express it) | Walking, Racing Dead | 9.8c |

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8a Zombie token and Awaken! evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8a | Mortimer's Zombie token (four, retained at round end) and Awaken! placing up to four into empty spawn points in radius or spaces beside him, with p.18's reclaim; the shared `spawnPointOrAdjacent` placement clause. Unregistered until 9.8f. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98a-implement-the-zombie-token-and-awaken). | `milestone/9.8a` |
+
 ## Milestone 9.8 Mortimer inventory evidence
 
 | Milestone | Outcome and definition | Commit |

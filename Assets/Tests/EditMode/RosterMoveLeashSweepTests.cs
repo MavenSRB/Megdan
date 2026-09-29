@@ -463,11 +463,27 @@ namespace GuardsDigital.Tests.EditMode
         /// Milestone 9.2. Every body every dealt face runs, from the roster-derived
         /// <see cref="PrintedWordingCorpus"/> - which walks Active-effect trigger bodies too, and takes
         /// in a newly dealt hero without anybody adding a line here (8.83 listed its heroes by hand).
+        ///
+        /// <para>Milestone 9.8a. A hero being composed but not yet dealt (Mortimer until 9.8f) is on
+        /// no roster, so his content class's own faces join here - the sweep reads his bodies from
+        /// his first block rather than from his dealing.</para>
         /// </summary>
-        private static IEnumerable<(string Owner, EffectDefinition Definition)> WholeCorpus() =>
-            PrintedWordingCorpus.All
-                .SelectMany(face => face.Bodies.Select(body => (face.Hero, body)))
-                .GroupBy(row => row.body.Reference)
-                .Select(group => group.First());
+        private static IEnumerable<(string Owner, EffectDefinition Definition)> WholeCorpus()
+        {
+            var dealt = PrintedWordingCorpus.All
+                .SelectMany(face => face.Bodies.Select(body => (Owner: face.Hero, Body: body)))
+                .ToArray();
+            var dealtOwners = new HashSet<string>(dealt.Select(row => row.Owner), StringComparer.Ordinal);
+            var undealt = VerifiedContentCorpus.ContentClasses()
+                .Where(type => !dealtOwners.Contains(VerifiedContentCorpus.OwnerOf(type)))
+                .SelectMany(type => VerifiedContentCorpus.AllDefinitionsOf(type)
+                    .SelectMany(card => card.ActionDefinitions)
+                    .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                    .Where(body => body != null)
+                    .Select(body => (Owner: VerifiedContentCorpus.OwnerOf(type), Body: body)));
+            return dealt.Concat(undealt)
+                .GroupBy(row => row.Body.Reference)
+                .Select(group => (group.First().Owner, group.First().Body));
+        }
     }
 }
