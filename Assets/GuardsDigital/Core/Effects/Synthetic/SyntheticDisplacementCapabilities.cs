@@ -300,6 +300,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string MaximumTargetsParameterName = "maximumTargets";
 
         /// <summary>
+        /// Milestone 9.8d. The space a push is made FROM when the pusher is not the acting hero -
+        /// Mortimer's "that Zombie token may push a unit or a token adjacent to it 1 space". p.18
+        /// measures "directly away" from the pushing piece, so its space is the push's origin and
+        /// the pieces beside it are what it may push; the acting hero stays the source the push is
+        /// judged against for immunity, because it is his card's effect. A bound space with nothing
+        /// standing on it pushes nothing. Unbound, the acting hero pushes, as before.
+        /// </summary>
+        public const string PusherSpaceParameterName = "pusherSpace";
+
+        /// <summary>
         /// The declared side of the board the batch may push, carrying a
         /// <see cref="SourceTeamRelation"/>. Wasp's kinetic Skills print "enemy units"; a card that
         /// names no side declares <see cref="SourceTeamRelation.AnyTeam"/>, which is p.18's own breadth.
@@ -1380,6 +1390,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             parameters.Add(new EffectCapabilityParameter(
                 LeastDistanceParameterName, EffectValueKind.Integer));
             parameters.Add(new EffectCapabilityParameter("ignoresObstacles", EffectValueKind.Boolean));
+            parameters.Add(new EffectCapabilityParameter(
+                PusherSpaceParameterName, EffectValueKind.Coordinate, isRequired: false));
 
             // Milestone 6.4c. Both declarations carry it, because both produce their target set
             // through the finders below and the reading lives there rather than per handler. The
@@ -1995,6 +2007,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             var pusher = BoardObjectReference.ForHero(context.ActorId);
+            var declaredPusher = context.Input(PusherSpaceParameterName);
+            if (declaredPusher.Kind == EffectValueKind.Coordinate)
+            {
+                // Milestone 9.8d. A piece other than the actor pushes: it must still stand there.
+                pusherAt = declaredPusher.Coordinate;
+                pushingUnit = pusher.AsRuleObject();
+                return components.Board.TryGetObjectAt(pusherAt, out _);
+            }
+
             if (!components.Board.TryGetObjectCoordinate(pusher, out pusherAt))
             {
                 return false;

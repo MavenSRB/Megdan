@@ -109,11 +109,21 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98c-knife-and-the-red-attacks-evidence).
 
-### [~] 9.8d Implement the five Blue Skills
+### [x] 9.8d Implement the five Blue Skills
 
 Outcome: a Zombie in range moves up to 1 space and may push a unit or token adjacent to it 1 space. The coin bullet (MO-Q3), and "Move 1 space".
 
-### [ ] 9.8e Implement the five Green Skills
+Completed 2026-09-29.
+- `MortimerBlueFaces` composes the five Ranged Skills (Range 4) on `MortimerRepeatedChoice`.
+- The Zombie moves `UpTo` one space: its own space is an answer, not a decline (W5), so "moved" is always published.
+- "That Zombie token may push" is a `May` over `synthetic-object-push@3` (one piece, unit or token, any team, 1 space). Its new optional `pusherSpace` input makes the Zombie's space the push origin, so p.18's "directly away" is measured from it. The acting hero stays the immunity source, and unbound the actor pushes as before.
+- The coin follows the move in one mandatory Sequence, so with no Zombie in range the bullet cannot start (MO-Q3). "Move 1 space" is Mortimer's exact one-space move.
+- `MortimerBlueFacesTests` (9) cover the push from a still and a moved Zombie, pushing Mortimer himself, declining, the coin at 0 spaces, no coin without a Zombie, and restore/replay.
+- `RosterMoveLeashSweepTests` lists the 23 new exact one-space pushes and moves.
+
+Historical evidence: [9.8d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98d-blue-skills-evidence).
+
+### [~] 9.8e Implement the five Green Skills
 
 Outcome: a Zombie in range moves 1 space. Also swap with a Zombie in range, and "once per turn" Replace an enemy minion in range adjacent to two or more Zombies with a Zombie.
 

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8d Blue Skills evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8d | Mortimer's five Blue Skills: a Zombie moves up to one space and may push a piece beside it from its own space (new `pusherSpace` push input), the coin only with a Zombie to move (MO-Q3), and "Move 1 space". Unregistered until 9.8f. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98d-implement-the-five-blue-skills). | `milestone/9.8d` |
+
 ## Milestone 9.8c Knife and the Red Attacks evidence
 
 | Milestone | Outcome and definition | Commit |

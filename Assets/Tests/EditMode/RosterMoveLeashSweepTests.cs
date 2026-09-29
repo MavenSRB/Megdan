@@ -361,6 +361,52 @@ namespace GuardsDigital.Tests.EditMode
                     "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
                 ["mortimer-braaaaaaains-attack-text | brains-5-move-step"] =
                     "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-corpse-slam-skill | slam-1-push"] =
+                    "Corpse Slam: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-corpse-slam-skill | slam-1-step-move"] =
+                    "Corpse Slam: \"Move 1 space\"",
+                ["mortimer-morbid-mosh-skill | slam-1-push"] =
+                    "Morbid Mosh: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-morbid-mosh-skill | slam-1-step-move"] =
+                    "Morbid Mosh: \"Move 1 space\"",
+                ["mortimer-morbid-mosh-skill | slam-2-push"] =
+                    "Morbid Mosh: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-morbid-mosh-skill | slam-2-step-move"] =
+                    "Morbid Mosh: \"Move 1 space\"",
+                ["mortimer-robbing-zombies-skill | rob-1-step-move"] =
+                    "Robbing Zombies: \"Move 1 space\"",
+                ["mortimer-robbing-zombies-skill | rob-2-step-move"] =
+                    "Robbing Zombies: \"Move 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-1-push"] =
+                    "Macabre Mayhem: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-1-step-move"] =
+                    "Macabre Mayhem: \"Move 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-2-push"] =
+                    "Macabre Mayhem: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-2-step-move"] =
+                    "Macabre Mayhem: \"Move 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-3-push"] =
+                    "Macabre Mayhem: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-3-step-move"] =
+                    "Macabre Mayhem: \"Move 1 space\"",
+                ["mortimer-macabre-mayhem-skill | slam-4-push"] =
+                    "Macabre Mayhem: \"that Zombie token may push a unit or a token adjacent to it 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-macabre-mayhem-skill | slam-4-step-move"] =
+                    "Macabre Mayhem: \"Move 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-macabre-mayhem-skill | slam-5-push"] =
+                    "Macabre Mayhem: \"that Zombie token may push a unit or a token adjacent to it 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-macabre-mayhem-skill | slam-5-step-move"] =
+                    "Macabre Mayhem: \"Move 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-stalking-scalpers-skill | rob-1-step-move"] =
+                    "Stalking Scalpers: \"Move 1 space\"",
+                ["mortimer-stalking-scalpers-skill | rob-2-step-move"] =
+                    "Stalking Scalpers: \"Move 1 space\"",
+                ["mortimer-stalking-scalpers-skill | rob-3-step-move"] =
+                    "Stalking Scalpers: \"Move 1 space\"",
+                ["mortimer-stalking-scalpers-skill | rob-4-step-move"] =
+                    "Stalking Scalpers: \"Move 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-stalking-scalpers-skill | rob-5-step-move"] =
+                    "Stalking Scalpers: \"Move 1 space\" (Master of Puppets' extra pass)",
 
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",

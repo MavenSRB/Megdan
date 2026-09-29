@@ -228,6 +228,9 @@ namespace GuardsDigital.Tests.EditMode
 
         internal AdjacentMoveAuthority Board => board;
 
+        /// <summary>Milestone 9.8d. A hero's coins, from the one ledger the round's actions pay into.</summary>
+        internal int Coins(HeroId hero) => actions.CoinLedger.GetCoins(hero);
+
         internal RoundResolutionAuthority Round => round;
 
         /// <summary>The question an end-of-round trigger stopped on, or null.</summary>
