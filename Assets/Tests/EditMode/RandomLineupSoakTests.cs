@@ -65,43 +65,74 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>Seed 1 for every line-up, the first seed milestone 9.6's survey plays them on.</summary>
         private static readonly int[] Seeds = { 1 };
 
-        private static readonly Lazy<Soak> Soaked = new Lazy<Soak>(Run);
+        /// <summary>
+        /// Milestone 9.9/9.10 landing: one soak per line-up, built by the first case that asks for that
+        /// line-up and shared by its sibling case, so no single case pays for all ten and every case
+        /// fits Unity's 180-second per-case budget. Each line-up plays exactly what it played inside
+        /// the single soak: the same seeds, commands, stride and shadow horizon.
+        /// </summary>
+        private static readonly Lazy<Lazy<Soak>[]> Soaks = new Lazy<Lazy<Soak>[]>(() =>
+            OfferOutcomeTests.RotatedLineups()
+                .Select(picked => new Lazy<Soak>(() => Run(picked)))
+                .ToArray());
 
-        [Test]
-        public void EveryRandomLineup_RestoresReplaysAndRewindsIntoTheSameMatch()
+        /// <summary>The line-ups, by index, as the per-line-up cases' source.</summary>
+        public static IEnumerable<int> Lineups() => OfferOutcomeTests.Lineups();
+
+        private static Soak Soaked(int lineup) => Soaks.Value[lineup].Value;
+
+        [TestCaseSource(nameof(Lineups))]
+        public void EveryRandomLineup_RestoresReplaysAndRewindsIntoTheSameMatch(int lineup)
         {
-            foreach (var kind in Soaked.Value.Findings
+            foreach (var kind in Soaked(lineup).Findings
                 .GroupBy(finding => finding.Substring(finding.IndexOf(']') + 1))
                 .OrderByDescending(group => group.Count()))
             {
                 TestContext.WriteLine($"{kind.Count()} x {kind.First()}");
             }
 
-            Assert.That(Soaked.Value.Findings, Is.Empty,
+            Assert.That(Soaked(lineup).Findings, Is.Empty,
                 "The soak found these disagreements between the live match and its restored, " +
                 "replayed or rewound copies, or these broken invariants:\n" +
-                string.Join("\n", Soaked.Value.Findings.Take(40)));
+                string.Join("\n", Soaked(lineup).Findings.Take(40)));
         }
 
-        [Test]
-        public void TheSoak_PlaysEveryDealtHeroAndWalksItsBudget()
+        /// <summary>
+        /// Restated per line-up at the landing. Each clause is the single soak's, asked of one
+        /// line-up's share: every hero of THIS line-up commits (stronger than "every dealt hero commits
+        /// in some line-up", whose global half is <see cref="TheSoaksLineups_SeatEveryDealtHero"/>),
+        /// this line-up walks more than half its own commands (the old floor was the sum of these), and
+        /// its restores and rewinds keep the same proportion to its commands.
+        /// </summary>
+        [TestCaseSource(nameof(Lineups))]
+        public void TheSoak_PlaysEveryDealtHeroAndWalksItsBudget(int lineup)
         {
-            var missing = QuickGameSetupConfiguration.DealtHeroes
+            var missing = OfferOutcomeTests.RotatedLineups()[lineup]
                 .Select(hero => hero.ContentId.Value)
-                .Except(Soaked.Value.HeroesCommitted)
+                .Except(Soaked(lineup).HeroesCommitted)
                 .ToArray();
             Assert.That(missing, Is.Empty,
                 "These dealt heroes never committed a card in the soak's line-ups.");
-            Assert.That(Soaked.Value.CommandsWalked, Is.GreaterThan(
-                    OfferOutcomeTests.RotatedLineups().Count * Seeds.Length * CommandsPerMatch / 2),
+            Assert.That(Soaked(lineup).CommandsWalked, Is.GreaterThan(
+                    Seeds.Length * CommandsPerMatch / 2),
                 "The soak is stopping early rather than walking its line-ups.");
-            Assert.That(Soaked.Value.Restores, Is.GreaterThan(Soaked.Value.CommandsWalked / Stride / 2));
-            Assert.That(Soaked.Value.Rewinds, Is.GreaterThan(Soaked.Value.CommandsWalked / Stride / 2));
+            Assert.That(Soaked(lineup).Restores, Is.GreaterThan(Soaked(lineup).CommandsWalked / Stride / 2));
+            Assert.That(Soaked(lineup).Rewinds, Is.GreaterThan(Soaked(lineup).CommandsWalked / Stride / 2));
             TestContext.WriteLine(
-                $"9.10 soak: {Soaked.Value.Matches} matches, {Soaked.Value.CommandsWalked} commands, " +
-                $"{Soaked.Value.Restores} restores, {Soaked.Value.Rewinds} rewinds, " +
-                $"{Soaked.Value.OffersSubmitted} offers submitted, {Soaked.Value.ShadowSteps} shadow " +
-                $"steps, {Soaked.Value.Elapsed.TotalSeconds:F1}s at stride {Stride}.");
+                $"9.10 soak: {Soaked(lineup).Matches} matches, {Soaked(lineup).CommandsWalked} commands, " +
+                $"{Soaked(lineup).Restores} restores, {Soaked(lineup).Rewinds} rewinds, " +
+                $"{Soaked(lineup).OffersSubmitted} offers submitted, {Soaked(lineup).ShadowSteps} shadow " +
+                $"steps, {Soaked(lineup).Elapsed.TotalSeconds:F1}s at stride {Stride}.");
+        }
+
+        [Test]
+        public void TheSoaksLineups_SeatEveryDealtHero()
+        {
+            var seated = OfferOutcomeTests.RotatedLineups().SelectMany(picked => picked)
+                .Select(hero => hero.ContentId.Value);
+            Assert.That(QuickGameSetupConfiguration.DealtHeroes.Select(hero => hero.ContentId.Value)
+                    .Except(seated),
+                Is.Empty, "Every dealt hero plays in one of the soak's line-ups.");
         }
 
         /// <summary>
@@ -185,17 +216,14 @@ namespace GuardsDigital.Tests.EditMode
             public TimeSpan Elapsed;
         }
 
-        private static Soak Run()
+        private static Soak Run(RegisteredHero[] picked)
         {
             var soak = new Soak();
             var clock = Stopwatch.StartNew();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            foreach (var picked in OfferOutcomeTests.RotatedLineups())
+            foreach (var seed in Seeds)
             {
-                foreach (var seed in Seeds)
-                {
-                    Play(soak, OfferOutcomeTests.Compose(map, picked), picked, seed);
-                }
+                Play(soak, OfferOutcomeTests.Compose(map, picked), picked, seed);
             }
 
             soak.Elapsed = clock.Elapsed;
