@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.11 Copy and codec completeness evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.11 | Reflection completeness over every projection copy, seat record and wire codec; three dropped client fields carried, two of them moving the wire to `/25`. [Definition](../../Roadmap/PHASE_9.md#x-911-every-copy-projection-and-wire-form-carries-every-field). | `milestone/9.11` |
+
 ## Milestone 9.9 Before-the-action offers evidence
 
 | Milestone | Outcome and definition | Commit |
