@@ -21,7 +21,7 @@ The four answers, to be recorded in the shard as MO-Q1 to MO-Q4:
 18. **Every offer is checked against its outcome** (9.6, 9.7). `OfferOutcomeTests` plays every dealt hero, so a newly dealt Mortimer is swept the moment he is pickable. A face offered where it can do nothing is a defect unless RULING 53 covers it (a false printed "If"); a greyed face that could act is a defect too.
 19. **Rulings can live in tests.** RULING 53 was recorded only in Whisper's journeys until 9.6; before composing, grep the tests as well as the shards for a ruling on the same shape.
 
-### [~] 9.8 Inventory Mortimer and map the implementation sequence
+### [x] 9.8 Inventory Mortimer and map the implementation sequence
 
 Outcome: verify the nineteen fronts, profile, dashboard, Zombie token and standee manifest pieces and the relevant rulebook pages. Record printed values, exact clauses, existing-capability matches, new contracts and the user's answers. No executable content is registered.
 
@@ -35,7 +35,16 @@ Acceptance:
 
 Non-goals: gameplay code, art import or a package.
 
-### [ ] 9.8a Implement the Zombie token and Awaken!
+Completed 2026-09-29.
+- The nineteen fronts (byte-distinct), the one back variant, the profile (three stars; Melee, Tokens, Farming, Durable, Pusher), the stat bars (Attack 8, Defense 7, Initiative 2, Movement 4) and the dashboard are inventoried in [his rules shard](../Rules/HERO_MORTIMER.md).
+- So are the standee (element 8596249, `Morty`) and the Zombie token (element 7694669, two faces).
+- Items and Range/Radius were verified by montage.
+- MO-Q1 to MO-Q4 are recorded.
+- The engine probe maps every novel shape. Reused: the repeatable modal (Treetop Ride's composition), moving and swapping a token, retention, supply and the adjacency count. Each new contract is assigned to one block: spawn-point placement, five passes, the target-excluding token-adjacent hero selection, a multi-hero exclusion across passes, a token as pusher, minion-to-token Replace, and a once-per-turn bullet.
+
+Historical evidence: [9.8 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98-mortimer-inventory-evidence).
+
+### [~] 9.8a Implement the Zombie token and Awaken!
 
 Outcome: a Zombie token definition (an obstacle; supply 4 per MO-Q1; p.19 reclaim; retained at every round end per MO-Q4), and Awaken! placing up to four into empty spawn points in radius or spaces adjacent to him (MO-Q2).
 

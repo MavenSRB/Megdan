@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8 Mortimer inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8 | Mortimer's nineteen fronts, profile, stat bars, dashboard, standee and Zombie token inventoried; MO-Q1-MO-Q4 recorded; engine seams probed and each new contract assigned to a block. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98-inventory-mortimer-and-map-the-implementation-sequence). | `milestone/9.8` |
+
 ## Milestone 9.7 Legal action evidence
 
 | Milestone | Outcome and definition | Commit |
