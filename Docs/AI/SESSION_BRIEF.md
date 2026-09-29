@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.16**.
-- Active authorized milestone: **9.17a**.
-- Next proposed milestone: **9.17a**.
+- Current completed milestone: **9.17a**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **9.18**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -26,7 +26,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
-On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50. **9.13** (expected-outcome corpus: format, executor, blind-reader pilot on Mortimer, Mrak and Wuk; two engine faults fixed) is complete; 9.13a-e, 9.14-9.15 queued; OQ-9.13 (does one decline end an "up to N"?) awaits the user. **9.17** (Charged Runestone) is complete and reopened as **9.17a** (active). **9.16** (the Turret piece redrawn as the user picked) is complete; **9.18** (a thin black outline on every token) awaits the user's approval of its sheet.
+On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50. **9.13** (expected-outcome corpus: format, executor, blind-reader pilot on Mortimer, Mrak and Wuk; two engine faults fixed) is complete; 9.13a-e, 9.14-9.15 queued; OQ-9.13 (does one decline end an "up to N"?) awaits the user. **9.17a** (Charged Runestone: its blue clause is the anvil rune; 9.19 queued) is complete. **9.16** (the Turret piece redrawn as the user picked) is complete; **9.18** (a thin black outline on every token) awaits the user's approval of its sheet.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

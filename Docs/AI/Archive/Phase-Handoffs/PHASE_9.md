@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.17a Runestone binding evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.17a | Charged Runestone's blue clause bound to the anvil rune (3) and Inscribed Runebomb's gold/blue unswapped, as a Snorri content correction with a whole-match regression replaying the logged play; 9.17's reading withdrawn; 9.19 queued for the unlogged card-text discard. [Definition](../../Roadmap/PHASE_9.md#x-917a-the-runestones-target-and-discard-are-visible-when-they-happen). | `milestone/9.17a` |
+
 ## Milestone 9.16 Turret piece evidence
 
 | Milestone | Outcome and definition | Commit |
