@@ -2319,6 +2319,22 @@ namespace GuardsDigital.Tests.EditMode
 
                         var spaces = open.Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
                             candidate.Value.Kind == EffectValueKind.Coordinate).ToList();
+                        var paired = answers.Count > 1 ? answers.ElementAt(1) : null;
+                        if (spaces.Count > 0 && paired != null && ShapeOf(paired, out var walk, out _) == AnswerShape.Distance)
+                        {
+                            // "toward X", "distance D": one walk of D, ending nearest (or farthest from) X,
+                            // measured from the piece that moves as a lone "distance D" is.
+                            var length = int.Parse(walk, CultureInfo.InvariantCulture);
+                            var mover = new[] { "actor", lastReferenced }.Where(reference => reference != null)
+                                .Select(reference => PositionOf(projection, reference))
+                                .Where(at => at.HasValue).Select(at => at.Value)
+                                .OrderBy(at => spaces.Max(candidate => Dist(candidate.Value.Coordinate, at)))
+                                .First();
+                            spaces = spaces.Where(candidate => Dist(candidate.Value.Coordinate, mover) == length).ToList();
+                            if (spaces.Count == 0) return null;
+                            extraConsumed = 1;
+                        }
+
                         return spaces.OrderBy(candidate => sign * Dist(candidate.Value.Coordinate, target))
                             .ThenBy(candidate => candidate.Value.Coordinate.Q).ThenBy(candidate => candidate.Value.Coordinate.R)
                             .Select(candidate => (EffectChoiceCandidate?)candidate).FirstOrDefault();
