@@ -391,7 +391,10 @@ namespace GuardsDigital.Tests.EditMode
             // Dominance's battle-time exclusion and Trample's two moved-through readers (8.114b1),
             // each proved by the focused Wuk fixtures. His Tree steps reuse PlaceHandler and
             // ReclaimHandler, and his Dominance and Trample sources ActiveEffectCreationHandler.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(127),
+            // Mortimer's dealing adds one at 9.8f: the minion-to-token Replace (9.8e), proved by the
+            // focused Green fixtures. His Zombie steps reuse PlaceHandler and ReclaimHandler, and
+            // Knife of the Living Dead's per-pass "+1 Attack" ActiveEffectCreationHandler.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(128),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

@@ -1133,8 +1133,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// contract, so this capability states no target bound of its own; what it does state, and
         /// re-derives on every call, is that the named space still holds an object this actor may push.
         /// </summary>
-        private sealed class PushTargetHandler : IEffectCapabilityHandler
+        private sealed class PushTargetHandler : IEffectCapabilityHandler,
+            IEffectInertDisplacementCapabilityHandler
         {
+            /// <summary>Milestone 9.8f: see <see cref="IEffectInertDisplacementCapabilityHandler"/>.</summary>
+            public bool WouldDisplaceNothing(EffectCapabilityContext context) =>
+                PushWouldMoveNothing(context, TryFindNamedTarget);
+
             public EffectCapabilityReference Reference => PushTargetV3;
 
             public EffectCapabilityParameterSchema Schema { get; } = PushSchema(named: true);
@@ -1524,6 +1529,38 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// target and this reports the push performable - the rule that a blocked push resolves to
         /// zero is the same rule whether or not anyone asked first.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.8f. Whether, as the board stands, the push would leave every target where it is
+        /// at every distance the declaration admits - and no target is a hero, whose 0-space push is a
+        /// stop other text may read. Resolved exactly as <see cref="Push"/> resolves, without committing.
+        /// </summary>
+        private static bool PushWouldMoveNothing(EffectCapabilityContext context, PushTargetFinder finder)
+        {
+            if (!DeclaresALegalDistance(context) || !finder(context, out var pusherAt, out var targets) ||
+                targets.Any(target => target.Kind == BoardObjectKind.Hero))
+            {
+                return false;
+            }
+
+            var board = context.Components.Board;
+            var ignoresObstacles = context.Input("ignoresObstacles").BooleanValue;
+            var admitted = Distances(context);
+            for (var distance = Math.Max(1, admitted.Minimum); distance <= admitted.Maximum; distance++)
+            {
+                foreach (var target in targets)
+                {
+                    if (board.TryGetObjectCoordinate(target, out var targetAt) &&
+                        board.ResolvePush(pusherAt, targetAt, distance, target.AsRuleObject(),
+                            ignoresObstacles, context.Modifications).Moves)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         private static EffectExecutionResultKind AnticipatePush(
             EffectCapabilityContext context, PushTargetFinder finder)
         {

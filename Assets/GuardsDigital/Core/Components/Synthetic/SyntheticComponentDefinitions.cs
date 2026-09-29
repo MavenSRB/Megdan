@@ -125,7 +125,9 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // Milestone 8.112g. Mrak the Rockshaper's one token, the three-rock pile (MR-Q1).
                     .Concat(GuardsDigital.Core.Cards.Verified.MrakComponentContent.Tokens())
                     // Milestone 8.114f. Wuk the Grove Keeper's Tree, three in supply (WU-Q1).
-                    .Concat(GuardsDigital.Core.Cards.Verified.WukComponentContent.Tokens()),
+                    .Concat(GuardsDigital.Core.Cards.Verified.WukComponentContent.Tokens())
+                    // Milestone 9.8f. Mortimer the Awakener's Zombie, four in supply (MO-Q1).
+                    .Concat(GuardsDigital.Core.Cards.Verified.MortimerComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

@@ -1279,6 +1279,17 @@ RefusalExplanation explanation = null)
                 outcomes,
                 context);
 
+            // Milestone 9.8f, the user's ruling of 2026-09-29: a displacement that would move nothing
+            // wherever it is aimed is taken and applies nothing, so the card is judged by what the
+            // steps after it can still do - Boulder Rush's push against terrain, then Mrak's own move.
+            if ((anticipated == EffectExecutionResultKind.Applied ||
+                    anticipated == EffectExecutionResultKind.NeedsChoice) &&
+                handler is IEffectInertDisplacementCapabilityHandler inert &&
+                inert.WouldDisplaceNothing(capabilityContext))
+            {
+                return Verdict.Empty;
+            }
+
             switch (anticipated)
             {
                 case EffectExecutionResultKind.Applied:

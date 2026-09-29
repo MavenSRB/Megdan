@@ -24,7 +24,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// p.18's short-supply step through <see cref="ReclaimZombieV1"/>, which every placing face
     /// composes before each placement it makes.</para>
     ///
-    /// <para><b>Nothing here is registered</b> until his dealing block (9.8f).</para>
+    /// <para><b>Registered</b> in the match catalog since his dealing (9.8f).</para>
     /// </summary>
     public static class MortimerComponentContent
     {

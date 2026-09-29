@@ -168,7 +168,10 @@ namespace GuardsDigital.Presentation.Match
                 { "mrak", "Mrak" },
                 // Milestone 8.114f. His card folder is `Wuk`; the dashboard prints "Wuk the Grove
                 // Keeper" (inventory 8.114).
-                { "wuk", "Wuk" }
+                { "wuk", "Wuk" },
+                // Milestone 9.8f. His card folder is `Mortimer`; the dashboard prints "Mortimer the
+                // Awakener" (inventory 9.8).
+                { "mortimer", "Mortimer" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -508,6 +511,7 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(SnorriCardContent.DealtDefinitions)
                 .Concat(MrakCardContent.DealtDefinitions)
                 .Concat(WukCardContent.DealtDefinitions)
+                .Concat(MortimerCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

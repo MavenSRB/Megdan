@@ -35,7 +35,11 @@ namespace GuardsDigital.Tests.EditMode
         // `Next(1)` still advances the stream, so every seeded walk is a different match. Seed 32
         // no longer reaches an ending inside any reasonable budget; seed 11 is the lowest that
         // does, ending on p.13's last Life counter after 44 rounds and 1,407 commands.
-        private const int Seed = 11;
+        // Milestone 9.8f re-derived it, 11 -> 4: a push that would move nothing no longer makes a
+        // Skill offerable on its own (Boulder Rush's ruling), so a seeded walk reroutes from the
+        // first such turn and seed 11 exhausts the budget. Scanning seeds 1-60 offline, seed 4 is
+        // the lowest that ends, on p.13's last Life counter after 948 commands (40% of budget).
+        private const int Seed = 4;
 
         private const int Budget = 2400;
 

@@ -509,6 +509,10 @@ namespace GuardsDigital.Core.Cards
                 .Concat(MrakComponentContent.RegisteredHandlers())
                 // Milestone 8.114f. Wuk's Tree, paired swap, Dominance and trampling contracts.
                 .Concat(WukComponentContent.RegisteredHandlers())
+                // Milestone 9.8f, the milestone that deals Mortimer the Awakener as the
+                // TWENTY-SEVENTH hero: the Zombie's placement, short supply and minion Replace, and
+                // Knife of the Living Dead's per-pass "+1 Attack".
+                .Concat(MortimerComponentContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

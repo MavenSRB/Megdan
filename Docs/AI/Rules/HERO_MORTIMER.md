@@ -51,7 +51,7 @@ File stems below are under the Mortimer source directory and end in `__front.png
 | mortimer18__7695027 | Master of Puppets / Purple / IV | - | - | - | Ultimate | - |
 | mortimer19__7695026 | Shallow Graves / Gold / Handicap | 10 | 1 | 1 | Basic Attack / A 3+, r 4 | - |
 
-Items: Attack x3, Defense x3, Initiative x3, Movement x1, Range x1, Radius x1. Awaken!'s 3 is its Basic Defense value; it prints no Movement icon. Upgrade lines (by name family, validated as a whole against p.15 at dealing):
+Items: Attack x3, Defense x3, Initiative x3, Movement x1, Range x1, Radius x1. Awaken!'s 3 is its Defense value; it prints no Movement icon. **Corrected at 9.8f:** its banner prints the Defense/Skill icon (p.13-14), so it is played as a Skill or discarded to defend with Defense 3, and its text applies either way. Upgrade lines (by name family, validated as a whole against p.15 at dealing):
 - Red: Crawling Dead -> Walking Dead or Braains...! -> Racing Dead or Braaaaaaains...!
 - Blue: Corpse Slam -> Morbid Mosh or Robbing Zombies -> Macabre Mayhem or Stalking Scalpers.
 - Green: Stage Dive -> Crowd Drift or Gathering Horde -> Crowd Surf or Army of Darkness.

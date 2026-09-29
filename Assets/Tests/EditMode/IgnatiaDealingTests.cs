@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var ignatia = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == IgnatiaCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(26),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(27),
                 "She is the twenty-second hero this build can put on a board.");
             Assert.That(
                 ignatia.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.IgnatiaHeroIdValue));
@@ -588,8 +588,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(IgnatiaCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(26));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(26),
+            Assert.That(dealt, Has.Count.EqualTo(27));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(27),
                 "and no two rows name one printed set.");
         }
 

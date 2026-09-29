@@ -628,6 +628,8 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.MrakCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.WukHeroIdValue:
                     return Cards.Verified.WukCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.MortimerHeroIdValue:
+                    return Cards.Verified.MortimerCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2220,6 +2222,36 @@ namespace GuardsDigital.Core.Participants
                 SetupRandomnessSeed.Unrecorded,
                 allyHand: Cards.Verified.ArienCardContent.CreateHand(
                     new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>Milestone 9.8f. Wasp on Red against Mortimer with his p.6 starting hand.</summary>
+        public static MatchConfiguration CreateStagedMortimerForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.MortimerCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 9.8f. Wasp against Mortimer, both on Tier III, Master of Puppets faceup - so his
+        /// "up to three times" faces offer five.
+        /// </summary>
+        public static MatchConfiguration CreateStagedMortimerTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.MortimerProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.MortimerCardContent.MasterOfPuppets)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
 
         /// <summary>Milestone 8.114f. Wasp on Red against Wuk with his p.6 starting hand.</summary>
         public static MatchConfiguration CreateStagedWukForInternalTest(

@@ -67,7 +67,8 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyList<HexCoordinate> enemyRocksAt = null,
             bool battleZone = false,
             IReadOnlyList<(HeroId Hero, TeamSide Side, RuleModification Modification)> standingEffects = null,
-            IReadOnlyList<(HeroId Hero, TeamSide Side, ActiveEffectDefinition Definition)> standingDefinitions = null)
+            IReadOnlyList<(HeroId Hero, TeamSide Side, ActiveEffectDefinition Definition)> standingDefinitions = null,
+            bool enemyAttacksFirst = false)
         {
             var participants = Participants(enemyAllyAt.HasValue, allyAt.HasValue);
             var spaces = (from q in Enumerable.Range(-5, 11)
@@ -117,16 +118,23 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             source = CardInstance.CreateInHand(new CardInstanceId("mortimer-source"), face.Reference, Mortimer);
+            // Milestone 9.8f. With enemyAttacksFirst the enemy commits a melee strike that outruns
+            // Mortimer's committed hold, and the face stays in his hand to defend with.
             var hold = CardInstance.CreateInHand(new CardInstanceId("mortimer-enemy-hold"),
-                EnemyHold.Reference, Enemy);
+                (enemyAttacksFirst ? EnemyStrike : EnemyHold).Reference, Enemy);
+            var mortimerHold = CardInstance.CreateInHand(new CardInstanceId("mortimer-own-hold"),
+                MortimerHold.Reference, Mortimer);
             var wall = CardInstance.CreateInHand(new CardInstanceId("mortimer-enemy-wall"),
                 EnemyWall.Reference, Enemy);
             var discardable = CardInstance.CreateInHand(new CardInstanceId("mortimer-enemy-spare"),
                 EnemyWall.Reference, Enemy);
-            definitions = withUltimate
+            definitions = (withUltimate
                 ? new[] { face, EnemyHold, EnemyWall, MortimerCardContent.MasterOfPuppetsDefinition }
-                : new[] { face, EnemyHold, EnemyWall };
+                : new[] { face, EnemyHold, EnemyWall })
+                .Concat(enemyAttacksFirst ? new[] { EnemyStrike, MortimerHold } : Array.Empty<CardDefinition>())
+                .ToArray();
             var all = new List<CardInstance> { source, hold, wall, discardable };
+            if (enemyAttacksFirst) all.Add(mortimerHold);
             if (withUltimate)
             {
                 var ultimate = CardInstance.CreateInDeck(new CardInstanceId("mortimer-ultimate-card"),
@@ -204,13 +212,64 @@ namespace GuardsDigital.Tests.EditMode
                 new RoundResolutionComposition(actions, board, timing,
                     markers, null, null, null, null, null, null,
                     startingCoins: new HeroCoinLedger(participants).CaptureRestoreState()));
-            Assert.That(round.TryCommitCard(Mortimer, source.Id).Accepted, Is.True);
+            Assert.That(round.TryCommitCard(Mortimer, (enemyAttacksFirst ? mortimerHold : source).Id).Accepted,
+                Is.True);
             foreach (var (hero, card) in holds)
             {
                 Assert.That(round.TryCommitCard(hero, card.Id).Accepted, Is.True, hero.Value + " commits");
             }
 
-            Assert.That(Turn.SelectedActor.ActorId, Is.EqualTo(Mortimer));
+            Assert.That(Turn.SelectedActor.ActorId, Is.EqualTo(enemyAttacksFirst ? Enemy : Mortimer));
+        }
+
+        /// <summary>Milestone 9.8f. The enemy's melee strike: Initiative 13, Attack 2, a unit adjacent.</summary>
+        internal static readonly CardDefinition EnemyStrike = new CardDefinition(
+            new CardDefinitionId("mortimer-enemy-strike"), "rev-1", "TEST - Strike",
+            new InitiativeValue(13), CardContentAuthority.SyntheticTestFixture,
+            CardProgressionProfile.NotStated,
+            new[]
+            {
+                new ActionDefinition(new ActionDefinitionId("strike"),
+                    ActionKind.Attack, ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, 2) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.NonRanged, default)
+            });
+
+        /// <summary>Milestone 9.8f. What Mortimer commits while a face waits in his hand to defend.</summary>
+        internal static readonly CardDefinition MortimerHold = new CardDefinition(
+            new CardDefinitionId("mortimer-own-hold"), "rev-1", "TEST - Mortimer's hold",
+            new InitiativeValue(1), CardContentAuthority.SyntheticTestFixture,
+            CardProgressionProfile.NotStated,
+            new[]
+            {
+                new ActionDefinition(new ActionDefinitionId("movement"),
+                    ActionKind.Movement, ActionDefinitionOrigin.PrintedSecondary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, 1) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true))
+            });
+
+        /// <summary>Milestone 9.8f. The enemy starts their strike and names Mortimer.</summary>
+        internal void EnemyStrikesMortimer()
+        {
+            var offer = Turn.GetTurnActionOffers().Single(value =>
+                value.ActionDefinitionId.Value == "strike" && value.IsAvailable);
+            Assert.That(round.TryStartAttack(new ActionResolutionId("enemy-strike"), offer).Accepted, Is.True);
+            Target(Mortimer);
+        }
+
+        /// <summary>Milestone 9.8f. The Defense offers Mortimer holds, by the card each is on.</summary>
+        internal CardDefinitionReference[] DefenseOffers() =>
+            Turn.PendingDefenseChoice.LegalDefenseOffers
+                .Select(offer => offer.SourceDefinitionReference).ToArray();
+
+        /// <summary>Milestone 9.8f. Mortimer discards the named card to defend.</summary>
+        internal void MortimerDefendsWith(CardDefinition card)
+        {
+            var defense = Turn.PendingDefenseChoice;
+            var offer = defense.LegalDefenseOffers.First(value => value.SourceDefinitionReference.Equals(card.Reference));
+            Assert.That(round.TryAnswerDefenseResponse(DefenseResponseChoiceCommand.SelectCards(
+                defense.ResolutionId, defense.ChoiceId, offer.SourceCardInstanceId)).Accepted, Is.True);
         }
 
         /// <summary>

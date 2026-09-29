@@ -164,7 +164,12 @@ namespace GuardsDigital.Tests.EditMode
                 // Sniper, Tactician and Healer.
                 ["hero-wuk"] = (HeroComplexity.VeryComplex,
                     HeroRole.Tokens | HeroRole.Pusher | HeroRole.Durable | HeroRole.Sniper |
-                        HeroRole.Tactician | HeroRole.Healer)
+                        HeroRole.Tactician | HeroRole.Healer),
+                // Milestone 9.8f. Mortimer's selection front: three stars; Melee, Tokens, Farming,
+                // Durable and Pusher.
+                ["hero-mortimer"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Melee | HeroRole.Tokens | HeroRole.Farming | HeroRole.Durable |
+                        HeroRole.Pusher)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

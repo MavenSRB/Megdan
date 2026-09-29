@@ -67,7 +67,10 @@ namespace GuardsDigital.Presentation.Board
                 [new TokenDefinitionId("mrak-rock")] = string.Empty,
 
                 // Milestone 8.114f. Wuk's Tree: the prepared hex prints the tree itself, so no caption.
-                [new TokenDefinitionId("wuk-tree")] = string.Empty
+                [new TokenDefinitionId("wuk-tree")] = string.Empty,
+
+                // Milestone 9.8f. Mortimer's Zombie: the prepared hex prints the Zombie, so no caption.
+                [new TokenDefinitionId("mortimer-zombie")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

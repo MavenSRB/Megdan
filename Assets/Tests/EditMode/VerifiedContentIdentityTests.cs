@@ -324,7 +324,10 @@ namespace GuardsDigital.Tests.EditMode
             new IdentityPin("trinkets", "trinkets-9-1-rev-1", "151104c2486030a425a2177d10ebfcb24c2f3562cd40ee135e49105afb063695"),
             new IdentityPin("snorri", "snorri-8-93f-rev-1", "133f27b08c4e3f21853e200c6807ac162778587d0226d98d7de86248e3f46e93"),
             new IdentityPin("mrak", "mrak-9-1-rev-1", "1398d39d034d44313c25a63fc101548fc9b044a1de82c07cf7e3e541e70de378"),
-            new IdentityPin("wuk", "wuk-9-2-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc")
+            new IdentityPin("wuk", "wuk-9-2-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc"),
+            // Milestone 9.8f. Mortimer, dealt; measured on the run that dealt him, with his staged
+            // configuration in EveryDealtDefinition in the same change.
+            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "ddac9405d44a1f238ea17080e840eed85bd6e5e015991378c655573cd80426fc")
         };
 
         [Test]
@@ -508,6 +511,9 @@ namespace GuardsDigital.Tests.EditMode
                     .CardDefinitions)
                 // Milestone 8.114f. Wuk's staged configuration, added in the same change as his pin.
                 .Concat(MatchConfiguration.CreateStagedWukForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 9.8f. Mortimer's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedMortimerForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

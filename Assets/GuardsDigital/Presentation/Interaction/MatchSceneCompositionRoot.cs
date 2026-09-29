@@ -1070,7 +1070,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedTierThreeEngagedStagedWuk = 136,
 
         /// <summary>Wasp versus Wuk with Arien as his Blue ally (8.114f).</summary>
-        VerifiedStagedWukWithAlly = 137
+        VerifiedStagedWukWithAlly = 137,
+
+        /// <summary>Wasp versus Mortimer with his p.6 starting hand (9.8f).</summary>
+        VerifiedEngagedStagedMortimer = 138,
+
+        /// <summary>Wasp versus Mortimer with Tier III hands and Master of Puppets faceup (9.8f).</summary>
+        VerifiedTierThreeEngagedStagedMortimer = 139
     }
 
     [ExecuteAlways]
@@ -1788,6 +1794,10 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedWukTierThreeForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedStagedWukWithAlly =>
                     MatchConfiguration.CreateStagedWukWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedMortimer =>
+                    MatchConfiguration.CreateStagedMortimerForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedMortimer =>
+                    MatchConfiguration.CreateStagedMortimerTierThreeForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1878,7 +1888,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedMrak ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedMrak ||
                 content == SceneCardContent.VerifiedEngagedStagedWuk ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedWuk)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedWuk ||
+                content == SceneCardContent.VerifiedEngagedStagedMortimer ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2477,6 +2489,13 @@ namespace GuardsDigital.Presentation.Interaction
                     if (content == SceneCardContent.VerifiedStagedWukWithAlly)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusWukWithAllyOneVsTwo();
+                    }
+
+                    // Milestone 9.8f. Mortimer's staged boards, in the same change as his members.
+                    if (content == SceneCardContent.VerifiedEngagedStagedMortimer ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusMortimerOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

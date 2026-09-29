@@ -137,10 +137,34 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98e-green-skills-evidence).
 
-### [~] 9.8f Deal Mortimer with his artwork
+### [x] 9.8f Deal Mortimer with his artwork
 
 Outcome: he is pickable with his profile, standee, card art and Zombie token art, and the corpus, conformance and offer checks cover him.
 
-### [ ] 9.8g Gate Mortimer on the player path
+Completed 2026-09-29.
+- **Dealt.** `hero-mortimer` joins the roster as "Mortimer the Awakener": three stars; Melee, Tokens, Farming, Durable, Pusher. `MatchConfiguration.CreateHand` deals his eighteen, and Shallow Graves (the p.20 Handicap) returns to the box. `MortimerCardContent.Set` owns his inventory order, starting hand and deck. His handlers and the Zombie token join the match catalogs.
+- **Staged boards.** The starting hand against Wasp, and Tier III with Master of Puppets unlocked (`MortimerProgressedHands`). Both land with their `SceneCardContent` members (138, 139) and both scene composition arms.
+- **Private art,** prepared and never staged:
+  - eighteen card fronts;
+  - the selection front (`randomizers-tt24__7723681`, SHA-identical to his named profile);
+  - the standee (element 8596249, `Morty`);
+  - the Zombie face (element 7694669, both faces inspected), with no caption.
+  All shine slots resolve.
+- **Awaken! corrected.** Its banner prints the Defense/Skill icon (p.13-14), so it is a Skill and a Defense (value 3), and its text applies when it is discarded to defend. 9.8a had composed a Skill with a Basic Defense. `MortimerAwakenDefenseTests` places a Zombie from the defense.
+- **W8 (user ruling).** The offer check found Mrak's Boulder Rush offered with nothing to change. The user ruled that a push target moving 0 spaces stays legal and the card is judged whole ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md)). The new `IEffectInertDisplacementCapabilityHandler` lets the offer walk read an inert push as applying nothing, so Boulder Rush greys only when the follow-up move cannot change anything either. `ConfiguredPushRepeatSkillTests`' blocked-push case now starts through the internal ignore-feasibility seam, because its Skill is correctly greyed.
+- **Pins moved, each with its cause:**
+  - roster 26 to 27 in the dealing fixtures and the profile table;
+  - handler types 127 to 128 and the hero-only list;
+  - catalog composition and the reachability walk;
+  - wording allow-lists (Master of Puppets; Walking and Racing Dead as "each" faces);
+  - artwork catalog 468 to 486;
+  - corpus MIGRATE (+274 bytes on the sixteen captures);
+  - the aggregate digests and his identity pin;
+  - `UndoCheckpointReconstructionTests`' seed 11 to 4: the inert-push reading reroutes self-play, and seed 4 is the lowest that ends.
+- T2; evidence in the milestone commit.
+
+Historical evidence: [9.8f completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98f-dealing-evidence).
+
+### [~] 9.8g Gate Mortimer on the player path
 
 Outcome: the permanent player-path gate passes for him, with every face's journey reading what its answer changed.

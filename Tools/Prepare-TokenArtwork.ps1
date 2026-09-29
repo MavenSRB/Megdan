@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk')]
+    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -651,6 +651,137 @@ if ($Hero -eq 'wuk') {
         # One face position declared twice: front and back print the same tree. See the note above.
         if ([int] $sprites[0].x -ne [int] $sprites[1].x -or [int] $sprites[0].y -ne [int] $sprites[1].y) {
             throw ("Element $($token.Element) no longer declares one face for both sides. " +
+                'Nothing was written.')
+        }
+
+        $rect = $sprites[$token.Sprite]
+        if ([int] $rect.x -ne $token.X -or [int] $rect.y -ne $token.Y) {
+            throw ("Element $($token.Element) sprite $($token.Sprite) is at ($($rect.x),$($rect.y)), " +
+                "not the measured ($($token.X),$($token.Y)). Nothing was written.")
+        }
+
+        $atlasIndexMatch = [regex]::Match($atlas.resource.id, '^Image_(?<index>\d+)_Atlas$')
+        if (-not $atlasIndexMatch.Success) {
+            throw "The declared atlas resource id '$($atlas.resource.id)' is not in the expected form."
+        }
+
+        $atlasIndex = $atlasIndexMatch.Groups['index'].Value
+        $candidates = @(Get-ChildItem -LiteralPath $corpusRoot -Filter "*.sprite$atlasIndex`__*.jpg" -File)
+        if ($candidates.Count -ne 1) {
+            throw "Expected exactly one extracted image for atlas '$($atlas.resource.id)'; found $($candidates.Count)."
+        }
+
+        $x = [int] $rect.x
+        $y = [int] $rect.y
+        $w = [int] $rect.width
+        $h = [int] $rect.height
+        $target = [System.IO.Path]::Combine($targetRoot, "$($token.TokenId).png")
+        if ((Test-Path -LiteralPath $target) -and -not $Force) {
+            $existing = [System.Drawing.Image]::FromFile($target)
+            try { $same = $existing.Width -eq $w -and $existing.Height -eq $h }
+            finally { $existing.Dispose() }
+            if ($same) {
+                $matched++
+                Write-Output "OK: $($token.Label) already prepared at ${w}x${h}: $target"
+                continue
+            }
+        }
+
+        if ($Check) { throw "Missing or stale prepared token face: $target" }
+
+        $source = [System.Drawing.Image]::FromFile($candidates[0].FullName)
+        try {
+            if ($source.Width -ne [int] $atlas.width -or $source.Height -ne [int] $atlas.height) {
+                throw ("Atlas '$($candidates[0].Name)' is $($source.Width)x$($source.Height), but the " +
+                    "manifest declares $($atlas.width)x$($atlas.height). Nothing was written.")
+            }
+
+            if ($x -lt 0 -or $y -lt 0 -or ($x + $w) -gt $source.Width -or ($y + $h) -gt $source.Height) {
+                throw 'A declared face rectangle falls outside the atlas. Nothing was written.'
+            }
+
+            $bitmap = New-Object System.Drawing.Bitmap $w, $h
+            try {
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                    $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
+                    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+                    $graphics.DrawImage(
+                        $source,
+                        (New-Object System.Drawing.Rectangle 0, 0, $w, $h),
+                        (New-Object System.Drawing.Rectangle $x, $y, $w, $h),
+                        [System.Drawing.GraphicsUnit]::Pixel)
+                } finally { $graphics.Dispose() }
+
+                $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+                $written++
+                Write-Output "WROTE: $($token.Label) -> $target (${w}x${h}, from ($x,$y) of $($atlas.resource.id))."
+            } finally { $bitmap.Dispose() }
+        } finally { $source.Dispose() }
+    }
+
+    Write-Output ("Prepared token faces: $written written, $matched already present. The source atlas " +
+        'and the extracted corpus were read only. The written resources are ignored by Git and are ' +
+        'never distributed.')
+    exit 0
+}
+
+# -------------------------------------------------------------------------------------------------
+# Milestone 9.8f. Mortimer the Awakener's ONE token, the Zombie (MO-Q1: four in supply). The manifest
+# declares one `Zombieeee` element, 7694669 (Tokens, `Image_3_Atlas`, 427x369 at y=1043), whose two
+# faces sit at x=441 and x=870 and print the SAME art - a Zombie's hand rising from a grave - which was
+# cropped and looked at on 2026-09-29. The rule is one token definition (MortimerComponentContent), so
+# one face is prepared: the front. Nothing about the rule is read from the picture.
+# -------------------------------------------------------------------------------------------------
+if ($Hero -eq 'mortimer') {
+    $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $corpusRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    $targetRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
+
+    if (-not (Test-Path -LiteralPath $corpusRoot -PathType Container)) {
+        Write-Output "The private Tabletopia corpus is absent: $corpusRoot. Nothing was written."
+        exit 0
+    }
+
+    $manifests = @(Get-ChildItem -LiteralPath $corpusRoot -Filter 'manifest-bundled__*.json' -File)
+    if ($manifests.Count -ne 1) {
+        throw "Expected exactly one bundled manifest under $corpusRoot; found $($manifests.Count)."
+    }
+
+    $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
+
+    $mrakTokens = @(
+        @{ Element = 7694669; Sprite = 0; X = 441; Y = 1043; TokenId = 'mortimer-zombie'; Label = 'Zombie' }
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    if (-not $Check) { New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null }
+
+    $written = 0
+    $matched = 0
+    foreach ($token in $mrakTokens) {
+        $found = @($manifest | Where-Object { $_.elementId -eq $token.Element })
+        if ($found.Count -ne 1) {
+            throw "The manifest holds $($found.Count) elements with id $($token.Element); one was expected."
+        }
+
+        $element = $found[0]
+        if ($element.elementType -ne 'Tokens') {
+            throw "Element $($token.Element) is '$($element.elementType)', not 'Tokens'. Nothing was written."
+        }
+
+        $atlas = $element.atlases[0]
+        $sprites = @($atlas.sprites)
+        if ($sprites.Count -ne 3) {
+            throw ("Element $($token.Element) declares $($sprites.Count) sprites; three were " +
+                'expected (front, back, edge strip). Nothing was written.')
+        }
+
+        # Two face positions that print the same art; the front is prepared. See the note above.
+        if ([int] $sprites[1].x -ne 870 -or [int] $sprites[1].y -ne 1043) {
+            throw ("Element $($token.Element) no longer declares its back face where it was inspected. " +
                 'Nothing was written.')
         }
 

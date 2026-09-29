@@ -87,7 +87,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(awaken.ActionDefinitions.Single(action => action.Kind == ActionKind.Skill)
                 .BaseValues.Single().Amount, Is.EqualTo(4), "Radius 4.");
             Assert.That(awaken.ActionDefinitions.Single(action => action.Kind == ActionKind.Defense)
-                .BaseValues.Single().Amount, Is.EqualTo(3), "Basic Defense 3.");
+                .BaseValues.Single(value => value.Channel == PrintedValueChannel.Defense).Amount, Is.EqualTo(3),
+                "Basic Defense 3.");
         }
 
         // --- Where a Zombie may go ------------------------------------------------------------------

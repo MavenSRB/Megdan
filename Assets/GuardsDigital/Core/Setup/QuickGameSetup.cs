@@ -428,6 +428,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 8.114f. Wuk the Grove Keeper, the TWENTY-SIXTH hero.</summary>
         public const string WukHeroIdValue = "hero-wuk";
 
+        /// <summary>Milestone 9.8f. Mortimer the Awakener, the TWENTY-SEVENTH hero.</summary>
+        public const string MortimerHeroIdValue = "hero-mortimer";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -568,7 +571,14 @@ namespace GuardsDigital.Core.Setup
                 (WukHeroIdValue, "wuk", "Wuk the Grove Keeper",
                     HeroComplexity.VeryComplex,
                     HeroRole.Tokens | HeroRole.Pusher | HeroRole.Durable |
-                    HeroRole.Sniper | HeroRole.Tactician | HeroRole.Healer)
+                    HeroRole.Sniper | HeroRole.Tactician | HeroRole.Healer),
+                // Milestone 9.8f. His selection front prints THREE stars and the roles Melee, Tokens,
+                // Farming, Durable and Pusher (inventory 9.8); the dashboard names him "Mortimer the
+                // Awakener".
+                (MortimerHeroIdValue, "mortimer", "Mortimer the Awakener",
+                    HeroComplexity.VeryComplex,
+                    HeroRole.Melee | HeroRole.Tokens | HeroRole.Farming |
+                    HeroRole.Durable | HeroRole.Pusher)
             };
 
         /// <summary>
@@ -941,6 +951,10 @@ namespace GuardsDigital.Core.Setup
                     : hero),
                 snorri.Minions);
         }
+
+        /// <summary>Milestone 9.8f. Wasp on Red against Mortimer on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusMortimerOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("mortimer"), "Mortimer");
 
         /// <summary>Milestone 8.114f. Wasp on Red against Wuk on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusWukOneVsOne() =>

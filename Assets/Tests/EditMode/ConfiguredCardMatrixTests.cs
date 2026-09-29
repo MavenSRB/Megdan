@@ -718,6 +718,8 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.114f. Wuk's dealt faces, including Trample's after-walk body; March of
                 // Nature's placement and Dominance's exclusions arrive through the triggered walk.
                 .Concat(WukCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 9.8f. Mortimer's dealt faces.
+                .Concat(MortimerCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -771,6 +773,7 @@ namespace GuardsDigital.Tests.EditMode
                     "PlaceInSpaceHandler",
                     "ReclaimHandler",
                     "RemoveObstacleHandler",
+                    "ReplaceMinionWithTokenHandler",
                     "RetrieveAllDiscardedHandler",
                     "RuneTargetHandler",
                     "SelectRuneHandler",
@@ -778,6 +781,7 @@ namespace GuardsDigital.Tests.EditMode
                     "SwapResolvedWithHandHandler",
                     "TrampledEnemyHeroesHandler"
                 }),
+                "Mortimer's minion-to-Zombie Replace (9.8f; the 9.8e Green fixtures prove it), " +
                 "Wuk's paired friendly-unit-and-Tree selection, Dominance's exclusion and Trample's two " +
                 "moved-through readers (8.114f), each proved by the focused Wuk fixtures, " +
                 "Mrak's three rock placements and their shared short-supply step (8.112g), each proved by " +

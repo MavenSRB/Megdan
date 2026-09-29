@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8f Dealing evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8f | Mortimer dealt, registered and pickable with his private art. Awaken! corrected to a Defense/Skill card whose text applies when discarded to defend. W8: a push target moving 0 spaces stays legal and the card is judged whole, read through `IEffectInertDisplacementCapabilityHandler`. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98f-deal-mortimer-with-his-artwork). | `milestone/9.8f` |
+
 ## Milestone 9.8e Green Skills evidence
 
 | Milestone | Outcome and definition | Commit |

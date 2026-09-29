@@ -474,6 +474,24 @@
     { "definitionId": "wuk-into-the-canopy", "contentRevision": "wuk-9-2-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk15__7721590__front.png" },
     { "definitionId": "wuk-monstrous-throw", "contentRevision": "wuk-9-2-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk16__7721597__front.png" },
     { "definitionId": "wuk-treetop-ride", "contentRevision": "wuk-9-2-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk17__7721595__front.png" },
-    { "definitionId": "wuk-march-of-nature", "contentRevision": "wuk-9-2-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk18__7721593__front.png" }
+    { "definitionId": "wuk-march-of-nature", "contentRevision": "wuk-9-2-rev-1", "sourcePath": "active-hero-cards/Wuk/wuk18__7721593__front.png" },
+    { "definitionId": "mortimer-knife-of-the-living-dead", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer__7695015__front.png" },
+    { "definitionId": "mortimer-awaken", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer2__7695011__front.png" },
+    { "definitionId": "mortimer-crawling-dead", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer3__7703472__front.png" },
+    { "definitionId": "mortimer-walking-dead", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer4__7703471__front.png" },
+    { "definitionId": "mortimer-braains", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer5__7703470__front.png" },
+    { "definitionId": "mortimer-racing-dead", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer6__7703469__front.png" },
+    { "definitionId": "mortimer-braaaaaaains", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer7__7703468__front.png" },
+    { "definitionId": "mortimer-corpse-slam", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer8__7695016__front.png" },
+    { "definitionId": "mortimer-morbid-mosh", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer9__7695014__front.png" },
+    { "definitionId": "mortimer-robbing-zombies", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer10__7695010__front.png" },
+    { "definitionId": "mortimer-macabre-mayhem", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer11__7695019__front.png" },
+    { "definitionId": "mortimer-stalking-scalpers", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer12__7695021__front.png" },
+    { "definitionId": "mortimer-stage-dive", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer13__7695012__front.png" },
+    { "definitionId": "mortimer-crowd-drift", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer14__7695017__front.png" },
+    { "definitionId": "mortimer-gathering-horde", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer15__7695028__front.png" },
+    { "definitionId": "mortimer-crowd-surf", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer16__7695025__front.png" },
+    { "definitionId": "mortimer-army-of-darkness", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer17__7695024__front.png" },
+    { "definitionId": "mortimer-master-of-puppets", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer18__7695027__front.png" }
   ]
 }

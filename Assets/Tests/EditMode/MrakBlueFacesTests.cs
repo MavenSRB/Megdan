@@ -111,6 +111,42 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(match.ActionEnded, Is.True);
         }
 
+        /// <summary>
+        /// Regression, milestone 9.8f (found by OfferOutcomeTests once Mortimer's dealing reshuffled the
+        /// line-ups): a token beside Mrak with terrain behind it cannot be pushed at any printed
+        /// distance, and his move "in the direction of the push" runs into the same terrain - so the
+        /// card ended exactly as a Hold, yet it was offered. The user's ruling of 2026-09-29: the token
+        /// stays a legal target and the card is judged whole, so it is greyed only when neither the push
+        /// nor the follow can change anything.
+        /// </summary>
+        [Test]
+        public void BoulderRush_WithTheOnlyTargetUnpushableAndNoFollow_IsNotOffered()
+        {
+            var stuck = new Match(heroes: new[] { (Mrak, H(0, 0)), (Enemy, H(0, -4)) },
+                rocksAt: new[] { H(0, 1) }, terrainAt: new[] { H(0, 2), H(0, 3) });
+            stuck.PlayBlue(MrakBlueFaces.BoulderRush, startTurn: false);
+            Assert.That(stuck.IsOffered(MrakCardContent.PrimarySkill), Is.False,
+                "the rock moves 0 spaces at 1 and at 2, and Mrak's follow meets the same terrain");
+
+            var open = new Match(heroes: new[] { (Mrak, H(0, 0)), (Enemy, H(0, -4)) },
+                rocksAt: new[] { H(0, 1) }, terrainAt: new[] { H(0, 2) });
+            open.PlayBlue(MrakBlueFaces.BoulderRush, startTurn: false);
+            Assert.That(open.IsOffered(MrakCardContent.PrimarySkill), Is.True,
+                "a push of 2 lands beyond the terrain, so the card can change something");
+        }
+
+        [Test]
+        public void BoulderRush_AnUnpushableTokenIsStillALegalTarget()
+        {
+            var match = new Match(heroes: new[] { (Mrak, H(0, 0)), (Enemy, H(1, 0)) },
+                rocksAt: new[] { H(0, 1) }, terrainAt: new[] { H(0, 2), H(0, 3) });
+            var rush = match.PlayBlue(MrakBlueFaces.BoulderRush);
+            match.StartSkill(rush);
+
+            Assert.That(match.OfferedSpaces(), Is.EquivalentTo(new[] { H(0, 1), H(1, 0) }),
+                "p.18: a push of 0 spaces is still a push - the rock stays a target (user, 2026-09-29).");
+        }
+
         [Test]
         public void BoulderRush_AShortPushAndADeclinedFollow()
         {

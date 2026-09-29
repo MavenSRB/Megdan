@@ -405,10 +405,25 @@ namespace GuardsDigital.Tests.EditMode
         // A zero-space push, and a repeated instance with nothing left
         // ---------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Re-pointed at milestone 9.8f by the user's ruling of 2026-09-29 (Boulder Rush): a piece the
+        /// push cannot move stays a legal TARGET - p.18 still calls a 0-space push a push - but the
+        /// action is judged whole, and one whose every answer ends exactly as a Hold is greyed (9.6).
+        /// Standing beside the blocked minion alone, Longbow can change nothing, so it is not offered;
+        /// forced through the test-only start, the target rules this case was written for still hold.
+        /// </summary>
         [Test]
         public void ABlockedPush_LeavesTheSubjectAdjacentAndLegallyNameableAgain()
         {
-            var session = StartLongbowSkill(BesideABlockedOne);
+            var greyed = CreateLongbowTurn(BesideABlockedOne);
+            Assert.That(greyed.Projection.AvailableTurnActions
+                    .Single(candidate => candidate.ActionDefinitionId.Equals(LongbowSkill)).IsAvailable,
+                Is.False,
+                "every answer leaves the match where a Hold does: the user's 9.8f ruling greys it.");
+
+            var session = CreateLongbowTurn(BesideABlockedOne);
+            Assert.That(session.StartActionIgnoringFeasibilityForInternalTest(
+                    session.Projection.SelectedActor.CardInstanceId, LongbowSkill).Accepted, Is.True);
             Assert.That(
                 session.Projection.PendingEffectChoice.Candidates
                     .Select(candidate => candidate.Value.Coordinate),

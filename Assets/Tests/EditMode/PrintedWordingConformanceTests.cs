@@ -119,7 +119,8 @@ namespace GuardsDigital.Tests.EditMode
                 ["hanu | hanu-hurry-up"] = "\"This may change the initiative order\" is reminder text.",
                 ["ignatia | ignatia-equilibrium"] = "\"you may apply either\" is the Equilibrium handler's per-action choice of text.",
                 ["whisper | whisper-grim-reaper"] = "\"you may choose one, or both\" raises the basic modal's ceiling; one stays legal.",
-                ["misa | misa-power-overwhelming"] = "\"you may choose two different options instead\" raises the modal ceiling; one stays legal."
+                ["misa | misa-power-overwhelming"] = "\"you may choose two different options instead\" raises the modal ceiling; one stays legal.",
+                ["mortimer | mortimer-master-of-puppets"] = "\"you may choose up to five times instead\" is carried by the seven \"up to three times\" faces: passes 4-5 behind the unlock gate, each its own UpTo Optional (MortimerRepeatedChoice)."
             };
 
         // -------------------------------------------------------------------------------------------
@@ -156,7 +157,8 @@ namespace GuardsDigital.Tests.EditMode
                 ["min | min-death-grenade"] = "W3: \"Up to 1 enemy hero ... discards\" hits the hero present.",
                 ["min | min-holy-death-grenade"] = "W3: \"Up to 2 enemy heroes ... discard\" hits the heroes present.",
                 ["trinkets | trinkets-self-destruct"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
-                ["trinkets | trinkets-emergency-protocol"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present."
+                ["trinkets | trinkets-emergency-protocol"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
+                ["mortimer | mortimer-master-of-puppets"] = "The Ultimate composes no node: \"up to five times\" is the two extra UpTo passes on the seven faces it raises (MortimerRepeatedChoice)."
             };
 
         /// <summary>An UpTo declaration under words that print no "up to" is a choice the card never gave.</summary>
@@ -551,7 +553,9 @@ namespace GuardsDigital.Tests.EditMode
                 ["tali | tali-snowstorm"] = "synthetic-batch-direct-move moves every enemy unit in radius.",
                 ["tali | tali-blizzard"] = "synthetic-batch-direct-move moves every enemy unit in radius.",
                 ["wuk | wuk-trample"] = "wuk-trampled-enemy-heroes publishes every enemy hero moved through, one slot each.",
-                ["wuk | wuk-angry-stampede"] = "wuk-trampled-enemy-heroes publishes every enemy hero moved through, one slot each."
+                ["wuk | wuk-angry-stampede"] = "wuk-trampled-enemy-heroes publishes every enemy hero moved through, one slot each.",
+                ["mortimer | mortimer-walking-dead"] = "\"each enemy hero can only be targeted once\" is an exclusion, not a reach: every pass's hero selection joins one distinctAcross group.",
+                ["mortimer | mortimer-racing-dead"] = "\"each enemy hero can only be targeted once\" is an exclusion, not a reach: every pass's hero selection joins one distinctAcross group."
             };
 
         // -------------------------------------------------------------------------------------------

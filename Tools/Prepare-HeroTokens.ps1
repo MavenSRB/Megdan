@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -267,6 +267,9 @@ $declaredHeroes = @{
     # 1024393), the ape-faced hero Hanu's row above says must never be taken for Hanu. Inventory 8.114
     # matched it to Tabletopia's own rendering of Wuk's standee; the crop decides, never the name.
     wuk = @{ ElementId = 8597495; ElementName = 'Hanu'; DisplayName = 'Wuk' }
+    # Milestone 9.8f. Mortimer's standee is the VerticalTokens element 8596249 named `Morty`
+    # (inventory 9.8). The crop decides, never the name.
+    mortimer = @{ ElementId = 8596249; ElementName = 'Morty'; DisplayName = 'Mortimer' }
 }
 
 $declared = $declaredHeroes[$Hero]

@@ -35,22 +35,18 @@ namespace GuardsDigital.Core.Cards.Verified
         public static ActionDefinitionId SecondaryDefense { get; } =
             new ActionDefinitionId("secondary-defense");
 
+        /// <summary>
+        /// Milestone 9.8f. Awaken!'s Defense, which is a PRIMARY: the face prints "Basic Defense /
+        /// Skill", p.13/14's Defense/Skill card.
+        /// </summary>
+        public static ActionDefinitionId PrimaryDefense { get; } = new ActionDefinitionId("primary-defense");
+
         public const string AwakenText =
             "Place up to 4 Zombie tokens into spawn points in radius, counting spaces adjacent to you " +
             "as spaces with spawn points; Zombie tokens are not removed at the end of round.";
 
         /// <summary>The most Zombies Awaken! prints.</summary>
         public const int AwakenPrintedZombieCount = 4;
-
-        /// <summary>
-        /// Every face composed so far - Awaken! alone at 9.8a - so the corpus sweeps that read the
-        /// content classes cover Mortimer from his first block. Each later block adds its faces here.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> AllDefinitions =>
-            new[] { AwakenDefinition, MasterOfPuppetsDefinition }
-                .Concat(MortimerAttackFaces.Definitions)
-                .Concat(MortimerBlueFaces.Definitions)
-                .Concat(MortimerGreenFaces.Definitions).ToArray();
 
         public static CardDefinitionId MasterOfPuppets { get; } = Id("master-of-puppets");
 
@@ -80,7 +76,16 @@ namespace GuardsDigital.Core.Cards.Verified
                 UltimateRuleDefinition.PermanentDeclaration(MasterOfPuppetsRuleId, MasterOfPuppetsRuleKind),
                 CardSourceContent.Transcribed(MasterOfPuppetsText)));
 
-        /// <summary>Silver, Basic: Initiative 6, Basic Defense 3, Basic Skill, Radius 4.</summary>
+        /// <summary>
+        /// Silver, Basic: Initiative 6, "Basic Defense / Skill" - Defense 3 and a Skill, Radius 4.
+        ///
+        /// <para><b>A Defense/Skill card</b> (rulebook pp.13-14): "Cards with this icon can be used as
+        /// either a Skill card, or as a Defense card ... The card text is applied whether you play this
+        /// card as a Skill card, or discard it to defend, as a Defense card." So the card declares two
+        /// printed primaries - the Skill, and a Defense 3 that applies the same text at p.14's step 4 -
+        /// and no secondary Defense. Milestone 9.8f corrected it: 9.8a composed an ordinary Skill with a
+        /// secondary Defense 3, which the dealing's shine tracing found (no rail badge on the face).</para>
+        /// </summary>
         public static CardDefinition AwakenDefinition => LazyAwaken.Value;
 
         private static readonly Lazy<CardDefinition> LazyAwaken = new Lazy<CardDefinition>(() =>
@@ -95,8 +100,23 @@ namespace GuardsDigital.Core.Cards.Verified
                         new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 4) },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None, default,
-                        AwakenSkill(Awaken)),
-                    Defense(3)
+                        AwakenSkill(Awaken, "-skill")),
+                    // "discard it to defend, as a Defense card": Defense 3, the same text at step 4,
+                    // reaching the card's printed Radius 4 - the icon belongs to the primary it shares.
+                    new ActionDefinition(
+                        PrimaryDefense, ActionKind.Defense, ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(PrintedValueChannel.Defense, 3),
+                            new PrintedValueDefinition(PrintedValueChannel.Radius, 4)
+                        },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
+                        AttackRangeKind.None,
+                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
+                        AwakenSkill(Awaken, "-defense"),
+                        PrintedTextComposition.None,
+                        PrintedDefenseResolution.Value,
+                        CardTextTiming.DefenseAction)
                 },
                 null, CardSourceContent.Transcribed(AwakenText)));
 
@@ -105,7 +125,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// four optional supply Places, each after p.18's short-supply step and each declaring the
         /// spawn-point-or-adjacent clause.
         /// </summary>
-        private static EffectDefinition AwakenSkill(CardDefinitionId card)
+        private static EffectDefinition AwakenSkill(CardDefinitionId card, string suffix)
         {
             var root = new EffectNodeId("awaken-root");
             var steps = new List<EffectNodeId>();
@@ -143,7 +163,7 @@ namespace GuardsDigital.Core.Cards.Verified
             nodes.Insert(0, new EffectNodeDefinition(
                 root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: steps));
             return new EffectDefinition(
-                new EffectDefinitionId(card.Value + "-skill"), ContentRevision, root, nodes);
+                new EffectDefinitionId(card.Value + suffix), ContentRevision, root, nodes);
         }
 
         internal static ActionDefinition Movement(int value) => new ActionDefinition(

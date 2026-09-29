@@ -171,15 +171,16 @@ namespace GuardsDigital.Tests.EditMode
             // roster row. That is recorded here rather than worked around: the guard is asking
             // exactly the right question and the answer is not yet yes.
             // Milestone 8.114f: 450 -> 468, Wuk's eighteen dealt faces (Makeshift Weapon boxed).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(468));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(468));
+            // Milestone 9.8f: 468 -> 486, Mortimer's eighteen dealt faces (Shallow Graves boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(486));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(486));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(468),
+                Is.EqualTo(486),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -189,7 +190,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("brynn", 18), ("cutter", 18),
                     ("dodger", 18),
-                    ("garrus", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18), ("mrak", 18),
+                    ("garrus", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
+                    ("mortimer", 18), ("mrak", 18),
                     ("rowenna", 18),
                     ("sabina", 18),
                     ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("tali", 18),
