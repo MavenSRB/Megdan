@@ -84,14 +84,32 @@ Completed 2026-09-29.
 
 Historical evidence: [9.8b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98b-repeated-choice-and-master-of-puppets-evidence).
 
-### [~] 9.8c Implement Knife of the Living Dead and the five Red Attacks
+### [x] 9.8c Implement Knife of the Living Dead and the five Red Attacks
 
 Outcome: the before-attack and after-attack Zombie moves in radius. Also:
 - Remove a Zombie adjacent to the target for +1 Attack.
 - Another enemy hero in radius, adjacent to a Zombie, discards, if able, with "each enemy hero can only be targeted once".
 - Retrieve if an enemy hero in radius is adjacent to a Zombie.
 
-### [ ] 9.8d Implement the five Blue Skills
+Completed 2026-09-29.
+- `MortimerAttackFaces` composes Knife and the five Reds on `MortimerRepeatedChoice`: the before-the-attack faces (Knife, the Braains pair) and the after-the-attack faces (Crawling, Walking, Racing Dead).
+- The per-bullet shapes:
+  - "Move a Zombie token in radius 1 space" is a Zombie-in-radius selection into `synthetic-direct-move@3`, exactly one space.
+  - Knife's Remove reads the attacked space and takes a Zombie beside it. Each removal creates its pass's own "+1 Attack" Active effect (`mortimer-gain-attack-pass-N`), because the lifecycle keeps one occurrence per uniqueness key.
+  - The discard bullet selects "another enemy hero in radius, adjacent to a Zombie token" and discards `IfAble`. On Walking and Racing Dead every pass's selection joins one `distinctAcross` group.
+  - Braains' retrieve is a printed "If" over presence-count, then Retrieve. As a modal option it stays takeable when false (8.35z35, RULING 53).
+- New shared contracts:
+  - `EffectSelectionDeclaration.DistinctAcrossParameterName` and `EffectCapabilityContext.AnswersGivenAcrossTheGroup`, read off the frame's accepted choices, so no schema move.
+  - The `excludeTheAttackTarget` clause on the printed-icon selections.
+  - presence-count's optional `adjacentToTokenKind`.
+  - `attacked-target-space@1` declared read-only, so the offer walk greys Knife's Remove with no Zombie beside the target.
+- **Engine defect found and fixed.** The page after step 1's text was produced with the modifications captured before the text ran, so a "+1 Attack" created by the text's last step was lost whenever no question followed it. `CardActionResolutionAuthority.ModificationsAfterTheText` re-derives them on both resume paths.
+- Correction to 9.8's mapping: "+1 Attack if you do" was not an existing verb (every Attack bonus was a board-read value contribution).
+- `MortimerAttackFacesTests` (13) and the shared `MortimerRound` harness cover it.
+
+Historical evidence: [9.8c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-98c-knife-and-the-red-attacks-evidence).
+
+### [~] 9.8d Implement the five Blue Skills
 
 Outcome: a Zombie in range moves up to 1 space and may push a unit or token adjacent to it 1 space. The coin bullet (MO-Q3), and "Move 1 space".
 

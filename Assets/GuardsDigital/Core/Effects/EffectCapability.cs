@@ -249,9 +249,12 @@ namespace GuardsDigital.Core.Effects
             HexCoordinate? prospectiveActorSpace = null,
             ActionInvocationContext invocationContext = ActionInvocationContext.None,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
-            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
+            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null,
+            IReadOnlyList<IReadOnlyList<EffectValue>> answersGivenAcrossTheGroup = null)
         {
             BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
+            AnswersGivenAcrossTheGroup =
+                answersGivenAcrossTheGroup ?? Array.Empty<IReadOnlyList<EffectValue>>();
             TieBreakerRevealedSide = tieBreakerRevealedSide;
             InvocationContext = invocationContext;
             ProspectiveActorSpace = prospectiveActorSpace;
@@ -472,6 +475,14 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public IReadOnlyList<IReadOnlyList<EffectValue>> AnswersAlreadyGiven { get; }
 
+        /// <summary>
+        /// Milestone 9.8c. The answers the OTHER members of this node's selection group
+        /// (<see cref="EffectSelectionDeclaration.DistinctAcrossParameterName"/>) have already been given
+        /// in this resolution, oldest first. Empty for a node in no group. Read off the frame's accepted
+        /// choices exactly as <see cref="AnswersAlreadyGiven"/> is, so it persists and replays with them.
+        /// </summary>
+        public IReadOnlyList<IReadOnlyList<EffectValue>> AnswersGivenAcrossTheGroup { get; }
+
         /// <summary>The round-owned roster state, or its named absence.</summary>
         public EffectRosterState RosterState { get; }
 
@@ -572,7 +583,8 @@ namespace GuardsDigital.Core.Effects
                 Capabilities,
                 space,
                 InvocationContext,
-                borrowedPrimaryCanAct: BorrowedPrimaryCanAct);
+                borrowedPrimaryCanAct: BorrowedPrimaryCanAct,
+                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup);
 
         /// <summary>
         /// Milestone 8.88. This same context with <paramref name="clauses"/> added to its inputs, each
@@ -626,7 +638,8 @@ namespace GuardsDigital.Core.Effects
                 ProspectiveActorSpace,
                 InvocationContext,
                 TieBreakerRevealedSide,
-                BorrowedPrimaryCanAct);
+                BorrowedPrimaryCanAct,
+                AnswersGivenAcrossTheGroup);
         }
 
         public EffectValue Input(string parameterName) =>

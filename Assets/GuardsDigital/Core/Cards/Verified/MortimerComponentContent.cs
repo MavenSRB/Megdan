@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -69,6 +72,40 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceZombieV1, Zombie, PrintedValueChannel.Radius),
                 SyntheticTokenCapabilities.ReclaimHandler(ReclaimZombieV1, Zombie)
-            };
+            }.Concat(Enumerable.Range(1, MortimerRepeatedChoice.MasterOfPuppetsPasses)
+                .Select(pass => (IEffectCapabilityHandler)new ActiveEffectCreationHandler(
+                    GainAttackForPass(pass), GainedAttackDefinition(pass))));
+
+        /// <summary>
+        /// Milestone 9.8c. Knife of the Living Dead's "if you do, gain +1 Attack", for the Remove
+        /// made on one pass. Each pass has its own capability and its own Active-effect definition
+        /// because the lifecycle keeps one occurrence per uniqueness key and controller, and every
+        /// Zombie removed adds one: removals on passes one and three give +2, never +1.
+        /// </summary>
+        public static EffectCapabilityReference GainAttackForPass(int pass) =>
+            new EffectCapabilityReference(new EffectCapabilityId($"mortimer-gain-attack-pass-{pass}"), 1);
+
+        /// <summary>
+        /// "+1 Attack" on Mortimer for the rest of this turn - the turn whose one Attack the text is
+        /// part of - as a p.17 Active effect carrying a value modifier: Dodger's curse's shape with
+        /// the sign reversed. It activates as it is created, before the Attack is totalled.
+        /// </summary>
+        public static ActiveEffectDefinition GainedAttackDefinition(int pass) => new ActiveEffectDefinition(
+            $"mortimer-gained-attack-pass-{pass}",
+            ActiveEffectAffectedScopeKind.ControllerHero,
+            ActiveEffectDurationKind.ThisTurn,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.ActionStarted,
+            TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+            new[]
+            {
+                ActiveEffectCancellationCondition.ControllerHeroDefeated,
+                ActiveEffectCancellationCondition.CardsRetrieved
+            },
+            false,
+            "MortimerGainedAttack",
+            $"mortimer-gained-attack-pass-{pass}",
+            Array.Empty<TimingCheckpoint>(),
+            new[] { RuleModification.ForValue(PrintedValueChannel.Attack, 1) });
     }
 }

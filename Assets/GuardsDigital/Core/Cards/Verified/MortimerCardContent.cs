@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -46,7 +47,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// content classes cover Mortimer from his first block. Each later block adds its faces here.
         /// </summary>
         public static IReadOnlyList<CardDefinition> AllDefinitions =>
-            new[] { AwakenDefinition, MasterOfPuppetsDefinition };
+            new[] { AwakenDefinition, MasterOfPuppetsDefinition }
+                .Concat(MortimerAttackFaces.Definitions).ToArray();
 
         public static CardDefinitionId MasterOfPuppets { get; } = Id("master-of-puppets");
 
@@ -141,6 +143,11 @@ namespace GuardsDigital.Core.Cards.Verified
             return new EffectDefinition(
                 new EffectDefinitionId(card.Value + "-skill"), ContentRevision, root, nodes);
         }
+
+        internal static ActionDefinition Movement(int value) => new ActionDefinition(
+            SecondaryMovement, ActionKind.Movement, ActionDefinitionOrigin.PrintedSecondary,
+            new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, value) },
+            new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
 
         internal static ActionDefinition Defense(int value) => new ActionDefinition(
             SecondaryDefense, ActionKind.Defense, ActionDefinitionOrigin.Reaction,

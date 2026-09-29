@@ -3219,8 +3219,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
         }
 
-        private sealed class FormerTargetSpaceHandler : IEffectCapabilityHandler
+        private sealed class FormerTargetSpaceHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
+            /// <summary>
+            /// Milestone 9.8c: it reads the Attack's facts and changes nothing, so the offer walk can
+            /// carry the attacked space to the step that reads it - Knife of the Living Dead's "a
+            /// Zombie token adjacent to the target", which is unavailable with none there.
+            /// </summary>
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var result = Execute(context);
+                return result.Kind == EffectExecutionResultKind.Applied
+                    ? result.Outcomes
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+
             public EffectCapabilityReference Reference => FormerTargetSpaceV1;
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
@@ -3406,7 +3423,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // Optional and defaulting to one, which is what `count > 0` already meant, so
                     // every declaration written before this milestone keeps its exact answer.
                     new EffectCapabilityParameter(
-                        MinimumPresentParameter, EffectValueKind.Integer, isRequired: false)
+                        MinimumPresentParameter, EffectValueKind.Integer, isRequired: false),
+
+                    // Milestone 9.8c. Mortimer's Braains faces, "If an enemy hero in radius is
+                    // ADJACENT TO A ZOMBIE TOKEN": only units standing beside a token of the named
+                    // kind count. The printed-icon selections' own clause, by the same name and read
+                    // the same way; unbound, every unit counts as before.
+                    new EffectCapabilityParameter(
+                        SyntheticTargetingCapabilities.AdjacentToTokenKindParameterName,
+                        EffectValueKind.TokenKind, isRequired: false)
                 },
                 new[]
                 {
@@ -3436,7 +3461,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var excludedTarget = context.Input("excludeTarget").BooleanValue
                     ? EnclosingTarget(context)
                     : default;
-                return RosterPresenceQuery.FindUnitsWithin(
+                var units = RosterPresenceQuery.FindUnitsWithin(
                     at,
                     distance,
                     kind,
@@ -3446,7 +3471,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Participants,
                     context.Modifications,
                     excludedActor,
-                    excludedTarget).Count;
+                    excludedTarget);
+                var tokenKind = context.Input(SyntheticTargetingCapabilities.AdjacentToTokenKindParameterName);
+                return tokenKind.Kind != EffectValueKind.TokenKind
+                    ? units.Count
+                    : units.Count(unit => board.TryGetObjectCoordinate(unit, out var unitAt) &&
+                        context.Components?.Tokens != null &&
+                        context.Components.Tokens.PlacedTokens.Any(token =>
+                            HexDistanceQuery.Calculate(unitAt, token.Coordinate) == 1 &&
+                            SyntheticTargetingCapabilities.PrintedIconSpaceClauses.HoldsTokenOfKind(
+                                context, token.Coordinate, tokenKind.TokenKindId)));
             }
 
             /// <summary>

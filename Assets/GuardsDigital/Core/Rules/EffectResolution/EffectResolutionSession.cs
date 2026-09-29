@@ -1863,7 +1863,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 // Milestone 8.75. Ignatia the Mad's coin-selected card text reads the revealed Tie
                 // Breaker face here; it is TeamSide.None for every resolution that did not carry one.
                 tieBreakerRevealedSide: context.TieBreakerRevealedSide,
-                borrowedPrimaryCanAct: context.BorrowedPrimaryCanAct);
+                borrowedPrimaryCanAct: context.BorrowedPrimaryCanAct,
+                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup(frame, node, context.Definition));
         }
 
         /// <summary>
@@ -1889,6 +1890,32 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     .Select(candidate => candidate.Value)
                     .ToArray())
                 .ToArray();
+
+        /// <summary>
+        /// Milestone 9.8c. What the other members of <paramref name="node"/>'s selection group
+        /// (<see cref="EffectSelectionDeclaration.DistinctAcrossParameterName"/>) have already been told
+        /// in this resolution, oldest first - read off the frame's accepted choices as
+        /// <see cref="AnswersAlreadyGiven"/> is, so a restored pause re-derives the same set.
+        /// </summary>
+        internal static IReadOnlyList<IReadOnlyList<EffectValue>> AnswersGivenAcrossTheGroup(
+            PendingResolution frame, EffectNodeDefinition node, EffectDefinition definition)
+        {
+            if (definition == null || !EffectSelectionDeclaration.TryReadDistinctGroup(node, out var group))
+            {
+                return Array.Empty<IReadOnlyList<EffectValue>>();
+            }
+
+            return frame.AcceptedChoices
+                .Where(record => !record.NodeId.Equals(node.Id) &&
+                    definition.TryGetNode(record.NodeId, out var member) &&
+                    EffectSelectionDeclaration.TryReadDistinctGroup(member, out var memberGroup) &&
+                    memberGroup.Equals(group))
+                .Select(record => (IReadOnlyList<EffectValue>)record.Selected
+                    .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value)
+                    .Select(candidate => candidate.Value)
+                    .ToArray())
+                .ToArray();
+        }
 
         /// <summary>
         /// The exact input dictionary live execution hands a capability. Internal so that snapshot

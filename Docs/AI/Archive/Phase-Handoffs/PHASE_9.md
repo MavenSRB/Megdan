@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.8c Knife and the Red Attacks evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.8c | Knife of the Living Dead and the five Red Attacks. It adds the selection group behind "each enemy hero can only be targeted once", `excludeTheAttackTarget`, presence-count token adjacency and a per-pass "+1 Attack". It fixes the Attack total after step 1's text, which missed a value the text's last step created. Unregistered until 9.8f. [Definition](../../Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md#x-98c-implement-knife-of-the-living-dead-and-the-five-red-attacks). | `milestone/9.8c` |
+
 ## Milestone 9.8b Repeated choice and Master of Puppets evidence
 
 | Milestone | Outcome and definition | Commit |

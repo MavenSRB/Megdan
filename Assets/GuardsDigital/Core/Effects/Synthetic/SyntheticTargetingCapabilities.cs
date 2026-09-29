@@ -403,6 +403,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ExcludeTheAttackerParameterName = "excludeTheAttacker";
 
         /// <summary>
+        /// Milestone 9.8c. "ANOTHER enemy hero in radius" in an Attack's own text - Mortimer's Crawling,
+        /// Walking and Racing Dead: never the unit this Attack targeted, read from the enclosing
+        /// Attack's facts (which keep the target after step 6 removes it). Outside an Attack there is
+        /// no target, and the clause excludes nothing.
+        /// </summary>
+        public const string ExcludeTheAttackTargetParameterName = "excludeTheAttackTarget";
+
+        /// <summary>
         /// The side-of-the-board parameter's name, carrying a <see cref="SourceTeamRelation"/>.
         /// Milestone 8.10.
         /// </summary>

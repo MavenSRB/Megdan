@@ -1624,7 +1624,12 @@ namespace GuardsDigital.Core.Snapshots
                 // so the re-ask carries it rather than the named absence a context built without one
                 // would carry. No capability in this build derives CANDIDATES from it, so no restored
                 // set moves; threading it is what keeps that true of the next one that does.
-                invocationContext: restored.InvocationContext));
+                invocationContext: restored.InvocationContext,
+                // Milestone 9.8c. A member of a "never the same answer twice" group offers what its
+                // group has not yet chosen, so the re-ask needs the group's accepted answers - which
+                // this payload has also just restored.
+                answersGivenAcrossTheGroup: EffectResolutionSession.AnswersGivenAcrossTheGroup(
+                    restored, node, resolution.Definition)));
             if (offered.Choice == null)
             {
                 throw Malformed(

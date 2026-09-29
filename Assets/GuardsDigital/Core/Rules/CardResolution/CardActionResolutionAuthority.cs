@@ -2583,11 +2583,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 steps.AddRange(ResumeAttackAfterBeforeText(
                     result.BoundAttackTarget, result.RequestedAttackSequences,
-                    materializedDefinitions, instances, participants, modifications));
+                    materializedDefinitions, instances, participants,
+                    ModificationsAfterTheText(
+                        modifications, timing, participants, tieBreaker, materializedDefinitions,
+                        instances, step.CardTextActorId)));
             }
 
             return Array.AsReadOnly(steps.ToArray());
         }
+
+        /// <summary>
+        /// Milestone 9.8c. The modifications in effect once step 1's text has run, which is when p.14's
+        /// step 3 totals the Attack. The set a command was handed was built before the text ran, so a
+        /// value the text itself changed - Knife of the Living Dead's "gain +1 Attack", an Active
+        /// effect created by the text's last step - was missing from the total whenever that step
+        /// ended the text without another question; after a question the next command rebuilt the set
+        /// and it counted. Re-derived here, the same set <see cref="CurrentModifications"/> builds for
+        /// every command; where no timing state was given there is nothing to rebuild from.
+        /// </summary>
+        private RuleModificationSet ModificationsAfterTheText(
+            RuleModificationSet handed,
+            ActiveEffectLifecycle timing,
+            MatchParticipants participants,
+            TieBreakerState tieBreaker,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            HeroId actorId) =>
+            timing == null || !tieBreaker.IsDefined || !actorId.IsDefined
+                ? handed
+                : CurrentModifications(
+                    timing, participants, tieBreaker,
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances),
+                    RuleObject.ForHero(actorId));
 
         /// <summary>
         /// Milestone 8.19a. Hands the Attack back everything rulebook p.14 does after its step 1, once
@@ -3897,7 +3924,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             facts.AddRange(paused.Moment == CardTextTiming.BeforeTheAttack
                 ? ResumeAttackAfterBeforeText(
                     step.BoundAttackTarget, step.RequestedAttackSequences, materializedDefinitions,
-                    instances, participants, modifications)
+                    instances, participants,
+                    ModificationsAfterTheText(
+                        modifications, timing, participants, tieBreaker, materializedDefinitions,
+                        instances, paused.Frame.ActorId))
                 : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
                     paused.Moment, paused.Attack, paused.Outcome,
                     theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(paused.Attack)));

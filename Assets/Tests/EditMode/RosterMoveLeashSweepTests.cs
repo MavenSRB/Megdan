@@ -321,6 +321,47 @@ namespace GuardsDigital.Tests.EditMode
                 ["mrak-avalanche-skill | shift-move"] =
                     "Avalanche: the same \"1 space\", May repeat once",
 
+                ["mortimer-knife-of-the-living-dead-attack-text | knife-1-move-step"] =
+                    "Knife of the Living Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-knife-of-the-living-dead-attack-text | knife-2-move-step"] =
+                    "Knife of the Living Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-knife-of-the-living-dead-attack-text | knife-3-move-step"] =
+                    "Knife of the Living Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-knife-of-the-living-dead-attack-text | knife-4-move-step"] =
+                    "Knife of the Living Dead: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-knife-of-the-living-dead-attack-text | knife-5-move-step"] =
+                    "Knife of the Living Dead: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-crawling-dead-attack-text | dead-1-move-step"] =
+                    "Crawling Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-walking-dead-attack-text | dead-1-move-step"] =
+                    "Walking Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-walking-dead-attack-text | dead-2-move-step"] =
+                    "Walking Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-braains-attack-text | brains-1-move-step"] =
+                    "Braains...!: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-braains-attack-text | brains-2-move-step"] =
+                    "Braains...!: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-racing-dead-attack-text | dead-1-move-step"] =
+                    "Racing Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-racing-dead-attack-text | dead-2-move-step"] =
+                    "Racing Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-racing-dead-attack-text | dead-3-move-step"] =
+                    "Racing Dead: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-racing-dead-attack-text | dead-4-move-step"] =
+                    "Racing Dead: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-racing-dead-attack-text | dead-5-move-step"] =
+                    "Racing Dead: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-braaaaaaains-attack-text | brains-1-move-step"] =
+                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-braaaaaaains-attack-text | brains-2-move-step"] =
+                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-braaaaaaains-attack-text | brains-3-move-step"] =
+                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                ["mortimer-braaaaaaains-attack-text | brains-4-move-step"] =
+                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                ["mortimer-braaaaaaains-attack-text | brains-5-move-step"] =
+                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",
 

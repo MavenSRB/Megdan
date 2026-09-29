@@ -196,6 +196,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 MeasuredFromParameterName,
                 AlsoWithinReachOfParameterName,
                 ExcludeTheAttackerParameterName,
+                ExcludeTheAttackTargetParameterName,
+                EffectSelectionDeclaration.DistinctAcrossParameterName,
                 ExcludedHeroParameterName,
                 ExcludedMinionParameterName,
                 AdmittedMinionClassParameterName,
@@ -377,6 +379,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return new EffectCapabilityParameter(name, EffectValueKind.Integer, isRequired);
                 case ExcludedHeroParameterName:
                     return new EffectCapabilityParameter(name, EffectValueKind.Hero, isRequired);
+                case EffectSelectionDeclaration.DistinctAcrossParameterName:
+                    return new EffectCapabilityParameter(name, EffectValueKind.Node, isRequired);
                 case ExcludedMinionParameterName:
                     return new EffectCapabilityParameter(name, EffectValueKind.Minion, isRequired);
                 case MeasuredFromParameterName:
@@ -631,6 +635,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly int total;
 
             private readonly HeroId excludedAttacker;
+            private readonly bool excludesTheAttackTarget;
+            private readonly IReadOnlyList<EffectValue> chosenAcrossTheGroup;
             private readonly EffectValue excludedHero;
             private readonly EffectValue excludedMinion;
             private readonly PrintedIconSpaceClauses space;
@@ -664,6 +670,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 excludedAttacker = context.Input(ExcludeTheAttackerParameterName).BooleanValue
                     ? context.EnclosingAttack.ActorId
                     : default;
+
+                // Milestone 9.8c. "ANOTHER enemy hero" in an Attack's text, and "each enemy hero can
+                // only be targeted once" across a modal's passes - every answer the selection's group
+                // has already been given in this resolution.
+                excludesTheAttackTarget = context.Input(ExcludeTheAttackTargetParameterName).BooleanValue;
+                chosenAcrossTheGroup = context.AnswersGivenAcrossTheGroup.SelectMany(answer => answer).ToArray();
 
                 // Milestone 8.69c. "on different targets" / "a DIFFERENT friendly unit". An unbound
                 // binding carries nobody, which is a pass that named nobody and excludes nobody.
@@ -710,6 +722,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public bool EmptiesTheOffer { get; }
 
+            private bool IsTheAttackTarget(BoardObjectReference target) =>
+                target.Kind == BoardObjectKind.Hero
+                    ? context.EnclosingAttack.HeroTargetId.IsDefined &&
+                        target.HeroId.Equals(context.EnclosingAttack.HeroTargetId)
+                    : target.Kind == BoardObjectKind.Minion &&
+                        context.EnclosingAttack.MinionTargetId.IsDefined &&
+                        target.MinionId.Equals(context.EnclosingAttack.MinionTargetId);
+
+            /// <summary>Whether an earlier answer of the group named this candidate.</summary>
+            private static bool Names(EffectValue chosen, BoardObjectReference target, HexCoordinate at)
+            {
+                switch (chosen.Kind)
+                {
+                    case EffectValueKind.Hero:
+                        return target.Kind == BoardObjectKind.Hero && target.HeroId.Equals(chosen.HeroId);
+                    case EffectValueKind.Minion:
+                        return target.Kind == BoardObjectKind.Minion && target.MinionId.Equals(chosen.MinionId);
+                    case EffectValueKind.Coordinate:
+                        return target.Kind == BoardObjectKind.Token && at.Equals(chosen.Coordinate);
+                    default:
+                        return false;
+                }
+            }
+
             public bool Admit(BoardObjectReference target, HexCoordinate at)
             {
                 if (excludedAttacker.IsDefined && target.Kind == BoardObjectKind.Hero &&
@@ -720,6 +756,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (excludedHero.Kind == EffectValueKind.Hero && target.Kind == BoardObjectKind.Hero &&
                     target.HeroId.Equals(excludedHero.HeroId))
+                {
+                    return false;
+                }
+
+                if (excludesTheAttackTarget && IsTheAttackTarget(target))
+                {
+                    return false;
+                }
+
+                if (chosenAcrossTheGroup.Any(chosen => Names(chosen, target, at)))
                 {
                     return false;
                 }

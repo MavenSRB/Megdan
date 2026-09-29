@@ -74,6 +74,44 @@ namespace GuardsDigital.Core.Effects
         }
 
         /// <summary>
+        /// Milestone 9.8c. The parameter a selection declares to join a group whose members may never
+        /// pick the same answer twice in one resolution - Mortimer's Walking and Racing Dead, "each
+        /// enemy hero can only be targeted once", where each of up to five passes asks its own
+        /// selection node.
+        ///
+        /// <para>The group is named by a node literal, as <see cref="ConsumerParameterName"/> names its
+        /// consumer: every member binds the same node (conventionally the first member). The resolver
+        /// hands each member the answers the group's other members have already been given
+        /// (<see cref="EffectCapabilityContext.AnswersGivenAcrossTheGroup"/>), read off the frame's own
+        /// accepted choices, so a snapshot already carries them and a restored pause re-derives
+        /// them.</para>
+        /// </summary>
+        public const string DistinctAcrossParameterName = "distinctAcross";
+
+        /// <summary>The group a selection belongs to, when it declares one.</summary>
+        public static bool TryReadDistinctGroup(EffectNodeDefinition node, out EffectNodeId groupNodeId)
+        {
+            groupNodeId = default;
+            if (node == null)
+            {
+                return false;
+            }
+
+            foreach (var input in node.Inputs)
+            {
+                if (string.Equals(input.ParameterName, DistinctAcrossParameterName, StringComparison.Ordinal) &&
+                    input.SourceKind == EffectBindingSourceKind.Literal &&
+                    input.Literal.Kind == EffectValueKind.Node)
+                {
+                    groupNodeId = input.Literal.NodeId;
+                    return groupNodeId.IsDefined;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The consumer's parameters fed by this selection's published outputs, in the consumer's own
         /// binding order, each beside the output it reads. Empty means the named node reads nothing this
         /// selection publishes, which the definition validator refuses at content load - so at runtime it
