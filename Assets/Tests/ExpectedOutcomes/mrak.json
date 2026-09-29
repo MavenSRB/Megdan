@@ -1,0 +1,1211 @@
+{
+  "hero": "Mrak",
+  "reader": "blind reader, 2026-09-29",
+  "cases": [
+    {
+      "id": "mrak-fissure-defeat-minion-then-three-rocks-from-vacated-space",
+      "card": "Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak__7430505__front.png", "rulebook p.13 attacking a minion (2 coins)", "rulebook p.17 after the attack", "rulebook p.17 direction", "rulebook p.17 empty space", "rulebook p.18 place", "rulebook p.19 straight line", "rulebook p.19 tokens"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 4 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Fissure", "state": "resolved" }
+      ],
+      "unsupported": "the three rock tokens occupy the spaces at distance 1, 2 and 3 from actor on the straight line from actor through the space enemy-minion-1 occupied (the vacated space is empty after the defeat, so it is the first of the three); the three spaces beyond the minion on that line must be open board spaces"
+    },
+    {
+      "id": "mrak-fissure-hero-defends-at-equal-total-rocks-skip-occupied-space",
+      "card": "Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak__7430505__front.png", "rulebook p.13 attack total (+1 per Attack item)", "rulebook p.14 defense total equal or higher defends", "rulebook p.17 after the attack", "rulebook p.17 empty space", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "enemy-hero-1": { "defends-with": 5 }
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "moved": 0 },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "because enemy-hero-1 still stands in the first space of the line, the rock tokens go to the first three EMPTY spaces beyond it: distance 2, 3 and 4 from actor on the straight line from actor through enemy-hero-1; no rock token is placed in enemy-hero-1's space; no minion may be adjacent to enemy-hero-1 (no defense modifiers)"
+    },
+    {
+      "id": "mrak-fissure-occupied-space-in-line-is-skipped",
+      "card": "Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak__7430505__front.png", "rulebook p.17 empty space", "rulebook p.18 obstacle", "rulebook p.18 place (only into an empty space)", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "friendly-minion-1", "moved": 0 },
+        { "tokens": "rock", "on-board": 3 }
+      ],
+      "unsupported": "friendly-minion-1 must stand on the same straight line as actor and enemy-minion-1, directly behind enemy-minion-1; the rock tokens then occupy distance 1 (enemy-minion-1's vacated space), 3 and 4 from actor on that line - the friendly minion's space is skipped, not a stopping point"
+    },
+    {
+      "id": "mrak-fissure-no-adjacent-enemy-not-offered",
+      "card": "Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak__7430505__front.png", "rulebook p.13 non-ranged attacks target adjacent units only", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "friendly-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "tokens": "rock", "on-board": 0 }
+      ]
+    },
+    {
+      "id": "mrak-stone-grip-three-rocks-behind-hero-in-line",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.9 range", "rulebook p.17 farther/farthest", "rulebook p.17 adjacent", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "enemy-hero-1", "moved": 0 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": 0 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Stone Grip", "state": "resolved" }
+      ],
+      "unsupported": "each of the three rock tokens is adjacent to enemy-hero-1 and at distance 4 from actor (with the target in a straight line at distance 3, exactly three of its neighbours are at distance 4, forming the far side); no rock token at distance 2 or 3 from actor"
+    },
+    {
+      "id": "mrak-stone-grip-hero-at-distance-4-out-of-range",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.9 range value", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor" },
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "tokens": "rock", "on-board": 0 }
+      ],
+      "unsupported": "the enemy minion in range is not a valid target - the text names an enemy hero"
+    },
+    {
+      "id": "mrak-stone-grip-range-item-reaches-distance-4",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.16 item bonus (+1 Range raises the range icon)", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": ["Range +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "enemy-hero-1", "moved": 0 }
+      ],
+      "unsupported": "each rock token adjacent to enemy-hero-1 and at distance 5 from actor"
+    },
+    {
+      "id": "mrak-stone-grip-farthest-space-blocked-falls-to-next-farthest",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.17 farther/farthest", "rulebook p.17 empty space", "rulebook p.18 place (only into an empty space)", "rulebook p.10 making choices"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "friendly-minion-1", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "friendly-minion-1", "moved": 0 }
+      ],
+      "unsupported": "friendly-minion-1 stands directly behind enemy-hero-1 on the line from actor (it occupies the single farthest-in-line neighbour at distance 3); of enemy-hero-1's empty neighbours the two at distance 3 from actor receive rock tokens and the third rock goes into one of the two neighbours at distance 2 (actor chooses); the neighbour at distance 1 from actor receives none. See Ambiguities A2"
+    },
+    {
+      "id": "mrak-stone-grip-fewer-than-three-empty-spaces-places-none",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.10 mandatory and optional steps", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor in a straight line" },
+          { "ref": "friendly-minion-1", "where": "adjacent to enemy-hero-1" },
+          { "ref": "friendly-minion-2", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-minion-2", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "tokens": "rock", "on-board": 0 }
+      ],
+      "unsupported": "only two empty spaces remain adjacent to enemy-hero-1; 'place exactly 3' is a mandatory step that cannot be completed, so the action stops at that step and no rock token is placed. See Ambiguities A1 (the other reading places 2, or makes the play not offered)"
+    },
+    {
+      "id": "mrak-seismic-slam-hero-beside-rock-discards",
+      "card": "Seismic Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png", "rulebook p.9 radius", "rulebook p.10 making choices", "rulebook p.17 adjacent", "rulebook p.19 tokens"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "moved": 0 },
+        { "tokens": "rock", "on-board": 1 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "enemy-hero-1 (holding cards) chooses to discard a card rather than be defeated; the rock token stays on the board"
+    },
+    {
+      "id": "mrak-seismic-slam-hero-beside-terrain-discards",
+      "card": "Seismic Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png", "rulebook p.19 terrain", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ],
+      "unsupported": "obstacle-1 must be a terrain space (a board space without a full grid outline, or the surrounding water), not a unit or token; no rock token anywhere near"
+    },
+    {
+      "id": "mrak-seismic-slam-hero-beside-unit-only-not-offered",
+      "card": "Seismic Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png", "rulebook p.19 terrain", "rulebook p.19 unit (tokens are not units)", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "friendly-minion-1", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ],
+      "unsupported": "enemy-hero-1 is adjacent to no terrain space and no rock token (a minion is an obstacle but not terrain)"
+    },
+    {
+      "id": "mrak-seismic-slam-hero-at-distance-4-outside-radius-3",
+      "card": "Seismic Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png", "rulebook p.9 radius value"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ]
+    },
+    {
+      "id": "mrak-seismic-slam-empty-handed-hero-is-defeated",
+      "card": "Seismic Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png", "rulebook p.13 when a hero is defeated (coins equal to its level)", "rulebook p.17 defeat"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 1 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 }
+      ],
+      "unsupported": "setup: enemy-hero-1 (level 1) has no cards in hand, so it cannot discard and is defeated; the enemy team spends 1 life (lowest card Tier I)"
+    },
+    {
+      "id": "mrak-seismic-slam-secondary-attack-is-non-ranged",
+      "card": "Seismic Slam",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak3__7596606__front.png (reminder: the secondary Attack action is non-ranged)", "rulebook p.9 ranged / non-ranged", "rulebook p.13 non-ranged attacks target adjacent units only"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false }
+      ],
+      "unsupported": "the radius 3 icon does not let the secondary Attack (value 6) reach a hero at distance 2"
+    },
+    {
+      "id": "mrak-seismic-assault-radius-4-hero-discards",
+      "card": "Seismic Assault",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak4__7596607__front.png", "rulebook p.9 radius", "rulebook p.10 making choices"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ],
+      "unsupported": "enemy-hero-1 (holding cards) chooses to discard a card rather than be defeated"
+    },
+    {
+      "id": "mrak-seismic-assault-hero-at-distance-5-outside-radius",
+      "card": "Seismic Assault",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak4__7596607__front.png", "rulebook p.9 radius value"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 5 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ]
+    },
+    {
+      "id": "mrak-seismic-assault-radius-item-reaches-distance-5",
+      "card": "Seismic Assault",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak4__7596607__front.png", "rulebook p.16 item bonus (+1 Radius raises the radius icon)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Radius +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 5 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 }
+      ]
+    },
+    {
+      "id": "mrak-epicentre-two-heroes-each-discard",
+      "card": "Epicentre",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak6__7596611__front.png", "rulebook p.10 repeat", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-hero-2", "where": "distance 4 from actor" },
+          { "ref": "token-2", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-2" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Boulder Blitz", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1", "enemy-hero-2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-2", "is": "not defeated" }
+      ],
+      "unsupported": "each enemy hero (holding cards) chooses to discard rather than be defeated; the repeat is the second instance on a different target"
+    },
+    {
+      "id": "mrak-epicentre-repeat-cannot-take-same-target",
+      "card": "Epicentre",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak6__7596611__front.png", "rulebook p.10 repeat"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-hero-2", "where": "distance 3 from actor off every straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Boulder Blitz", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": 0 }
+      ],
+      "unsupported": "enemy-hero-2 is in radius but adjacent to no terrain and no rock token, so the repeat has no legal different target; enemy-hero-1 must not be offered as the repeat target (hand -1, never -2)"
+    },
+    {
+      "id": "mrak-stone-carapace-move-4-and-round-long-substitute",
+      "card": "Stone Carapace",
+      "action": "Movement",
+      "source": ["active-hero-cards/Mrak/mrak5__8176070__front.png", "rulebook p.11 movement as primary action", "rulebook p.17 active effects", "rulebook p.19 this turn / round", "rulebook p.10 card states"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "hand": ["Fissure", "Stone Grip", "Stone Carapace", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [ "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "card": "Stone Carapace", "state": "resolved" }
+      ],
+      "unsupported": "Stone Carapace's This round effect is active (card turned on its side) until end of round: when actor would discard a card from hand this round (including discarding to defend), actor may discard the resolved Stone Carapace instead; when actor is attacked this round, actor may discard the resolved Stone Carapace to defend with its printed Defense 6 (plus Defense items), keeping all hand cards"
+    },
+    {
+      "id": "mrak-stone-carapace-zero-move-still-applies-text",
+      "card": "Stone Carapace",
+      "action": "Movement",
+      "source": ["active-hero-cards/Mrak/mrak5__8176070__front.png", "rulebook p.11 card text is applied even if you choose to move zero spaces"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Stone Carapace", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [ "distance 0" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Stone Carapace", "state": "resolved" }
+      ],
+      "unsupported": "the This round substitute effect is active even though actor moved 0 spaces; if enemy-hero-1 later attacks actor this round, actor's hand size after defending with Stone Carapace is unchanged (the discarded card is the resolved Stone Carapace, not a hand card)"
+    },
+    {
+      "id": "mrak-rock-solid-retrieve-discarded-card-then-move",
+      "card": "Rock Solid",
+      "action": "Movement",
+      "source": ["active-hero-cards/Mrak/mrak7__8176071__front.png", "rulebook p.10 retrieve a card", "rulebook p.11 card text comes into effect before movement", "rulebook p.17 active effects"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "hand": ["Fissure", "Stone Grip", "Rock Solid", "Rockslide"],
+        "discard": ["Boulder Blitz"]
+      },
+      "answers": [ "card: Boulder Blitz", "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "card": "Boulder Blitz", "state": "retrieved" },
+        { "ref": "actor", "moved": 4 },
+        { "card": "Rock Solid", "state": "resolved" }
+      ],
+      "unsupported": "after the play Boulder Blitz is in actor's hand; Rock Solid's This round substitute effect (same wording as Stone Carapace, Defense 6) is active for the rest of the round"
+    },
+    {
+      "id": "mrak-rock-solid-resolved-card-is-not-a-discarded-card",
+      "card": "Rock Solid",
+      "action": "Movement",
+      "source": ["active-hero-cards/Mrak/mrak7__8176071__front.png", "rulebook p.10 card states (resolved vs discarded)", "rulebook p.10 mandatory and optional steps (you may)"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "standing": [ "actor played Boulder Blitz last turn" ],
+        "hand": ["Fissure", "Stone Grip", "Rock Solid", "Rockslide"],
+        "discard": []
+      },
+      "answers": [ "decline", "distance 2" ],
+      "expect": [
+        { "offered": true },
+        { "card": "Boulder Blitz", "state": "resolved" },
+        { "ref": "actor", "moved": 2 },
+        { "card": "Rock Solid", "state": "resolved" }
+      ],
+      "unsupported": "Boulder Blitz (resolved, not discarded) must not be offered for retrieval; the discard pile is empty so nothing can be retrieved"
+    },
+    {
+      "id": "mrak-boulder-rush-push-minion-2-and-follow-2",
+      "card": "Boulder Rush",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak8__7430502__front.png", "rulebook p.18 push", "rulebook p.18 ignoring obstacles", "rulebook p.17 direction", "rulebook p.11 movement in the card text"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "distance 2", "distance 2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "moved": 2 },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "actor", "moved": 2 },
+        { "ref": "actor", "at": "adjacent to enemy-minion-1" },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "enemy-minion-1 ends 3 spaces from actor's starting space in a straight line directly away from actor; actor moves 2 spaces along that same line (the direction of the push), not in any other direction"
+    },
+    {
+      "id": "mrak-boulder-rush-push-jumps-obstacle-follow-stops-short",
+      "card": "Boulder Rush",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak8__7430502__front.png", "rulebook p.18 push (ignoring obstacles: moved through obstacles as long as it can reach an empty space)", "rulebook p.18 ignoring obstacles (never end on an obstacle)", "rulebook p.18 obstacle"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "distance 2", "distance 1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "moved": 2 },
+        { "ref": "friendly-minion-1", "moved": 0 },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "actor", "at": "adjacent to friendly-minion-1" }
+      ],
+      "unsupported": "friendly-minion-1 stands directly behind enemy-minion-1 on the line from actor; the push passes through it and enemy-minion-1 ends beyond it (distance 3 from actor's start); actor may not choose to move 2 (that would end on friendly-minion-1's space)"
+    },
+    {
+      "id": "mrak-boulder-rush-push-rock-token-1-decline-move",
+      "card": "Boulder Rush",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak8__7430502__front.png", "rulebook p.18 push (unit / token)", "rulebook p.10 mandatory and optional steps (you may / up to)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "token-1", "distance 1", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "pushed": "distance 2 from actor in a straight line" },
+        { "ref": "actor", "moved": 0 },
+        { "tokens": "rock", "on-board": 1 }
+      ]
+    },
+    {
+      "id": "mrak-boulder-rush-only-friendly-adjacent-not-offered",
+      "card": "Boulder Rush",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak8__7430502__front.png", "rulebook p.10 picking targets", "rulebook p.17 friendly"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "friendly-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "friendly-minion-1", "moved": 0 }
+      ],
+      "unsupported": "no token and no enemy unit is adjacent to actor (the adjacent unit is friendly)"
+    },
+    {
+      "id": "mrak-boulder-blitz-push-hero-3-follow-3",
+      "card": "Boulder Blitz",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak9__7430515__front.png", "rulebook p.18 push", "rulebook p.18 ignoring obstacles"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Blitz", "Treacherous Ground"]
+      },
+      "answers": [ "enemy-hero-1", "distance 3", "distance 3" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 3 },
+        { "ref": "actor", "moved": 3 },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ],
+      "unsupported": "enemy-hero-1 ends 4 spaces from actor's starting space in a straight line away from actor; actor follows along the same line"
+    },
+    {
+      "id": "mrak-boulder-blitz-push-3-decline-move",
+      "card": "Boulder Blitz",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak9__7430515__front.png", "rulebook p.18 push", "rulebook p.10 mandatory and optional steps"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Blitz", "Treacherous Ground"]
+      },
+      "answers": [ "enemy-hero-1", "distance 3", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "pushed": "distance 4 from actor in a straight line" },
+        { "ref": "actor", "moved": 0 }
+      ]
+    },
+    {
+      "id": "mrak-boulder-blitz-nothing-adjacent-not-offered",
+      "card": "Boulder Blitz",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak9__7430515__front.png", "rulebook p.17 adjacent", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Blitz", "Treacherous Ground"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false }
+      ]
+    },
+    {
+      "id": "mrak-boulderdozer-push-rock-4-follow-4",
+      "card": "Boulderdozer",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak11__7430509__front.png", "rulebook p.18 push (unit / token)", "rulebook p.18 ignoring obstacles"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulderdozer", "Rockslide"]
+      },
+      "answers": [ "token-1", "distance 4", "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 4 },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "actor", "at": "adjacent to token-1" },
+        { "tokens": "rock", "on-board": 1 }
+      ]
+    },
+    {
+      "id": "mrak-boulderdozer-push-and-follow-through-two-obstacles",
+      "card": "Boulderdozer",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak11__7430509__front.png", "rulebook p.18 push (ignoring obstacles)", "rulebook p.18 ignoring obstacles (never end on an obstacle)"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 3 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulderdozer", "Rockslide"]
+      },
+      "answers": [ "enemy-minion-1", "distance 4", "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "moved": 4 },
+        { "ref": "friendly-minion-1", "moved": 0 },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "actor", "at": "adjacent to enemy-minion-1" },
+        { "ref": "enemy-minion-1", "is": "not defeated" }
+      ],
+      "unsupported": "friendly-minion-1 and token-1 lie on the same straight line as actor and enemy-minion-1 (spaces 2 and 3 of that line); space 4 and 5 are open board spaces; the minion ends at space 5, actor at space 4, both having passed through the two obstacles"
+    },
+    {
+      "id": "mrak-stomping-step-move-hero-off-rock-leaves-rock",
+      "card": "Stomping Step",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak10__7583415__front.png", "rulebook p.9 radius", "rulebook p.11 movement in the card text (exact distance)", "rulebook p.18 place", "rulebook p.10 making choices"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Stomping Step", "Treacherous Ground"]
+      },
+      "answers": [ "enemy-hero-1", "away from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 2 },
+        { "ref": "enemy-hero-1", "hand": 0 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "actor", "moved": 0 }
+      ],
+      "unsupported": "the new rock token occupies the space enemy-hero-1 left (so it ends adjacent to enemy-hero-1); token-1 does not move"
+    },
+    {
+      "id": "mrak-stomping-step-friendly-unit-is-a-legal-target",
+      "card": "Stomping Step",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak10__7583415__front.png", "rulebook p.19 unit (heroes and minions)", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to friendly-minion-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Stomping Step", "Treacherous Ground"]
+      },
+      "answers": [ "friendly-minion-1", "away from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-minion-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 2 }
+      ],
+      "unsupported": "the printed target is 'a unit', not 'an enemy unit'; the new rock token occupies friendly-minion-1's former space"
+    },
+    {
+      "id": "mrak-stomping-step-unit-not-beside-rock-or-terrain-not-offered",
+      "card": "Stomping Step",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak10__7583415__front.png", "rulebook p.19 terrain", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 5 from actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Stomping Step", "Treacherous Ground"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "tokens": "rock", "on-board": 1 }
+      ],
+      "unsupported": "no unit within radius 4 of actor is adjacent to terrain or to a rock token (token-1 is far away and adjacent to no unit; the minion beside the hero is not terrain)"
+    },
+    {
+      "id": "mrak-stomping-step-unit-outside-radius-4-not-offered",
+      "card": "Stomping Step",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak10__7583415__front.png", "rulebook p.9 radius value"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 5 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Stomping Step", "Treacherous Ground"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "moved": 0 }
+      ]
+    },
+    {
+      "id": "mrak-ground-shaker-two-different-targets-two-rocks",
+      "card": "Ground Shaker",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak12__7583417__front.png", "rulebook p.10 repeat", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-minion-1", "where": "distance 4 from actor" },
+          { "ref": "token-2", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Ground Shaker", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1", "away from actor", "enemy-minion-1", "away from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 4 },
+        { "ref": "enemy-minion-1", "is": "not defeated" }
+      ],
+      "unsupported": "one new rock token in each unit's vacated space"
+    },
+    {
+      "id": "mrak-ground-shaker-first-rock-qualifies-second-target",
+      "card": "Ground Shaker",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak12__7583417__front.png", "rulebook p.10 repeat (treat each instance as a separate action)", "rulebook p.19 tokens (a placed token keeps its properties)"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Ground Shaker", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1", "away from actor", "enemy-minion-1", "away from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 3 }
+      ],
+      "unsupported": "enemy-minion-1 is not adjacent to token-1 nor to terrain at the start; it becomes a legal repeat target because the first instance's rock lands in enemy-hero-1's vacated space, which is adjacent to enemy-minion-1; no other unit within radius 4"
+    },
+    {
+      "id": "mrak-ground-shaker-repeat-needs-a-different-target",
+      "card": "Ground Shaker",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak12__7583417__front.png", "rulebook p.10 repeat"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Ground Shaker", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1", "away from actor", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "tokens": "rock", "on-board": 2 }
+      ],
+      "unsupported": "enemy-hero-1 (now adjacent to the new rock) must not be offered again as the repeat target; it moves 1 space in total, never 2; no other unit within radius 4"
+    },
+    {
+      "id": "mrak-treacherous-ground-pull-hero-beside-rock",
+      "card": "Treacherous Ground",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak13__7572600__front.png", "rulebook p.9 range", "rulebook p.11 movement in the card text", "rulebook p.17 adjacent"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ]
+      },
+      "answers": [ "enemy-hero-1", "toward token-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "at": "adjacent to token-1" },
+        { "tokens": "rock", "on-board": 1 },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ],
+      "unsupported": "the destination must be a space adjacent to terrain or to a rock token; no rock token is placed by this card"
+    },
+    {
+      "id": "mrak-treacherous-ground-unit-at-distance-4-out-of-range",
+      "card": "Treacherous Ground",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak13__7572600__front.png", "rulebook p.9 range value", "rulebook p.10 mandatory and optional steps (you may)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ]
+      },
+      "answers": [ "decline" ],
+      "expect": [
+        { "ref": "enemy-hero-1", "moved": 0 }
+      ],
+      "unsupported": "enemy-hero-1 is not selectable (range 3); because the whole text is optional ('you may') whether the Skill is still offered as a do-nothing play is not settled by the card - see Ambiguities A6"
+    },
+    {
+      "id": "mrak-rockslide-range-4-moves-friendly-hero",
+      "card": "Rockslide",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak14__7583411__front.png", "rulebook p.9 range", "rulebook p.19 unit (heroes and minions)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "friendly-hero-1", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from friendly-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Rockslide"]
+      },
+      "answers": [ "friendly-hero-1", "toward token-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-hero-1", "moved": 1 },
+        { "ref": "friendly-hero-1", "at": "adjacent to token-1" }
+      ],
+      "unsupported": "the printed target is 'a unit', friendly units included"
+    },
+    {
+      "id": "mrak-rockslide-enemy-hero-beside-terrain",
+      "card": "Rockslide",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak14__7583411__front.png", "rulebook p.19 terrain"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "obstacle-1", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Rockslide"]
+      },
+      "answers": [ "enemy-hero-1", "toward obstacle-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "at": "adjacent to obstacle-1" }
+      ],
+      "unsupported": "obstacle-1 must be a terrain space; no rock token on the board"
+    },
+    {
+      "id": "mrak-avalanche-two-different-units",
+      "card": "Avalanche",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak16__7583413__front.png", "rulebook p.10 repeat", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-hero-1" },
+          { "ref": "enemy-minion-1", "where": "distance 4 from actor" },
+          { "ref": "token-2", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-minion-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Blitz", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1", "toward token-1", "enemy-minion-1", "toward token-2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "at": "adjacent to token-1" },
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "at": "adjacent to token-2" },
+        { "tokens": "rock", "on-board": 2 }
+      ]
+    },
+    {
+      "id": "mrak-avalanche-repeat-may-take-same-unit",
+      "card": "Avalanche",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak16__7583413__front.png", "rulebook p.10 repeat (same range, restrictions)"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Blitz", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1", "toward token-1", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 2 },
+        { "ref": "enemy-hero-1", "at": "adjacent to token-1" }
+      ],
+      "unsupported": "Avalanche's 'May repeat once' has no 'different target' clause (unlike Epicentre and Ground Shaker), so the repeat may move enemy-hero-1 again; second destination: a space adjacent to both enemy-hero-1's current space and token-1, still within range 4 of actor"
+    },
+    {
+      "id": "mrak-rolling-stone-through-one-empty-space",
+      "card": "Rolling Stone",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak15__7583412__front.png", "rulebook p.19 straight line", "rulebook p.18 ignoring obstacles", "rulebook p.17 empty space"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 1 from actor in a straight line" },
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Rolling Stone"]
+      },
+      "answers": [ "toward token-1", "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "actor", "at": "adjacent to enemy-minion-1" },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "enemy-minion-1", "moved": 0 }
+      ],
+      "unsupported": "token-1 and enemy-minion-1 lie on the same straight line from actor (spaces 1 and 3); space 2 is empty, space 4 is empty and is the destination; the path passes through exactly one empty space (space 2), which is allowed"
+    },
+    {
+      "id": "mrak-rolling-stone-two-empty-spaces-too-many",
+      "card": "Rolling Stone",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak15__7583412__front.png (reminder: the starting space and the destination space do not count)", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 3 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Rolling Stone"]
+      },
+      "answers": [ "toward token-1", "distance 2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 2 },
+        { "ref": "actor", "at": "adjacent to token-1" }
+      ],
+      "unsupported": "spaces 1, 2 and 4 of the line are empty; the destination at distance 4 (beyond token-1) must NOT be selectable because the path would pass through two empty spaces (1 and 2); distance 2 passes through one empty space and is legal"
+    },
+    {
+      "id": "mrak-strolling-stone-through-two-empty-spaces",
+      "card": "Strolling Stone",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak17__7583414__front.png", "rulebook p.19 straight line", "rulebook p.18 ignoring obstacles"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 3 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Blitz", "Strolling Stone"]
+      },
+      "answers": [ "toward token-1", "distance 4" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "actor", "at": "adjacent to token-1" },
+        { "ref": "token-1", "moved": 0 }
+      ],
+      "unsupported": "spaces 1, 2 and 4 of the line are empty; the path to space 4 passes through two empty spaces (1 and 2) and through token-1 - legal for Strolling Stone (no more than two), illegal for Rolling Stone"
+    },
+    {
+      "id": "mrak-strolling-stone-three-empty-spaces-too-many",
+      "card": "Strolling Stone",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak17__7583414__front.png", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "level": 5, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 4 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Seismic Assault", "Boulder Blitz", "Strolling Stone"]
+      },
+      "answers": [ "toward token-1", "distance 3" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 3 },
+        { "ref": "actor", "at": "adjacent to token-1" }
+      ],
+      "unsupported": "spaces 1, 2, 3 and 5 of the line are empty; the destination at distance 5 must NOT be selectable (the path would pass through three empty spaces 1, 2, 3); distance 3 passes through two and is legal"
+    },
+    {
+      "id": "mrak-rock-and-a-hard-place-stone-grip-one-discard-per-hero",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak18__7659508__front.png", "active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.16 the Ultimate (permanent ability)", "rulebook p.17 adjacent"],
+      "setup": {
+        "actor": { "level": 8, "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor in a straight line" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Ground Shaker", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ],
+      "unsupported": "this case exercises the Ultimate Rock and a Hard Place; three rocks adjacent to one hero still cost that hero exactly one card, not three"
+    },
+    {
+      "id": "mrak-rock-and-a-hard-place-fissure-after-defence",
+      "card": "Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak18__7659508__front.png", "active-hero-cards/Mrak/mrak__7430505__front.png", "rulebook p.14 attack/defense detailed order (after the attack comes last)"],
+      "setup": {
+        "actor": { "level": 8, "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Ground Shaker", "Avalanche"],
+        "enemy-hero-1": { "defends-with": 5 }
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 4 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "tokens": "rock", "on-board": 3 },
+        { "ref": "enemy-hero-1", "hand": -2 }
+      ],
+      "unsupported": "this case exercises the Ultimate; enemy-hero-1 discards one card to defend, then the rock placed at distance 2 on the line (adjacent to enemy-hero-1) triggers the Ultimate: one more discard"
+    },
+    {
+      "id": "mrak-rock-and-a-hard-place-once-per-turn-across-repeat",
+      "card": "Ground Shaker",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak18__7659508__front.png", "active-hero-cards/Mrak/mrak12__7583417__front.png", "rulebook p.10 repeat (each instance a separate action)"],
+      "setup": {
+        "actor": { "level": 8, "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "enemy-hero-2", "where": "distance 4 from actor" },
+          { "ref": "token-2", "kind": "rock", "owner": "actor", "where": "adjacent to enemy-hero-2" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Ground Shaker", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1", "away from actor", "enemy-hero-2", "away from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-hero-2", "moved": 1 },
+        { "tokens": "rock", "on-board": 4 },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": 0 }
+      ],
+      "unsupported": "this case exercises the Ultimate's 'Once per turn': the first instance's rock (in enemy-hero-1's vacated space) triggers a discard; the repeated instance's rock beside enemy-hero-2 in the same turn does not"
+    },
+    {
+      "id": "mrak-rock-and-a-hard-place-moving-beside-rock-is-not-placing",
+      "card": "Avalanche",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak18__7659508__front.png", "active-hero-cards/Mrak/mrak16__7583413__front.png", "rulebook p.18 place (this does not count as movement)"],
+      "setup": {
+        "actor": { "level": 8, "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "rock", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Ground Shaker", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1", "toward token-1", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "at": "adjacent to token-1" },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ],
+      "unsupported": "this case exercises the Ultimate: moving a hero next to an existing rock is not placing a rock, so no discard"
+    },
+    {
+      "id": "mrak-rock-and-a-hard-place-friendly-hero-unaffected",
+      "card": "Stone Grip",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mrak/mrak18__7659508__front.png", "active-hero-cards/Mrak/mrak2__7430510__front.png", "rulebook p.17 friendly"],
+      "setup": {
+        "actor": { "level": 8, "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor in a straight line" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Fissure", "Stone Grip", "Epicentre", "Ground Shaker", "Avalanche"]
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "friendly-hero-1", "hand": 0 }
+      ],
+      "unsupported": "this case exercises the Ultimate; friendly-hero-1 must stand on the far side of enemy-hero-1 (distance 4 or 5 from actor) so at least one of the placed rocks is adjacent to it; only enemy heroes discard"
+    },
+    {
+      "id": "mrak-lesser-fissure-defeats-hero-then-rocks",
+      "handicap": true,
+      "card": "Lesser Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak19__7430501__front.png", "rulebook p.20 handicap cards (replaces the gold card)", "rulebook p.13 when a hero is defeated", "rulebook p.17 after the attack", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "hand": ["Lesser Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Treacherous Ground"],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 3 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 },
+        { "tokens": "rock", "on-board": 3 }
+      ],
+      "unsupported": "rocks at distance 1 (the defeated hero's vacated space), 2 and 3 on the straight line from actor through enemy-hero-1's former space; enemy team spends 1 life"
+    },
+    {
+      "id": "mrak-lesser-fissure-cannot-target-minion",
+      "handicap": true,
+      "card": "Lesser Fissure",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mrak/mrak19__7430501__front.png", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ],
+        "hand": ["Lesser Fissure", "Stone Grip", "Seismic Slam", "Boulder Rush", "Treacherous Ground"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-minion-1", "is": "not defeated" }
+      ],
+      "unsupported": "Lesser Fissure says 'Target a hero adjacent to you' where Fissure says 'a unit'; an adjacent enemy minion is not a legal target"
+    }
+  ]
+}

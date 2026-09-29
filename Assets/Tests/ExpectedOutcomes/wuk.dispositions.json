@@ -1,0 +1,452 @@
+[
+ {
+  "id": "wuk-tree-slam-adjacent-minion",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "tokens": "tree",
+    "on-board": 0
+   }
+  ]
+ },
+ {
+  "id": "wuk-tree-slam-no-adjacent-tree-hero-not-targetable",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a defends-with staged for an attack the table expects not to be offered is a precaution, not an unused answer; the case runs as written | reader note (recorded, not executed): The first bullet targets only a minion (an adjacent enemy HERO is not a legal target for it); the second bullet needs a Tree token ADJACENT to Wuk, and the only one is 2 away, so no bullet is performable and the Attack is not offered."
+ },
+ {
+  "id": "wuk-makeshift-weapon-remove-tree-hit-hero-in-range",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "wuk-makeshift-weapon-minion-only-not-offered",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "wuk-mystic-saplings-place-three-in-radius",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Answers name the empty spaces chosen for each placement (no v1 answer form for a placement space). Also expected: after this round's End of Round step 'Remove tokens', the 3 Tree tokens are still on the board (tokens tree on-board 3 at the start of the next round).",
+  "execute": true
+ },
+ {
+  "id": "wuk-mystic-saplings-up-to-one-and-radius-limit",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "wuk-mystic-saplings-short-supply-takes-from-board",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "wuk-natures-protector-unit-adjacent-to-tree-in-range",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Expected also: token-1 is neither removed nor moved; the Tree is a targeting condition, not a cost.",
+  "execute": true
+ },
+ {
+  "id": "wuk-natures-protector-no-tree-minion-adjacent-not-offered",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a defends-with staged for an attack the table expects not to be offered is a precaution, not an unused answer; the case runs as written | reader note (recorded, not executed): No Tree token anywhere on the board: bullet 1 needs an adjacent HERO (the adjacent unit is a minion) and bullet 2 needs a unit adjacent to a Tree token."
+ },
+ {
+  "id": "wuk-natures-protector-tree-hero-out-of-range",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a defends-with staged for an attack the table expects not to be offered is a precaution, not an unused answer; the case runs as written"
+ },
+ {
+  "id": "wuk-natures-guardian-minion-at-range-3-adjacent-to-tree",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "tokens": "tree",
+    "on-board": 1
+   }
+  ]
+ },
+ {
+  "id": "wuk-natures-champion-both-bullets-two-targets",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a \"choose one or both\" second bullet listed later in the answers is selected where the choice asks it; the case runs as written | reader note (recorded, not executed): actor.level 5 (lowest level at which a Tier III card is held; v1 setup allows 1-4)."
+ },
+ {
+  "id": "wuk-natures-champion-same-target-not-twice",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor.level 5. Also expected: after the first bullet resolves against enemy-hero-1, the second bullet ('Target a unit in range adjacent to a Tree token') offers NO target, because 'on different targets' forbids enemy-hero-1 again and no other enemy unit is in range; enemy-hero-1 is attacked (and discards to defend) exactly once.",
+  "execute": true
+ },
+ {
+  "id": "wuk-trample-straight-line-through-hero-minion-tree",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): Setup: enemy-hero-1, enemy-minion-1 and token-1 all lie on ONE straight line from actor, in that order, and the space at distance 4 on that line is empty (v1 cannot tie three pieces to the same line). enemy-hero-1 has cards in hand and discards one of its choice. The Tree is moved through, not removed or moved."
+ },
+ {
+  "id": "wuk-trample-enemy-hero-with-empty-hand-is-defeated",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's enemy-hero-1 has no cards in hand (declared note) but the table does not stage \"enemy-hero-1.hand\": [] | reader note: Setup: enemy-hero-1 has no cards in hand (cannot discard), so the printed alternative 'or is defeated' applies.",
+  "execute": false
+ },
+ {
+  "id": "wuk-trample-bent-path-no-effect",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Answer: Wuk walks a 3-space path that turns (not a straight line), passing beside but never through enemy-minion-1 or enemy-hero-1. Expected: none of the 'If you move in a straight line' clauses apply, and Wuk cannot enter an obstacle space on a bent path.",
+  "execute": true
+ },
+ {
+  "id": "wuk-angry-stampede-two-minions-defeated",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): actor.level 5. Setup: the three pieces lie on ONE straight line from actor in that order, the space at distance 4 on it is empty; neither minion is a heavy minion; enemy-hero-1 has cards in hand."
+ },
+ {
+  "id": "wuk-angry-stampede-third-minion-survives",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): actor.level 5. Setup: the three minions lie on ONE straight line from actor, the space at distance 4 on it is empty, none is heavy, and the Battle Zone keeps at least one other enemy minion so no Lane push intervenes."
+ },
+ {
+  "id": "wuk-gifts-of-nature-no-tree-in-radius",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Reading: the mandatory first step 'Remove a Tree token in radius' cannot be done (only Tree is at distance 4, radius 3), so the retrieve after it is never reached; I expect the Skill not to be offered (see Ambiguities A5 for the other reading: offered but doing nothing).",
+  "execute": true
+ },
+ {
+  "id": "wuk-tree-of-plenty-friendly-hero-retrieves",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's friendly-hero-1 holds a discarded card (declared note) but the table stages none; with nothing to retrieve the friendly bullet is greyed (8.70). Staged with \"friendly-hero-1.discard\" the bullet is offered and the friendly seat chooses (verified at 9.13) | reader note: Setup: friendly-hero-1 has at least one discarded card of its own; friendly-hero-1 chooses to retrieve one (its own card, its choice).",
+  "execute": false
+ },
+ {
+  "id": "wuk-tree-of-plenty-friendly-hero-outside-radius",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a trailing \"decline\" of a question the engine never asks (nothing left to act on) declines nothing; the case runs as written | reader note (recorded, not executed): Setup: friendly-hero-1 has a discarded card. Expected: friendly-hero-1 (distance 5, radius 4) is NOT offered as the hero for the second bullet; and because it is 'Choose one', Wuk cannot take both bullets."
+ },
+ {
+  "id": "wuk-abundance-both-bullets",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's friendly-hero-1 holds a discarded card (declared note) but the table stages none; with nothing to retrieve the friendly bullet is greyed (8.70). Staged with \"friendly-hero-1.discard\" the bullet is offered and the friendly seat chooses (verified at 9.13) | reader note: actor.level 5. Setup: friendly-hero-1 has at least one discarded card of its own and chooses to retrieve one.",
+  "execute": false
+ },
+ {
+  "id": "wuk-abundance-no-tree-on-board",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor.level 5. No Tree token anywhere on the board: the mandatory 'Remove a Tree token in radius' fails, so neither retrieval happens (see Ambiguities A5).",
+  "execute": true
+ },
+ {
+  "id": "wuk-claim-dominance-adjacent-minion-not-counted",
+  "kind": "ruling",
+  "ref": "WU-Q3",
+  "note": "WU-Q3: Claim and Assert Dominance choose nothing on resolution; Wuk chooses the minions that do not count at the round's minion battle. The override runs the round out, answers that choice from the reader's answers, and reads the battle the reader's note expects (a tie).",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 0
+   },
+   {
+    "card": "Claim Dominance",
+    "state": "resolved"
+   },
+   {
+    "minion-battle": "tie"
+   }
+  ]
+ },
+ {
+  "id": "wuk-claim-dominance-only-one-of-two-adjacent",
+  "kind": "ruling",
+  "ref": "WU-Q3",
+  "note": "WU-Q3: Claim and Assert Dominance choose nothing on resolution; Wuk chooses the minions that do not count at the round's minion battle. The override runs the round out, answers that choice from the reader's answers, and reads the battle the reader's note expects (a tie).",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-2",
+    "is": "not defeated"
+   },
+   {
+    "minion-battle": "tie"
+   }
+  ]
+ },
+ {
+  "id": "wuk-claim-dominance-immune-heavy-still-discounted",
+  "kind": "ruling",
+  "ref": "WU-Q3",
+  "note": "WU-Q3: Claim and Assert Dominance choose nothing on resolution; Wuk chooses the minions that do not count at the round's minion battle. The override runs the round out, answers that choice from the reader's answers, and reads the battle the reader's note expects (a tie).",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "minion-battle": "tie"
+   }
+  ]
+ },
+ {
+  "id": "wuk-claim-dominance-cancelled-when-wuk-defeated",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the case continues after the play (Wuk attacked and defeated later the same round), which a table cannot stage | reader note: Continuation: later the same round Wuk is attacked and defeated. Expected: the Claim Dominance active effect is cancelled, so at Minion Battle enemy counts 2 vs friendly 1 and the friendly team removes 1 minion.",
+  "execute": false
+ },
+ {
+  "id": "wuk-assert-dominance-two-adjacent-not-counted",
+  "kind": "ruling",
+  "ref": "WU-Q3",
+  "note": "WU-Q3: Claim and Assert Dominance choose nothing on resolution; Wuk chooses the minions that do not count at the round's minion battle. The override runs the round out, answers that choice from the reader's answers, and reads the battle the reader's note expects (a tie).",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "ref": "enemy-minion-2",
+    "is": "not defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 0
+   },
+   {
+    "card": "Assert Dominance",
+    "state": "resolved"
+   },
+   {
+    "minion-battle": "tie"
+   }
+  ]
+ },
+ {
+  "id": "wuk-assert-dominance-third-adjacent-still-counts",
+  "kind": "ruling",
+  "ref": "WU-Q3",
+  "note": "WU-Q3: Claim and Assert Dominance choose nothing on resolution; Wuk chooses the minions that do not count at the round's minion battle. The override runs the round out, answers that choice from the reader's answers, and reads the battle the reader's note expects (a tie).",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-3",
+    "is": "not defeated"
+   },
+   {
+    "minion-battle": "tie"
+   }
+  ]
+ },
+ {
+  "id": "wuk-toss-away-throw-adjacent-enemy-hero",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Answer names the destination space (any empty space within distance 3 of Wuk).",
+  "execute": true
+ },
+ {
+  "id": "wuk-toss-away-throw-tree-token",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Answer names the destination space.",
+  "execute": true
+ },
+ {
+  "id": "wuk-toss-away-nothing-adjacent-eligible",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Only a FRIENDLY unit is adjacent (not an enemy unit) and no token is adjacent; the enemy hero is in range but not adjacent.",
+  "execute": true
+ },
+ {
+  "id": "wuk-mighty-throw-enemy-minion-to-range-4",
+  "kind": "ruling",
+  "ref": "p.19 displaced-minion correction; HERO_WUK throws reading",
+  "note": "p.19 displaced-minion correction (HERO_WUK throws reading: a minion placed outside its Battle Zone is returned; 8.81/8.83 move leash): the minion ends back inside the Battle Zone",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 0
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   }
+  ]
+ },
+ {
+  "id": "wuk-mighty-throw-immune-heavy-not-targetable",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's enemy-minion-1 is a heavy minion (declared note) but the table stages it without \"type\": \"heavy\" | reader note: Setup: enemy-minion-1 is the enemy HEAVY minion and enemy-minion-2 is a non-heavy enemy minion in the same Battle Zone, so the heavy is immune; nothing else is adjacent.",
+  "execute": false
+ },
+ {
+  "id": "wuk-monstrous-throw-repeat-hero-then-tree",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor.level 5. Answers name destination spaces; the second instance is the printed 'May repeat once' (the token-1 destination must also be within distance 4 of actor).",
+  "execute": true
+ },
+ {
+  "id": "wuk-monstrous-throw-decline-repeat",
+  "kind": "ruling",
+  "ref": "p.19 displaced-minion correction; HERO_WUK throws reading",
+  "note": "p.19 displaced-minion correction (HERO_WUK throws reading: a minion placed outside its Battle Zone is returned; 8.81/8.83 move leash): the minion ends back inside the Battle Zone",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-2",
+    "at": "adjacent to actor"
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   }
+  ]
+ },
+ {
+  "id": "wuk-into-the-canopy-swap-with-tree",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Setup: enemy-hero-1 is adjacent to token-1 and at distance 3 from actor (continuing the same line), so after the swap Wuk stands where the Tree stood (next to enemy-hero-1) and the Tree stands where Wuk stood. A swap is not movement: 'moved' should read 0 if the executor counts only movement.",
+  "execute": true
+ },
+ {
+  "id": "wuk-into-the-canopy-tree-outside-radius",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: The only Tree is at distance 3 (radius 2), so neither bullet has a Tree in radius. An enemy unit in radius is never a legal swap partner for bullet 2.",
+  "execute": true
+ },
+ {
+  "id": "wuk-treetop-ride-two-swaps",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): actor.level 5. Setup: token-1 and friendly-hero-1 on the same straight line from actor. Trace: swap 1 puts friendly-hero-1 at distance 1 and token-1 at distance 2; swap 2 puts Wuk at distance 2 (old friendly space) and token-1 on Wuk's starting space."
+ },
+ {
+  "id": "wuk-treetop-ride-decline-second",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a selection already at its maximum closes by itself; the \"decline\" answers the next question; the case runs as written | reader note (recorded, not executed): actor.level 5."
+ },
+ {
+  "id": "wuk-treetop-ride-no-tree-in-radius",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor.level 5.",
+  "execute": true
+ },
+ {
+  "id": "wuk-march-of-nature-extra-tree-after-saplings",
+  "kind": "ruling",
+  "ref": "WU-Q1",
+  "note": "The Tree supply is three (WU-Q1): after Mystic Saplings places three, the Ultimate's fourth Tree first reclaims one from the board (p.18), so four Trees on the board is impossible; the override answers the reclaim and expects three",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "card": "Mystic Saplings",
+    "state": "resolved"
+   },
+   {
+    "tokens": "tree",
+    "on-board": 3
+   }
+  ],
+  "answers-override": [
+   "space: distance 1 from actor",
+   "space: distance 2 from actor",
+   "space: distance 3 from actor",
+   "space: distance 3 from actor",
+   "space: distance 3 from actor"
+  ]
+ },
+ {
+  "id": "wuk-march-of-nature-decline",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor.level 8. Answers name the destination space; throw the hero, decline the repeat, decline the Ultimate's placement. Also expected: a space at distance 4 is never offered for the Ultimate's placement (radius 3).",
+  "execute": true
+ },
+ {
+  "id": "wuk-march-of-nature-after-hold",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's play is a Hold (declared note) but the table's action is \"Skill\"; the table is not edited | reader note: actor.level 8; action is HOLD (no v1 action word): Wuk resolves Monstrous Throw with a Hold action and does nothing. Expected: the card is still resolved, so March of Nature still offers its Tree placement.",
+  "execute": false
+ }
+]

@@ -389,13 +389,13 @@
       "setup": {
         "pieces": [
           { "ref": "enemy-minion-1", "where": "adjacent to actor" },
-          { "ref": "friendly-hero-1", "where": "distance 3 from actor in a straight line" }
+          { "ref": "friendly-hero-1", "where": "distance 2 beyond enemy-minion-1 from actor" }
         ]
       },
       "answers": [ "toward friendly-hero-1" ],
       "expect": [
         { "ref": "enemy-minion-1", "moved": 1 },
-        { "ref": "enemy-minion-1", "at": "distance 2 from friendly-hero-1" }
+        { "ref": "enemy-minion-1", "at": "adjacent to friendly-hero-1" }
       ]
     },
     {

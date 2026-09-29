@@ -2489,8 +2489,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ? HeroDefeatRewardSchedule.LifeCounters(lowestTier, additionalLifeCounters)
                 : 0;
 
+            // Milestone 9.13, the hero arm of 8.118's minion fix. One Attack can defeat two heroes -
+            // its target, then a second hero its "After the attack" text defeats (Wasp's Electroblast
+            // on an empty-handed hero) - and both Defeats were named "<resolution>:hero-defeat", so
+            // p.13's second reward was refused as already awarded. The first Defeat keeps the name
+            // every existing record carries; a later one in the same resolution adds the defeated
+            // hero, so each Defeat is paid once.
+            var heroDefeatId = new DefeatOutcomeId($"{completedResolution.ResolutionId.Value}:hero-defeat");
+            if (coinLedger != null && coinLedger.AwardedOutcomeIds.Contains(heroDefeatId))
+            {
+                heroDefeatId = new DefeatOutcomeId($"{heroDefeatId.Value}:{defeatedHeroId.Value}");
+            }
+
             var outcome = new DefeatOutcome(
-                new DefeatOutcomeId($"{completedResolution.ResolutionId.Value}:hero-defeat"),
+                heroDefeatId,
                 new DefeatTargetId(defeatedHeroId.Value),
                 defeatedTeamId,
                 completedResolution.ActorId,

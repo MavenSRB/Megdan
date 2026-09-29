@@ -1,0 +1,517 @@
+[
+ {
+  "id": "mortimer-knife-three-removals-defeat-hero",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: expectation: enemy team spends 1 Life counter (defeated level-1 hero's lowest card Tier is I, rulebook p.13)",
+  "execute": true
+ },
+ {
+  "id": "mortimer-knife-only-adjacent-zombies-count",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "on the canonical board token-1 cannot be moved adjacent to the target in one step, so the Remove bullet is greyed (8.70) and the reader's answers no longer fit; the table names no position for token-1 relative to the target | reader note: offer check: token-2 (not adjacent to the target) is not offered for the Remove bullet",
+  "execute": false
+ },
+ {
+  "id": "mortimer-knife-move-then-remove-with-attack-item",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "on the canonical board token-1 cannot be moved adjacent to the target in one step, so the Remove bullet is greyed (8.70) and the reader's answers no longer fit; the table names no position for token-1 relative to the target",
+  "execute": false
+ },
+ {
+  "id": "mortimer-knife-capped-at-three-choices",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): the enemy seat that defends with Defense N is the first dealt hero whose deck prints it; the case runs as written | reader note (recorded, not executed): offer check: no fourth choice is offered without the Ultimate"
+ },
+ {
+  "id": "mortimer-knife-defeats-adjacent-minion",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "tokens": "zombie",
+    "on-board": 0
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "enemy-minion-2",
+    "is": "not defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   }
+  ]
+ },
+ {
+  "id": "mortimer-awaken-four-zombies-adjacent",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: no spawn point within distance 4 of actor; answer naming the empty space each token is placed into ('place: <placement>'); expectation: every placed zombie token is adjacent to actor",
+  "execute": true
+ },
+ {
+  "id": "mortimer-awaken-up-to-declined-after-two",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "mortimer-awaken-only-empty-spaces-take-tokens",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's setup \"no spawn point within distance 4 of actor\" is not stated in the table; the canonical board has empty spawn points in Radius 4, so further placements are (correctly, MO-Q2) offered | reader note: setup: no spawn point within distance 4 of actor; answer 'place: <placement>'; offer check: after one token no further placement is offered (no empty adjacent space and no empty spawn point in radius)",
+  "execute": false
+ },
+ {
+  "id": "mortimer-awaken-zombies-survive-end-of-round",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: no spawn point within distance 4 of actor; answer 'place: <placement>'; after the play, finish the round through its End of Round steps (Remove Tokens included), then expect: zombie tokens on board = 4",
+  "execute": true
+ },
+ {
+  "id": "mortimer-awaken-as-defense-still-places-zombies",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "action \"Defense\" without setup \"attack\" {by, value}: the attacker and its value are not stated, so the defence cannot be staged | reader note: action 'Defense' (Awaken! discarded from hand to defend); setup: enemy-hero-1 attacks actor this turn with a non-ranged Attack whose total is 3, no minion within distance 2 of actor, no spawn point within distance 4 of actor; answer 'place: <placement>'",
+  "execute": false
+ },
+ {
+  "id": "mortimer-crawling-dead-minion-then-another-hero-discards",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "ref": "enemy-hero-1",
+    "hand": -1
+   },
+   {
+    "tokens": "zombie",
+    "on-board": 1
+   },
+   {
+    "card": "Crawling Dead",
+    "state": "resolved"
+   }
+  ]
+ },
+ {
+  "id": "mortimer-crawling-dead-target-is-not-another-hero",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): the enemy seat that defends with Defense N is the first dealt hero whose deck prints it; the case runs as written | reader note (recorded, not executed): offer check: the discard bullet does not offer enemy-hero-1, the attack's own target ('Another enemy hero'); enemy-hero-1 loses only its Defense card, not a second card"
+ },
+ {
+  "id": "mortimer-crawling-dead-hero-outside-radius-not-offered",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: token-1 on the same straight line as enemy-hero-1, between it and actor (adjacent to enemy-hero-1, in radius); offer check: the discard bullet does not offer enemy-hero-1 (distance 5, outside radius 4)",
+  "execute": true
+ },
+ {
+  "id": "mortimer-walking-dead-two-heroes-discard",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "ref": "enemy-hero-1",
+    "hand": -1
+   },
+   {
+    "ref": "enemy-hero-2",
+    "hand": -1
+   },
+   {
+    "card": "Walking Dead",
+    "state": "resolved"
+   }
+  ]
+ },
+ {
+  "id": "mortimer-walking-dead-each-hero-only-once",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): offer check: for the second choice the discard bullet does not offer enemy-hero-1 again"
+ },
+ {
+  "id": "mortimer-walking-dead-equal-defense-holds-then-discard",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): the enemy seat that defends with Defense N is the first dealt hero whose deck prints it; the case runs as written"
+ },
+ {
+  "id": "mortimer-braains-retrieve-twice",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "card": "Awaken!",
+    "state": "retrieved"
+   },
+   {
+    "card": "Stage Dive",
+    "state": "retrieved"
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "ref": "enemy-hero-1",
+    "hand": 0
+   }
+  ]
+ },
+ {
+  "id": "mortimer-braains-move-zombie-then-retrieve",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): setup: token-1 within distance 4 of actor; offer check: the retrieve bullet is not offered before token-1 is moved"
+ },
+ {
+  "id": "mortimer-braains-hero-outside-radius-no-retrieve",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a trailing \"decline\" of a question the engine never asks (nothing left to act on) declines nothing; the case runs as written | reader note (recorded, not executed): offer check: the retrieve bullet is not offered (no enemy hero within radius 4 is adjacent to a zombie token)"
+ },
+ {
+  "id": "mortimer-racing-dead-three-heroes-discard",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "enemy-hero-1",
+    "hand": -1
+   },
+   {
+    "ref": "enemy-hero-2",
+    "hand": -1
+   },
+   {
+    "ref": "enemy-hero-3",
+    "hand": -1
+   },
+   {
+    "card": "Racing Dead",
+    "state": "resolved"
+   }
+  ]
+ },
+ {
+  "id": "mortimer-racing-dead-hero-in-radius-zombie-outside",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a trailing \"decline\" of a question the engine never asks (nothing left to act on) declines nothing; the case runs as written | reader note (recorded, not executed): actor level 5 or higher; setup: token-1 on the same straight line just beyond enemy-hero-1 (adjacent to it, outside radius); offer check: the move bullet does not offer token-1 (outside radius 4)"
+ },
+ {
+  "id": "mortimer-racing-dead-defended-target-and-once-per-hero",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): the enemy seat that defends with Defense N is the first dealt hero whose deck prints it; the case runs as written | reader note (recorded, not executed): actor level 5 or higher; offer check: enemy-hero-2 is not offered a second time and enemy-hero-1 (the target) is never offered for the discard bullet"
+ },
+ {
+  "id": "mortimer-braaaaaaaains-retrieve-three",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "card": "Knife of the Living Dead",
+    "state": "retrieved"
+   },
+   {
+    "card": "Awaken!",
+    "state": "retrieved"
+   },
+   {
+    "card": "Crowd Drift",
+    "state": "retrieved"
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   }
+  ]
+ },
+ {
+  "id": "mortimer-braaaaaaaains-two-moves-then-one-retrieve",
+  "kind": "executor-gap",
+  "ref": "content finding: Braaaaaaaains...! display name",
+  "note": "The card prints BRAAAAAAAAINS...! (eight a’s, mortimer7__7703468, verified by the coordinator); the content display name has seven and feeds Mortimer’s pinned semantic identity digest (VerifiedContentIdentityTests), so it is left for its own corrective. The executor resolves the printed spelling to the dealt card; the case runs as written | reader note (recorded, not executed): actor level 5 or higher; setup: token-1 within distance 4 of actor with an open two-step path toward enemy-hero-1 that stays within distance 4 of actor"
+ },
+ {
+  "id": "mortimer-braaaaaaaains-choices-run-out-before-retrieve",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's \"open three-step path within distance 4\" for token-1 is not stated; on the canonical board token-1 stands outside Radius 4 and no move is offered | reader note: actor level 5 or higher; setup: token-1 within distance 4 of actor with an open three-step path toward enemy-hero-1 that stays within distance 4 of actor; offer check: no fourth choice is offered",
+  "execute": false
+ },
+ {
+  "id": "mortimer-corpse-slam-move-zombie-and-push-hero",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "on the canonical board the Zombie moves to the hero's far side and its push runs into Mortimer (a blocked push moves 0, p.18); the table names no position that keeps the push line open",
+  "execute": false
+ },
+ {
+  "id": "mortimer-corpse-slam-push-blocked-by-obstacle",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): setup: obstacle-1 directly behind enemy-hero-1 on the line from token-1 through enemy-hero-1"
+ },
+ {
+  "id": "mortimer-corpse-slam-zombie-out-of-range-move-self",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: offer check: the zombie bullet does not offer token-1 (distance 5, range 4); only one bullet may be chosen ('Choose one')",
+  "execute": true
+ },
+ {
+  "id": "mortimer-morbid-mosh-same-zombie-pushes-twice",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the pushes depend on empty spaces behind the pushed piece on the line from token-1, which the reader could not state (declared note); on the canonical board the push is shortened or blocked | reader note: setup: the two spaces behind enemy-hero-1 on the line from token-1 are empty",
+  "execute": false
+ },
+ {
+  "id": "mortimer-morbid-mosh-step-into-range-then-zombie",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the pushes depend on empty spaces behind the pushed piece on the line from token-1, which the reader could not state (declared note); on the canonical board the push is shortened or blocked | reader note: setup: enemy-minion-1 is not heavy and stays inside the Battle Zone after the push; offer check: token-1 is not offered before the actor's move (distance 5)",
+  "execute": false
+ },
+ {
+  "id": "mortimer-morbid-mosh-zombie-pushes-a-token-push-optional",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: the space behind token-2 on the line from token-1 is empty",
+  "execute": true
+ },
+ {
+  "id": "mortimer-robbing-zombies-no-zombie-in-range-no-coin",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: offer check: the coin bullet is never offered (token-1 is at distance 7, then 6, then 5: always outside range 4)",
+  "execute": true
+ },
+ {
+  "id": "mortimer-macabre-mayhem-three-different-choices",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor level 5 or higher (Tier III card in hand); setup: push destinations empty, enemy-minion-1 not heavy and remains in the Battle Zone; offer check: no fourth choice",
+  "execute": true
+ },
+ {
+  "id": "mortimer-macabre-mayhem-zombie-pushes-friendly-never-actor",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "mortimer-stalking-scalpers-three-coins",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor level 5 or higher (Tier III card in hand); offer check: no fourth choice",
+  "execute": true
+ },
+ {
+  "id": "mortimer-stalking-scalpers-range-item-reaches-distance-5",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "mortimer-crowd-drift-two-swaps-chain",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: token-2 lies beyond token-1 on the same line from actor (distance 7 from actor, outside range 4 before the first swap)",
+  "execute": true
+ },
+ {
+  "id": "mortimer-crowd-drift-second-zombie-out-of-range-after-swap",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: setup: token-2 at distance 4 from actor on the opposite side from token-1 (same line); offer check: after the first swap token-2 is not offered for a second swap",
+  "execute": true
+ },
+ {
+  "id": "mortimer-gathering-horde-move-then-replace-minion",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): setup: token-2 within distance 4 of actor; enemy-minion-1 is a melee or ranged minion (not heavy); expectation: the new zombie token stands in enemy-minion-1's former space"
+ },
+ {
+  "id": "mortimer-gathering-horde-replace-once-per-turn",
+  "kind": "ruling",
+  "ref": "MO-Q1",
+  "note": "The Zombie supply is four (MO-Q1): with four Zombies staged the Replace first reclaims one from the board (p.18), so five on the board is impossible; the override answers the reclaim and expects four",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "removed"
+   },
+   {
+    "ref": "enemy-minion-2",
+    "is": "not defeated"
+   },
+   {
+    "tokens": "zombie",
+    "on-board": 4
+   },
+   {
+    "ref": "actor",
+    "coins": 0
+   }
+  ],
+  "answers-override": [
+   "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.",
+   "enemy-minion-1",
+   "token-4",
+   "decline"
+  ]
+ },
+ {
+  "id": "mortimer-gathering-horde-one-zombie-not-enough",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's token and minion geometry (declared note: \"within distance 4 throughout\", \"adjacent to two Zombie tokens\") is not stated; on the canonical board the engine asks a question the answers do not cover (a Zombie destination or the Zombie supply's reclaim) | reader note: offer check: the Replace bullet does not offer enemy-minion-1 (adjacent to only one zombie token)",
+  "execute": false
+ },
+ {
+  "id": "mortimer-crowd-surf-three-swaps-chain",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: actor level 5 or higher (Tier III card in hand); setup: token-2 and token-3 continue the same straight line away from actor (distances 8 and 12 from actor)",
+  "execute": true
+ },
+ {
+  "id": "mortimer-crowd-surf-swap-ignores-blocked-path",
+  "kind": "open-question",
+  "ref": "W2 (partial); not settled",
+  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
+ },
+ {
+  "id": "mortimer-army-of-darkness-two-moves-then-replace",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's token and minion geometry (declared note: \"within distance 4 throughout\", \"adjacent to two Zombie tokens\") is not stated; on the canonical board the engine asks a question the answers do not cover (a Zombie destination or the Zombie supply's reclaim) | reader note: actor level 5 or higher (Tier III card in hand); setup: token-2 within distance 4 of actor throughout; enemy-minion-1 not heavy",
+  "execute": false
+ },
+ {
+  "id": "mortimer-army-of-darkness-replacing-last-minion-pushes-lane",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's token and minion geometry (declared note: \"within distance 4 throughout\", \"adjacent to two Zombie tokens\") is not stated; on the canonical board the engine asks a question the answers do not cover (a Zombie destination or the Zombie supply's reclaim) | reader note: actor level 5 or higher; setup: enemy-minion-1 is the only enemy minion left in the Battle Zone and is not heavy; expectation: the Lane is pushed immediately (one Wave counter flipped, next Zone toward the enemy Throne becomes the Battle Zone)",
+  "execute": false
+ },
+ {
+  "id": "mortimer-master-of-puppets-knife-five-removals",
+  "kind": "not-executable",
+  "ref": "MO-Q1",
+  "note": "the table stages five Zombie tokens of Mortimer; the supply is four (MO-Q1), so the board cannot be staged | reader note: face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8 with the Ultimate unlocked and no Attack item (items deliberately empty)",
+  "execute": false
+ },
+ {
+  "id": "mortimer-master-of-puppets-stalking-scalpers-five-choices",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8 with the Ultimate unlocked; offer check: no sixth choice is offered",
+  "execute": true
+ },
+ {
+  "id": "mortimer-master-of-puppets-army-replace-still-once-per-turn",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's token and minion geometry (declared note: \"within distance 4 throughout\", \"adjacent to two Zombie tokens\") is not stated; on the canonical board the engine asks a question the answers do not cover (a Zombie destination or the Zombie supply's reclaim) | reader note: face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8; setup: enemy-minion-2, token-3, token-4 within distance 4 of actor, no minion heavy; offer check: Replace is not offered in choices 2-5 although enemy-minion-2 is adjacent to two zombie tokens at the start of choice 2",
+  "execute": false
+ },
+ {
+  "id": "mortimer-master-of-puppets-does-not-extend-up-to-two",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "mortimer-shallow-graves-two-removals-defeat-hero",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "mortimer-shallow-graves-capped-at-two",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "mortimer-shallow-graves-cannot-target-minion",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ }
+]

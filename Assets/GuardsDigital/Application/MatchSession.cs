@@ -1274,7 +1274,16 @@ namespace GuardsDigital.Application
         private ValueContributionProjection ProjectContribution(ValueContribution contribution)
         {
             string label;
-            if (contribution.SourceCardInstanceId.IsDefined)
+            if (contribution.Kind == ValueContributionKind.ItemModifier &&
+                contribution.SourceCardInstanceId.IsDefined &&
+                configuration.CardInstances.All(value => !value.Id.Equals(contribution.SourceCardInstanceId)))
+            {
+                // Milestone 9.13. p.16's "use any spare card from the box" item (Dodger's Darkest
+                // Ritual with his Ultimate) names a box identity, not a dealt card; the lookup below
+                // threw on it, so the first Attack or Defense preview after the grant faulted.
+                label = $"{contribution.Channel} item from the box";
+            }
+            else if (contribution.SourceCardInstanceId.IsDefined)
             {
                 label = GetCardDisplayName(contribution.SourceCardInstanceId);
             }

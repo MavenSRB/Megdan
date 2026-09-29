@@ -28,6 +28,28 @@ Phrases (format v1 plus the v1.1 additions) and how the executor reads them:
 - Expectations: `offered`; `is` defeated / not defeated / removed; `at`; `moved` (the walked Movement cost, else start-to-end distance); `pushed`; `tokens` with `on-board`, `supply` (the actor's), `on-board-after-round-end`; `coins`; `level`; `hand` (change from the play's start); `attack` (the actor's resolved Attack total); `team-lives`, `enemy-team-lives`; `card` with `state` hand/played/resolved/discarded/retrieved; `targetable` (in any targeting question asked); `chose` discard/defeated; `bullet` with `offered`; `minion-battle` red/blue/friendly/enemy/tie and `lane-pushed` (both run the round out: every hero Holds, the end of round is answered by its first legal command); a `token-N`/`obstacle-N` the setup never placed names a token the play placed, matched as a set against every such `at`.
 - A Defeat is read from the match log, else from the scoreboard's Deaths and minion kills (the log is silent on some card-text Defeats and Removals); `removed` means the piece left the board without a Defeat. `immune`, `minions-in-lane` and `handicap` are refused by name.
 
+## Executor defaults
+
+Each is taken only where the table says nothing, and the trace names it:
+
+- An enemy seat with a numeric `defends-with` is given, in roster order, the first dealt hero (never the actor's) whose deck prints a card with that Defense.
+- Another hero's own which-card question (an enemy's discard, the card a friendly hero retrieves) the answers do not name takes that hero's first card in hand; p.19's displaced-minion correction takes the first space offered.
+- A printed card name the content spells differently resolves to the dealt card while its content corrective is pending (today only Mortimer's BRAAAAAAAAINS...!, printed with eight a's; the content has seven and its display name feeds a pinned identity digest).
+- `handicap: true` is not executed (p.6 boxes the Handicap cards). A placement's parenthetical is ignored. `action: Defense` without `attack` fails by name.
+- Staging prefers open ground clear of terrain (unless terrain is staged) and puts every "in a straight line" piece from one piece on its first file, relaxing each only when no anchor meets it. A `toward X` walk follows X's file, so a straight-line trample runs through the named pieces.
+- A trailing `decline` of a question never asked declines nothing; a selection at its maximum closes itself; a "one or both" bullet listed later is selected where the choice asks it; a play expected not offered that the rules refuse even past the offer leaves the board unchanged.
+
+## Dispositions
+
+A failing case is dispositioned in `<hero>.dispositions.json` (+ `.meta`), an array of `{ "id", "kind", "ref", "note" }`:
+
+- `ruling` - the reader's reading collides with a settled ruling (`ref`); `expect-override` (and, where the ruling moves a question, `answers-override`) replaces the case's facts, so the case fails if the ruling's behaviour regresses.
+- `engine-defect`, `executor-gap` - fixed in the engine or the executor; the case runs as written.
+- `not-executable` - with `"execute": false` the case is not run (why in `ref`/`note`); otherwise it runs and must pass, and the reader's own note is recorded instead of failing.
+- `open-question` - not executed; `EveryDisposition_NamesACase_AndTheOpenQuestionsAreCounted` prints each for the user under its own count.
+
+A case with no disposition runs as written, and a reader's `unsupported` note fails it.
+
 ## Running
 
 Run the dotnet-harness filter `ExpectedOutcomeTableTests`; add `Name~<case id>` to run one case, for example:

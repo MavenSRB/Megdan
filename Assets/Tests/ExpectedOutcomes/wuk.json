@@ -1,0 +1,1145 @@
+{
+  "hero": "Wuk",
+  "reader": "blind reader, 2026-09-29",
+  "cases": [
+    {
+      "id": "wuk-tree-slam-remove-tree-hit-hero-in-range",
+      "card": "Tree Slam",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk__7721594__front.png", "rulebook p.10 modal actions (bullet points)", "rulebook p.9 range", "rulebook p.19 remove", "rulebook p.13 attacking a hero, hero defeat coins"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "option: Remove a Tree token adjacent to you. Target a unit in range.", "token-1", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "tokens": "tree", "on-board": 0 },
+        { "ref": "actor", "attack": 4 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Tree Slam", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "wuk-tree-slam-adjacent-minion",
+      "card": "Tree Slam",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk__7721594__front.png", "rulebook p.10 modal actions", "rulebook p.13 attacking a minion (2 coins)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "option: Target a minion adjacent to you.", "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "actor", "attack": 4 },
+        { "tokens": "tree", "on-board": 0 }
+      ]
+    },
+    {
+      "id": "wuk-tree-slam-no-adjacent-tree-hero-not-targetable",
+      "card": "Tree Slam",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk__7721594__front.png", "rulebook p.10 picking targets, mandatory steps", "rulebook p.17 adjacent"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "token-1", "at": "distance 2 from actor" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "The first bullet targets only a minion (an adjacent enemy HERO is not a legal target for it); the second bullet needs a Tree token ADJACENT to Wuk, and the only one is 2 away, so no bullet is performable and the Attack is not offered."
+    },
+    {
+      "id": "wuk-tree-slam-hero-defends-tree-still-removed",
+      "card": "Tree Slam",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk__7721594__front.png", "rulebook p.14 defense total equal or higher defends", "rulebook p.10 steps applied in printed order"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" }
+        ],
+        "enemy-hero-1": { "defends-with": 4 }
+      },
+      "answers": [ "option: Remove a Tree token adjacent to you. Target a unit in range.", "token-1", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "ref": "actor", "attack": 4 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "actor", "coins": 0 }
+      ]
+    },
+    {
+      "id": "wuk-makeshift-weapon-remove-tree-hit-hero-in-range",
+      "handicap": true,
+      "card": "Makeshift Weapon",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk19__7721583__front.png", "rulebook p.20 handicap cards", "rulebook p.10 modal actions", "rulebook p.19 remove"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Makeshift Weapon", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "option: Remove a Tree token adjacent to you. Target a hero in range.", "token-1", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "ref": "actor", "attack": 3 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 }
+      ]
+    },
+    {
+      "id": "wuk-makeshift-weapon-minion-only-not-offered",
+      "handicap": true,
+      "card": "Makeshift Weapon",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk19__7721583__front.png", "rulebook p.20 handicap cards", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Makeshift Weapon", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "Both bullets of Makeshift Weapon target only a HERO; with no enemy hero adjacent or in range 2, the adjacent enemy minion is not a legal target even though a Tree token is adjacent."
+    },
+    {
+      "id": "wuk-mystic-saplings-place-three-in-radius",
+      "card": "Mystic Saplings",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk2__7721586__front.png", "rulebook p.18 place (empty space, supply first)", "rulebook p.9 radius", "rulebook p.19 tokens removed at end of round unless card says otherwise"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": []
+      },
+      "answers": [ "space: distance 1 from actor", "space: distance 2 from actor", "space: distance 3 from actor" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "tree", "on-board": 3 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Mystic Saplings", "state": "resolved" }
+      ],
+      "unsupported": "Answers name the empty spaces chosen for each placement (no v1 answer form for a placement space). Also expected: after this round's End of Round step 'Remove tokens', the 3 Tree tokens are still on the board (tokens tree on-board 3 at the start of the next round)."
+    },
+    {
+      "id": "wuk-mystic-saplings-up-to-one-and-radius-limit",
+      "card": "Mystic Saplings",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk2__7721586__front.png", "rulebook p.10 'up to' is non-mandatory", "rulebook p.9 radius value is the maximum distance"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": []
+      },
+      "answers": [ "space: distance 3 from actor", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "tree", "on-board": 1 },
+        { "card": "Mystic Saplings", "state": "resolved" }
+      ],
+      "unsupported": "Answers name a placement space. Also expected: a space at distance 4 from actor is NOT offered as a placement space (radius 3)."
+    },
+    {
+      "id": "wuk-mystic-saplings-short-supply-takes-from-board",
+      "card": "Mystic Saplings",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk2__7721586__front.png", "rulebook p.18 place: tokens are intentionally limited, remove from board first"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 6 from actor" }
+        ]
+      },
+      "answers": [ "space: distance 1 from actor" , "decline" ],
+      "expect": [
+        { "offered": true },
+        { "tokens": "tree", "supply": 0 }
+      ],
+      "unsupported": "Setup needs: every Tree token Wuk owns is already on the board (supply 0); only token-1 is spelled out because the printed supply size is not on any source I may read. Expected: the one placed Tree is taken from the board (a Tree formerly at distance 6 leaves that space) so the Tree total on the board is unchanged, and a Tree now stands adjacent to actor."
+    },
+    {
+      "id": "wuk-natures-protector-unit-adjacent-to-tree-in-range",
+      "card": "Nature's Protector",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk3__7721582__front.png", "rulebook p.10 modal actions", "rulebook p.9 range", "rulebook p.13 attacking a hero"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "option: Target a unit in range adjacent to a Tree token.", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "Expected also: token-1 is neither removed nor moved; the Tree is a targeting condition, not a cost."
+    },
+    {
+      "id": "wuk-natures-protector-no-tree-minion-adjacent-not-offered",
+      "card": "Nature's Protector",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk3__7721582__front.png", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ],
+      "unsupported": "No Tree token anywhere on the board: bullet 1 needs an adjacent HERO (the adjacent unit is a minion) and bullet 2 needs a unit adjacent to a Tree token."
+    },
+    {
+      "id": "wuk-natures-protector-tree-hero-out-of-range",
+      "card": "Nature's Protector",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk3__7721582__front.png", "rulebook p.9 range value is the maximum"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ]
+    },
+    {
+      "id": "wuk-natures-protector-adjacent-hero-defends-equal",
+      "card": "Nature's Protector",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk3__7721582__front.png", "rulebook p.14 defense total equal or higher defends"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "enemy-hero-1": { "defends-with": 5 }
+      },
+      "answers": [ "option: Target a hero adjacent to you.", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "actor", "coins": 0 }
+      ]
+    },
+    {
+      "id": "wuk-natures-guardian-minion-at-range-3-adjacent-to-tree",
+      "card": "Nature's Guardian",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk4__7721585__front.png", "rulebook p.9 range", "rulebook p.13 attacking a minion"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Guardian", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ]
+      },
+      "answers": [ "option: Target a unit in range adjacent to a Tree token.", "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "tokens": "tree", "on-board": 1 }
+      ]
+    },
+    {
+      "id": "wuk-natures-guardian-tree-unit-at-range-4-not-offered",
+      "card": "Nature's Guardian",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk4__7721585__front.png", "rulebook p.9 range value is the maximum"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Guardian", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-minion-1", "is": "not defeated" }
+      ]
+    },
+    {
+      "id": "wuk-natures-guardian-adjacent-hero-defends-high",
+      "card": "Nature's Guardian",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk4__7721585__front.png", "rulebook p.14 defense"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Guardian", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [ "option: Target a hero adjacent to you.", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 }
+      ]
+    },
+    {
+      "id": "wuk-natures-champion-both-bullets-two-targets",
+      "card": "Nature's Champion",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk6__7721592__front.png", "rulebook p.10 modal actions: multiple options are a single action, any order", "rulebook p.13 hero and minion coins"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ],
+        "enemy-hero-1": { "defends-with": "none" }
+      },
+      "answers": [ "option: Target a hero adjacent to you.", "enemy-hero-1", "option: Target a unit in range adjacent to a Tree token.", "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 6 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 3 },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "actor.level 5 (lowest level at which a Tier III card is held; v1 setup allows 1-4)."
+    },
+    {
+      "id": "wuk-natures-champion-same-target-not-twice",
+      "card": "Nature's Champion",
+      "action": "Attack",
+      "source": ["active-hero-cards/Wuk/wuk6__7721592__front.png", "rulebook p.14 defense"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [ "option: Target a hero adjacent to you.", "enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 6 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 }
+      ],
+      "unsupported": "actor.level 5. Also expected: after the first bullet resolves against enemy-hero-1, the second bullet ('Target a unit in range adjacent to a Tree token') offers NO target, because 'on different targets' forbids enemy-hero-1 again and no other enemy unit is in range; enemy-hero-1 is attacked (and discards to defend) exactly once."
+    },
+    {
+      "id": "wuk-trample-straight-line-through-hero-minion-tree",
+      "card": "Trample",
+      "action": "Movement",
+      "source": ["active-hero-cards/Wuk/wuk5__7721580__front.png", "rulebook p.11 movement as primary action", "rulebook p.18 ignoring obstacles / move through", "rulebook p.19 straight line", "rulebook p.17 defeat (collect coins)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Trample", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 1 from actor in a straight line" },
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "toward enemy-hero-1", "distance 4", "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "actor", "at": "adjacent to token-1" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "token-1", "at": "distance 2 from enemy-hero-1 in a straight line" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "Setup: enemy-hero-1, enemy-minion-1 and token-1 all lie on ONE straight line from actor, in that order, and the space at distance 4 on that line is empty (v1 cannot tie three pieces to the same line). enemy-hero-1 has cards in hand and discards one of its choice. The Tree is moved through, not removed or moved."
+    },
+    {
+      "id": "wuk-trample-enemy-hero-with-empty-hand-is-defeated",
+      "card": "Trample",
+      "action": "Movement",
+      "source": ["active-hero-cards/Wuk/wuk5__7721580__front.png", "rulebook p.17 defeat", "rulebook p.13 hero defeat coins"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Trample", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 1 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "toward enemy-hero-1", "distance 2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 2 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 }
+      ],
+      "unsupported": "Setup: enemy-hero-1 has no cards in hand (cannot discard), so the printed alternative 'or is defeated' applies."
+    },
+    {
+      "id": "wuk-trample-bent-path-no-effect",
+      "card": "Trample",
+      "action": "Movement",
+      "source": ["active-hero-cards/Wuk/wuk5__7721580__front.png", "rulebook p.11 units cannot move through obstacles", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Trample", "Gifts of Nature", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor off every straight line" }
+        ]
+      },
+      "answers": [ "distance 3" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 3 },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": 0 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "Answer: Wuk walks a 3-space path that turns (not a straight line), passing beside but never through enemy-minion-1 or enemy-hero-1. Expected: none of the 'If you move in a straight line' clauses apply, and Wuk cannot enter an obstacle space on a bent path."
+    },
+    {
+      "id": "wuk-angry-stampede-two-minions-defeated",
+      "card": "Angry Stampede",
+      "action": "Movement",
+      "source": ["active-hero-cards/Wuk/wuk7__7721589__front.png", "rulebook p.11 movement as primary action", "rulebook p.18 ignoring obstacles", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Angry Stampede", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 1 from actor in a straight line" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line" },
+          { "ref": "enemy-minion-2", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "toward enemy-minion-1", "distance 4", "enemy-minion-1", "enemy-minion-2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-minion-2", "is": "defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "actor", "coins": 4 }
+      ],
+      "unsupported": "actor.level 5. Setup: the three pieces lie on ONE straight line from actor in that order, the space at distance 4 on it is empty; neither minion is a heavy minion; enemy-hero-1 has cards in hand."
+    },
+    {
+      "id": "wuk-angry-stampede-third-minion-survives",
+      "card": "Angry Stampede",
+      "action": "Movement",
+      "source": ["active-hero-cards/Wuk/wuk7__7721589__front.png", "rulebook p.10 'up to' is non-mandatory and a limit"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Angry Stampede", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 1 from actor in a straight line" },
+          { "ref": "enemy-minion-2", "where": "distance 2 from actor in a straight line" },
+          { "ref": "enemy-minion-3", "where": "distance 3 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "toward enemy-minion-1", "distance 4", "enemy-minion-1", "enemy-minion-3" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 4 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-minion-3", "is": "defeated" },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "ref": "actor", "coins": 4 }
+      ],
+      "unsupported": "actor.level 5. Setup: the three minions lie on ONE straight line from actor, the space at distance 4 on it is empty, none is heavy, and the Battle Zone keeps at least one other enemy minion so no Lane push intervenes."
+    },
+    {
+      "id": "wuk-gifts-of-nature-remove-tree-retrieve",
+      "card": "Gifts of Nature",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk8__7721587__front.png", "rulebook p.19 remove", "rulebook p.10 retrieve a card", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature"],
+        "discard": ["Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 3 from actor" }
+        ]
+      },
+      "answers": [ "token-1", "card: Toss Away" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "tokens": "tree", "on-board": 0 },
+        { "card": "Toss Away", "state": "retrieved" },
+        { "card": "Gifts of Nature", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "wuk-gifts-of-nature-decline-retrieve-tree-still-removed",
+      "card": "Gifts of Nature",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk8__7721587__front.png", "rulebook p.10 'you may' is non-mandatory"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature"],
+        "discard": ["Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "token-1", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "card": "Toss Away", "state": "discarded" }
+      ]
+    },
+    {
+      "id": "wuk-gifts-of-nature-no-tree-in-radius",
+      "card": "Gifts of Nature",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk8__7721587__front.png", "rulebook p.10 cannot complete a mandatory step: stop, skip remaining steps"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature"],
+        "discard": ["Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 4 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "token-1", "at": "distance 4 from actor" },
+        { "card": "Toss Away", "state": "discarded" }
+      ],
+      "unsupported": "Reading: the mandatory first step 'Remove a Tree token in radius' cannot be done (only Tree is at distance 4, radius 3), so the retrieve after it is never reached; I expect the Skill not to be offered (see Ambiguities A5 for the other reading: offered but doing nothing)."
+    },
+    {
+      "id": "wuk-tree-of-plenty-friendly-hero-retrieves",
+      "card": "Tree of Plenty",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk9__7721588__front.png", "rulebook p.10 modal actions; retrieve (never another hero's cards)", "rulebook p.17 friendly", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Tree of Plenty", "Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 4 from actor" },
+          { "ref": "friendly-hero-1", "where": "distance 3 from actor" }
+        ]
+      },
+      "answers": [ "token-1", "option: A friendly hero in radius may retrieve a discarded card.", "friendly-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "ref": "friendly-hero-1", "hand": 1 }
+      ],
+      "unsupported": "Setup: friendly-hero-1 has at least one discarded card of its own; friendly-hero-1 chooses to retrieve one (its own card, its choice)."
+    },
+    {
+      "id": "wuk-tree-of-plenty-self-retrieve",
+      "card": "Tree of Plenty",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk9__7721588__front.png", "rulebook p.10 retrieve a card"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Tree of Plenty"],
+        "discard": ["Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "token-1", "option: You may retrieve a discarded card.", "card: Toss Away" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "card": "Toss Away", "state": "retrieved" }
+      ]
+    },
+    {
+      "id": "wuk-tree-of-plenty-friendly-hero-outside-radius",
+      "card": "Tree of Plenty",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk9__7721588__front.png", "rulebook p.9 radius value is the maximum", "rulebook p.10 modal actions (choose ONE)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Tree of Plenty", "Toss Away"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "friendly-hero-1", "where": "distance 5 from actor" }
+        ]
+      },
+      "answers": [ "token-1", "option: You may retrieve a discarded card.", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "ref": "friendly-hero-1", "hand": 0 }
+      ],
+      "unsupported": "Setup: friendly-hero-1 has a discarded card. Expected: friendly-hero-1 (distance 5, radius 4) is NOT offered as the hero for the second bullet; and because it is 'Choose one', Wuk cannot take both bullets."
+    },
+    {
+      "id": "wuk-abundance-both-bullets",
+      "card": "Abundance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk11__7721581__front.png", "rulebook p.10 modal actions (one or both, any order)", "rulebook p.10 retrieve"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance"],
+        "discard": ["Monstrous Throw"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 4 from actor" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "token-1", "option: You may retrieve a discarded card.", "card: Monstrous Throw", "option: A friendly hero in radius may retrieve a discarded card.", "friendly-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "is": "removed" },
+        { "card": "Monstrous Throw", "state": "retrieved" },
+        { "ref": "friendly-hero-1", "hand": 1 }
+      ],
+      "unsupported": "actor.level 5. Setup: friendly-hero-1 has at least one discarded card of its own and chooses to retrieve one."
+    },
+    {
+      "id": "wuk-abundance-no-tree-on-board",
+      "card": "Abundance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk11__7721581__front.png", "rulebook p.10 cannot complete a mandatory step"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance"],
+        "discard": ["Monstrous Throw"],
+        "pieces": [
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "card": "Monstrous Throw", "state": "discarded" },
+        { "ref": "friendly-hero-1", "hand": 0 },
+        { "tokens": "tree", "on-board": 0 }
+      ],
+      "unsupported": "actor.level 5. No Tree token anywhere on the board: the mandatory 'Remove a Tree token in radius' fails, so neither retrieval happens (see Ambiguities A5)."
+    },
+    {
+      "id": "wuk-claim-dominance-adjacent-minion-not-counted",
+      "card": "Claim Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk10__7721579__front.png", "rulebook p.17 active effects (This Round)", "rulebook p.8 minion battle"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Claim Dominance", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 3 from actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "actor", "coins": 0 },
+        { "card": "Claim Dominance", "state": "resolved" }
+      ],
+      "unsupported": "Setup: all three minions are in the Battle Zone and are the only minions there; Wuk stays in place until the end of round. Expected at this round's Minion Battle: enemy total counted as 1 (enemy-minion-1 not counted), friendly total 1, so the battle is a tie and no minion is removed. The effect is an Active 'This Round' effect (card turned sideways)."
+    },
+    {
+      "id": "wuk-claim-dominance-only-one-of-two-adjacent",
+      "card": "Claim Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk10__7721579__front.png", "rulebook p.8 minion battle", "rulebook p.10 'up to'"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Claim Dominance", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-2", "is": "not defeated" }
+      ],
+      "unsupported": "Setup: these are the only minions in the Battle Zone. Expected at Minion Battle: enemy total counted as 1 (only ONE adjacent minion discounted, not both), friendly total 1, tie, nothing removed."
+    },
+    {
+      "id": "wuk-claim-dominance-immune-heavy-still-discounted",
+      "card": "Claim Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk10__7721579__front.png", "rulebook p.13 heavy minion immunity", "rulebook p.18 immune"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Claim Dominance", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 4 from actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "not defeated" }
+      ],
+      "unsupported": "Setup: enemy-minion-1 is the enemy HEAVY minion, immune because enemy-minion-2 (non-heavy) is in the Battle Zone. Expected: enemy-minion-1 may still be the discounted minion ('regardless of immunity'); at Minion Battle enemy counted 1, friendly 1, tie."
+    },
+    {
+      "id": "wuk-claim-dominance-cancelled-when-wuk-defeated",
+      "card": "Claim Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk10__7721579__front.png", "rulebook p.17 active effect cancelled if you are defeated", "rulebook p.13 when a hero is defeated"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Claim Dominance", "Toss Away"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 3 from actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1" ],
+      "expect": [
+        { "offered": true }
+      ],
+      "unsupported": "Continuation: later the same round Wuk is attacked and defeated. Expected: the Claim Dominance active effect is cancelled, so at Minion Battle enemy counts 2 vs friendly 1 and the friendly team removes 1 minion."
+    },
+    {
+      "id": "wuk-assert-dominance-two-adjacent-not-counted",
+      "card": "Assert Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk12__7721591__front.png", "rulebook p.17 active effects", "rulebook p.8 minion battle"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Assert Dominance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-3", "where": "distance 3 from actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "enemy-minion-2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "ref": "actor", "coins": 0 },
+        { "card": "Assert Dominance", "state": "resolved" }
+      ],
+      "unsupported": "actor.level 5. Setup: these are the only minions in the Battle Zone; Wuk stays in place. Expected at Minion Battle: enemy counted 1, friendly 1, tie, nothing removed."
+    },
+    {
+      "id": "wuk-assert-dominance-third-adjacent-still-counts",
+      "card": "Assert Dominance",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk12__7721591__front.png", "rulebook p.8 minion battle", "rulebook p.10 'up to'"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Assert Dominance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-3", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "enemy-minion-2" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-3", "is": "not defeated" }
+      ],
+      "unsupported": "actor.level 5. Setup: only minions in the Battle Zone. Expected at Minion Battle: enemy counted 1 (two discounted, the third counts), friendly 1, tie; a friendly minion is never discounted."
+    },
+    {
+      "id": "wuk-toss-away-throw-adjacent-enemy-hero",
+      "card": "Toss Away",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk13__7721584__front.png", "rulebook p.18 place (empty space; not movement)", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-hero-1", "space: distance 3 from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "at": "distance 3 from actor" },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Toss Away", "state": "resolved" }
+      ],
+      "unsupported": "Answer names the destination space (any empty space within distance 3 of Wuk)."
+    },
+    {
+      "id": "wuk-toss-away-throw-tree-token",
+      "card": "Toss Away",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk13__7721584__front.png", "rulebook p.18 place", "rulebook p.19 tokens"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" }
+        ]
+      },
+      "answers": [ "token-1", "space: adjacent to enemy-hero-1 and distance 3 from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "at": "adjacent to enemy-hero-1" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "Answer names the destination space."
+    },
+    {
+      "id": "wuk-toss-away-nothing-adjacent-eligible",
+      "card": "Toss Away",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk13__7721584__front.png", "rulebook p.17 friendly", "rulebook p.10 picking targets"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "friendly-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "friendly-minion-1", "at": "adjacent to actor" },
+        { "ref": "enemy-hero-1", "at": "distance 2 from actor" }
+      ],
+      "unsupported": "Only a FRIENDLY unit is adjacent (not an enemy unit) and no token is adjacent; the enemy hero is in range but not adjacent."
+    },
+    {
+      "id": "wuk-mighty-throw-enemy-minion-to-range-4",
+      "card": "Mighty Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk14__7721596__front.png", "rulebook p.18 place", "rulebook p.18 minions outside of the Battle Zone"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Mighty Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "space: distance 4 from actor" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "at": "distance 4 from actor" },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "Answer names the destination space; setup: Wuk and the destination are inside the Battle Zone (so the minion does not walk back)."
+    },
+    {
+      "id": "wuk-mighty-throw-immune-heavy-not-targetable",
+      "card": "Mighty Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk14__7721596__front.png", "rulebook p.13 heavy minion immunity", "rulebook p.18 immune"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Mighty Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 3 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "enemy-minion-1", "at": "adjacent to actor" }
+      ],
+      "unsupported": "Setup: enemy-minion-1 is the enemy HEAVY minion and enemy-minion-2 is a non-heavy enemy minion in the same Battle Zone, so the heavy is immune; nothing else is adjacent."
+    },
+    {
+      "id": "wuk-monstrous-throw-repeat-hero-then-tree",
+      "card": "Monstrous Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk16__7721597__front.png", "rulebook p.10 repeat (once)", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-hero-1", "space: distance 4 from actor", "token-1", "space: adjacent to enemy-hero-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "at": "distance 4 from actor" },
+        { "ref": "token-1", "at": "adjacent to enemy-hero-1" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "actor.level 5. Answers name destination spaces; the second instance is the printed 'May repeat once' (the token-1 destination must also be within distance 4 of actor)."
+    },
+    {
+      "id": "wuk-monstrous-throw-decline-repeat",
+      "card": "Monstrous Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk16__7721597__front.png", "rulebook p.10 repeat is optional ('may')"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-minion-1", "space: distance 4 from actor", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "at": "distance 4 from actor" },
+        { "ref": "enemy-minion-2", "at": "adjacent to actor" }
+      ],
+      "unsupported": "actor.level 5. Answers name a destination space. Setup: all inside the Battle Zone."
+    },
+    {
+      "id": "wuk-into-the-canopy-swap-with-tree",
+      "card": "Into the Canopy",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk15__7721590__front.png", "rulebook p.19 swap (not movement or placement)", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Into the Canopy"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 2 from actor in a straight line" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" }
+        ]
+      },
+      "answers": [ "option: Swap with a Tree token in radius.", "token-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "token-1", "at": "distance 2 from actor in a straight line" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "Setup: enemy-hero-1 is adjacent to token-1 and at distance 3 from actor (continuing the same line), so after the swap Wuk stands where the Tree stood (next to enemy-hero-1) and the Tree stands where Wuk stood. A swap is not movement: 'moved' should read 0 if the executor counts only movement."
+    },
+    {
+      "id": "wuk-into-the-canopy-swap-friendly-hero-with-tree",
+      "card": "Into the Canopy",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk15__7721590__front.png", "rulebook p.19 swap", "rulebook p.17 friendly (never includes you)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Into the Canopy"],
+        "pieces": [
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "option: Swap a friendly unit in radius with a Tree token in radius.", "friendly-hero-1", "token-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-hero-1", "at": "adjacent to actor" },
+        { "ref": "token-1", "at": "distance 2 from actor" },
+        { "ref": "actor", "moved": 0 }
+      ]
+    },
+    {
+      "id": "wuk-into-the-canopy-tree-outside-radius",
+      "card": "Into the Canopy",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk15__7721590__front.png", "rulebook p.9 radius value is the maximum"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Protector", "Gifts of Nature", "Into the Canopy"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "friendly-hero-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "token-1", "at": "distance 3 from actor" },
+        { "ref": "friendly-hero-1", "at": "adjacent to actor" }
+      ],
+      "unsupported": "The only Tree is at distance 3 (radius 2), so neither bullet has a Tree in radius. An enemy unit in radius is never a legal swap partner for bullet 2."
+    },
+    {
+      "id": "wuk-treetop-ride-two-swaps",
+      "card": "Treetop Ride",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk17__7721595__front.png", "rulebook p.10 modal actions (up to two times, one action)", "rulebook p.19 swap"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Treetop Ride"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 1 from actor in a straight line" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "option: Swap a friendly unit in radius with a Tree token in radius.", "friendly-hero-1", "token-1", "option: Swap with a Tree token in radius.", "token-1" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-hero-1", "at": "adjacent to actor and token-1" },
+        { "ref": "token-1", "at": "distance 2 from actor in a straight line" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "actor.level 5. Setup: token-1 and friendly-hero-1 on the same straight line from actor. Trace: swap 1 puts friendly-hero-1 at distance 1 and token-1 at distance 2; swap 2 puts Wuk at distance 2 (old friendly space) and token-1 on Wuk's starting space."
+    },
+    {
+      "id": "wuk-treetop-ride-decline-second",
+      "card": "Treetop Ride",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk17__7721595__front.png", "rulebook p.10 'up to' is non-mandatory"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Treetop Ride"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 1 from actor in a straight line" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor in a straight line" }
+        ]
+      },
+      "answers": [ "option: Swap a friendly unit in radius with a Tree token in radius.", "friendly-hero-1", "token-1", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-hero-1", "at": "adjacent to actor" },
+        { "ref": "token-1", "at": "distance 2 from actor in a straight line" },
+        { "ref": "actor", "moved": 0 }
+      ],
+      "unsupported": "actor.level 5."
+    },
+    {
+      "id": "wuk-treetop-ride-no-tree-in-radius",
+      "card": "Treetop Ride",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk17__7721595__front.png", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Treetop Ride"],
+        "pieces": [
+          { "ref": "token-1", "kind": "tree", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "friendly-minion-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "token-1", "at": "distance 3 from actor" }
+      ],
+      "unsupported": "actor.level 5."
+    },
+    {
+      "id": "wuk-march-of-nature-extra-tree-after-saplings",
+      "card": "Mystic Saplings",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk18__7721593__front.png", "active-hero-cards/Wuk/wuk2__7721586__front.png", "rulebook p.16 the Ultimate (permanent, while on the board)", "rulebook p.7 resolve your card", "rulebook p.18 place"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Treetop Ride"],
+        "pieces": []
+      },
+      "answers": [ "space: distance 1 from actor", "space: distance 2 from actor", "space: distance 3 from actor", "space: distance 3 from actor (March of Nature)" ],
+      "expect": [
+        { "offered": true },
+        { "card": "Mystic Saplings", "state": "resolved" },
+        { "tokens": "tree", "on-board": 4 }
+      ],
+      "unsupported": "actor.level 8. Case exercises the Ultimate March of Nature: after Mystic Saplings is resolved (placed on the dashboard), Wuk may place one more Tree token in radius 3 (the Ultimate's own radius). Answers name placement spaces."
+    },
+    {
+      "id": "wuk-march-of-nature-decline",
+      "card": "Monstrous Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk18__7721593__front.png", "rulebook p.10 'you may' is non-mandatory"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ]
+      },
+      "answers": [ "enemy-hero-1", "space: distance 4 from actor", "decline", "decline" ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "at": "distance 4 from actor" },
+        { "tokens": "tree", "on-board": 0 }
+      ],
+      "unsupported": "actor.level 8. Answers name the destination space; throw the hero, decline the repeat, decline the Ultimate's placement. Also expected: a space at distance 4 is never offered for the Ultimate's placement (radius 3)."
+    },
+    {
+      "id": "wuk-march-of-nature-after-hold",
+      "card": "Monstrous Throw",
+      "action": "Skill",
+      "source": ["active-hero-cards/Wuk/wuk18__7721593__front.png", "rulebook p.12 hold action", "rulebook p.7 resolve your card"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "hand": ["Tree Slam", "Mystic Saplings", "Nature's Champion", "Abundance", "Monstrous Throw"],
+        "pieces": []
+      },
+      "answers": [ "space: distance 2 from actor" ],
+      "expect": [
+        { "card": "Monstrous Throw", "state": "resolved" },
+        { "tokens": "tree", "on-board": 1 }
+      ],
+      "unsupported": "actor.level 8; action is HOLD (no v1 action word): Wuk resolves Monstrous Throw with a Hold action and does nothing. Expected: the card is still resolved, so March of Nature still offers its Tree placement."
+    }
+  ]
+}

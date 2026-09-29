@@ -1,0 +1,420 @@
+[
+ {
+  "id": "mrak-fissure-defeat-minion-then-three-rocks-from-vacated-space",
+  "kind": "ruling",
+  "ref": "rulebook p.13 (minion Defeat)",
+  "note": "rulebook p.13: an Attack on a minion defeats it with no Defense comparison, so the engine computes no Attack total to read; the override drops the reader's attack fact and keeps every other",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "defeated"
+   },
+   {
+    "ref": "actor",
+    "coins": 2
+   },
+   {
+    "tokens": "rock",
+    "on-board": 3
+   },
+   {
+    "ref": "actor",
+    "moved": 0
+   },
+   {
+    "card": "Fissure",
+    "state": "resolved"
+   }
+  ]
+ },
+ {
+  "id": "mrak-fissure-hero-defends-at-equal-total-rocks-skip-occupied-space",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: because enemy-hero-1 still stands in the first space of the line, the rock tokens go to the first three EMPTY spaces beyond it: distance 2, 3 and 4 from actor on the straight line from actor through enemy-hero-1; no rock token is placed in enemy-hero-1's space; no minion may be adjacent to enemy-hero-1 (no defense modifiers)",
+  "execute": true
+ },
+ {
+  "id": "mrak-fissure-occupied-space-in-line-is-skipped",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "friendly-minion-1 must stand directly behind the target on the line from Mrak (declared note), which the table does not state | reader note: friendly-minion-1 must stand on the same straight line as actor and enemy-minion-1, directly behind enemy-minion-1; the rock tokens then occupy distance 1 (enemy-minion-1's vacated space), 3 and 4 from actor on that line - the friendly minion's space is skipped, not a stopping point",
+  "execute": false
+ },
+ {
+  "id": "mrak-fissure-no-adjacent-enemy-not-offered",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor (9.13 pass 2): a play the table expects not offered, refused by the rules even past the offer, leaves the board unchanged for the facts; the case runs as written"
+ },
+ {
+  "id": "mrak-stone-grip-three-rocks-behind-hero-in-line",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: each of the three rock tokens is adjacent to enemy-hero-1 and at distance 4 from actor (with the target in a straight line at distance 3, exactly three of its neighbours are at distance 4, forming the far side); no rock token at distance 2 or 3 from actor",
+  "execute": true
+ },
+ {
+  "id": "mrak-stone-grip-hero-at-distance-4-out-of-range",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the enemy minion in range is not a valid target - the text names an enemy hero",
+  "execute": true
+ },
+ {
+  "id": "mrak-stone-grip-range-item-reaches-distance-4",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: each rock token adjacent to enemy-hero-1 and at distance 5 from actor",
+  "execute": true
+ },
+ {
+  "id": "mrak-stone-grip-farthest-space-blocked-falls-to-next-farthest",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "friendly-minion-1 must stand directly behind the target on the line from Mrak (declared note), which the table does not state | reader note: friendly-minion-1 stands directly behind enemy-hero-1 on the line from actor (it occupies the single farthest-in-line neighbour at distance 3); of enemy-hero-1's empty neighbours the two at distance 3 from actor receive rock tokens and the third rock goes into one of the two neighbours at distance 2 (actor chooses); the neighbour at distance 1 from actor receives none. See Ambiguities A2",
+  "execute": false
+ },
+ {
+  "id": "mrak-stone-grip-fewer-than-three-empty-spaces-places-none",
+  "kind": "ruling",
+  "ref": "MR-Q3",
+  "note": "MR-Q3 (\"Fill; place what fits\"): with fewer than three empty spaces adjacent to the target Stone Grip places as many as fit; the reader read \"place exactly 3\" as placing none",
+  "expect-override": [
+   {
+    "tokens": "rock",
+    "on-board": 2
+   }
+  ]
+ },
+ {
+  "id": "mrak-seismic-slam-hero-beside-rock-discards",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): enemy-hero-1 (holding cards) chooses to discard a card rather than be defeated; the rock token stays on the board"
+ },
+ {
+  "id": "mrak-seismic-slam-hero-beside-terrain-discards",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's obstacle-1 must be a terrain space (declared note) but the table stages a plain obstacle | reader note: obstacle-1 must be a terrain space (a board space without a full grid outline, or the surrounding water), not a unit or token; no rock token anywhere near",
+  "execute": false
+ },
+ {
+  "id": "mrak-seismic-slam-hero-beside-unit-only-not-offered",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging (9.13 pass 2): pieces stand on open ground, clear of terrain, unless the table stages terrain; the case runs as written | reader note (recorded, not executed): enemy-hero-1 is adjacent to no terrain space and no rock token (a minion is an obstacle but not terrain)"
+ },
+ {
+  "id": "mrak-seismic-slam-empty-handed-hero-is-defeated",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's enemy-hero-1 has no cards in hand (declared note) but the table does not stage \"enemy-hero-1.hand\": [] | reader note: setup: enemy-hero-1 (level 1) has no cards in hand, so it cannot discard and is defeated; the enemy team spends 1 life (lowest card Tier I)",
+  "execute": false
+ },
+ {
+  "id": "mrak-seismic-slam-secondary-attack-is-non-ranged",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the radius 3 icon does not let the secondary Attack (value 6) reach a hero at distance 2",
+  "execute": true
+ },
+ {
+  "id": "mrak-seismic-assault-radius-4-hero-discards",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): enemy-hero-1 (holding cards) chooses to discard a card rather than be defeated"
+ },
+ {
+  "id": "mrak-seismic-assault-radius-item-reaches-distance-5",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written"
+ },
+ {
+  "id": "mrak-epicentre-two-heroes-each-discard",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): each enemy hero (holding cards) chooses to discard rather than be defeated; the repeat is the second instance on a different target"
+ },
+ {
+  "id": "mrak-epicentre-repeat-cannot-take-same-target",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): enemy-hero-2 is in radius but adjacent to no terrain and no rock token, so the repeat has no legal different target; enemy-hero-1 must not be offered as the repeat target (hand -1, never -2)"
+ },
+ {
+  "id": "mrak-stone-carapace-move-4-and-round-long-substitute",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: Stone Carapace's This round effect is active (card turned on its side) until end of round: when actor would discard a card from hand this round (including discarding to defend), actor may discard the resolved Stone Carapace instead; when actor is attacked this round, actor may discard the resolved Stone Carapace to defend with its printed Defense 6 (plus Defense items), keeping all hand cards",
+  "execute": true
+ },
+ {
+  "id": "mrak-stone-carapace-zero-move-still-applies-text",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the This round substitute effect is active even though actor moved 0 spaces; if enemy-hero-1 later attacks actor this round, actor's hand size after defending with Stone Carapace is unchanged (the discarded card is the resolved Stone Carapace, not a hand card)",
+  "execute": true
+ },
+ {
+  "id": "mrak-rock-solid-retrieve-discarded-card-then-move",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: after the play Boulder Blitz is in actor's hand; Rock Solid's This round substitute effect (same wording as Stone Carapace, Defense 6) is active for the rest of the round",
+  "execute": true
+ },
+ {
+  "id": "mrak-rock-solid-resolved-card-is-not-a-discarded-card",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the standing \"actor played Boulder Blitz last turn\" cannot be played on the staged board: nothing stands adjacent to push that turn, and the table names no earlier-turn board | reader note: Boulder Blitz (resolved, not discarded) must not be offered for retrieval; the discard pile is empty so nothing can be retrieved",
+  "execute": false
+ },
+ {
+  "id": "mrak-boulder-rush-push-minion-2-and-follow-2",
+  "kind": "ruling",
+  "ref": "p.19 displaced-minion correction; 8.81/8.83 leash",
+  "note": "p.19 displaced-minion correction (HERO_WUK throws reading: a minion placed outside its Battle Zone is returned; 8.81/8.83 move leash): the minion ends back inside the Battle Zone",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "ref": "actor",
+    "moved": 2
+   },
+   {
+    "ref": "actor",
+    "at": "adjacent to enemy-minion-1"
+   },
+   {
+    "ref": "actor",
+    "coins": 0
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   }
+  ]
+ },
+ {
+  "id": "mrak-boulder-rush-push-jumps-obstacle-follow-stops-short",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "friendly-minion-1 must stand directly behind the target on the line from Mrak (declared note), which the table does not state | reader note: friendly-minion-1 stands directly behind enemy-minion-1 on the line from actor; the push passes through it and enemy-minion-1 ends beyond it (distance 3 from actor's start); actor may not choose to move 2 (that would end on friendly-minion-1's space)",
+  "execute": false
+ },
+ {
+  "id": "mrak-boulder-rush-only-friendly-adjacent-not-offered",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: no token and no enemy unit is adjacent to actor (the adjacent unit is friendly)",
+  "execute": true
+ },
+ {
+  "id": "mrak-boulder-blitz-push-hero-3-follow-3",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: enemy-hero-1 ends 4 spaces from actor's starting space in a straight line away from actor; actor follows along the same line",
+  "execute": true
+ },
+ {
+  "id": "mrak-boulderdozer-push-and-follow-through-two-obstacles",
+  "kind": "ruling",
+  "ref": "p.19 displaced-minion correction; 8.81/8.83 leash",
+  "note": "p.19 displaced-minion correction (HERO_WUK throws reading: a minion placed outside its Battle Zone is returned; 8.81/8.83 move leash): the minion ends back inside the Battle Zone",
+  "expect-override": [
+   {
+    "offered": true
+   },
+   {
+    "ref": "friendly-minion-1",
+    "moved": 0
+   },
+   {
+    "ref": "token-1",
+    "moved": 0
+   },
+   {
+    "ref": "actor",
+    "moved": 4
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   },
+   {
+    "ref": "enemy-minion-1",
+    "is": "not defeated"
+   }
+  ]
+ },
+ {
+  "id": "mrak-stomping-step-move-hero-off-rock-leaves-rock",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the new rock token occupies the space enemy-hero-1 left (so it ends adjacent to enemy-hero-1); token-1 does not move",
+  "execute": true
+ },
+ {
+  "id": "mrak-stomping-step-friendly-unit-is-a-legal-target",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the printed target is 'a unit', not 'an enemy unit'; the new rock token occupies friendly-minion-1's former space",
+  "execute": true
+ },
+ {
+  "id": "mrak-stomping-step-unit-not-beside-rock-or-terrain-not-offered",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging (9.13 pass 2): pieces stand on open ground, clear of terrain, unless the table stages terrain; the case runs as written | reader note (recorded, not executed): no unit within radius 4 of actor is adjacent to terrain or to a rock token (token-1 is far away and adjacent to no unit; the minion beside the hero is not terrain)"
+ },
+ {
+  "id": "mrak-ground-shaker-two-different-targets-two-rocks",
+  "kind": "not-executable",
+  "ref": "MR-Q1",
+  "note": "the table stages two rocks and expects four after two placements; the supply is three (MR-Q1), so the third placement first asks which standing rock to reclaim (p.18), a question the answers do not cover | reader note: one new rock token in each unit's vacated space",
+  "execute": false
+ },
+ {
+  "id": "mrak-ground-shaker-first-rock-qualifies-second-target",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: enemy-minion-1 is not adjacent to token-1 nor to terrain at the start; it becomes a legal repeat target because the first instance's rock lands in enemy-hero-1's vacated space, which is adjacent to enemy-minion-1; no other unit within radius 4",
+  "execute": true
+ },
+ {
+  "id": "mrak-ground-shaker-repeat-needs-a-different-target",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: enemy-hero-1 (now adjacent to the new rock) must not be offered again as the repeat target; it moves 1 space in total, never 2; no other unit within radius 4",
+  "execute": true
+ },
+ {
+  "id": "mrak-treacherous-ground-pull-hero-beside-rock",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: the destination must be a space adjacent to terrain or to a rock token; no rock token is placed by this card",
+  "execute": true
+ },
+ {
+  "id": "mrak-treacherous-ground-unit-at-distance-4-out-of-range",
+  "kind": "ruling",
+  "ref": "RULING 53 and rule 14 (8.35z15)",
+  "note": "Only a false printed \"If\" makes a do-nothing play legal (RULING 53); an optional text with nothing in reach is greyed (rule 14, 8.35z15). The reader flagged this as their ambiguity A6.",
+  "expect-override": [
+   {
+    "offered": false
+   }
+  ]
+ },
+ {
+  "id": "mrak-rockslide-range-4-moves-friendly-hero",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): the printed target is 'a unit', friendly units included"
+ },
+ {
+  "id": "mrak-rockslide-enemy-hero-beside-terrain",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the reader's obstacle-1 must be a terrain space (declared note) but the table stages a plain obstacle | reader note: obstacle-1 must be a terrain space; no rock token on the board",
+  "execute": false
+ },
+ {
+  "id": "mrak-avalanche-two-different-units",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "on the canonical board no space adjacent to token-1 is offered for enemy-hero-1; the reader's relative geometry of the hero and the rock is not stated",
+  "execute": false
+ },
+ {
+  "id": "mrak-avalanche-repeat-may-take-same-unit",
+  "kind": "not-executable",
+  "ref": "format v1.1 cannot state the reader's setup",
+  "note": "the answers stop before the repeat's destination; the reader's second destination (\"adjacent to both\") is only in the declared note | reader note: Avalanche's 'May repeat once' has no 'different target' clause (unlike Epicentre and Ground Shaker), so the repeat may move enemy-hero-1 again; second destination: a space adjacent to both enemy-hero-1's current space and token-1, still within range 4 of actor",
+  "execute": false
+ },
+ {
+  "id": "mrak-rolling-stone-through-one-empty-space",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor staging and walk (9.13 pass 2): pieces \"in a straight line\" from one piece share its file, and a \"toward X\" walk follows X’s file (a straight-line trample through the named pieces); the case runs as written | reader note (recorded, not executed): token-1 and enemy-minion-1 lie on the same straight line from actor (spaces 1 and 3); space 2 is empty, space 4 is empty and is the destination; the path passes through exactly one empty space (space 2), which is allowed"
+ },
+ {
+  "id": "mrak-rolling-stone-two-empty-spaces-too-many",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: spaces 1, 2 and 4 of the line are empty; the destination at distance 4 (beyond token-1) must NOT be selectable because the path would pass through two empty spaces (1 and 2); distance 2 passes through one empty space and is legal",
+  "execute": true
+ },
+ {
+  "id": "mrak-strolling-stone-through-two-empty-spaces",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: spaces 1, 2 and 4 of the line are empty; the path to space 4 passes through two empty spaces (1 and 2) and through token-1 - legal for Strolling Stone (no more than two), illegal for Rolling Stone",
+  "execute": true
+ },
+ {
+  "id": "mrak-strolling-stone-three-empty-spaces-too-many",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: spaces 1, 2, 3 and 5 of the line are empty; the destination at distance 5 must NOT be selectable (the path would pass through three empty spaces 1, 2, 3); distance 3 passes through two and is legal",
+  "execute": true
+ },
+ {
+  "id": "mrak-rock-and-a-hard-place-stone-grip-one-discard-per-hero",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): this case exercises the Ultimate Rock and a Hard Place; three rocks adjacent to one hero still cost that hero exactly one card, not three"
+ },
+ {
+  "id": "mrak-rock-and-a-hard-place-fissure-after-defence",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): this case exercises the Ultimate; enemy-hero-1 discards one card to defend, then the rock placed at distance 2 on the line (adjacent to enemy-hero-1) triggers the Ultimate: one more discard"
+ },
+ {
+  "id": "mrak-rock-and-a-hard-place-once-per-turn-across-repeat",
+  "kind": "not-executable",
+  "ref": "MR-Q1",
+  "note": "the table stages two rocks and expects four after two placements; the supply is three (MR-Q1), so the third placement first asks which standing rock to reclaim (p.18), a question the answers do not cover | reader note: this case exercises the Ultimate's 'Once per turn': the first instance's rock (in enemy-hero-1's vacated space) triggers a discard; the repeated instance's rock beside enemy-hero-2 in the same turn does not",
+  "execute": false
+ },
+ {
+  "id": "mrak-rock-and-a-hard-place-moving-beside-rock-is-not-placing",
+  "kind": "not-executable",
+  "ref": "reader note (the format could not state it)",
+  "note": "Every executed fact passes; the reader's own note names what the table could not state: this case exercises the Ultimate: moving a hero next to an existing rock is not placing a rock, so no discard",
+  "execute": true
+ },
+ {
+  "id": "mrak-rock-and-a-hard-place-friendly-hero-unaffected",
+  "kind": "executor-gap",
+  "ref": "ExpectedOutcomeExecutor",
+  "note": "executor default (9.13 pass 2): an opponent’s own which-card-to-discard question the table does not answer takes the first card in that hand; the case runs as written | reader note (recorded, not executed): this case exercises the Ultimate; friendly-hero-1 must stand on the far side of enemy-hero-1 (distance 4 or 5 from actor) so at least one of the placed rocks is adjacent to it; only enemy heroes discard"
+ },
+ {
+  "id": "mrak-lesser-fissure-defeats-hero-then-rocks",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ },
+ {
+  "id": "mrak-lesser-fissure-cannot-target-minion",
+  "kind": "not-executable",
+  "ref": "rulebook p.6",
+  "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
+  "execute": false
+ }
+]

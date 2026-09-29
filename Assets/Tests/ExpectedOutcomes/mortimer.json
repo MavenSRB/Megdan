@@ -1,0 +1,1599 @@
+{
+  "hero": "Mortimer",
+  "reader": "blind reader, 2026-09-29",
+  "cases": [
+    {
+      "id": "mortimer-knife-three-removals-defeat-hero",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer__7695015__front.png", "rulebook p.10 modal actions (choose up to)", "rulebook p.13 attack total, attacking a hero, hero defeat coins", "rulebook p.14 defense total", "rulebook p.19 remove, tokens"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-3"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "tokens": "zombie", "on-board": 0 },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 },
+        { "card": "Knife of the Living Dead", "state": "resolved" }
+      ],
+      "unsupported": "expectation: enemy team spends 1 Life counter (defeated level-1 hero's lowest card Tier is I, rulebook p.13)"
+    },
+    {
+      "id": "mortimer-knife-only-adjacent-zombies-count",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer__7695015__front.png", "rulebook p.17 adjacent", "rulebook p.13 attack total", "rulebook p.14 defense total"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "tokens": "zombie", "on-board": 1 },
+        { "ref": "token-2", "at": "distance 3 from enemy-hero-1" },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "offer check: token-2 (not adjacent to the target) is not offered for the Remove bullet"
+    },
+    {
+      "id": "mortimer-knife-move-then-remove-with-attack-item",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer__7695015__front.png", "active-hero-cards/Mortimer/mortimer9__7695014__front.png (Attack item icon)", "rulebook p.10 modal actions, bullets in any order", "rulebook p.11 movement in the card text", "rulebook p.16 item bonus", "rulebook p.13 attack total"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Robbing Zombies", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 5 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 6 },
+        { "tokens": "zombie", "on-board": 0 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 }
+      ]
+    },
+    {
+      "id": "mortimer-knife-capped-at-three-choices",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer__7695015__front.png", "rulebook p.10 modal actions (up to)", "rulebook p.14 defense total"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-4", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 8 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-3"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "tokens": "zombie", "on-board": 1 },
+        { "ref": "token-4", "at": "adjacent to enemy-hero-1" },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 }
+      ],
+      "unsupported": "offer check: no fourth choice is offered without the Ultimate"
+    },
+    {
+      "id": "mortimer-knife-defeats-adjacent-minion",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer__7695015__front.png", "rulebook p.13 attacking a minion (2 coins)", "rulebook p.17 before the attack"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "tokens": "zombie", "on-board": 0 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "ref": "actor", "coins": 2 }
+      ]
+    },
+
+    {
+      "id": "mortimer-awaken-four-zombies-adjacent",
+      "card": "Awaken!",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer2__7695011__front.png", "rulebook p.18 place", "rulebook p.19 tokens", "rulebook p.9 radius"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["place: adjacent to actor", "place: adjacent to actor", "place: adjacent to actor", "place: adjacent to actor"],
+      "expect": [
+        { "offered": true },
+        { "tokens": "zombie", "on-board": 4 },
+        { "card": "Awaken!", "state": "resolved" }
+      ],
+      "unsupported": "setup: no spawn point within distance 4 of actor; answer naming the empty space each token is placed into ('place: <placement>'); expectation: every placed zombie token is adjacent to actor"
+    },
+    {
+      "id": "mortimer-awaken-up-to-declined-after-two",
+      "card": "Awaken!",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer2__7695011__front.png", "rulebook p.10 mandatory and optional steps (up to)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["place: adjacent to actor", "place: adjacent to actor", "decline"],
+      "expect": [
+        { "offered": true },
+        { "tokens": "zombie", "on-board": 2 }
+      ],
+      "unsupported": "setup: no spawn point within distance 4 of actor; answer 'place: <placement>'"
+    },
+    {
+      "id": "mortimer-awaken-only-empty-spaces-take-tokens",
+      "card": "Awaken!",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer2__7695011__front.png", "rulebook p.18 place (only into an empty space), obstacle", "rulebook p.17 empty space / empty spawn point"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "obstacle-1", "where": "adjacent to actor" },
+          { "ref": "obstacle-2", "where": "adjacent to actor" },
+          { "ref": "obstacle-3", "where": "adjacent to actor" },
+          { "ref": "obstacle-4", "where": "adjacent to actor" },
+          { "ref": "obstacle-5", "where": "adjacent to actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["place: adjacent to actor"],
+      "expect": [
+        { "offered": true },
+        { "tokens": "zombie", "on-board": 1 }
+      ],
+      "unsupported": "setup: no spawn point within distance 4 of actor; answer 'place: <placement>'; offer check: after one token no further placement is offered (no empty adjacent space and no empty spawn point in radius)"
+    },
+    {
+      "id": "mortimer-awaken-zombies-survive-end-of-round",
+      "card": "Awaken!",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer2__7695011__front.png", "rulebook p.8 end of round: remove tokens", "rulebook p.19 tokens (removed at end of round unless the card text says otherwise)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["place: adjacent to actor", "place: adjacent to actor", "place: adjacent to actor", "place: adjacent to actor"],
+      "expect": [
+        { "offered": true },
+        { "tokens": "zombie", "on-board": 4 }
+      ],
+      "unsupported": "setup: no spawn point within distance 4 of actor; answer 'place: <placement>'; after the play, finish the round through its End of Round steps (Remove Tokens included), then expect: zombie tokens on board = 4"
+    },
+    {
+      "id": "mortimer-awaken-as-defense-still-places-zombies",
+      "card": "Awaken!",
+      "action": "Defense",
+      "source": ["active-hero-cards/Mortimer/mortimer2__7695011__front.png", "rulebook p.14 defense/skill cards (card text applied when discarded to defend), attack/defense detailed order", "rulebook p.14 defense total"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["defense: Awaken!", "place: adjacent to actor", "place: adjacent to actor", "decline"],
+      "expect": [
+        { "tokens": "zombie", "on-board": 2 },
+        { "ref": "actor", "is": "not defeated" },
+        { "card": "Awaken!", "state": "discarded" },
+        { "ref": "actor", "hand": -1 }
+      ],
+      "unsupported": "action 'Defense' (Awaken! discarded from hand to defend); setup: enemy-hero-1 attacks actor this turn with a non-ranged Attack whose total is 3, no minion within distance 2 of actor, no spawn point within distance 4 of actor; answer 'place: <placement>'"
+    },
+
+    {
+      "id": "mortimer-crawling-dead-minion-then-another-hero-discards",
+      "card": "Crawling Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer3__7703472__front.png", "rulebook p.17 after the attack", "rulebook p.13 attacking a minion", "rulebook p.10 making choices (the other hero picks the card)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able.", "enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 6 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "tokens": "zombie", "on-board": 1 },
+        { "card": "Crawling Dead", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-crawling-dead-target-is-not-another-hero",
+      "card": "Crawling Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer3__7703472__front.png", "rulebook p.17 after the attack", "rulebook p.14 defense total", "rulebook p.11 movement in the card text (exact distance)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 7 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "away from enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 6 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "token-1", "moved": 1 }
+      ],
+      "unsupported": "offer check: the discard bullet does not offer enemy-hero-1, the attack's own target ('Another enemy hero'); enemy-hero-1 loses only its Defense card, not a second card"
+    },
+    {
+      "id": "mortimer-crawling-dead-hero-outside-radius-not-offered",
+      "card": "Crawling Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer3__7703472__front.png", "rulebook p.9 radius", "rulebook p.11 movement in the card text"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 5 from actor in a straight line" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward actor"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "enemy-hero-1", "hand": 0 },
+        { "ref": "token-1", "moved": 1 }
+      ],
+      "unsupported": "setup: token-1 on the same straight line as enemy-hero-1, between it and actor (adjacent to enemy-hero-1, in radius); offer check: the discard bullet does not offer enemy-hero-1 (distance 5, outside radius 4)"
+    },
+
+    {
+      "id": "mortimer-walking-dead-two-heroes-discard",
+      "card": "Walking Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer4__7703471__front.png", "rulebook p.17 after the attack", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Initiative +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "enemy-hero-2", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-2"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "card": "Walking Dead", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-walking-dead-each-hero-only-once",
+      "card": "Walking Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer4__7703471__front.png", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Initiative +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "away from enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "token-1", "moved": 1 }
+      ],
+      "unsupported": "offer check: for the second choice the discard bullet does not offer enemy-hero-1 again"
+    },
+    {
+      "id": "mortimer-walking-dead-equal-defense-holds-then-discard",
+      "card": "Walking Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer4__7703471__front.png", "rulebook p.14 defense total (equal or higher defends)", "rulebook p.17 after the attack (applied after the target defends)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Initiative +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-2", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 7 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-2",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "ref": "actor", "coins": 0 }
+      ]
+    },
+
+    {
+      "id": "mortimer-braains-retrieve-twice",
+      "card": "Braains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer5__7703470__front.png", "rulebook p.10 retrieve a card", "rulebook p.17 before the attack", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Braains...!", "Corpse Slam"],
+        "discard": ["Awaken!", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Awaken!",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Stage Dive"
+      ],
+      "expect": [
+        { "offered": true },
+        { "card": "Awaken!", "state": "retrieved" },
+        { "card": "Stage Dive", "state": "retrieved" },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "enemy-hero-1", "hand": 0 }
+      ]
+    },
+    {
+      "id": "mortimer-braains-move-zombie-then-retrieve",
+      "card": "Braains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer5__7703470__front.png", "rulebook p.10 performing actions (steps in order)", "rulebook p.11 movement in the card text"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Braains...!", "Corpse Slam"],
+        "discard": ["Awaken!", "Stage Dive"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Stage Dive"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "at": "adjacent to enemy-hero-1" },
+        { "card": "Stage Dive", "state": "retrieved" },
+        { "card": "Awaken!", "state": "discarded" },
+        { "ref": "enemy-minion-1", "is": "defeated" }
+      ],
+      "unsupported": "setup: token-1 within distance 4 of actor; offer check: the retrieve bullet is not offered before token-1 is moved"
+    },
+    {
+      "id": "mortimer-braains-hero-outside-radius-no-retrieve",
+      "card": "Braains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer5__7703470__front.png", "rulebook p.9 radius", "rulebook p.19 target (presence checks)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 5 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Braains...!", "Corpse Slam"],
+        "discard": ["Awaken!", "Stage Dive"]
+      },
+      "answers": ["enemy-minion-1", "decline"],
+      "expect": [
+        { "offered": true },
+        { "card": "Awaken!", "state": "discarded" },
+        { "card": "Stage Dive", "state": "discarded" },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 }
+      ],
+      "unsupported": "offer check: the retrieve bullet is not offered (no enemy hero within radius 4 is adjacent to a zombie token)"
+    },
+
+    {
+      "id": "mortimer-racing-dead-three-heroes-discard",
+      "card": "Racing Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer6__7703469__front.png", "rulebook p.17 after the attack", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-hero-2", "where": "distance 3 from actor" },
+          { "ref": "enemy-hero-3", "where": "distance 4 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-2" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-3" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Morbid Mosh", "Crowd Drift"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-2",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-3"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "ref": "enemy-hero-3", "hand": -1 },
+        { "card": "Racing Dead", "state": "resolved" }
+      ],
+      "unsupported": "actor level 5 or higher (a Tier III card in hand; setup level accepts 1-4); items deliberately empty"
+    },
+    {
+      "id": "mortimer-racing-dead-hero-in-radius-zombie-outside",
+      "card": "Racing Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer6__7703469__front.png", "rulebook p.9 radius", "rulebook p.19 target (presence checks do not target)"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 4 from actor in a straight line" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Morbid Mosh", "Crowd Drift"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "token-1", "moved": 0 }
+      ],
+      "unsupported": "actor level 5 or higher; setup: token-1 on the same straight line just beyond enemy-hero-1 (adjacent to it, outside radius); offer check: the move bullet does not offer token-1 (outside radius 4)"
+    },
+    {
+      "id": "mortimer-racing-dead-defended-target-and-once-per-hero",
+      "card": "Racing Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer6__7703469__front.png", "rulebook p.14 defense total", "rulebook p.17 after the attack"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "enemy-hero-2", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Morbid Mosh", "Crowd Drift"],
+        "enemy-hero-1": { "defends-with": 8 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able; each enemy hero can only be targeted once.", "enemy-hero-2",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "enemy-hero-2", "hand": -1 },
+        { "ref": "token-1", "moved": 1 }
+      ],
+      "unsupported": "actor level 5 or higher; offer check: enemy-hero-2 is not offered a second time and enemy-hero-1 (the target) is never offered for the discard bullet"
+    },
+
+    {
+      "id": "mortimer-braaaaaaaains-retrieve-three",
+      "card": "Braaaaaaaains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer7__7703468__front.png", "rulebook p.10 retrieve a card, modal actions", "rulebook p.17 before the attack"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Braaaaaaaains...!", "Morbid Mosh"],
+        "discard": ["Knife of the Living Dead", "Awaken!", "Crowd Drift"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Knife of the Living Dead",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Awaken!",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Crowd Drift"
+      ],
+      "expect": [
+        { "offered": true },
+        { "card": "Knife of the Living Dead", "state": "retrieved" },
+        { "card": "Awaken!", "state": "retrieved" },
+        { "card": "Crowd Drift", "state": "retrieved" },
+        { "ref": "actor", "attack": 7 },
+        { "ref": "enemy-minion-1", "is": "defeated" },
+        { "ref": "actor", "coins": 2 }
+      ],
+      "unsupported": "actor level 5 or higher (Tier III card in hand)"
+    },
+    {
+      "id": "mortimer-braaaaaaaains-two-moves-then-one-retrieve",
+      "card": "Braaaaaaaains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer7__7703468__front.png", "rulebook p.10 performing actions (steps in order)", "rulebook p.11 movement in the card text"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 3 from enemy-hero-1" }
+        ],
+        "hand": ["Braaaaaaaains...!", "Morbid Mosh"],
+        "discard": ["Knife of the Living Dead", "Awaken!", "Crowd Drift"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card.", "card: Knife of the Living Dead"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 2 },
+        { "ref": "token-1", "at": "adjacent to enemy-hero-1" },
+        { "card": "Knife of the Living Dead", "state": "retrieved" },
+        { "card": "Awaken!", "state": "discarded" },
+        { "card": "Crowd Drift", "state": "discarded" }
+      ],
+      "unsupported": "actor level 5 or higher; setup: token-1 within distance 4 of actor with an open two-step path toward enemy-hero-1 that stays within distance 4 of actor"
+    },
+    {
+      "id": "mortimer-braaaaaaaains-choices-run-out-before-retrieve",
+      "card": "Braaaaaaaains...!",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer7__7703468__front.png", "rulebook p.10 modal actions (up to)"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from enemy-hero-1" }
+        ],
+        "hand": ["Braaaaaaaains...!", "Morbid Mosh"],
+        "discard": ["Knife of the Living Dead", "Awaken!", "Crowd Drift"]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1",
+        "option: Move a Zombie token in radius 1 space.", "token-1", "toward enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 3 },
+        { "ref": "token-1", "at": "adjacent to enemy-hero-1" },
+        { "card": "Knife of the Living Dead", "state": "discarded" },
+        { "card": "Awaken!", "state": "discarded" },
+        { "card": "Crowd Drift", "state": "discarded" }
+      ],
+      "unsupported": "actor level 5 or higher; setup: token-1 within distance 4 of actor with an open three-step path toward enemy-hero-1 that stays within distance 4 of actor; offer check: no fourth choice is offered"
+    },
+
+    {
+      "id": "mortimer-corpse-slam-move-zombie-and-push-hero",
+      "card": "Corpse Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer8__7695016__front.png", "rulebook p.18 push", "rulebook p.9 range", "rulebook p.19 straight line"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "enemy-hero-1", "where": "distance 2 from token-1 in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 1", "toward enemy-hero-1", "enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "pushed": "distance 2 from token-1 in a straight line" },
+        { "ref": "enemy-hero-1", "moved": 1 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Corpse Slam", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-corpse-slam-push-blocked-by-obstacle",
+      "card": "Corpse Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer8__7695016__front.png", "rulebook p.18 push (as far as possible, can be 0)", "rulebook p.18 obstacle"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" },
+          { "ref": "obstacle-1", "where": "distance 2 from token-1 in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "enemy-hero-1", "moved": 0 },
+        { "ref": "enemy-hero-1", "at": "adjacent to token-1" }
+      ],
+      "unsupported": "setup: obstacle-1 directly behind enemy-hero-1 on the line from token-1 through enemy-hero-1"
+    },
+    {
+      "id": "mortimer-corpse-slam-zombie-out-of-range-move-self",
+      "card": "Corpse Slam",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer8__7695016__front.png", "rulebook p.9 range", "rulebook p.11 movement in the card text (exact distance)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["option: Move 1 space.", "toward token-1"],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "enemy-hero-1", "moved": 0 }
+      ],
+      "unsupported": "offer check: the zombie bullet does not offer token-1 (distance 5, range 4); only one bullet may be chosen ('Choose one')"
+    },
+
+    {
+      "id": "mortimer-morbid-mosh-same-zombie-pushes-twice",
+      "card": "Morbid Mosh",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer9__7695014__front.png", "rulebook p.18 push", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Morbid Mosh", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "enemy-hero-1",
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 1", "toward enemy-hero-1", "enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "enemy-hero-1", "moved": 2 },
+        { "ref": "enemy-hero-1", "pushed": "distance 2 from token-1 in a straight line" },
+        { "card": "Morbid Mosh", "state": "resolved" }
+      ],
+      "unsupported": "setup: the two spaces behind enemy-hero-1 on the line from token-1 are empty"
+    },
+    {
+      "id": "mortimer-morbid-mosh-step-into-range-then-zombie",
+      "card": "Morbid Mosh",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer9__7695014__front.png", "rulebook p.9 range", "rulebook p.10 modal actions (any order)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor in a straight line" },
+          { "ref": "enemy-minion-1", "where": "adjacent to token-1" },
+          { "ref": "enemy-minion-2", "where": "distance 8 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Morbid Mosh", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move 1 space.", "toward token-1",
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "enemy-minion-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "enemy-minion-1", "moved": 1 },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "setup: enemy-minion-1 is not heavy and stays inside the Battle Zone after the push; offer check: token-1 is not offered before the actor's move (distance 5)"
+    },
+    {
+      "id": "mortimer-morbid-mosh-zombie-pushes-a-token-push-optional",
+      "card": "Morbid Mosh",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer9__7695014__front.png", "rulebook p.18 push (unit / token)", "rulebook p.10 mandatory and optional steps (may)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Defense +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to token-1" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Morbid Mosh", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "token-2",
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-2", "moved": 1 },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "enemy-hero-1", "moved": 0 },
+        { "tokens": "zombie", "on-board": 2 }
+      ],
+      "unsupported": "setup: the space behind token-2 on the line from token-1 is empty"
+    },
+
+    {
+      "id": "mortimer-robbing-zombies-two-coins",
+      "card": "Robbing Zombies",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer10__7695010__front.png", "rulebook p.9 range", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Robbing Zombies", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 1", "toward actor",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-2", "distance 1", "toward actor"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 2 },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "token-2", "moved": 1 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Robbing Zombies", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-robbing-zombies-no-zombie-in-range-no-coin",
+      "card": "Robbing Zombies",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer10__7695010__front.png", "rulebook p.9 range", "rulebook p.10 mandatory steps (a step that cannot be completed stops the action)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 7 from actor in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Robbing Zombies", "Stage Dive"]
+      },
+      "answers": ["option: Move 1 space.", "toward token-1", "option: Move 1 space.", "toward token-1"],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 2 },
+        { "ref": "actor", "coins": 0 },
+        { "ref": "token-1", "moved": 0 }
+      ],
+      "unsupported": "offer check: the coin bullet is never offered (token-1 is at distance 7, then 6, then 5: always outside range 4)"
+    },
+    {
+      "id": "mortimer-robbing-zombies-step-into-range-then-rob",
+      "card": "Robbing Zombies",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer10__7695010__front.png", "rulebook p.9 range", "rulebook p.10 modal actions (any order)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Robbing Zombies", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move 1 space.", "toward token-1",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 1", "toward actor"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "actor", "coins": 1 }
+      ]
+    },
+    {
+      "id": "mortimer-robbing-zombies-zero-space-move-still-gains-coin",
+      "card": "Robbing Zombies",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer10__7695010__front.png", "rulebook p.11 movement in the card text (up to = optional distance)", "rulebook p.10 mandatory and optional steps"],
+      "setup": {
+        "actor": { "level": 2, "coins": 1, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Robbing Zombies", "Stage Dive"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 0",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 0 },
+        { "ref": "actor", "coins": 2 }
+      ]
+    },
+
+    {
+      "id": "mortimer-macabre-mayhem-three-different-choices",
+      "card": "Macabre Mayhem",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer11__7695019__front.png", "rulebook p.18 push", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-1", "where": "adjacent to token-2" },
+          { "ref": "enemy-minion-2", "where": "distance 7 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Macabre Mayhem", "Crowd Drift"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "enemy-hero-1",
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-2", "distance 0", "enemy-minion-1",
+        "option: Move 1 space.", "away from enemy-hero-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-hero-1", "pushed": "distance 2 from token-1 in a straight line" },
+        { "ref": "enemy-minion-1", "pushed": "distance 2 from token-2 in a straight line" },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "card": "Macabre Mayhem", "state": "resolved" }
+      ],
+      "unsupported": "actor level 5 or higher (Tier III card in hand); setup: push destinations empty, enemy-minion-1 not heavy and remains in the Battle Zone; offer check: no fourth choice"
+    },
+    {
+      "id": "mortimer-macabre-mayhem-zombie-pushes-friendly-never-actor",
+      "card": "Macabre Mayhem",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer11__7695019__front.png", "rulebook p.10 picking targets (an action affects you only when the text says so)", "rulebook p.18 push", "rulebook p.19 unit"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to actor" },
+          { "ref": "friendly-minion-1", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Macabre Mayhem", "Crowd Drift"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space.",
+        "token-1", "distance 0", "friendly-minion-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "friendly-minion-1", "moved": 1 },
+        { "ref": "actor", "moved": 0 }
+      ],
+      "unsupported": "actor level 5 or higher; offer check: actor is not offered as the push target although adjacent to token-1; setup: friendly-minion-1 stays in the Battle Zone after the push"
+    },
+
+    {
+      "id": "mortimer-stalking-scalpers-three-coins",
+      "card": "Stalking Scalpers",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer12__7695021__front.png", "rulebook p.10 modal actions"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Morbid Mosh", "Stalking Scalpers"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 1", "toward actor",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-2", "distance 1", "toward actor",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-3", "distance 1", "toward actor"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 3 },
+        { "ref": "actor", "moved": 0 },
+        { "card": "Stalking Scalpers", "state": "resolved" }
+      ],
+      "unsupported": "actor level 5 or higher (Tier III card in hand); offer check: no fourth choice"
+    },
+    {
+      "id": "mortimer-stalking-scalpers-range-item-reaches-distance-5",
+      "card": "Stalking Scalpers",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer12__7695021__front.png", "active-hero-cards/Mortimer/mortimer6__7703469__front.png (Range item icon)", "rulebook p.16 item bonus (Range icon)", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "coins": 0, "items": ["Range +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 6 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Braaaaaaaains...!", "Morbid Mosh", "Stalking Scalpers"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 1", "toward actor",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 1 },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "token-2", "moved": 0 }
+      ],
+      "unsupported": "actor level 5 or higher with the Range item from Racing Dead; offer check: token-2 (distance 6) is not offered with range 5"
+    },
+
+    {
+      "id": "mortimer-stage-dive-swap-with-zombie-at-range-4",
+      "card": "Stage Dive",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer13__7695012__front.png", "rulebook p.19 swap (with a unit/token: not movement)", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["option: Swap with a Zombie token in range.", "token-1"],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "token-1", "at": "distance 4 from actor" },
+        { "tokens": "zombie", "on-board": 1 },
+        { "card": "Stage Dive", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-stage-dive-move-zombie-exactly-one",
+      "card": "Stage Dive",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer13__7695012__front.png", "rulebook p.11 movement in the card text (exact distance)"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": ["option: Move a Zombie token in range 1 space.", "token-1", "toward actor"],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "token-1", "at": "adjacent to actor" },
+        { "ref": "actor", "moved": 0 }
+      ]
+    },
+    {
+      "id": "mortimer-stage-dive-no-zombie-in-range-not-offered",
+      "card": "Stage Dive",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer13__7695012__front.png", "rulebook p.9 range", "rulebook p.10 performing actions"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 5 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [],
+      "expect": [
+        { "offered": false },
+        { "ref": "token-1", "moved": 0 }
+      ]
+    },
+
+    {
+      "id": "mortimer-crowd-drift-two-swaps-chain",
+      "card": "Crowd Drift",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer14__7695017__front.png", "rulebook p.19 swap", "rulebook p.9 range (from your current space)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Initiative +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor in a straight line" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from token-1 in a straight line" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Crowd Drift"]
+      },
+      "answers": [
+        "option: Swap with a Zombie token in range.", "token-1",
+        "option: Swap with a Zombie token in range.", "token-2"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "token-2", "at": "distance 3 from actor in a straight line" },
+        { "ref": "token-1", "at": "distance 4 from token-2 in a straight line" },
+        { "card": "Crowd Drift", "state": "resolved" }
+      ],
+      "unsupported": "setup: token-2 lies beyond token-1 on the same line from actor (distance 7 from actor, outside range 4 before the first swap)"
+    },
+    {
+      "id": "mortimer-crowd-drift-second-zombie-out-of-range-after-swap",
+      "card": "Crowd Drift",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer14__7695017__front.png", "rulebook p.19 swap", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Initiative +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor in a straight line" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 8 from token-1 in a straight line" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Crowd Drift"]
+      },
+      "answers": ["option: Swap with a Zombie token in range.", "token-1", "decline"],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-1", "at": "distance 4 from actor in a straight line" },
+        { "ref": "token-2", "at": "distance 8 from actor in a straight line" },
+        { "ref": "token-2", "moved": 0 }
+      ],
+      "unsupported": "setup: token-2 at distance 4 from actor on the opposite side from token-1 (same line); offer check: after the first swap token-2 is not offered for a second swap"
+    },
+
+    {
+      "id": "mortimer-gathering-horde-move-then-replace-minion",
+      "card": "Gathering Horde",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer15__7695028__front.png", "rulebook p.19 replace, remove (no coins)", "rulebook p.18 place (tokens from supply)", "rulebook p.10 modal actions (any order)"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor" },
+          { "ref": "enemy-minion-2", "where": "distance 7 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 2 from enemy-minion-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Gathering Horde"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range 1 space.", "token-2", "toward enemy-minion-1",
+        "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.", "enemy-minion-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-2", "moved": 1 },
+        { "ref": "enemy-minion-1", "is": "removed" },
+        { "tokens": "zombie", "on-board": 3 },
+        { "ref": "actor", "coins": 0 },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "card": "Gathering Horde", "state": "resolved" }
+      ],
+      "unsupported": "setup: token-2 within distance 4 of actor; enemy-minion-1 is a melee or ranged minion (not heavy); expectation: the new zombie token stands in enemy-minion-1's former space"
+    },
+    {
+      "id": "mortimer-gathering-horde-replace-once-per-turn",
+      "card": "Gathering Horde",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer15__7695028__front.png", "rulebook p.19 replace"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-2", "where": "distance 4 from enemy-minion-1" },
+          { "ref": "enemy-minion-3", "where": "distance 8 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-2" },
+          { "ref": "token-4", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Gathering Horde"]
+      },
+      "answers": [
+        "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.", "enemy-minion-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "removed" },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "tokens": "zombie", "on-board": 5 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "setup: enemy-minion-2 within distance 4 of actor, no minion heavy; offer check: for the second choice the Replace bullet is not offered (once per turn), although enemy-minion-2 qualifies"
+    },
+    {
+      "id": "mortimer-gathering-horde-one-zombie-not-enough",
+      "card": "Gathering Horde",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer15__7695028__front.png", "rulebook p.17 adjacent"],
+      "setup": {
+        "actor": { "level": 2, "coins": 0, "items": ["Attack +1"], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor" },
+          { "ref": "enemy-minion-2", "where": "distance 7 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Crawling Dead", "Corpse Slam", "Gathering Horde"]
+      },
+      "answers": ["decline"],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "tokens": "zombie", "on-board": 1 }
+      ],
+      "unsupported": "offer check: the Replace bullet does not offer enemy-minion-1 (adjacent to only one zombie token)"
+    },
+
+    {
+      "id": "mortimer-crowd-surf-three-swaps-chain",
+      "card": "Crowd Surf",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer16__7695025__front.png", "rulebook p.19 swap", "rulebook p.9 range"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor in a straight line" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 4 from token-1 in a straight line" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "distance 4 from token-2 in a straight line" },
+          { "ref": "enemy-hero-1", "where": "adjacent to token-3" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Morbid Mosh", "Crowd Surf"]
+      },
+      "answers": [
+        "option: Swap with a Zombie token in range.", "token-1",
+        "option: Swap with a Zombie token in range.", "token-2",
+        "option: Swap with a Zombie token in range.", "token-3"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "at": "adjacent to enemy-hero-1" },
+        { "ref": "token-3", "at": "distance 4 from actor in a straight line" },
+        { "tokens": "zombie", "on-board": 3 },
+        { "card": "Crowd Surf", "state": "resolved" }
+      ],
+      "unsupported": "actor level 5 or higher (Tier III card in hand); setup: token-2 and token-3 continue the same straight line away from actor (distances 8 and 12 from actor)"
+    },
+    {
+      "id": "mortimer-crowd-surf-swap-ignores-blocked-path",
+      "card": "Crowd Surf",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer16__7695025__front.png", "rulebook p.19 swap (not movement)", "rulebook p.9 range (no line of sight)"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 4 from actor" },
+          { "ref": "obstacle-1", "where": "adjacent to token-1" },
+          { "ref": "obstacle-2", "where": "adjacent to token-1" },
+          { "ref": "obstacle-3", "where": "adjacent to token-1" },
+          { "ref": "obstacle-4", "where": "adjacent to token-1" },
+          { "ref": "obstacle-5", "where": "adjacent to token-1" },
+          { "ref": "obstacle-6", "where": "adjacent to token-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Morbid Mosh", "Crowd Surf"]
+      },
+      "answers": ["option: Swap with a Zombie token in range.", "token-1", "decline"],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "at": "adjacent to obstacle-1" },
+        { "ref": "token-1", "at": "distance 4 from actor" }
+      ],
+      "unsupported": "actor level 5 or higher; offer check: the move bullet does not offer token-1 (no empty space to move into) while the swap bullet does"
+    },
+
+    {
+      "id": "mortimer-army-of-darkness-two-moves-then-replace",
+      "card": "Army of Darkness",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer17__7695024__front.png", "rulebook p.19 replace", "rulebook p.11 movement in the card text"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 3 from actor" },
+          { "ref": "enemy-minion-2", "where": "distance 8 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from enemy-minion-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Morbid Mosh", "Army of Darkness"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range 1 space.", "token-2", "toward enemy-minion-1",
+        "option: Move a Zombie token in range 1 space.", "token-2", "toward enemy-minion-1",
+        "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.", "enemy-minion-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "token-2", "moved": 2 },
+        { "ref": "enemy-minion-1", "is": "removed" },
+        { "tokens": "zombie", "on-board": 3 },
+        { "ref": "actor", "coins": 0 },
+        { "card": "Army of Darkness", "state": "resolved" }
+      ],
+      "unsupported": "actor level 5 or higher (Tier III card in hand); setup: token-2 within distance 4 of actor throughout; enemy-minion-1 not heavy"
+    },
+    {
+      "id": "mortimer-army-of-darkness-replacing-last-minion-pushes-lane",
+      "card": "Army of Darkness",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer17__7695024__front.png", "rulebook p.8 lane push in the middle of a turn (defeated or removed)", "rulebook p.19 replace"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Walking Dead", "Morbid Mosh", "Army of Darkness"]
+      },
+      "answers": [
+        "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.", "enemy-minion-1",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "removed" },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "actor level 5 or higher; setup: enemy-minion-1 is the only enemy minion left in the Battle Zone and is not heavy; expectation: the Lane is pushed immediately (one Wave counter flipped, next Zone toward the enemy Throne becomes the Battle Zone)"
+    },
+
+    {
+      "id": "mortimer-master-of-puppets-knife-five-removals",
+      "card": "Knife of the Living Dead",
+      "action": "Attack",
+      "source": ["active-hero-cards/Mortimer/mortimer18__7695027__front.png", "active-hero-cards/Mortimer/mortimer__7695015__front.png", "rulebook p.16 the Ultimate (always in effect)", "rulebook p.13 attack total"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-4", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-5", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Macabre Mayhem", "Crowd Surf"],
+        "enemy-hero-1": { "defends-with": 8 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-3",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-4",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-5"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 9 },
+        { "tokens": "zombie", "on-board": 0 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 }
+      ],
+      "unsupported": "face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8 with the Ultimate unlocked and no Attack item (items deliberately empty)"
+    },
+    {
+      "id": "mortimer-master-of-puppets-stalking-scalpers-five-choices",
+      "card": "Stalking Scalpers",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer18__7695027__front.png", "active-hero-cards/Mortimer/mortimer12__7695021__front.png", "rulebook p.16 the Ultimate"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "distance 2 from actor" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "distance 3 from actor" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Stalking Scalpers", "Crowd Surf"]
+      },
+      "answers": [
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 0",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-2", "distance 0",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-1", "distance 1", "toward actor",
+        "option: Move a Zombie token in range up to 1 space. Gain 1 coin.", "token-2", "distance 1", "toward actor",
+        "option: Move 1 space.", "away from token-1"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 4 },
+        { "ref": "actor", "moved": 1 },
+        { "ref": "token-1", "moved": 1 },
+        { "ref": "token-2", "moved": 1 }
+      ],
+      "unsupported": "face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8 with the Ultimate unlocked; offer check: no sixth choice is offered"
+    },
+    {
+      "id": "mortimer-master-of-puppets-army-replace-still-once-per-turn",
+      "card": "Army of Darkness",
+      "action": "Skill",
+      "source": ["active-hero-cards/Mortimer/mortimer18__7695027__front.png", "active-hero-cards/Mortimer/mortimer17__7695024__front.png", "rulebook p.19 replace"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "distance 2 from actor" },
+          { "ref": "enemy-minion-2", "where": "distance 4 from enemy-minion-1" },
+          { "ref": "enemy-minion-3", "where": "distance 8 from actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-2" },
+          { "ref": "token-4", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-minion-2" }
+        ],
+        "hand": ["Knife of the Living Dead", "Awaken!", "Racing Dead", "Macabre Mayhem", "Army of Darkness"]
+      },
+      "answers": [
+        "option: Once per turn: Replace an enemy minion in range adjacent to two or more Zombie tokens with a Zombie token.", "enemy-minion-1",
+        "option: Move a Zombie token in range 1 space.", "token-3", "away from enemy-minion-2",
+        "option: Move a Zombie token in range 1 space.", "token-3", "toward enemy-minion-2",
+        "option: Move a Zombie token in range 1 space.", "token-4", "away from enemy-minion-2",
+        "decline"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "enemy-minion-1", "is": "removed" },
+        { "ref": "enemy-minion-2", "is": "not defeated" },
+        { "tokens": "zombie", "on-board": 5 },
+        { "ref": "token-3", "moved": 2 },
+        { "ref": "token-4", "moved": 1 }
+      ],
+      "unsupported": "face under test is the Ultimate Master of Puppets, exercised through the played card; actor level 8; setup: enemy-minion-2, token-3, token-4 within distance 4 of actor, no minion heavy; offer check: Replace is not offered in choices 2-5 although enemy-minion-2 is adjacent to two zombie tokens at the start of choice 2"
+    },
+    {
+      "id": "mortimer-master-of-puppets-does-not-extend-up-to-two",
+      "card": "Shallow Graves",
+      "action": "Attack",
+      "handicap": true,
+      "source": ["active-hero-cards/Mortimer/mortimer18__7695027__front.png", "active-hero-cards/Mortimer/mortimer19__7695026__front.png", "rulebook p.16 the Ultimate", "rulebook p.20 handicap cards"],
+      "setup": {
+        "actor": { "coins": 0, "items": [], "ultimate": true },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Shallow Graves", "Awaken!", "Racing Dead", "Macabre Mayhem", "Crowd Surf"],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "tokens": "zombie", "on-board": 1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" }
+      ],
+      "unsupported": "face under test is the Ultimate Master of Puppets ('choose up to three times' only) with the Handicap card replacing the gold card; actor level 8; offer check: no third choice is offered on a 'Choose up to two times' card"
+    },
+
+    {
+      "id": "mortimer-shallow-graves-two-removals-defeat-hero",
+      "card": "Shallow Graves",
+      "action": "Attack",
+      "handicap": true,
+      "source": ["active-hero-cards/Mortimer/mortimer19__7695026__front.png", "rulebook p.20 handicap cards", "rulebook p.13 attack total, hero defeat coins", "rulebook p.14 defense total"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Shallow Graves", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 5 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "tokens": "zombie", "on-board": 0 },
+        { "ref": "enemy-hero-1", "is": "defeated" },
+        { "ref": "actor", "coins": 1 },
+        { "card": "Shallow Graves", "state": "resolved" }
+      ]
+    },
+    {
+      "id": "mortimer-shallow-graves-capped-at-two",
+      "card": "Shallow Graves",
+      "action": "Attack",
+      "handicap": true,
+      "source": ["active-hero-cards/Mortimer/mortimer19__7695026__front.png", "rulebook p.10 modal actions (up to)", "rulebook p.14 defense total"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "adjacent to actor" },
+          { "ref": "token-1", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-2", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" },
+          { "ref": "token-3", "kind": "zombie", "owner": "actor", "where": "adjacent to enemy-hero-1" }
+        ],
+        "hand": ["Shallow Graves", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"],
+        "enemy-hero-1": { "defends-with": 6 }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-1",
+        "option: Remove a Zombie token adjacent to the target; if you do, gain +1 Attack.", "token-2"
+      ],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "attack": 5 },
+        { "tokens": "zombie", "on-board": 1 },
+        { "ref": "enemy-hero-1", "is": "not defeated" },
+        { "ref": "enemy-hero-1", "hand": -1 },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "offer check: no third choice is offered"
+    },
+    {
+      "id": "mortimer-shallow-graves-cannot-target-minion",
+      "card": "Shallow Graves",
+      "action": "Attack",
+      "handicap": true,
+      "source": ["active-hero-cards/Mortimer/mortimer19__7695026__front.png", "rulebook p.10 picking targets", "rulebook p.19 unit vs hero"],
+      "setup": {
+        "actor": { "level": 1, "coins": 0, "items": [], "ultimate": false },
+        "pieces": [
+          { "ref": "enemy-minion-1", "where": "adjacent to actor" },
+          { "ref": "enemy-minion-2", "where": "distance 6 from actor" }
+        ],
+        "hand": ["Shallow Graves", "Awaken!", "Crawling Dead", "Corpse Slam", "Stage Dive"]
+      },
+      "answers": [],
+      "expect": [
+        { "ref": "enemy-minion-1", "is": "not defeated" },
+        { "ref": "actor", "coins": 0 }
+      ],
+      "unsupported": "offer check: enemy-minion-1 is never offered as the target ('Target a hero adjacent to you'); whether the Attack action is offered at all with no adjacent enemy hero is not settled by the card (see notes)"
+    }
+  ]
+}

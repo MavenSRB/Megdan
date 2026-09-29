@@ -48,14 +48,18 @@ namespace GuardsDigital.Tests.EditMode
     {
         internal sealed class Report
         {
-            internal Report(List<string> failures, string trace)
+            internal Report(List<string> failures, string trace, string skipped)
             {
                 Failures = failures;
                 Trace = trace;
+                Skipped = skipped;
             }
 
             internal List<string> Failures { get; }
             internal string Trace { get; }
+
+            /// <summary>Why the case was not executed (an open question, a boxed Handicap card), or null.</summary>
+            internal string Skipped { get; }
         }
 
         private sealed class Refusal : Exception
@@ -65,9 +69,14 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        internal static Report Run(JsonObject document, JsonObject entry, string name)
+        internal static readonly HashSet<string> DispositionKinds = new HashSet<string>(StringComparer.Ordinal)
         {
-            var run = new CaseRun(document, entry, name);
+            "ruling", "engine-defect", "executor-gap", "not-executable", "open-question"
+        };
+
+        internal static Report Run(JsonObject document, JsonObject entry, string name, JsonObject disposition = null)
+        {
+            var run = new CaseRun(document, entry, name, disposition);
             try
             {
                 run.Execute();
@@ -82,7 +91,7 @@ namespace GuardsDigital.Tests.EditMode
                 run.Trace.AppendLine(exception.ToString());
             }
 
-            return new Report(run.Failures, run.Trace.ToString());
+            return new Report(run.Failures, run.Trace.ToString(), run.Skipped);
         }
 
         private static bool IsFamily(PendingDecisionContract contract, PendingDecisionFamilyId family) =>
@@ -166,11 +175,12 @@ namespace GuardsDigital.Tests.EditMode
         private static Placement ParsePlacement(string raw)
         {
             if (raw == null) return null;
-            var single = ParseSingle(raw, Normalize(raw));
+            var stripped = Regex.Replace(raw, "\\s*\\([^)]*\\)", string.Empty);
+            var single = ParseSingle(raw, Normalize(stripped));
             if (single != null) return single;
 
             // Two conditions on one space: "<placement> and <placement>".
-            var text = Normalize(raw);
+            var text = Normalize(stripped);
             for (var at = text.IndexOf(" and ", StringComparison.Ordinal); at > 0;
                  at = text.IndexOf(" and ", at + 1, StringComparison.Ordinal))
             {
@@ -253,11 +263,24 @@ namespace GuardsDigital.Tests.EditMode
         private static string Normalize(string text) =>
             Regex.Replace((text ?? string.Empty).Trim().ToLowerInvariant(), "\\s+", " ");
 
-        /// <summary>Card names compare without case, punctuation variants or spacing.</summary>
-        private static string CardKey(string name) =>
-            Regex.Replace((name ?? string.Empty).ToLowerInvariant()
+        /// <summary>
+        /// Card names compare without case, punctuation variants or spacing. Printed names the content spells differently, pending their own corrective. 9.13: Mortimer's
+        /// Tier III red card prints BRAAAAAAAAINS...! (eight a's, mortimer7__7703468); the content's display
+        /// name has seven, and the display name feeds Mortimer's pinned semantic identity digest, so it
+        /// is not changed here. The reader's printed spelling resolves to the dealt card.
+        /// </summary>
+        private static readonly Dictionary<string, string> PrintedSpellings = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["br" + new string('a', 8) + "ins"] = "br" + new string('a', 7) + "ins"
+        };
+
+        private static string CardKey(string name)
+        {
+            var key = Regex.Replace((name ?? string.Empty).ToLowerInvariant()
                 .Replace('’', '\'').Replace('‘', '\'').Replace('–', '-').Replace('—', '-'),
                 "[^a-z0-9']+", " ").Trim();
+            return PrintedSpellings.TryGetValue(key, out var content) ? content : key;
+        }
 
         private static int Dist(HexCoordinate a, HexCoordinate b) => HexDistanceQuery.Calculate(a, b);
 
@@ -267,6 +290,15 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary><paramref name="m"/> lies strictly between <paramref name="a"/> and <paramref name="b"/> on one straight line.</summary>
         private static bool Between(HexCoordinate a, HexCoordinate m, HexCoordinate b) =>
             Aligned(a, b) && Aligned(a, m) && !m.Equals(b) && Dist(a, m) + Dist(m, b) == Dist(a, b);
+
+        /// <summary>
+        /// Whether <paramref name="at"/> lies on the straight line from <paramref name="origin"/> through
+        /// <paramref name="toward"/> (or, away, on its continuation behind the origin): "toward X" on a
+        /// walk first means along X's file, as a straight-line walk through X does.
+        /// </summary>
+        private static bool OnFile(HexCoordinate origin, HexCoordinate toward, HexCoordinate at, bool away) =>
+            Aligned(origin, toward) && Aligned(origin, at) &&
+            (away ? SectorOf(origin, at) == (SectorOf(origin, toward) + 3) % 6 : SectorOf(origin, at) == SectorOf(origin, toward));
 
         private static int SectorOf(HexCoordinate from, HexCoordinate to)
         {
@@ -293,6 +325,8 @@ namespace GuardsDigital.Tests.EditMode
             private readonly JsonObject document;
             private readonly JsonObject entry;
             private readonly string name;
+            private readonly JsonObject disposition;
+            internal string Skipped;
 
             private RegisteredHero hero;
             private MatchConfiguration configuration;
@@ -337,11 +371,34 @@ namespace GuardsDigital.Tests.EditMode
             private MatchSessionProjection afterRound;
             private string minionBattleWinner;
 
-            internal CaseRun(JsonObject document, JsonObject entry, string name)
+            internal CaseRun(JsonObject document, JsonObject entry, string name, JsonObject disposition)
             {
                 this.document = document;
-                this.entry = entry;
                 this.name = name;
+                this.disposition = disposition;
+                this.entry = entry;
+
+                // A ruling disposition evaluates its override in place of the reader's facts (and
+                // answers, where the ruling moves the question); every other kind runs as written.
+                if (disposition != null && (disposition.Get("kind") as string) == "ruling")
+                {
+                    var copy = new JsonObject();
+                    foreach (var pair in entry)
+                    {
+                        var key = pair.Key;
+                        var value = pair.Value;
+                        if (key == "expect" && disposition.Has("expect-override")) value = disposition.Get("expect-override");
+                        if (key == "answers" && disposition.Has("answers-override")) value = disposition.Get("answers-override");
+                        copy.Add(new KeyValuePair<string, object>(key, value));
+                    }
+
+                    if (!copy.Has("answers") && disposition.Has("answers-override"))
+                    {
+                        copy.Add(new KeyValuePair<string, object>("answers", disposition.Get("answers-override")));
+                    }
+
+                    this.entry = copy;
+                }
             }
 
             private Refusal Refuse(string message) => new Refusal($"{name}: {message}");
@@ -358,13 +415,35 @@ namespace GuardsDigital.Tests.EditMode
             /// </summary>
             internal void Execute()
             {
+                var kind = disposition?.Get("kind") as string;
+                var reference = disposition?.Get("ref") as string ?? string.Empty;
+                if (entry.Get("handicap") is bool handicap && handicap)
+                {
+                    Skipped = "not-executable (rulebook p.6): the p.20 Handicap cards are returned to the box at setup, " +
+                        "so this build deals none";
+                    return;
+                }
+
+                if (kind == "not-executable" && disposition.Get("execute") is bool execute && !execute)
+                {
+                    Skipped = $"not-executable ({reference}): {disposition.Get("note")}";
+                    return;
+                }
+
+                if (kind == "open-question")
+                {
+                    Skipped = $"OPEN QUESTION ({reference}): {disposition.Get("note")}";
+                    return;
+                }
+
                 try
                 {
                     ExecuteTheCase();
                 }
                 finally
                 {
-                    if (entry.Get("unsupported") is object declared && declared != null)
+                    // A disposition records the reader's own note; without one it is a failure of its own.
+                    if (disposition == null && entry.Get("unsupported") is object declared && declared != null)
                     {
                         Failures.Add($"{name}: DECLARED UNSUPPORTED (not executed): \"{Describe(declared)}\"");
                     }
@@ -439,13 +518,24 @@ namespace GuardsDigital.Tests.EditMode
 
             private void FinalChecks()
             {
+                // A trailing "decline" of a question the engine never asked (a "choose up to N times" or
+                // "may" that had nothing left to act on, so p.10 stops it unasked) declines nothing.
+                if (answers.Count > 0 && answers.All(value => Normalize(value) == "decline"))
+                {
+                    Log($"unasked trailing declines ignored: {answers.Count}");
+                    answers.Clear();
+                }
+
                 if (answers.Count > 0)
                 {
                     Failures.Add($"{name}: answers never asked for: " +
                         string.Join(", ", answers.Select(value => $"\"{value}\"")));
                 }
 
-                foreach (var pair in refSetups.Where(pair => pair.Value.Has("defends-with")))
+                // A Defense the table stages for an attack it expects not to be offered is a precaution.
+                var expectsNoOffer = ReadExpectations().Any(value => value.Has("offered") && !value.Has("bullet") &&
+                    value.Get("offered") is bool offeredFact && !offeredFact);
+                foreach (var pair in refSetups.Where(pair => pair.Value.Has("defends-with") && !expectsNoOffer))
                 {
                     if (!defendsWithAsked.Contains(pair.Key))
                     {
@@ -470,11 +560,6 @@ namespace GuardsDigital.Tests.EditMode
                     if (!CaseKeys.Contains(pair.Key)) throw Unsupported("case key", pair.Key);
                 }
 
-                if (entry.Get("handicap") is bool handicap && handicap)
-                {
-                    throw Refuse("unsupported \"handicap\": rulebook p.6 returns the p.20 Handicap cards to the box " +
-                        "at setup, so this build deals none and cannot put one in place of the gold card");
-                }
 
                 var heroName = (entry.Get("hero") ?? document.Get("hero")) as string;
                 if (string.IsNullOrWhiteSpace(heroName)) throw Refuse("the table names no \"hero\"");
@@ -486,11 +571,7 @@ namespace GuardsDigital.Tests.EditMode
                 if (matches.Length != 1) throw Refuse($"unknown hero \"{heroName}\"");
                 hero = matches[0];
 
-                var others = QuickGameSetupConfiguration.DealtHeroes
-                    .Where(candidate => !candidate.ContentId.Equals(hero.ContentId))
-                    .Take(5)
-                    .ToArray();
-                var lineup = new HeroLineup(new[] { hero, others[0], others[1] }, others.Skip(2).Take(3));
+                var lineup = Lineup();
                 configuration = MatchConfiguration.CreateForLineupForInternalTest(
                     MatchFormat.ThreeVersusThreeQuick, lineup, TeamSide.Red);
                 setup = QuickGameSetupAuthority.Create(
@@ -552,6 +633,72 @@ namespace GuardsDigital.Tests.EditMode
                     : "the offer judges it can do nothing here";
 
             /// <summary>The card's printed action of that kind: its primary, else its secondary.</summary>
+            /// <summary>
+            /// The actor with the next dealt heroes. An enemy seat whose table says it defends with a
+            /// Defense value is given, in roster order, the first other dealt hero whose printed deck
+            /// holds a card with that Defense, so a value read off the card is always stageable.
+            /// </summary>
+            private HeroLineup Lineup()
+            {
+                var spec = entry.Get("setup") as JsonObject ?? new JsonObject();
+                var seats = new RegisteredHero?[3];
+                var assigned = new HashSet<string>(StringComparer.Ordinal) { hero.ContentId.Value };
+                for (var seat = 1; seat <= 3; seat++)
+                {
+                    if (!((spec.Get($"enemy-hero-{seat}") as JsonObject)?.Get("defends-with") is double value)) continue;
+                    var wanted = (int)value;
+                    var chosen = QuickGameSetupConfiguration.DealtHeroes.FirstOrDefault(candidate =>
+                        !assigned.Contains(candidate.ContentId.Value) && DefenseValues(candidate).Contains(wanted));
+                    if (!chosen.ContentId.IsDefined)
+                    {
+                        throw Refuse($"setup enemy-hero-{seat}.defends-with {wanted}: no dealt hero's deck prints that Defense");
+                    }
+
+                    seats[seat - 1] = chosen;
+                    assigned.Add(chosen.ContentId.Value);
+                }
+
+                var others = new Queue<RegisteredHero>(QuickGameSetupConfiguration.DealtHeroes
+                    .Where(candidate => !assigned.Contains(candidate.ContentId.Value)));
+                var red = new[] { hero, others.Dequeue(), others.Dequeue() };
+                var blue = seats.Select(value => value ?? others.Dequeue()).ToArray();
+                return new HeroLineup(red, blue);
+            }
+
+            private static readonly Dictionary<string, HashSet<int>> DefenseByHero =
+                new Dictionary<string, HashSet<int>>(StringComparer.Ordinal);
+
+            private static HashSet<int> DefenseValues(RegisteredHero candidate)
+            {
+                lock (DefenseByHero)
+                {
+                    if (DefenseByHero.TryGetValue(candidate.ContentId.Value, out var known)) return known;
+                    var dealt = QuickGameSetupConfiguration.DealtHeroes.ToList();
+                    for (var start = 0; start < dealt.Count; start += 6)
+                    {
+                        var six = Enumerable.Range(0, 6).Select(offset => dealt[(start + offset) % dealt.Count]).ToArray();
+                        var probe = MatchConfiguration.CreateForLineupForInternalTest(
+                            MatchFormat.ThreeVersusThreeQuick, new HeroLineup(six.Take(3), six.Skip(3)), TeamSide.Red);
+                        foreach (var member in six)
+                        {
+                            var values = new HashSet<int>(probe.CardInstances
+                                .Where(card => card.DefinitionReference.DefinitionId.Value.StartsWith(
+                                    member.ContentId.Value + "-", StringComparison.Ordinal))
+                                .Select(card => probe.CardDefinitions.Single(definition => definition.Reference.Equals(card.DefinitionReference)))
+                                .Where(definition => !definition.Progression.IsUltimate)
+                                .SelectMany(definition => definition.ActionDefinitions)
+                                .Where(action => action.Kind == ActionKind.Defense)
+                                .SelectMany(action => action.BaseValues)
+                                .Where(item => item.Channel == PrintedValueChannel.Defense)
+                                .Select(item => item.Amount));
+                            DefenseByHero[member.ContentId.Value] = values;
+                        }
+                    }
+
+                    return DefenseByHero[candidate.ContentId.Value];
+                }
+            }
+
             private ActionDefinition PrimaryOf(ActionKind kind) =>
                 caseCard.ActionDefinitions
                     .Where(action => action.Kind == kind && (action.Origin == ActionDefinitionOrigin.PrintedPrimary ||
@@ -1167,7 +1314,10 @@ namespace GuardsDigital.Tests.EditMode
             private HexCoordinate anchor;
             private readonly List<(string Item, CardInstance Card)> itemCards = new List<(string, CardInstance)>();
             private readonly List<int> spawnNeeds = new List<int>();
+            private bool clearOfTerrain;
+            private bool strictFiles;
             private readonly Dictionary<string, int> rotation = new Dictionary<string, int>(StringComparer.Ordinal);
+            private readonly Dictionary<string, int> files = new Dictionary<string, int>(StringComparer.Ordinal);
 
             private void PlaceEverything()
             {
@@ -1186,16 +1336,29 @@ namespace GuardsDigital.Tests.EditMode
                     .ThenBy(space => space.R));
 
                 string firstReason = null;
-                foreach (var candidate in anchors)
-                {
-                    if (TryPlaceFrom(candidate, spaces, battleZone, anyFlag, out var reason))
-                    {
-                        anchor = candidate;
-                        Log("anchor " + candidate + "; " + string.Join("; ", pieces.Select(piece => $"{piece.Ref} {piece.At}")));
-                        return;
-                    }
+                var anchorList = anchors.ToList();
 
-                    firstReason = firstReason ?? reason;
+                // Open ground first: unless the table stages terrain, no staged piece stands beside a
+                // terrain space, so "adjacent to terrain" is never an accident of the anchor.
+                // Straight-line pieces from one piece share a file where any anchor allows it, then open
+                // ground; each is relaxed in turn only when no anchor meets it.
+                var noTerrain = pieces.All(piece => !piece.IsTerrain);
+                var passes = new[] { (true, noTerrain), (true, false), (false, noTerrain), (false, false) }.Distinct();
+                foreach (var (shareFiles, avoidTerrain) in passes)
+                {
+                    strictFiles = shareFiles;
+                    clearOfTerrain = avoidTerrain;
+                    foreach (var candidate in anchorList)
+                    {
+                        if (TryPlaceFrom(candidate, spaces, battleZone, anyFlag, out var reason))
+                        {
+                            anchor = candidate;
+                            Log("anchor " + candidate + "; " + string.Join("; ", pieces.Select(piece => $"{piece.Ref} {piece.At}")));
+                            return;
+                        }
+
+                        firstReason = firstReason ?? reason;
+                    }
                 }
 
                 throw Refuse(firstReason ?? "unresolvable placement");
@@ -1207,6 +1370,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 reason = null;
                 rotation.Clear();
+                files.Clear();
                 var occupied = new HashSet<HexCoordinate>();
                 Func<Piece, HexCoordinate, bool> acceptable = (piece, at) =>
                 {
@@ -1217,6 +1381,12 @@ namespace GuardsDigital.Tests.EditMode
                     // A minion outside the Battle Zone is corrected back into it (p.19) the moment an
                     // action ends, so a staged minion stands inside it or the board would not hold.
                     if ((piece.BattleZone || piece.IsMinion) && !inZone) return false;
+                    if (clearOfTerrain && at.GetNeighbors().Any(neighbor =>
+                        spaces.TryGetValue(neighbor, out var beside) && beside.Kind == BoardMapSpaceKind.Terrain))
+                    {
+                        return false;
+                    }
+
                     return true;
                 };
 
@@ -1233,8 +1403,14 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     var placement = piece.Where;
                     var start = rotation.TryGetValue(placement.Primary, out var turned) ? turned : 0;
+                    // Pieces placed "in a straight line" from the same piece share that piece's first
+                    // file, so "distance 1 / 2 / 3 from actor in a straight line" is one line.
+                    var straight = placement.Kind == "distance" && placement.Line == "straight" && placement.Through == null;
+                    if (straight && files.TryGetValue(placement.A, out var file)) start = file;
+                    var fileNeeded = straight && strictFiles && files.ContainsKey(placement.A) ? files[placement.A] : (int?)null;
                     var chosen = spaces.Keys
-                        .Where(at => acceptable(piece, at) && Satisfies(placement, at, positions))
+                        .Where(at => acceptable(piece, at) && Satisfies(placement, at, positions) &&
+                            (fileNeeded == null || SectorOf(positions[placement.A], at) == fileNeeded.Value))
                         .OrderBy(at => placement.Prefer == null ? 0 : (placement.PreferAway ? -1 : 1) * Dist(at, positions[placement.Prefer]))
                         .ThenBy(at => placement.Kind == "distance" && placement.Line == null && !Aligned(positions[placement.A], at) ? 1 : 0)
                         .ThenBy(at => (SectorOf(positions[placement.Primary], at) - start + 6) % 6)
@@ -1249,7 +1425,16 @@ namespace GuardsDigital.Tests.EditMode
                         return false;
                     }
 
-                    rotation[placement.Primary] = start + 1;
+                    if (straight && !files.ContainsKey(placement.A))
+                    {
+                        files[placement.A] = SectorOf(positions[placement.A], chosen.Value);
+                        rotation[placement.Primary] = start + 1;
+                    }
+                    else if (!straight)
+                    {
+                        rotation[placement.Primary] = start + 1;
+                    }
+
                     piece.At = chosen.Value;
                     positions[piece.Ref] = chosen.Value;
                     occupied.Add(chosen.Value);
@@ -1394,6 +1579,16 @@ namespace GuardsDigital.Tests.EditMode
                 // Tokens and items: committed to the fresh graphs, then carried by a snapshot.
                 var tokens = pieces.Where(piece => piece.IsTokenLike).ToArray();
                 if (tokens.Length == 0 && itemCards.Count == 0) return;
+                foreach (var group in tokens.GroupBy(piece => (piece.TokenDefinition.Id.Value, piece.TokenOwner.Value)))
+                {
+                    var definition = group.First().TokenDefinition;
+                    if (group.Count() > definition.SupplyCount)
+                    {
+                        throw Refuse($"setup places {group.Count()} {definition.DisplayName} tokens of one owner; " +
+                            $"the supply holds {definition.SupplyCount}");
+                    }
+                }
+
                 foreach (var piece in tokens)
                 {
                     session.aggregate.Board.CommitValidatedTokenPlacement(new PlacedToken(
@@ -1643,6 +1838,16 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 ObserveEvents(started);
+                if (!started.Accepted && forced)
+                {
+                    // The table expects the play not to be offered and lists what it leaves unchanged;
+                    // the rules refuse it even past the offer (an Attack with no target, p.13), so the
+                    // board stands as it was and the facts are read from it.
+                    Log($"forced start refused, the board is unchanged: {started.Detail}");
+                    answers.Clear();
+                    return;
+                }
+
                 if (!started.Accepted)
                 {
                     throw Refuse($"the engine refused to start {actionName} on {caseCard.DisplayName}" +
@@ -1960,6 +2165,13 @@ namespace GuardsDigital.Tests.EditMode
                     return commands.First();
                 }
 
+                // p.19's displaced-minion correction (a pushed or placed minion returned to the Battle
+                // Zone): the table never names where; the first space offered is taken, as documented.
+                if (family.Equals(PendingDecisionFamilies.Correction))
+                {
+                    return commands.First();
+                }
+
                 throw Refuse($"unsupported question: the {DescribeQuestion(projection, contract)}");
             }
 
@@ -1976,6 +2188,8 @@ namespace GuardsDigital.Tests.EditMode
                 var stop = contract.Commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.StopMovement);
                 var shape = ShapeOf(next, out var value, out _);
                 var moverRef = RefOfHero(choice.MovingHeroId);
+                Log($"    walk from {choice.Origin}, {choice.RemainingAllowance} left: " + string.Join(" ",
+                    choice.LegalDestinations.Select(destination => $"{destination.Destination}:{destination.Cost}")));
                 var positions = Positions(projection, byRef.Keys.Concat(new[] { moverRef }));
                 IEnumerable<Movement.Destination> destinations = choice.LegalDestinations
                     .Select(destination => new Movement.Destination(destination.Destination, destination.Cost));
@@ -2013,7 +2227,8 @@ namespace GuardsDigital.Tests.EditMode
                         {
                             ShapeOf(following, out var target, out _);
                             var at = positions.ContainsKey(target) ? positions[target] : throw Refuse($"answer \"{following}\": {target} is not on the board");
-                            var best = fitting.OrderBy(destination => (followingShape == AnswerShape.Away ? -1 : 1) * Dist(destination.At, at))
+                            var best = fitting.OrderBy(destination => OnFile(choice.Origin, at, destination.At, followingShape == AnswerShape.Away) ? 0 : 1)
+                                .ThenBy(destination => (followingShape == AnswerShape.Away ? -1 : 1) * Dist(destination.At, at))
                                 .ThenBy(destination => destination.At.Q).ThenBy(destination => destination.At.R).First();
                             return Go(best, 2);
                         }
@@ -2034,14 +2249,16 @@ namespace GuardsDigital.Tests.EditMode
                         {
                             var length = int.Parse(walk, CultureInfo.InvariantCulture);
                             var walked = destinations.Where(destination => destination.Cost == length)
-                                .OrderBy(destination => sign * Dist(destination.At, target))
+                                .OrderBy(destination => OnFile(choice.Origin, target, destination.At, sign < 0) ? 0 : 1)
+                                .ThenBy(destination => sign * Dist(destination.At, target))
                                 .ThenBy(destination => destination.At.Q).ThenBy(destination => destination.At.R)
                                 .FirstOrDefault();
                             if (walked == null) throw NotCovered(projection, contract, $"{next}\", \"{paired}");
                             return Go(walked, 2);
                         }
 
-                        var best = destinations.OrderBy(destination => sign * Dist(destination.At, target))
+                        var best = destinations.OrderBy(destination => OnFile(choice.Origin, target, destination.At, sign < 0) ? 0 : 1)
+                            .ThenBy(destination => sign * Dist(destination.At, target))
                             .ThenBy(destination => destination.Cost)
                             .ThenBy(destination => destination.At.Q).ThenBy(destination => destination.At.R)
                             .FirstOrDefault();
@@ -2190,6 +2407,33 @@ namespace GuardsDigital.Tests.EditMode
                             .Replace("space of ", string.Empty)), StringComparer.Ordinal));
                 }
 
+                // An opponent's own which-card question (the discard its hero must make) that the table
+                // does not answer names the first card in that hand: the recipe's documented default.
+                // It is any other hero's own choice of one of its cards: an enemy's discard, or the card a
+                // friendly hero retrieves when the actor's text lets it (Wuk's Tree of Plenty).
+                var opponent = !choice.ChooserId.Equals(actor) &&
+                    setup.Heroes.Any(seat => seat.HeroId.Equals(choice.ChooserId));
+                var named = (shape == AnswerShape.RefDiscard || shape == AnswerShape.RefDefeat) && who == chooserRef ||
+                    shape == AnswerShape.Card;
+                if (opponent && !named && choice.Kind == EffectChoiceKind.SelectTarget && choice.Candidates.Count > 0 &&
+                    choice.Candidates.All(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
+                        candidate.Value.Kind == EffectValueKind.CardInstance))
+                {
+                    var hand = projection.Cards.Where(card => card.OwnerId.Equals(choice.ChooserId))
+                        .OrderBy(card => card.State.Location == CardLocation.Hand ? 0 : 1)
+                        .Select(card => card.Id).ToList();
+                    var first = choice.SelectInvocations
+                        .Where(invocation => hand.Contains(invocation.Candidate.Value.CardInstanceId))
+                        .OrderBy(invocation => hand.IndexOf(invocation.Candidate.Value.CardInstanceId))
+                        .FirstOrDefault() ?? choice.SelectInvocations.FirstOrDefault();
+                    var command = EffectCommand(contract, first);
+                    if (command != null)
+                    {
+                        Log($"  (default) {chooserRef} chooses {CardNameOf(projection, first.Candidate.Value.CardInstanceId)}, its first card");
+                        return command;
+                    }
+                }
+
                 // A reference-prefixed answer speaks only for that hero's own question.
                 if ((shape == AnswerShape.RefDiscard || shape == AnswerShape.RefDefeat) && who != chooserRef)
                 {
@@ -2205,6 +2449,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (shape == AnswerShape.Decline || shape == AnswerShape.RefDefeat)
                 {
+                    // A selection already at its maximum closes by itself; the decline is for a later question.
+                    if (choice.SelectedCandidates.Count >= choice.MaximumSelections && confirm != null) return confirm;
                     if (choice.SelectedCandidates.Count > 0 && confirm != null) return Consume(confirm);
                     if (decline != null) return Consume(decline);
                     throw NotCovered(projection, contract, next);
@@ -2224,6 +2470,29 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     extraConsumed = 0;
+                }
+
+                // "Choose one or both": the second bullet may be answered later in the list, after the
+                // answers the first bullet's steps ask; it is selected now, where the choice asks it.
+                if (choice.Kind == EffectChoiceKind.SelectOption && choice.SelectedCandidates.Count > 0)
+                {
+                    var queued = answers.ToList();
+                    for (var index = 0; index < queued.Count; index++)
+                    {
+                        if (ShapeOf(queued[index], out var later, out _) != AnswerShape.Option) continue;
+                        EffectChoiceCandidate? arm = null;
+                        try { arm = SelectFor(projection, choice, AnswerShape.Option, later); } catch (Refusal) { }
+                        var invocation = arm.HasValue
+                            ? choice.SelectInvocations.FirstOrDefault(candidate => candidate.Candidate.Equals(arm.Value))
+                            : null;
+                        var command = EffectCommand(contract, invocation);
+                        if (command == null) continue;
+                        var rest = queued.Where((_, position) => position != index).ToList();
+                        answers.Clear();
+                        foreach (var answer in rest) answers.Enqueue(answer);
+                        lastConsumed.Add(queued[index]);
+                        return command;
+                    }
                 }
 
                 // A choice whose selections are made, or which has only one answer, closes by itself.
@@ -2466,6 +2735,14 @@ namespace GuardsDigital.Tests.EditMode
                         projection.AvailableHoldOffer.HasValue && projection.AvailableHoldOffer.Value.IsAvailable)
                     {
                         next = DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId);
+                    }
+                    else if (projection.DecisionContract != null && answers.Count > 0 &&
+                        projection.DecisionOwner.HeroId.Equals(actor) && projection.PendingMinionBattleChoice == null)
+                    {
+                        // The actor's own question at the round's end (Wuk's Claim Dominance choosing the
+                        // minions that do not count, WU-Q3) is answered from the table like any other.
+                        next = Answer(projection, projection.DecisionContract);
+                        Log($"  round end asked: {DescribeQuestion(projection, projection.DecisionContract)} -> {next.Kind}");
                     }
                     else if (projection.PendingMinionBattleChoice != null)
                     {
