@@ -100,9 +100,15 @@ Completed 2026-09-29.
 
 Historical evidence: [9.9 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-99-before-the-action-offers-evidence).
 
-### [ ] 9.10 Random line-ups replay, restore and rewind into the same match
+### [x] 9.10 Random line-ups replay, restore and rewind into the same match
 
 Outcome: a seeded soak whose line-ups are drawn from every dealt hero, not the one official fixture, and which at every accepted command (a) captures a snapshot, restores it into a fresh session and continues both sessions on the same seed to the same authoritative payload, (b) replays the retained command prefix into a byte-identical state and event log, and (c) checks the invariants play has broken before: lives and coins within their ledgers, one Tie Breaker, no standing decision whose owner cannot answer it, no turn released with a resolution still pending, no card in two places, and every offered command accepted when submitted. Each finding is corrected with a regression that fails on the base. Closing check: the soak green over its fixed seeds with every dealt hero appearing, the run bounded so the harness stays under its budget, the affected suites green. T2, T3 if snapshot schema or replay authority moves.
+
+Result: `RandomLineupSoakTests` walks the ten 9.6 line-ups (every dealt hero commits cards) for 300 commands each. At every command the live snapshot is restored into a spare session that must match the live one on the authoritative payload, the offered commands and each seat's wire record, then take the chosen command to the same payload; every fifteen commands a fresh restored session walks thirty commands beside the live one, Director Undo rewinds and resubmits to byte-identical state and log, and every offered command is submitted to its own restored copy; each match replays from setup to identical bytes; and the ledger, ownership and occupancy invariants hold at every command (stride 15; one case per line-up, under Unity's 180 s case budget). Two findings, one cause: a restored or rewound session projected heroes, obstacles, minions, tokens and held markers in snapshot (id) order while the live one used arrival order, so the same match reached every seat in a different order. `MatchSession.CreateProjection` now orders those lists by id (regressions `ARestoredSession_ProjectsItsBoardInTheLiveSessionsOrder` and `ARestoredSession_ProjectsHeldMarkersInTheLiveSessionsOrder`, failing on 43294cd9). No payload, event log or offer set ever differed, before or after. Limitations: the lives check demands a recorded Defeat for every spend but does not recompute p.13's tier cost; few 300-command walks reach an ending, so `CompleteCoreMatchLoopTests` still owns endings.
+
+Completed 2026-09-29.
+
+Historical evidence: [9.10 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-910-random-line-up-soak-evidence).
 
 ### [x] 9.11 Every copy, projection and wire form carries every field
 

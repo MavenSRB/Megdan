@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.10 Random line-up soak evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.10 | Ten random six-hero line-ups restored, rewound and replayed at every command with ledger, ownership and occupancy invariants; restored and rewound projections now list the board and held markers in one order. [Definition](../../Roadmap/PHASE_9.md#x-910-random-line-ups-replay-restore-and-rewind-into-the-same-match). | `milestone/9.10` |
+
 ## Milestone 9.11 Copy and codec completeness evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.11**.
+- Current completed milestone: **9.10**.
 - Active authorized milestone: **9.8g**.
 - Next proposed milestone: **9.8g**.
 
@@ -24,7 +24,11 @@ On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rocksha
 
 On 2026-09-28 the user named **Wuk the Grove Keeper** to follow Mrak and settled WU-Q1-WU-Q4 that night, authorizing [8.114-8.114g, with 8.114b1](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) through a dealt, artworked and gated Wuk; its carried-lessons list extends Mrak's. The Wuk sequence **8.114-8.114g** is complete ([his shard](Rules/HERO_WUK.md); schema v47 at 8.114b1). **[8.116](Roadmap/PHASE_8.md)** then made Whisper's forced move fire Widget's Dragon Knight right after the move (Ruling 16c). The user then authorized 8.117 -> 8.118 ("Go for both"); **8.117** is complete: every gate walks its Active effects' trigger bodies; **8.118** is complete: Defeats held behind a removal-prevention question are settled by its answer (schema v48). The user then closed Phase 8 and started **[Phase 9](Roadmap/PHASE_9.md)**, the printed-wording audit **9.1 -> 9.2 -> 9.3 -> 9.4 -> 9.5**; the earlier presentation plan is retired. **9.1** (optionality, W1-W3), **9.2** (targeting, W4, R1) **9.3** (conditions, W5), **9.4** (journeys read outcomes) and **9.5** (the new-hero checklist) are complete; the user then authorized **9.6 -> 9.7** (offer against outcome) ([PRINTED_WORDING](Rules/PRINTED_WORDING.md)). **9.6** and **9.7** are complete: offers checked against outcomes both ways; restrictions refused at start. The user then authorized **[8.115](Roadmap/PHASE_8.md)**, complete: Whisper's forced move is a full-distance Movement action (Rulings 16a-16b in [her shard](Rules/HERO_WHISPER.md)); the user ruled it also fires the defender's after-Movement triggers (Widget's Dragon Knight) - queued as 8.116. W8 (2026-09-29, Boulder Rush) was ruled during 9.8f. No package is authorized.
 
+On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.114-8.114g](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) is complete ([his shard](Rules/HERO_WUK.md); schema v47). **[8.116](Roadmap/PHASE_8.md)** then made Whisper's forced move fire Widget's Dragon Knight right after the move (Ruling 16c). **8.117** (every gate walks its Active effects' trigger bodies) and **8.118** (Defeats held behind a removal-prevention question are settled by its answer; schema v48) are complete. The user then closed Phase 8 and started **[Phase 9](Roadmap/PHASE_9.md)**, the printed-wording audit **9.1 -> 9.2 -> 9.3 -> 9.4 -> 9.5**; the earlier presentation plan is retired. **9.1** (optionality, W1-W3), **9.2** (targeting, W4, R1) **9.3** (conditions, W5), **9.4** (journeys read outcomes) and **9.5** (the new-hero checklist) are complete; the user then authorized **9.6 -> 9.7** (offer against outcome) ([PRINTED_WORDING](Rules/PRINTED_WORDING.md)). **9.6** and **9.7** are complete: offers checked against outcomes both ways; restrictions refused at start. **[8.115](Roadmap/PHASE_8.md)** is complete: Whisper's forced move is a full-distance Movement action (Rulings 16a-16b, [her shard](Rules/HERO_WHISPER.md)).
+
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8f are complete: he is dealt, artworked and pickable, and 9.8g gates him.
+
+On 2026-09-29 the user authorized the **bug net [9.9 -> 9.12](Roadmap/PHASE_9.md)** beside Mortimer's dealing; **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) are complete. **9.12** packages the playtest build, with Mortimer if 9.8g has landed.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
