@@ -19,17 +19,20 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 9.17. The 9.12 playtest's Charged Runestone, replayed in a whole configured match:
-    /// Snorri inscribes the runes on round 1's first turn, the round runs out, and on round 2's first
-    /// turn he plays the face with Bain in Radius - the host log's line-up and spaces, (-2, 1) and
-    /// (-1, 2). Rune 4 sits below slot 2 in every case (the log's round-2 Rune Sigils repeated on a
-    /// different hero, which is rune 4's clause); the rune below slot 1 is not in the log, so each of
-    /// the other three is played.
+    /// Milestones 9.17 and 9.17a. The 9.12 playtest's Charged Runestone, replayed in a whole
+    /// configured match: Snorri inscribes the runes on round 1's first turn, the round runs out, and on
+    /// round 2's first turn he plays the face with Bain in Radius - the host log's line-up and spaces,
+    /// (-2, 1) and (-1, 2), and Bain's hand at the log's v147 (Light Crossbow, Close Call and Drinking
+    /// Buddies, the Blue his round-1 level-up upgraded A Game of Chance into). Rune 4 sits below slot 2
+    /// in every case (the log's round-2 Rune Sigils repeated on a different hero); the rune below slot
+    /// 1 is the case's.
     ///
-    /// <para>The finding: across the round boundary the slot-1 rune is active again, and Charged
-    /// Runestone asks for its enemy hero exactly when rune 1, 2 or 4 is - the three runes the face
-    /// prints a clause for. Under rune 3 it asks nothing and discards nothing, the play the log shows.
-    /// Inscribed Runebomb, which prints a clause for all four, asks under every rune.</para>
+    /// <para><b>The glyphs, by their order on Rune Sigils</b> (the order the marker ordinals and the
+    /// tray artwork follow): rune 1 the winged glyph, rune 2 the axe, rune 3 the anvil, rune 4 the
+    /// hook. Charged Runestone prints the hook (green), the axe (silver) and the anvil (blue); Inscribed
+    /// Runebomb adds the winged glyph (gold). 9.17a: the content had given blue to rune 1 and, on
+    /// Runebomb, gold to rune 3 - so the anvil the player saw below slot 1 read as a rune the Runestone
+    /// did not print, and the play asked nothing and discarded nothing.</para>
     /// </summary>
     public sealed class SnorriRoundTwoRuneTests
     {
@@ -37,20 +40,43 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HexCoordinate BainAt = new HexCoordinate(-1, 2);
 
         /// <summary>
-        /// The second three replay the log's round more closely: the minions stay on the board, and
-        /// Snorri starts at Level 1 holding the coin for Level 2, buying it at round 1's end and
-        /// upgrading his Green into Charged Runestone there, as the log's v113-v117 did.
+        /// Under the anvil (rune 3) Snorri's seat is asked for the enemy hero, and then Bain's own seat
+        /// is asked which Blue he discards - Drinking Buddies, his only one.
         /// </summary>
-        [TestCase(1, true, false)]
-        [TestCase(2, true, false)]
-        [TestCase(3, false, false)]
-        [TestCase(1, true, true)]
-        [TestCase(2, true, true)]
-        [TestCase(3, false, true)]
-        public void RoundTwoTurnOne_ChargedRunestone_AsksForItsTargetExactlyWhenItsPrintedRuneIsActive(
-            int runeBelowSlotOne, bool expectsTarget, bool levelsUpAtRoundOnesEnd)
+        [TestCase(false)]
+        [TestCase(true)]
+        public void RoundTwoTurnOne_ChargedRunestone_UnderTheAnvilRune_TargetsBain_AndBainDiscardsHisBlue(
+            bool levelsUpAtRoundOnesEnd)
         {
-            var run = new Run(SnorriGreenFaces.ChargedRunestone, runeBelowSlotOne, levelsUpAtRoundOnesEnd);
+            var run = new Run(SnorriGreenFaces.ChargedRunestone, 3, levelsUpAtRoundOnesEnd);
+            run.ReachRoundTwoFace();
+            RunesStayBelowTheirSlots(run, 3);
+
+            var choice = Start(run);
+            Assert.That(HeroCandidates(choice), Is.EqualTo(new[] { run.Bain }),
+                "with the anvil rune active, Charged Runestone asks for the enemy hero in Radius - " +
+                "a question with one candidate still stands; it is not answered for the player");
+            Assert.That(run.SeatAsked(), Is.EqualTo(run.Snorri),
+                "the target question stands on Snorri's seat");
+            run.Answer(EffectValue.Hero(run.Bain));
+
+            var discard = run.Session.Projection.PendingEffectChoice;
+            Assert.That(discard, Is.Not.Null, "Bain is asked which Blue card he discards");
+            Assert.That(discard.Candidates.Select(candidate => candidate.Value.CardInstanceId),
+                Is.EqualTo(new[] { run.BainsBlue }), "Drinking Buddies is his only Blue");
+            Assert.That(run.SeatAsked(), Is.EqualTo(run.Bain), "the discard stands on Bain's seat");
+            run.Answer(EffectValue.Card(run.BainsBlue));
+            Assert.That(run.Session.Projection.Cards.Single(card => card.Id.Equals(run.BainsBlue))
+                .State.Location, Is.EqualTo(CardLocation.DiscardPile));
+        }
+
+        /// <summary>The axe (rune 2) asks too; the winged rune 1 is not printed on the face.</summary>
+        [TestCase(2, true)]
+        [TestCase(1, false)]
+        public void RoundTwoTurnOne_ChargedRunestone_AsksForItsTargetExactlyWhenItsPrintedRuneIsActive(
+            int runeBelowSlotOne, bool expectsTarget)
+        {
+            var run = new Run(SnorriGreenFaces.ChargedRunestone, runeBelowSlotOne, false);
             run.ReachRoundTwoFace();
             RunesStayBelowTheirSlots(run, runeBelowSlotOne);
 
@@ -63,18 +89,18 @@ namespace GuardsDigital.Tests.EditMode
             else
             {
                 Assert.That(choice, Is.Null,
-                    "rune 3 prints no Charged Runestone clause, so the play asks nothing");
+                    "the winged rune prints no Charged Runestone clause, so the play asks nothing");
                 Assert.That(run.Session.Projection.PendingTurnRelease, Is.Not.Null,
-                    "and resolves at once, as the log's v147 SkillUsed did");
+                    "and resolves at once");
             }
         }
 
         /// <summary>
         /// With no enemy hero in Radius the face is greyed under a printed rune (rule 14: its mandatory
-        /// target has nothing to name) and offered as RULING 53's do-nothing play under rune 3.
+        /// target has nothing to name) and offered as RULING 53's do-nothing play under the winged rune.
         /// </summary>
-        [TestCase(1, false)]
-        [TestCase(3, true)]
+        [TestCase(3, false)]
+        [TestCase(1, true)]
         public void RoundTwoTurnOne_ChargedRunestone_WithNoEnemyInRadius_IsGreyedUnlessItsGateIsFalse(
             int runeBelowSlotOne, bool offered)
         {
@@ -84,16 +110,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Offer(run).IsAvailable, Is.EqualTo(offered));
         }
 
-        [TestCase(1)]
-        [TestCase(2)]
-        [TestCase(3)]
-        public void RoundTwoTurnOne_InscribedRunebomb_AsksForItsTargetUnderEveryRune(int runeBelowSlotOne)
+        /// <summary>Runebomb prints all four glyphs; the winged rune 1 names gold, the anvil blue.</summary>
+        [TestCase(1, CardColor.Gold)]
+        [TestCase(2, CardColor.Silver)]
+        [TestCase(3, CardColor.Blue)]
+        public void RoundTwoTurnOne_InscribedRunebomb_AsksForItsTarget_AndNamesThePrintedColour(
+            int runeBelowSlotOne, CardColor colour)
         {
             var run = new Run(SnorriGreenFaces.InscribedRunebomb, runeBelowSlotOne, false);
             run.ReachRoundTwoFace();
             RunesStayBelowTheirSlots(run, runeBelowSlotOne);
             Assert.That(HeroCandidates(Start(run)), Does.Contain(run.Bain),
                 $"with rune {runeBelowSlotOne} active, Inscribed Runebomb asks for the enemy hero in Radius");
+            run.Answer(EffectValue.Hero(run.Bain));
+            var discard = run.Session.Projection.PendingEffectChoice;
+            Assert.That(discard, Is.Not.Null, $"Bain holds a {colour} card and is asked to discard it");
+            Assert.That(discard.Candidates.Select(candidate => run.ColourOf(candidate.Value.CardInstanceId)),
+                Is.All.EqualTo(colour));
         }
 
         private static void RunesStayBelowTheirSlots(Run run, int runeBelowSlotOne)
@@ -138,11 +171,53 @@ namespace GuardsDigital.Tests.EditMode
             private readonly int runeBelowSlotOne;
             private readonly HeroId snorri;
             private readonly CardInstanceId silver;
+            private readonly MatchHost host;
             private int snorriCommitments;
 
             internal MatchSession Session { get; }
+            internal HeroId Snorri => snorri;
             internal HeroId Bain { get; }
             internal CardInstanceId Face { get; }
+
+            /// <summary>Drinking Buddies, the Blue Bain held at the log's v147.</summary>
+            internal CardInstanceId BainsBlue { get; }
+
+            internal CardColor ColourOf(CardInstanceId card)
+            {
+                var instance = Session.Projection.Cards.Single(value => value.Id.Equals(card));
+                return Session.Projection.Definitions.Single(definition =>
+                    definition.Reference.Equals(instance.DefinitionReference)).Progression.Color;
+            }
+
+            /// <summary>The one seat authorized to answer the standing effect question.</summary>
+            internal HeroId SeatAsked() =>
+                host.Seats.Seats.Where(seat => host.ProjectionForSeat(seat.Id).AuthorizedCommands
+                        .Any(command => command.Kind == DirectorCommandKind.AnswerEffectChoice))
+                    .Select(seat => seat.HeroId)
+                    .Single();
+
+            /// <summary>Selects one candidate and confirms it where the question waits for DONE.</summary>
+            internal void Answer(EffectValue value)
+            {
+                var choice = Session.Projection.PendingEffectChoice;
+                var invocation = choice.SelectInvocations.Single(command => command.Candidate.Value.Equals(value));
+                Execute(Session.Projection.DecisionContract.Commands.Single(command =>
+                    command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    command.EffectChoice.Equals(invocation)));
+                var after = Session.Projection.PendingEffectChoice;
+                if (after != null && after.ChoiceId.Equals(choice.ChoiceId) && after.ConfirmInvocation != null)
+                {
+                    Execute(Session.Projection.DecisionContract.Commands.Single(command =>
+                        command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        command.EffectChoice.Equals(after.ConfirmInvocation)));
+                }
+            }
+
+            private void Execute(DirectorCommand command)
+            {
+                var result = Session.Execute(command);
+                Assert.That(result.Accepted, Is.True, command.Kind + ": " + result.Detail);
+            }
 
             internal IReadOnlyList<int> ExpectedSlots => new[] { runeBelowSlotOne, 4 }
                 .Concat(Enumerable.Range(1, 3).Where(rune => rune != runeBelowSlotOne))
@@ -186,6 +261,15 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 Face = faceCard.Id;
+
+                // Bain's hand at v147: his round-1 level-up upgraded A Game of Chance into Drinking
+                // Buddies (the log's r2 t4 reveal) and set Dead Man's Hand aside as his item.
+                var bainOwned = configuration.CardInstances.Where(card => card.OwnerId.Equals(Bain)).ToArray();
+                var gameOfChance = bainOwned.Single(card => Definition(card).DisplayName == "A Game of Chance");
+                var drinkingBuddies = bainOwned.Single(card => Definition(card).DisplayName == "Drinking Buddies");
+                Assert.That(CardLifecycleAuthority.TryReturnToDeck(gameOfChance), Is.True);
+                Assert.That(CardLifecycleAuthority.TryTakeFromDeckIntoHand(drinkingBuddies), Is.True);
+                BainsBlue = drinkingBuddies.Id;
                 silver = owned.Single(card =>
                     card.DefinitionReference.Equals(SnorriSilverFace.Silver.Reference)).Id;
 
@@ -237,6 +321,7 @@ namespace GuardsDigital.Tests.EditMode
                     Array.Empty<ObstacleOccupancy>());
                 Session = new MatchSession(new MatchSessionInitialState(
                     scenario, staged, new[] { map }, null, null, progression));
+                host = new MatchHost(Session);
             }
 
             /// <summary>
@@ -327,7 +412,8 @@ namespace GuardsDigital.Tests.EditMode
                     .ToArray();
                 if (!owner.Equals(snorri))
                 {
-                    return hand.First().Id;
+                    // Bain keeps his Blue in hand, as he did through round 2's first turn.
+                    return hand.First(card => !card.Id.Equals(BainsBlue)).Id;
                 }
 
                 var turn = snorriCommitments++;

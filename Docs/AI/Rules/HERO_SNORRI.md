@@ -40,6 +40,8 @@ File stems below end in `__front.png` under the Snorri source directory. D/M are
 | snorri18__7730144 | Rune Mastery / Purple / IV | - | - | - | Ultimate | - |
 | snorri19__7387418 | Rune Shards / Gold / Handicap | 10 | 1 | 1 | Basic Skill - Ranged / A 1+, R 2 | - |
 
+**Corrected at 9.17a:** by the glyphs on Rune Sigils (G1 winged, G2 axe, G3 anvil, G4 hook), Charged Runestone's blue clause is the anvil (G3) and Inscribed Runebomb's gold clause the winged glyph (G1); the content had bound blue to G1 and, on Runebomb, gold to G3. Every other rune-gated face was re-read against its printed glyph and already matched.
+
 **Corrected at 8.93f:** the three Oath ribbons print only Movement 2; the Defense 2 first recorded here was a misreading, and the Block is each Oath's only Defense (as on Wasp's Stop Projectiles).
 
 The eighteen ordinary cards consist of two Basics, three Tier I, six Tier II, six Tier III and one Tier IV Ultimate. `Rune Shards` is the nineteenth p.20 Handicap and is boxed at setup. The twelve item faces give Initiative x3, Defense x3, Attack x3, and Radius, Range and Movement x1 each; no item is an additional action.

@@ -57,10 +57,15 @@ namespace GuardsDigital.Core.Cards.Verified
                         })
                 });
 
+        /// <summary>
+        /// The printed glyphs, by their order on Rune Sigils (the marker ordinals): the hook is rune 4
+        /// (green), the axe rune 2 (silver) and the anvil rune 3 (blue). Milestone 9.17a: blue had been
+        /// given to rune 1, the winged glyph this face does not print.
+        /// </summary>
         public static EffectDefinition ChargedRunestone(string revision)
         {
             var children = new[] { Id("target"), Id("rune-4"), Id("rune-2"),
-                Id("rune-1") };
+                Id("rune-3") };
             var nodes = new List<EffectNodeDefinition>
             {
                 new EffectNodeDefinition(
@@ -70,7 +75,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     childNodeIds: new[] { Id("body") },
                     inputs: new[]
                     {
-                        EffectInputBinding.FromClosedVocabulary("mask", SnorriRuneMask.Runes124)
+                        EffectInputBinding.FromClosedVocabulary("mask", SnorriRuneMask.Runes234)
                     },
                     outputs: new[]
                     {
@@ -83,7 +88,7 @@ namespace GuardsDigital.Core.Cards.Verified
             };
             AddRuneDiscard(nodes, 4, CardColor.Green);
             AddRuneDiscard(nodes, 2, CardColor.Silver);
-            AddRuneDiscard(nodes, 1, CardColor.Blue);
+            AddRuneDiscard(nodes, 3, CardColor.Blue);
             return new EffectDefinition(
                 new EffectDefinitionId("snorri-charged-runestone-skill-text"),
                 revision, Id("root"), nodes);
@@ -261,9 +266,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardColor color;
                 switch (ordinal)
                 {
-                    case 1: color = CardColor.Blue; break;
+                    // Milestone 9.17a. By the glyphs on Rune Sigils: the winged rune 1 prints gold and
+                    // the anvil rune 3 blue on Inscribed Runebomb (the two had been transposed).
+                    case 1: color = CardColor.Gold; break;
                     case 2: color = CardColor.Silver; break;
-                    case 3: color = CardColor.Gold; break;
+                    case 3: color = CardColor.Blue; break;
                     case 4: color = CardColor.Green; break;
                     default: return EffectExecutionResult.ImpossibleMandatory();
                 }

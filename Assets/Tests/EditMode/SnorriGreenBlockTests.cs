@@ -111,9 +111,11 @@ namespace GuardsDigital.Tests.EditMode
                 AttackRangeKind.Ranged), Is.False);
         }
 
-        [TestCase(false, 1, true)]
-        [TestCase(true, 3, true)]
-        [TestCase(false, 1, false)]
+        // Milestone 9.17a. By the glyphs on Rune Sigils, blue is the anvil (rune 3) on both faces and
+        // gold the winged rune 1 on Runebomb; these cases had carried the transposed pair.
+        [TestCase(false, 3, true)]
+        [TestCase(true, 1, true)]
+        [TestCase(false, 3, false)]
         public void GreenSkillMakesEnemyDiscardTheActiveRunesColor(
             bool runebomb, int rune, bool eligible)
         {

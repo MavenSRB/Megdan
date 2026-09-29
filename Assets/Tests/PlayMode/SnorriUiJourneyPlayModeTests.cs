@@ -653,7 +653,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice.Candidates.Any(value =>
                 value.Value.Kind == EffectValueKind.Integer && value.Value.IntegerValue == 4),
                 Is.False, "The live slot rune is not inactive.");
-            yield return AnswerRuneMastery(root, 3);
+            // Milestone 9.17a. Gold is the winged rune 1 on Runebomb (it had been bound to rune 3).
+            yield return AnswerRuneMastery(root, 1);
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "Runebomb asks which active rune. " + Remaining(runtime));
             var heroChosen = false;
@@ -666,9 +667,9 @@ namespace GuardsDigital.Tests.PlayMode
             }
             Assert.That(runtime.PendingEffectChoice.Candidates.Where(value =>
                     value.Value.Kind == EffectValueKind.Integer)
-                .Select(value => value.Value.IntegerValue), Is.EquivalentTo(new[] { 3, 4 }),
+                .Select(value => value.Value.IntegerValue), Is.EquivalentTo(new[] { 1, 4 }),
                 "Both the slot rune and Mastery's rune are active. " + Remaining(runtime));
-            yield return AnswerRuneMastery(root, 3);
+            yield return AnswerRuneMastery(root, 1);
             if (runtime.PendingEffectChoice != null && runtime.PendingEffectChoice.Candidates.Any(value =>
                 value.Value.Kind == EffectValueKind.Hero))
             {
@@ -682,7 +683,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Pick(root, runtime.PendingEffectChoice.Candidates.Single(value =>
                 value.Value.Kind == EffectValueKind.CardInstance));
             Assert.That(Card(runtime, wasp, WaspCardContent.MagneticDagger).State.Location,
-                Is.Not.EqualTo(CardLocation.Hand), "Rune 3 names gold: Wasp discards Magnetic Dagger.");
+                Is.Not.EqualTo(CardLocation.Hand), "Rune 1 names gold: Wasp discards Magnetic Dagger.");
             Healthy(runtime);
         }
 
