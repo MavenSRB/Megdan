@@ -400,8 +400,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // predicate reads an earlier step's count ("adjacent to an empty spawn point"),
                         // and without it Dread Razor's range bullet was judged reachable on a board
                         // where the "if" was false. Every other child reads what it always read.
+                        //
+                        // Milestone 9.9a. A node judged from the spaces an earlier Move could leave
+                        // him on is handed them too: the hypothetical board is already carried, and
+                        // what the Move started from is the other half of the same question. Cutter's
+                        // "a hero adjacent to you in the direction of the move" reads the heading from
+                        // the square the move left; without it the selection judged an undirected disk.
                         var given = context.Definition.TryGetNode(child, out var childNode) &&
-                            childNode.Kind == EffectNodeKind.Conditional
+                            (childNode.Kind == EffectNodeKind.Conditional ||
+                                (spaces != null && spaces.Count > 0))
                             ? carried
                             : outcomes;
                         var verdict = WalkToAttackTargetBinding(
@@ -613,9 +620,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context,
             IReadOnlyList<HexCoordinate> alreadyHypothetical)
         {
+            // Milestone 9.9a. A Move waiting on an earlier question ("Move 1 or 2 spaces in a straight
+            // line" composes the line's end as a question and the Move as its consumer) is asked once
+            // per answer that question can take, before the Move alone is asked - asked alone, the
+            // missing answer reads as "nowhere", and every step after it went unjudged.
             if (alreadyHypothetical == null &&
-                TryAnticipateActorRelocationClause(
-                    nodeId, frame, carried, context, out var anticipatedSpaces))
+                (TryAnticipateThroughAnEarlierQuestion(
+                        nodeId, frame, carried, context, out var anticipatedSpaces) ||
+                    TryAnticipateActorRelocationClause(
+                        nodeId, frame, carried, context, out anticipatedSpaces)))
             {
                 return anticipatedSpaces;
             }

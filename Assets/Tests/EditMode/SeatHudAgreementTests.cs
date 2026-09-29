@@ -35,12 +35,13 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class SeatHudAgreementTests
     {
-        [Test]
-        public void EverySteppedFace_IsDrawnAsTheRulesOfferIt()
+        /// <summary>Milestone 9.9a: one case per step shape, so each stays inside the per-case budget.</summary>
+        [TestCaseSource(typeof(BeforeActionStepOfferTests), nameof(BeforeActionStepOfferTests.Shapes))]
+        public void EverySteppedFace_IsDrawnAsTheRulesOfferIt(string shape)
         {
             var findings = new List<string>();
             var read = 0;
-            foreach (var face in Faces)
+            foreach (var face in Faces.Where(face => face.Shape.ToString() == shape))
             {
                 foreach (var position in PositionsFor(face))
                 {

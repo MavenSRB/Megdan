@@ -2338,6 +2338,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<BoardObjectReference>();
                 }
 
+                // Milestone 9.9a. The heading runs through where the actor stands - on a hypothetical
+                // board, the square the offer walk is judging him from, exactly as the origin of the
+                // selection itself is read.
+                if (context.ProspectiveActorSpace.HasValue)
+                {
+                    actorAt = context.ProspectiveActorSpace.Value;
+                }
+
                 var from = context.Input(ContinuedLineFromParameter).Coordinate;
                 var kept = new List<BoardObjectReference>();
                 foreach (var target in declared)

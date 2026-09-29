@@ -32,12 +32,24 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class BeforeActionStepOfferTests
     {
-        private static readonly Lazy<Sweep> Swept = new Lazy<Sweep>(Run);
+        /// <summary>
+        /// Milestone 9.9a: one sweep per step shape, built by the first case asking for that shape and
+        /// shared by its siblings, so no case pays for every face and each stays inside Unity's
+        /// per-case budget. The faces and positions each shape sweeps are unchanged.
+        /// </summary>
+        private static readonly Lazy<Dictionary<string, Lazy<Sweep>>> Sweeps =
+            new Lazy<Dictionary<string, Lazy<Sweep>>>(() => Shapes().ToDictionary(
+                shape => shape, shape => new Lazy<Sweep>(() => Run(shape))));
 
-        [Test]
-        public void EveryDerivedFace_IsStagedInEveryPosition()
+        public static IEnumerable<string> Shapes() =>
+            Enum.GetNames(typeof(StepShape));
+
+        private static Sweep Swept(string shape) => Sweeps.Value[shape].Value;
+
+        [TestCaseSource(nameof(Shapes))]
+        public void EveryDerivedFace_IsStagedInEveryPosition(string shape)
         {
-            var sweep = Swept.Value;
+            var sweep = Swept(shape);
             foreach (var line in sweep.Report)
             {
                 TestContext.Out.WriteLine(line);
@@ -62,20 +74,20 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        [Test]
-        public void TheSeatProjection_OffersExactlyWhatTheRulesOffer()
+        [TestCaseSource(nameof(Shapes))]
+        public void TheSeatProjection_OffersExactlyWhatTheRulesOffer(string shape)
         {
-            Assert.That(Swept.Value.SeatDisagreements, Is.Empty,
+            Assert.That(Swept(shape).SeatDisagreements, Is.Empty,
                 "The owner's seat projection disagreed with the rules offer on these stepped faces.");
         }
 
-        [Test]
-        public void NoGreyedSteppedPlay_CouldHaveBeenTaken()
+        [TestCaseSource(nameof(Shapes))]
+        public void NoGreyedSteppedPlay_CouldHaveBeenTaken(string shape)
         {
-            Assert.That(Swept.Value.GreyedButLegal, Is.Empty,
+            Assert.That(Swept(shape).GreyedButLegal, Is.Empty,
                 "These faces were greyed by the rules, yet forced past the offer some answer reached " +
                 "a target (an Attack) or changed the game (a Skill): a legal play the player was denied.");
-            Assert.That(Swept.Value.GreyedTried, Is.GreaterThan(20),
+            Assert.That(Swept(shape).GreyedTried, Is.GreaterThan(20),
                 "A sweep forcing few greyed offers is not asking the question it exists for.");
         }
 
@@ -120,10 +132,26 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True, "and from beside the minion the Attack takes it.");
         }
 
-        [Test]
-        public void TheSweep_ExploresEveryForcedPlayToTheEnd()
+        /// <summary>
+        /// Milestone 9.9a, the converse 9.9 recorded: an offered stepped Attack that no answer brings
+        /// to a target. Cutter's Daring Strike, Bold Thrust and Fearless Lunge ("Before the attack:
+        /// Move N spaces in a straight line. Target a hero adjacent to you in the direction of the
+        /// move") were offered with the only enemy off every line she can move along, because the
+        /// offer walk stopped judging at the unanswered move instead of following the selection that
+        /// is bound to its direction through it. 6.5af and 9.7 grey an Attack with no reachable target
+        /// under any answer; nothing here is a "may" whose omission leaves a target.
+        /// </summary>
+        [TestCaseSource(nameof(Shapes))]
+        public void NoOfferedSteppedAttack_ReachesNobody(string shape)
         {
-            Assert.That(Swept.Value.Undecided, Is.Empty,
+            Assert.That(Swept(shape).OfferedWithoutATarget, Is.Empty,
+                "These stepped Attacks were offered, yet no answer brings them to a target.");
+        }
+
+        [TestCaseSource(nameof(Shapes))]
+        public void TheSweep_ExploresEveryForcedPlayToTheEnd(string shape)
+        {
+            Assert.That(Swept(shape).Undecided, Is.Empty,
                 "A forced play's answers outgrew the exploration budget, so it was neither proved " +
                 "legal nor reported; raise the budget rather than let it pass unread.");
         }
@@ -140,10 +168,10 @@ namespace GuardsDigital.Tests.EditMode
             public int GreyedTried;
         }
 
-        private static Sweep Run()
+        private static Sweep Run(string shape)
         {
             var sweep = new Sweep();
-            foreach (var face in Faces)
+            foreach (var face in Faces.Where(face => face.Shape.ToString() == shape))
             {
                 sweep.Faces++;
                 sweep.Report.Add($"{face.Hero}: {face.Name} ({face.Action.Kind} {face.Action.Id.Value})");
@@ -243,7 +271,7 @@ namespace GuardsDigital.Tests.EditMode
                 return OfferOutcomeTests.ReachesATarget(staged.Initial, forced, staged.Actor, 0, ref budget);
             }
 
-            if (face.Ability != null)
+            if (face.Ability != null || face.Creator != null)
             {
                 // The ability's own move changes the board whatever the Skill then does, so "ends
                 // anywhere Hold does not" would count the step as the Skill. What is asked instead is
@@ -274,8 +302,10 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The nodes of the ability's own before-action effect.</summary>
         private static HashSet<string> TriggerNodes(SteppedFace face)
         {
-            var reference = face.Ability.UltimateRule.TriggeredEffect;
-            Assert.That(reference.HasValue, Is.True, $"{face.Ability.Id.Value} declares a step it runs.");
+            var reference = face.Creator != null
+                ? face.Standing.TriggeredEffect
+                : face.Ability.UltimateRule.TriggeredEffect;
+            Assert.That(reference.HasValue, Is.True, $"{face.Name} declares a step it runs.");
             Assert.That(MatchContentCatalogs.ForThisBuild().TriggeredEffects.TryGet(
                 reference.Value, out var effect), Is.True);
             return new HashSet<string>(effect.Nodes.Select(node => node.Id.Value), StringComparer.Ordinal);

@@ -46,7 +46,13 @@ namespace GuardsDigital.Tests.EditMode
         {
             BeforeTheAttackText,
             SkillPreStep,
-            BeforeActionAbility
+            BeforeActionAbility,
+
+            /// <summary>
+            /// Milestone 9.9a. A standing Active effect runs the step before the action - Misa's
+            /// Next-turn move, Trinkets' Disruptor discard - raised by an earlier face.
+            /// </summary>
+            BeforeActionEffect
         }
 
         internal sealed class SteppedFace
@@ -62,6 +68,25 @@ namespace GuardsDigital.Tests.EditMode
                 Ability = ability;
             }
 
+            internal SteppedFace(
+                string hero, CardDefinition card, ActionDefinition action, CardDefinition creator,
+                string creatorHero, GuardsDigital.Core.Timing.ActiveEffectDefinition standing)
+                : this(hero, card, action, StepShape.BeforeActionEffect, null)
+            {
+                Creator = creator;
+                CreatorHero = creatorHero;
+                Standing = standing;
+            }
+
+            /// <summary>The face whose effect stands before the action, for that shape alone.</summary>
+            internal CardDefinition Creator { get; }
+
+            /// <summary>The hero who plays <see cref="Creator"/>.</summary>
+            internal string CreatorHero { get; }
+
+            /// <summary>The standing effect whose before-action step fires.</summary>
+            internal GuardsDigital.Core.Timing.ActiveEffectDefinition Standing { get; }
+
             internal string Hero { get; }
             internal CardDefinition Card { get; }
             internal ActionDefinition Action { get; }
@@ -70,9 +95,11 @@ namespace GuardsDigital.Tests.EditMode
             /// <summary>The p.16 card whose before-action ability stands, for that shape alone.</summary>
             internal CardDefinition Ability { get; }
 
-            internal string Name => Ability == null
-                ? $"{Card.Id.Value} [{Shape}]"
-                : $"{Card.Id.Value} under {Ability.Id.Value} [{Shape}]";
+            internal string Name => Creator != null
+                ? $"{Card.Id.Value} under {Creator.Id.Value}'s standing effect [{Shape}]"
+                : Ability == null
+                    ? $"{Card.Id.Value} [{Shape}]"
+                    : $"{Card.Id.Value} under {Ability.Id.Value} [{Shape}]";
 
             internal bool TargetsMinionsOnly =>
                 Action.AttackTargetPolicy?.TargetableUnits == AttackTargetableUnits.MinionsOnly;
@@ -205,7 +232,80 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
+            faces.AddRange(DeriveStandingEffectSteps());
             return faces;
+        }
+
+        /// <summary>
+        /// Milestone 9.9a. Every dealt face whose action raises an Active effect declaring the
+        /// before-a-primary-action window (<c>TimingCheckpoint.BeforePrimaryAction</c>), read off the
+        /// capability handlers its effect names. An effect the creator's own hero lives under (Misa's
+        /// "Next turn: before you perform a primary action...") is asked of that hero's printed Attack
+        /// and Skill faces; one that stands over enemy heroes in a radius (Trinkets' Disruptor cards)
+        /// is asked of the first other dealt hero's, acting inside it.
+        /// </summary>
+        private static IEnumerable<SteppedFace> DeriveStandingEffectSteps()
+        {
+            var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
+            foreach (var hero in QuickGameSetupConfiguration.DealtHeroes)
+            {
+                foreach (var creator in OwnedFaces(hero))
+                {
+                    var standing = creator.ActionDefinitions
+                        .Where(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                            action.EffectRoot != null)
+                        .SelectMany(action => action.EffectRoot.Nodes)
+                        .Where(node => node.Kind == EffectNodeKind.Capability)
+                        .Select(node => capabilities.TryLoad(node.Capability, out var handler)
+                            ? handler : null)
+                        .Where(handler => handler != null)
+                        .SelectMany(handler => handler.ActiveEffectDefinitions)
+                        .FirstOrDefault(effect => effect.TriggeredEffect.HasValue &&
+                            effect.TriggerCheckpoints.Contains(
+                                GuardsDigital.Core.Timing.TimingCheckpoint.BeforePrimaryAction));
+                    if (standing == null)
+                    {
+                        continue;
+                    }
+
+                    var overItsOwner = standing.AffectedScope ==
+                        GuardsDigital.Core.Timing.ActiveEffectAffectedScopeKind.ControllerHero;
+                    var actor = overItsOwner
+                        ? hero
+                        : QuickGameSetupConfiguration.DealtHeroes.First(
+                            candidate => !candidate.ContentId.Equals(hero.ContentId));
+                    // An effect raised over enemies this turn stands over an enemy's action only if that
+                    // action comes later in the same turn, which p.7 orders by Initiative: a face that
+                    // would act before its creator can never meet the step, so it is not one of these.
+                    foreach (var card in OwnedFaces(actor).Where(card =>
+                        !card.Progression.IsUltimate && !card.Reference.Equals(creator.Reference) &&
+                        (overItsOwner || card.Initiative.Value < creator.Initiative.Value)))
+                    {
+                        foreach (var action in card.ActionDefinitions.Where(action =>
+                            action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                            (action.Kind == ActionKind.Attack || action.Kind == ActionKind.Skill)))
+                        {
+                            yield return new SteppedFace(
+                                actor.ContentId.Value, card, action, creator, hero.ContentId.Value,
+                                standing);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static IReadOnlyList<CardDefinition> OwnedFaces(RegisteredHero hero)
+        {
+            var configuration = Configure(hero, out var lineup);
+            var heroId = HeroIdOf(configuration, lineup, hero);
+            return configuration.CardInstances
+                .Where(card => card.OwnerId.Equals(heroId))
+                .Select(card => configuration.CardDefinitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)))
+                .GroupBy(definition => definition.Reference)
+                .Select(group => group.First())
+                .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)
+                .ToArray();
         }
 
         /// <summary>
@@ -242,13 +342,20 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static MatchConfiguration Configure(RegisteredHero hero, out HeroLineup lineup)
+        private static MatchConfiguration Configure(
+            RegisteredHero hero, out HeroLineup lineup, RegisteredHero? opponent = null)
         {
+            // Milestone 9.9a: a standing effect raised by another hero seats that hero first on the
+            // other side, so the enemy placed as the target is the effect's own controller.
             var others = QuickGameSetupConfiguration.DealtHeroes
-                .Where(candidate => !candidate.ContentId.Equals(hero.ContentId))
+                .Where(candidate => !candidate.ContentId.Equals(hero.ContentId) &&
+                    (opponent == null || !candidate.ContentId.Equals(opponent.Value.ContentId)))
                 .Take(5)
                 .ToArray();
-            lineup = new HeroLineup(new[] { hero, others[0], others[1] }, others.Skip(2).Take(3));
+            lineup = opponent == null
+                ? new HeroLineup(new[] { hero, others[0], others[1] }, others.Skip(2).Take(3))
+                : new HeroLineup(new[] { hero, others[0], others[1] },
+                    new[] { opponent.Value }.Concat(others.Skip(2).Take(2)));
             return MatchConfiguration.CreateForLineupForInternalTest(
                 MatchFormat.ThreeVersusThreeQuick, lineup, TeamSide.Red);
         }
@@ -296,7 +403,12 @@ namespace GuardsDigital.Tests.EditMode
             var map = Map.Value;
             var hero = QuickGameSetupConfiguration.DealtHeroes.Single(
                 candidate => candidate.ContentId.Value == face.Hero);
-            var configuration = Configure(hero, out var lineup);
+            var creatorHero = face.Creator == null || withoutTheAbility
+                ? (RegisteredHero?)null
+                : QuickGameSetupConfiguration.DealtHeroes.Single(
+                    candidate => candidate.ContentId.Value == face.CreatorHero);
+            var configuration = Configure(hero, out var lineup,
+                creatorHero != null && !creatorHero.Value.ContentId.Equals(hero.ContentId) ? creatorHero : null);
             var setup = QuickGameSetupAuthority.Create(
                 HeroLineupComposition.Compose(MatchFormat.ThreeVersusThreeQuick, lineup),
                 configuration.Participants, map, configuration.TieBreakerState);
@@ -306,21 +418,37 @@ namespace GuardsDigital.Tests.EditMode
             var card = configuration.CardInstances.Single(instance =>
                 instance.OwnerId.Equals(actor) &&
                 instance.DefinitionReference.Equals(face.Card.Reference));
-            if (card.State.Location != CardLocation.Hand)
+            CardInstance creatorCard = null;
+            var creatorOwner = default(HeroId);
+            if (creatorHero != null)
             {
-                if (card.State.Location != CardLocation.Deck)
+                creatorOwner = setup.Heroes.Single(seat => seat.ContentId.Equals(creatorHero.Value.ContentId)).HeroId;
+                creatorCard = configuration.CardInstances.Single(instance =>
+                    instance.OwnerId.Equals(creatorOwner) &&
+                    instance.DefinitionReference.Equals(face.Creator.Reference));
+            }
+
+            foreach (var needed in new[] { card, creatorCard }.Where(value => value != null))
+            {
+                if (needed.State.Location == CardLocation.Hand)
                 {
-                    unstaged = $"{face.Card.Id.Value} starts in {card.State.Location}, not in hand or deck";
+                    continue;
+                }
+
+                if (needed.State.Location != CardLocation.Deck)
+                {
+                    unstaged = $"{needed.Id.Value} starts in {needed.State.Location}, not in hand or deck";
                     return null;
                 }
 
                 var yielded = configuration.CardInstances
-                    .Where(instance => instance.OwnerId.Equals(actor) &&
-                        instance.State.Location == CardLocation.Hand)
+                    .Where(instance => instance.OwnerId.Equals(needed.OwnerId) &&
+                        instance.State.Location == CardLocation.Hand &&
+                        instance != card && instance != creatorCard)
                     .OrderBy(instance => instance.Id.Value, StringComparer.Ordinal)
                     .First();
                 Assert.That(CardLifecycleAuthority.TryReturnToDeck(yielded), Is.True);
-                Assert.That(CardLifecycleAuthority.TryTakeFromDeckIntoHand(card), Is.True);
+                Assert.That(CardLifecycleAuthority.TryTakeFromDeckIntoHand(needed), Is.True);
             }
 
             if (face.Ability != null && !withoutTheAbility)
@@ -373,6 +501,19 @@ namespace GuardsDigital.Tests.EditMode
                         new ObstacleId($"step-wall-{index}"), space))
                     .ToArray()
                 : Array.Empty<ObstacleOccupancy>();
+            if (creatorHero != null && face.Standing.TryGetOwnedObstacleRadiusAnchorKind(out var anchorKind))
+            {
+                // Milestone 9.9a. An effect whose radius is measured from its hero's own obstacle
+                // (Trinkets' Turret) stands only while that obstacle is on the board, so the setup
+                // places it two spaces from the actor on the side away from the target - a starting
+                // position, not card state.
+                obstacles = obstacles.Concat(new[]
+                {
+                    new ObstacleOccupancy(
+                        OwnedObstacleIdentity.For(anchorKind, creatorOwner), Walk(centre, HexDirection.West, 2))
+                }).ToArray();
+            }
+
             var scenario = new InitialScenarioDescription(
                 configuration.Participants,
                 configuration.CardDefinitions,
@@ -385,8 +526,16 @@ namespace GuardsDigital.Tests.EditMode
             var initial = new MatchSessionInitialState(scenario, staged, new[] { map });
             var session = new MatchSession(initial);
 
-            if (!ReachTheActorsTurn(session, actor, card.Id, out unstaged))
+            if (!ReachTheActorsTurn(
+                    session, actor, card.Id, out unstaged, creatorOwner, creatorCard?.Id ?? default))
             {
+                return null;
+            }
+
+            if (creatorCard != null &&
+                !session.Projection.ActiveEffectSourceCardInstanceIds.Contains(creatorCard.Id))
+            {
+                unstaged = $"{face.Creator.Id.Value}'s effect is not standing when the actor acts";
                 return null;
             }
 
@@ -407,13 +556,60 @@ namespace GuardsDigital.Tests.EditMode
         /// lets every earlier turn Hold (p.12), so nothing on the board moves before the actor acts.
         /// </summary>
         private static bool ReachTheActorsTurn(
-            MatchSession session, HeroId actor, CardInstanceId card, out string unstaged)
+            MatchSession session, HeroId actor, CardInstanceId card, out string unstaged,
+            HeroId creatorOwner = default, CardInstanceId creatorCard = default)
         {
             unstaged = null;
-            for (var step = 0; step < 200; step++)
+
+            // Milestone 9.9a. A standing effect is raised the way the game raises it: its creator is
+            // committed and played first, every answer it asks taken the doing way.
+            var creatorPlayed = !creatorCard.IsDefined;
+            var creatorStarted = false;
+            for (var step = 0; step < 400; step++)
             {
                 var projection = session.Projection;
-                if (projection.IsTurnActive && projection.SelectedActor.IsDefined &&
+                if (creatorStarted && !creatorPlayed &&
+                    !(projection.IsTurnActive && projection.SelectedActor.IsDefined &&
+                        projection.SelectedActor.CardInstanceId.Equals(creatorCard)))
+                {
+                    creatorPlayed = true;
+                }
+
+                if (!creatorStarted && creatorCard.IsDefined && projection.IsTurnActive &&
+                    projection.SelectedActor.IsDefined &&
+                    projection.SelectedActor.CardInstanceId.Equals(creatorCard) &&
+                    projection.DecisionContract == null && projection.PendingTurnRelease == null)
+                {
+                    var creation = projection.AvailableTurnActions.FirstOrDefault(offer =>
+                        offer.IsAvailable &&
+                        offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
+                    if (!creation.ActionDefinitionId.IsDefined ||
+                        !session.Execute(DirectorCommand.StartAction(
+                            creation.SourceCardInstanceId, creation.ActionDefinitionId)).Accepted)
+                    {
+                        unstaged = "the standing effect's creator could not be played";
+                        return false;
+                    }
+
+                    creatorStarted = true;
+                    continue;
+                }
+
+                if (creatorStarted && !creatorPlayed && projection.DecisionContract != null &&
+                    projection.PendingTurnRelease == null)
+                {
+                    var answer = projection.DecisionContract.Commands
+                        .OrderBy(OfferOutcomeTests.Doing).First();
+                    if (!session.Execute(answer).Accepted)
+                    {
+                        unstaged = "the standing effect's creator refused its own answer";
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (creatorPlayed && projection.IsTurnActive && projection.SelectedActor.IsDefined &&
                     projection.SelectedActor.ActorId.Equals(actor) &&
                     projection.DecisionContract == null && projection.PendingTurnRelease == null)
                 {
@@ -432,7 +628,9 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     var asked = projection.Commitments.First(value =>
                         value.Status == TurnCardCommitmentStatus.AwaitingResponse);
-                    var chosen = asked.HeroId.Equals(actor)
+                    var chosen = asked.HeroId.Equals(creatorOwner) && !creatorStarted
+                        ? creatorCard
+                        : asked.HeroId.Equals(actor)
                         ? card
                         : projection.Cards
                             .Where(value => value.OwnerId.Equals(asked.HeroId) &&

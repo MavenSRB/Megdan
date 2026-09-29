@@ -571,7 +571,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>Answers that act before answers that decline, so a doing path is found early.</summary>
-        private static int Doing(DirectorCommand command)
+        internal static int Doing(DirectorCommand command)
         {
             switch (command.Kind)
             {
