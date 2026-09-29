@@ -193,24 +193,37 @@ namespace GuardsDigital.Tests.EditMode
         {
             var survey = new Survey();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            // Two rotations, the second in reverse, so every hero plays in two different line-ups.
+            foreach (var picked in RotatedLineups())
+            {
+                for (var seed = 1; seed <= SeedsPerLineup; seed++)
+                {
+                    Play(survey, map, picked, seed);
+                }
+            }
+
+            return survey;
+        }
+
+        /// <summary>
+        /// Two rotations through every dealt hero, the second in reverse, so every hero plays in two
+        /// different six-hero line-ups. Milestone 9.10's soak draws its line-ups from here too.
+        /// </summary>
+        internal static IReadOnlyList<RegisteredHero[]> RotatedLineups()
+        {
+            var drawn = new List<RegisteredHero[]>();
             var dealt = QuickGameSetupConfiguration.DealtHeroes.ToArray();
             foreach (var heroes in new[] { dealt, dealt.Reverse().ToArray() })
             {
                 var lineups = (heroes.Length + 5) / 6;
                 for (var lineup = 0; lineup < lineups; lineup++)
                 {
-                    var picked = Enumerable.Range(0, 6)
+                    drawn.Add(Enumerable.Range(0, 6)
                         .Select(offset => heroes[(lineup * 6 + offset) % heroes.Length])
-                        .ToArray();
-                    for (var seed = 1; seed <= SeedsPerLineup; seed++)
-                    {
-                        Play(survey, map, picked, seed);
-                    }
+                        .ToArray());
                 }
             }
 
-            return survey;
+            return drawn;
         }
 
         private static void Play(Survey survey, BoardMapDefinition map, RegisteredHero[] picked, int seed)

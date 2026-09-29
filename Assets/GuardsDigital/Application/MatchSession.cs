@@ -939,6 +939,11 @@ namespace GuardsDigital.Application
             // here at all: the projection assembles each on demand from the same immutable capture,
             // so a reader pays for what it reads and a command does not.
             var authoritative = aggregate.CaptureAuthoritative();
+            // Milestone 9.10. The board's units and tokens are projected in the order the snapshot
+            // writes them - by id - rather than the board's own setup-and-arrival order, which a
+            // restore, a replay from a retained point and a reconnecting seat cannot reproduce. The
+            // projection is a reading of the authoritative state, so it may not depend on history the
+            // state does not keep.
             var projection = new MatchSessionProjection(
                 version,
                 initialState.Setup,
@@ -946,8 +951,8 @@ namespace GuardsDigital.Application
                 configuration.Participants,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                board.Occupancies,
-                board.ObstacleOccupancies,
+                board.Occupancies.OrderBy(hero => hero.HeroId.Value, StringComparer.Ordinal),
+                board.ObstacleOccupancies.OrderBy(obstacle => obstacle.ObstacleId.Value, StringComparer.Ordinal),
                 round.RoundIndex,
                 round.TurnIndex,
                 round.Phase,
@@ -971,8 +976,8 @@ namespace GuardsDigital.Application
                 aggregate.EventLogEntries,
                 authoritative,
                 canRecordHistory,
-                board.Minions,
-                board.PlacedTokens,
+                board.Minions.OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal),
+                board.PlacedTokens.OrderBy(token => token.Id.Value, StringComparer.Ordinal),
                 availableHoldOffer,
                 availableFastTravelOptions,
                 defensePreview,
@@ -998,8 +1003,9 @@ namespace GuardsDigital.Application
                 turn?.DescribeRemovalPrevention(turnModifications),
                 // Milestone 8.23a. The register itself, not a copy of what it said: the same object
                 // p.8's cleanup and p.13's Defeat return markers to, so a reading of it can never
-                // outlive the attachment it describes.
-                round?.Markers.Attachments,
+                // outlive the attachment it describes. Milestone 9.10: in the snapshot's id order, for
+                // the reason the board lists above are.
+                round?.Markers.Attachments.OrderBy(marker => marker.Id.Value, StringComparer.Ordinal),
                 attackTargetDefensePreviews,
                 // Milestone 8.35g. The finished turn waiting for its own player's release, read
                 // from the turn authority that holds it beside every other pause it publishes.
