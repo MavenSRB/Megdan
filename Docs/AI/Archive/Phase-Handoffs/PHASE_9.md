@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.22 Adjacent target evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.22 | Get over here! and Grappling Bolt offer an already-adjacent target under ruling W9 (superseding W6), through a shared zero-space-move reading in the selection consumer and the offer check; three regressions, the 9.6-era pins restored, a 188-selection sweep naming only these two faces. [Definition](../../Roadmap/PHASE_9.md#x-922-get-over-here-and-grappling-bolt-offer-an-already-adjacent-target). | `milestone/9.22` |
+
 ## Milestone 9.21a Many-bodies model evidence
 
 | Milestone | Outcome and definition | Commit |
