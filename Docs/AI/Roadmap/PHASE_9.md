@@ -258,3 +258,9 @@ Result: the 9.6 narrowing lived in the shared selection consumer: `synthetic-dir
 Completed 2026-09-30.
 
 Historical evidence: [9.22 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-922-adjacent-target-evidence).
+
+## Package, authorized 2026-09-30
+
+### [~] 9.24 Package the 2026-09-30 build without Razzle
+
+Authorized 2026-09-30 by the user ("Can you gut out the build with all the other stuff, but no razzle?"). Outcome: a Windows playtest package `Builds/Playtest-9.24-roster27` cut from main after 9.21g, carrying everything landed since 9.12 - Trinkets' Turret redrawn (9.16), the thin outline on every token (9.18), Snorri's rune marks (9.20), Charged Runestone's and Runebomb's rune bindings (9.17a), the adjacent-target ruling W9 (9.22), 9.13's two engine fixes and expected-outcome corpus, and Razzle's engine groundwork (9.21a-9.21g: bodies, the acting-body choice, snapshot v50, wire /27) with his content unregistered, so the roster stays at twenty-seven heroes. Recipe as 9.12: version stamp first, the build-and-launch smoke, copy without logs or debug information, launcher, read-me, manifest and identity, ZIP inspected, packaged executable launched from its own folder, content digest measured. Closing check: the T3 pre-build gate (full harness, full Edit Mode, full Play Mode) green on the packaged revision at the root; package folder, ZIP and archive row recorded. T3.
