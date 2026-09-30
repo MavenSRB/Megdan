@@ -47,7 +47,11 @@ namespace GuardsDigital.Tests.EditMode
             // this list is compared for equivalence rather than containment, so leaving the release
             // out would fail here - which is exactly the guard working. Three complete matches now
             // reach all eleven.
-            PendingDecisionFamilies.TurnRelease
+            PendingDecisionFamilies.TurnRelease,
+            // Milestone 9.21k. The twelfth family, "which of you acts" (9.21b), reached once Razzle -
+            // the one many-bodied hero - is seated and Stunt Doubles has spawned: the "razzle" record
+            // below reaches it through the same seat boundary as every other family here.
+            PendingDecisionFamilies.ActingBody
         };
 
         private static readonly CardLocation[] PublicCardLocations =
@@ -565,6 +569,14 @@ namespace GuardsDigital.Tests.EditMode
                 // seed 5 is the lowest such seed, at 170 commands.
                 "throne", 5, MatchVictoryCause.ThroneCaptured,
                 ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession);
+            yield return new RecordedScenario(
+                // Milestone 9.21k. Razzle seated in a 3v3 line-up, staged beside Wasp with two Life
+                // counters a side. An offline scan of seeds 1-30 on this scenario's OWN fixture found
+                // seven complete endings that answer "which of you acts"; seed 4 exhausts the Life
+                // counters in 293 commands over four rounds, answers the pick three times, and has a
+                // plain CommitCard at its halfway index, so the session replacement latches.
+                "razzle", 4, MatchVictoryCause.LifeCountersExhausted,
+                () => ConfiguredMatchFixtures.CreateEngagedSixPlayerSessionSeatingRazzle(2));
         }
 
         private sealed class RecordedScenario

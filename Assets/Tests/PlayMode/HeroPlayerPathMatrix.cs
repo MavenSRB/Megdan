@@ -234,6 +234,20 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         ColorNamingChoice,
 
+        /// <summary>
+        /// Milestone 9.21k. A repeat performed by "a different you" (Razzle's Twin Strike and
+        /// Spectacle, 9.21h): the player names which other standing body performs the repeated
+        /// instance by clicking its standee, or declines.
+        ///
+        /// <para>It is its own shape rather than <see cref="RepeatDecision"/> alone because the
+        /// answer is a body on the board, and the repeated instance is then measured from it - a
+        /// different transition from p.10's ordinary repeat, whose performer never changes. Read off
+        /// the RepeatAction node that publishes <see cref="EffectNodeDefinition.RepeatActorBodyOutput"/>,
+        /// which is the whole of what a definition writes to say so; no earlier hero's node publishes
+        /// it, so every earlier row is byte-identical.</para>
+        /// </summary>
+        DifferentBodyRepeatPerformer,
+
 
         // -------------------------------------------------------------------------------------
         // Component shapes. These belong to the hero rather than to any one face, and the gate
@@ -479,7 +493,15 @@ namespace GuardsDigital.Tests.PlayMode
         /// Defense in p.14's window "as if it was in your hand", paid by discarding it from where it
         /// rests. Read off <c>RulePermissionKind.DefendWithSourceCardAsIfInHand</c>.
         /// </summary>
-        SourceCardDefenseSubstitution
+        SourceCardDefenseSubstitution,
+
+        /// <summary>
+        /// Milestone 9.21k. A hero standing on several spaces (Razzle, RZ-Q4): before his card's
+        /// action the player answers "which of you acts" by clicking a standee, and the acting cue
+        /// moves onto it. Not required of every hero - it belongs to the many-bodied hero's own
+        /// component row, as <see cref="HeroCoinBalanceReading"/> belongs to Wasp's.
+        /// </summary>
+        ActingBodyStandeePick
     }
 
     /// <summary>
@@ -1458,7 +1480,16 @@ namespace GuardsDigital.Tests.PlayMode
                 // preceding printed-icon selection named, so it asks nothing itself.
                 ["mortimer-place-zombie"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["mortimer-reclaim-zombie"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
-                ["mortimer-replace-minion-with-zombie"] = Array.Empty<PlayerInteractionShape>()
+                ["mortimer-replace-minion-with-zombie"] = Array.Empty<PlayerInteractionShape>(),
+                // Milestone 9.21k. Razzle. Stunt Doubles' spawn asks for an empty space in radius; the
+                // removals and "another one of you" ask for his bodies as the spaces they stand on,
+                // clicked on the board as Mortimer's reclaim asks for a Zombie's, except Crowd
+                // Control's "remove all other you", which asks nothing (read off the node below). The
+                // retreat's line end is decided by the push the player already made.
+                ["razzle-spawn-body"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["razzle-remove-bodies"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["razzle-other-body"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["razzle-retreat-line-end"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1811,6 +1842,15 @@ namespace GuardsDigital.Tests.PlayMode
             if (node.Kind == EffectNodeKind.RepeatAction)
             {
                 shapes.Add(PlayerInteractionShape.RepeatDecision);
+
+                // Milestone 9.21k. "A different you may repeat it": the node publishes the
+                // performing body's space, which is how 9.21h's definitions declare it.
+                if (node.Outputs.Any(output => string.Equals(
+                        output.OutputName, EffectNodeDefinition.RepeatActorBodyOutput,
+                        StringComparison.Ordinal)))
+                {
+                    shapes.Add(PlayerInteractionShape.DifferentBodyRepeatPerformer);
+                }
             }
 
             // Milestone 8.21. Rulebook p.10's modal form: "choose a bullet point and apply its text,
@@ -1861,7 +1901,7 @@ namespace GuardsDigital.Tests.PlayMode
                 // a click those cards produce - and a row claiming one would name a journey for an
                 // input no player is ever offered.
                 if (shape == PlayerInteractionShape.BoardSpaceSelection &&
-                    NamesItsOwnDestination(node))
+                    (NamesItsOwnDestination(node) || RemovesEveryOtherBodyWithoutAsking(node)))
                 {
                     continue;
                 }
@@ -1973,6 +2013,23 @@ namespace GuardsDigital.Tests.PlayMode
                 input.Literal.IsDefined &&
                 input.Literal.IntegerValue ==
                     (int)GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy.NamedSpace);
+
+        /// <summary>
+        /// Milestone 9.21k. Whether a removal of the actor's own bodies names them itself: Crowd
+        /// Control's "remove all other you in play" (<see cref="ActorBodyRemoval.EveryOtherBody"/>)
+        /// removes every body but the acting one and asks nothing, while every other member asks for
+        /// the bodies as their spaces. Read off the node's declared member for the reason
+        /// <see cref="NamesItsOwnDestination"/> is: one capability, two declarations.
+        /// </summary>
+        private static bool RemovesEveryOtherBodyWithoutAsking(EffectNodeDefinition node) =>
+            string.Equals(node.Capability.CapabilityId.Value, "razzle-remove-bodies", StringComparison.Ordinal) &&
+            node.Inputs.Any(input =>
+                string.Equals(
+                    input.ParameterName,
+                    SyntheticHeroBodyCapabilities.RemovalParameterName,
+                    StringComparison.Ordinal) &&
+                input.Literal.IsDefined &&
+                input.Literal.IntegerValue == (int)ActorBodyRemoval.EveryOtherBody);
 
         private static bool NamesMoreThanOnePushDistance(EffectNodeDefinition node) =>
             DeclaredInteger(node, PushDistanceParameterName) >

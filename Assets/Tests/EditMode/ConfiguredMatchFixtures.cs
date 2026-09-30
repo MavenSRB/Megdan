@@ -1655,6 +1655,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 9.21k. A six-seat 3v3 Quick Game line-up seating Razzle - Wasp, Arien and Sabina
+        /// against Razzle, Brogan and Tigerclaw - with Razzle staged beside Wasp and the stated Life
+        /// count, so a complete recorded match reaches "which of you acts" once Stunt Doubles has
+        /// spawned. His four-body supply arrives from his roster declaration, as in a selected match.
+        /// </summary>
+        public static MatchSession CreateEngagedSixPlayerSessionSeatingRazzle(int lifeCountersPerTeam)
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var dealt = QuickGameSetupConfiguration.DealtHeroes;
+            RegisteredHero Hero(string id) => dealt.Single(hero => hero.ContentId.Value == id);
+            var lineup = new HeroLineup(
+                new[] { Hero("wasp"), Hero("arien"), Hero("sabina") },
+                new[] { Hero(RazzleCardContent.ContentSetId), Hero("brogan"), Hero("tigerclaw") });
+            var format = MatchFormat.ThreeVersusThreeQuick;
+            var configuration = MatchConfiguration.CreateForLineupForInternalTest(format, lineup, TeamSide.Red);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(format, lineup),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var engaged = new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams.Select(team => new QuickGameTeamSetupState(
+                    team.TeamId, team.TeamSide, lifeCountersPerTeam, team.ThroneZoneId)).ToArray(),
+                WithOneBlueHeroBesideOneRedHero(map, setup),
+                setup.Minions);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                configuration.SetupSeed,
+                map.Reference,
+                engaged.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return new MatchSession(new MatchSessionInitialState(scenario, engaged, new[] { map }));
+        }
+
+        /// <summary>
         /// The official six seats and content sets with Blue reduced to one non-Heavy Battle-Zone
         /// minion. The ordinary p.8 Minion Battle therefore supplies Red's repeated Lane Pushes and
         /// makes the Throne ending reachable without staging a victory command or mutating authority.
