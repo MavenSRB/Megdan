@@ -374,9 +374,17 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
+        /// <summary>
+        /// Answers a printed "may" on the decision window's own pair (8.46e), found by command kind.
+        /// The shared Garrus helper reads one view per hero, which his bodies break by design.
+        /// </summary>
         private static IEnumerator May(MatchSceneCompositionRoot root, bool accept)
         {
-            yield return GarrusUiJourneyTests.May(root, accept);
+            Assert.That(root.Runtime.PendingEffectChoice, Is.Not.Null, Remaining(root.Runtime));
+            UiPlayer.ClickEffectControl(root.Runtime, root.Hud,
+                accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline);
+            yield return null;
+            yield return null;
             Healthy(root.Runtime);
         }
 
@@ -674,16 +682,13 @@ namespace GuardsDigital.Tests.PlayMode
                 var runtime = root.Runtime;
                 yield return BeginRazzle(root, face, ActionKind.Movement);
                 Assert.That(runtime.PendingMovementChoice, Is.Not.Null, face.Value + " " + Remaining(runtime));
+                // The whole Movement 2 in one click: the walk ends by itself and p.11 reaches the text
+                // after it. END TURN would walk away from the optional step instead (8.35v).
                 var step = FirstClickableSpace(Pointer(), runtime.PendingMovementChoice.LegalDestinations
-                    .Where(value => value.Cost == 1).Select(value => value.Destination).ToArray());
+                    .Where(value => value.Cost == 2).Select(value => value.Destination).ToArray());
                 Assert.That(UiPlayer.ClickBoard(Pointer(), root.Hud, Tile(step).transform.position), Is.True);
                 yield return null;
-                if (runtime.PendingMovementChoice != null)
-                {
-                    Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null, Remaining(runtime));
-                    UiPlayer.Click(UiPlayer.Button(root.Hud, runtime.RoundView.Model.EndTurnInvocation.Label));
-                    yield return null;
-                }
+                Assert.That(runtime.PendingMovementChoice, Is.Null, "The Movement is spent. " + Remaining(runtime));
 
                 Assert.That(Bodies(runtime).First().Space, Is.EqualTo(step), face.Value + " walks the acting body.");
                 Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Does.EndWith("-other-body"),
