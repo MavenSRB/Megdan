@@ -105,5 +105,6 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Eleventh shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_11.md)
 - [Phase 9 - Rules fidelity and hero intake hardening](Roadmap/PHASE_9.md)
 - [Phase 9 - Twenty-seventh-hero dealing: Mortimer the Awakener](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md)
+- [Phase 9 - Twenty-eighth-hero dealing: Razzle](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)
