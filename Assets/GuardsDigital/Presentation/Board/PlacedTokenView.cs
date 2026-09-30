@@ -15,8 +15,8 @@ namespace GuardsDigital.Presentation.Board
     /// is what makes a Replace read correctly for a token kind this view has never seen - the name
     /// changes and the space is never drawn empty, because the two are one projection apart.
     ///
-    /// It is deliberately smaller than a unit and sits lower, so a highlighted destination remains
-    /// visible around it. The view carries no pointer selector or legality: its retained target ring
+    /// It sits low and inside the space's corners, so a highlighted destination remains visible
+    /// around it. The view carries no pointer selector or legality: its retained target ring
     /// only projects the typed state and consequence intent supplied by the interaction presenter.
     /// </summary>
     [DisallowMultipleComponent]
@@ -25,8 +25,13 @@ namespace GuardsDigital.Presentation.Board
     {
         public const float DefaultVerticalOffset = 0.05f;
 
-        /// <summary>The disc's share of a tile's outer radius, leaving the tile's own edge visible.</summary>
-        public const float DiscRadiusFraction = 0.68f;
+        /// <summary>
+        /// The piece's share of a space's outer radius. Milestone 9.25, the user on the 9.18 sheet:
+        /// "make them all a bit bigger" - 0.68 became 0.78. With <see cref="BoardPieceOutline"/>'s
+        /// rim added the piece still ends inside the space's corners, so the space's own edge and
+        /// a destination highlight stay visible around it; the Turret's figure follows the same value.
+        /// </summary>
+        public const float DiscRadiusFraction = 0.78f;
 
         public const float NameCharacterSize = 0.035f;
 

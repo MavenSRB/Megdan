@@ -70,7 +70,16 @@ namespace GuardsDigital.Presentation.Board
                 [new TokenDefinitionId("wuk-tree")] = string.Empty,
 
                 // Milestone 9.8f. Mortimer's Zombie: the prepared hex prints the Zombie, so no caption.
-                [new TokenDefinitionId("mortimer-zombie")] = string.Empty
+                [new TokenDefinitionId("mortimer-zombie")] = string.Empty,
+
+                // Milestone 9.25. Tali's Ice and Totem, the user on the 2026-09-30 playtest board:
+                // "remove totem and ice text from these ones as well". The prepared faces print
+                // the frozen mass with its -1 hourglass and the carved totem, so no caption. Both
+                // totems are one physical piece with one face on the table too; which card placed
+                // it is what says which rule it carries, on the board as in the box.
+                [new TokenDefinitionId("tali-ice")] = string.Empty,
+                [new TokenDefinitionId("tali-totem-ancestral")] = string.Empty,
+                [new TokenDefinitionId("tali-totem-venerated")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

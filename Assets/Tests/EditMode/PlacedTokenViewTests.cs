@@ -104,14 +104,83 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.25, the user on the 2026-09-30 playtest board: "can you remove totem and ice
+        /// text from these ones as well". Tali's three kinds print their own faces, so none wears a
+        /// caption over it; a kind drawn without its prepared face keeps its name.
+        /// </summary>
+        [Test]
+        public void TalisIceAndTotems_WearNoCaptionOverTheirPreparedFaces()
+        {
+            var roles = new[]
+            {
+                TaliComponentContent.IceDefinition,
+                TaliComponentContent.AncestralTotemDefinition,
+                TaliComponentContent.VeneratedTotemDefinition
+            };
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                for (var index = 0; index < roles.Length; index++)
+                {
+                    var definition = roles[index];
+                    Assert.That(PlacedTokenArtwork.Caption(definition, true), Is.Empty,
+                        definition.Id.Value + " must wear no caption over its prepared face.");
+                    Assert.That(PlacedTokenArtwork.Caption(definition, false),
+                        Is.EqualTo(definition.DisplayName.ToUpperInvariant()),
+                        definition.Id.Value + " must keep its name when its face is absent.");
+                    Assert.That(PlacedTokenArtwork.TryLoadTexture(definition.Id, out _),
+                        Is.True, definition.Id.Value + " must have its prepared private face.");
+                    board.Render(index + 1, Token("tali-caption-" + index, definition,
+                        new HexCoordinate(1, 0)));
+                    Assert.That(board.View.TokenViews.Single().NameText, Is.Empty,
+                        definition.Id.Value + " is drawn under a caption.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.25: "make them all a bit bigger". Every catalog kind's piece, outline
+        /// included, still ends inside its space with a tenth of the radius to spare at the corners
+        /// and at the flats, so the space's own edge and a destination highlight stay visible
+        /// around it whatever the piece's share of the space is set to.
+        /// </summary>
+        [Test]
+        public void EveryCatalogTokenKind_LeavesTheSpacesEdgeVisibleAroundItsOutline()
+        {
+            var catalog = MatchContentCatalogs.ForThisBuild().Components;
+            var kinds = catalog.RegisteredTokens.Select(catalog.LoadToken).ToArray();
+            Assert.That(kinds, Is.Not.Empty, "The catalog registered no token kind, so this would pass vacuously.");
+            const float radius = 1.25f;
+            var cornerLimit = radius * 0.9f;
+            var flatLimit = radius * Mathf.Cos(30f * Mathf.Deg2Rad) * 0.9f;
+            foreach (var kind in kinds)
+            {
+                var gameObject = new GameObject("Fit " + kind.Id.Value);
+                try
+                {
+                    var view = gameObject.AddComponent<PlacedTokenView>();
+                    view.Configure(new PlacedToken(new TokenInstanceId("fit-" + kind.Id.Value), kind,
+                        Owner, Owner, Source, new HexCoordinate(0, 0)), radius);
+                    var outline = gameObject.transform.Find("Placed Token Outline");
+                    Assert.That(outline, Is.Not.Null, kind.Id.Value + " is drawn with no outline.");
+                    var rim = outline.GetComponent<MeshFilter>().sharedMesh.bounds;
+                    // A pointy-top hex reaches its corners along z and its flats along x.
+                    Assert.That(rim.extents.z, Is.LessThanOrEqualTo(cornerLimit),
+                        kind.Id.Value + "'s outline reaches the space's corners.");
+                    Assert.That(rim.extents.x, Is.LessThanOrEqualTo(flatLimit),
+                        kind.Id.Value + "'s outline reaches the space's flats.");
+                }
+                finally
+                {
+                    Object.DestroyImmediate(gameObject);
+                }
+            }
+        }
+
         [Test]
         public void PyrosPreparedArtworkHasNoNameOverlayAndPooledFallbackKeepsItsName()
         {
             Assert.That(PlacedTokenArtwork.Caption(WidgetComponentContent.PyroDefinition, false), Is.EqualTo("PYRO"));
-            Assert.That(PlacedTokenArtwork.Caption(TaliComponentContent.AncestralTotemDefinition, true),
-                Is.EqualTo(TaliComponentContent.AncestralTotemDefinition.DisplayName.ToUpperInvariant()));
-            Assert.That(PlacedTokenArtwork.Caption(TaliComponentContent.VeneratedTotemDefinition, true),
-                Is.EqualTo(TaliComponentContent.VeneratedTotemDefinition.DisplayName.ToUpperInvariant()));
             Assert.That(PlacedTokenArtwork.TryLoadTexture(WidgetComponentContent.PyroDefinition.Id, out var face), Is.True);
             using (var board = new TokenBoard(new HexCoordinate(1, 0)))
             {
