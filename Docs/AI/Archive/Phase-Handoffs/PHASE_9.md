@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21 Razzle inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21 | Razzle's nineteen fronts, profile, dashboard and standee evidence inventoried; the one-space-per-hero engine seams named; RZ-Q1-RZ-Q12 recorded with recommendations; blocks 9.21a-9.21k mapped. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921-inventory-razzle-and-map-the-implementation-sequence). | `milestone/9.21` |
+
 ## Milestone 9.20 Rune marks evidence
 
 | Milestone | Outcome and definition | Commit |
