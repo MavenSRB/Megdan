@@ -91,7 +91,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId blockingCardInstanceId = default,
             CardInstanceId revealedCardInstanceId = default,
             int moveThroughTrapCardsOwed = 0,
-            IEnumerable<CoinResourceOperation> coinAwards = null)
+            IEnumerable<CoinResourceOperation> coinAwards = null,
+            CardInstanceId discardedCardInstanceId = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -154,6 +155,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
             RevealedCardInstanceId = revealedCardInstanceId;
+            DiscardedCardInstanceId = discardedCardInstanceId;
             MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
             CoinAwards = Array.AsReadOnly((coinAwards ?? Enumerable.Empty<CoinResourceOperation>()).ToArray());
         }
@@ -171,6 +173,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// unresolved card.</para>
         /// </summary>
         public CardInstanceId RevealedCardInstanceId { get; }
+
+        /// <summary>Milestone 9.19. The card card text discarded, on a <see cref="CardActionResolutionEventKind.CardTextDiscardedCard"/> fact.</summary>
+        public CardInstanceId DiscardedCardInstanceId { get; }
 
         /// <summary>
         /// Milestone 8.61e. How many cards the token this event revealed costs the hero who walked over
@@ -772,6 +777,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
                 BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
                 RevealedCardInstanceId.Equals(other.RevealedCardInstanceId) &&
+                DiscardedCardInstanceId.Equals(other.DiscardedCardInstanceId) &&
                 (CoinAwards ?? Array.Empty<CoinResourceOperation>()).SequenceEqual(
                     other.CoinAwards ?? Array.Empty<CoinResourceOperation>());
         }
@@ -813,7 +819,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ RemainingLifeCounters;
                 hashCode = (hashCode * 397) ^ BlockingHeroId.GetHashCode();
                 hashCode = (hashCode * 397) ^ BlockingCardInstanceId.GetHashCode();
-                return (hashCode * 397) ^ RevealedCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ RevealedCardInstanceId.GetHashCode();
+                return (hashCode * 397) ^ DiscardedCardInstanceId.GetHashCode();
             }
         }
 
@@ -971,6 +978,54 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     default,
                     default,
                     revealedCardInstanceId: revealed.CardInstanceId));
+
+        /// <summary>
+        /// Milestone 9.19. One <see cref="CardActionResolutionEventKind.CardTextDiscardedCard"/> fact
+        /// per card the node sent to a discard pile, on exactly <see cref="RevealedCardFacts"/>'s
+        /// terms: the owner rides the target field, the card the discarded-card field, and the step
+        /// id names the node and the card. Empty for every node that discarded nothing.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> DiscardedCardFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            (node ?? throw new ArgumentNullException(nameof(node))).DiscardedCards
+                .Select(discarded => new CardActionResolutionEvent(
+                    CardActionResolutionEventKind.CardTextDiscardedCard,
+                    resolutionId,
+                    sourceCardInstanceId,
+                    actionDefinitionId,
+                    default,
+                    actorId,
+                    discarded.OwnerHeroId,
+                    new ActionResolutionStepId(
+                        node.NodeId.Value + ":discard:" + discarded.CardInstanceId.Value),
+                    0,
+                    0,
+                    default,
+                    0,
+                    AttackResolutionOutcome.None,
+                    default,
+                    default,
+                    discardedCardInstanceId: discarded.CardInstanceId));
+
+        /// <summary>
+        /// Milestone 9.19. Every fact a node publishes about cards it moved out of a hand: its
+        /// reveals (8.40f) and its discards, in that order. The four altitudes that turn a node's
+        /// facts into the ordered stream call this one helper, so no altitude publishes one and not
+        /// the other.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> RevealedAndDiscardedCardFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            RevealedCardFacts(resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node)
+                .Concat(DiscardedCardFacts(
+                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node));
 
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,

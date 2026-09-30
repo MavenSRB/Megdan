@@ -86,6 +86,10 @@ namespace GuardsDigital.Core.Diagnostics
         // card nobody but the host knew had been turned over.
         private static readonly string CardTextRevealedCard =
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRevealedCard);
+
+        // Milestone 9.19.
+        private static readonly string CardTextDiscardedCard =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextDiscardedCard);
         private static readonly string MinionDefeatRecorded =
             ActionPrefix + nameof(CardActionResolutionEventKind.MinionDefeatRecorded);
         private static readonly string MinionRemovalCompleted =
@@ -512,6 +516,15 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectCardInstanceId: Optional(
                             references, "revealedCard", value => new CardInstanceId(value)));
 
+                // Milestone 9.19. The same two readings for the same reason: `target` is the card's
+                // owner and `discardedCard` the card that left their hand.
+                case MatchLogEntryKind.CardDiscardedByCardText:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        subjectCardInstanceId: Optional(
+                            references, "discardedCard", value => new CardInstanceId(value)));
+
                 // Milestone 8.35z61. THE SUBJECT IS THE TARGET, NOT THE ACTOR. On every
                 // card-action event `hero` is the acting hero and `target` is the hero the action was
                 // about, and this row is about the hero who was defeated and thereby passed over -
@@ -603,6 +616,7 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == GameEnded) return MatchLogEntryKind.GameEnded;
             if (type == CardRevealed) return MatchLogEntryKind.CardRevealed;
             if (type == CardTextRevealedCard) return MatchLogEntryKind.CardRevealedByCardText;
+            if (type == CardTextDiscardedCard) return MatchLogEntryKind.CardDiscardedByCardText;
             return MatchLogEntryKind.None;
         }
 

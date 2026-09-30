@@ -384,7 +384,14 @@ namespace GuardsDigital.Application
         // network client drew no acting cue on a many-bodied hero. A v27 reader would take the flag
         // for the next row's id, so v27 peers are refused from the header. Projection-only: the
         // snapshot already persists the settled body (v50 stands).
-        public const int Version = 28;
+        // v29 (milestone 9.19): the seat-public match log gained MatchLogEntryKind.
+        // CardDiscardedByCardText, the row for a card that card text sent out of a hand (Charged
+        // Runestone, the Seismic faces, Trample, Mortimer's Dead faces), which until then nobody at
+        // the table could see. No bytes grew - the row spends SubjectHeroId and SubjectCardInstanceId
+        // as the reveal row does - but NetworkMatchLog.TryRead validates every kind with
+        // Enum.IsDefined, so a v28 peer meeting the new number would refuse the whole frame and go
+        // dark; the header refuses it first. Snapshot schema unmoved at v50.
+        public const int Version = 29;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

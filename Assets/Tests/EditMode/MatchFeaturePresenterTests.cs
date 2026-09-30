@@ -1184,6 +1184,16 @@ namespace GuardsDigital.Tests.EditMode
                         subjectHeroId: hero,
                         amount: 2),
                     "GAINED 2 COINS", false),
+                // Milestone 9.19 minted the THIRTY-FIFTH kind - card text sent a card out of a hand -
+                // and sweeps this walk in the same change. The rendered word differs from the
+                // reveal's because the card changed state rather than being shown.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CardDiscardedByCardText,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "DISCARDED", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

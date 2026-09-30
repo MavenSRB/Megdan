@@ -366,6 +366,12 @@ namespace GuardsDigital.Core.Diagnostics
                 // log row names it - so this string is the publication itself.
                 ruleEvent.RevealedCardInstanceId.IsDefined
                     ? $"revealedCard={ruleEvent.RevealedCardInstanceId.Value}"
+                    : null,
+                // Milestone 9.19. Present only on the fact a card-text discard produces, and a
+                // reference for the reason the reveal above is: the seat-public row reads it, and a
+                // discarded card is nameable to every seat exactly when a log row names it.
+                ruleEvent.DiscardedCardInstanceId.IsDefined
+                    ? $"discardedCard={ruleEvent.DiscardedCardInstanceId.Value}"
                     : null);
 
             var detailParts = new List<string> { $"step={ruleEvent.StepId.Value}" };

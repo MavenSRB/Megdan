@@ -75,6 +75,28 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(line, Does.Contain("v730").And.Contain("r6").And.Contain("t2"));
         }
 
+        /// <summary>
+        /// Milestone 9.19. A card-text discard (Charged Runestone, the Seismic faces, Trample) had no
+        /// words at all; the row now says who discarded which card out of their hand.
+        /// </summary>
+        [Test]
+        public void TheLog_SaysWhenCardTextMadeAHeroDiscard()
+        {
+            var line = GameplayNarrationLog.Row(
+                Noon, 731,
+                new MatchLogEntry(
+                    2474, MatchLogEntryKind.CardDiscardedByCardText, 6, 2,
+                    subjectHeroId: new HeroId("hero-bain"),
+                    subjectCardInstanceId: new CardInstanceId("blue-01-bain-drinking-buddies")));
+
+            Assert.That(line, Does.Contain("hero-bain"), "The row names the card's owner.");
+            Assert.That(line, Does.Contain("blue-01-bain-drinking-buddies"), "and the card that left his hand.");
+            Assert.That(line, Does.Contain("DISCARDED").IgnoreCase.And.Contain("FROM THEIR HAND").IgnoreCase,
+                "and the fact.");
+            Assert.That(line, Does.Not.Contain("REVEALED").IgnoreCase,
+                "A discard is not a reveal: the card changed state, it was not merely shown.");
+        }
+
         [Test]
         public void TheLog_NamesTheAuthoritativeCoinAwardAmount()
         {

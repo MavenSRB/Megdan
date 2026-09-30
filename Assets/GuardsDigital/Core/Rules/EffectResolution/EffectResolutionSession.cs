@@ -39,7 +39,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
             AppliedRuleModification blocking = null,
-            IEnumerable<RevealedCard> revealedCards = null)
+            IEnumerable<RevealedCard> revealedCards = null,
+            IEnumerable<DiscardedCard> discardedCards = null)
         {
             NodeId = nodeId;
             ResultKind = resultKind;
@@ -52,6 +53,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Blocking = blocking;
             RevealedCards = new ReadOnlyCollection<RevealedCard>(
                 (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray());
+            DiscardedCards = new ReadOnlyCollection<DiscardedCard>(
+                (discardedCards ?? Enumerable.Empty<DiscardedCard>()).ToArray());
         }
 
         public EffectNodeId NodeId { get; }
@@ -74,6 +77,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// log on restore, replay and Undo rather than persisted a second time.</para>
         /// </summary>
         public IReadOnlyList<RevealedCard> RevealedCards { get; }
+
+        /// <summary>Milestone 9.19. The cards this node sent to a discard pile by card text.</summary>
+        public IReadOnlyList<DiscardedCard> DiscardedCards { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
@@ -2111,7 +2117,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             outcomes.Add(new EffectNodeOutcome(nodeId, kind, result?.Outcomes));
             events.Add(new EffectResolutionEvent(
                 nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
-                blocking, result?.RevealedCards));
+                blocking, result?.RevealedCards, result?.DiscardedCards));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

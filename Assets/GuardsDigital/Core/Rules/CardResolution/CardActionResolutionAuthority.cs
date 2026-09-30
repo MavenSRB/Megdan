@@ -2711,7 +2711,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         CardActionResolutionEvent.CardTextApplied(
                             card.Id, action.Id, step.CardTextActorId, step.CardTextTiming, value)
                     }
-                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                    .Concat(CardActionResolutionEvent.RevealedAndDiscardedCardFacts(
                         new ActionResolutionId(
                             "card-text-" + card.Id.Value + "-" + action.Id.Value),
                         card.Id, action.Id, step.CardTextActorId, value)))
@@ -4067,7 +4067,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     }
                     // Milestone 8.40f. See the resolving site above: the reveal row travels with the
                     // node's own fact at every altitude that publishes one.
-                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                    .Concat(CardActionResolutionEvent.RevealedAndDiscardedCardFacts(
                         new ActionResolutionId(
                             "card-text-" + paused.Frame.SourceCardInstanceId.Value + "-" +
                             paused.Frame.ActionDefinitionId.Value),
@@ -6536,7 +6536,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             sourceCardInstanceId, actionDefinitionId, actorId, timing, value)
                     }
                     // Milestone 8.40f. The third of the three card-text altitudes; see the two above.
-                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                    .Concat(CardActionResolutionEvent.RevealedAndDiscardedCardFacts(
                         new ActionResolutionId(
                             "card-text-" + sourceCardInstanceId.Value + "-" +
                             actionDefinitionId.Value),

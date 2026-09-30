@@ -694,6 +694,42 @@ namespace GuardsDigital.Core.Effects
     /// declares around itself. The checkpoints become resolver steps, so an effect raises timing the
     /// same way milestone 6.1ap made every other action raise it.
     /// </summary>
+    /// <summary>
+    /// Milestone 9.19. A card that card text sent from a hand to its owner's discard pile, and whose
+    /// owner. Reported by the discarding handlers on the terms <see cref="RevealedCard"/> set at
+    /// 8.40f, so the seat-public log can say that it happened - until this milestone a card-text
+    /// discard (Charged Runestone, the Seismic faces, Trample, Mortimer's Dead faces) left no row
+    /// and no narration, and a discard nobody at the table could see read as a discard that had not
+    /// happened.
+    /// </summary>
+    public readonly struct DiscardedCard : IEquatable<DiscardedCard>
+    {
+        public DiscardedCard(HeroId ownerHeroId, CardInstanceId cardInstanceId)
+        {
+            if (!ownerHeroId.IsDefined || !cardInstanceId.IsDefined)
+            {
+                throw new ArgumentException("A discard names an owning hero and a card instance.");
+            }
+
+            OwnerHeroId = ownerHeroId;
+            CardInstanceId = cardInstanceId;
+        }
+
+        public HeroId OwnerHeroId { get; }
+        public CardInstanceId CardInstanceId { get; }
+        public bool IsDefined => OwnerHeroId.IsDefined && CardInstanceId.IsDefined;
+
+        public bool Equals(DiscardedCard other) =>
+            OwnerHeroId.Equals(other.OwnerHeroId) && CardInstanceId.Equals(other.CardInstanceId);
+
+        public override bool Equals(object obj) => obj is DiscardedCard other && Equals(other);
+
+        public override int GetHashCode() =>
+            (OwnerHeroId.GetHashCode() * 397) ^ CardInstanceId.GetHashCode();
+
+        public override string ToString() => OwnerHeroId + ":" + CardInstanceId;
+    }
+
     public sealed class EffectExecutionResult
     {
         private EffectExecutionResult(
@@ -705,7 +741,8 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<RuleObject> appliedPushes = null,
             IEnumerable<RevealedCard> revealedCards = null,
             HeroId markerGivenTo = default,
-            IEnumerable<PlacedToken> placedTokens = null)
+            IEnumerable<PlacedToken> placedTokens = null,
+            IEnumerable<DiscardedCard> discardedCards = null)
         {
             var placed = (placedTokens ?? Enumerable.Empty<PlacedToken>()).ToArray();
             if (placed.Any(token => token == null))
@@ -730,6 +767,15 @@ namespace GuardsDigital.Core.Effects
             }
 
             RevealedCards = new ReadOnlyCollection<RevealedCard>(revealed);
+            var discarded = (discardedCards ?? Enumerable.Empty<DiscardedCard>()).ToArray();
+            if (discarded.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a card it discarded.",
+                    nameof(discardedCards));
+            }
+
+            DiscardedCards = new ReadOnlyCollection<DiscardedCard>(discarded);
             if (markerGivenTo.IsDefined && kind != EffectExecutionResultKind.Applied)
             {
                 throw new ArgumentException(
@@ -810,6 +856,12 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<RevealedCard> RevealedCards { get; }
 
         /// <summary>
+        /// Milestone 9.19. The cards this handler sent from a hand to a discard pile by card text,
+        /// and empty for every handler that discarded nothing. See <see cref="DiscardedCard"/>.
+        /// </summary>
+        public IReadOnlyList<DiscardedCard> DiscardedCards { get; }
+
+        /// <summary>
         /// Milestone 8.40h. The hero this handler GAVE a marker to, or the undefined id for every
         /// handler that gave none - which is every handler in this build but the giving one.
         ///
@@ -848,10 +900,11 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<RuleObject> appliedPushes = null,
             IEnumerable<RevealedCard> revealedCards = null,
             HeroId markerGivenTo = default,
-            IEnumerable<PlacedToken> placedTokens = null) =>
+            IEnumerable<PlacedToken> placedTokens = null,
+            IEnumerable<DiscardedCard> discardedCards = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
-                appliedPushes, revealedCards, markerGivenTo, placedTokens);
+                appliedPushes, revealedCards, markerGivenTo, placedTokens, discardedCards);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

@@ -179,7 +179,16 @@ namespace GuardsDigital.Core.Diagnostics
         /// its public recipient and amount. Card-effect and Pity Coin grants retain their existing
         /// rows because they are different rules sources.
         /// </summary>
-        CoinAwarded = 34
+        CoinAwarded = 34,
+
+        /// <summary>
+        /// Milestone 9.19. Card text sent a card from a hero's hand to their discard pile: Charged
+        /// Runestone, the Seismic faces, Trample, Mortimer's Dead faces and every other printed
+        /// discard. Until this row only a Defense discard was visible at the table, so a discard that
+        /// happened looked like one that had not. The subject is the card's OWNER, never the acting
+        /// hero, and the card is the discarded one, on <see cref="CardRevealedByCardText"/>'s terms.
+        /// </summary>
+        CardDiscardedByCardText = 35
     }
 
     /// <summary>

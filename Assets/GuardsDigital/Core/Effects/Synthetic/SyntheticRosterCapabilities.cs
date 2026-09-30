@@ -4327,7 +4327,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectOutcomeFact(
                             DiscardedOutput, EffectValue.Card(result.DiscardedCardId)),
                         new EffectOutcomeFact(DidDiscardOutput, EffectValue.Boolean(true))
-                    })
+                    },
+                    // Milestone 9.19. Reported so the seat-public log can say the discard happened.
+                    discardedCards: new[] { new DiscardedCard(Chooser(context), result.DiscardedCardId) })
                     : EffectExecutionResult.ImpossibleMandatory();
             }
 

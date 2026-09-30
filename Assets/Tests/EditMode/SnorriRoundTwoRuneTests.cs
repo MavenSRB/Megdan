@@ -70,6 +70,41 @@ namespace GuardsDigital.Tests.EditMode
                 .State.Location, Is.EqualTo(CardLocation.DiscardPile));
         }
 
+        /// <summary>
+        /// Milestone 9.19, from the 2026-09-30 playtest: the discard above happened and nobody at the
+        /// table could see it - no match-log row, no narration - so a correct Charged Runestone read
+        /// as one that had skipped its discard. The seat-public log now carries one row for it,
+        /// naming the card's OWNER (Bain, not Snorri) and the card, and the narration says so.
+        /// Compares the kind by name so this case compiles, and fails, on the base that has no such
+        /// row.
+        /// </summary>
+        [Test]
+        public void RoundTwoTurnOne_ChargedRunestone_LogsBainsDiscardForEverySeat()
+        {
+            var run = new Run(SnorriGreenFaces.ChargedRunestone, 3, false);
+            run.ReachRoundTwoFace();
+            var choice = Start(run);
+            run.Answer(EffectValue.Hero(run.Bain));
+            run.Answer(EffectValue.Card(run.BainsBlue));
+            var projection = run.Session.Projection;
+            Assert.That(projection.Cards.Single(card => card.Id.Equals(run.BainsBlue)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile), "the discard itself is 9.17a's, unchanged");
+
+            var rows = projection.MatchLog
+                .Where(entry => entry.Kind.ToString() == "CardDiscardedByCardText")
+                .ToArray();
+            Assert.That(rows.Length, Is.EqualTo(1),
+                "one seat-public row says the card-text discard happened; the log holds: " +
+                string.Join(" | ", projection.MatchLog.Select(entry => entry.Kind + ":" + entry.SubjectHeroId.Value)));
+            Assert.That(rows[0].SubjectHeroId, Is.EqualTo(run.Bain),
+                "the row is about the card's owner, never the hero whose text made him discard");
+            Assert.That(rows[0].SubjectCardInstanceId, Is.EqualTo(run.BainsBlue), "and names the card");
+            Assert.That(rows[0].RoundIndex, Is.EqualTo(2));
+            var narrated = GuardsDigital.Application.GameplayNarrationLog.Describe(rows[0]);
+            Assert.That(narrated, Does.Contain("discarded").IgnoreCase.And.Contain(run.Bain.Value),
+                "and the status strip has words for it: " + narrated);
+        }
+
         /// <summary>The axe (rune 2) asks too; the winged rune 1 is not printed on the face.</summary>
         [TestCase(2, true)]
         [TestCase(1, false)]

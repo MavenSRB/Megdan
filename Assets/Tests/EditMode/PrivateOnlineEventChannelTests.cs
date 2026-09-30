@@ -604,7 +604,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(28),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(29),
+                "9.19 carries the CARD-TEXT DISCARD ROW: the seat-public match log gained " +
+                "CardDiscardedByCardText, the row for a card that card text sent out of a hand, so " +
+                "a /28 peer refuses the frame rather than going dark on a kind it cannot name. " +
                 "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
                 + "row gained the attacking card's instance id, its definition id and that "
                 + "definition's content revision, and the action definition id, all written "

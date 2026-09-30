@@ -547,6 +547,18 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
+                // Milestone 9.19. Card text sent a card out of a hand. The card resolves by name in
+                // every seat for the reason the reveal does: the row is what made it nameable.
+                case MatchLogEntryKind.CardDiscardedByCardText:
+                {
+                    var shown = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+                    lines.Add(Line(entry,
+                        shown == null
+                            ? $"{HeroName(projection, entry.SubjectHeroId)} DISCARDED A CARD"
+                            : $"{HeroName(projection, entry.SubjectHeroId)} DISCARDED {shown}"));
+                    return;
+                }
+
                 // Milestone 8.51. Rulebook p.12's Hold by the seat's own command. The card is a
                 // resolved turn card every seat sees, so it resolves by name wherever the
                 // projection can name it, and the line says outright that no action was taken -

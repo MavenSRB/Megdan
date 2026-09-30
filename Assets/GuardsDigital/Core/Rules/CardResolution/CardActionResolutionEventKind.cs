@@ -132,6 +132,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// through the token coordinate, and what it cost through
         /// <c>MoveThroughTrapCardsOwed</c>, which is the blast-or-dud the removal made public.</para>
         /// </summary>
-        MoveThroughTrapSprung = 53
+        MoveThroughTrapSprung = 53,
+
+        /// <summary>
+        /// Milestone 9.19. Card text sent a card from a hand to its owner's discard pile. Written
+        /// beside the node's applied fact at every altitude that publishes a reveal, on the same
+        /// terms as <see cref="CardTextRevealedCard"/>: the card's owner rides the target field and
+        /// the card itself the discarded-card field, and the seat-public log derives its row from it.
+        /// </summary>
+        CardTextDiscardedCard = 54
     }
 }

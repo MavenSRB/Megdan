@@ -376,7 +376,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NetworkCommandCodec.TryDecode(NetworkCommandCodec.Encode(command), out var decoded), Is.True);
             Assert.That(decoded, Is.EqualTo(command));
             Assert.That(decoded.HeroBody, Is.EqualTo(2));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(28));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(29));
         }
 
         private static int Lives(MatchSession session, HeroId hero)

@@ -332,7 +332,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         UnableToDiscardOutput, EffectValue.Boolean(false)));
                 }
 
-                return EffectExecutionResult.Applied(facts);
+                // Milestone 9.19. Reported so the seat-public log can say the discard happened.
+                return EffectExecutionResult.Applied(
+                    facts,
+                    discardedCards: new[] { new DiscardedCard(chooser, result.DiscardedCardId) });
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)

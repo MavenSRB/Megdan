@@ -855,7 +855,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // row after the node's applied fact, because the reveal is something the node DID
                 // rather than a property of the node's result - and the seat-public log derived from
                 // this stream is the whole publication mechanism.
-                foreach (var reveal in CardActionResolutionEvent.RevealedCardFacts(
+                foreach (var reveal in CardActionResolutionEvent.RevealedAndDiscardedCardFacts(
                     resolutionId, card, action, actor, effectEvent))
                 {
                     steps.Add(ResolutionStep.FromFact(reveal));
