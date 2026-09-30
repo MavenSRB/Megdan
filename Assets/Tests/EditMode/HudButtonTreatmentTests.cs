@@ -7,6 +7,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -201,6 +202,44 @@ namespace GuardsDigital.Tests.EditMode
             var shine = control.Q("gd-end-turn-shine");
             Assert.That(shine, Is.Not.Null, "The sole remaining action keeps its cue.");
             Assert.That(shine.pickingMode, Is.EqualTo(PickingMode.Ignore));
+        }
+
+        /// <summary>
+        /// Milestone 9.28, the user on 8.35g's release pause: "their end turn button should start
+        /// flashing". A control whose press releases a finished turn wears a blood-red ring outside
+        /// its face - never over it, so "END TURN" stays readable - in place of the gold sole-action
+        /// outline; any other END TURN does not flash.
+        /// </summary>
+        [Test]
+        public void EndTurn_ThatReleasesAFinishedTurn_FlashesBloodRedOutsideItsFace()
+        {
+            RoundActionViewModel With(TypedInvocationViewModel invocation) => new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), invocation, null,
+                Array.Empty<TypedInvocationViewModel>(), Array.Empty<TypedInvocationViewModel>());
+
+            var view = new RoundActionUnityView();
+            view.Render(With(new TypedInvocationViewModel("END TURN", DirectorCommand.ReleaseTurn())));
+
+            var control = view.EndTurnRoot.Q<Button>("gd-end-turn-control");
+            Assert.That(control, Is.Not.Null);
+            AssertSharedCornerChrome(control);
+            var flash = control.Q("gd-end-turn-flash");
+            Assert.That(flash, Is.Not.Null, "A turn waiting on its own release flashes its control.");
+            Assert.That(flash.pickingMode, Is.EqualTo(PickingMode.Ignore));
+            Assert.That(flash.style.borderTopColor.value, Is.EqualTo(BoardTargetRing.BloodRedColor),
+                "The board's own blood red, the colour the user settled at 8.62.");
+            Assert.That(flash.style.left.value.value, Is.LessThan(0f), "Outside the face, not over it.");
+            Assert.That(flash.style.top.value.value, Is.LessThan(0f));
+            Assert.That(control.Q("gd-end-turn-shine"), Is.Null,
+                "The flash takes the gold outline's place rather than ringing the control twice.");
+
+            view.Render(With(new TypedInvocationViewModel(
+                "END TURN", DirectorCommand.PerformHold(new CardInstanceId("card-1")))));
+            control = view.EndTurnRoot.Q<Button>("gd-end-turn-control");
+            Assert.That(control.Q("gd-end-turn-flash"), Is.Null,
+                "A Hold still to be made is not a finished turn: no flash.");
+            Assert.That(control.Q("gd-end-turn-shine"), Is.Not.Null, "and its gold outline is unchanged.");
         }
 
         [Test]

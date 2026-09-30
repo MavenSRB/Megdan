@@ -73,6 +73,14 @@ namespace GuardsDigital.Presentation.Match
         public const string ResolveOwnLine = "RESOLVE YOUR CARD";
         public const string MinionBattleLine = "MINION BATTLE";
 
+        // Milestone 9.28. The user, on 8.35g's release pause: "big blood red lights should say
+        // 'end turn', same way they say 'commit a card'". The eyebrow is the strip's own words for
+        // the state; the line is the control's own label, so the banner names what to press.
+        public const string EndTurnEyebrow = "TURN COMPLETE";
+        public const string EndTurnLine = "END TURN";
+
+        internal const string EndTurnKeyPrefix = "release:";
+
         public static string RoundAndTurn(int roundIndex, int turnIndex) =>
             "ROUND " + roundIndex + " · TURN " + turnIndex;
 
@@ -95,6 +103,20 @@ namespace GuardsDigital.Presentation.Match
         public static PhaseBannerViewModel MinionBattle(int roundIndex) =>
             new PhaseBannerViewModel("battle:" + roundIndex, EndOfRound(roundIndex), MinionBattleLine);
 
+        /// <summary>
+        /// Milestone 9.28. The viewer's own turn has finished resolving and waits on its release.
+        /// Keyed by the turn rather than by the pause, so a rewind that reaches the release again
+        /// inside the same turn is not announced twice - the flashing control still says it.
+        /// </summary>
+        public static PhaseBannerViewModel EndTurn(int roundIndex, int turnIndex, HeroId actor) =>
+            new PhaseBannerViewModel(
+                EndTurnKeyPrefix + roundIndex + ":" + turnIndex + ":" + actor.Value,
+                EndTurnEyebrow,
+                EndTurnLine);
+
+        public static bool IsEndTurn(PhaseBannerViewModel model) =>
+            model.HasBanner && model.Key.StartsWith(EndTurnKeyPrefix, StringComparison.Ordinal);
+
         internal static string ResolveKey(int roundIndex, int turnIndex, HeroId actor) =>
             "resolve:" + roundIndex + ":" + turnIndex + ":" + actor.Value;
     }
@@ -106,13 +128,19 @@ namespace GuardsDigital.Presentation.Match
     public readonly struct PhaseSnapshot
     {
         public PhaseSnapshot(
-            int roundIndex, int turnIndex, bool isCommitting, HeroId actingHero, bool isMinionBattle)
+            int roundIndex,
+            int turnIndex,
+            bool isCommitting,
+            HeroId actingHero,
+            bool isMinionBattle,
+            HeroId releasingHero = default)
         {
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             IsCommitting = isCommitting;
             ActingHero = actingHero;
             IsMinionBattle = isMinionBattle;
+            ReleasingHero = releasingHero;
         }
 
         public int RoundIndex { get; }
@@ -126,6 +154,13 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The end of round stands on p.8's Minion Battle.</summary>
         public bool IsMinionBattle { get; }
+
+        /// <summary>
+        /// Milestone 9.28. The hero whose finished turn waits on its release (8.35g), or undefined.
+        /// Read off <see cref="IMatchReadModel.PendingTurnRelease"/>, whose actor is unscoped by
+        /// 8.35g's own decision - the same fact the strip's "AWAITING RELEASE" line names.
+        /// </summary>
+        public HeroId ReleasingHero { get; }
 
         public static PhaseSnapshot Of(IMatchReadModel projection)
         {
@@ -141,7 +176,8 @@ namespace GuardsDigital.Presentation.Match
                 projection.TurnIndex,
                 projection.Phase == RoundResolutionPhase.AwaitingCommitments,
                 acting,
-                battle);
+                battle,
+                projection.PendingTurnRelease?.ActorId ?? default);
         }
     }
 
@@ -156,7 +192,8 @@ namespace GuardsDigital.Presentation.Match
     ///
     /// <para><b>One banner per observation, the latest phase first.</b> A single refresh can carry a
     /// whole turn's worth of change (a bot's turn resolved between two frames); the player is told
-    /// where the game IS, not walked through where it went: minion battle over resolve over commit.</para>
+    /// where the game IS, not walked through where it went: minion battle over the viewer's own
+    /// release (9.28) over resolve over commit.</para>
     /// </summary>
     public sealed class PhaseBannerCueDetector
     {
@@ -164,6 +201,7 @@ namespace GuardsDigital.Presentation.Match
         private string lastCommitKey;
         private string lastResolveKey;
         private string lastBattleKey;
+        private string lastEndTurnKey;
 
         public PhaseBannerViewModel Observe(
             PhaseSnapshot snapshot, HeroId viewer, Func<HeroId, string> heroDisplayName)
@@ -182,12 +220,20 @@ namespace GuardsDigital.Presentation.Match
 
             var battle = snapshot.IsMinionBattle ? PhaseBannerLabels.MinionBattle(snapshot.RoundIndex) : PhaseBannerViewModel.None;
 
+            // Milestone 9.28. Only the seat whose own turn waits on it is up; the Director, who
+            // answers for everybody, is up for nobody, exactly as 8.50 reads the turn banner.
+            var endTurn = snapshot.ReleasingHero.IsDefined && viewer.IsDefined &&
+                snapshot.ReleasingHero.Equals(viewer)
+                    ? PhaseBannerLabels.EndTurn(snapshot.RoundIndex, snapshot.TurnIndex, snapshot.ReleasingHero)
+                    : PhaseBannerViewModel.None;
+
             if (!primed)
             {
                 primed = true;
                 lastCommitKey = commit.Key;
                 lastResolveKey = resolve.Key;
                 lastBattleKey = battle.Key;
+                lastEndTurnKey = endTurn.Key;
                 return PhaseBannerViewModel.None;
             }
 
@@ -195,6 +241,10 @@ namespace GuardsDigital.Presentation.Match
             if (battle.HasBanner && battle.Key != lastBattleKey)
             {
                 announced = battle;
+            }
+            else if (endTurn.HasBanner && endTurn.Key != lastEndTurnKey)
+            {
+                announced = endTurn;
             }
             else if (resolve.HasBanner && resolve.Key != lastResolveKey)
             {
@@ -208,6 +258,7 @@ namespace GuardsDigital.Presentation.Match
             // Every current key counts as seen, announced or not: a transition the viewer was shown
             // past in the same refresh is not owed later.
             if (battle.HasBanner) lastBattleKey = battle.Key;
+            if (endTurn.HasBanner) lastEndTurnKey = endTurn.Key;
             if (resolve.HasBanner) lastResolveKey = resolve.Key;
             if (commit.HasBanner) lastCommitKey = commit.Key;
             return announced;
@@ -220,6 +271,7 @@ namespace GuardsDigital.Presentation.Match
             lastCommitKey = null;
             lastResolveKey = null;
             lastBattleKey = null;
+            lastEndTurnKey = null;
         }
     }
 
@@ -283,8 +335,9 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            var snapshot = PhaseSnapshot.Of(projection);
             var banner = detector.Observe(
-                PhaseSnapshot.Of(projection),
+                snapshot,
                 viewerHeroId,
                 heroId => projection.Setup?.Heroes?
                     .FirstOrDefault(hero => hero.HeroId.Equals(heroId))?.DisplayName);
@@ -305,6 +358,15 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 return;
+            }
+
+            // Milestone 9.28. An END TURN banner is true only while the release it announced still
+            // stands: once the player has pressed END TURN (or rewound past the pause) it comes down
+            // at once, rather than telling them for another two seconds to do what they just did.
+            if (PhaseBannerLabels.IsEndTurn(view.Current) &&
+                !(snapshot.ReleasingHero.IsDefined && snapshot.ReleasingHero.Equals(viewerHeroId)))
+            {
+                view.Hide();
             }
 
             if (!banner.HasBanner)

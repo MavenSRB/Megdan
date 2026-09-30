@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
@@ -321,6 +322,13 @@ namespace GuardsDigital.Presentation.Match
         /// only a screenshot carries; false whenever the control is hidden.
         /// </summary>
         public bool EndTurnShinesFully { get; private set; }
+
+        /// <summary>
+        /// Milestone 9.28. Whether the drawn End Turn control flashes blood red because pressing it
+        /// releases a turn that has already finished resolving (8.35g's pause). Where it flashes, the
+        /// flash takes the place of the gold sole-action outline rather than ringing it twice.
+        /// </summary>
+        public bool EndTurnFlashes { get; private set; }
 
         public RoundActionViewModel Model { get; private set; }
         public DefenseBreakdownViewModel ActiveDefensePreview => activeDefensePreview;
@@ -1891,6 +1899,7 @@ namespace GuardsDigital.Presentation.Match
             if (invocation == null && !cancelsOpenAttack && unavailableReason == null)
             {
                 EndTurnShinesFully = false;
+                EndTurnFlashes = false;
                 endTurnHost.style.display = DisplayStyle.None;
                 return;
             }
@@ -1900,6 +1909,7 @@ namespace GuardsDigital.Presentation.Match
             if (unavailableReason != null)
             {
                 EndTurnShinesFully = false;
+                EndTurnFlashes = false;
                 var disabled = CreateCornerControl(
                     "END TURN", RequestEndTurn, "gd-end-turn-control",
                     ConfiguredMatchHudRenderer.EndTurnControlHeight, EndTurnControlFontSize);
@@ -1937,7 +1947,18 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.52: and a keyboard can no longer press it at all - see IgnoreKeyboardSubmit.
             IgnoreKeyboardSubmit(control);
             endTurnControl = control;
-            if (onlyOfferLeft)
+
+            // Milestone 9.28. The turn has finished resolving and waits on this press alone: the
+            // control flashes blood red until it is pressed. The user: "when the player seat reach
+            // that state, their end turn button should start flashing". The projection draws a
+            // release command here only for the seat that owns the pause (and the Director, who
+            // answers for everybody), so the flash is never shown to a seat that cannot press it.
+            EndTurnFlashes = invocation?.Command.Kind == DirectorCommandKind.ReleaseTurn;
+            if (EndTurnFlashes)
+            {
+                control.Add(CreateEndTurnFlash());
+            }
+            else if (onlyOfferLeft)
             {
                 // Keep the existing sole-action cue outside the shared chrome, never over its face.
                 var shine = new VisualElement
@@ -1956,6 +1977,65 @@ namespace GuardsDigital.Presentation.Match
                 control.Add(shine);
             }
             endTurnHost.Add(control);
+        }
+
+        public const string EndTurnFlashName = "gd-end-turn-flash";
+
+        /// <summary>Milestone 9.28. How far the flash stands outside the control, in reference units.</summary>
+        public const float EndTurnFlashOutset = 5f;
+
+        /// <summary>Milestone 9.28. The flash ring's width: thick enough to read as a light, not a keyline.</summary>
+        public const float EndTurnFlashWidth = 5f;
+
+        /// <summary>
+        /// Milestone 9.28. Half of one flash: lit this long, then dark this long. 0.8 s a cycle, well
+        /// under the three flashes a second above which a flashing light becomes a hazard.
+        /// </summary>
+        public const long EndTurnFlashHalfPeriodMs = 400;
+
+        /// <summary>Milestone 9.28. How long each lit-to-dark change takes, so it pulses rather than strobes.</summary>
+        public const long EndTurnFlashEaseMs = 150;
+
+        /// <summary>Milestone 9.28. The flash at its darkest: nearly out, never quite gone.</summary>
+        public const float EndTurnFlashFloorOpacity = 0.12f;
+
+        /// <summary>
+        /// Milestone 9.28. The blood-red ring around a control that releases the turn. It sits
+        /// outside the shared chrome and never over the face, as 8.30d's sole-action outline does, so
+        /// "END TURN" stays readable at every point of the flash; it takes no pointer. The red is the
+        /// board's own blood red (8.62), the one the user settled for "this is what to act on".
+        ///
+        /// <para>It flashes on the element's own scheduler, which UI Toolkit runs only while the
+        /// element is on a panel, so a control the HUD rebuilds or removes stops its flash with it and
+        /// nothing outlives the state that drew it.</para>
+        /// </summary>
+        private static VisualElement CreateEndTurnFlash()
+        {
+            var flash = new VisualElement
+            {
+                name = EndTurnFlashName,
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            flash.style.position = Position.Absolute;
+            flash.style.left = -EndTurnFlashOutset;
+            flash.style.right = -EndTurnFlashOutset;
+            flash.style.top = -EndTurnFlashOutset;
+            flash.style.bottom = -EndTurnFlashOutset;
+            HudElements.Border(flash, BoardTargetRing.BloodRedColor, EndTurnFlashWidth,
+                MatchHudTheme.ButtonCornerRadius + EndTurnFlashOutset);
+            flash.style.opacity = 1f;
+            flash.style.transitionProperty = new List<StylePropertyName> { new StylePropertyName("opacity") };
+            flash.style.transitionDuration = new List<TimeValue> { new TimeValue(EndTurnFlashEaseMs, TimeUnit.Millisecond) };
+            flash.style.transitionTimingFunction = new List<EasingFunction> { new EasingFunction(EasingMode.EaseInOut) };
+
+            var lit = true;
+            flash.schedule.Execute(() =>
+            {
+                lit = !lit;
+                flash.style.opacity = lit ? 1f : EndTurnFlashFloorOpacity;
+            }).StartingIn(EndTurnFlashHalfPeriodMs).Every(EndTurnFlashHalfPeriodMs);
+            return flash;
         }
 
         /// <summary>

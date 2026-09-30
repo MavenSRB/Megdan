@@ -38,6 +38,12 @@ namespace GuardsDigital.Tests.EditMode
         private static PhaseSnapshot Battle(int round) =>
             new PhaseSnapshot(round, 4, isCommitting: false, actingHero: default, isMinionBattle: true);
 
+        // Milestone 9.28: 8.35g's release pause. The acknowledgement that raised it empties the
+        // selection, so nobody is acting while it stands.
+        private static PhaseSnapshot Releasing(int round, int turn, HeroId actor) =>
+            new PhaseSnapshot(round, turn, isCommitting: false, actingHero: default, isMinionBattle: false,
+                releasingHero: actor);
+
         [Test]
         public void TheFirstObservation_PrimesAndAnnouncesNothing()
         {
@@ -92,6 +98,44 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(detector.Observe(Committing(1, 2), default, Name).Line,
                 Is.EqualTo(PhaseBannerLabels.CommitLine),
                 "but still sees each commitment and the Minion Battle.");
+        }
+
+        /// <summary>
+        /// Milestone 9.28. The viewer's own finished turn is announced once, when it starts waiting
+        /// on its release - not on every refresh while it waits, not again when a rewind inside the
+        /// same turn reaches the pause a second time, and never for another seat's release.
+        /// </summary>
+        [Test]
+        public void TheViewersOwnRelease_IsAnnouncedOncePerTurn_ToThatSeatAlone()
+        {
+            var detector = new PhaseBannerCueDetector();
+            detector.Observe(Resolving(1, 1, Sabina), Sabina, Name);
+            var banner = detector.Observe(Releasing(1, 1, Sabina), Sabina, Name);
+            Assert.That(banner.Eyebrow, Is.EqualTo(PhaseBannerLabels.EndTurnEyebrow));
+            Assert.That(banner.Line, Is.EqualTo(PhaseBannerLabels.EndTurnLine));
+            Assert.That(PhaseBannerLabels.IsEndTurn(banner), Is.True);
+            Assert.That(detector.Observe(Releasing(1, 1, Sabina), Sabina, Name).HasBanner, Is.False,
+                "Not on every refresh while the release waits.");
+
+            // Undo steps back behind the pause and the turn reaches it again: the same turn, so the
+            // banner is not repeated - the flashing control still says it.
+            Assert.That(detector.Observe(Resolving(1, 1, Sabina), Sabina, Name).HasBanner, Is.False);
+            Assert.That(detector.Observe(Releasing(1, 1, Sabina), Sabina, Name).HasBanner, Is.False);
+
+            Assert.That(detector.Observe(Releasing(1, 2, Tali), Sabina, Name).HasBanner, Is.False,
+                "Another seat's release is not this seat's moment.");
+            Assert.That(PhaseBannerLabels.IsEndTurn(detector.Observe(Releasing(1, 3, Sabina), Sabina, Name)),
+                Is.True, "and the viewer's next own release is announced after the silent one.");
+            Assert.That(PhaseBannerLabels.IsEndTurn(PhaseBannerLabels.Commit(1, 1)), Is.False);
+        }
+
+        [Test]
+        public void TheDirector_IsNotToldToEndAnybodysTurn()
+        {
+            var detector = new PhaseBannerCueDetector();
+            detector.Observe(Resolving(1, 1, Sabina), default, Name);
+            Assert.That(detector.Observe(Releasing(1, 1, Sabina), default, Name).HasBanner, Is.False,
+                "The Director answers for everybody and is up for nobody, as 8.50 reads the turn banner.");
         }
 
         [Test]
@@ -227,6 +271,204 @@ namespace GuardsDigital.Tests.EditMode
             presenter.YieldsWhen = () => false;
             presenter.Refresh();
             Assert.That(view.IsShowing, Is.False, "The yielded transition is not owed later.");
+        }
+
+        /// <summary>
+        /// Milestone 9.28, the user on 8.35g's release pause: "when the player seat reach that state
+        /// ... big blood red lights should say 'end turn', same way they say 'commit a card'". The
+        /// seat whose own finished turn waits on END TURN is told so in the banner's words, no other
+        /// seat is, and the banner comes down the moment the press lands.
+        /// </summary>
+        [Test]
+        public void TheViewersOwnFinishedTurn_SaysEndTurn_UntilItIsReleased()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+            var (red, blue) = LiftUpAndStopProjectiles(session);
+            var redRoot = new VisualElement();
+            var redView = new PhaseBannerUnityView(() => redRoot);
+            var redBanner = new PhaseBannerPresenter(new DirectorMatchClient(session), redView, red.OwnerId);
+            var blueRoot = new VisualElement();
+            var blueView = new PhaseBannerUnityView(() => blueRoot);
+            var blueBanner = new PhaseBannerPresenter(new DirectorMatchClient(session), blueView, blue.OwnerId);
+
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(red.OwnerId),
+                "Arrange: Red's Lift Up acts first.");
+            redBanner.Refresh();
+            blueBanner.Refresh();
+
+            var hold = RoundActionPresenter.CreateViewModel(session.Projection, red.OwnerId).EndTurnInvocation;
+            Assert.That(hold?.Command.Kind, Is.EqualTo(DirectorCommandKind.PerformHold),
+                "Arrange: an untouched card's first END TURN is p.12's Hold.");
+            ConfiguredMatchFixtures.Accept(session, hold.Command);
+            Assert.That(session.Projection.PendingTurnRelease?.ActorId, Is.EqualTo(red.OwnerId),
+                "Arrange: the finished turn now waits on Red's own release (8.35g).");
+
+            redBanner.Refresh();
+            blueBanner.Refresh();
+            Assert.That(redView.IsShowing, Is.True,
+                "The seat whose finished turn waits on its own END TURN is told so.");
+            Assert.That(redView.LineText, Is.EqualTo("END TURN"));
+            Assert.That(redView.EyebrowText, Is.EqualTo("TURN COMPLETE"));
+            Assert.That(blueView.IsShowing, Is.False,
+                "Another seat is not up: 8.50's rule, nothing is said to it.");
+
+            var release = RoundActionPresenter.CreateViewModel(session.Projection, red.OwnerId).EndTurnInvocation;
+            Assert.That(release?.Command.Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+            ConfiguredMatchFixtures.Accept(session, release.Command);
+            redBanner.Refresh();
+            Assert.That(redView.IsShowing, Is.False,
+                "Pressed, the banner comes down at once instead of asking for what was just done.");
+        }
+
+        /// <summary>
+        /// Milestone 9.28. Over the wire one END TURN press is a Hold, a round trip, then the release
+        /// (8.35z4's continuation), so the match passes THROUGH the seat's own release pause after
+        /// the player has already pressed. Announcing END TURN there would tell them to do what they
+        /// just did, and it is never announced: the round panel refreshes first and sends the release
+        /// on the push that brings the pause, and a seat waiting on the host is not published a
+        /// release it could answer, so the banner never sees one standing - then or later.
+        /// </summary>
+        [Test]
+        public void AReleaseTheSeatHasAlreadyPressedFor_IsNeverAnnounced()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+            var (red, blue) = LiftUpAndStopProjectiles(session);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+
+            var client = new DeferredSeatClient(session, red.OwnerId);
+            var round = new RoundActionPresenter(client, new RoundActionUnityView(), red.OwnerId);
+            var root = new VisualElement();
+            var view = new PhaseBannerUnityView(() => root);
+            var banner = new PhaseBannerPresenter(client, view, red.OwnerId);
+            // The coordinator's own order (MatchFeatureCoordinator.RefreshAll): the round panel,
+            // then the banner.
+            void Push()
+            {
+                round.Refresh();
+                banner.Refresh();
+            }
+
+            Push();
+            Assert.That(round.SubmitEndTurn(), Is.True, "Arrange: the press sends p.12's Hold.");
+
+            client.DeliverPending();
+            Assert.That(session.Projection.PendingTurnRelease?.ActorId, Is.EqualTo(red.OwnerId),
+                "Arrange: the Hold landed and the match stands at Red's own release.");
+            Push();
+            Assert.That(client.InFlight, Is.True,
+                "Arrange: the round panel resumed the press and sent the release on this push.");
+            Assert.That(client.Projection.PendingTurnRelease, Is.Null,
+                "Arrange: a seat waiting on the host is not published a release to answer.");
+            Assert.That(view.IsShowing, Is.False, "The player already pressed END TURN.");
+
+            client.DeliverPending();
+            Push();
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "Arrange: the same press's release landed on the next round trip.");
+            Assert.That(view.IsShowing, Is.False, "and the release is not announced later.");
+            Assert.That(banner.LastAnnounced.HasBanner, Is.False);
+        }
+
+        private static (CardInstance Red, CardInstance Blue) LiftUpAndStopProjectiles(MatchSession session)
+        {
+            var red = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Red &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.LiftUp));
+            var blue = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            return (red, blue);
+        }
+
+        /// <summary>
+        /// A seat's client whose submissions are SENT rather than decided, as over the wire: while a
+        /// command is in flight the seat renders its own stripped projection with input disabled, and
+        /// <see cref="DeliverPending"/> is the host's answer arriving. The same shape as
+        /// <c>MatchFeaturePresenterTests.DeferredMatchClient</c>, bound to a named hero's seat.
+        /// </summary>
+        private sealed class DeferredSeatClient : IMatchClient
+        {
+            private readonly IMatchSession session;
+            private readonly MatchHost host;
+            private readonly HeroId heroId;
+            private DirectorCommand pending;
+
+            public DeferredSeatClient(IMatchSession session, HeroId heroId)
+            {
+                this.session = session;
+                this.heroId = heroId;
+                host = new MatchHost(session);
+            }
+
+            public bool IsDirector => false;
+
+            public bool InFlight => pending != null;
+
+            public IMatchReadModel Projection
+            {
+                get
+                {
+                    if (pending == null)
+                    {
+                        return session.Projection;
+                    }
+
+                    var seat = host.Seats.FindByHero(heroId);
+                    Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                        NetworkSeatProjectionCodec.Encode(host.ProjectionForSeat(seat.Id)),
+                        out var record), Is.True);
+                    var waiting = new NetworkMatchReadModel(
+                        host.Projection, MatchContentCatalogs.ForThisBuild());
+                    waiting.Replace(record, false);
+                    return waiting;
+                }
+            }
+
+            public MatchClientResult Submit(DirectorCommand command)
+            {
+                if (pending != null)
+                {
+                    return new MatchClientResult(false, "Waiting for the host.", Projection, true);
+                }
+
+                pending = command;
+                return new MatchClientResult(true, "Sent to the host.", Projection, false);
+            }
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            public MatchClientResult SubmitUndo() =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            public void DeliverPending()
+            {
+                if (pending == null)
+                {
+                    return;
+                }
+
+                var command = pending;
+                pending = null;
+                session.Execute(command);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.28, the user: "all those warnings should linger little bit longer". Every
+        /// banner holds a second longer than 8.47's 1.3 s.
+        /// </summary>
+        [Test]
+        public void EveryBanner_HoldsASecondLongerThanItDidAt847()
+        {
+            Assert.That(PhaseBannerUnityView.HoldMs, Is.EqualTo(2300L));
+            Assert.That(PhaseBannerUnityView.TotalMs, Is.EqualTo(2900L),
+                "Fade in, hold and fade out: 2.9 s in all, up from 1.9 s.");
         }
     }
 }

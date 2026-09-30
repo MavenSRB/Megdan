@@ -37,7 +37,12 @@ namespace GuardsDigital.Presentation.Match
         public const float LabelGap = 12f;
 
         public const long FadeInMs = 250;
-        public const long HoldMs = 1300;
+
+        /// <summary>
+        /// Milestone 9.28 added a second: the user, "all those warnings should linger little bit
+        /// longer". 8.47's 1.3 s hold is now 2.3 s, so a banner stands for 2.9 s in all.
+        /// </summary>
+        public const long HoldMs = 2300;
         public const long FadeOutMs = 350;
         public const long TotalMs = FadeInMs + HoldMs + FadeOutMs;
 
