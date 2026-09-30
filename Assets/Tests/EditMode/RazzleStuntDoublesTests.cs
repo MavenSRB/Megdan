@@ -473,7 +473,9 @@ namespace GuardsDigital.Tests.EditMode
                 bool secondCardInHand = false,
                 // ===== 9.21g: Razzle's cards in hand (HandCard) and in his discard (DiscardedCard) =====
                 IReadOnlyList<CardDefinition> hand = null,
-                int discarded = 0)
+                int discarded = 0,
+                // ===== 9.21h: an Ultimate unlocked in his Ultimate area (Twin Strike) =====
+                CardDefinition ultimate = null)
             {
                 face = face ?? RazzleCardContent.StuntDoublesDefinition;
                 var participants = StagedBoardParticipants.Create();
@@ -533,11 +535,23 @@ namespace GuardsDigital.Tests.EditMode
                         DiscardedCard(at), EnemyHold.Reference, Razzle, CardStateFacts.DiscardedUnplayed())))
                     .ToArray();
                 // ===== END 9.21g =====
+                // ===== 9.21h: the unlocked Ultimate and its triggered effect =====
+                var triggered = new List<EffectDefinition>();
+                if (ultimate != null)
+                {
+                    var ability = CardInstance.CreateInDeck(UltimateCard, ultimate.Reference, Razzle);
+                    Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ability), Is.True,
+                        "p.16 unlocks the Ultimate by moving it out of the deck.");
+                    definitions = definitions.Concat(new[] { ultimate }).ToArray();
+                    instances = instances.Concat(new[] { ability }).ToArray();
+                    triggered.Add(RazzleEffectContent.TwinStrikeTriggeredEffect(ultimate.ContentRevision));
+                }
+                // ===== END 9.21h =====
                 catalogs = new MatchContentCatalogs(
                     SyntheticEffectCapabilities.CreateCatalog(RazzleEffectContent.Handlers()),
                     new ComponentDefinitionCatalog(
                         Array.Empty<TokenDefinition>(), Array.Empty<MarkerDefinition>()),
-                    new TriggeredEffectCatalog(Array.Empty<EffectDefinition>()));
+                    new TriggeredEffectCatalog(triggered));
                 var markers = new MarkerAttachmentRegister();
                 var actions = new CardActionResolutionAuthority(catalogs, board, markers);
                 round = new RoundResolutionAuthority(
@@ -565,6 +579,9 @@ namespace GuardsDigital.Tests.EditMode
             internal CardInstanceId Source => source.Id;
 
             internal static readonly CardInstanceId SecondCard = new CardInstanceId("razzle-second");
+
+            // ===== 9.21h: his unlocked Ultimate =====
+            internal static readonly CardInstanceId UltimateCard = new CardInstanceId("razzle-ultimate");
 
             // ===== 9.21g: the staged hand and discard =====
             internal static CardInstanceId HandCard(int index) => new CardInstanceId($"razzle-hand-{index}");

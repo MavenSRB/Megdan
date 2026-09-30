@@ -127,9 +127,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(alone.TryGetHeroCoordinate(Razzle, out var only), Is.True);
             Assert.That(only, Is.EqualTo(new HexCoordinate(-2, 0)), "One standing body is unambiguous.");
 
-            Assert.That(() => board.TryGetSoleHeroCoordinate(Razzle, "an aura anchor", out _),
-                Throws.InvalidOperationException.With.Message.Contains("an aura anchor"),
-                "A read the RZ readings do not settle refuses loudly, naming itself.");
+            // Milestone 9.21h (RZ-Q13): a radius anchored on him is drawn around every body; 9.21a's
+            // named refusal (TryGetSoleHeroCoordinate) is gone with the reading settled.
+            var anchors = board.GetHeroRadiusAnchors(Razzle);
+            Assert.That(anchors, Is.EqualTo(board.GetHeroBodies(Razzle).Select(body => body.Coordinate)),
+                "every standing body anchors \"in radius of you\", in body order.");
+            Assert.That(alone.GetHeroRadiusAnchors(Razzle), Is.EqualTo(new[] { new HexCoordinate(-2, 0) }));
+            Assert.That(AdjacentMoveAuthority.IsWithinRadiusOfAnyBody(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(4, 0) }, 1, new HexCoordinate(5, 0)), Is.True,
+                "a space is in radius of him if it is in radius of at least one body.");
+            Assert.That(AdjacentMoveAuthority.IsWithinRadiusOfAnyBody(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(4, 0) }, 1, new HexCoordinate(2, 0)), Is.False);
         }
 
         [Test]

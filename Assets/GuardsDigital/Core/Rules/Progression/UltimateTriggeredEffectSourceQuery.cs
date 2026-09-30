@@ -203,6 +203,10 @@ namespace GuardsDigital.Core.Rules.Progression
                 case UltimateTriggerCondition.AfterControllerPerformsBasicAction:
                     return true;
 
+                // Milestone 9.21h. Razzle's Twin Strike: the Attack twin of the basic-Skill reading.
+                case UltimateTriggerCondition.AfterControllerPerformsBasicAttack:
+                    return performed.Kind == ActionKind.Attack;
+
                 // Milestone 8.35z29. The one condition here that reads what the action did rather
                 // than which kind it was: a basic Skill of Misa's that moved her five spaces is not a
                 // basic Skill of Misa's that placed her, and only the second is what her Ultimate's

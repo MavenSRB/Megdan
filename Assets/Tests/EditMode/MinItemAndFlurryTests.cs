@@ -1529,7 +1529,7 @@ namespace GuardsDigital.Tests.EditMode
 
                     // The board would admit the second instance; what this case is about is whether
                     // the node is offered at all.
-                    _ => true);
+                    (_, _, _) => true);
                 return authority.PendingResolution?.PendingChoice;
             }
 

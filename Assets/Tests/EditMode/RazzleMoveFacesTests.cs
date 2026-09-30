@@ -774,7 +774,7 @@ namespace GuardsDigital.Tests.EditMode
         /// One round on the disk with one of Razzle's faces committed and Razzle (Blue) selected to act,
         /// his supply of four bodies declared on the board (RZ-Q1).
         /// </summary>
-        private sealed class MoveRound
+        internal sealed class MoveRound
         {
             internal static MinionId RedMinion(int index) => new MinionId($"razzle-move-red-{index}");
 

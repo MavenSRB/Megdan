@@ -38,6 +38,70 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
         private EffectRosterState rosterState = EffectRosterState.Absent;
 
+        // Milestone 9.21h. Where "a different one of you" repeat settles the body that performs it -
+        // the board's acting body, bound by the dispatcher that owns the board.
+        private Action<HeroId, GuardsDigital.Core.Board.HexCoordinate> settleRepeatPerformer;
+
+        /// <summary>
+        /// Milestone 9.21h. Binds how a requested repeat's performing body is settled (RZ-Q12), so the
+        /// repeated Skill measures its Range from the body that performs it.
+        /// </summary>
+        internal void BindRepeatPerformer(
+            Action<HeroId, GuardsDigital.Core.Board.HexCoordinate> settle,
+            Func<HeroId, int, Func<bool>, bool> probeWithActingBody)
+        {
+            settleRepeatPerformer = settle;
+            this.probeWithActingBody = probeWithActingBody;
+        }
+
+        // Milestone 9.21h. Answers a probe as if a named body of the actor were acting, leaving the
+        // settled acting body as it was.
+        private Func<HeroId, int, Func<bool>, bool> probeWithActingBody;
+
+        /// <summary>
+        /// Milestone 9.21h. A Skill's own printed repeat "by a different one of you" offers a body only
+        /// when the repeated Skill could apply something with that body acting - Spectacle's Range 2
+        /// measured from it, the first swap's minion excluded (RZ-Q12) - asked by the same walk that
+        /// greys a Skill whose text can apply nothing (6.5af), on the frame the repeated instance would
+        /// start from. The body acting now (0) answers as a Skill's repeat always has: nothing here
+        /// probes it, so every repeat written before this milestone keeps its walk.
+        /// </summary>
+        private RepeatFeasibility DifferentBodyRepeatProbe(
+            Func<EffectResolutionContext> context,
+            CardInstanceId card,
+            CardDefinitionReference definition,
+            ActionDefinitionId action,
+            HeroId actor,
+            HeroId controller) =>
+            (binding, body, next) =>
+                body <= 0 || probeWithActingBody == null ||
+                probeWithActingBody(actor, body, () => EffectOptionFeasibilityQuery.CanApplyAnything(
+                    EffectResolutionSession.BuildStartFrame(
+                        new EffectResolutionId($"probe-repeat-{card.Value}-{action.Value}-{body}"),
+                        card, definition, action, actor, controller,
+                        ActionInvocationContext.Repeated, context(), next),
+                    context()));
+
+        /// <summary>
+        /// Milestone 9.21h. A request naming the body that performs the repeated instance switches the
+        /// acting body now, in the command that made it; the switched body is board state from then on.
+        /// </summary>
+        private void SettleRepeatPerformer(RepeatRequest requested, HeroId actorId)
+        {
+            if (!requested.IsRequested || !requested.PerformingBodySpace.HasValue)
+            {
+                return;
+            }
+
+            if (settleRepeatPerformer == null)
+            {
+                throw new InvalidOperationException(
+                    "A repeat performed by a different body needs the board that settles it.");
+            }
+
+            settleRepeatPerformer(actorId, requested.PerformingBodySpace.Value);
+        }
+
         internal SkillCardActionStrategyBackend(EffectCapabilityCatalog catalog)
         {
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -87,6 +151,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         public PendingResolution PendingResolution => pendingResolution;
+
+        /// <summary>
+        /// Milestone 9.21h. A restored "different one of you" repeat pause narrowed to the bodies the
+        /// repeated Skill can be performed from, as the live pause offered.
+        /// </summary>
+        internal void NarrowRestoredRepeatPerformers(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            Func<RuleModificationSet> currentModifications,
+            MatchComponents components,
+            int roundIndex,
+            int turnIndex)
+        {
+            var frame = pendingResolution;
+            var effectRoot = frame?.PendingChoice == null ? null : FindEffectRoot(definitions, frame);
+            if (effectRoot == null ||
+                !effectRoot.TryGetNode(frame.PendingChoice.NodeId, out var node) ||
+                node.RepeatActor != RepeatActor.DifferentBody)
+            {
+                return;
+            }
+
+            var modifications = currentModifications?.Invoke() ?? RuleModificationSet.Empty;
+            EffectResolutionContext context = null;
+            context = new EffectResolutionContext(
+                effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
+                EffectCardState.Of(definitions, instances), ActionKind.Skill,
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                repeatCanBePerformed: DifferentBodyRepeatProbe(
+                    () => context, frame.SourceCardInstanceId, frame.SourceDefinitionReference,
+                    frame.ActionDefinitionId, frame.ActorId, frame.ControllerId),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
+            pendingResolution = frame.With(
+                frame.Continuation, frame.CompletedOutcomes, frame.AcceptedChoices,
+                frame.PendingChoice.KeepingOnly(RepeatPerformerQuery.Candidates(frame, node, context)
+                    .Select(space => EffectChoiceCandidate.Value_(EffectValue.Space(space)))));
+        }
 
         internal PendingResolution SuspendForBorrow()
         {
@@ -231,7 +334,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var context = new EffectResolutionContext(
+            EffectResolutionContext context = null;
+            context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
@@ -241,6 +345,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
+                repeatCanBePerformed: DifferentBodyRepeatProbe(
+                    () => context, offer.SourceCardInstanceId, offer.SourceDefinitionReference, offer.ActionDefinitionId, offer.ActorId, offer.ActorId),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -254,6 +360,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (step.RepeatRequested.IsRequested)
             {
+                SettleRepeatPerformer(step.RepeatRequested, offer.ActorId);
                 repeat = PendingRepeatedAction.Mint(
                     resolutionId, offer.SourceCardInstanceId, offer.SourceDefinitionReference,
                     offer.ActionDefinitionId, action.EffectRoot.Reference, offer.ActorId, offer.ActorId,
@@ -355,6 +462,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // eligibility is what stops it and the frame this instance ran under carries the count.
             if (step.RepeatRequested.IsRequested)
             {
+                SettleRepeatPerformer(step.RepeatRequested, repeat.ActorId);
                 furtherRepeat = PendingRepeatedAction.Mint(
                     resolutionId, repeat.SourceCardInstanceId, repeat.SourceDefinitionReference,
                     repeat.ActionDefinitionId, action.EffectRoot.Reference, repeat.ActorId,
@@ -492,7 +600,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var context = new EffectResolutionContext(
+            EffectResolutionContext context = null;
+            context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
@@ -502,6 +611,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
+                repeatCanBePerformed: DifferentBodyRepeatProbe(
+                    () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
@@ -519,6 +630,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (step.RepeatRequested.IsRequested)
             {
+                SettleRepeatPerformer(step.RepeatRequested, pendingResolution.ActorId);
                 repeat = PendingRepeatedAction.Mint(
                     new ActionResolutionId(pendingResolution.ResolutionId.Value),
                     pendingResolution.SourceCardInstanceId,
@@ -582,7 +694,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var context = new EffectResolutionContext(
+            EffectResolutionContext context = null;
+            context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
@@ -592,6 +705,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
+                repeatCanBePerformed: DifferentBodyRepeatProbe(
+                    () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
@@ -601,6 +716,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (step.RepeatRequested.IsRequested)
             {
+                SettleRepeatPerformer(step.RepeatRequested, pendingResolution.ActorId);
                 repeat = PendingRepeatedAction.Mint(
                     new ActionResolutionId(pendingResolution.ResolutionId.Value),
                     pendingResolution.SourceCardInstanceId,

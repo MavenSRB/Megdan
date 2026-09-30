@@ -125,6 +125,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             rosterState = state ?? throw new ArgumentNullException(nameof(state));
         }
 
+        /// <summary>
+        /// Milestone 9.21h. The restored pause with its choice narrowed by the dispatcher that holds
+        /// the repeat probe - a "different you" repeat offers only the bodies it can be performed from.
+        /// </summary>
+        internal void NarrowPendingChoice(PendingEffectChoice narrowed)
+        {
+            if (PendingResolution?.PendingChoice == null || narrowed == null) return;
+            PendingResolution = PendingResolution.With(
+                PendingResolution.Continuation, PendingResolution.CompletedOutcomes,
+                PendingResolution.AcceptedChoices, narrowed);
+        }
+
+        /// <summary>The trusted definition a paused triggered frame runs, or null. Milestone 9.21h.</summary>
+        internal EffectDefinition PendingDefinition =>
+            PendingResolution != null && effects.TryGet(PendingResolution.EffectDefinitionReference, out var effect)
+                ? effect
+                : null;
+
         internal void RestorePending(PendingResolution pending)
         {
             if (PendingResolution != null) throw new InvalidOperationException("A triggered continuation is already present.");
@@ -159,7 +177,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            RepeatFeasibility repeatCanBePerformed = null,
             IMatchTieBreakerCoin coin = null)
         {
             if (PendingResolution != null)
@@ -241,7 +259,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed,
+            RepeatFeasibility repeatCanBePerformed,
             IMatchTieBreakerCoin coin = null)
         {
             var materializedDefinitions = definitions as CardDefinition[] ?? definitions.ToArray();
@@ -405,7 +423,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            RepeatFeasibility repeatCanBePerformed = null,
             IMatchTieBreakerCoin coin = null)
         {
             if (PendingResolution != null) return true;
@@ -703,7 +721,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int roundIndex,
             int turnIndex,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            RepeatFeasibility repeatCanBePerformed = null,
             IMatchTieBreakerCoin coin = null)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));

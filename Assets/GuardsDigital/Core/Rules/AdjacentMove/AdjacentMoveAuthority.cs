@@ -489,6 +489,63 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// </summary>
         internal void ClearActingBodies() => actingBodies.Clear();
 
+        /// <summary>
+        /// Milestone 9.21h. "A different you" performs a repeated instance: the body standing on this
+        /// space becomes the acting body, so every read of the repeated instance - its adjacency, its
+        /// Range, its spawn's Radius - is measured from it (RZ-Q11, RZ-Q12). It stays settled until the
+        /// turn selects its next actor, as a picked body does.
+        /// </summary>
+        internal void SettleActingBodyAt(HeroId heroId, HexCoordinate space)
+        {
+            var index = occupancies.FindIndex(occupancy =>
+                occupancy.HeroId.Equals(heroId) && occupancy.Coordinate.Equals(space));
+            if (index < 0)
+            {
+                throw new InvalidOperationException(
+                    $"No body of {heroId} stands on {space}, so it cannot perform the repeat.");
+            }
+
+            SettleActingBody(heroId, occupancies[index].Body);
+        }
+
+        /// <summary>
+        /// Milestone 9.21h. Answers a feasibility probe as if this body were acting, and leaves the
+        /// settled acting body exactly as it was - the question "could the repeat start from body N"
+        /// that a "different you" repeat asks before it offers N. Body 0 asks with the body acting now;
+        /// a body that does not stand cannot perform anything.
+        /// </summary>
+        internal bool ProbeWithActingBody(HeroId heroId, int body, Func<bool> probe)
+        {
+            if (probe == null) throw new ArgumentNullException(nameof(probe));
+            if (body <= 0)
+            {
+                return probe();
+            }
+
+            if (!TryGetHeroBodyCoordinate(heroId, body, out _))
+            {
+                return false;
+            }
+
+            var had = actingBodies.TryGetValue(heroId, out var previous);
+            actingBodies[heroId] = body;
+            try
+            {
+                return probe();
+            }
+            finally
+            {
+                if (had)
+                {
+                    actingBodies[heroId] = previous;
+                }
+                else
+                {
+                    actingBodies.Remove(heroId);
+                }
+            }
+        }
+
         /// <summary>Milestone 9.21a. How many bodies this hero has in all; 1 unless it declares more.</summary>
         public int HeroBodySupplyOf(HeroId heroId) =>
             heroBodySupplies.TryGetValue(heroId, out var bodies) ? bodies : 1;
@@ -521,26 +578,26 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         }
 
         /// <summary>
-        /// Milestone 9.21a. Where a hero stands, for a read the twelve RZ readings do not settle for a
-        /// hero on several spaces - the anchor of an Active effect's radius the hero controls ("in
-        /// radius of you" when nobody is acting), or the defender a Defense card moves. A hero with one
-        /// body answers exactly as <see cref="TryGetHeroCoordinate"/>; a hero standing on several
-        /// spaces is refused loudly, naming the read, rather than answered from one body.
+        /// Milestone 9.21h (RZ-Q13, settled by the user as "any body"). The spaces a radius "of you" is
+        /// measured from when the hero it is anchored on is not acting - an Active effect's disk around
+        /// its controller, a Defeat-bounty promise's, a before-action trigger's: every body standing, in
+        /// body order. A space is in radius of him if it is in radius of at least one body, so a reader
+        /// asks whether ANY anchor holds it (<see cref="IsWithinRadiusOfAnyBody"/>). A hero with one body
+        /// has one anchor, exactly as before; a hero off the board has none, and reaches nothing.
+        ///
+        /// <para>It replaces 9.21a's <c>TryGetSoleHeroCoordinate</c>, which refused a many-bodied hero
+        /// loudly at these reads until the reading was settled.</para>
         /// </summary>
-        public bool TryGetSoleHeroCoordinate(HeroId heroId, string reading, out HexCoordinate coordinate)
-        {
-            var bodies = GetHeroBodies(heroId);
-            if (bodies.Count > 1)
-            {
-                throw new InvalidOperationException(
-                    $"{heroId} stands on {bodies.Count} spaces, and {reading} names no body; which of " +
-                    "his spaces it is measured from is not settled for a many-bodied hero (milestone " +
-                    "9.21a leaves it to the block that deals a face reaching it).");
-            }
+        public IReadOnlyList<HexCoordinate> GetHeroRadiusAnchors(HeroId heroId) =>
+            Array.AsReadOnly(GetHeroBodies(heroId).Select(body => body.Coordinate).ToArray());
 
-            coordinate = bodies.Count == 0 ? default : bodies[0].Coordinate;
-            return bodies.Count == 1;
-        }
+        /// <summary>
+        /// Milestone 9.21h (RZ-Q13). Whether a space lies within <paramref name="radius"/> of at least
+        /// one of these anchors - p.9's inclusive disk, drawn around every body of a many-bodied hero.
+        /// </summary>
+        public static bool IsWithinRadiusOfAnyBody(
+            IReadOnlyList<HexCoordinate> anchors, int radius, HexCoordinate space) =>
+            anchors != null && anchors.Any(anchor => HexDistanceQuery.Calculate(anchor, space) <= radius);
 
         /// <summary>
         /// Milestone 9.21a. The index of the body that answers for the hero as a whole: the only body

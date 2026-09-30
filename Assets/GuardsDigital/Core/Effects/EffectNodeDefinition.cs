@@ -201,6 +201,39 @@ namespace GuardsDigital.Core.Effects
         public EffectNodeId BoundSelectionNodeId { get; }
 
         /// <summary>
+        /// Milestone 9.21h. Who performs the repeated instance: the body performing this one (p.10's
+        /// default), or "a different you" - another standing body of a many-bodied actor, which the
+        /// node asks for and publishes as the space it stands on.
+        ///
+        /// <para><b>The declaration IS that published output</b> (<see cref="RepeatActorBodyOutput"/>),
+        /// and this reading is derived from it rather than stored beside it. Until this milestone a
+        /// RepeatAction published nothing, so a repeat that publishes the performing body's space says
+        /// exactly "performed by a different body" and nothing else can. Carrying it as a second public
+        /// property would have moved every verified content digest (the identity oracle walks every
+        /// public property of every node) for a fact only two faces print; the output is already public
+        /// on the node, so Razzle's two repeats still reach the oracle when they are pinned.</para>
+        /// </summary>
+        internal RepeatActor RepeatActor =>
+            Kind == EffectNodeKind.RepeatAction && Outputs.Any(output =>
+                string.Equals(output.OutputName, RepeatActorBodyOutput, StringComparison.Ordinal))
+                ? RepeatActor.DifferentBody
+                : RepeatActor.SameBody;
+
+        /// <summary>
+        /// Milestone 9.21h. The one output a <see cref="RepeatActor.DifferentBody"/> repeat publishes
+        /// (and so declares itself by): the space the body that performs the repeated instance stands
+        /// on.
+        /// </summary>
+        public const string RepeatActorBodyOutput = "body";
+
+        /// <summary>
+        /// Milestone 9.21h. The output binding a "different you" repeat declares - the whole of what a
+        /// definition writes to say that another body performs the repeated instance.
+        /// </summary>
+        public static EffectOutputBinding PerformedByADifferentBody =>
+            new EffectOutputBinding(RepeatActorBodyOutput, EffectValueKind.Coordinate);
+
+        /// <summary>
         /// Exact trusted immunity exceptions this capability may consume. They are definition semantics,
         /// so a snapshot carries none and restore rebinds them from this node.
         /// </summary>
@@ -319,9 +352,15 @@ namespace GuardsDigital.Core.Effects
                     RequireNoCapability();
                     if (ChildNodeIds.Count != 0)
                         throw new ArgumentException("A RepeatAction node is a leaf and takes no children.");
-                    if (Inputs.Count != 0 || Outputs.Count != 0)
+                    // Milestone 9.21h. "A different you" is the one repeat that publishes: the space of the
+                    // body that performs the repeated instance, and nothing else.
+                    if (Inputs.Count != 0 ||
+                        (Outputs.Count != 0 && (Outputs.Count != 1 ||
+                                !string.Equals(Outputs[0].OutputName, RepeatActorBodyOutput, StringComparison.Ordinal) ||
+                                Outputs[0].ValueKind != EffectValueKind.Coordinate)))
                         throw new ArgumentException(
-                            "A RepeatAction node reads and publishes nothing; the repeated instance " +
+                            "A RepeatAction node reads nothing and publishes nothing but, for \"a different you\", the " +
+                            "performing body's space; the repeated instance " +
                             "runs the same definition from its own start.");
 
                     // A repeat that must happen is unbounded by construction. Admitting `may` and `if
@@ -382,6 +421,12 @@ namespace GuardsDigital.Core.Effects
                     if (FailurePolicy == EffectFailurePolicy.IfAble && Chooser != EffectChooserRole.None)
                         throw new ArgumentException(
                             "An if-able RepeatAction node opens no decision, so it must name no chooser.");
+                    // Milestone 9.21h. "A different you MAY repeat it": which body performs it is a
+                    // question, so only a `may` node - which has a chooser to ask - declares it.
+                    if (RepeatActor != GuardsDigital.Core.Effects.RepeatActor.SameBody &&
+                        FailurePolicy != EffectFailurePolicy.May)
+                        throw new ArgumentException(
+                            "A different-body repeat asks which body performs it, so it is a `may` node.");
                     RequireNoSelectionBounds();
                     break;
             }

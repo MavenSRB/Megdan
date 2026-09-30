@@ -917,6 +917,13 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Restored active turn state is incomplete.", nameof(state));
             }
 
+            // Milestone 9.21h. A pause on "a different you may repeat it" offers the bodies the live
+            // pause offered: the dispatcher holds the repeat probe, and this is where the turn it asks
+            // about - its modifications, its round and turn - is whole again.
+            cardActions?.NarrowRestoredRepeatPerformers(
+                authority.definitions, authority.instances, participants, timing,
+                authority.CurrentModifications, state.RoundIndex, state.TurnIndex);
+
             return authority;
         }
 

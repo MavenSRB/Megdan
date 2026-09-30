@@ -1601,7 +1601,7 @@ namespace GuardsDigital.Tests.EditMode
                                     action.Origin == ActionDefinitionOrigin.PrintedPrimary)
                                 .Kind,
                             wasRepeatedInstance)),
-                    _ => true);
+                    (_, _, _) => true);
                 return authority.PendingResolution?.PendingChoice;
             }
 

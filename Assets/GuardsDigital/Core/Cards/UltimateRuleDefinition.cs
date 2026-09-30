@@ -203,7 +203,24 @@ namespace GuardsDigital.Core.Cards
         /// resolves once a turn however many actions the turn performs, so a repeat or a grant performed
         /// off a card already resolved does not fire it again.</para>
         /// </summary>
-        AfterControllerResolvesCard = 11
+        AfterControllerResolvesCard = 11,
+
+        /// <summary>
+        /// Milestone 9.21h. Razzle's Twin Strike, "After you perform a basic attack action a different
+        /// you may repeat it once, targeting a different unit."
+        ///
+        /// <para><b>A twelfth condition, the Attack twin of
+        /// <see cref="AfterControllerPerformsBasicSkill"/></b>: it reads the same
+        /// <see cref="GuardsDigital.Core.Cards.PerformedBasicAction"/> fact and asks its kind. "Basic
+        /// attack action" is p.9's basic supertype (a Gold or Silver card's action) of p.13's Attack
+        /// kind, so a coloured card's Attack - which <see cref="AfterControllerPerformsAttackAction"/>
+        /// sees - and every basic Skill, Movement, Defense, Hold, Fast Travel and Clear are excluded by
+        /// construction. Widening <see cref="AfterControllerPerformsBasicAction"/> would have fired it
+        /// after Stunt Doubles' Movement; narrowing <see cref="AfterControllerPerformsAttackAction"/>
+        /// would have changed Min's Flurry of Blows. It is unbounded, as the sentence is: p.10's "You
+        /// cannot repeat a repeated action!" ends the chain, on the subject the authority holds.</para>
+        /// </summary>
+        AfterControllerPerformsBasicAttack = 12
     }
 
     /// <summary>

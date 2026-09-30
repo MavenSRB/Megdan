@@ -135,9 +135,12 @@ namespace GuardsDigital.Core.Rules.Consequences
             MinionOccupancy defeatedMinion,
             int bonusPerItem)
         {
-            if (!effect.ControllerHeroId.IsDefined ||
-                !board.TryGetSoleHeroCoordinate(
-                    effect.ControllerHeroId, "the anchor of a Defeat-bounty promise", out var controllerAt))
+            // Milestone 9.21h (RZ-Q13). The disk is drawn around every body of its controller: a
+            // minion is in radius of him if it is in radius of any one of them.
+            var controllerAnchors = effect.ControllerHeroId.IsDefined
+                ? board.GetHeroRadiusAnchors(effect.ControllerHeroId)
+                : Array.Empty<GuardsDigital.Core.Board.HexCoordinate>();
+            if (controllerAnchors.Count == 0)
             {
                 // p.16 ends an Ultimate's ability while its hero is off the board and p.17 says the
                 // same of an Active effect's controller; a promise whose maker is not standing
@@ -176,7 +179,8 @@ namespace GuardsDigital.Core.Rules.Consequences
                 items,
                 bonusPerItem).Total;
             return radius > 0 &&
-                HexDistanceQuery.Calculate(controllerAt, defeatedMinion.Coordinate) <= radius;
+                AdjacentMoveAuthority.IsWithinRadiusOfAnyBody(
+                    controllerAnchors, radius, defeatedMinion.Coordinate);
         }
     }
 }

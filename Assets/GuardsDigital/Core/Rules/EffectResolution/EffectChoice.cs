@@ -526,6 +526,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// choice is confirmed and the capability resumes. The stop rides with them for the same
         /// reason, and a choice that carries one offers nothing to select in the first place.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.21h. This choice offering only the candidates kept - a restored "different you"
+        /// repeat narrowed by the probe its dispatcher holds, so the restored question is the live one.
+        /// </summary>
+        internal PendingEffectChoice KeepingOnly(IEnumerable<EffectChoiceCandidate> kept)
+        {
+            var admitted = new HashSet<EffectChoiceCandidate>(kept ?? Enumerable.Empty<EffectChoiceCandidate>());
+            return new PendingEffectChoice(
+                ResolutionId, ChoiceId, NodeId, ChooserId, Kind,
+                Candidates.Where(admitted.Contains).ToArray(), MinimumSelections,
+                Math.Min(MaximumSelections, Candidates.Count(admitted.Contains)),
+                SelectedCandidates.Where(admitted.Contains).ToArray(), UnavailableCandidates,
+                StopInvocation != null, DeclinableRegardlessOfMinimum, ValueVocabulary);
+        }
+
         public PendingEffectChoice WithSelected(IEnumerable<EffectChoiceCandidate> selected) =>
             new PendingEffectChoice(
                 ResolutionId, ChoiceId, NodeId, ChooserId, Kind,

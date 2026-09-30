@@ -18,12 +18,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     public readonly struct RepeatRequest : IEquatable<RepeatRequest>
     {
         private RepeatRequest(
-            bool isRequested, RepeatContinuation continuation, RepeatTargetBinding binding)
+            bool isRequested, RepeatContinuation continuation, RepeatTargetBinding binding,
+            HexCoordinate? performingBodySpace = null)
         {
             IsRequested = isRequested;
             Continuation = continuation;
             Binding = binding;
+            PerformingBodySpace = performingBodySpace;
         }
+
+        /// <summary>
+        /// Milestone 9.21h. Where the body that performs the requested instance stands, when the node
+        /// declared <see cref="RepeatActor.DifferentBody"/> ("a different you may repeat it") - the
+        /// caller settles it as the acting body before the instance starts; null for p.10's default,
+        /// the body performing this instance. A request, never state: it is consumed in the command
+        /// that made it, and the switched acting body is what the board then persists.
+        /// </summary>
+        public HexCoordinate? PerformingBodySpace { get; }
+
+        /// <summary>Milestone 9.21h. This request with the space of the body that performs it.</summary>
+        public RepeatRequest PerformedFrom(HexCoordinate space) =>
+            new RepeatRequest(IsRequested, Continuation, Binding, space);
 
         /// <summary>No repeat was asked for - the default, and what every non-repeating action reports.</summary>
         public static RepeatRequest None => default;
@@ -47,7 +62,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public bool Equals(RepeatRequest other) =>
             IsRequested == other.IsRequested && Continuation.Equals(other.Continuation) &&
-            Binding == other.Binding;
+            Binding == other.Binding && Nullable.Equals(PerformingBodySpace, other.PerformingBodySpace);
 
         public override bool Equals(object obj) => obj is RepeatRequest other && Equals(other);
 
@@ -140,8 +155,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 if (node.RepeatTargetBinding != RepeatTargetBinding.SameTarget &&
                     node.RepeatTargetBinding != RepeatTargetBinding.DifferentSelectionSubject)
                 {
-                    return RepeatRequest.For(
-                        RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding);
+                    return PerformedBy(node, outcome, RepeatRequest.For(
+                        RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding));
                 }
 
                 // The piece was recorded onto the frame when the selection named it, because that is
@@ -152,25 +167,47 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // the card saying something it does not say. An EXCLUDING repeat with no piece has
                     // nothing to exclude, and a repeat of an unnarrowed set is exactly what p.10's
                     // default already is - so it advances rather than refusing.
-                    return node.RepeatTargetBinding == RepeatTargetBinding.DifferentSelectionSubject
+                    return PerformedBy(node, outcome, node.RepeatTargetBinding == RepeatTargetBinding.DifferentSelectionSubject
                         ? RepeatRequest.For(
                             RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding)
-                        : RepeatRequest.None;
+                        : RepeatRequest.None);
                 }
 
                 // `on the same target` carried no binding before milestone 8.39d1 and carries none
                 // now: `RepeatRequest.Binding` exists so a dispatcher can honour "on a different
                 // target" without reading nodes, and putting a value where Wasp and Dodger have
                 // always seen `Unbound` would be a behaviour change they never asked for.
-                return node.RepeatTargetBinding == RepeatTargetBinding.SameTarget
+                return PerformedBy(node, outcome, node.RepeatTargetBinding == RepeatTargetBinding.SameTarget
                     ? RepeatRequest.For(RepeatContinuation.NextBoundTo(
                         completedRepeats, frame.Repeat.BoundTarget))
                     : RepeatRequest.For(
                         RepeatContinuation.NextBoundTo(completedRepeats, frame.Repeat.BoundTarget),
-                        node.RepeatTargetBinding);
+                        node.RepeatTargetBinding));
             }
 
             return RepeatRequest.None;
+        }
+
+        /// <summary>
+        /// Milestone 9.21h. A request from a <see cref="RepeatActor.DifferentBody"/> node carries the
+        /// space its answer named - the body that performs the repeated instance. A node of p.10's
+        /// default, and a request refused above, pass through unchanged; a different-body node that
+        /// recorded no space requests nothing, because the card would be saying something it does not.
+        /// </summary>
+        private static RepeatRequest PerformedBy(
+            EffectNodeDefinition node, EffectNodeOutcome outcome, RepeatRequest request)
+        {
+            if (!request.IsRequested || node.RepeatActor != RepeatActor.DifferentBody)
+            {
+                return request;
+            }
+
+            var space = outcome.Outputs?.Where(fact =>
+                string.Equals(fact.OutputName, EffectNodeDefinition.RepeatActorBodyOutput,
+                    StringComparison.Ordinal) &&
+                fact.Value.Kind == EffectValueKind.Coordinate)
+                .Select(fact => (EffectOutcomeFact?)fact).FirstOrDefault();
+            return space == null ? RepeatRequest.None : request.PerformedFrom(space.Value.Value.Coordinate);
         }
 
         /// <summary>

@@ -376,10 +376,22 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
     }
 
+    /// <summary>
+    /// Milestone 8.25e's repeat probe, widened by milestone 9.21h: whether the instance a RepeatAction
+    /// node would request can be performed - under the binding the node declares, by the body named
+    /// (0 = the body acting now; another body for "a different you"), starting from the continuation
+    /// the requested instance would inherit (its count and the piece a different-subject repeat
+    /// excludes).
+    /// </summary>
+    public delegate bool RepeatFeasibility(
+        GuardsDigital.Core.Effects.RepeatTargetBinding binding,
+        int performingBody,
+        GuardsDigital.Core.Effects.RepeatContinuation next);
+
     /// <summary>Everything the resolver needs that is not part of the frame's own state.</summary>
     public sealed class EffectResolutionContext
     {
-        private readonly Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed;
+        private readonly RepeatFeasibility repeatCanBePerformed;
 
         public EffectResolutionContext(
             EffectDefinition definition,
@@ -399,7 +411,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool watchesAppliedPushes = false,
             bool watchesMarkerGives = false,
             bool repeatIsUnavailable = false,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            RepeatFeasibility repeatCanBePerformed = null,
             bool stagesMinionDefeats = false,
             bool stagesBorrowedActions = false,
             bool watchesResolvedDiscards = false,
@@ -514,7 +526,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public bool RepeatIsUnavailableFor(GuardsDigital.Core.Effects.RepeatTargetBinding binding) =>
             RepeatIsUnavailable ||
-            (repeatCanBePerformed != null && !repeatCanBePerformed(binding));
+            (repeatCanBePerformed != null && !repeatCanBePerformed(binding, 0, default));
+
+        /// <summary>
+        /// Milestone 9.21h. The same question asked of a repeat performed by one named body of a
+        /// many-bodied actor ("a different you may repeat it"): whether the instance could start with
+        /// that body acting. The probe's second argument is the body (0 = the body acting now); a
+        /// resolution with no probe - a Skill's own printed repeat - admits every body, exactly as it
+        /// admits its own repeat from the body acting.
+        /// </summary>
+        public bool RepeatCanBePerformedBy(
+            GuardsDigital.Core.Effects.RepeatTargetBinding binding, int body,
+            GuardsDigital.Core.Effects.RepeatContinuation next) =>
+            !RepeatIsUnavailable &&
+            (repeatCanBePerformed == null || repeatCanBePerformed(binding, body, next));
 
         /// <summary>
         /// Milestone 8.19c1. Whether any live rule source has declared that it runs after one of
@@ -975,6 +1000,32 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // instance is created by the card action once this one's boundary is clean. The
                     // node is popped here rather than re-entered, because re-entering would reach the
                     // same `may` and ask again.
+                    if (node.RepeatActor == GuardsDigital.Core.Effects.RepeatActor.DifferentBody)
+                    {
+                        // Milestone 9.21h. The body named must still be one the repeat can be
+                        // performed from when the answer arrives - re-derived, never trusted, as a
+                        // selection's Resume re-derives its targets. The space is the request.
+                        var named = choice.SelectedCandidates
+                            .Where(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
+                            .Select(candidate => candidate.Value.Coordinate)
+                            .ToArray();
+                        if (named.Length != 1 ||
+                            !RepeatPerformerQuery.Candidates(frame, node, context).Contains(named[0]))
+                        {
+                            return EffectResolutionStepResult.Reject(
+                                EffectResolutionRejectionReason.InvalidChoice, frame);
+                        }
+
+                        Pop(continuation);
+                        Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied,
+                            EffectExecutionResult.Applied(new[]
+                            {
+                                new EffectOutcomeFact(
+                                    EffectNodeDefinition.RepeatActorBodyOutput, EffectValue.Space(named[0]))
+                            }));
+                        break;
+                    }
+
                     Pop(continuation);
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied);
                     break;
@@ -1342,6 +1393,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // under this node's own declared binding - is one this node has nothing to
                         // offer. Skipping it in silence is what p.10 already does with a repeat it
                         // does not owe; offering it and then dropping it is what it never does.
+                        // Milestone 9.21h. "A different you may repeat it": the question is WHICH of
+                        // the actor's other bodies performs it, among those the repeat can be
+                        // performed from - one press names the body, and the `may` is the decline.
+                        // With no such body there is nothing to offer, exactly as above.
+                        if (node.RepeatActor == GuardsDigital.Core.Effects.RepeatActor.DifferentBody)
+                        {
+                            var performers = RepeatPerformerQuery.Candidates(frame, node, context);
+                            if (!RepeatedActionQuery.CanRepeat(frame, node) || performers.Count == 0)
+                            {
+                                Pop(continuation);
+                                Record(outcomes, events, node.Id,
+                                    EffectExecutionResultKind.DeclinedOptional);
+                                continue;
+                            }
+
+                            return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
+                                frame, node, context, EffectChoiceKind.SelectTarget,
+                                performers.Select(space =>
+                                    EffectChoiceCandidate.Value_(EffectValue.Space(space))).ToArray(),
+                                1, 1, declinableRegardlessOfMinimum: true));
+                        }
+
                         if (!RepeatedActionQuery.CanRepeat(frame, node) ||
                             context.RepeatIsUnavailableFor(node.RepeatTargetBinding))
                         {

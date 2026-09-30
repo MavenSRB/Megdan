@@ -4,6 +4,37 @@ using GuardsDigital.Core.Components;
 namespace GuardsDigital.Core.Effects
 {
     /// <summary>
+    /// Milestone 9.21h. WHO performs the repeated instance - an axis of its own beside
+    /// <see cref="RepeatTargetBinding"/>, because the two cards that print it bind the target in two
+    /// different ways: Twin Strike, "a different you may repeat it once, targeting a different unit"
+    /// (the action's own target), and Spectacle, "May repeat once by a different one of you, targeting
+    /// a different minion" (a selection's subject).
+    ///
+    /// <para>p.10's default is the hero who performed the first instance, and for a hero standing on
+    /// one space that is all there is. For a hero standing on several spaces (9.21a) the performer of
+    /// an instance is one body - the acting body (RZ-Q4) - and "a different you" is another one of
+    /// them: the repeated instance is performed by a body other than the one acting now, which the
+    /// actor picks among those from which the repeat can be performed (RZ-Q11, RZ-Q12). Everything
+    /// the repeated instance measures - its adjacency, its Range, the Radius of its spawn - is then
+    /// measured from that body, because it IS the acting body for that instance.</para>
+    ///
+    /// <para>The zero value is p.10's default, so every repeat written before this milestone declares
+    /// it by declaring nothing, and no definition, digest or snapshot moves.</para>
+    /// </summary>
+    public enum RepeatActor
+    {
+        /// <summary>The body performing the instance that asked - p.10's default.</summary>
+        SameBody = 0,
+
+        /// <summary>
+        /// "A different you" / "a different one of you": another standing body of the actor performs
+        /// the repeated instance. The node asks which (its spaces, among those the repeat can be
+        /// performed from), and with none it has nothing to offer and is skipped in silence.
+        /// </summary>
+        DifferentBody = 1
+    }
+
+    /// <summary>
     /// What a repeated instance may do about the target the instance before it chose.
     ///
     /// Rulebook p.10's default is that a repeated action is a new instance which may make different

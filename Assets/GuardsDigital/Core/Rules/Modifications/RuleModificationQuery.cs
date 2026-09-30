@@ -142,10 +142,12 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             foreach (var effect in timing.Effects)
             {
-                if (effect.Phase != ActiveEffectPhase.Active ||
-                    effect.Definition.ObstacleOverlays.Count == 0 ||
-                    !board.TryGetSoleHeroCoordinate(
-                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
+                // Milestone 9.21h (RZ-Q13). The disk is drawn around every body of its controller.
+                var anchors = effect.Phase == ActiveEffectPhase.Active &&
+                    effect.Definition.ObstacleOverlays.Count > 0
+                        ? board.GetHeroRadiusAnchors(effect.ControllerHeroId)
+                        : Array.Empty<GuardsDigital.Core.Board.HexCoordinate>();
+                if (anchors.Count == 0)
                 {
                     continue;
                 }
@@ -156,7 +158,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 {
                     yield return AppliedObstacleOverlay.Bind(
                         effect.Definition.ObstacleOverlays[index],
-                        anchor,
+                        anchors,
                         radius,
                         $"{effect.Id.Value}:overlay:{index}",
                         effect.ControllerHeroId,
@@ -327,17 +329,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                     "cannot be decided without the board they are standing on.");
             }
 
-            if (!board.TryGetSoleHeroCoordinate(
-                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
+            // Milestone 9.21h (RZ-Q13). The disk is drawn around every body of its controller - a unit
+            // is in radius of him if it is in radius of any one of them - unless an owned obstacle
+            // anchors it, as before.
+            var anchors = board.GetHeroRadiusAnchors(effect.ControllerHeroId);
+            if (anchors.Count == 0)
             {
                 yield break;
             }
-            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var obstacleKind) &&
-                !board.TryGetObstacleCoordinate(
-                    GuardsDigital.Core.Obstacles.OwnedObstacleIdentity.For(
-                        obstacleKind, effect.ControllerHeroId), out anchor))
+            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var obstacleKind))
             {
-                yield break;
+                if (!board.TryGetObstacleCoordinate(
+                        GuardsDigital.Core.Obstacles.OwnedObstacleIdentity.For(
+                            obstacleKind, effect.ControllerHeroId), out var obstacleAt))
+                {
+                    yield break;
+                }
+
+                anchors = new[] { obstacleAt };
             }
 
             var radius = new ValueResult(
@@ -369,7 +378,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 {
                     var hero = BoardObjectReference.ForHero(occupancy.HeroId);
                     if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
-                        RadiusQuery.Contains(anchor, radius, occupancy.Coordinate) &&
+                        anchors.Any(anchor => RadiusQuery.Contains(anchor, radius, occupancy.Coordinate)) &&
                         TargetQuery.StandsInRelationTo(
                             relation, hero, effect.ControllerHeroId, participants, board) &&
                         affectedHeroes.Add(occupancy.HeroId))
@@ -387,7 +396,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             foreach (var minion in board.Minions)
             {
                 var unit = BoardObjectReference.ForMinion(minion.MinionId);
-                if (RadiusQuery.Contains(anchor, radius, minion.Coordinate) &&
+                if (anchors.Any(anchor => RadiusQuery.Contains(anchor, radius, minion.Coordinate)) &&
                     TargetQuery.StandsInRelationTo(
                         relation, unit, effect.ControllerHeroId, participants, board))
                 {

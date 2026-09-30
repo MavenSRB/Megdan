@@ -1603,6 +1603,19 @@ namespace GuardsDigital.Core.Snapshots
             out EffectChoiceValueVocabulary valueVocabulary)
         {
             valueVocabulary = EffectChoiceValueVocabulary.None;
+
+            // Milestone 9.21h. "A different you may repeat it" pauses on its RepeatAction node, which
+            // invokes no capability: its candidates are the actor's other standing bodies, re-derived
+            // from the restored board by the one query the live pause asked. The repeat probe that
+            // narrowed them live belongs to the dispatcher, which applies it once it is restored
+            // (CardActionResolutionAuthority.NarrowRestoredRepeatPerformers).
+            if (node.Kind == EffectNodeKind.RepeatAction)
+            {
+                return RepeatPerformerQuery.Candidates(restored, node, resolution)
+                    .Select(space => EffectChoiceCandidate.Value_(EffectValue.Space(space)))
+                    .ToArray();
+            }
+
             var handler = resolution.Catalog.Load(node.Capability);
             var offered = handler.Execute(new EffectCapabilityContext(
                 node.Id,

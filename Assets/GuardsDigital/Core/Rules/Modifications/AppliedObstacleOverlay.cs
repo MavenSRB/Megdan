@@ -30,7 +30,7 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         private AppliedObstacleOverlay(
             ConditionalObstacleOverlay declaration,
-            HexCoordinate anchor,
+            System.Collections.Generic.IReadOnlyList<HexCoordinate> anchors,
             int radius,
             string sourceId,
             HeroId controllerHeroId,
@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             bool actorIsInside)
         {
             Declaration = declaration;
-            Anchor = anchor;
+            Anchors = anchors;
             Radius = radius;
             SourceId = sourceId;
             ControllerHeroId = controllerHeroId;
@@ -73,8 +73,29 @@ namespace GuardsDigital.Core.Rules.Modifications
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
             TeamSide? actingHeroSide,
+            HexCoordinate actingHeroSpace) =>
+            Bind(declaration, new[] { anchor }, radius, sourceId, controllerHeroId, controllerTeamSide,
+                actingHeroSide, actingHeroSpace);
+
+        /// <summary>
+        /// Milestone 9.21h (RZ-Q13). The same binding around every body of a many-bodied source hero:
+        /// the disk is the union of one disk per body, so a space is inside when it is inside any.
+        /// </summary>
+        public static AppliedObstacleOverlay Bind(
+            ConditionalObstacleOverlay declaration,
+            System.Collections.Generic.IReadOnlyList<HexCoordinate> anchors,
+            int radius,
+            string sourceId,
+            HeroId controllerHeroId,
+            TeamSide controllerTeamSide,
+            TeamSide? actingHeroSide,
             HexCoordinate actingHeroSpace)
         {
+            if (anchors == null || anchors.Count == 0)
+            {
+                throw new ArgumentException("A bound overlay is drawn around at least one space.", nameof(anchors));
+            }
+
             if (declaration == null) throw new ArgumentNullException(nameof(declaration));
             if (string.IsNullOrWhiteSpace(sourceId))
             {
@@ -97,16 +118,26 @@ namespace GuardsDigital.Core.Rules.Modifications
             var qualifies = actingHeroSide.HasValue && Qualifies(
                 declaration.ActingHeroRelation, actingHeroSide.Value, controllerTeamSide);
             var inside = qualifies &&
-                HexDistanceQuery.Calculate(anchor, actingHeroSpace) <= radius;
+                IsInside(anchors, radius, actingHeroSpace);
             return new AppliedObstacleOverlay(
-                declaration, anchor, radius, sourceId, controllerHeroId, controllerTeamSide,
+                declaration, System.Linq.Enumerable.ToArray(anchors), radius, sourceId, controllerHeroId, controllerTeamSide,
                 qualifies, inside);
         }
 
         public ConditionalObstacleOverlay Declaration { get; }
 
         /// <summary>The source hero's space at derivation - the centre of p.17's moving disk.</summary>
-        public HexCoordinate Anchor { get; }
+        public HexCoordinate Anchor => Anchors[0];
+
+        /// <summary>
+        /// Milestone 9.21h (RZ-Q13). Every centre the disk is drawn around: the one space of a hero with
+        /// one body, every body of a many-bodied one.
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyList<HexCoordinate> Anchors { get; }
+
+        private static bool IsInside(
+            System.Collections.Generic.IReadOnlyList<HexCoordinate> anchors, int radius, HexCoordinate space) =>
+            System.Linq.Enumerable.Any(anchors, anchor => HexDistanceQuery.Calculate(anchor, space) <= radius);
 
         /// <summary>The disk's inclusive radius at derivation, items already composed onto it.</summary>
         public int Radius { get; }
@@ -138,7 +169,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            var spaceIsInside = HexDistanceQuery.Calculate(Anchor, space) <= Radius;
+            var spaceIsInside = IsInside(Anchors, Radius, space);
             return actorIsInside
                 ? !spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesOutsideWhileActorInside)
                 : spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesInsideWhileActorOutside);

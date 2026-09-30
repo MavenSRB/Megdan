@@ -218,6 +218,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // is the precondition of was composed against - on a fresh match and on a restored one
             // alike.
             this.attackDefenseBackend.BindCapabilities(catalogs.Capabilities);
+            // Milestone 9.21h. "A different one of you" repeat settles the body that performs it on
+            // this board, whichever resolver requested it.
+            this.skillBackend.BindRepeatPerformer(
+                this.board.SettleActingBodyAt, this.board.ProbeWithActingBody);
             triggeredEffects = new TriggeredEffectResolutionAuthority(
                 catalogs.TriggeredEffects, catalogs.Capabilities, components);
         }
@@ -603,8 +607,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // what the instance it offers would have to satisfy. The board is the one this
                 // checkpoint is standing on, because it is the board the second instance would start
                 // from.
-                binding => OwedRepeatCanBePerformed(
-                    binding, materializedDefinitions, materializedInstances, participants,
+                (binding, body, _) => OwedRepeatCanBePerformed(
+                    body, binding, materializedDefinitions, materializedInstances, participants,
                     modifications, checkpoint.RoundIndex, checkpoint.TurnIndex, timing),
                 // Milestone 8.75a. The live coin, so a body that prints "you may flip the Tie
                 // Breaker coin" can have it flipped before the node after the flip reads a face.
@@ -632,6 +636,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="PerformedBasicAction.KindCanBeRepeated"/> states and the subject above has
         /// already applied.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 9.21h. The same question with a named body of a many-bodied actor acting - "a
+        /// different you may repeat it" asks it of each other body before it offers that body (RZ-Q11).
+        /// Body 0 is the body acting now, which is every question asked before this milestone.
+        /// </summary>
+        private bool OwedRepeatCanBePerformed(
+            int body,
+            RepeatTargetBinding binding,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            ActiveEffectLifecycle timing) =>
+            body <= 0 || repeatSubject == null
+                ? OwedRepeatCanBePerformed(
+                    binding, definitions, instances, participants, modifications, roundIndex,
+                    turnIndex, timing)
+                : board.ProbeWithActingBody(repeatSubject.ActorId, body, () => OwedRepeatCanBePerformed(
+                    binding, definitions, instances, participants, modifications, roundIndex,
+                    turnIndex, timing));
+
         private bool OwedRepeatCanBePerformed(
             RepeatTargetBinding binding,
             IReadOnlyList<CardDefinition> definitions,
@@ -812,6 +839,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 owedAfterActionRepeat = repeatSubject;
 
+                // Milestone 9.21h. Twin Strike's "a different you may repeat it": the body the answer
+                // named performs the owed instance, so it acts from here on - the repeated Attack's
+                // adjacency and its spawn's Radius are measured from it (RZ-Q11). The switch is board
+                // state (v50's settled acting body), so the owed repeat carries nothing new.
+                if (requested.Value.PerformingBodySpace.HasValue)
+                {
+                    board.SettleActingBodyAt(
+                        repeatSubject.ActorId, requested.Value.PerformingBodySpace.Value);
+                }
+
                 // Tigerclaw's Cloak and Daggers prints "if you repeat an attack action, you cannot
                 // target the same unit", which arrives as the requesting node's own declared binding.
                 // It is read off the ability rather than assumed, so an ability printing no such clause
@@ -827,6 +864,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>Whether a permanent after-action ability has asked for a repeat that has not started.</summary>
+        /// <summary>
+        /// Milestone 9.21h. A restored "a different you may repeat it" pause offers what the live one
+        /// offered. Its candidates are never written: the snapshot reader re-derives the actor's other
+        /// standing bodies from the board, and the repeat probe that kept only the bodies the repeat
+        /// can be performed from is this dispatcher's (and its Skill resolver's), so it is applied here,
+        /// once the turn around it is restored. A pause on any other node is untouched.
+        /// </summary>
+        internal void NarrowRestoredRepeatPerformers(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            Func<RuleModificationSet> currentModifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            var materializedDefinitions = definitions?.ToArray() ?? Array.Empty<CardDefinition>();
+            var materializedInstances = instances?.ToArray() ?? Array.Empty<CardInstance>();
+            skillBackend.NarrowRestoredRepeatPerformers(
+                materializedDefinitions, materializedInstances, participants, timing, currentModifications,
+                components, roundIndex, turnIndex);
+
+            var frame = triggeredEffects.PendingResolution;
+            var effect = triggeredEffects.PendingDefinition;
+            if (frame?.PendingChoice == null || effect == null ||
+                !effect.TryGetNode(frame.PendingChoice.NodeId, out var node) ||
+                node.RepeatActor != RepeatActor.DifferentBody)
+            {
+                return;
+            }
+
+            var modifications = currentModifications?.Invoke() ?? RuleModificationSet.Empty;
+
+            var context = new EffectResolutionContext(
+                effect, ContentCatalogs.Capabilities, participants, timing, roundIndex, turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                components: components, heroItems: skillBackend.HeroItems,
+                repeatCanBePerformed: (binding, body, _) => OwedRepeatCanBePerformed(
+                    body, binding, materializedDefinitions, materializedInstances, participants,
+                    modifications, roundIndex, turnIndex, timing));
+            triggeredEffects.NarrowPendingChoice(frame.PendingChoice.KeepingOnly(
+                RepeatPerformerQuery.Candidates(frame, node, context)
+                    .Select(space => EffectChoiceCandidate.Value_(EffectValue.Space(space)))));
+        }
+
         public bool HasOwedAfterActionRepeat => owedAfterActionRepeat != null;
 
         /// <summary>The owed repeat, or null. Milestone 8.23.</summary>
@@ -897,8 +980,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     // repeat - Chaos Incarnate's flip is answered and the repeat is the node after
                     // it - so 8.25e's live feasibility probe travels this path too, asked against the
                     // board as it now stands and under the face the coin now shows.
-                    binding => OwedRepeatCanBePerformed(
-                        binding, materializedDefinitions, materializedInstances, participants,
+                    (binding, body, _) => OwedRepeatCanBePerformed(
+                        body, binding, materializedDefinitions, materializedInstances, participants,
                         modifications, roundIndex, turnIndex, timing),
                     tieBreakerCoin),
                 participants,
@@ -961,8 +1044,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // The same live feasibility probe the checkpoint's first pass travelled with, asked
                 // against the board as it now stands - which is the board the second instance would
                 // start from, exactly as milestone 8.25e requires.
-                binding => OwedRepeatCanBePerformed(
-                    binding, boundary.Definitions, boundary.Instances, boundary.Participants,
+                (binding, body, _) => OwedRepeatCanBePerformed(
+                    body, binding, boundary.Definitions, boundary.Instances, boundary.Participants,
                     modifications, boundary.RoundIndex, boundary.TurnIndex, boundary.Timing),
                 tieBreakerCoin);
         }
@@ -2569,8 +2652,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // had: p.10's repeat is an offer, so the node asks whether the instance it would
                 // offer can start at all - with the binding it declares, against the board this
                 // moment is standing on. See CardTextRepeatCanBePerformed.
-                repeatCanBePerformed: binding => CardTextRepeatCanBePerformed(
-                    binding,
+                repeatCanBePerformed: (binding, body, _) => CardTextRepeatCanBePerformed(
+                    body, binding,
                     step.CardTextRemainderResolution,
                     materializedDefinitions,
                     materializedInstances,
@@ -3037,6 +3120,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             owedAttackRepeat = attack;
             owedAttackRepeatExclusion =
                 CardTextRepeatExclusionFor(result.RepeatRequested.Binding, attack);
+
+            // Milestone 9.21h. An Attack's own text printed "by a different one of you": that body
+            // performs the owed instance, so it acts from now on.
+            if (result.RepeatRequested.PerformingBodySpace.HasValue)
+            {
+                board.SettleActingBodyAt(attack.ActorId, result.RepeatRequested.PerformingBodySpace.Value);
+            }
         }
 
         /// <summary>
@@ -3179,6 +3269,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// offers its repeat. The live report was a defended Attack, and the empty subject set is the
         /// whole of what is refused here.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 9.21h. The card-text question with a named body of a many-bodied actor acting,
+        /// for a repeat printed "by a different one of you"; body 0 is the body acting now.
+        /// </summary>
+        private bool CardTextRepeatCanBePerformed(
+            int body,
+            RepeatTargetBinding binding,
+            PendingAttackResolution enclosing,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex) =>
+            body <= 0 || enclosing == null
+                ? CardTextRepeatCanBePerformed(
+                    binding, enclosing, definitions, instances, participants, modifications, timing,
+                    roundIndex, turnIndex)
+                : board.ProbeWithActingBody(enclosing.ActorId, body, () => CardTextRepeatCanBePerformed(
+                    binding, enclosing, definitions, instances, participants, modifications, timing,
+                    roundIndex, turnIndex));
+
         private bool CardTextRepeatCanBePerformed(
             RepeatTargetBinding binding,
             PendingAttackResolution enclosing,
@@ -3910,8 +4023,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // frame that comes back to a `RepeatAction` node after answering an earlier question
                 // is offered that repeat here, so it is judged here too - and from the board as it
                 // now stands, which is a later board than the one the start half read.
-                repeatCanBePerformed: binding => CardTextRepeatCanBePerformed(
-                    binding,
+                repeatCanBePerformed: (binding, body, _) => CardTextRepeatCanBePerformed(
+                    body, binding,
                     pendingCardText.Attack,
                     materializedDefinitions,
                     materializedInstances,

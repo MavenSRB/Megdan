@@ -218,22 +218,28 @@ namespace GuardsDigital.Core.Rules.Progression
                     BoardObjectReference.ForHero(actor), effect.ControllerHeroId,
                     participants, board))
                 return false;
-            if (!board.TryGetSoleHeroCoordinate(
-                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
+            // Milestone 9.21h (RZ-Q13). The disk is drawn around every body of its controller; an owned
+            // obstacle anchors it at the obstacle alone, as before.
+            var anchors = board.GetHeroRadiusAnchors(effect.ControllerHeroId);
+            if (anchors.Count == 0)
                 return false;
-            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var kind) &&
-                !board.TryGetObstacleCoordinate(
-                    OwnedObstacleIdentity.For(kind, effect.ControllerHeroId), out anchor))
-                return false;
+            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var kind))
+            {
+                if (!board.TryGetObstacleCoordinate(
+                        OwnedObstacleIdentity.For(kind, effect.ControllerHeroId), out var obstacleAt))
+                    return false;
+                anchors = new[] { obstacleAt };
+            }
             var radius = effect.Definition.Radius.Resolve(
                 effect.ControllerHeroId, effect.SourceCardInstanceId,
                 effect.SourceActionDefinitionId, heroItems,
                 ItemBonusMultiplierQuery.BonusPerItem(effect.ControllerHeroId, timing));
-            return RadiusQuery.Contains(anchor, new ValueResult(
+            var disk = new ValueResult(
                 PrintedValueChannel.Radius,
                 new[] { new ValueContribution(ValueContributionKind.PrintedIcon,
                     effect.SourceCardInstanceId, effect.SourceActionDefinitionId,
-                    PrintedValueChannel.Radius, radius) }), actorAt);
+                    PrintedValueChannel.Radius, radius) });
+            return anchors.Any(anchor => RadiusQuery.Contains(anchor, disk, actorAt));
         }
 
         /// <summary>

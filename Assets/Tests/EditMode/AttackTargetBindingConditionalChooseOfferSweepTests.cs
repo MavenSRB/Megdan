@@ -249,6 +249,9 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.21g. The counting faces: Rummage's and Ransack's Conditionals gate optional
             // retrievals after the Attack and bind no Attack target, so they add no at-risk gate.
             foreach (var card in RazzleCardContent.CountingDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.21h. The repeats by a different body: Spectacle is a Skill and Twin Strike an
+            // Ultimate with no action, so neither binds an Attack target nor adds an at-risk gate.
+            foreach (var card in RazzleCardContent.RepeatDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

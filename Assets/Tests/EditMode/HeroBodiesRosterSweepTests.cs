@@ -623,36 +623,44 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// 9.21a's named refusal, exercised. A radius anchored on a hero standing on several spaces
-        /// ("in radius" of "you", an Active effect the many-bodied hero controls) is a reading no RZ
-        /// answer settles, and only a many-bodied hero's OWN faces reach it - Razzle prints none. Staged
-        /// on Arien given four bodies (the soak's line-up 0), his own aura reaches it at the ninth
-        /// command: the command is refused naming the reading, and nothing changed.
+        /// Milestone 9.21h (RZ-Q13, the user's "any body"). The radius anchored on a hero standing on
+        /// several spaces ("in radius" of "you", an Active effect the many-bodied hero controls) is read
+        /// from every body: a space is in radius of him if it is in radius of at least one. Until 9.21h
+        /// the reading was 9.21a's named refusal, and this case - Arien given four bodies (the soak's
+        /// line-up 0), reaching his own aura at the ninth command - proved it refused atomically by
+        /// name. The same forty commands now all resolve, the aura standing while he stands on four
+        /// spaces.
         /// </summary>
         [Test]
-        public void AFaceReachingAnUnsettledBodyReading_IsRefusedNamingIt_AndChangesNothing()
+        public void AFaceReachingAnAuraAnchoredOnAManyBodiedHero_ReadsEveryBody_AndResolves()
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var picked = OfferOutcomeTests.RotatedLineups()[0];
             var session = new MatchSession(RandomLineupSoakTests.ComposeManyBodied(map, picked, 0));
             var random = new MatchLoopRandom(1);
-            MatchCommandResult refused = null;
-            for (var step = 0; step < 40 && refused == null; step++)
+            var auraWithSeveralBodies = false;
+            for (var step = 0; step < 40; step++)
             {
                 var legal = DeterministicMatchLoop.EnumerateLegalCommands(session.Projection);
-                var chosen = legal[random.Next(legal.Count)];
-                var before = session.CaptureSnapshot();
-                var result = session.Execute(chosen);
-                if (!result.Accepted)
+                if (legal.Count == 0)
                 {
-                    refused = result;
-                    Assert.That(session.CaptureSnapshot(), Is.EqualTo(before), "The refusal is atomic.");
+                    break;
                 }
+
+                var chosen = legal[random.Next(legal.Count)];
+                var result = session.Execute(chosen);
+                Assert.That(result.Accepted, Is.True,
+                    $"step {step}: {result.Detail} (RZ-Q13 settles the reading; nothing is refused).");
+                var projection = session.Projection;
+                var manyBodied = projection.Heroes.GroupBy(row => row.HeroId)
+                    .Where(group => group.Count() > 1).Select(group => group.Key).ToArray();
+                auraWithSeveralBodies |= projection.ActiveEffectSourceCardInstanceIds.Any(card =>
+                    manyBodied.Contains(projection.Cards.Single(value => value.Id.Equals(card)).OwnerId));
             }
 
-            Assert.That(refused, Is.Not.Null, "Fixture precondition: Arien's own radius aura is reached.");
-            Assert.That(refused.Detail, Does.Contain("the anchor of an Active effect's radius"));
-            Assert.That(refused.Detail, Does.Contain("names no body"));
+            Assert.That(auraWithSeveralBodies, Is.True,
+                "Fixture precondition: the many-bodied hero's own Active effect stood while several of his " +
+                "bodies did.");
         }
 
         // -------------------------------------------------------------------------------------------

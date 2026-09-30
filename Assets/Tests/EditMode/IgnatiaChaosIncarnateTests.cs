@@ -246,7 +246,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TheRepeatIsNotOfferedWhenNothingDifferentCanBePerformed()
         {
             var coin = new StubCoin(TeamSide.Red);
-            var run = new UltimateFrame(coin, repeatCanBePerformed: _ => false);
+            var run = new UltimateFrame(coin, repeatCanBePerformed: (_, _, _) => false);
             var finished = run.Answer(EffectChoiceCommandKind.Confirm);
 
             Assert.That(coin.Flips, Is.EqualTo(1),
@@ -462,13 +462,13 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class UltimateFrame
         {
             private readonly StubCoin coin;
-            private readonly Func<RepeatTargetBinding, bool> repeatCanBePerformed;
+            private readonly RepeatFeasibility repeatCanBePerformed;
             private readonly EffectDefinition body;
             private readonly MatchParticipants participants;
             private PendingResolution frame;
 
             public UltimateFrame(
-                StubCoin coin, Func<RepeatTargetBinding, bool> repeatCanBePerformed = null)
+                StubCoin coin, RepeatFeasibility repeatCanBePerformed = null)
             {
                 this.coin = coin;
                 this.repeatCanBePerformed = repeatCanBePerformed;
