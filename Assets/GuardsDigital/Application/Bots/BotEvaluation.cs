@@ -137,27 +137,40 @@ namespace GuardsDigital.Application.Bots
             var heroes = readModel.Heroes ?? Array.Empty<HeroOccupancy>();
             var ownHeroesOnBoard = 0;
             var enemyHeroesOnBoard = 0;
-            var ownCoordinate = default(HexCoordinate);
-            var ownIsOnBoard = false;
+            // Milestone 9.21j. A hero on several spaces (Razzle, RZ-Q2) is one hero on the board and
+            // every space he stands on is his: presence counts him once, and his own proximity and
+            // adjacency are read from whichever of his bodies is nearest - never from whichever row
+            // happened to come first or last. A single-bodied hero reads exactly as before.
+            var ownCoordinates = new List<HexCoordinate>();
+            var counted = new HashSet<HeroId>();
             var enemyPositions = new List<HexCoordinate>();
             foreach (var occupancy in heroes)
             {
                 if (occupancy.HeroId.Equals(perspectiveHeroId))
                 {
-                    ownCoordinate = occupancy.Coordinate;
-                    ownIsOnBoard = true;
+                    ownCoordinates.Add(occupancy.Coordinate);
                 }
 
+                var firstRowOfHero = counted.Add(occupancy.HeroId);
                 if (IsSameTeam(readModel, occupancy.HeroId, ownTeamId))
                 {
-                    ownHeroesOnBoard++;
+                    if (firstRowOfHero)
+                    {
+                        ownHeroesOnBoard++;
+                    }
                 }
                 else
                 {
-                    enemyHeroesOnBoard++;
+                    if (firstRowOfHero)
+                    {
+                        enemyHeroesOnBoard++;
+                    }
+
                     enemyPositions.Add(occupancy.Coordinate);
                 }
             }
+
+            var ownIsOnBoard = ownCoordinates.Count > 0;
 
             var minions = readModel.Minions ?? Array.Empty<Core.Units.Minions.MinionOccupancy>();
             var ownMinions = 0;
@@ -212,10 +225,11 @@ namespace GuardsDigital.Application.Bots
             var adjacentThreats = 0;
             if (ownIsOnBoard && objectives.Length > 0)
             {
-                var nearest = objectives.Min(objective => HexDistanceQuery.Calculate(ownCoordinate, objective));
+                var nearest = objectives.Min(objective => ownCoordinates.Min(own =>
+                    HexDistanceQuery.Calculate(own, objective)));
                 proximity = ProximityCap - Math.Min(nearest, ProximityCap);
-                adjacentThreats = objectives.Count(objective =>
-                    HexDistanceQuery.Calculate(ownCoordinate, objective) <= 1);
+                adjacentThreats = objectives.Count(objective => ownCoordinates.Any(own =>
+                    HexDistanceQuery.Calculate(own, objective) <= 1));
             }
 
             // Own hand only. Another hero's hand SIZE is public and its CONTENTS are not, but a term

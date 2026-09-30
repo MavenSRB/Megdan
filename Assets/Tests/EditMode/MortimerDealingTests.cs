@@ -26,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedMortimer_DealsTheEighteenPlayableFacesInEitherFormat(int perTeam)
         {
             var mortimer = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "mortimer");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(27));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28));
             Assert.That(mortimer.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.MortimerHeroIdValue));
             Assert.That(mortimer.DisplayName, Is.EqualTo("Mortimer the Awakener"));
             Assert.That(mortimer.Complexity, Is.EqualTo(HeroComplexity.VeryComplex), "three stars");

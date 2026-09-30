@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -270,6 +270,10 @@ $declaredHeroes = @{
     # Milestone 9.8f. Mortimer's standee is the VerticalTokens element 8596249 named `Morty`
     # (inventory 9.8). The crop decides, never the name.
     mortimer = @{ ElementId = 8596249; ElementName = 'Morty'; DisplayName = 'Mortimer' }
+    # Milestone 9.21j. Razzle's standee is the VerticalTokens element 8596252 named `Razzle`
+    # (inventory 9.21, RZ-03): one element for all four of his bodies (RZ-Q1), two round faces.
+    # The crop decides, never the name.
+    razzle = @{ ElementId = 8596252; ElementName = 'Razzle'; DisplayName = 'Razzle' }
 }
 
 $declared = $declaredHeroes[$Hero]

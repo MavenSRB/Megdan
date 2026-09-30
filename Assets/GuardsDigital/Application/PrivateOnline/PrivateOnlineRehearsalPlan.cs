@@ -195,7 +195,11 @@ namespace GuardsDigital.Application
                 PendingDecisionFamilies.MinionBattle,
                 PendingDecisionFamilies.HeroRespawn,
                 PendingDecisionFamilies.SystemTransition,
-                PendingDecisionFamilies.RemovalPrevention
+                PendingDecisionFamilies.RemovalPrevention,
+                // Milestone 9.21j. "Which of you acts" (9.21b, RZ-Q4), dealt with Razzle: the
+                // eleventh family a seat may be disconnected on, staged by the reconnect matrix on
+                // his two-bodied board.
+                PendingDecisionFamilies.ActingBody
             });
 
             ReconnectCutPoints = Array.AsReadOnly(new[]
@@ -213,7 +217,11 @@ namespace GuardsDigital.Application
         /// <summary>The six official player identities, reused as the private session's seat IDs.</summary>
         public static IReadOnlyList<SeatId> SeatIds { get; }
 
-        /// <summary>The exact ten production pending-decision families.</summary>
+        /// <summary>
+        /// The exact eleven production pending-decision families a seat can be disconnected on
+        /// (milestone 9.21j added the acting body); the turn release is walked by the reconnect
+        /// matrix but is not a cut-point family of this plan.
+        /// </summary>
         public static IReadOnlyList<PendingDecisionFamilyId> PendingFamilies { get; }
 
         /// <summary>The exact five required reconnect cut points.</summary>

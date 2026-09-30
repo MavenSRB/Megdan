@@ -172,15 +172,16 @@ namespace GuardsDigital.Tests.EditMode
             // exactly the right question and the answer is not yet yes.
             // Milestone 8.114f: 450 -> 468, Wuk's eighteen dealt faces (Makeshift Weapon boxed).
             // Milestone 9.8f: 468 -> 486, Mortimer's eighteen dealt faces (Shallow Graves boxed).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(486));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(486));
+            // Milestone 9.21j: 486 -> 504, Razzle's eighteen dealt faces (Stunted Doubles boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(504));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(504));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(486),
+                Is.EqualTo(504),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -192,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
                     ("dodger", 18),
                     ("garrus", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
                     ("mortimer", 18), ("mrak", 18),
-                    ("rowenna", 18),
+                    ("razzle", 18), ("rowenna", 18),
                     ("sabina", 18),
                     ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("trinkets", 18), ("ursafar", 18), ("wasp", 18),

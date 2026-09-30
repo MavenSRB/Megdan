@@ -10,7 +10,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Milestone 9.21e. Razzle's four removal faces - the Red Attacks Phantom Strike, Hit and Gone and
     /// Into Thin Air, and the Silver Defense/Skill Crowd Control - each composed over one generic
     /// removal of the actor's own bodies (<see cref="SyntheticHeroBodyCapabilities.RemoveActorBodiesHandler"/>),
-    /// which is p.19's Remove and never a Defeat (RZ-Q6). Nothing here is registered until 9.21j.
+    /// which is p.19's Remove and never a Defeat (RZ-Q6). Registered and dealt at 9.21j.
     /// </summary>
     public static partial class RazzleCardContent
     {
@@ -24,15 +24,6 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>Crowd Control's Defense, a PRIMARY: the face prints "Basic Defense/Skill" (p.14).</summary>
         public static ActionDefinitionId PrimaryDefense { get; } = new ActionDefinitionId("primary-defense");
 
-        /// <summary>
-        /// 9.21e's block list (read by the corpus sweeps until 9.21j mints the aggregate): the three
-        /// removal Attacks and Crowd Control.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> RemovalDefinitions =>
-            new[]
-            {
-                PhantomStrikeDefinition, HitAndGoneDefinition, IntoThinAirDefinition, CrowdControlDefinition
-            };
 
         public const string PhantomStrikeText =
             "Target a unit adjacent to you. After the attack: If there is more than one of you in play, " +

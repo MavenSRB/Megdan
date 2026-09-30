@@ -127,7 +127,12 @@ namespace GuardsDigital.Tests.EditMode
                 // structurally silent about the declaration for two milestones and fired the moment
                 // Cutter's dealing registered it. Nothing was wrong with the parameter - what was
                 // missing was a tier that could look at it, and a dealing is that tier.
-                "threshold"
+                "threshold",
+                // Milestone 9.21j, the same class a third time: `razzle-other-bodies-in-radius@1`'s
+                // count threshold (9.21g) reached this rule when Razzle's dealing registered it. "At
+                // least n other bodies" is Ransack's n-th retrieval gate - an ordinary count, not a
+                // closed vocabulary.
+                "atLeast"
             };
             var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
             var integerParameters = catalog.Registered

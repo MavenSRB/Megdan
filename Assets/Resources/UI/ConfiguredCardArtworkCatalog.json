@@ -492,6 +492,24 @@
     { "definitionId": "mortimer-gathering-horde", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer15__7695028__front.png" },
     { "definitionId": "mortimer-crowd-surf", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer16__7695025__front.png" },
     { "definitionId": "mortimer-army-of-darkness", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer17__7695024__front.png" },
-    { "definitionId": "mortimer-master-of-puppets", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer18__7695027__front.png" }
+    { "definitionId": "mortimer-master-of-puppets", "contentRevision": "mortimer-9-8-rev-1", "sourcePath": "active-hero-cards/Mortimer/mortimer18__7695027__front.png" },
+    { "definitionId": "razzle-stunt-doubles", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle__7475655__front.png" },
+    { "definitionId": "razzle-crowd-control", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle2__7518579__front.png" },
+    { "definitionId": "razzle-phantom-strike", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle3__7475666__front.png" },
+    { "definitionId": "razzle-hit-and-gone", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle4__7475670__front.png" },
+    { "definitionId": "razzle-rummage", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle5__7486207__front.png" },
+    { "definitionId": "razzle-into-thin-air", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle6__7486209__front.png" },
+    { "definitionId": "razzle-ransack", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle7__7486210__front.png" },
+    { "definitionId": "razzle-alleyoop", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle8__7647987__front.png" },
+    { "definitionId": "razzle-group-performance", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle9__7647988__front.png" },
+    { "definitionId": "razzle-magic-trick", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle10__7647928__front.png" },
+    { "definitionId": "razzle-team-spirit", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle11__7647989__front.png" },
+    { "definitionId": "razzle-aaaand-its-gone", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle12__7647931__front.png" },
+    { "definitionId": "razzle-tightrope", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle13__7709373__front.png" },
+    { "definitionId": "razzle-high-wire", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle14__7709372__front.png" },
+    { "definitionId": "razzle-theatrics", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle15__7655534__front.png" },
+    { "definitionId": "razzle-wire-dancers", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle16__7709371__front.png" },
+    { "definitionId": "razzle-spectacle", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle17__7706372__front.png" },
+    { "definitionId": "razzle-twin-strike", "contentRevision": "razzle-9-21j-rev-1", "sourcePath": "active-hero-cards/Razzle/razzle18__7709414__front.png" }
   ]
 }

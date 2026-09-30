@@ -1691,24 +1691,33 @@ namespace GuardsDigital.Tests.EditMode
         // performs it. No fixture declares a supply, so no capture changes length: every one moves only
         // by its schema version (setup 16,057, verified-hand setup 15,156, attached-marker 17,227
         // unchanged). Wire moves to /27 for the new ChooseActingBody command kind.
+        // 9.21j MIGRATE, not reject: dealing Razzle registers his six capabilities (the spawn of one
+        // body, the removal of his bodies and the several-bodies gate, "another one of you", the
+        // retreat's line end and "other you in radius"), and all sixteen captures grow by exactly 157
+        // authoritative bytes (setup 16,057 -> 16,214; verified-hand setup 15,156 -> 15,313;
+        // attached-marker 17,227 -> 17,384): 127 UTF-8 capability-name bytes plus six one-byte lengths
+        // and six four-byte revisions. The older registration lists are strict subsets whose entries
+        // still resolve at the same revisions; no fixture deals Razzle or declares a body supply, and no
+        // persisted field changes. Schema v50 stands; wire moves to /28 for the acting-body flag on the
+        // hero rows, a projection-only field no capture carries.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v50", "70a08befe766f9638c5eaec92f458f5854331018c1d51fa124c3b27c14a20330"),
-            new CompatibilityFixture("active-turn-v50", "67a256615a74991bedc3c311663dd959685a1db034416ee42ce03e307729dd48"),
-            new CompatibilityFixture("pending-choice-v50", "6f5ef7c8250670640df7d473cf37fe32f79417a9aaf4c2c36bacc8cfe3a2c75d"),
-            new CompatibilityFixture("end-of-round-v50", "2c3d7cc5517cbceaf99b2b9b68de5aa95b5706fc8cd981ef81bb04cbe8242d02"),
-            new CompatibilityFixture("pending-minion-battle-v50", "31faf91f2cca3bcac0dfa8dc34188b02ddd1de1746ac9d7002292ee37efe272c"),
-            new CompatibilityFixture("placed-token-v50", "a15ae738572327648638474f601b8da50e9d19cfc2158e53dbb630a1c8024c11"),
-            new CompatibilityFixture("attached-marker-v50", "8b93f2d9f6d5a7c084909e704dcbfa48865abfc8a55719443ae9e6a3c6bc5687"),
-            new CompatibilityFixture("pending-correction-v50", "e35ab4424639d24ff206851c73383a6a67029f49cbc864c9b25ef9fd479a6427"),
-            new CompatibilityFixture("paused-level-up-v50", "d7da789da87a73751c0e65b01427af9ff2b7c5c19c89ab48137edfaa214c2687"),
-            new CompatibilityFixture("ended-match-v50", "fcce45a9cef95d768e10623137b0793ed22ab787f87f0d325c6e630a2c370e62"),
-            new CompatibilityFixture("verified-hand-setup-v50", "3991739dc77b891655adfc6949e2b31b36398bdec8648ec8dc289e7fe6fe5b69"),
-            new CompatibilityFixture("paused-orbit-repeat-v50", "3dec8386d6dbd37e2e4fe56391423edb53c2aa7652a542da283e749cce97b1a6"),
-            new CompatibilityFixture("paused-card-text-v50", "443d780488d4d8040ca3d51d304a8e55b5adfe653ffb9f897e68d75a8a05881a"),
-            new CompatibilityFixture("paused-block-rider-v50", "43672b6a38db05ab29011a34c5450d6e8e8c32eb2abb619339f626e9f37fcc22"),
-            new CompatibilityFixture("paused-repeated-attack-v50", "fd5cd69dc4566eadd796484fd397d015d619f4b346c14c8c66c11a9a28965441"),
-            new CompatibilityFixture("parked-pre-action-v50", "fc6f9b2a7a380e6cb931f7d180b65b4e4ab6bd357b5de60de9129814d0617623")
+            new CompatibilityFixture("setup-v50", "a981210ce6d6a14d11d21b6747740728f9cf0fcaf610b4b57863a214247f2c06"),
+            new CompatibilityFixture("active-turn-v50", "74bbd84c544e39d63071de156442c2bf34f6e4ffa62c9b725deeca059a059c56"),
+            new CompatibilityFixture("pending-choice-v50", "58eff4205a78ac0c0e0b8697da59ae13ed8b4c386ca54d8aa7d768b8bb23c835"),
+            new CompatibilityFixture("end-of-round-v50", "ea7a9dc9bcf317d6a9bb913020365352b363a801338e655f437c1173dcddb58c"),
+            new CompatibilityFixture("pending-minion-battle-v50", "7e8eec5d3e510151fbe599d034e79d92c66da18f901c7caf4dd65c13a45c4860"),
+            new CompatibilityFixture("placed-token-v50", "ee6c8310131110aafab2d695bf84b7fa0619b375f80f69588e5e7074fbca7f0a"),
+            new CompatibilityFixture("attached-marker-v50", "2c0472e37d2618377b85e64f2ecf96377ac8418d05589213972a461f59b03b45"),
+            new CompatibilityFixture("pending-correction-v50", "3b38f4f01e00bf3908310378074aba403efaac2d69cc5884dd51f21df1ae2e29"),
+            new CompatibilityFixture("paused-level-up-v50", "242f804062bc92cdef33abfadb20f955bbc8f896a2dc7791b6a6ebc0da002aed"),
+            new CompatibilityFixture("ended-match-v50", "955cbc90af840fb4297e68fafc0f2aabc236c01ed5c7a4a9c8f82ba1169ff3f4"),
+            new CompatibilityFixture("verified-hand-setup-v50", "00b0479d5a4cc5766da350367eddc5b3558290e188861af8dcc65ef7b37a862b"),
+            new CompatibilityFixture("paused-orbit-repeat-v50", "1854b5eccecaddcb6197ab5fffe9fb9ccf7f8f2ed40efe1494afe813db3aeecc"),
+            new CompatibilityFixture("paused-card-text-v50", "bf0368a9c51ef47bc9ab0eee5b5bc8c93dfa695bd901d306bdff519f27c4c465"),
+            new CompatibilityFixture("paused-block-rider-v50", "3fb9ed97e9287e739565a4b6e701ae8f6a21b4d4348ac1cedb18809285617dd4"),
+            new CompatibilityFixture("paused-repeated-attack-v50", "ef2ea87bcc80fe6b019ec7b58bc4b85d6a0beb8e3ed14c02f4df9bd2a6f37c65"),
+            new CompatibilityFixture("parked-pre-action-v50", "3dfb81576494922f01e575edb41d704265622d7ee8d17c7f3c60bb33aa420d05")
         };
 
         [Test]

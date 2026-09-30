@@ -103,6 +103,34 @@ namespace GuardsDigital.Core.Replay
         public IReadOnlyList<ObstacleOccupancy> InitialObstacles => initialObstacles;
         public IReadOnlyList<HeroBodySupply> HeroBodySupplies => heroBodySupplies;
 
+        /// <summary>
+        /// Milestone 9.21j. The same scenario with <paramref name="declared"/> added for every hero it
+        /// does not already declare a supply for - how a dealt many-bodied hero's roster declaration
+        /// reaches his board. A supply the scenario states itself wins. Returns this scenario when
+        /// nothing is added, so a setup that seats no many-bodied hero is the scenario it was.
+        /// </summary>
+        public InitialScenarioDescription WithHeroBodySupplies(IEnumerable<HeroBodySupply> declared)
+        {
+            var added = (declared ?? throw new ArgumentNullException(nameof(declared)))
+                .Where(supply => heroBodySupplies.All(existing => !existing.HeroId.Equals(supply.HeroId)))
+                .ToArray();
+            if (added.Length == 0)
+            {
+                return this;
+            }
+
+            return new InitialScenarioDescription(
+                Participants,
+                definitions,
+                initialCards,
+                InitialTieBreakerState,
+                SetupSeed,
+                SelectedMap,
+                initialHeroes,
+                initialObstacles,
+                heroBodySupplies.Concat(added));
+        }
+
         public MatchConfiguration CreateConfiguration()
         {
             return MatchConfiguration.Restore(

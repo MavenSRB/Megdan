@@ -12,8 +12,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>
     /// Milestone 9.21f. Razzle's moves and swaps of his bodies - nine faces, composed on the vocabulary
     /// that already existed wherever it composes, with two new generic shapes
-    /// (<see cref="SyntheticHeroBodyMoveCapabilities"/>) where it did not. Nothing here is registered
-    /// until 9.21j deals him.
+    /// (<see cref="SyntheticHeroBodyMoveCapabilities"/>) where it did not. Registered and dealt
+    /// at 9.21j.
     ///
     /// <list type="bullet">
     /// <item><description><b>Alleyoop / Group Performance / Team Spirit</b> (Blue I-III, Skill - Ranged
@@ -56,17 +56,6 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The Green Movement faces' printed primary: "Movement" with the value 2.</summary>
         public static ActionDefinitionId PrimaryMovement { get; } = new ActionDefinitionId("primary-movement");
 
-        /// <summary>
-        /// 9.21f's block list (read by the corpus sweeps until 9.21j mints the aggregate): the nine
-        /// moves and swaps of his bodies.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> MoveDefinitions =>
-            new[]
-            {
-                AlleyoopDefinition, GroupPerformanceDefinition, MagicTrickDefinition,
-                TeamSpiritDefinition, AaaandItsGoneDefinition,
-                TightropeDefinition, HighWireDefinition, TheatricsDefinition, WireDancersDefinition
-            };
 
         public const string AlleyoopText =
             "Swap places with a friendly hero in range. Move one other you 1 space.";

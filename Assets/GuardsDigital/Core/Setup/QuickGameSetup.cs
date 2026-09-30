@@ -431,6 +431,44 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.8f. Mortimer the Awakener, the TWENTY-SEVENTH hero.</summary>
         public const string MortimerHeroIdValue = "hero-mortimer";
 
+        /// <summary>Milestone 9.21j. Razzle the Ringmaster, the TWENTY-EIGHTH hero.</summary>
+        public const string RazzleHeroIdValue = "hero-razzle";
+
+        /// <summary>
+        /// Milestone 9.21j. How many bodies of Razzle can stand on the board at once: RZ-Q1 (a), settled
+        /// by the user on 2026-09-30 - four in all, the hero plus the three "Spawn up to 3 more of you"
+        /// adds. A spawn takes only from this supply (p.19).
+        /// </summary>
+        public const int RazzleBodySupply = 4;
+
+        /// <summary>
+        /// Milestone 9.21j. The heroes that stand on several bodies, declared beside their roster rows by
+        /// content identity, so a staged seat dealing that content (whatever its hero id) and a selected
+        /// seat declare the same supply. Every other hero is one body.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, int> DeclaredHeroBodies =
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                ["razzle"] = RazzleBodySupply
+            };
+
+        /// <summary>Milestone 9.21j. The body supply a hero's content declares: one unless listed above.</summary>
+        public static int HeroBodiesOf(HeroContentId contentId) =>
+            contentId.IsDefined && DeclaredHeroBodies.TryGetValue(contentId.Value, out var bodies) ? bodies : 1;
+
+        /// <summary>
+        /// Milestone 9.21j. The body supplies a dealt setup's seats declare (9.21a's
+        /// <see cref="HeroBodySupply"/>), in hero order - empty for every setup that seats no
+        /// many-bodied hero.
+        /// </summary>
+        public static IReadOnlyList<HeroBodySupply> DeclaredHeroBodySupplies(
+            IEnumerable<QuickGameHeroSetupState> heroes) =>
+            Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
+                .Where(hero => HeroBodiesOf(hero.ContentId) > 1)
+                .Select(hero => new HeroBodySupply(hero.HeroId, HeroBodiesOf(hero.ContentId)))
+                .OrderBy(supply => supply.HeroId.Value, StringComparer.Ordinal)
+                .ToArray());
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -578,7 +616,13 @@ namespace GuardsDigital.Core.Setup
                 (MortimerHeroIdValue, "mortimer", "Mortimer the Awakener",
                     HeroComplexity.VeryComplex,
                     HeroRole.Melee | HeroRole.Tokens | HeroRole.Farming |
-                    HeroRole.Durable | HeroRole.Pusher)
+                    HeroRole.Durable | HeroRole.Pusher),
+                // Milestone 9.21j. His selection front prints FOUR stars and the roles Tactician and
+                // Melee (inventory 9.21, RZ-01); the dashboard names him "Razzle the Ringmaster"
+                // (RZ-02). His four-body supply is declared by content in `DeclaredHeroBodies` above.
+                (RazzleHeroIdValue, "razzle", "Razzle the Ringmaster",
+                    HeroComplexity.Wizard,
+                    HeroRole.Tactician | HeroRole.Melee)
             };
 
         /// <summary>
@@ -951,6 +995,10 @@ namespace GuardsDigital.Core.Setup
                     : hero),
                 snorri.Minions);
         }
+
+        /// <summary>Milestone 9.21j. Wasp on Red against Razzle on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusRazzleOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("razzle"), "Razzle");
 
         /// <summary>Milestone 9.8f. Wasp on Red against Mortimer on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusMortimerOneVsOne() =>

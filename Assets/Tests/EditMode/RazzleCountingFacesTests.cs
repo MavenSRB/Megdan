@@ -79,8 +79,8 @@ namespace GuardsDigital.Tests.EditMode
                 Does.Contain(RazzleCardContent.Rummage));
             Assert.That(RazzleCardContent.HitAndGoneDefinition.Progression.NextTierCandidateIds,
                 Does.Contain(RazzleCardContent.Ransack));
-            Assert.That(RazzleCardContent.CountingDefinitions.Select(face => face.Id),
-                Is.EqualTo(new[] { RazzleCardContent.Rummage, RazzleCardContent.Ransack }));
+            Assert.That(RazzleCardContent.AllDefinitions.Select(face => face.Id),
+                Is.SupersetOf(new[] { RazzleCardContent.Rummage, RazzleCardContent.Ransack }));
         }
 
         [Test]

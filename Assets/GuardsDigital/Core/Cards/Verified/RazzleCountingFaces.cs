@@ -10,22 +10,13 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Milestone 9.21g. Razzle's counting faces - the Red Attacks Rummage and Ransack, and Crowd
     /// Control's Defense text - each counting "other you in radius": the bodies of his other than the
     /// one performing (or, for a Defense, the attacked one, RZ-Q3), within the card's printed Radius 3
-    /// raised by Radius items (R1). Nothing here is registered until 9.21j.
+    /// raised by Radius items (R1). Registered and dealt at 9.21j.
     /// </summary>
     public static partial class RazzleCardContent
     {
         public static CardDefinitionId Rummage { get; } = Id("rummage");
         public static CardDefinitionId Ransack { get; } = Id("ransack");
 
-        // ===== MERGE BLOCK (9.21g) =====
-        /// <summary>
-        /// 9.21g's block list (read by the corpus sweeps until 9.21j mints the aggregate): the two
-        /// counting Attacks. Crowd Control stays in <see cref="RemovalDefinitions"/>; its Defense text
-        /// is <see cref="CrowdControlDefenseText"/>.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> CountingDefinitions =>
-            new[] { RummageDefinition, RansackDefinition };
-        // ===== END MERGE BLOCK =====
 
         public const string RummageText =
             "Target a unit adjacent to you. After the attack: If there's another you in radius, you may " +

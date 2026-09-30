@@ -720,6 +720,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(WukCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 // Milestone 9.8f. Mortimer's dealt faces.
                 .Concat(MortimerCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 9.21j. Razzle's dealt faces; Twin Strike's repeat arrives through the
+                // triggered walk below.
+                .Concat(RazzleCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -754,14 +757,18 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(heroOnlyHandlerTypes, Is.EqualTo(new[]
                 {
                     "ActiveRuneHandler",
+                    "ActorHasSeveralBodiesPredicate",
                     "ActorInTurretRadiusHandler",
+                    "ActorOtherBodiesInRadius",
                     "AnySupportRuneHandler",
                     "ChooseFriendlyUnitAndTreeHandler",
+                    "ChooseOtherActorBody",
                     "ChooseOwnedItemHandler",
                     "ChooseResolvedCardHandler",
                     "ChooseRuneHandler",
                     "ChooseTrampledMinionsHandler",
                     "ConditionHandler",
+                    "ContinuedLineEnd",
                     "DefeatMinionHandler",
                     "ExcludeAdjacentEnemyMinionsHandler",
                     "HeroAdjacentToMinionHandler",
@@ -772,15 +779,21 @@ namespace GuardsDigital.Tests.EditMode
                     "PlaceFarthestAdjacentHandler",
                     "PlaceInSpaceHandler",
                     "ReclaimHandler",
+                    "RemoveActorBodiesFromTheBoard",
                     "RemoveObstacleHandler",
                     "ReplaceMinionWithTokenHandler",
                     "RetrieveAllDiscardedHandler",
                     "RuneTargetHandler",
                     "SelectRuneHandler",
+                    "SpawnActorBodyInRadiusHandler",
                     "SwapItemWithCardHandler",
                     "SwapResolvedWithHandHandler",
                     "TrampledEnemyHeroesHandler"
                 }),
+                "Razzle's six many-bodies handlers - the spawn, the removal and its several-bodies gate, " +
+                "another-one-of-you, the retreat's line end and other-you-in-radius (9.21j; the " +
+                "9.21d-9.21g fixtures prove each on a staged board of his bodies, a shape no showcase " +
+                "card can stand without a many-bodied hero), " +
                 "Mortimer's minion-to-Zombie Replace (9.8f; the 9.8e Green fixtures prove it), " +
                 "Wuk's paired friendly-unit-and-Tree selection, Dominance's exclusion and Trample's two " +
                 "moved-through readers (8.114f), each proved by the focused Wuk fixtures, " +

@@ -630,6 +630,10 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.WukCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.MortimerHeroIdValue:
                     return Cards.Verified.MortimerCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 9.21j. The TWENTY-EIGHTH hero; Stunted Doubles, his p.20 Handicap, is
+                // boxed by his set's own ReturnedToBoxAtSetup.
+                case Setup.QuickGameSetupConfiguration.RazzleHeroIdValue:
+                    return Cards.Verified.RazzleCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2222,6 +2226,36 @@ namespace GuardsDigital.Core.Participants
                 SetupRandomnessSeed.Unrecorded,
                 allyHand: Cards.Verified.ArienCardContent.CreateHand(
                     new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>Milestone 9.21j. Wasp on Red against Razzle with his p.6 starting hand.</summary>
+        public static MatchConfiguration CreateStagedRazzleForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.RazzleCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 9.21j. Wasp against Razzle, both on Tier III, Twin Strike faceup - so a basic Attack
+        /// of his offers "a different you may repeat it once" when another body stands.
+        /// </summary>
+        public static MatchConfiguration CreateStagedRazzleTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.RazzleProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.RazzleCardContent.TwinStrike)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
 
         /// <summary>Milestone 9.8f. Wasp on Red against Mortimer with his p.6 starting hand.</summary>
         public static MatchConfiguration CreateStagedMortimerForInternalTest(

@@ -14,7 +14,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedGarrusCarriesHisEntireSetIntoEitherOfficialFormat(int perTeam)
         {
             var garrus = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "garrus");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(27));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28));
             var printed = RegisteredHeroRoster.PrintedLineup(perTeam);
             var lineup = new HeroLineup(new[] { garrus }.Concat(printed.Red.Skip(1)), printed.Blue);
             var format = perTeam == 2 ? MatchFormat.TwoVersusTwoQuick : MatchFormat.ThreeVersusThreeQuick;

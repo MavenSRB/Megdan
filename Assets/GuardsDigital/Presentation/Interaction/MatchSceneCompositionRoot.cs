@@ -1076,7 +1076,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedMortimer = 138,
 
         /// <summary>Wasp versus Mortimer with Tier III hands and Master of Puppets faceup (9.8f).</summary>
-        VerifiedTierThreeEngagedStagedMortimer = 139
+        VerifiedTierThreeEngagedStagedMortimer = 139,
+
+        /// <summary>Wasp versus Razzle with his p.6 starting hand (9.21j).</summary>
+        VerifiedEngagedStagedRazzle = 140,
+
+        /// <summary>Wasp versus Razzle with Tier III hands and Twin Strike faceup (9.21j).</summary>
+        VerifiedTierThreeEngagedStagedRazzle = 141
     }
 
     [ExecuteAlways]
@@ -1808,6 +1814,10 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedMortimerForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedStagedMortimer =>
                     MatchConfiguration.CreateStagedMortimerTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedRazzle =>
+                    MatchConfiguration.CreateStagedRazzleForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedRazzle =>
+                    MatchConfiguration.CreateStagedRazzleTierThreeForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1900,7 +1910,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedWuk ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedWuk ||
                 content == SceneCardContent.VerifiedEngagedStagedMortimer ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer ||
+                content == SceneCardContent.VerifiedEngagedStagedRazzle ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2535,6 +2547,16 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusMortimerOneVsOne();
+                    }
+
+                    // Milestone 9.21j. Razzle's staged boards, in the same change as his members. The
+                    // setup's content identity is what declares his four-body supply
+                    // (QuickGameSetupConfiguration.DeclaredHeroBodySupplies), so this arm is also what
+                    // lets Stunt Doubles spawn on these boards.
+                    if (content == SceneCardContent.VerifiedEngagedStagedRazzle ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusRazzleOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

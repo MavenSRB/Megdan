@@ -9,8 +9,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Razzle the Ringmaster's card text. Milestone 9.21d starts it with Stunt Doubles' after-the-attack
     /// spawn, which the boxed Stunted Doubles prints word for word.
     ///
-    /// <para>Nothing here is registered until 9.21j deals him: the handlers are composed into a staged
-    /// fixture's own catalog.</para>
+    /// <para>Registered in the match catalogs at 9.21j, the dealing (<see cref="MatchContentCatalogs"/>);
+    /// the staged fixtures of 9.21d-9.21h composed them into their own catalogs before that.</para>
     /// </summary>
     public static partial class RazzleEffectContent
     {

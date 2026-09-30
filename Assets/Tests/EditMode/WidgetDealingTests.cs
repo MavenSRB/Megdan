@@ -32,7 +32,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedWidgetCarriesHisEntireSetIntoEitherOfficialFormat(int perTeam)
         {
             var widget = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "widget");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(27));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28));
             var printed = RegisteredHeroRoster.PrintedLineup(perTeam);
             var lineup = new HeroLineup(new[] { widget }.Concat(printed.Red.Skip(1)), printed.Blue);
             var format = perTeam == 2 ? MatchFormat.TwoVersusTwoQuick : MatchFormat.ThreeVersusThreeQuick;

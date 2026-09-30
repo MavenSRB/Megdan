@@ -86,79 +86,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 9.21d. The hero-body spawn is registered only when Razzle is dealt (9.21j), so the
-        /// two rules above do not reach it yet; they are asked of its type here, so the first build
-        /// that registers it already knows its probe reads its own derivation and commits nothing.
+        /// Milestone 9.21j. 9.21d-9.21g asked Razzle's six handler types these rules one by one while
+        /// they were unregistered; his dealing registers them, so the registered walk above reaches
+        /// them - which this case proves rather than assumes.
         /// </summary>
         [Test]
-        public void TheUnregisteredHeroBodySpawn_DerivesItsProbeFromItsExecution_AndCommitsNothing()
+        public void RazzlesSixHandlerTypes_AreRegistered_SoTheWalkAboveAsksThemBothRules()
         {
-            var spawn = new[]
-            {
-                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
-                    .SpawnActorBodyHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.SpawnBodyV1)
-                    .GetType()
-            };
-            Assert.That(ILConformanceScanner.UnresolvedTokens(spawn), Is.Empty);
-            Assert.That(FindUnsharedDerivations(spawn), Is.Empty);
-            Assert.That(FindPerformingProbes(spawn), Is.Empty);
-        }
-
-        /// <summary>
-        /// Milestone 9.21e. The removal of the actor's own bodies and its "more than one of you" gate
-        /// are registered only when Razzle is dealt (9.21j), so they are asked of their types here too.
-        /// </summary>
-        [Test]
-        public void TheUnregisteredHeroBodyRemoval_DerivesItsProbeFromItsExecution_AndCommitsNothing()
-        {
-            var removal = new[]
-            {
-                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
-                    .RemoveActorBodiesHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.RemoveBodiesV1)
-                    .GetType(),
-                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
-                    .ActorHasSeveralBodiesHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.SeveralBodiesV1)
-                    .GetType()
-            };
-            Assert.That(ILConformanceScanner.UnresolvedTokens(removal), Is.Empty);
-            Assert.That(FindUnsharedDerivations(removal), Is.Empty);
-            Assert.That(FindPerformingProbes(removal), Is.Empty);
-        }
-
-        /// <summary>
-        /// Milestone 9.21f. The other-body selection and the retreat's line end are registered only when
-        /// Razzle is dealt (9.21j), so they are asked of their types here too. Neither commits anything:
-        /// the Moves after them are the registered direct Move.
-        /// </summary>
-        [Test]
-        public void TheUnregisteredHeroBodyMoves_DeriveTheirProbesFromTheirExecution_AndCommitNothing()
-        {
-            var moves = GuardsDigital.Core.Cards.Verified.RazzleEffectContent.MoveHandlers()
+            var razzle = GuardsDigital.Core.Cards.Verified.RazzleEffectContent.Handlers()
                 .Select(handler => handler.GetType())
+                .Distinct()
                 .ToArray();
-            Assert.That(moves, Has.Length.EqualTo(2));
-            Assert.That(ILConformanceScanner.UnresolvedTokens(moves), Is.Empty);
-            Assert.That(FindUnsharedDerivations(moves), Is.Empty);
-            Assert.That(FindPerformingProbes(moves), Is.Empty);
-        }
-
-        /// <summary>
-        /// Milestone 9.21g. The "other you in radius" count behind Rummage's and Ransack's gates is
-        /// registered only when Razzle is dealt (9.21j), so it is asked of its type here too.
-        /// </summary>
-        [Test]
-        public void TheUnregisteredOtherBodiesCount_DerivesItsProbeFromItsExecution_AndCommitsNothing()
-        {
-            var count = new[]
-            {
-                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCountCapabilities
-                    .ActorOtherBodiesInRadiusHandler(
-                        GuardsDigital.Core.Cards.Verified.RazzleEffectContent.OtherBodiesInRadiusV1)
-                    .GetType()
-            };
-            Assert.That(ILConformanceScanner.UnresolvedTokens(count), Is.Empty);
-            Assert.That(FindUnsharedDerivations(count), Is.Empty);
-            Assert.That(FindPerformingProbes(count), Is.Empty);
+            Assert.That(razzle, Has.Length.EqualTo(6));
+            Assert.That(RegisteredHandlerTypes(), Is.SupersetOf(razzle));
         }
 
         [Test]
@@ -474,7 +414,12 @@ namespace GuardsDigital.Tests.EditMode
             // Mortimer's dealing adds one at 9.8f: the minion-to-token Replace (9.8e), proved by the
             // focused Green fixtures. His Zombie steps reuse PlaceHandler and ReclaimHandler, and
             // Knife of the Living Dead's per-pass "+1 Attack" ActiveEffectCreationHandler.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(128),
+            // Razzle's dealing adds six at 9.21j: the spawn of one body (9.21d), the removal of his
+            // bodies and the "more than one of you" gate (9.21e), "another one of you" and the
+            // retreat's line end (9.21f), and "other you in radius" (9.21g), each proved by the
+            // focused 9.21d-9.21g fixtures. Everything else his eighteen faces name runs on types
+            // this build already had.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(134),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

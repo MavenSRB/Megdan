@@ -21,8 +21,13 @@ namespace GuardsDigital.Application
             ActiveEffectLifecycle initialTiming = null,
             MatchStagedProgression stagedProgression = null)
         {
-            Scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
+            // Milestone 9.21j. A seat whose hero declares several bodies (Razzle, RZ-Q1) carries that
+            // supply onto the board from here, the one place every configured and staged match's
+            // initial state passes through, so a restart, an Undo rebuild and a replay begin from it
+            // exactly as the first build did. A scenario that states a supply itself keeps it.
+            Scenario = (scenario ?? throw new ArgumentNullException(nameof(scenario)))
+                .WithHeroBodySupplies(QuickGameSetupConfiguration.DeclaredHeroBodySupplies(setup.Heroes));
             InitialConfiguration = initialConfiguration;
             StagedProgression = stagedProgression ?? MatchStagedProgression.None;
             InitialTiming = (initialTiming ?? new ActiveEffectLifecycle()).Clone();

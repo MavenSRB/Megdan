@@ -619,7 +619,11 @@ namespace GuardsDigital.Tests.EditMode
 
                     // Milestone 8.114e. Wuk's March of Nature declares the any-card resolution
                     // condition; it names ActionEnded like the six, which the case below keeps true.
-                    UltimateTriggerCondition.AfterControllerResolvesCard
+                    UltimateTriggerCondition.AfterControllerResolvesCard,
+
+                    // Milestone 9.21j. Razzle's Twin Strike declares 9.21h's basic-Attack condition;
+                    // it names ActionEnded like the six, which the case below keeps true.
+                    UltimateTriggerCondition.AfterControllerPerformsBasicAttack
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
                 "were; Bain adds marker-given, Garrus resolved-card-discarded, Widget actual Movement, " +

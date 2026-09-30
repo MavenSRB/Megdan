@@ -242,6 +242,10 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 8.114f, the milestone that deals Wuk the Grove Keeper as the TWENTY-SIXTH
                 // hero: March of Nature's placement and Dominance's two pre-battle exclusions.
                 .Concat(WukCardContent.TriggeredEffects())
+                // Milestone 9.21j, the milestone that deals Razzle the Ringmaster as the
+                // TWENTY-EIGHTH hero: Twin Strike's "a different you may repeat it once", the body a
+                // p.16 triggered ability names by reference (9.21h).
+                .Concat(new[] { RazzleEffectContent.TwinStrikeTriggeredEffect(RazzleCardContent.ContentRevision) })
                 .Concat(new[]
                 {
                     TrinketsEffectContent.DisruptorTrigger(
@@ -513,6 +517,11 @@ namespace GuardsDigital.Core.Cards
                 // TWENTY-SEVENTH hero: the Zombie's placement, short supply and minion Replace, and
                 // Knife of the Living Dead's per-pass "+1 Attack".
                 .Concat(MortimerComponentContent.Handlers())
+                // Milestone 9.21j, the milestone that deals Razzle the Ringmaster as the
+                // TWENTY-EIGHTH hero: the spawn of one body (9.21d), the removal of his bodies and the
+                // "more than one of you" gate (9.21e), "another one of you" and the retreat's line end
+                // (9.21f), and "other you in radius" (9.21g) - six handler types, each new to the build.
+                .Concat(RazzleEffectContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

@@ -4453,7 +4453,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.114f. The twenty-sixth, on the same terms.
                 .Concat(WukCardContent.DealtDefinitions)
                 // Milestone 9.8f. The twenty-seventh, on the same terms.
-                .Concat(MortimerCardContent.DealtDefinitions).ToArray();
+                .Concat(MortimerCardContent.DealtDefinitions)
+                // Milestone 9.21j. The twenty-eighth, on the same terms.
+                .Concat(RazzleCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

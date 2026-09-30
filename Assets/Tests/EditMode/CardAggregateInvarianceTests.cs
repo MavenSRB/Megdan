@@ -903,17 +903,20 @@ namespace GuardsDigital.Tests.EditMode
         // 9.21b re-pins all nine for schema v50: each hero body supply row now ends with the acting body
         // of the current action. No scenario declares a supply, so only the version moved, and the three
         // groups still hold.
+        // 9.21j re-pins all nine for dealing Razzle: his six capabilities join the recorded registration
+        // list (the same bytes the sibling corpus measures on all sixteen captures). No scenario seats
+        // him or declares a supply; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "b75533db52afe011f0f33deb7a05027d8da08fa13148c15575e10b630bf18627", "e4bfd66e0b7efc53aca951d127d1f5d7334624205b7d2f6504df90819b2d0c11"),
-            new ScenarioDigest("rejected", "b75533db52afe011f0f33deb7a05027d8da08fa13148c15575e10b630bf18627", "e4bfd66e0b7efc53aca951d127d1f5d7334624205b7d2f6504df90819b2d0c11"),
-            new ScenarioDigest("stale", "b75533db52afe011f0f33deb7a05027d8da08fa13148c15575e10b630bf18627", "e4bfd66e0b7efc53aca951d127d1f5d7334624205b7d2f6504df90819b2d0c11"),
-            new ScenarioDigest("restored", "b75533db52afe011f0f33deb7a05027d8da08fa13148c15575e10b630bf18627", "e4bfd66e0b7efc53aca951d127d1f5d7334624205b7d2f6504df90819b2d0c11"),
-            new ScenarioDigest("replayed", "b75533db52afe011f0f33deb7a05027d8da08fa13148c15575e10b630bf18627", "e4bfd66e0b7efc53aca951d127d1f5d7334624205b7d2f6504df90819b2d0c11"),
-            new ScenarioDigest("undo-truncated", "eb60a56128076ba09e497aa62e68d85d53f6ef3ae85192bb3243c39937eb9523", "e6b55e097129984af96845d8ea1d418cb119658bce3e1cabda460b0a3ea73fde"),
-            new ScenarioDigest("defense-discarded", "87c653fbc82156352b0991b10a35a155698d27208513cc3fd4c7a1c2e069f1df", "d674d493c7f7af9f2a1a507e395fe3249ae4d1fcdaa87818e76807e05ee46729"),
-            new ScenarioDigest("defense-discarded-restored", "87c653fbc82156352b0991b10a35a155698d27208513cc3fd4c7a1c2e069f1df", "d674d493c7f7af9f2a1a507e395fe3249ae4d1fcdaa87818e76807e05ee46729"),
-            new ScenarioDigest("defense-discarded-replayed", "87c653fbc82156352b0991b10a35a155698d27208513cc3fd4c7a1c2e069f1df", "d674d493c7f7af9f2a1a507e395fe3249ae4d1fcdaa87818e76807e05ee46729"),
+            new ScenarioDigest("accepted", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
+            new ScenarioDigest("rejected", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
+            new ScenarioDigest("stale", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
+            new ScenarioDigest("restored", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
+            new ScenarioDigest("replayed", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
+            new ScenarioDigest("undo-truncated", "efa76b3c8eebb0c1f6c5e39a397865ea83936f416657c30490bf360b9d95bdc8", "77ac57b237d88b4a161e42b752a63f85bcd3c69325f359a04e2dab91bb14888f"),
+            new ScenarioDigest("defense-discarded", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
+            new ScenarioDigest("defense-discarded-restored", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
+            new ScenarioDigest("defense-discarded-replayed", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

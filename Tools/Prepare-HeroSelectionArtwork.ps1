@@ -94,6 +94,10 @@ $sources = [ordered]@{
     # Milestone 9.8f. SHA-256-identical to active-hero-cards/_selection-cards/Mortimer__front.png
     # (51853D90...AF0): the front his three stars and five role icons were read off (inventory 9.8).
     mortimer = 'randomizers-tt24__7723681__front.png'
+    # Milestone 9.21j. SHA-256-identical to active-hero-cards/_selection-cards/Razzle__front.png
+    # (d526f6a3...5c25, RZ-01): the front his four stars and the Tactician and Melee icons were read
+    # off (inventory 9.21).
+    razzle = 'randomizers-tt30__7723698__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

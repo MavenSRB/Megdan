@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
@@ -286,12 +287,13 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkHeroRow
     {
-        public NetworkHeroRow(string heroId, int body, int q, int r)
+        public NetworkHeroRow(string heroId, int body, int q, int r, bool acting = false)
         {
             HeroId = heroId;
             Body = body;
             Q = q;
             R = r;
+            Acting = acting;
         }
 
         public string HeroId { get; }
@@ -300,6 +302,13 @@ namespace GuardsDigital.Application
         public int Body { get; }
         public int Q { get; }
         public int R { get; }
+
+        /// <summary>
+        /// Milestone 9.21j, protocol /28. Whether this body is its many-bodied hero's settled acting
+        /// body (RZ-Q4, <c>IMatchReadModel.ActingBodies</c>) - what the board's acting cue is drawn
+        /// from. A settled acting body always stands (9.21b-9.21e), so its own row carries it.
+        /// </summary>
+        public bool Acting { get; }
     }
 
     public sealed class NetworkMinionRow
@@ -658,6 +667,8 @@ namespace GuardsDigital.Application
                     writer.Write(hero.Body);
                     writer.Write(hero.Coordinate.Q);
                     writer.Write(hero.Coordinate.R);
+                    // Milestone 9.21j, protocol /28: the settled acting body rides its own row.
+                    writer.Write(projection.ActingBodies.Contains(new HeroActingBody(hero.HeroId, hero.Body)));
                 }
 
                 writer.Write(projection.Minions.Count);
@@ -933,12 +944,19 @@ namespace GuardsDigital.Application
                         var body = reader.ReadInt32();
                         var q = reader.ReadInt32();
                         var r = reader.ReadInt32();
+                        var acting = reader.ReadBoolean();
                         if (string.IsNullOrWhiteSpace(id) || body < 1)
                         {
                             return false;
                         }
 
-                        heroes.Add(new NetworkHeroRow(id, body, q, r));
+                        // Milestone 9.21j. One acting body per hero at most, as the engine settles it.
+                        if (acting && heroes.Any(row => row.Acting && row.HeroId == id))
+                        {
+                            return false;
+                        }
+
+                        heroes.Add(new NetworkHeroRow(id, body, q, r, acting));
                     }
 
                     if (!TryReadCount(reader, out var minionCount))

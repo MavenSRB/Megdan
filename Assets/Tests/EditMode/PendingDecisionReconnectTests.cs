@@ -48,6 +48,8 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase("defense")]
         [TestCase("hero-respawn")]
         [TestCase("removal-prevention")]
+        // Milestone 9.21j. Razzle's "which of you acts", on his two-bodied staged board.
+        [TestCase("acting-body")]
         public void AStagedFamily_SurvivesEveryCutPoint(string family) =>
             WalkTheCutPoints(ComposeAt(family), family);
 
@@ -114,6 +116,12 @@ namespace GuardsDigital.Tests.EditMode
                 case "removal-prevention":
                     return ConfiguredPendingChoiceProjectionTests
                         .CreateConfiguredRemovalPreventionPause();
+                case "acting-body":
+                {
+                    var session = RazzleDealingTests.TwoBodiedStagedSession(out var wasp, out var razzle);
+                    HeroBodiesBoard.CommitBlueFirst(session, wasp, razzle);
+                    return session;
+                }
                 default:
                     return null;
             }

@@ -47,7 +47,8 @@ namespace GuardsDigital.Tests.EditMode
                 { PrivateOnlineRehearsalCaseCategory.MismatchedLength, 1 },
                 { PrivateOnlineRehearsalCaseCategory.ProtocolLimitExceeded, 11 },
                 { PrivateOnlineRehearsalCaseCategory.ForgedEnvelopeIdentity, 4 },
-                { PrivateOnlineRehearsalCaseCategory.PendingDecisionReconnect, 50 },
+                // Milestone 9.21j: 50 -> 55, the acting-body family at the five cut points.
+                { PrivateOnlineRehearsalCaseCategory.PendingDecisionReconnect, 55 },
                 { PrivateOnlineRehearsalCaseCategory.ReconnectEligibilityExpiry, 1 },
                 { PrivateOnlineRehearsalCaseCategory.HostTermination, 1 }
             };
@@ -142,7 +143,8 @@ namespace GuardsDigital.Tests.EditMode
                 PendingDecisionFamilies.MinionBattle,
                 PendingDecisionFamilies.HeroRespawn,
                 PendingDecisionFamilies.SystemTransition,
-                PendingDecisionFamilies.RemovalPrevention
+                PendingDecisionFamilies.RemovalPrevention,
+                PendingDecisionFamilies.ActingBody
             };
             var expectedCutPoints = Enum.GetValues(typeof(PrivateOnlineRehearsalReconnectCutPoint))
                 .Cast<PrivateOnlineRehearsalReconnectCutPoint>()

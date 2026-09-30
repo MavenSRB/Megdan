@@ -236,22 +236,12 @@ namespace GuardsDigital.Tests.EditMode
             // `MortimerCardContent` exists, dealt or not. Awaken! is a Skill of token placements and
             // binds no Attack target, so he adds no at-risk gate yet.
             foreach (var card in MortimerCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mortimer", d);
-            // Milestone 9.21d. The twenty-eighth hero's line, owed as his content class exists. Stunt
-            // Doubles' spawn is three optional body placements after the Attack and binds no Attack
-            // target, so it adds no at-risk gate. 9.21j swaps the block list for the aggregate.
-            foreach (var card in RazzleCardContent.DoublesDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
-            // Milestone 9.21e. The removal faces: Phantom Strike's Conditional gates an optional removal
-            // after the Attack and binds no Attack target, so it adds no at-risk gate either.
-            foreach (var card in RazzleCardContent.RemovalDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
-            // Milestone 9.21f. The moves and swaps: Skills and Movement text with no Attack, so they
-            // bind no Attack target and add no at-risk gate.
-            foreach (var card in RazzleCardContent.MoveDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
-            // Milestone 9.21g. The counting faces: Rummage's and Ransack's Conditionals gate optional
-            // retrievals after the Attack and bind no Attack target, so they add no at-risk gate.
-            foreach (var card in RazzleCardContent.CountingDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
-            // Milestone 9.21h. The repeats by a different body: Spectacle is a Skill and Twin Strike an
-            // Ultimate with no action, so neither binds an Attack target nor adds an at-risk gate.
-            foreach (var card in RazzleCardContent.RepeatDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.21j. The twenty-eighth hero, dealt: 9.21d-9.21h's five block lines collapse
+            // to the aggregate. No face of his binds an Attack target from text: Stunt Doubles' spawn,
+            // the removals, the counting retrievals and Twin Strike's repeat all follow the Attack,
+            // and the moves, swaps and Spectacle are Skills and Movement text, so he adds no at-risk
+            // gate.
+            foreach (var card in RazzleCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

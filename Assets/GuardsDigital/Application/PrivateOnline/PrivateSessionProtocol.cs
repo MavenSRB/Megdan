@@ -379,7 +379,12 @@ namespace GuardsDigital.Application
         // it, so v26 peers are refused from the header. No projection row moves: the pick's answers
         // name every body and the bodies' spaces are already on the hero rows. The admission tuple's
         // snapshot schema advances to 50 with it.
-        public const int Version = 27;
+        // v28 (milestone 9.21j): each hero row ends with whether that body is its hero's settled acting
+        // body (IMatchReadModel.ActingBodies, 9.21i's acting cue), which /27 carried on no row, so a
+        // network client drew no acting cue on a many-bodied hero. A v27 reader would take the flag
+        // for the next row's id, so v27 peers are refused from the header. Projection-only: the
+        // snapshot already persists the settled body (v50 stands).
+        public const int Version = 28;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

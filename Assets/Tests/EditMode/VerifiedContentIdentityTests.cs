@@ -334,7 +334,11 @@ namespace GuardsDigital.Tests.EditMode
             new IdentityPin("wuk", "wuk-9-2-rev-1", "ba5a77ea2f15e34d4b383b31b70755e2f127f72a1ee3b9dedc21d9161f410fdc"),
             // Milestone 9.8f. Mortimer, dealt; measured on the run that dealt him, with his staged
             // configuration in EveryDealtDefinition in the same change.
-            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "ddac9405d44a1f238ea17080e840eed85bd6e5e015991378c655573cd80426fc")
+            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "ddac9405d44a1f238ea17080e840eed85bd6e5e015991378c655573cd80426fc"),
+            // Milestone 9.21j. Razzle, dealt under his first dealt revision (razzle-9-21d-prep ->
+            // razzle-9-21j-rev-1); measured on the run that dealt him, with his staged configuration
+            // in EveryDealtDefinition in the same change.
+            new IdentityPin("razzle", "razzle-9-21j-rev-1", "ab8aa5ba35d0a0780409911418238feb36a6c46dcb6fd01e46bc1ed4524930a2")
         };
 
         [Test]
@@ -521,6 +525,9 @@ namespace GuardsDigital.Tests.EditMode
                     .CardDefinitions)
                 // Milestone 9.8f. Mortimer's staged configuration, added in the same change as his pin.
                 .Concat(MatchConfiguration.CreateStagedMortimerForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 9.21j. Razzle's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedRazzleForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

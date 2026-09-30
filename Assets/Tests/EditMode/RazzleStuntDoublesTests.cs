@@ -54,7 +54,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var face = RazzleCardContent.StuntDoublesDefinition;
             Assert.That(face.Initiative.Value, Is.EqualTo(13));
-            Assert.That(face.ContentRevision, Is.EqualTo("razzle-9-21d-prep"));
+            Assert.That(face.ContentRevision, Is.EqualTo("razzle-9-21j-rev-1"), "his dealt revision (9.21j)");
             Assert.That((face.Progression.Color, face.Progression.Classification), Is.EqualTo((CardColor.Gold, CardClassification.Basic)));
             Assert.That(face.SourceContent.PrintedText, Is.EqualTo(
                 "Target a unit adjacent to you. After the attack: Spawn up to 3 more of you in radius; " +

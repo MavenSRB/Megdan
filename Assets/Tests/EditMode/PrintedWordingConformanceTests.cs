@@ -388,7 +388,16 @@ namespace GuardsDigital.Tests.EditMode
                 ["xargatha | xargatha-lethal-spin"] = "\"each other enemy unit\" is the Attack value count, Dangerous Slash's rule at +3.",
                 ["tigerclaw | tigerclaw-backstab"] = "Reminder text defining \"friendly unit\" as another hero or minion on your team.",
                 ["arien | arien-spell-break"] = "Reminder text: \"Other action types are unaffected.\"",
-                ["misa | misa-power-overwhelming"] = "\"two different options\" is the modal ceiling; p.10 already forbids one option twice."
+                ["misa | misa-power-overwhelming"] = "\"two different options\" is the modal ceiling; p.10 already forbids one option twice.",
+                // Milestone 9.21j. Razzle's "other you" is every body of his but the acting one (RZ-Q5,
+                // RZ-Q4): the exclusion is the capability's own contract, measured from the acting body,
+                // not an input a node binds.
+                ["razzle | razzle-crowd-control"] = "\"each other you in radius\" is the Defense count of bodies other than the attacked one (DefenderOtherBodiesInPrintedRadius, RazzleCountingFacesTests); \"remove all other you\" is ActorBodyRemoval.EveryOtherBody (RazzleRemovalFacesTests).",
+                ["razzle | razzle-rummage"] = "\"another you in radius\" is razzle-other-bodies-in-radius@1, which counts only bodies other than the acting one (RazzleCountingFacesTests).",
+                ["razzle | razzle-ransack"] = "\"every other you in radius\" is razzle-other-bodies-in-radius@1's count of bodies other than the acting one (RazzleCountingFacesTests).",
+                ["razzle | razzle-tightrope"] = "\"another one of you\" is razzle-other-body@1, which offers only bodies other than the acting one (RazzleMoveFacesTests).",
+                ["razzle | razzle-high-wire"] = "\"another one of you\" is razzle-other-body@1, Tightrope's selection.",
+                ["razzle | razzle-wire-dancers"] = "\"another one of you\" is razzle-other-body@1, Tightrope's selection."
             };
 
         /// <summary>

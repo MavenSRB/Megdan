@@ -169,7 +169,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Durable and Pusher.
                 ["hero-mortimer"] = (HeroComplexity.VeryComplex,
                     HeroRole.Melee | HeroRole.Tokens | HeroRole.Farming | HeroRole.Durable |
-                        HeroRole.Pusher)
+                        HeroRole.Pusher),
+                // Milestone 9.21j. Razzle's selection front: four stars; Tactician and Melee.
+                ["hero-razzle"] = (HeroComplexity.Wizard, HeroRole.Tactician | HeroRole.Melee)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

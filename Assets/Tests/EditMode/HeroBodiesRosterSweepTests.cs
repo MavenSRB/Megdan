@@ -155,6 +155,18 @@ namespace GuardsDigital.Tests.EditMode
             ["SyntheticExchangeCapabilities+RemoveHandler"] = Reading.SpaceNamesBody,
             ["SyntheticExchangeCapabilities+SwapHandler"] = Reading.SpaceNamesBody,
             ["SyntheticExchangeCapabilities+SwapWithActorHandler"] = Reading.SpaceNamesBody,
+            // Milestone 9.21j. Razzle's capability nodes, each read from the acting body (RZ-Q4): the
+            // spawn's radius, the removal's "other", "another one of you" and the retreat's line
+            // through the acting body; their staged two-body cases are 9.21d-9.21f's own fixtures.
+            // His two gates - "more than one of you" and "other you in radius" - are Conditional
+            // predicates rather than capability nodes, so this walk does not reach them (9.21e and
+            // 9.21g prove them from the acting body). His two repeats by a different body are
+            // RepeatAction nodes: the repeated instance is performed with the other body settled as
+            // the acting body (9.21h), the ActingBody reading too.
+            ["SyntheticHeroBodyCapabilities+RemoveActorBodiesFromTheBoard"] = Reading.ActingBody,
+            ["SyntheticHeroBodyCapabilities+SpawnActorBodyInRadiusHandler"] = Reading.ActingBody,
+            ["SyntheticHeroBodyMoveCapabilities+ChooseOtherActorBody"] = Reading.ActingBody,
+            ["SyntheticHeroBodyMoveCapabilities+ContinuedLineEnd"] = Reading.ActingBody,
             ["SyntheticHiddenChoiceCapabilities+HiddenCardChoiceHandler"] = Reading.NoHeroOrUnit,
             ["SyntheticHiddenChoiceCapabilities+RevealChosenCardHandler"] = Reading.NoHeroOrUnit,
             ["SyntheticNamedBorrowCapabilities+Handler"] = Reading.NoHeroOrUnit,

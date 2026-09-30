@@ -66,6 +66,7 @@ $heroFolders = [ordered]@{
     mrak = 'Mrak'
     wuk = 'Wuk'
     mortimer = 'Mortimer'
+    razzle = 'Razzle'
 }
 
 function Assert-PathUnder([string] $path, [string] $root, [string] $label) {

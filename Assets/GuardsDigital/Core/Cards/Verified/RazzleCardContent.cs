@@ -17,18 +17,19 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Movement 1, Basic Attack 1, Radius 1, the same text with "Target a hero adjacent to you." -
     /// the one narrowing <see cref="AttackTargetableUnits.HeroesOnly"/> names. Composed, never dealt.</para>
     ///
-    /// <para>Nothing here is registered until 9.21j deals him.</para>
+    /// <para>Registered and dealt at 9.21j (<see cref="AllDefinitions"/>).</para>
     /// </summary>
     public static partial class RazzleCardContent
     {
         // ===== MERGE BLOCK =====
-        // The set's shared identities. A later Razzle block adds its own per-block list beside
-        // DoublesDefinitions; a block cut in parallel from an earlier base declares its own copy of
-        // this block, and the coordinator keeps one at the merge (Hanu's wave convention). The
-        // aggregate (AllDefinitions, DealtDefinitions) is 9.21j's.
+        // The set's shared identities. The aggregate (AllDefinitions, DealtDefinitions) is 9.21j's,
+        // in RazzleCardContent.Set.cs; it replaced 9.21d-9.21h's per-block lists.
 
-        /// <summary>The revision every Razzle definition carries until his dealing.</summary>
-        public const string ContentRevision = "razzle-9-21d-prep";
+        /// <summary>
+        /// The revision every Razzle definition carries: 9.21d-9.21h composed under
+        /// <c>razzle-9-21d-prep</c>; milestone 9.21j deals him under his first dealt revision.
+        /// </summary>
+        public const string ContentRevision = "razzle-9-21j-rev-1";
 
         public const string ContentSetId = "razzle";
 
@@ -57,12 +58,6 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinitionId StuntDoubles { get; } = Id("stunt-doubles");
         public static CardDefinitionId StuntedDoubles { get; } = Id("stunted-doubles");
 
-        /// <summary>
-        /// 9.21d's block list (Min's wave convention, read by the corpus sweeps until 9.21j mints the
-        /// aggregate): the Gold basic and the boxed Handicap.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> DoublesDefinitions =>
-            new[] { StuntDoublesDefinition, StuntedDoublesDefinition };
 
         public const string StuntDoublesText =
             "Target a unit adjacent to you. After the attack: Spawn up to 3 more of you in radius; " +

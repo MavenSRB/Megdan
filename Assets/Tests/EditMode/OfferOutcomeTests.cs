@@ -79,10 +79,26 @@ namespace GuardsDigital.Tests.EditMode
                     "the Spirit to her hand: a discard and a retrieval, ending where Hold does."
             };
 
+        /// <summary>
+        /// Milestone 9.21j. W9 (user, 2026-09-30, superseding W6; built at 9.22): a target the step
+        /// would move 0 spaces is still offered, and the card resolves - so with only an adjacent
+        /// target these faces end where Hold does BY RULING. Found when dealing Razzle rotated a new
+        /// line-up (garrus, bain, cutter, swift, tali, whisper; seed 2, step 146): Bain's only target
+        /// stood beside him. The faces are the two W9 names; any other reason for an empty play still
+        /// fails.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, string> ZeroSpaceMoveByRuling =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["bain-get-over-here"] = "W9: an already-adjacent unit or token is pulled 0 spaces.",
+                ["cutter-grappling-bolt"] = "W9: an obstacle Cutter already stands beside moves her 0 spaces."
+            };
+
         [TestCaseSource(nameof(Lineups))]
         public void EveryOfferedPrintedPrimary_DoesSomething(int lineup)
         {
-            Assert.That(Surveyed(lineup).Empty.Where(entry => !CancelsOut.ContainsKey(entry.Split(' ')[0])),
+            Assert.That(Surveyed(lineup).Empty.Where(entry => !CancelsOut.ContainsKey(entry.Split(' ')[0]) &&
+                    !ZeroSpaceMoveByRuling.ContainsKey(entry.Split(' ')[0])),
                 Is.Empty,
                 "These printed primaries were offered in a position where every answer left the match " +
                 "exactly as Holding the card would. Rules 6.5af, 7.8a1 and 8.35z15 grey an action that " +
@@ -423,6 +439,15 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Whether the face's printed text opens a sentence with "If" - the gate RULING 53 speaks to.
         /// "if able" and "if you do" are lower-case clauses inside a sentence and are not it.
+        ///
+        /// <para>Milestone 9.21j. Razzle's Stunt Doubles (and the boxed Stunted Doubles) print
+        /// ". If defeated, remove all of you." - a sentence opening with "If" that is NOT a gate on
+        /// the play: it is RZ-Q3's Defeat, composed to no node. The pattern matches it all the same, so
+        /// an empty Stunt Doubles play would be counted as a RULING 53 do-nothing rather than flagged.
+        /// It cannot arise: the face's primary is a Basic Attack, offered only with a unit adjacent to
+        /// the acting body, and an Attack always does something. RazzleDealingTests pins which of his
+        /// faces the pattern matches (the two Doubles for that reason; Phantom Strike and Rummage for
+        /// their printed gates), so a new "If" sentence on his faces is seen rather than absorbed.</para>
         /// </summary>
         internal static bool OpensWithAnIf(CardDefinition definition) =>
             IfGate.IsMatch(definition.SourceContent?.PrintedText ?? string.Empty);

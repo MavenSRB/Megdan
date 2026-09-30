@@ -1038,11 +1038,6 @@ namespace GuardsDigital.Tests.EditMode
                     "another seat's cards; presence crosses as HasPendingSkillResolution and the " +
                     "resolving card as ResolvingSourceCardInstanceId (8.58)"
                 },
-                {
-                    "IMatchReadModel.ActingBodies",
-                    "not carried (9.21i): the settled acting body has no wire row at protocol /27, so " +
-                    "a network client draws no acting cue on a many-bodied hero; owed with 9.21j"
-                },
             };
 
         /// <summary>

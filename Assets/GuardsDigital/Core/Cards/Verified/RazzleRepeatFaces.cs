@@ -33,19 +33,13 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="RepeatTargetBinding.DifferentSelectionSubject"/>, unchanged; a many-bodied first
     /// target is excluded at hero grain, every body of him (9.21a, 9.21c).</para>
     ///
-    /// <para>Nothing here is registered until 9.21j deals him.</para>
+    /// <para>Registered and dealt at 9.21j.</para>
     /// </summary>
     public static partial class RazzleCardContent
     {
         public static CardDefinitionId Spectacle { get; } = Id("spectacle");
         public static CardDefinitionId TwinStrike { get; } = Id("twin-strike");
 
-        /// <summary>
-        /// 9.21h's block list (read by the corpus sweeps until 9.21j mints the aggregate): Spectacle and
-        /// the Ultimate.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> RepeatDefinitions =>
-            new[] { SpectacleDefinition, TwinStrikeDefinition };
 
         public const string SpectacleText =
             "Swap with a minion in range. May repeat once by a different one of you, targeting a " +
