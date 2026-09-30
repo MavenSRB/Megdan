@@ -251,6 +251,16 @@ namespace GuardsDigital.Application
         /// other pending family, so the status bar can name the step.
         /// </summary>
         PendingActingBodyChoice PendingActingBodyChoice { get; }
+
+        /// <summary>
+        /// Milestone 9.21i. The settled acting body of each many-bodied hero (RZ-Q4), the engine's own
+        /// read (<c>AdjacentMoveAuthority.ActingBodies</c>), in hero order; empty while none is settled.
+        /// The board draws its acting cue from it, so the cue follows whichever body the engine says
+        /// acts - including a later "different you" repeat - without a presentation rule of its own.
+        /// A public board fact, carried to every seat. The wire does not carry it yet (declared in the
+        /// synchronization map, owed with 9.21j): a network client reads it empty.
+        /// </summary>
+        IReadOnlyList<HeroActingBody> ActingBodies { get; }
         GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
             PendingSystemTransitionStep { get; }
         RemovalPreventionPrompt PendingRemovalPrevention { get; }

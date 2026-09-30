@@ -316,7 +316,13 @@ namespace GuardsDigital.Presentation.Match
                 // and it stays a first-class feature - clicking a hero to read their tray is how a
                 // player looks around, and nothing about that is changed by no longer letting it
                 // pre-empt the board.
-                heroId => SelectViewedHero(heroId));
+                heroId => SelectViewedHero(heroId),
+                // Milestone 9.21i. A click on one standee of a hero: the body answers the acting-body
+                // pick or an Attack on that body, and otherwise the click means what the hero arm means.
+                (heroId, body) =>
+                    BoardPresenter.SubmitHeroBody(heroId, body) ||
+                    MinionChoicePresenter.SubmitUnit(
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)));
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.CardDroppedOnMap += cardId => HandsPresenter.CommitCardImmediately(cardId);

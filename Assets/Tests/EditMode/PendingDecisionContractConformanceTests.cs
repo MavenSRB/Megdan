@@ -541,10 +541,24 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var recorder = new RecordingSession(projection);
                 var presenter = new BoardInteractionPresenter(recorder, new CapturingBoardView());
-                foreach (var hero in projection.PendingAttackTargetChoice.LegalTargetHeroIds)
-                    Assert.That(presenter.SubmitHero(hero), Is.True);
+                // Milestone 9.21i. A click on a hero's STANDEE, which names its body: one click per
+                // offered body, so a hero on two spaces answers with two commands, each naming its body.
+                foreach (var target in projection.PendingAttackTargetChoice.LegalTargets.Where(value =>
+                             value.Kind == AttackTargetKind.Hero))
+                    Assert.That(presenter.SubmitHeroBody(target.HeroId, target.HeroBody), Is.True);
                 foreach (var minion in projection.PendingAttackTargetChoice.LegalTargetMinionIds)
                     Assert.That(presenter.SubmitMinion(minion), Is.True);
+                return recorder.Commands;
+            }
+            // Milestone 9.21i. "Which of you acts" (RZ-Q4) is answered by clicking one of his standees:
+            // one click per standing body, through the board presenter the scene binds to the standee.
+            // This replaced 9.21b's parked arm, where the contract stood in for a surface not yet built.
+            if (contract.FamilyId.Equals(PendingDecisionFamilies.ActingBody))
+            {
+                var recorder = new RecordingSession(projection);
+                var presenter = new BoardInteractionPresenter(recorder, new CapturingBoardView());
+                foreach (var body in projection.PendingActingBodyChoice.Bodies)
+                    Assert.That(presenter.SubmitHeroBody(body.HeroId, body.Body), Is.True);
                 return recorder.Commands;
             }
             if (contract.FamilyId.Equals(PendingDecisionFamilies.Correction) ||
@@ -593,12 +607,6 @@ namespace GuardsDigital.Tests.EditMode
             // TURN rather than falling through to the removal-prevention arm below.
             if (contract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
                 return new[] { round.EndTurnInvocation.Command };
-            // Milestone 9.21b. PARKED, owner 9.21i: "which of you acts" has no visible surface yet -
-            // presenting it (the standee pick) is 9.21i's outcome, and no dealt hero can reach it
-            // until 9.21j. The contract stands in for the surface here, and ParkedSurfaceFamilies
-            // keeps the parking visible: 9.21i replaces this arm with the standee pick's commands.
-            if (ParkedSurfaceFamilies.ContainsKey(contract.FamilyId))
-                return contract.Commands;
             if (contract.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
                 return round.SystemTransitionPrompt.Options.Select(value => value.Command).ToArray();
             return round.RemovalPreventionPrompt.Payments.Select(value => value.Command)
@@ -802,24 +810,6 @@ namespace GuardsDigital.Tests.EditMode
                 () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _), true,
                 Row("Acting body", "Acting body", "Pick a standing body"))
         };
-
-        /// <summary>
-        /// Milestone 9.21b. Families whose visible surface is owed by a named later block, with the
-        /// block. The contract stands in for the surface only for these; the set is asserted exactly,
-        /// so a parked surface cannot be added or outlive its owner silently.
-        /// </summary>
-        internal static readonly IReadOnlyDictionary<PendingDecisionFamilyId, string> ParkedSurfaceFamilies =
-            new Dictionary<PendingDecisionFamilyId, string>
-            {
-                [PendingDecisionFamilies.ActingBody] = "9.21i presents the pick of the acting body"
-            };
-
-        [Test]
-        public void ParkedSurfaces_AreExactlyTheAcknowledgedOwedOnes()
-        {
-            Assert.That(ParkedSurfaceFamilies.Keys, Is.EquivalentTo(new[] { PendingDecisionFamilies.ActingBody }),
-                "A parked surface is recorded on the owning block's acceptance (9.21i) and removed there.");
-        }
 
         private static PauseCase Case(string name, PendingDecisionFamilyId familyId,
             string inventoryFamily, Func<MatchSession> create, bool lifecycle, params string[] rows) =>

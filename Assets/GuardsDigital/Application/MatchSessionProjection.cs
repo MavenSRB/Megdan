@@ -1014,7 +1014,8 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null,
             int? remainingWaveCounters = null,
             IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null,
-            PendingActingBodyChoice pendingActingBodyChoice = null)
+            PendingActingBodyChoice pendingActingBodyChoice = null,
+            IEnumerable<HeroActingBody> actingBodies = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1106,6 +1107,9 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingActingBodyChoice = pendingActingBodyChoice;
+            ActingBodies = Array.AsReadOnly((actingBodies ?? Enumerable.Empty<HeroActingBody>())
+                .OrderBy(value => value.HeroId.Value, StringComparer.Ordinal)
+                .ToArray());
             PendingLanePushRequest = pendingLanePushRequest;
             PendingImmediateLanePush = pendingImmediateLanePush;
             PendingSystemTransitionStep = pendingSystemTransitionStep;
@@ -1513,6 +1517,12 @@ namespace GuardsDigital.Application
         /// each body, and from <see cref="Heroes"/>, which hold the bodies' spaces - no row of its own.
         /// </summary>
         public PendingActingBodyChoice PendingActingBodyChoice { get; }
+
+        /// <summary>
+        /// Milestone 9.21i. The settled acting body of each many-bodied hero, read from the board
+        /// authority that settles it (RZ-Q4); what the board's acting cue is drawn from.
+        /// </summary>
+        public IReadOnlyList<HeroActingBody> ActingBodies { get; }
 
         /// <summary>
         /// Milestone 8.35g. The finished turn waiting for its own player's release, or <c>null</c>

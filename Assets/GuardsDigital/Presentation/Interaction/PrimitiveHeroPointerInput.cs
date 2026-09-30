@@ -56,6 +56,20 @@ namespace GuardsDigital.Presentation.Interaction
             blocksPointer = pointerBlocker;
         }
 
+        /// <summary>
+        /// Milestone 9.21i. Offers the pointer a standee the board drew after composition - a
+        /// many-bodied hero's second, third or fourth body.
+        /// </summary>
+        public void AddHeroSelectors(IEnumerable<PrimitiveHeroPointerSelector> added)
+        {
+            EnsureBindings();
+            selectors = selectors
+                .Concat((added ?? System.Array.Empty<PrimitiveHeroPointerSelector>())
+                    .Where(selector => selector != null))
+                .Distinct()
+                .ToArray();
+        }
+
         public void ReplaceMinionSelectors(
             IEnumerable<StandardMinionPointerSelector> pointerMinionSelectors)
         {
@@ -124,12 +138,14 @@ namespace GuardsDigital.Presentation.Interaction
             var tile = FindTileUnderPointer(pointerRay);
             boardView.SetHoveredCoordinate(tile?.Coordinate);
             var hoveredHero = default(GuardsDigital.Core.Units.Heroes.HeroId);
+            var hoveredBody = 0;
             foreach (var selector in selectors ?? System.Array.Empty<PrimitiveHeroPointerSelector>())
             {
-                if (selector != null && selector.TryGetHeroFromPointerRay(pointerRay, out hoveredHero))
+                if (selector != null &&
+                    selector.TryGetHeroFromPointerRay(pointerRay, out hoveredHero, out hoveredBody))
                     break;
             }
-            boardView.SetPointerHoveredHero(hoveredHero);
+            boardView.SetPointerHoveredHero(hoveredHero, hoveredBody);
             return tile != null;
         }
 

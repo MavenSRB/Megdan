@@ -186,7 +186,8 @@ namespace GuardsDigital.Presentation.Match
             ActiveEffectVisibilityModel activeEffects = null,
             HexCoordinate? directionChooserSpace = null,
             IEnumerable<DirectionCandidateViewModel> directionCandidates = null,
-            IEnumerable<ObstacleOccupancy> obstacles = null)
+            IEnumerable<ObstacleOccupancy> obstacles = null,
+            int focusedHeroBody = 0)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             Version = version;
@@ -203,6 +204,13 @@ namespace GuardsDigital.Presentation.Match
             MinionAttackTargets = Array.AsReadOnly((minionAttackTargets ??
                 throw new ArgumentNullException(nameof(minionAttackTargets))).ToArray());
             FocusedHeroId = focusedHeroId;
+            if (focusedHeroBody < 0 || (focusedHeroBody > 0 && !focusedHeroId.IsDefined))
+            {
+                throw new ArgumentOutOfRangeException(nameof(focusedHeroBody), focusedHeroBody,
+                    "An acting body is 0 (none known) or a body of the focused hero.");
+            }
+
+            FocusedHeroBody = focusedHeroBody;
             FastTravelDestinations = Array.AsReadOnly((fastTravelDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             MinionDefenseCues = Array.AsReadOnly((minionDefenseCues ??
@@ -211,7 +219,9 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray());
             PieceTargetCues = Array.AsReadOnly((pieceTargetCues ??
                 Enumerable.Empty<PieceTargetCueViewModel>()).ToArray());
-            if (PieceTargetCues.Select(value => value.Target).Distinct().Count() !=
+            // Milestone 9.21i. A piece is a hero BODY where the cue names one: two standees of one
+            // hero are two pieces, while BoardObjectReference compares at hero grain (RZ-Q2).
+            if (PieceTargetCues.Select(value => PieceKey(value.Target)).Distinct().Count() !=
                 PieceTargetCues.Count)
             {
                 throw new ArgumentException(
@@ -239,8 +249,8 @@ namespace GuardsDigital.Presentation.Match
                     value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack)
                 .Select(value => value.Target.HeroId));
             if (AttackTargetDefensePreviews.Any(value => value == null) ||
-                AttackTargetDefensePreviews.Select(value => value.HeroId).Distinct().Count() !=
-                    AttackTargetDefensePreviews.Count ||
+                AttackTargetDefensePreviews.Select(value => (value.HeroId, value.HeroBody)).Distinct()
+                    .Count() != AttackTargetDefensePreviews.Count ||
                 AttackTargetDefensePreviews.Any(value =>
                     !attackIntentHeroIds.Contains(value.HeroId)))
             {
@@ -347,6 +357,20 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HeroId> AttackTargets { get; }
         public IReadOnlyList<MinionId> MinionAttackTargets { get; }
         public HeroId FocusedHeroId { get; }
+
+        /// <summary>
+        /// Milestone 9.21i. The settled acting body of <see cref="FocusedHeroId"/> when that hero
+        /// stands on several spaces (RZ-Q4), or 0 when none is known - no acting body is settled yet,
+        /// or the view cannot see it. The board's acting cue stands on that body's standee.
+        /// </summary>
+        public int FocusedHeroBody { get; }
+
+        /// <summary>
+        /// Milestone 9.21i. The key one board piece is known by: a hero cue naming a body is that
+        /// body's standee, a hero cue naming none (body 0) is every standee of the hero.
+        /// </summary>
+        public static (BoardObjectReference Reference, int Body) PieceKey(BoardObjectReference target) =>
+            (target, target.Kind == BoardObjectKind.Hero ? target.HeroBody : 0);
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<AttackTargetDefensePreviewProjection> AttackTargetDefensePreviews { get; }

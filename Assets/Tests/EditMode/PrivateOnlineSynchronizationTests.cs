@@ -598,6 +598,13 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingActingBodyChoice",
                     nameof(NetworkSeatProjectionRecord.DecisionContractCommands) + " plus " +
                         nameof(NetworkSeatProjectionRecord.Heroes) },
+                // Milestone 9.21i. NOT CARRIED, and the ceiling below moved 7 -> 8 for it: the board's
+                // acting cue reads the settled acting body, and no row carries it without a protocol
+                // move, which 9.21i may not make. A network client reads none and draws no acting cue on a
+                // many-bodied hero. Owed with 9.21j (a body on the supply or selected-actor row); the
+                // ceiling returns to 7 when it crosses.
+                { "ActingBodies",
+                    "excluded until 9.21j: the settled acting body has no wire row (protocol /27)" },
                 { "PendingSystemTransitionStep",
                     nameof(NetworkProjectionDetailRecord.PendingSystemTransitionStep) },
                 { "PendingSystemTransitionDescription",
@@ -640,7 +647,7 @@ namespace GuardsDigital.Tests.EditMode
             var excluded = carriers.Values.Count(value =>
                 value.StartsWith("excluded", StringComparison.Ordinal) ||
                 value.StartsWith("derived", StringComparison.Ordinal));
-            Assert.That(excluded, Is.LessThanOrEqualTo(7),
+            Assert.That(excluded, Is.LessThanOrEqualTo(8),
                 "The exclusion list grew. Every new exclusion is a field a client cannot see.");
         }
 

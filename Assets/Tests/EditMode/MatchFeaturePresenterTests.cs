@@ -4736,6 +4736,7 @@ namespace GuardsDigital.Tests.EditMode
                 inner.PendingHeroRespawnChoice;
             public virtual PendingActingBodyChoice PendingActingBodyChoice =>
                 inner.PendingActingBodyChoice;
+            public virtual IReadOnlyList<HeroActingBody> ActingBodies => inner.ActingBodies;
             public virtual GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 PendingSystemTransitionStep => inner.PendingSystemTransitionStep;
             public virtual RemovalPreventionPrompt PendingRemovalPrevention =>

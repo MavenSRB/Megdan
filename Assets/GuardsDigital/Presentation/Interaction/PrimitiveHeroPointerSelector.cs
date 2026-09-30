@@ -30,8 +30,10 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
+            // Milestone 9.21i. The standee's own body travels with the click, so one of several
+            // standees of a hero answers for that body.
             var hero = GetComponent<PrimitiveHeroView>();
-            return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
+            return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId, hero.Body);
         }
 
         /// <summary>
@@ -69,13 +71,22 @@ namespace GuardsDigital.Presentation.Interaction
 
         public bool TryGetHeroFromPointerRay(
             Ray pointerRay, out GuardsDigital.Core.Units.Heroes.HeroId heroId,
+            float maxDistance = 500f) =>
+            TryGetHeroFromPointerRay(pointerRay, out heroId, out _, maxDistance);
+
+        /// <summary>Milestone 9.21i. The standee under the ray, by hero and body.</summary>
+        public bool TryGetHeroFromPointerRay(
+            Ray pointerRay, out GuardsDigital.Core.Units.Heroes.HeroId heroId, out int body,
             float maxDistance = 500f)
         {
             heroId = default;
+            body = 0;
             if (!isActiveAndEnabled ||
                 !GetComponent<CapsuleCollider>().Raycast(pointerRay, out _, maxDistance))
                 return false;
-            heroId = GetComponent<PrimitiveHeroView>().Occupancy.HeroId;
+            var view = GetComponent<PrimitiveHeroView>();
+            heroId = view.Occupancy.HeroId;
+            body = view.Body;
             return heroId.IsDefined;
         }
 

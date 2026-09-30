@@ -687,6 +687,8 @@ namespace GuardsDigital.Application
             Participants = source.Participants;
             Definitions = source.Definitions;
             Heroes = source.Heroes;
+            // Milestone 9.21i. Public: which body acts is as open as where each body stands.
+            ActingBodies = source.ActingBodies;
             Minions = source.Minions;
             Obstacles = source.Obstacles;
             // Milestone 8.61d. The one place a facedown token stops naming its kind. See
@@ -897,6 +899,9 @@ namespace GuardsDigital.Application
         public PendingMinionBattleChoice PendingMinionBattleChoice => pending.MinionBattleChoice;
         public PendingHeroRespawnChoice PendingHeroRespawnChoice => pending.HeroRespawnChoice;
         public PendingActingBodyChoice PendingActingBodyChoice => pending.ActingBodyChoice;
+
+        /// <summary>Milestone 9.21i. The source's settled acting bodies, for every seat.</summary>
+        public IReadOnlyList<HeroActingBody> ActingBodies { get; }
 
         public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
             PendingSystemTransitionStep => pending.SystemTransitionStep;

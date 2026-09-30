@@ -49,6 +49,13 @@ namespace GuardsDigital.Presentation.Units.Heroes
         [SerializeField]
         private string heroDisplayName;
 
+        /// <summary>
+        /// Milestone 9.21i. Which of the hero's bodies this standee draws (RZ-Q1): 1 for every
+        /// single-bodied hero, and for a many-bodied hero's first body.
+        /// </summary>
+        [SerializeField]
+        private int body = HeroOccupancy.FirstBody;
+
         [SerializeField]
         private int q;
 
@@ -72,8 +79,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Material ownedRimMaterial;
         private BoardTargetRing targetRing;
         private ActiveEffectHeroMarker activeEffectMarker;
+        private HeroBodyMark bodyMark;
 
-        public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
+        public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Body, Coordinate);
+
+        /// <summary>Milestone 9.21i. The body this standee draws; see <see cref="body"/>.</summary>
+        public int Body => body < HeroOccupancy.FirstBody ? HeroOccupancy.FirstBody : body;
+
+        /// <summary>Milestone 9.21i. The per-body mark, or null before one has been needed.</summary>
+        public HeroBodyMark BodyMark => bodyMark;
 
         public TeamSide TeamSide => teamSide;
 
@@ -125,7 +139,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
         {
             var identityChanged = !string.IsNullOrWhiteSpace(heroId) &&
                 !string.Equals(heroId, occupancy.HeroId.Value, System.StringComparison.Ordinal);
+            identityChanged |= occupancy.Body != Body;
             heroId = occupancy.HeroId.Value;
+            body = occupancy.Body;
             q = occupancy.Coordinate.Q;
             r = occupancy.Coordinate.R;
             outerRadius = radius;
@@ -180,6 +196,54 @@ namespace GuardsDigital.Presentation.Units.Heroes
             EnsureVisual();
         }
 
+        /// <summary>
+        /// Milestone 9.21i. Makes this piece another standee of <paramref name="template"/>'s hero:
+        /// the same hero, team and content identity (so the same team face), standing as
+        /// <paramref name="occupancy"/>'s body. It is how the board draws a body the scene never
+        /// authored - a many-bodied hero's second, third or fourth - with no setup row of its own.
+        /// </summary>
+        public void ConfigureAsBodyOf(PrimitiveHeroView template, HeroOccupancy occupancy)
+        {
+            if (template == null) throw new System.ArgumentNullException(nameof(template));
+            if (!occupancy.HeroId.Equals(template.Occupancy.HeroId))
+            {
+                throw new System.ArgumentException(
+                    "A body standee belongs to its template's own hero.", nameof(occupancy));
+            }
+
+            teamSide = template.teamSide;
+            spawnPointId = template.spawnPointId;
+            heroContentId = template.heroContentId;
+            heroDisplayName = template.heroDisplayName;
+            baseRadius = template.baseRadius;
+            height = template.height;
+            verticalOffset = template.verticalOffset;
+            Configure(occupancy, template.OuterRadius);
+            gameObject.name = $"{teamSide} {heroDisplayName} ({occupancy.HeroId.Value} body {occupancy.Body})";
+            EnsureVisual();
+        }
+
+        /// <summary>
+        /// Milestone 9.21i. Draws, or clears, the quiet per-body mark (<see cref="HeroBodyMark"/>):
+        /// <paramref name="pips"/> pips for this body, or none for 0. The board asks for it only on a
+        /// hero standing on more than one space or on a body above the first.
+        /// </summary>
+        public void SetBodyMark(int pips)
+        {
+            if (pips < 1)
+            {
+                if (bodyMark != null) bodyMark.SetHidden();
+                return;
+            }
+
+            if (bodyMark == null) bodyMark = HeroBodyMark.GetOrCreate(transform);
+            var ringRadius = HasTokenVisual
+                ? (HeroTokenArtwork.FaceRadius + HeroTokenArtwork.TokenOuterRadius) * 0.5f
+                : baseRadius * 0.62f;
+            var surface = HasTokenVisual ? BoardPieceDepth.Standard : height;
+            bodyMark.SetVisible(pips, ringRadius, surface);
+        }
+
         public bool PlaceAtConfiguredSpawnPoint(BoardMapDefinition definition)
         {
             if (definition == null) throw new System.ArgumentNullException(nameof(definition));
@@ -201,7 +265,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             }
 
             var selectedSpace = definition.Spaces.Single(space => space.Id.Equals(selectedSpawnPoint.SpaceId));
-            Configure(new HeroOccupancy(Occupancy.HeroId, selectedSpace.Coordinate), outerRadius);
+            Configure(new HeroOccupancy(Occupancy.HeroId, Body, selectedSpace.Coordinate), outerRadius);
             return true;
         }
 
@@ -689,6 +753,11 @@ namespace GuardsDigital.Presentation.Units.Heroes
             if (!ReferenceEquals(activeEffectMarker, null))
             {
                 activeEffectMarker.ReleaseOwnedResources();
+            }
+
+            if (!ReferenceEquals(bodyMark, null))
+            {
+                bodyMark.ReleaseOwnedResources();
             }
 
             DestroyOwnedResource(ownedMesh);

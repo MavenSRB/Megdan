@@ -49,7 +49,9 @@ namespace GuardsDigital.Application
             QuickGameSetupState setup,
             MatchConfiguration configuration,
             IEnumerable<BoardMapDefinition> availableMaps = null,
-            IEnumerable<ObstacleOccupancy> initialObstacles = null)
+            IEnumerable<ObstacleOccupancy> initialObstacles = null,
+            IEnumerable<HeroOccupancy> additionalHeroBodies = null,
+            IEnumerable<HeroBodySupply> heroBodySupplies = null)
         {
             if (description == null) throw new ArgumentNullException(nameof(description));
             if (map == null) throw new ArgumentNullException(nameof(map));
@@ -64,8 +66,12 @@ namespace GuardsDigital.Application
                 configuration.TieBreakerState,
                 configuration.SetupSeed,
                 map.Reference,
-                staged.Setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                initialObstacles ?? Array.Empty<ObstacleOccupancy>());
+                staged.Setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate))
+                    // Milestone 9.21i. A Director fixture's further bodies of a staged hero (body 2 and
+                    // up), beside the supplies that declare him many-bodied - 9.21a's staging seam.
+                    .Concat(additionalHeroBodies ?? Array.Empty<HeroOccupancy>()),
+                initialObstacles ?? Array.Empty<ObstacleOccupancy>(),
+                heroBodySupplies);
             return new MatchSessionInitialState(
                 scenario,
                 staged.Setup,

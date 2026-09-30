@@ -1053,7 +1053,10 @@ namespace GuardsDigital.Application
                 // screen prints the two together.
                 round.Scoreboard.Entries,
                 // Milestone 9.21b. "Which of you acts" (RZ-Q4), read from the turn that derives it.
-                actingBodyChoice);
+                actingBodyChoice,
+                // Milestone 9.21i. The settled acting bodies, the engine's own read, so the board's
+                // acting cue follows whichever body acts.
+                board.ActingBodies);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

@@ -1221,6 +1221,16 @@ namespace GuardsDigital.Presentation.Interaction
         public static IReadOnlyList<ObstacleOccupancy> NextComposedStagedObstacles { get; set; }
 
         /// <summary>
+        /// Milestone 9.21i. One-shot Director fixture bodies: further standing bodies of a staged hero
+        /// (body 2 and up) and the supplies that declare them many-bodied, as 9.21a's internal-test
+        /// staging seam takes them. Never a player command or serialized staging field.
+        /// </summary>
+        public static IReadOnlyList<HeroOccupancy> NextComposedStagedHeroBodies { get; set; }
+
+        /// <summary>Milestone 9.21i. The supplies <see cref="NextComposedStagedHeroBodies"/> stand in.</summary>
+        public static IReadOnlyList<HeroBodySupply> NextComposedStagedHeroBodySupplies { get; set; }
+
+        /// <summary>
         /// The staging the current runtime was composed from, or <c>null</c> for an ordinary dealt
         /// match. Read by the HUD to draw the Director-only sandbox banner, so the banner states
         /// what was actually composed rather than what a flag asked for.
@@ -1912,11 +1922,18 @@ namespace GuardsDigital.Presentation.Interaction
             if (stagedObstacles != null && ComposedSandboxStaging == null)
                 throw new InvalidOperationException(
                     "Staged obstacles require a Director sandbox composition.");
+            var stagedBodies = NextComposedStagedHeroBodies;
+            var stagedSupplies = NextComposedStagedHeroBodySupplies;
+            NextComposedStagedHeroBodies = null;
+            NextComposedStagedHeroBodySupplies = null;
+            if ((stagedBodies != null || stagedSupplies != null) && ComposedSandboxStaging == null)
+                throw new InvalidOperationException(
+                    "Staged hero bodies require a Director sandbox composition.");
             if (ComposedSandboxStaging != null)
             {
                 stagedInitialState = SandboxMatchComposition.Compose(
                     ComposedSandboxStaging, map, setup, configuration, new[] { map },
-                    stagedObstacles);
+                    stagedObstacles, stagedBodies, stagedSupplies);
                 setup = stagedInitialState.Setup;
             }
             // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
@@ -2047,6 +2064,18 @@ namespace GuardsDigital.Presentation.Interaction
                 tiles,
                 hud.BlocksPointerAt);
 
+            // Milestone 9.21i. The board draws a standee for each further body of a many-bodied hero
+            // the first time one stands - some while the runtime above was composed, the rest later.
+            // Each is offered to the pointer and remembered as generated, so a re-composition retires
+            // it with the seat views this composition generated.
+            foreach (var body in runtime.BoardView.HeroViews.Where(view =>
+                         view != null && !heroViews.Contains(view)))
+            {
+                AdoptHeroBodyView(body);
+            }
+
+            runtime.BoardView.HeroBodyViewCreated += AdoptHeroBodyView;
+
             // TWELFTH amendment. The Director-only banner, announced last so it is drawn over a HUD
             // the runtime above has already configured. It is told what the staging DID rather than
             // what it was, and the summary is derived from the composed staging itself, so the
@@ -2056,6 +2085,16 @@ namespace GuardsDigital.Presentation.Interaction
                 hud.ShowSandboxStaging(
                     SandboxStagingSummary.Describe(ComposedSandboxStaging));
             }
+        }
+
+        private void AdoptHeroBodyView(PrimitiveHeroView view)
+        {
+            if (view == null || generatedHeroViews.Contains(view)) return;
+            generatedHeroViews.Add(view);
+            var selector = view.GetComponent<PrimitiveHeroPointerSelector>();
+            if (selector == null) return;
+            generatedSelectors.Add(selector);
+            pointerInput.AddHeroSelectors(new[] { selector });
         }
 
         private void RebindConfiguredMinionViews(IReadOnlyList<StandardMinionView> minionViews)

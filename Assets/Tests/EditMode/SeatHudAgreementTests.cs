@@ -110,6 +110,62 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 9.21i. The sixth thing compared, and the one control 9.21i adds: the board's
+        /// standee pick of "which of you acts" (RZ-Q4). Every seat's board is built from that seat's
+        /// own projection; the pick is cued on a standee exactly when the seat is authorized to answer
+        /// it, and each cued standee answers with a command the seat may submit. The walks above
+        /// never reach it - no dealt hero has several bodies until 9.21j - so it is read on 9.21a's
+        /// staged two-body board.
+        /// </summary>
+        [Test]
+        public void TheActingBodyPick_IsCuedOnTheBoard_ExactlyForTheSeatAuthorizedToAnswerIt()
+        {
+            var host = new MatchHost(HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out var blue));
+            var findings = new List<string>();
+            var owners = 0;
+            foreach (var seat in host.Seats.Seats)
+            {
+                var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
+                var board = new CapturingBoard();
+                new BoardInteractionPresenter(client, board).Refresh();
+                var authorized = client.SeatProjection.AuthorizedCommands
+                    .Where(command => command.Kind == DirectorCommandKind.ChooseActingBody)
+                    .ToArray();
+                var cued = board.Model.PieceTargetCues
+                    .Where(cue => cue.Target.HeroId.Equals(blue) &&
+                        cue.ConsequenceIntent == BoardTargetConsequenceIntent.Ally)
+                    .Select(cue => cue.Target.HeroBody)
+                    .OrderBy(body => body)
+                    .ToArray();
+                var answerable = authorized.Select(command => command.HeroBody).OrderBy(body => body).ToArray();
+                if (!cued.SequenceEqual(answerable))
+                {
+                    findings.Add($"{seat.HeroId.Value}: cued bodies [{string.Join(",", cued)}], " +
+                        $"authorized answers [{string.Join(",", answerable)}]");
+                }
+
+                owners += authorized.Length > 0 ? 1 : 0;
+            }
+
+            Assert.That(findings, Is.Empty);
+            Assert.That(owners, Is.EqualTo(1), "Exactly the owning seat answers the pick.");
+
+            // The owning seat's click on body 2 is the command it is authorized to send, and it lands.
+            var owner = host.Seats.FindByHero(blue);
+            var ownerClient = new SeatMatchClient(host.ClientForSeat(owner.Id));
+            var presenter = new BoardInteractionPresenter(ownerClient, new CapturingBoard());
+            Assert.That(presenter.SubmitHeroBody(blue, 2), Is.True);
+            Assert.That(host.Projection.PendingActingBodyChoice, Is.Null);
+            Assert.That(host.Projection.ActingBodies.Single().Body, Is.EqualTo(2));
+        }
+
+        private sealed class CapturingBoard : IBoardInteractionView
+        {
+            public BoardInteractionViewModel Model { get; private set; }
+            public void Render(BoardInteractionViewModel model) => Model = model;
+        }
+
+        /// <summary>
         /// The 9.6 line-up and seed, played through the seats as a client plays it - which is what
         /// publishes each seat's own rewind - comparing every seat before every command.
         /// </summary>

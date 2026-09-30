@@ -18,7 +18,9 @@ namespace GuardsDigital.Presentation.Match
 {
     public sealed class BoardInteractionUnityView : IBoardInteractionView
     {
-        private readonly IReadOnlyList<PrimitiveHeroView> heroes;
+        // Milestone 9.21i. A list rather than a fixed roster: a many-bodied hero's second, third and
+        // fourth standees are drawn the first time the projection stands one (EnsureHeroBodyViews).
+        private readonly List<PrimitiveHeroView> heroes;
         private IReadOnlyList<StandardMinionView> minions;
         private readonly List<PlacedTokenView> tokens = new List<PlacedTokenView>();
         private readonly List<PlaceholderObstacleView> projectedObstacles =
@@ -30,6 +32,9 @@ namespace GuardsDigital.Presentation.Match
         private GuardsDigital.Core.Board.HexCoordinate? hoveredCoordinate;
         private HeroId hoveredHeroId;
         private HeroId pointerHoveredHeroId;
+        private int pointerHoveredHeroBody;
+        private int hoveredHeroBody;
+        private Func<HeroId, int, bool> heroBodyIntentHandler;
         private HeroId interfaceHoveredHeroId;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
@@ -76,8 +81,8 @@ namespace GuardsDigital.Presentation.Match
             Material resultingSpaceRimMaterial = null,
             HexCornerHighlightTemplate sharedCornerHighlightTemplate = null)
         {
-            this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
-                .Where(value => value != null).Distinct().ToArray());
+            this.heroes = (heroes ?? throw new ArgumentNullException(nameof(heroes)))
+                .Where(value => value != null).Distinct().ToList();
             this.minions = Array.AsReadOnly((minions ?? Enumerable.Empty<StandardMinionView>())
                 .Where(value => value != null).Distinct().ToArray());
             this.tiles = Array.AsReadOnly((tiles ?? throw new ArgumentNullException(nameof(tiles)))
@@ -105,6 +110,13 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The hero pieces this board draws, so a kinetic pass can offset the ones an event
         /// names without holding a second roster of its own. Milestone 8.35y.</summary>
         public IReadOnlyList<PrimitiveHeroView> HeroViews => heroes;
+
+        /// <summary>
+        /// Milestone 9.21i. Raised once for each standee this board draws for a body the scene never
+        /// authored, after it is built and its pointer selector is bound to this board - so a
+        /// composition can offer it to the pointer and retire it with the views it generated.
+        /// </summary>
+        public event Action<PrimitiveHeroView> HeroBodyViewCreated;
 
         /// <summary>
         /// The one acting-hero ring this board owns, or null before one has been needed. Milestone
@@ -315,9 +327,12 @@ namespace GuardsDigital.Presentation.Match
             Func<HeroId, bool> submitHero,
             Func<MinionId, bool> submitMinion,
             Func<GuardsDigital.Core.Board.HexCoordinate, bool> submitDestination,
-            Func<HeroId, bool> viewHero = null)
+            Func<HeroId, bool> viewHero = null,
+            Func<HeroId, int, bool> submitHeroBody = null)
         {
             heroIntentHandler = submitHero ?? throw new ArgumentNullException(nameof(submitHero));
+            // Milestone 9.21i. The standee's body travels with the click where a handler takes it.
+            heroBodyIntentHandler = submitHeroBody;
             minionIntentHandler = submitMinion ?? throw new ArgumentNullException(nameof(submitMinion));
             destinationIntentHandler = submitDestination ??
                 throw new ArgumentNullException(nameof(submitDestination));
@@ -344,11 +359,14 @@ namespace GuardsDigital.Presentation.Match
                 activeEffects.AuraSpaces);
             litAuraTiles.Clear();
 
+            // Milestone 9.21i. One standee per standing BODY. A body the scene never authored is drawn
+            // the first time it stands, from its hero's own standee; each is then matched by (hero,
+            // body), so two bodies of one hero never collapse into one piece.
+            EnsureHeroBodyViews(model);
             PrimitiveHeroView actingHero = null;
             foreach (var hero in heroes)
             {
-                var occupancy = model.Heroes.SingleOrDefault(value =>
-                    value.HeroId.Equals(hero.Occupancy.HeroId));
+                var occupancy = FindHeroRow(model, hero.Occupancy.HeroId, hero.Body);
                 if (!occupancy.HeroId.IsDefined)
                 {
                     hero.SetTargetCue(
@@ -358,6 +376,9 @@ namespace GuardsDigital.Presentation.Match
                     // cancels an Active effect on a defeated controller anyway; this makes the visual
                     // agree with that in the frame the piece disappears rather than one later.
                     hero.SetActiveEffectMark(false, MatchHudTheme.ActiveEffectAccent);
+                    // Milestone 9.21i. A body REMOVED without a Defeat (9.21e's faces) leaves the
+                    // projection exactly as a defeated one does, so it fades the same way here; no
+                    // Defeat is narrated, because no Defeat row exists for it.
                     // Milestone 8.35z6. Only a piece that WAS drawn a moment ago is a genuine
                     // removal edge worth a fade - a hero this render pass finds still absent (already
                     // inactive) fires nothing a second time.
@@ -391,7 +412,15 @@ namespace GuardsDigital.Presentation.Match
                 // every legal Attack, Removal and card-text target its typed cue - so this draws the
                 // cue that was already being computed. The six corner marks are UNCHANGED and still
                 // mark the space: the ring and its wash are what say the PIECE is the target.
-                ApplyPieceTargetCue(hero, model, BoardObjectReference.ForHero(occupancy.HeroId));
+                ApplyPieceTargetCue(
+                    hero, model, BoardObjectReference.ForHero(occupancy.HeroId), occupancy.Body);
+
+                // Milestone 9.21i. The quiet per-body mark, only where a hero stands on several spaces
+                // or on a body above the first: every single-bodied piece is drawn as before.
+                var severalBodies = StandsOnSeveralSpaces(model, occupancy.HeroId);
+                hero.SetBodyMark(severalBodies || occupancy.Body > HeroOccupancy.FirstBody
+                    ? occupancy.Body
+                    : 0);
 
                 // Milestone 8.35z63: the tray's own Active violet, on the piece the effect is
                 // standing on. It is a separate, inner annulus beside the token, so a
@@ -403,8 +432,13 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35n (the FOURTH amendment). `FocusedHeroId` is `SelectedActor`'s own
                 // hero, unscoped and public, and unrelated to `hoveredHeroId` above - a viewer
                 // pointing at some other hero's plaque must not steal the acting-hero marker.
+                // Milestone 9.21i. On a hero standing on several spaces the ring is the ACTING CUE: it
+                // stands on the engine's settled acting body (the model's FocusedHeroBody) and on no
+                // body while none is settled - the pick is then still open, and every body is cued as
+                // eligible instead.
                 if (model.FocusedHeroId.IsDefined &&
-                    occupancy.HeroId.Equals(model.FocusedHeroId))
+                    occupancy.HeroId.Equals(model.FocusedHeroId) &&
+                    (!severalBodies || model.FocusedHeroBody == occupancy.Body))
                 {
                     actingHero = hero;
                 }
@@ -443,10 +477,7 @@ namespace GuardsDigital.Presentation.Match
                          value.State != BoardTargetCueState.None &&
                          value.ConsequenceIntent == BoardTargetConsequenceIntent.Affect))
             {
-                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
-                {
-                    targetCoordinates.Add(coordinate);
-                }
+                targetCoordinates.UnionWith(CoordinatesOf(model, cue.Target));
             }
 
             // The predicted landing space uses its own neutral corners and is never selectable, so it
@@ -473,8 +504,11 @@ namespace GuardsDigital.Presentation.Match
             }
             var attackHeroIds = new HashSet<HeroId>(model.AttackTargets);
             var attackMinionIds = new HashSet<MinionId>(model.MinionAttackTargets);
+            // Milestone 9.21i. A hero on several spaces is marked only where a body is offered - his
+            // piece cues name each offered body, and are read below.
             var attackCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
-                model.Heroes.Where(value => attackHeroIds.Contains(value.HeroId))
+                model.Heroes.Where(value => attackHeroIds.Contains(value.HeroId) &&
+                        !StandsOnSeveralSpaces(model, value.HeroId))
                     .Select(value => value.Coordinate));
             attackCoordinates.UnionWith(model.Minions
                 .Where(value => attackMinionIds.Contains(value.MinionId))
@@ -484,10 +518,11 @@ namespace GuardsDigital.Presentation.Match
             {
                 var hoveredHero = model.Heroes.FirstOrDefault(value =>
                     value.Coordinate.Equals(hoveredCoordinate.Value));
+                // Milestone 9.21i. The preview of the BODY under the pointer (RZ-Q3).
                 var targetPreview = !hoveredHero.HeroId.IsDefined
                     ? null
                     : model.AttackTargetDefensePreviews.FirstOrDefault(value =>
-                        value.HeroId.Equals(hoveredHero.HeroId));
+                        value.HeroId.Equals(hoveredHero.HeroId) && value.HeroBody == hoveredHero.Body);
                 if (targetPreview != null)
                 {
                     activeDefenseCues = Array.AsReadOnly(targetPreview.MinionContributions
@@ -504,32 +539,30 @@ namespace GuardsDigital.Presentation.Match
                     ? HexCornerHighlightKind.DefensePositive
                     : HexCornerHighlightKind.DefenseNegative);
             var allyCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
-            GuardsDigital.Core.Board.HexCoordinate? hoveredHeroCoordinate = null;
+            // Milestone 9.21i. The standee under the pointer lights its own space; a hero pointed at
+            // through the HUD (no body) lights every space he stands on.
+            var hoveredHeroCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
             if (hoveredHeroId.IsDefined)
             {
-                var hoveredHero = model.Heroes.FirstOrDefault(value =>
-                    value.HeroId.Equals(hoveredHeroId));
-                if (hoveredHero.HeroId.IsDefined)
-                    hoveredHeroCoordinate = hoveredHero.Coordinate;
+                foreach (var hoveredHero in model.Heroes)
+                {
+                    if (hoveredHero.HeroId.Equals(hoveredHeroId) &&
+                        (hoveredHeroBody < HeroOccupancy.FirstBody || hoveredHero.Body == hoveredHeroBody))
+                        hoveredHeroCoordinates.Add(hoveredHero.Coordinate);
+                }
             }
             foreach (var cue in model.PieceTargetCues.Where(value =>
                          value.State != BoardTargetCueState.None &&
                          (value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack ||
                           value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal)))
             {
-                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
-                {
-                    attackCoordinates.Add(coordinate);
-                }
+                attackCoordinates.UnionWith(CoordinatesOf(model, cue.Target));
             }
             foreach (var cue in model.PieceTargetCues.Where(value =>
                          value.State != BoardTargetCueState.None &&
                          value.ConsequenceIntent == BoardTargetConsequenceIntent.Ally))
             {
-                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
-                {
-                    allyCoordinates.Add(coordinate);
-                }
+                allyCoordinates.UnionWith(CoordinatesOf(model, cue.Target));
             }
             var targetOutlineSides = TargetOutlineSides(model);
             foreach (var tile in tiles.Where(value => value.IsPlayable))
@@ -554,8 +587,7 @@ namespace GuardsDigital.Presentation.Match
 
                 if (cornerHighlightTemplate != null)
                 {
-                    var kind = hoveredHeroCoordinate.HasValue &&
-                               hoveredHeroCoordinate.Value.Equals(tile.Coordinate)
+                    var kind = hoveredHeroCoordinates.Contains(tile.Coordinate)
                         ? HexCornerHighlightKind.Ally
                         : attackCoordinates.Contains(tile.Coordinate)
                             ? HexCornerHighlightKind.Attack
@@ -582,8 +614,7 @@ namespace GuardsDigital.Presentation.Match
                     // it. Only the outline reads this: the six corner marks keep the hover language
                     // every shipped journey pins them with.
                     if (outlineSide != BoardTargetOutlineSide.None &&
-                        hoveredHeroCoordinate.HasValue &&
-                        hoveredHeroCoordinate.Value.Equals(tile.Coordinate))
+                        hoveredHeroCoordinates.Contains(tile.Coordinate))
                     {
                         pointedAt = true;
                     }
@@ -695,34 +726,95 @@ namespace GuardsDigital.Presentation.Match
             return directionArrowTemplate;
         }
 
-        private static bool TryResolveCoordinate(
+        /// <summary>
+        /// The spaces one projected piece cue stands on. Milestone 9.21i: a hero cue naming a body is
+        /// that body's space; one naming no body is every space the hero stands on (before this it was
+        /// a <c>Single</c> read, which threw the moment a hero stood on two spaces).
+        /// </summary>
+        private static IEnumerable<GuardsDigital.Core.Board.HexCoordinate> CoordinatesOf(
             BoardInteractionViewModel model,
-            BoardObjectReference target,
-            out GuardsDigital.Core.Board.HexCoordinate coordinate)
+            BoardObjectReference target)
         {
             if (target.Kind == BoardObjectKind.Hero)
             {
-                var occupancy = model.Heroes.Single(value => value.HeroId.Equals(target.HeroId));
-                coordinate = occupancy.Coordinate;
-                return true;
+                return model.Heroes
+                    .Where(value => value.HeroId.Equals(target.HeroId) &&
+                        (target.HeroBody < HeroOccupancy.FirstBody || value.Body == target.HeroBody))
+                    .Select(value => value.Coordinate)
+                    .ToArray();
             }
 
             if (target.Kind == BoardObjectKind.Minion)
             {
                 var occupancy = model.Minions.Single(value => value.MinionId.Equals(target.MinionId));
-                coordinate = occupancy.Coordinate;
-                return true;
+                return new[] { occupancy.Coordinate };
             }
 
             if (target.Kind == BoardObjectKind.Token)
             {
                 var token = model.PlacedTokens.Single(value => value.Id.Equals(target.TokenInstanceId));
-                coordinate = token.Coordinate;
-                return true;
+                return new[] { token.Coordinate };
             }
 
-            coordinate = default;
+            return Array.Empty<GuardsDigital.Core.Board.HexCoordinate>();
+        }
+
+        /// <summary>Milestone 9.21i. The row of one body of a hero, or default when it does not stand.</summary>
+        private static HeroOccupancy FindHeroRow(BoardInteractionViewModel model, HeroId heroId, int body)
+        {
+            var rows = model.Heroes;
+            for (var index = 0; index < rows.Count; index++)
+            {
+                if (rows[index].HeroId.Equals(heroId) && rows[index].Body == body) return rows[index];
+            }
+
+            return default;
+        }
+
+        private static bool StandsOnSeveralSpaces(BoardInteractionViewModel model, HeroId heroId)
+        {
+            var count = 0;
+            var rows = model.Heroes;
+            for (var index = 0; index < rows.Count; index++)
+            {
+                if (rows[index].HeroId.Equals(heroId) && ++count > 1) return true;
+            }
+
             return false;
+        }
+
+        /// <summary>
+        /// Milestone 9.21i. Draws a standee for every projected body that has none, from the standee
+        /// of the same hero this board already draws (its team face, identity and size), with its own
+        /// pointer selector bound to this board. A hero the board has no standee for at all stays
+        /// undrawn, as before. Views are never destroyed: a body that leaves the board keeps its
+        /// standee hidden for a respawn, a spawn, an Undo or a restore.
+        /// </summary>
+        private void EnsureHeroBodyViews(BoardInteractionViewModel model)
+        {
+            foreach (var row in model.Heroes)
+            {
+                PrimitiveHeroView template = null;
+                var drawn = false;
+                for (var index = 0; index < heroes.Count && !drawn; index++)
+                {
+                    var view = heroes[index];
+                    if (view == null || !view.Occupancy.HeroId.Equals(row.HeroId)) continue;
+                    drawn = view.Body == row.Body;
+                    if (template == null || view.Body < template.Body) template = view;
+                }
+
+                if (drawn || template == null) continue;
+
+                var piece = new GameObject($"{template.name} body {row.Body}");
+                piece.transform.SetParent(template.transform.parent, false);
+                var created = piece.AddComponent<PrimitiveHeroView>();
+                created.ConfigureAsBodyOf(template, row);
+                piece.AddComponent<GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerSelector>()
+                    .Configure(this);
+                heroes.Add(created);
+                HeroBodyViewCreated?.Invoke(created);
+            }
         }
 
         /// <summary>
@@ -746,9 +838,13 @@ namespace GuardsDigital.Presentation.Match
             ApplyHoveredHero();
         }
 
-        public void SetPointerHoveredHero(HeroId heroId)
+        public void SetPointerHoveredHero(HeroId heroId) => SetPointerHoveredHero(heroId, 0);
+
+        /// <summary>Milestone 9.21i. The standee under the pointer, by hero and body (0 = hero only).</summary>
+        public void SetPointerHoveredHero(HeroId heroId, int body)
         {
             pointerHoveredHeroId = heroId;
+            pointerHoveredHeroBody = heroId.IsDefined ? body : 0;
             ApplyHoveredHero();
         }
 
@@ -781,9 +877,12 @@ namespace GuardsDigital.Presentation.Match
             var next = interfaceHoveredHeroId.IsDefined
                 ? interfaceHoveredHeroId
                 : pointerHoveredHeroId;
-            if (hoveredHeroId.Equals(next)) return;
+            var nextBody = interfaceHoveredHeroId.IsDefined ? 0 : pointerHoveredHeroBody;
+            if (hoveredHeroId.Equals(next) && hoveredHeroBody == nextBody) return;
+            var heroChanged = !hoveredHeroId.Equals(next);
             hoveredHeroId = next;
-            HeroHighlighted?.Invoke(next);
+            hoveredHeroBody = nextBody;
+            if (heroChanged) HeroHighlighted?.Invoke(next);
             if (Model != null) Render(Model, true);
         }
 
@@ -969,9 +1068,10 @@ namespace GuardsDigital.Presentation.Match
         private static void ApplyPieceTargetCue(
             GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView piece,
             BoardInteractionViewModel model,
-            BoardObjectReference reference)
+            BoardObjectReference reference,
+            int body)
         {
-            var cue = Drawable(piece.CanWearATargetCue, CueFor(model, reference));
+            var cue = Drawable(piece.CanWearATargetCue, CueFor(model, reference, body));
             piece.SetTargetCue(
                 cue?.State ?? BoardTargetCueState.None,
                 cue?.ConsequenceIntent ?? BoardTargetConsequenceIntent.None);
@@ -1026,7 +1126,6 @@ namespace GuardsDigital.Presentation.Match
             foreach (var cue in model.PieceTargetCues)
             {
                 if (cue.State == BoardTargetCueState.None) continue;
-                if (!TryResolveCoordinate(model, cue.Target, out var coordinate)) continue;
 
                 var side = BoardTargetCuePresentation.ColourByTargetSide
                     ? SideOf(model, cue, choosingSide)
@@ -1036,7 +1135,10 @@ namespace GuardsDigital.Presentation.Match
                 // A space that is both an enemy target and a friendly one cannot happen - one piece
                 // stands on it - but a later cue wins deterministically rather than by dictionary
                 // order.
-                sides[coordinate] = side;
+                foreach (var coordinate in CoordinatesOf(model, cue.Target))
+                {
+                    sides[coordinate] = side;
+                }
             }
 
             return sides;
@@ -1112,12 +1214,18 @@ namespace GuardsDigital.Presentation.Match
             canWearACue && BoardTargetCuePresentation.DrawsTheRingOnThePiece ? cue : null;
 
         private static PieceTargetCueViewModel? CueFor(
-            BoardInteractionViewModel model, BoardObjectReference reference)
+            BoardInteractionViewModel model, BoardObjectReference reference, int body = 0)
         {
             var cues = model.PieceTargetCues;
             for (var index = 0; index < cues.Count; index++)
             {
-                if (cues[index].Target.Equals(reference))
+                // Milestone 9.21i. A hero cue naming a body is that body's standee's alone; one naming
+                // no body is every standee of the hero (the equality is at hero grain, RZ-Q2).
+                if (cues[index].Target.Equals(reference) &&
+                    (cues[index].Target.Kind != BoardObjectKind.Hero ||
+                     cues[index].Target.HeroBody < HeroOccupancy.FirstBody ||
+                     body < HeroOccupancy.FirstBody ||
+                     cues[index].Target.HeroBody == body))
                 {
                     return cues[index];
                 }
@@ -1142,6 +1250,21 @@ namespace GuardsDigital.Presentation.Match
 
             tokens.Add(created);
             return created;
+        }
+
+        /// <summary>
+        /// Milestone 9.21i. A click on one standee, carrying the body it draws: the body-aware handler
+        /// answers where one is bound (the acting-body pick, an Attack on a body), and the hero handler
+        /// otherwise, exactly as before.
+        /// </summary>
+        public bool TryForwardHeroIntent(HeroId heroId, int body)
+        {
+            if (heroBodyIntentHandler != null && body >= HeroOccupancy.FirstBody)
+            {
+                return heroBodyIntentHandler(heroId, body);
+            }
+
+            return TryForwardHeroIntent(heroId);
         }
 
         public bool TryForwardHeroIntent(HeroId heroId)

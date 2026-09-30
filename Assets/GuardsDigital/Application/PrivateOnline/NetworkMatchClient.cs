@@ -890,6 +890,13 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>
+        /// Milestone 9.21i. No wire row carries the settled acting body yet (protocol /27 stands), so a
+        /// network client reads none and draws no acting cue on a many-bodied hero. Declared in the
+        /// synchronization map; owed with 9.21j.
+        /// </summary>
+        public IReadOnlyList<HeroActingBody> ActingBodies => Array.Empty<HeroActingBody>();
+
         public PendingSystemTransitionStep PendingSystemTransitionStep
         {
             get

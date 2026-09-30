@@ -163,7 +163,10 @@ namespace GuardsDigital.Presentation.Match
                     // when it resolves - there is no arrow state of this presenter's own to go stale.
                     directions.ChooserSpace,
                     directions.Candidates,
-                    projection.Obstacles);
+                    projection.Obstacles,
+                    // Milestone 9.21i. The engine's settled acting body of the selected actor, so the
+                    // acting cue stands on the body that acts and follows it wherever the engine moves it.
+                    FocusedActingBody(projection));
             }
 
             view.Render(lastViewModel);
@@ -497,7 +500,8 @@ namespace GuardsDigital.Presentation.Match
             IReadOnlyList<TokenInstanceId> offeredClearTokenIds,
             IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
         {
-            var cues = new Dictionary<BoardObjectReference, PieceTargetCueViewModel>();
+            // Milestone 9.21i. Keyed by the PIECE, which for a hero on several spaces is one body.
+            var cues = new Dictionary<(BoardObjectReference, int), PieceTargetCueViewModel>();
 
             void Add(
                 BoardObjectReference target,
@@ -505,9 +509,10 @@ namespace GuardsDigital.Presentation.Match
                 BoardTargetConsequenceIntent consequenceIntent)
             {
                 var next = new PieceTargetCueViewModel(target, state, consequenceIntent);
-                if (!cues.TryGetValue(target, out var current))
+                var key = BoardInteractionViewModel.PieceKey(target);
+                if (!cues.TryGetValue(key, out var current))
                 {
-                    cues.Add(target, next);
+                    cues.Add(key, next);
                     return;
                 }
 
@@ -519,17 +524,34 @@ namespace GuardsDigital.Presentation.Match
 
                 if ((int)state > (int)current.State)
                 {
-                    cues[target] = next;
+                    cues[key] = next;
+                }
+            }
+
+            // Milestone 9.21i. "Which of you acts" (RZ-Q4) is answered on the board: every standing
+            // body is cued as a friendly target is, and a click on one answers the pick.
+            var actingBodyPick = projection.PendingActingBodyChoice;
+            if (actingBodyPick != null)
+            {
+                foreach (var body in actingBodyPick.Bodies)
+                {
+                    Add(
+                        BoardObjectReference.ForHeroBody(body.HeroId, body.Body),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Ally);
                 }
             }
 
             var attack = projection.PendingAttackTargetChoice;
             if (attack != null)
             {
-                foreach (var heroId in attack.LegalTargetHeroIds)
+                // Milestone 9.21i. An Attack targets a BODY (RZ-Q3): a hero on several spaces is cued
+                // on each body the choice offers and on no other.
+                foreach (var target in attack.LegalTargets.Where(value =>
+                             value.Kind == AttackTargetKind.Hero))
                 {
                     Add(
-                        BoardObjectReference.ForHero(heroId),
+                        HeroPiece(projection, target.HeroId, target.HeroBody),
                         BoardTargetCueState.Eligible,
                         BoardTargetConsequenceIntent.Attack);
                 }
@@ -619,8 +641,12 @@ namespace GuardsDigital.Presentation.Match
                         continue;
                     }
 
+                    // Milestone 9.21i. A preview names the hero; the body is the one on its space.
+                    var occupant = preview.Occupant.Kind == BoardObjectKind.Hero
+                        ? HeroPieceAt(projection, preview.Occupant.HeroId, preview.Coordinate)
+                        : preview.Occupant;
                     Add(
-                        preview.Occupant,
+                        occupant,
                         isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
                         preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal
                             ? BoardTargetConsequenceIntent.Removal
@@ -652,6 +678,45 @@ namespace GuardsDigital.Presentation.Match
                 .OrderBy(value => value.Target.Kind)
                 .ThenBy(value => value.Target.ToString(), StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 9.21i. The piece a hero cue names: the hero alone while he stands on one space
+        /// (every single-bodied hero's cue is unchanged), and the named body while he stands on several.
+        /// </summary>
+        private static BoardObjectReference HeroPiece(IMatchReadModel projection, HeroId heroId, int body) =>
+            StandsOnSeveralSpaces(projection, heroId) && body >= HeroOccupancy.FirstBody
+                ? BoardObjectReference.ForHeroBody(heroId, body)
+                : BoardObjectReference.ForHero(heroId);
+
+        private static BoardObjectReference HeroPieceAt(
+            IMatchReadModel projection, HeroId heroId, HexCoordinate space)
+        {
+            if (!StandsOnSeveralSpaces(projection, heroId)) return BoardObjectReference.ForHero(heroId);
+            var standing = projection.Heroes.FirstOrDefault(value =>
+                value.HeroId.Equals(heroId) && value.Coordinate.Equals(space));
+            return standing.HeroId.IsDefined
+                ? BoardObjectReference.ForHeroBody(heroId, standing.Body)
+                : BoardObjectReference.ForHero(heroId);
+        }
+
+        private static bool StandsOnSeveralSpaces(IMatchReadModel projection, HeroId heroId) =>
+            projection.Heroes.Count(value => value.HeroId.Equals(heroId)) > 1;
+
+        /// <summary>
+        /// Milestone 9.21i. The selected actor's settled acting body, read from the engine
+        /// (<see cref="IMatchReadModel.ActingBodies"/>), or 0 when none is settled or none is visible.
+        /// </summary>
+        internal static int FocusedActingBody(IMatchReadModel projection)
+        {
+            if (!projection.SelectedActor.IsDefined) return 0;
+            var actor = projection.SelectedActor.ActorId;
+            foreach (var acting in projection.ActingBodies ?? Array.Empty<HeroActingBody>())
+            {
+                if (acting.HeroId.Equals(actor)) return acting.Body;
+            }
+
+            return 0;
         }
 
         private static bool IsTeammate(
@@ -854,6 +919,52 @@ namespace GuardsDigital.Presentation.Match
             }).ToArray());
         }
 
+        /// <summary>
+        /// Milestone 9.21i. A click on one standee: the body it draws is part of the answer. It answers
+        /// "which of you acts" with that body (RZ-Q4), an Attack aimed at that body (RZ-Q3), or an
+        /// effect choice at that body's space - each through the standing contract's own command. For
+        /// a hero on one space it is exactly <see cref="SubmitHero"/>.
+        /// </summary>
+        public bool SubmitHeroBody(HeroId heroId, int body)
+        {
+            var projection = session.Projection;
+            var pick = projection.PendingActingBodyChoice;
+            if (pick != null && pick.HeroId.Equals(heroId))
+            {
+                return pick.Bodies.Any(value => value.Body == body) &&
+                    Execute(PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.ActingBody,
+                        command => command.Kind == DirectorCommandKind.ChooseActingBody &&
+                            command.HeroId.Equals(heroId) &&
+                            command.HeroBody == body));
+            }
+
+            if (!StandsOnSeveralSpaces(projection, heroId))
+            {
+                return SubmitHero(heroId);
+            }
+
+            var choice = projection.PendingAttackTargetChoice;
+            if (choice != null && choice.LegalTargets.Any(value =>
+                    value.Kind == AttackTargetKind.Hero && value.HeroId.Equals(heroId) &&
+                    value.HeroBody == body))
+            {
+                return Execute(PendingDecisionCommandBinding.Require(
+                    projection,
+                    PendingDecisionFamilies.AttackTarget,
+                    command => command.Kind == DirectorCommandKind.ChooseAttackTarget &&
+                        command.ResolutionId.Equals(choice.ResolutionId) &&
+                        command.ChoiceId.Equals(choice.ChoiceId) &&
+                        command.HeroId.Equals(heroId) &&
+                        (command.HeroBody == body || command.HeroBody == 0)));
+            }
+
+            var standing = projection.Heroes.FirstOrDefault(value =>
+                value.HeroId.Equals(heroId) && value.Body == body);
+            return standing.HeroId.IsDefined && SubmitEffectChoiceAtSpace(standing.Coordinate);
+        }
+
         public bool SubmitHero(HeroId heroId)
         {
             var choice = session.Projection.PendingAttackTargetChoice;
@@ -865,6 +976,14 @@ namespace GuardsDigital.Presentation.Match
                 var occupancy = session.Projection.Heroes
                     .FirstOrDefault(value => value.HeroId.Equals(heroId));
                 return occupancy.HeroId.IsDefined && SubmitEffectChoiceAtSpace(occupancy.Coordinate);
+            }
+
+            // Milestone 9.21i. With two of his bodies offered, a click naming only the hero answers
+            // nothing: the body is the answer (RZ-Q3), and it arrives through SubmitHeroBody.
+            if (choice.LegalTargets.Count(value =>
+                    value.Kind == AttackTargetKind.Hero && value.HeroId.Equals(heroId)) > 1)
+            {
+                return false;
             }
 
             return Execute(PendingDecisionCommandBinding.Require(

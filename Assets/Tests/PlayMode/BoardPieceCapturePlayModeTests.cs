@@ -173,7 +173,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// Writes the default match frame to <c>prefix.png</c> and a close crop centred on the named
         /// spaces to <c>prefix-close.png</c>, restoring the camera afterwards.
         /// </summary>
-        private static IEnumerator Capture(
+        internal static IEnumerator Capture(
             BoardInteractionUnityView view, string prefix, IReadOnlyList<HexCoordinate> subject)
         {
             var camera = Camera.main;
