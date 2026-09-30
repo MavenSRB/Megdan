@@ -2,6 +2,24 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21g Counting faces evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21g | Crowd Control's Defense counts his other bodies from the attacked body as a shared value contribution; Rummage and Ransack retrieve behind a generic other-bodies-in-radius read; proven on the staged round. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921g-implement-crowd-controls-defense-and-the-counting-faces). | `milestone/9.21g` |
+
+## Milestone 9.21f Body moves evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21f | The Alleyoop, Tightrope and Magic Trick families and Theatrics composed on the existing swap, push and move vocabulary plus two generic body capabilities; RZ-Q5 enforced in the printed-icon selections; proven on a staged round. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921f-implement-the-moves-and-swaps-of-his-bodies). | `milestone/9.21f` |
+
+## Milestone 9.21e Removal faces evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21e | Phantom Strike, Hit and Gone, Into Thin Air and Crowd Control's Skill remove his own bodies through one generic Removal that is never a Defeat, the acting body included and the lowest remaining body taking over; proven on the staged round. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921e-implement-the-removal-faces). | `milestone/9.21e` |
+
 ## Milestone 9.21d Stunt Doubles evidence
 
 | Milestone | Outcome and definition | Commit |
