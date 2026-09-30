@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21a Many-bodies model evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21a | A hero may stand on several spaces as one hero: body ordinals on occupancy, targets and commands, a declared supply, the acting-body seam, every named site body-aware or refusing by name, snapshot v49 and wire /26, proven on a staged four-body hero. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921a-build-the-many-bodies-model-in-the-engine). | `milestone/9.21a` |
+
 ## Milestone 9.21 Razzle inventory evidence
 
 | Milestone | Outcome and definition | Commit |
