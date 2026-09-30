@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.20 Rune marks evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.20 | Snorri's rune marks centred on their turn slots as clean printed-glyph pictures at a size that fits the card, the squashed marker import fixed, approved by the user on the before/after sheet. [Definition](../../Roadmap/PHASE_9.md#x-920-snorris-rune-marks-are-centred-on-their-turn-slots-and-show-only-their-glyph). | `milestone/9.20` |
+
 ## Milestone 9.18 Token outline evidence
 
 | Milestone | Outcome and definition | Commit |
