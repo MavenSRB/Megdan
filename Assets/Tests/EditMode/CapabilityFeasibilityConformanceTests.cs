@@ -104,6 +104,27 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(FindPerformingProbes(spawn), Is.Empty);
         }
 
+        /// <summary>
+        /// Milestone 9.21e. The removal of the actor's own bodies and its "more than one of you" gate
+        /// are registered only when Razzle is dealt (9.21j), so they are asked of their types here too.
+        /// </summary>
+        [Test]
+        public void TheUnregisteredHeroBodyRemoval_DerivesItsProbeFromItsExecution_AndCommitsNothing()
+        {
+            var removal = new[]
+            {
+                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
+                    .RemoveActorBodiesHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.RemoveBodiesV1)
+                    .GetType(),
+                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
+                    .ActorHasSeveralBodiesHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.SeveralBodiesV1)
+                    .GetType()
+            };
+            Assert.That(ILConformanceScanner.UnresolvedTokens(removal), Is.Empty);
+            Assert.That(FindUnsharedDerivations(removal), Is.Empty);
+            Assert.That(FindPerformingProbes(removal), Is.Empty);
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {
@@ -113,7 +134,9 @@ namespace GuardsDigital.Tests.EditMode
             // board, so both are members no probe may reach.
             // Milestone 9.21d moves it by one: p.19's Spawn of one more body of a many-bodied hero
             // (`IUnitSpawnAuthority.CommitValidatedHeroBodySpawn`) mutates the board.
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(21),
+            // Milestone 9.21e moves it by one: p.19's Remove of named bodies of a many-bodied hero
+            // (`IUnitSpawnAuthority.CommitValidatedHeroBodyRemoval`) mutates the board.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(22),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -545,6 +568,8 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(IUnitSpawnAuthority), nameof(IUnitSpawnAuthority.CommitValidatedUnitSpawn)),
             ILConformanceScanner.Method(
                 typeof(IUnitSpawnAuthority), nameof(IUnitSpawnAuthority.CommitValidatedHeroBodySpawn)),
+            ILConformanceScanner.Method(
+                typeof(IUnitSpawnAuthority), nameof(IUnitSpawnAuthority.CommitValidatedHeroBodyRemoval)),
             ILConformanceScanner.Method(
                 typeof(ITokenPlacementAuthority),
                 nameof(ITokenPlacementAuthority.CommitValidatedTokenPlacement)),

@@ -449,7 +449,7 @@ namespace GuardsDigital.Tests.EditMode
         /// One round on the disk with one of Razzle's two faces committed and Razzle selected to act,
         /// his supply of four bodies declared on the board (RZ-Q1).
         /// </summary>
-        private sealed class Round
+        internal sealed class Round
         {
             internal static MinionId EnemyMinion(int index) => new MinionId($"razzle-blue-melee-{index}");
 
@@ -469,7 +469,8 @@ namespace GuardsDigital.Tests.EditMode
                 HexCoordinate? enemyAt = null,
                 int radiusItems = 0,
                 bool enemyStrikes = false,
-                IReadOnlyList<int> stagedBodyNumbers = null)
+                IReadOnlyList<int> stagedBodyNumbers = null,
+                bool secondCardInHand = false)
             {
                 face = face ?? RazzleCardContent.StuntDoublesDefinition;
                 var participants = StagedBoardParticipants.Create();
@@ -514,7 +515,11 @@ namespace GuardsDigital.Tests.EditMode
                 var wall = CardInstance.CreateInHand(new CardInstanceId("razzle-enemy-wall"),
                     EnemyWall.Reference, Enemy);
                 definitions = new[] { face, EnemyHold, EnemyStrike, EnemyWall };
-                instances = new[] { source, enemyCard, wall };
+                // Milestone 9.21e. A second card of his (a plain Movement) so a case reaches his next turn.
+                instances = secondCardInHand
+                    ? new[] { source, enemyCard, wall,
+                        CardInstance.CreateInHand(SecondCard, EnemyHold.Reference, Razzle) }
+                    : new[] { source, enemyCard, wall };
                 catalogs = new MatchContentCatalogs(
                     SyntheticEffectCapabilities.CreateCatalog(RazzleEffectContent.Handlers()),
                     new ComponentDefinitionCatalog(
@@ -539,7 +544,14 @@ namespace GuardsDigital.Tests.EditMode
 
             internal AdjacentMoveAuthority Board => board;
 
-            private TurnResolutionAuthority Turn => round.CurrentTurnAuthority;
+            internal TurnResolutionAuthority Turn => round.CurrentTurnAuthority;
+
+            // Milestone 9.21e. The removal faces (RazzleRemovalFacesTests) drive the same round.
+            internal RoundResolutionAuthority Authority => round;
+
+            internal CardInstanceId Source => source.Id;
+
+            internal static readonly CardInstanceId SecondCard = new CardInstanceId("razzle-second");
 
             internal string PendingNode => Turn.PendingEffectChoice?.NodeId.Value;
 
@@ -666,6 +678,29 @@ namespace GuardsDigital.Tests.EditMode
                 AnswerSpaces(round, spaces);
             }
 
+            /// <summary>Milestone 9.21e. Crowd Control's Skill primary.</summary>
+            internal void StartSkill() =>
+                Assert.That(round.TryStartSkill(new ActionResolutionId("razzle-skill"),
+                    Offer(RazzleCardContent.PrimarySkill)).Accepted, Is.True);
+
+            /// <summary>Milestone 9.21e. One body of a many-body removal, without closing it.</summary>
+            internal void Select(HexCoordinate space)
+            {
+                var asked = Turn.PendingEffectChoice;
+                Assert.That(asked, Is.Not.Null);
+                Assert.That(round.TryAnswerEffectChoice(asked.SelectInvocations.Single(
+                    invocation => invocation.Candidate.Value.Equals(EffectValue.Space(space)))).Accepted,
+                    Is.True);
+            }
+
+            /// <summary>Milestone 9.21e. Closes a many-body removal with the bodies chosen.</summary>
+            internal void Confirm()
+            {
+                var asked = Turn.PendingEffectChoice;
+                Assert.That(asked?.ConfirmInvocation, Is.Not.Null);
+                Assert.That(round.TryAnswerEffectChoice(asked.ConfirmInvocation).Accepted, Is.True);
+            }
+
             internal void Decline()
             {
                 var choice = Turn.PendingEffectChoice;
@@ -723,7 +758,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(live), "re-executing from the retained prefix matches the forward result");
             }
 
-            private RestoredAuthoritativeMatch Restore(string bytes) =>
+            internal RestoredAuthoritativeMatch Restore(string bytes) =>
                 AuthoritativeSnapshotSerializer.Deserialize(
                     catalogs, bytes, definitions, new[] { board.MapDefinition }, minions);
 

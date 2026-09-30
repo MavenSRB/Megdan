@@ -1904,5 +1904,53 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             occupancies.Add(spawned);
             return true;
         }
+
+        /// <summary>
+        /// Milestone 9.21e. p.19's Remove of named bodies of a many-bodied hero by his own card text
+        /// (RZ-Q6): never a Defeat, so nothing here reaches <c>HeroDefeatResolution</c>, Life or
+        /// coins, and the bodies are back in the supply because <see cref="FindHeroBodySupply"/> reads
+        /// the board. Removing the body settled to act for this action (RZ-Q6: "one of you" may be it)
+        /// settles the LOWEST body left in its place, so every later read of the actor's space in the
+        /// action answers a body that stands (never 9.21a's refusal, never a body gone); with none
+        /// left the settled body is forgotten and the hero is off the board, as after a Defeat.
+        /// </summary>
+        public bool CommitValidatedHeroBodyRemoval(
+            HeroId heroId, IReadOnlyList<int> bodies, out IReadOnlyList<HeroOccupancy> removed)
+        {
+            removed = Array.Empty<HeroOccupancy>();
+            if (bodies == null || bodies.Count == 0 || HeroBodySupplyOf(heroId) < 2 ||
+                bodies.Distinct().Count() != bodies.Count)
+            {
+                return false;
+            }
+
+            var taken = GetHeroBodies(heroId).Where(body => bodies.Contains(body.Body)).ToArray();
+            if (taken.Length != bodies.Count)
+            {
+                return false;
+            }
+
+            foreach (var body in taken)
+            {
+                occupancies.Remove(body);
+                occupancyIndex.Remove(body.Coordinate);
+            }
+
+            if (actingBodies.TryGetValue(heroId, out var acting) && taken.Any(body => body.Body == acting))
+            {
+                var left = GetHeroBodies(heroId);
+                if (left.Count == 0)
+                {
+                    actingBodies.Remove(heroId);
+                }
+                else
+                {
+                    actingBodies[heroId] = left[0].Body;
+                }
+            }
+
+            removed = Array.AsReadOnly(taken);
+            return true;
+        }
     }
 }

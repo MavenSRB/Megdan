@@ -240,6 +240,9 @@ namespace GuardsDigital.Tests.EditMode
             // Doubles' spawn is three optional body placements after the Attack and binds no Attack
             // target, so it adds no at-risk gate. 9.21j swaps the block list for the aggregate.
             foreach (var card in RazzleCardContent.DoublesDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.21e. The removal faces: Phantom Strike's Conditional gates an optional removal
+            // after the Attack and binds no Attack target, so it adds no at-risk gate either.
+            foreach (var card in RazzleCardContent.RemovalDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

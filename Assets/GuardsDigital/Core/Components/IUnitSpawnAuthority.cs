@@ -202,5 +202,25 @@ namespace GuardsDigital.Core.Components
         /// between derivation and commit is a real race the effect must report.
         /// </summary>
         bool CommitValidatedHeroBodySpawn(HeroId heroId, HexCoordinate destination, out HeroOccupancy spawned);
+
+        /// <summary>
+        /// Milestone 9.21e. Every body of this hero standing on the board, in body order - the set his
+        /// own "remove ... of you" text chooses from. One row for a hero that declares one body.
+        /// </summary>
+        IReadOnlyList<HeroOccupancy> GetHeroBodies(HeroId heroId);
+
+        /// <summary>
+        /// Milestone 9.21e. p.19's Remove of named bodies of a hero that declares several (RZ-Q6): each
+        /// leaves the board and is back in <see cref="FindHeroBodySupply"/> at once, which is derived
+        /// from the board. It is never a Defeat - no Life, no coins, no Defeat fact (p.19: "Do not
+        /// collect any coins") - so a hero with one declared body is refused here and still leaves the
+        /// board only through p.13 (<see cref="IBoardObjectExchangeAuthority.CommitValidatedRemoval"/>
+        /// keeps refusing every hero). Refused (false) for an empty, repeated or not-standing body.
+        /// Removing every body leaves the hero off the board, to return by p.7's respawn. When the body
+        /// settled to act (9.21b) is removed, the lowest body left is settled in its place, and none is
+        /// settled when none is left.
+        /// </summary>
+        bool CommitValidatedHeroBodyRemoval(
+            HeroId heroId, IReadOnlyList<int> bodies, out IReadOnlyList<HeroOccupancy> removed);
     }
 }

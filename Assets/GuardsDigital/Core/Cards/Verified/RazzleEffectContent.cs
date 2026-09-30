@@ -27,9 +27,17 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The spawn's nodes, in order, so a paused spawn names which body it is asking about.</summary>
         public static string SpawnNode(int index) => $"stunt-doubles-spawn-{index}";
 
-        /// <summary>Razzle's capabilities so far: the spawn of one body (9.21d).</summary>
+        /// <summary>
+        /// Razzle's capabilities so far: the spawn of one body (9.21d), and the removal of his own
+        /// bodies with the "more than one of you" gate (9.21e).
+        /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            new[] { SyntheticHeroBodyCapabilities.SpawnActorBodyHandler(SpawnBodyV1) };
+            new[]
+            {
+                SyntheticHeroBodyCapabilities.SpawnActorBodyHandler(SpawnBodyV1),
+                SyntheticHeroBodyCapabilities.RemoveActorBodiesHandler(RemoveBodiesV1),
+                SyntheticHeroBodyCapabilities.ActorHasSeveralBodiesHandler(SeveralBodiesV1)
+            };
 
         /// <summary>
         /// "After the attack: Spawn up to 3 more of you in radius." Three optional spawns of one body

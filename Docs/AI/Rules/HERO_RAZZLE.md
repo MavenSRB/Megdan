@@ -198,6 +198,33 @@ Left to later blocks after 9.21c: a card-text Attack target is bound as the hero
 
 Left to later blocks after 9.21d: registration at 9.21j (the handler type is new to the build, so milestone 7.9's first-arrival gate and the registered-type count in `CapabilityFeasibilityConformanceTests` move then); `HeroBodiesRosterSweepTests` must classify `razzle-spawn-body@1` (acting body) once his faces are dealt; the 9.6/9.7 `OfferOutcomeTests` and the expected-outcome executor draw on the dealt roster and reach the face only at 9.21j; Twin Strike's repeated spawn (9.21h) and the standees of spawned bodies (9.21i).
 
+**What 9.21e built** (the removal faces; unregistered, revision `razzle-9-21d-prep` kept - no content identity test needs a revision per block):
+- **The faces** (`RazzleRemovalFaces.cs`, block list `RazzleCardContent.RemovalDefinitions`, added to the conditional-choose corpus sweep):
+  - Phantom Strike (Red I: Initiative 9, Defense 3, Movement 4, Attack 4): a `Conditional` over `razzle-several-bodies@1` ("If there is more than one of you in play") with no else-child, so a false gate is RULING 53's legal do-nothing; its then-child is a `May` removal of exactly one body.
+  - Hit and Gone (Red II: 9, 4, 4, Attack 4, Defense item): a `May` removal of 1 to all but one body.
+  - Into Thin Air (Red III: 10, 4, 4, Attack 5, Range item): a `May` removal of 1 to all bodies. Its reminder composes to no node.
+  - Crowd Control (Silver basic, Initiative 13): p.14's Defense/Skill card with two printed primaries, as Awaken! has. The Skill (Radius 3) is a mandatory removal of every body but the acting one, so it is greyed when no other body stands (RZ-Q7). The Defense primary (Defense 1, Radius 3) has no text yet: "+2 Defense for each other you in radius" belongs to 9.21g.
+- **The capability.** `SyntheticHeroBodyCapabilities.RemoveActorBodiesHandler` (`razzle-remove-bodies@1`) is generic. Its closed input `ActorBodyRemoval` has one member per printed quantity: `OneBody`, `OneOrMoreButNotTheLast`, `OneOrMoreIncludingAll` and `EveryOtherBody`. "Other" is measured from the acting body. The choosing members ask for the bodies as their spaces, with the printed bounds; `EveryOtherBody` asks nothing. The handler publishes `removed` (a count). Execute, Resume and Anticipate share one derivation. `ActorHasSeveralBodiesHandler` (`razzle-several-bodies@1`) is a read-only predicate.
+- **The authority.** `IUnitSpawnAuthority.CommitValidatedHeroBodyRemoval(hero, bodies, out removed)` and `GetHeroBodies` are implemented by `AdjacentMoveAuthority`:
+  - The removal refuses a hero that declares one body, an empty or repeated list, and a body not standing.
+  - The bodies go straight back to the supply, because `FindHeroBodySupply` reads the board.
+  - It never reaches `HeroDefeatResolution`: no Life, no coins, no Defeat history or score.
+  - `CommitValidatedRemoval` still refuses every hero (`HeroRequiresDefeat`).
+  - `CapabilityFeasibilityConformanceTests` names the commit (21 -> 22) and holds both unregistered types to its probe rules.
+- **The acting body removed mid-action (RZ-Q6).** When the settled acting body is removed, the **lowest body left** is settled in its place. When no body is left, nothing is settled: he is off the board, as after a Defeat, and p.7 offers his respawn at his next action. The removal is the last clause of all four faces, so no printed text reads the actor after it. The reading only has to keep the engine's later reads of that action (and 9.21b's "which of you acts", which must not reopen mid-action) on a body that stands. The lowest body is the rule 9.21a already uses by default (body 1). No card leaves this open, so it is not an RZ question; a later face with text after a removal would have to revisit it.
+- **No schema, wire or match-log move** (v50, `/27`). A removed body is a missing row, and the re-settled acting body rides v50's supply row. The match log has no row for a removed body yet; 9.21i draws the removal.
+- **Evidence.** `RazzleRemovalFacesTests` runs on 9.21d's staged round (`RazzleStuntDoublesTests.Round`, now internal, with `Select`/`Confirm`/`StartSkill`). It covers:
+  - the printed values and composition of each face;
+  - Phantom Strike with one body (no question) and with two (either body offered, exactly one removed, declined);
+  - Hit and Gone's 1..n-1 bounds, one body (no question), and every offered body answered on a restored copy;
+  - Into Thin Air removing both bodies or the only body, with no coins, Life, Defeat history or score, and the respawn offered at his next turn;
+  - Crowd Control greyed with one body and removing both others from a picked body 2;
+  - the acting body removed (Phantom Strike, and Hit and Gone with body 1 also gone, where 9.21a's fallback would refuse);
+  - restore and replay with a body already chosen, with body 2 acting, and off the board;
+  - the commit's refusals.
+
+Left to later blocks after 9.21e: Crowd Control's Defense text (9.21g, onto `CrowdControlDefinition`'s `PrimaryDefense`); registration and the `HeroBodiesRosterSweepTests` classification of `razzle-remove-bodies@1` (acting body) and `razzle-several-bodies@1` (9.21j); the removal's presentation and log row (9.21i).
+
 ## Presentation needs
 
 - Several standees for one hero, all drawn from element 8596252's team face. A quiet per-body mark keeps them apart in the log and the pick. Hover, the target cue (8.62) and the Defeat fade apply per body.
