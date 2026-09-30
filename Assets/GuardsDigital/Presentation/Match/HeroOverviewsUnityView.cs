@@ -779,14 +779,17 @@ namespace GuardsDigital.Presentation.Match
                 if (turnMarker != null)
                 {
                     // Milestone 9.20: centred on the slot, across and down, over the card that may
-                    // stand in it - the user's "center them on card slots". The frame's padding and
-                    // border are even on every side, so its centre is the card's.
+                    // stand in it - the user's "center them on card slots". The marker covers the
+                    // card itself and draws its glyph centred inside, so the glyph's centre is the
+                    // card's wherever layout snaps the two to screen pixels; a marker sized to its
+                    // glyph and centred by margins snapped differently from the card and stood
+                    // half a pixel off it (the axe, which the user saw).
                     turnMarker.style.position = Position.Absolute;
-                    turnMarker.style.left = Length.Percent(50f);
-                    turnMarker.style.top = Length.Percent(50f);
-                    turnMarker.style.marginLeft = -turnMarker.style.width.value.value / 2f;
-                    turnMarker.style.marginTop = -turnMarker.style.height.value.value / 2f;
-                    outline.Add(turnMarker);
+                    turnMarker.style.left = 0f;
+                    turnMarker.style.top = 0f;
+                    turnMarker.style.right = 0f;
+                    turnMarker.style.bottom = 0f;
+                    element.Add(turnMarker);
                 }
                 column.Add(outline);
 
@@ -1395,20 +1398,19 @@ namespace GuardsDigital.Presentation.Match
             {
                 currentTurnMarker.style.position = Position.Absolute;
                 // Inside the slot's top edge: the header clips anything drawn above it. Milestone
-                // 9.20: at the tray's own glyph scale, centred in the band the card reserves for it.
-                var markerWidth = currentTurnMarker.style.width.value.value;
-                var markerHeight = currentTurnMarker.style.height.value.value;
-                currentTurnMarker.style.top = Mathf.Max(0f, (TurnSlotMarkerHeight - markerHeight) / 2f);
-                currentTurnMarker.style.left = (CurrentCardWidth - markerWidth) / 2f;
+                // 9.20: the band the card reserves across the slot's width, with the glyph centred
+                // in it at the tray's own scale.
+                currentTurnMarker.style.top = 0f;
+                currentTurnMarker.style.left = 0f;
+                currentTurnMarker.style.right = 0f;
+                currentTurnMarker.style.height = TurnSlotMarkerHeight;
                 slot.Add(currentTurnMarker);
             }
 
             return slot;
         }
 
-        // Milestone 8.93f. A printed rune glyph large enough to read at 1280x720: the prepared
-        // tile is 27x22 source pixels, drawn at its own aspect.
-        private const float TurnSlotMarkerWidth = 30f;
+        // Milestone 8.93f. The band over the live turn's card that its rune stands in.
         private const float TurnSlotMarkerHeight = 24f;
 
         // Milestone 9.20. A tray glyph's size: the UI units one prepared source pixel is drawn at,
@@ -1421,34 +1423,40 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// A turn-slot marker as its printed glyph alone (milestone 9.20): cut off the prepared
         /// tile's card stock by <see cref="PrintedGlyphCutout"/>, transparent around it and outlined.
-        /// The element is sized to the glyph at the tray's one scale, in the tray and over the live
-        /// turn's card alike. When no glyph can be cut, the prepared tile, and failing that the slot's
-        /// number, stand in at the fixed footprint. The marker takes no pointer, so the card under it
-        /// keeps its own hover.
+        /// The caller places the element over the area the rune stands on; the glyph is drawn
+        /// centred in it at the tray's one scale, in the tray and over the live turn's card alike, so
+        /// the glyph's centre is the area's and the four keep their printed relative sizes. The
+        /// cutout's ink is centred in its own texture, so centring the picture centres the ink. When
+        /// no glyph can be cut, the prepared tile, and failing that the slot's number, stand in,
+        /// fitted to the area. The marker takes no pointer, so the card under it keeps its hover.
         /// </summary>
         private static VisualElement BuildTurnSlotMarker(
             TurnSlotMarkerViewModel marker, string elementName)
         {
             if (marker == null) return null;
             var icon = new VisualElement { name = elementName, pickingMode = PickingMode.Ignore };
-            icon.style.width = TurnSlotMarkerWidth;
-            icon.style.height = TurnSlotMarkerHeight;
             icon.style.flexShrink = 0f;
+            icon.style.justifyContent = Justify.Center;
             icon.tooltip = marker.AssistiveLabel;
             var tile = Resources.Load<Texture2D>(marker.ResourcePath);
             var glyph = tile == null ? null : PrintedGlyphCutout.Cut(tile);
-            var texture = glyph != null ? glyph : tile;
             if (glyph != null)
             {
                 const float unitsPerTexel =
                     TrayGlyphUnitsPerSourcePixel / PrintedGlyphCutout.Magnification;
-                icon.style.width = glyph.width * unitsPerTexel;
-                icon.style.height = glyph.height * unitsPerTexel;
+                icon.style.backgroundImage = new StyleBackground(glyph);
+                icon.style.backgroundSize = new StyleBackgroundSize(new BackgroundSize(
+                    glyph.width * unitsPerTexel, glyph.height * unitsPerTexel));
+                icon.style.backgroundPositionX =
+                    new StyleBackgroundPosition(new BackgroundPosition(BackgroundPositionKeyword.Center));
+                icon.style.backgroundPositionY =
+                    new StyleBackgroundPosition(new BackgroundPosition(BackgroundPositionKeyword.Center));
+                icon.style.backgroundRepeat =
+                    new StyleBackgroundRepeat(new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat));
             }
-
-            if (texture != null)
+            else if (tile != null)
             {
-                icon.style.backgroundImage = new StyleBackground(texture);
+                icon.style.backgroundImage = new StyleBackground(tile);
                 icon.style.backgroundSize =
                     new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
             }

@@ -170,7 +170,9 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 var marker = slotMarkers.Single(value =>
                     value.tooltip == "Rune " + rune + " assigned to turn " + slotFor[rune]);
-                var slot = marker.parent.Q("gd-turn-slot");
+                var slot = marker.parent != null && marker.parent.name == "gd-turn-slot"
+                    ? marker.parent
+                    : marker.parent?.Q("gd-turn-slot");
                 if (slot == null)
                 {
                     misses.Add("rune " + rune + " stands outside its slot's frame");
@@ -227,28 +229,43 @@ namespace GuardsDigital.Tests.PlayMode
                     maxY = System.Math.Max(maxY, index / width);
                 }
 
-                var drawnWidth = marker.worldBound.width * (maxX - minX + 1) / width;
-                var drawnHeight = marker.worldBound.height * (maxY - minY + 1) / texture.height;
+                var picture = DrawnPicture(marker, texture);
+                var drawnWidth = picture.width * (maxX - minX + 1) / width;
+                var drawnHeight = picture.height * (maxY - minY + 1) / texture.height;
                 if (drawnWidth > slot.worldBound.width - (2f * CardMargin) ||
                     drawnHeight > slot.worldBound.height - (2f * CardMargin))
                     misses.Add("rune " + rune + " draws " + drawnWidth.ToString("0.0") + " x " +
                         drawnHeight.ToString("0.0") + " on a " + slot.worldBound.width.ToString("0.0") +
                         " x " + slot.worldBound.height.ToString("0.0") + " card, leaving under " +
                         CardMargin + " each side");
+
+                // The user's "just center the axe horizontally": the ink - the columns the glyph
+                // actually draws where the picture is drawn - is centred across the card, not
+                // merely the element around it.
+                var inkCentre = picture.x + (picture.width * (minX + maxX + 1) / (2f * width));
+                var inkOffset = inkCentre - slot.worldBound.center.x;
+                UnityEngine.Debug.Log("9.20 rune " + rune + " ink centre offset " +
+                    inkOffset.ToString("0.00") + " (picture " + picture + ", card " +
+                    slot.worldBound + ", ink columns " + minX + ".." + maxX + " of " + width + ")");
+                if (UnityEngine.Mathf.Abs(inkOffset) > InkCentring)
+                    misses.Add("rune " + rune + "'s ink is centred " + inkOffset.ToString("0.00") +
+                        " across turn slot " + slotFor[rune]);
             }
 
-            // The live turn's rune over the header's card is the same glyph at the same size, to
-            // within the one screen pixel (4/3 of a panel unit at 1920x1080) layout snapping moves it.
+            // The live turn's rune over the header's card is the same glyph drawn at the same size.
             var live = Named(hud, "gd-current-turn-marker").Where(UiPlayer.IsShown).ToArray();
             var trayTwin = slotMarkers.Single(value => value.tooltip == "Rune 2 assigned to turn 1");
             if (live.Length != 1 || live[0].tooltip != trayTwin.tooltip)
                 misses.Add("the live turn shows " + live.Length + " rune(s), not rune 2");
             else if (live[0].resolvedStyle.backgroundImage.texture !=
                      trayTwin.resolvedStyle.backgroundImage.texture ||
-                     UnityEngine.Mathf.Abs(live[0].worldBound.width - trayTwin.worldBound.width) > 1.5f ||
-                     UnityEngine.Mathf.Abs(live[0].worldBound.height - trayTwin.worldBound.height) > 1.5f)
-                misses.Add("the live turn's rune is " + live[0].worldBound.size + ", the tray's " +
-                    trayTwin.worldBound.size);
+                     (DrawnPicture(live[0], live[0].resolvedStyle.backgroundImage.texture).size -
+                      DrawnPicture(trayTwin, trayTwin.resolvedStyle.backgroundImage.texture).size)
+                     .magnitude > 0.1f)
+                misses.Add("the live turn's rune draws " +
+                    DrawnPicture(live[0], live[0].resolvedStyle.backgroundImage.texture).size +
+                    ", the tray's " +
+                    DrawnPicture(trayTwin, trayTwin.resolvedStyle.backgroundImage.texture).size);
 
             Assert.That(misses, Is.Empty, string.Join("; ", misses));
             Healthy(runtime);
@@ -256,6 +273,60 @@ namespace GuardsDigital.Tests.PlayMode
 
         // Milestone 9.20: the least clear card a tray glyph leaves on each side, in panel units.
         private const float CardMargin = 2f;
+
+        // Milestone 9.20: how far a glyph's ink centre may sit from its card's, in panel units.
+        // Half a unit: the axe the user saw off centre stood 0.67 units (half a screen pixel at
+        // 1920x1080) to the right, inside a one-unit allowance.
+        private const float InkCentring = 0.5f;
+
+        /// <summary>
+        /// Milestone 9.20. Where an element's background picture is drawn, in panel units: its
+        /// resolved size (fitted for contain and cover, or the explicit lengths) placed by its
+        /// resolved background position inside the element's box.
+        /// </summary>
+        private static UnityEngine.Rect DrawnPicture(
+            VisualElement element, UnityEngine.Texture texture)
+        {
+            var box = element.worldBound;
+            if (texture == null) return box;
+            var size = element.resolvedStyle.backgroundSize;
+            float width, height;
+            if (size.sizeType == BackgroundSizeType.Contain || size.sizeType == BackgroundSizeType.Cover)
+            {
+                var fit = size.sizeType == BackgroundSizeType.Contain
+                    ? UnityEngine.Mathf.Min(box.width / texture.width, box.height / texture.height)
+                    : UnityEngine.Mathf.Max(box.width / texture.width, box.height / texture.height);
+                width = texture.width * fit;
+                height = texture.height * fit;
+            }
+            else
+            {
+                width = size.x.unit == LengthUnit.Percent ? box.width * size.x.value / 100f : size.x.value;
+                height = size.y.unit == LengthUnit.Percent ? box.height * size.y.value / 100f : size.y.value;
+            }
+
+            return new UnityEngine.Rect(
+                Place(element.resolvedStyle.backgroundPositionX, box.x, box.width, width),
+                Place(element.resolvedStyle.backgroundPositionY, box.y, box.height, height),
+                width, height);
+        }
+
+        private static float Place(BackgroundPosition position, float start, float span, float size)
+        {
+            var offset = position.offset.unit == LengthUnit.Percent
+                ? (span - size) * position.offset.value / 100f
+                : position.offset.value;
+            switch (position.keyword)
+            {
+                case BackgroundPositionKeyword.Center:
+                    return start + ((span - size) / 2f);
+                case BackgroundPositionKeyword.Right:
+                case BackgroundPositionKeyword.Bottom:
+                    return start + span - size - offset;
+                default:
+                    return start + offset;
+            }
+        }
 
         private static VisualElement[] Named(VisualElement root, string name) =>
             UiPlayer.Descendants(root).Where(element => element.name == name).ToArray();
