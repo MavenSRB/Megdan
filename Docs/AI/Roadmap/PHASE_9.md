@@ -181,7 +181,7 @@ Queued: the last four heroes, plus one invariant per numbered rulebook rule that
 
 Queued 2026-09-29 by 9.13's content finding: the card prints eight a's, the content display name seven. Outcome: the display name corrected to the printed spelling and Mortimer's pinned semantic identity digest re-measured and re-pinned with the reason recorded; no identity id or rule changes. Closing check: `VerifiedContentIdentityTests` green at the new pin, the card-name resolver in `ExpectedOutcomeExecutor` no longer needing its spelling bridge, harness and Edit Mode green. T1.
 
-### [ ] 9.15 The match log records triggered-effect Defeats and card-text Removals
+### [~] 9.15 The match log records triggered-effect Defeats and card-text Removals
 
 Queued 2026-09-29 by 9.13's diagnostic finding: `RuleEventLogProjection` unpacks card-action events for Movement, Attack, Fast Travel, Clear and Skill but not `TriggeredEffectProgressed`, so a Defeat inside a triggered effect (Wasp's High Voltage) logs no `MinionDefeated`; and Ignatia's card-text Removal emits no `MinionRemovalCompleted` at all. Outcome: both reach the seat-public match log and rule events like their card-action siblings, with regressions failing on the base; the executor's scoreboard fallback is then retired. Closing check: the regressions, the event-channel fixtures and the wire log round trips green; wire protocol unmoved unless a new row is required, which is recorded. T2.
 
@@ -231,9 +231,15 @@ Completed 2026-09-29.
 
 Historical evidence: [9.17a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-917a-runestone-binding-evidence).
 
-### [~] 9.19 A card-text discard is narrated and logged
+### [x] 9.19 A card-text discard is narrated and logged
 
 Queued 2026-09-29 by 9.17a: an enemy hero's card-text discard (Charged Runestone, the Seismic faces, Trample) produces no match-log row and no narration line - only the Defense discard has a row kind - so a discard that happens is invisible at the table. Outcome: every card-text discard writes a seat-public match-log row naming the hero and the card's colour, and the status strip narrates it; a new `MatchLogEntryKind` moves the wire to `/26` (`NetworkMatchLog` rejects unknown kinds), recorded with the move. Closing check: a regression on the event channel and the wire log round trip failing on the base; the narration fixture; harness and the private-online fixtures green. T2.
+
+Result: the discard rides the same path as 8.40f's reveal, end to end. A handler that sends a card out of a hand reports it on its result (`EffectExecutionResult.DiscardedCards`, a `DiscardedCard` naming the owner and the card, reported by `discard-chosen-card@1/@2` and `discard-owned-card@1`); the node event carries it (`EffectResolutionEvent.DiscardedCards`); `CardActionResolutionEvent.DiscardedCardFacts` mints one `CardActionResolutionEventKind.CardTextDiscardedCard` fact per card with the owner on the target field and the card on `DiscardedCardInstanceId`, and the four altitudes that published reveals now call `RevealedAndDiscardedCardFacts`, so no altitude publishes one and not the other; `RuleEventLogProjection` writes `discardedCard=` as a reference; `MatchLogProjection` derives `MatchLogEntryKind.CardDiscardedByCardText` (the thirty-fifth kind) with the subject the card's OWNER, never the acting hero; `GameplayNarrationLog` says "discarded ... from their hand" and `MatchLogPresentation` prints "DISCARDED <card>" in every seat, the row being what makes the card nameable. The wire moves `/28` -> `/29` (the closed kind vocabulary widened; `NetworkMatchLog` validates kinds with `Enum.IsDefined`, so a /28 peer is refused at the header rather than going dark), recorded in `PrivateSessionProtocol`'s notes; schema v50 unmoved. `SnorriRoundTwoRuneTests.RoundTwoTurnOne_ChargedRunestone_LogsBainsDiscardForEverySeat` drives Charged Runestone under the anvil rune and reads the row (owner Bain, his Blue, round 2, narrated) - it compares the kind by name so it compiles on the base and fails there with no such row; `CardTextDiscardLogTests` (5) proves the translation node -> fact -> log line -> row, both rows reveal-first for a node that did both, no row for a node that discarded nothing, and the fact's fields; the narration walk, the panel's closed-vocabulary walk and the kinetic-cue walk each gain the kind; nine wire-version pins move to 29.
+
+Completed 2026-10-01.
+
+Historical evidence: [9.19 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-919-card-text-discard-row-evidence).
 
 ## Rune marks, authorized 2026-09-30
 

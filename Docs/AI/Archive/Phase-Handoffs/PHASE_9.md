@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.19 Card-text discard row evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.19 | Every card-text discard writes a seat-public match-log row naming the card's owner and the card, narrated and printed in every seat, on the reveal row's path; wire /28 -> /29; proven by a Runestone regression failing on the base and the node-to-row derivation cases. [Definition](../../Roadmap/PHASE_9.md#x-919-a-card-text-discard-is-narrated-and-logged). | `milestone/9.19` |
+
 ## Milestone 9.27 Package evidence
 
 | Milestone | Outcome and definition | Commit |
