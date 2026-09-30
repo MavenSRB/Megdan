@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.27 Package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.27 | `Builds/Playtest-9.27-razzle` cut from `17c2072f` with stamp `1.0-9.27-razzle+20260930224123-a5f67598`, protocol /28, schema 50, 28 heroes with Razzle dealt and gated, after the T3 gate (harness 5513 at the root; Edit 6561 with 37 established skips and Play 1016 reused from the 9.21k landing on identical code; lobby 31) and the build-and-launch smoke. [Definition](../../Roadmap/PHASE_9.md#x-927-package-the-2026-10-01-build-with-razzle). | `milestone/9.27` |
+
 ## Milestone 9.21k Player-path gate evidence
 
 | Milestone | Outcome and definition | Commit |
