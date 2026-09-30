@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21b Acting body evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21b | A twelfth pending family, "which of you acts", raised before the action when more than one body stands, owned and delegated like the action itself, settling the acting body for every read; snapshot v50, wire /27, bot answer, status lines; proven on the staged four-body hero. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921b-choose-the-acting-body-for-each-action). | `milestone/9.21b` |
+
 ## Milestone 9.22 Adjacent target evidence
 
 | Milestone | Outcome and definition | Commit |
