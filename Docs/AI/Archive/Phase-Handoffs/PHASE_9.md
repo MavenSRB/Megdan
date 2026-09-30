@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21d Stunt Doubles evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21d | Stunt Doubles and the boxed Stunted Doubles composed: a generic spawn of the actor's bodies from his supply into empty spaces within the printed Radius of the acting body, widened by the Radius item, 0-3 per play, proven on a staged round including restore and replay mid-spawn. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921d-implement-stunt-doubles-and-the-spawn). | `milestone/9.21d` |
+
 ## Milestone 9.21c Roster reading evidence
 
 | Milestone | Outcome and definition | Commit |
