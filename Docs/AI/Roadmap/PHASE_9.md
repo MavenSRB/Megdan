@@ -328,3 +328,36 @@ Result: `PhaseSnapshot` now carries the hero whose finished turn waits on its re
 Completed 2026-10-01.
 
 Historical evidence: [9.28 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-928-end-turn-cue-evidence).
+
+## Minion Battle picks, authorized 2026-10-01
+
+### [ ] 9.29 Each teammate picks their own Minion Battle removals, and matching picks remove them
+
+Authorized 2026-10-01 by the user, from the 2026-09-30 playtest: "After minion battle removal, when team is supposed to agree what minon to remove. That UI implementation sucks. Player are struggling with it a lot." and "they now share the selection, and that is confusing for people. Stuff is changing on the screen and they dont know why." The user settled the design the same day. Each player picks their own minions. "Matching picks remove, but you need to see what other people picked as well ... not full hex outline when minion is selectable, and full outline when a teammate or you have selected it". A teammate's pick also carries that teammate's small portrait. The milestone runs now, ahead of 9.19's sequence.
+
+Measured cause, from the host log `Builds/Playtest-9.24-roster27/Logs/launches/3e51301cecd1419faf4c7125d3179a16/match-20260930-212556.log` (Red, end of round 1): one minion took 48 s, 35 board selections from three seats and four stale refusals. Every other contested removal that night took 14-46 s. Three things caused it:
+- All three seats toggle one shared authoritative selection.
+- A full selection offers no Select, so a click on another minion does nothing.
+- Every click clears all three agreements.
+
+Outcome:
+- On a seat-served match the choosing-team seats no longer receive the Minion Battle's Select, Deselect or Confirm.
+- Each seat states its own pick set through the host agreement coordinator. Like 8.30n's Initiative preference, it is a team-scoped statement and neither snapshot nor replay state.
+- A pick on a full set replaces that seat's oldest pick.
+- Each set follows the authority's non-Heavy-before-Heavy order.
+- When every choosing-team seat holds the same complete set, the host submits the existing Select commands and Confirm at once, so no button remains.
+- The opposing side sees neither picks nor cues, only that the other side is choosing.
+- On the board, a minion the viewer may pick keeps its corner marks. Every minion the viewer or a teammate picked wears the full hex outline, plus the picking teammate's small token (the viewer's own picks carry none).
+- The docked bar counts the viewer's picks and names a teammate who has not finished or picked differently.
+- Bot seats follow a human teammate's complete set and never block.
+- Director mode keeps its direct controls.
+- p.8 is unchanged. The wire protocol moves.
+
+Closing check: every regression below fails on the base and passes after.
+- Coordinator: a seat's picks never move a teammate's; a full set swaps; the Heavy order holds; unanimity submits Select and Confirm and removes the minions; a divergent set does not; the opposing side receives no picks; a stale proposal is refused.
+- Seat authorization: no Minion Battle rules command reaches a seat.
+- Codec: picks round-trip.
+- Presenter: the corner marks, the full outline and the teammate token, and the docked bar's wording.
+- Bots: bot seats converge on a human's picks.
+
+The six-seat rehearsal, the seat drivers and the Play Mode paths through a Minion Battle are re-pointed and green. Full dotnet harness, then complete Edit Mode and Play Mode suites: T3, because seat authorization, the wire and the whole-match drivers change. A capture of picked minions on the board goes to the user.
