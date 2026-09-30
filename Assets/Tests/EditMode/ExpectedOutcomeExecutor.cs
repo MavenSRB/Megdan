@@ -2804,35 +2804,14 @@ namespace GuardsDigital.Tests.EditMode
                 projection.MatchLog.Where(value => value.Sequence > logBaseline);
 
             /// <summary>
-            /// A Defeat is read from the match log, and where the log is silent from the scoreboard's
-            /// Deaths and minion kills, which the p.13 rewards feed: 9.13's smoke table found the log
-            /// silent on a Defeat inside a triggered effect (Wasp's High Voltage, coins paid, kill
-            /// counted) and on a Removal made by card text (Ignatia's Abrupt Combustion, no kill).
+            /// A Defeat is read from the match log and nowhere else. 9.13's smoke table had found the
+            /// log silent on a Defeat inside a triggered effect (Wasp's High Voltage) and on a
+            /// Removal made by card text (Ignatia's Abrupt Combustion) and read the scoreboard's
+            /// Deaths and minion kills instead; milestone 9.15 put both on the log, so the fallback
+            /// is retired: a Defeat the log does not record is a defect the table should surface.
             /// </summary>
-            private bool Defeated(MatchSessionProjection projection, Piece piece)
-            {
-                if (!piece.IsHero && !piece.IsMinion) return false;
-                if (DefeatLogged(projection, piece)) return true;
-                if (piece.IsHero)
-                {
-                    int Deaths(MatchSessionProjection value) =>
-                        value.Scoreboard.Where(entry => entry.HeroId.Equals(piece.Hero)).Select(entry => entry.Deaths).FirstOrDefault();
-                    return Deaths(projection) > Deaths(before);
-                }
-
-                if (PositionOf(projection, piece.Ref).HasValue || RemovalLogged(projection, piece)) return false;
-                var unlogged = pieces.Where(other => other.IsMinion && !PositionOf(projection, other.Ref).HasValue &&
-                    !DefeatLogged(projection, other) && !RemovalLogged(projection, other)).ToList();
-                var kills = projection.Scoreboard.Sum(entry => entry.MinionsKilled) - before.Scoreboard.Sum(entry => entry.MinionsKilled) -
-                    pieces.Count(other => other.IsMinion && DefeatLogged(projection, other));
-                if (kills > 0 && kills < unlogged.Count)
-                {
-                    throw Refuse($"cannot tell which of {string.Join(", ", unlogged.Select(other => other.Ref))} were defeated: " +
-                        $"the log records none of them and the scoreboard counts {kills} minion kills");
-                }
-
-                return kills > 0;
-            }
+            private bool Defeated(MatchSessionProjection projection, Piece piece) =>
+                (piece.IsHero || piece.IsMinion) && DefeatLogged(projection, piece);
 
             private bool DefeatLogged(MatchSessionProjection projection, Piece piece) =>
                 LogSince(projection).Any(value =>

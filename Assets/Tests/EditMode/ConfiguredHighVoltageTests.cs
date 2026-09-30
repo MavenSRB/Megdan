@@ -5,6 +5,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -78,6 +79,42 @@ namespace GuardsDigital.Tests.EditMode
                     MinionDefeatFactKind.RemovalAttempted,
                     MinionDefeatFactKind.RemovalCompleted
                 }));
+        }
+
+        /// <summary>
+        /// Milestone 9.15, from 9.13's smoke table: the Defeat High Voltage makes paid its coins and
+        /// counted its kill but reached no log row, because the rule-event log unpacked card-action
+        /// facts for the five action kinds and not for TriggeredEffectProgressed. Derived here through
+        /// the production translation from the turn's own events.
+        /// </summary>
+        [Test]
+        public void HighVoltagesDefeat_ReachesTheSeatPublicLog_LikeASkillsWould()
+        {
+            var fixture = CreateFixture(StandardMinionType.Melee, lastEnemyMinion: false,
+                adjacentEnemyHero: true, controllerOnBoard: true);
+            StartBasicSkill(fixture);
+            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
+            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.SelectInvocations.Single(value =>
+                value.Candidate.Value.MinionId.Equals(fixture.TargetId)));
+            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.SelectInvocations.Single());
+            var completed = Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.SelectInvocations.First());
+
+            var log = new RuleEventLogProjection();
+            log.Append(completed.Events.Select(value => RoundResolutionEvent.FromTurn(1, 1, value)));
+            var rows = MatchLogProjection.Derive(log.Entries, int.MaxValue);
+
+            Assert.That(
+                rows.Where(row => row.Kind == MatchLogEntryKind.MinionDefeated)
+                    .Select(row => row.SubjectMinionId),
+                Does.Contain(fixture.TargetId),
+                "the triggered Defeat has its row; the rows are: " +
+                string.Join(" | ", rows.Select(row => row.Kind.ToString())));
+            Assert.That(
+                rows.Where(row => row.Kind == MatchLogEntryKind.MinionRemoved)
+                    .Select(row => row.SubjectMinionId),
+                Does.Contain(fixture.TargetId), "and the removal that followed it");
+            Assert.That(rows.Select(row => row.Kind), Does.Contain(MatchLogEntryKind.CoinAwarded),
+                "and the reward, like a Skill's own Defeat");
         }
 
         [Test]

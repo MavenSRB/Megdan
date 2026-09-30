@@ -40,7 +40,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
             AppliedRuleModification blocking = null,
             IEnumerable<RevealedCard> revealedCards = null,
-            IEnumerable<DiscardedCard> discardedCards = null)
+            IEnumerable<DiscardedCard> discardedCards = null,
+            IEnumerable<RemovedMinion> removedMinions = null)
         {
             NodeId = nodeId;
             ResultKind = resultKind;
@@ -55,6 +56,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray());
             DiscardedCards = new ReadOnlyCollection<DiscardedCard>(
                 (discardedCards ?? Enumerable.Empty<DiscardedCard>()).ToArray());
+            RemovedMinions = new ReadOnlyCollection<RemovedMinion>(
+                (removedMinions ?? Enumerable.Empty<RemovedMinion>()).ToArray());
         }
 
         public EffectNodeId NodeId { get; }
@@ -80,6 +83,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>Milestone 9.19. The cards this node sent to a discard pile by card text.</summary>
         public IReadOnlyList<DiscardedCard> DiscardedCards { get; }
+
+        /// <summary>Milestone 9.15. The minions this node removed from the board by card text.</summary>
+        public IReadOnlyList<RemovedMinion> RemovedMinions { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
@@ -2117,7 +2123,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             outcomes.Add(new EffectNodeOutcome(nodeId, kind, result?.Outcomes));
             events.Add(new EffectResolutionEvent(
                 nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
-                blocking, result?.RevealedCards, result?.DiscardedCards));
+                blocking, result?.RevealedCards, result?.DiscardedCards, result?.RemovedMinions));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

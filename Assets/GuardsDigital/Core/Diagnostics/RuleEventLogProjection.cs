@@ -306,11 +306,16 @@ namespace GuardsDigital.Core.Diagnostics
                 return;
             }
 
+            // Milestone 9.15. A triggered effect's facts (p.16 Ultimates and the other triggered
+            // effects) are card-action facts exactly like a Skill's and were the one kind this
+            // switch dropped, so a Defeat inside Wasp's High Voltage reached the coin ledger and
+            // the scoreboard but never the log.
             if (ruleEvent.Kind == TurnResolutionEventKind.MovementActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.AttackActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.FastTravelActionProgressed ||
                 ruleEvent.Kind == TurnResolutionEventKind.ClearActionProgressed ||
-                ruleEvent.Kind == TurnResolutionEventKind.SkillActionProgressed)
+                ruleEvent.Kind == TurnResolutionEventKind.SkillActionProgressed ||
+                ruleEvent.Kind == TurnResolutionEventKind.TriggeredEffectProgressed)
             {
                 AppendCardAction(roundReference, ruleEvent.CardActionEvent);
                 return;

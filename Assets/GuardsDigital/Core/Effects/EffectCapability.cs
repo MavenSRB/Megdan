@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -730,6 +731,33 @@ namespace GuardsDigital.Core.Effects
         public override string ToString() => OwnerHeroId + ":" + CardInstanceId;
     }
 
+    /// <summary>
+    /// Milestone 9.15. A minion that card text removed from the board (rulebook p.19's Remove, no
+    /// coins), reported by the removing handler on the terms <see cref="DiscardedCard"/> set, so the
+    /// seat-public log can say it left - until this milestone a card-text Removal (Ignatia's Abrupt
+    /// Combustion) wrote no row at all, and the expected-outcome executor had to infer it from the
+    /// scoreboard.
+    /// </summary>
+    public readonly struct RemovedMinion : IEquatable<RemovedMinion>
+    {
+        public RemovedMinion(MinionId minionId)
+        {
+            if (!minionId.IsDefined)
+            {
+                throw new ArgumentException("A removal names the minion it removed.");
+            }
+
+            MinionId = minionId;
+        }
+
+        public MinionId MinionId { get; }
+        public bool IsDefined => MinionId.IsDefined;
+        public bool Equals(RemovedMinion other) => MinionId.Equals(other.MinionId);
+        public override bool Equals(object obj) => obj is RemovedMinion other && Equals(other);
+        public override int GetHashCode() => MinionId.GetHashCode();
+        public override string ToString() => MinionId.ToString();
+    }
+
     public sealed class EffectExecutionResult
     {
         private EffectExecutionResult(
@@ -742,7 +770,8 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<RevealedCard> revealedCards = null,
             HeroId markerGivenTo = default,
             IEnumerable<PlacedToken> placedTokens = null,
-            IEnumerable<DiscardedCard> discardedCards = null)
+            IEnumerable<DiscardedCard> discardedCards = null,
+            IEnumerable<RemovedMinion> removedMinions = null)
         {
             var placed = (placedTokens ?? Enumerable.Empty<PlacedToken>()).ToArray();
             if (placed.Any(token => token == null))
@@ -776,6 +805,15 @@ namespace GuardsDigital.Core.Effects
             }
 
             DiscardedCards = new ReadOnlyCollection<DiscardedCard>(discarded);
+            var removed = (removedMinions ?? Enumerable.Empty<RemovedMinion>()).ToArray();
+            if (removed.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a minion it removed.",
+                    nameof(removedMinions));
+            }
+
+            RemovedMinions = new ReadOnlyCollection<RemovedMinion>(removed);
             if (markerGivenTo.IsDefined && kind != EffectExecutionResultKind.Applied)
             {
                 throw new ArgumentException(
@@ -862,6 +900,12 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<DiscardedCard> DiscardedCards { get; }
 
         /// <summary>
+        /// Milestone 9.15. The minions this handler removed from the board by card text, and empty
+        /// for every handler that removed none. See <see cref="RemovedMinion"/>.
+        /// </summary>
+        public IReadOnlyList<RemovedMinion> RemovedMinions { get; }
+
+        /// <summary>
         /// Milestone 8.40h. The hero this handler GAVE a marker to, or the undefined id for every
         /// handler that gave none - which is every handler in this build but the giving one.
         ///
@@ -901,10 +945,12 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<RevealedCard> revealedCards = null,
             HeroId markerGivenTo = default,
             IEnumerable<PlacedToken> placedTokens = null,
-            IEnumerable<DiscardedCard> discardedCards = null) =>
+            IEnumerable<DiscardedCard> discardedCards = null,
+            IEnumerable<RemovedMinion> removedMinions = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
-                appliedPushes, revealedCards, markerGivenTo, placedTokens, discardedCards);
+                appliedPushes, revealedCards, markerGivenTo, placedTokens, discardedCards,
+                removedMinions);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

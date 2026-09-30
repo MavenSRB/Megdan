@@ -679,13 +679,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 // A prevented removal is an applied step whose rules answer was "it stays". The piece
                 // is still in its space, and the Lane-Push fact is false because nothing was removed.
+                // Milestone 9.15: a minion that DID leave is reported, so the seat-public log can say
+                // so; a prevented one, or a token, is not.
+                var removedMinion = outcome.ResultKind == RemoveResultKind.Removed &&
+                    outcome.Subject.Kind == BoardObjectKind.Minion && outcome.Subject.MinionId.IsDefined
+                        ? new[] { new RemovedMinion(outcome.Subject.MinionId) }
+                        : null;
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("removed", EffectValue.Space(outcome.Origin)),
                     new EffectOutcomeFact(
                         RecordedLanePushQuery.OutcomeFactName,
                         EffectValue.Boolean(outcome.LanePush.Qualifies))
-                });
+                }, removedMinions: removedMinion);
             }
 
             public EffectExecutionResult Resume(

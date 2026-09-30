@@ -763,6 +763,32 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
+        /// Milestone 9.15, from 9.13's smoke table: a Removal made by card text (Ignatia's Abrupt
+        /// Combustion, and this fixture's p.19 Remove) reached the board and p.8's Lane Push but
+        /// never the seat-public log, so the table had to infer it from the scoreboard. The removing
+        /// handler now reports the minion and the log carries the same MinionRemoved row a Defeat's
+        /// removal has always had. Compares the kind by name so this compiles, and fails, on the base.
+        /// </summary>
+        [Test]
+        public void ACardTextRemove_WritesTheMinionRemovedRowForEverySeat()
+        {
+            var session = StartRemoveSkillAgainstTheLastMinion(out var target, out var actor);
+
+            var rows = session.Projection.MatchLog
+                .Where(entry => entry.Kind.ToString() == "MinionRemoved")
+                .ToArray();
+            Assert.That(rows.Select(entry => entry.SubjectMinionId), Does.Contain(target),
+                "one seat-public row says the card-text Removal happened; the log holds: " +
+                string.Join(" | ", session.Projection.MatchLog.Select(entry =>
+                    entry.Kind + ":" + entry.SubjectMinionId.Value)));
+            Assert.That(rows.Single(entry => entry.SubjectMinionId.Equals(target)).SubjectHeroId,
+                Is.EqualTo(actor), "and names the hero whose text removed it");
+            Assert.That(session.Projection.MatchLog.Any(entry =>
+                    entry.Kind.ToString() == "MinionDefeated" && entry.SubjectMinionId.Equals(target)),
+                Is.False, "p.19's Remove is not a Defeat: no coins, no kill, no Defeat row");
+        }
+
+        /// <summary>
         /// A played turn in which the Red hero's Skill removes the one Blue minion left in the Battle
         /// Zone.
         ///

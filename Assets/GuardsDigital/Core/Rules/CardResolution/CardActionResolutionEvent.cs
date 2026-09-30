@@ -1027,6 +1027,56 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Concat(DiscardedCardFacts(
                     resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node));
 
+        /// <summary>
+        /// Milestone 9.15. One <see cref="CardActionResolutionEventKind.MinionRemovalCompleted"/> fact
+        /// per minion the node removed from the board by card text (p.19's Remove, no Defeat and no
+        /// coins), so the seat-public log derives the same MinionRemoved row a Defeat's removal gets.
+        /// No Defeat outcome rides it, because none exists; the minion rides the target field and
+        /// the typed fact kind says which removal fact this is.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> RemovedMinionFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            (node ?? throw new ArgumentNullException(nameof(node))).RemovedMinions
+                .Select(removed => new CardActionResolutionEvent(
+                    CardActionResolutionEventKind.MinionRemovalCompleted,
+                    resolutionId,
+                    sourceCardInstanceId,
+                    actionDefinitionId,
+                    default,
+                    actorId,
+                    default,
+                    new ActionResolutionStepId(
+                        node.NodeId.Value + ":remove:" + removed.MinionId.Value),
+                    0,
+                    0,
+                    default,
+                    0,
+                    AttackResolutionOutcome.None,
+                    default,
+                    default,
+                    MinionDefeatFactKind.RemovalCompleted,
+                    removed.MinionId));
+
+        /// <summary>
+        /// Milestone 9.15. Every fact a node publishes about pieces it moved off the board or out of a
+        /// hand: its reveals (8.40f), its discards (9.19) and its minion removals, in that order. The
+        /// four altitudes call this one helper.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> CardTextNodeFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            RevealedAndDiscardedCardFacts(
+                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node)
+                .Concat(RemovedMinionFacts(
+                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node));
+
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
