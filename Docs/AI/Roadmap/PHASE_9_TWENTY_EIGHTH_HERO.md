@@ -119,7 +119,7 @@ Tier T2.
 
 ### [ ] 9.21h Implement the repeat by a different body
 
-Outcome: Twin Strike (p.16 permanent): after Stunt Doubles' Basic Attack, another body may perform it again against a different unit (RZ-Q11; Cloak and Daggers' after-basic-action repeat with the acting body switched). Spectacle: "May repeat once by a different one of you, targeting a different minion" (RZ-Q12).
+Outcome: Twin Strike (p.16 permanent): after Stunt Doubles' Basic Attack, another body may perform it again against a different unit (RZ-Q11; Cloak and Daggers' after-basic-action repeat with the acting body switched). Spectacle: "May repeat once by a different one of you, targeting a different minion" (RZ-Q12). RZ-Q13 (any body): the self-anchored radius sites 9.21a left as named refusals read any body of a many-bodied controller here, with the borrowed-action arm.
 
 Acceptance:
 - The repeat is measured from the second body.
