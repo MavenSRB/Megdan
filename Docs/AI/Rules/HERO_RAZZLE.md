@@ -153,7 +153,7 @@ Probed 2026-09-30 against the build at `ae16072e` (schema v48, `AuthoritativeSna
 
 ## Open questions
 
-Recorded by 9.21. User answers are recorded here with their date before any dependent block starts. Each blocks only the block named; recommendations are this inventory's reading, not a decision.
+Recorded by 9.21. **All twelve settled by the user on 2026-09-30, one by one, each as the recommended reading:** RZ-Q1 (a) four bodies in all; RZ-Q2 (A) one hero on several spaces for everyone else; RZ-Q3 (A) an Attack targets one body and a Defeat removes all; RZ-Q4 (A) the acting body is picked when the card resolves and stays fixed for the action, a Defense by the attacked body; RZ-Q5 (A) his other bodies are never a unit or friendly hero for his own text; RZ-Q6 (A) "one of you" may be the acting body, removal is never a Defeat, Into Thin Air leaves him off the board to respawn normally; RZ-Q7 (A) Crowd Control as a Skill with no other body is greyed; RZ-Q8 (A) "Move one other you" reaches any body; RZ-Q9 (A) Tightrope applies after a 0-space Movement and never after a Fast Travel; RZ-Q10 (A) Magic Trick retreats exactly the pushed distance, straight back, stopping if blocked; RZ-Q11 (A) Twin Strike repeats the whole action from another body, spawn included; RZ-Q12 (A) Spectacle's repeat measures Range from the second body. Each entry below keeps its candidate readings for the record.
 
 - **RZ-Q1 - how many bodies can exist? (blocks 9.21a supply, 9.21d)** Printed: "Spawn up to 3 more of you in radius". p.19 Spawn takes from the supply only. The corpus has one standee element and no counts (RZ-03).
   - (a) Four bodies in all (the hero plus three), so a spawn with four standing does nothing.
