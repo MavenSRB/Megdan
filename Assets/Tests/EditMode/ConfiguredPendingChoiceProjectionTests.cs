@@ -95,16 +95,18 @@ namespace GuardsDigital.Tests.EditMode
             var errors = DecisionFamilyInventory.AuditProductionInventory();
             Assert.That(errors, Is.Empty, string.Join(Environment.NewLine, errors));
 
-            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(11),
-                "The bounded current claim is eleven pending decision families, not all possible " +
-                "states; milestone 8.35g's turn release is the eleventh.");
+            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(12),
+                "The bounded current claim is twelve pending decision families, not all possible " +
+                "states; milestone 8.35g's turn release is the eleventh and 9.21b's acting-body pick " +
+                "the twelfth.");
             Assert.That(DecisionFamilyInventory.Families.Select(value => value.Family).Distinct().Count(),
-                Is.EqualTo(11), "Every pending family has one distinct semantic identity.");
+                Is.EqualTo(12), "Every pending family has one distinct semantic identity.");
             Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count),
-                Is.EqualTo(31),
+                Is.EqualTo(32),
                 "Every current legal answer shape has one inventory row. Thirty until milestone " +
                 "8.35g, whose turn release adds exactly one: the release itself is the whole of " +
-                "that family's contract, so the pause can be answered one way and no other.");
+                "that family's contract, so the pause can be answered one way and no other. " +
+                "Milestone 9.21b's acting-body pick adds one more: naming a standing body.");
 
             AssertEnumKindsCovered<EffectChoiceCommandKind>("Effect/Skill", "Effect/Attack or Block");
             AssertEnumKindsCovered<DisplacedMinionCorrectionCommandKind>("Displaced minion correction");
@@ -521,7 +523,8 @@ namespace GuardsDigital.Tests.EditMode
             nameof(MatchSessionProjection.PendingHeroRespawnChoice),
             nameof(MatchSessionProjection.PendingSystemTransitionStep),
             nameof(MatchSessionProjection.PendingRemovalPrevention),
-            nameof(MatchSessionProjection.PendingTurnRelease)
+            nameof(MatchSessionProjection.PendingTurnRelease),
+            nameof(MatchSessionProjection.PendingActingBodyChoice)
         };
 
         internal static readonly string[] CompanionProjectionMembers =
@@ -659,7 +662,16 @@ namespace GuardsDigital.Tests.EditMode
                 Row("Turn release", "Release the finished turn",
                     "PendingTurnRelease",
                     "End Turn control", DirectorCommandKind.ReleaseTurn,
-                    "End-of-turn timing runs and the turn is handed to the next actor"))
+                    "End-of-turn timing runs and the turn is handed to the next actor")),
+            // Milestone 9.21b. The twelfth: "which of you acts" (RZ-Q4), one answer per standing body
+            // of a hero on several spaces, before his action is chosen. Its visible surface - the
+            // standee click - is owed by 9.21i and parked in the conformance fixture until then.
+            Family("Acting body", nameof(MatchSessionProjection.PendingActingBodyChoice),
+                projection => projection.PendingActingBodyChoice != null,
+                Row("Acting body", "Pick a standing body",
+                    "PendingActingBodyChoice.Invocations[*]",
+                    "Standee pick (owed by 9.21i)", DirectorCommandKind.ChooseActingBody,
+                    "The named body performs the card's action"))
         };
 
         internal static readonly NonPendingOfferDefinition[] NonPendingOffers =
@@ -920,6 +932,14 @@ namespace GuardsDigital.Tests.EditMode
             if (projection.PendingTurnRelease != null)
             {
                 commands.Add(DirectorCommand.ReleaseTurn());
+                return commands;
+            }
+
+            // Milestone 9.21b. One answer per standing body, in body order.
+            var acting = projection.PendingActingBodyChoice;
+            if (acting != null)
+            {
+                commands.AddRange(acting.Invocations.Select(DirectorCommand.ChooseActingBody));
                 return commands;
             }
 

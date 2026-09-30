@@ -111,7 +111,7 @@ namespace GuardsDigital.Tests.EditMode
             });
             Assert.That(board.TryGetHeroCoordinate(Razzle, out var acting), Is.True);
             Assert.That(acting, Is.EqualTo(new HexCoordinate(0, 0)),
-                "Until 9.21b's pick, the acting body is body 1 (RZ-Q4's seam).");
+                "With no acting body settled (another hero's turn), the read answers body 1 (RZ-Q4's seam).");
 
             var withoutBodyOne = Board(new[]
             {
@@ -337,7 +337,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(after));
 
             // The prior schema is refused.
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(49));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(50));
         }
 
         [Test]
@@ -368,7 +368,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NetworkCommandCodec.TryDecode(NetworkCommandCodec.Encode(command), out var decoded), Is.True);
             Assert.That(decoded, Is.EqualTo(command));
             Assert.That(decoded.HeroBody, Is.EqualTo(2));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(26));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(27));
         }
 
         private static int Lives(MatchSession session, HeroId hero)
@@ -388,7 +388,12 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     internal static class HeroBodiesBoard
     {
-        internal static MatchSession CreateSession(out HeroId red, out HeroId blue, out MinionId besideBodyTwo)
+        /// <param name="bodyTwoAtSpawn">
+        /// Milestone 9.21b. Stands body 2 on the Blue hero's own spawn instead, far from every Red unit,
+        /// so the two bodies' offers differ: an Attack from body 1 only, and a Fast Travel from body 2.
+        /// </param>
+        internal static MatchSession CreateSession(
+            out HeroId red, out HeroId blue, out MinionId besideBodyTwo, bool bodyTwoAtSpawn = false)
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -423,6 +428,10 @@ namespace GuardsDigital.Tests.EditMode
                         HexDistanceQuery.Calculate(at, redAt) > 1)
                     .Select(at => (pair.first, pair.second, at)))
                 .First();
+            if (bodyTwoAtSpawn)
+            {
+                bodyTwo = blueSetup.Coordinate;
+            }
 
             var moved = setup.Minions.First(minion =>
                 minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee);
@@ -460,6 +469,49 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<ObstacleOccupancy>(),
                 new[] { new HeroBodySupply(blue, 4) });
             return new MatchSession(new MatchSessionInitialState(scenario, staged, new[] { map }));
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. The Blue hero's card resolves first, with two bodies standing, so
+        /// "which of you acts" (RZ-Q4) stands before any action of it.
+        /// </summary>
+        internal static MatchSession CreateSessionAtTheActingBodyPick(
+            out HeroId red, out HeroId blue, bool bodyTwoAtSpawn = false)
+        {
+            var session = CreateSession(out red, out blue, out _, bodyTwoAtSpawn);
+            CommitBlueFirst(session, red, blue);
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(blue),
+                "Fixture precondition: the many-bodied hero acts first.");
+            Assert.That(session.Projection.PendingActingBodyChoice, Is.Not.Null,
+                "Fixture precondition: two bodies stand as his card resolves.");
+            return session;
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. Blue commits its highest-Initiative Attack card and Red its lowest card, so
+        /// Blue acts first (a tie is broken for Blue).
+        /// </summary>
+        internal static void CommitBlueFirst(
+            MatchSession session, HeroId red, HeroId blue, Action<DirectorCommand> accept = null)
+        {
+            accept = accept ?? (command => Accept(session, command));
+            var blueCard = Hand(session, blue)
+                .Where(card => Definition(session, card).ActionDefinitions
+                    .Any(action => action.Kind == ActionKind.Attack))
+                .OrderByDescending(card => Definition(session, card).Initiative.Value)
+                .ThenBy(card => card.Id.Value, StringComparer.Ordinal)
+                .First();
+            var redCard = Hand(session, red)
+                .OrderBy(card => Definition(session, card).Initiative.Value)
+                .ThenBy(card => card.Id.Value, StringComparer.Ordinal)
+                .First();
+            accept(DirectorCommand.CommitCard(red, redCard.Id));
+            accept(DirectorCommand.CommitCard(blue, blueCard.Id));
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                accept(DirectorCommand.ChooseTiedActor(tie.OwningSide, blueCard.Id));
+            }
         }
 
         /// <summary>Red's Attack started, both Blue bodies adjacent and legal.</summary>

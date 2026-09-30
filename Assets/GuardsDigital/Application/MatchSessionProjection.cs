@@ -580,7 +580,7 @@ namespace GuardsDigital.Application
         public override string ToString() => Value ?? string.Empty;
     }
 
-    /// <summary>The bounded production identities for the eleven configured pending-decision families.</summary>
+    /// <summary>The bounded production identities for the twelve configured pending-decision families.</summary>
     public static class PendingDecisionFamilies
     {
         public static readonly PendingDecisionFamilyId Initiative =
@@ -610,6 +610,13 @@ namespace GuardsDigital.Application
         /// </summary>
         public static readonly PendingDecisionFamilyId TurnRelease =
             new PendingDecisionFamilyId("turn-release");
+
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4): a hero standing on several spaces picks the
+        /// body that performs the action his card is about to choose - one answer per standing body.
+        /// </summary>
+        public static readonly PendingDecisionFamilyId ActingBody =
+            new PendingDecisionFamilyId("acting-body");
     }
 
     /// <summary>
@@ -665,7 +672,8 @@ namespace GuardsDigital.Application
             PendingHeroRespawnChoice heroRespawn,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransition,
             RemovalPreventionPrompt removalPrevention,
-            GuardsDigital.Core.Cards.PendingTurnRelease turnRelease)
+            GuardsDigital.Core.Cards.PendingTurnRelease turnRelease,
+            PendingActingBodyChoice actingBody = null)
         {
             var standing = new List<PendingDecisionContract>();
             if (initiative != null)
@@ -825,6 +833,13 @@ namespace GuardsDigital.Application
                 standing.Add(new PendingDecisionContract(
                     PendingDecisionFamilies.TurnRelease,
                     new[] { DirectorCommand.ReleaseTurn() }));
+            }
+
+            if (actingBody != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.ActingBody,
+                    actingBody.Invocations.Select(DirectorCommand.ChooseActingBody)));
             }
 
             // Milestone 8.35u AMENDED this guard rather than removing it, and the distinction is the
@@ -998,7 +1013,8 @@ namespace GuardsDigital.Application
                 pendingAttackTargetDefensePreviews = null,
             GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null,
             int? remainingWaveCounters = null,
-            IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null)
+            IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null,
+            PendingActingBodyChoice pendingActingBodyChoice = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1089,6 +1105,7 @@ namespace GuardsDigital.Application
             PendingAttackTargetDefensePreviews = Array.AsReadOnly(attackTargetDefensePreviews);
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
+            PendingActingBodyChoice = pendingActingBodyChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PendingImmediateLanePush = pendingImmediateLanePush;
             PendingSystemTransitionStep = pendingSystemTransitionStep;
@@ -1186,6 +1203,7 @@ namespace GuardsDigital.Application
                 PendingDisplacedMinionCorrection != null ||
                 PendingMinionBattleChoice != null ||
                 PendingHeroRespawnChoice != null ||
+                PendingActingBodyChoice != null ||
                 PendingSystemTransitionStep != null ||
                 PendingRemovalPrevention != null
                     ? null
@@ -1202,7 +1220,8 @@ namespace GuardsDigital.Application
                 PendingHeroRespawnChoice,
                 PendingSystemTransitionStep,
                 PendingRemovalPrevention,
-                PendingTurnRelease);
+                PendingTurnRelease,
+                PendingActingBodyChoice);
 
             if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
             {
@@ -1486,6 +1505,14 @@ namespace GuardsDigital.Application
             PendingAttackTargetDefensePreviews { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
+
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4), standing before the action choice of a hero
+        /// on several spaces. Carried on the Director's projection only: a seat reads the decision
+        /// through its <see cref="DecisionContract"/>, whose answers name the hero, the card and each
+        /// body, and the bodies' spaces are already on <see cref="Heroes"/>.
+        /// </summary>
+        public PendingActingBodyChoice PendingActingBodyChoice { get; }
 
         /// <summary>
         /// Milestone 8.35g. The finished turn waiting for its own player's release, or <c>null</c>

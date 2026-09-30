@@ -182,6 +182,12 @@ namespace GuardsDigital.Application
                     writer.Write(command.HeroId.Value);
                     writer.Write(command.CardInstanceId.Value);
                     return;
+                // Milestone 9.21b, protocol /27: "which of you acts" names the hero, the card and the body.
+                case DirectorCommandKind.ChooseActingBody:
+                    writer.Write(command.HeroId.Value);
+                    writer.Write(command.CardInstanceId.Value);
+                    writer.Write(command.HeroBody);
+                    return;
                 case DirectorCommandKind.BeginSystemTransition:
                     writer.Write(command.SystemTransitionDefinitionId.Value);
                     return;
@@ -550,6 +556,20 @@ namespace GuardsDigital.Application
                             HeroRespawnCommandKind.ResolveWithoutAction,
                             new HeroId(hero),
                             new CardInstanceId(card)));
+                        return true;
+                    }
+
+                    case DirectorCommandKind.ChooseActingBody:
+                    {
+                        if (!TryReadId(reader, out var hero) || !TryReadId(reader, out var card))
+                        {
+                            return false;
+                        }
+
+                        command = DirectorCommand.ChooseActingBody(new ActingBodyCommand(
+                            new HeroId(hero),
+                            new CardInstanceId(card),
+                            reader.ReadInt32()));
                         return true;
                     }
 

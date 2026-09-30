@@ -64,9 +64,9 @@ namespace GuardsDigital.Tests.EditMode
         public void TheOwnershipRuleReadsEveryDeclaredFamilysOwnProjectionMember()
         {
             var declared = DeclaredFamilies();
-            Assert.That(declared.Count, Is.EqualTo(11),
-                "The eleven families are the declared set this milestone authorizes against; " +
-                "milestone 8.35g's turn release is the eleventh.");
+            Assert.That(declared.Count, Is.EqualTo(12),
+                "The twelve families are the declared set this milestone authorizes against; " +
+                "milestone 8.35g's turn release is the eleventh and 9.21b's acting-body pick the twelfth.");
             Assert.That(declared.Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(declared.Count));
 
             var rule = new[] { typeof(SeatProjectionFactory) };
@@ -393,6 +393,12 @@ namespace GuardsDigital.Tests.EditMode
                 return (new[] { projection.PendingRemovalPrevention.DecidingHeroId }, TeamSide.None);
             }
 
+            if (family.Equals(PendingDecisionFamilies.ActingBody))
+            {
+                // Milestone 9.21b. The hero whose card resolved picks which of him acts.
+                return (new[] { projection.PendingActingBodyChoice.HeroId }, TeamSide.None);
+            }
+
             if (family.Equals(PendingDecisionFamilies.TurnRelease))
             {
                 // Milestone 8.35g. The turn belongs to the hero who just finished resolving it,
@@ -416,7 +422,12 @@ namespace GuardsDigital.Tests.EditMode
                     "hero-respawn", HeroRespawnTests.CreatePendingRespawnSession),
                 new KeyValuePair<string, Func<MatchSession>>(
                     "removal-prevention",
-                    ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause)
+                    ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause),
+                // Milestone 9.21b. No dealt hero stands on two spaces until 9.21j, so the pick comes
+                // from 9.21a's staged two-body board.
+                new KeyValuePair<string, Func<MatchSession>>(
+                    "acting-body",
+                    () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _))
             };
 
         private static IReadOnlyList<string> DeclaredFamilies() =>

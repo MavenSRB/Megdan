@@ -373,7 +373,13 @@ namespace GuardsDigital.Application
         // the attacked body, and an Attack-target answer carries the body it names (0 for the hero
         // alone). A v25 reader would take the body ordinal for the next field, so v25 peers are
         // refused from the header. The admission tuple's snapshot schema advances to 49 with it.
-        public const int Version = 26;
+        // v27 (milestone 9.21b): "which of you acts" (RZ-Q4). A new command kind, ChooseActingBody
+        // (hero, card, body), rides the decision contract and the seat submission under the new
+        // acting-body family. A v26 reader has no such kind and would refuse the contract that carries
+        // it, so v26 peers are refused from the header. No projection row moves: the pick's answers
+        // name every body and the bodies' spaces are already on the hero rows. The admission tuple's
+        // snapshot schema advances to 50 with it.
+        public const int Version = 27;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

@@ -30,6 +30,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         // build deals today; the one-space-per-hero rule is relaxed for the heroes named here only.
         private readonly Dictionary<HeroId, int> heroBodySupplies = new Dictionary<HeroId, int>();
 
+        // Milestone 9.21b, schema v50. The acting body settled for a many-bodied hero's current action
+        // (RZ-Q4): the player's pick when several bodies stand as his card resolves, or the one body
+        // when one stands. Only heroes named in the supply map ever appear; the turn authority clears
+        // the map whenever it selects the next actor.
+        private readonly Dictionary<HeroId, int> actingBodies = new Dictionary<HeroId, int>();
+
         public IReadOnlyCollection<MinionId> MinionsExcludedFromMinionBattle =>
             minionBattleExclusions.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray();
 
@@ -411,6 +417,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             tokens = new List<PlacedToken>(source.tokens);
             minionBattleExclusions = new HashSet<MinionId>(source.minionBattleExclusions);
             heroBodySupplies = new Dictionary<HeroId, int>(source.heroBodySupplies);
+            actingBodies = new Dictionary<HeroId, int>(source.actingBodies);
             lastCompletedMovementWalk = source.lastCompletedMovementWalk;
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
@@ -437,6 +444,50 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 .OrderBy(entry => entry.Key.Value, StringComparer.Ordinal)
                 .Select(entry => new HeroBodySupply(entry.Key, entry.Value))
                 .ToArray());
+
+        /// <summary>
+        /// Milestone 9.21b. The acting bodies settled for the current action, by hero id - empty for
+        /// every hero with one body.
+        /// </summary>
+        public IReadOnlyList<HeroActingBody> ActingBodies =>
+            Array.AsReadOnly(actingBodies
+                .OrderBy(entry => entry.Key.Value, StringComparer.Ordinal)
+                .Select(entry => new HeroActingBody(entry.Key, entry.Value))
+                .ToArray());
+
+        /// <summary>
+        /// Milestone 9.21b. The body settled to perform this many-bodied hero's current action (RZ-Q4),
+        /// whether or not it still stands; false when none is settled.
+        /// </summary>
+        public bool TryGetActingBody(HeroId heroId, out int body) =>
+            actingBodies.TryGetValue(heroId, out body);
+
+        /// <summary>
+        /// Milestone 9.21b. Settles the body that performs this hero's current action. Only a hero
+        /// that declares more than one body has one, and only a body that stands may be settled.
+        /// </summary>
+        internal void SettleActingBody(HeroId heroId, int body)
+        {
+            if (HeroBodySupplyOf(heroId) < 2)
+            {
+                throw new InvalidOperationException(
+                    $"{heroId} declares one body; an acting body is settled only for a many-bodied hero.");
+            }
+
+            if (!TryGetHeroBodyCoordinate(heroId, body, out _))
+            {
+                throw new InvalidOperationException(
+                    $"Body {body} of {heroId} does not stand, so it cannot be the acting body.");
+            }
+
+            actingBodies[heroId] = body;
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. Forgets every settled acting body - called when the turn selects its next
+        /// actor, so the pick is asked again the next time a many-bodied hero's card resolves.
+        /// </summary>
+        internal void ClearActingBodies() => actingBodies.Clear();
 
         /// <summary>Milestone 9.21a. How many bodies this hero has in all; 1 unless it declares more.</summary>
         public int HeroBodySupplyOf(HeroId heroId) =>
@@ -493,14 +544,25 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         /// <summary>
         /// Milestone 9.21a. The index of the body that answers for the hero as a whole: the only body
-        /// when one stands, and the ACTING body when several do. Until milestone 9.21b makes the acting
-        /// body a player's pick (RZ-Q4), the acting body is <see cref="HeroOccupancy.FirstBody"/>; a
-        /// board on which several bodies stand and that one does not has no acting body to name, and
-        /// the read refuses loudly rather than silently taking whichever body happens to be listed
-        /// first. -1 when no body stands.
+        /// when one stands, and the ACTING body when several do. Milestone 9.21b: the acting body is the
+        /// one settled for the current action (the player's pick, RZ-Q4) while it stands; with none
+        /// settled - another hero's turn - it is <see cref="HeroOccupancy.FirstBody"/>, and a board on
+        /// which several bodies stand and that one does not has no acting body to name, and the read
+        /// refuses loudly rather than silently taking whichever body happens to be listed first. -1
+        /// when no body stands.
         /// </summary>
         private int ActingBodyIndex(HeroId heroId)
         {
+            if (actingBodies.TryGetValue(heroId, out var settled))
+            {
+                var acting = occupancies.FindIndex(occupancy =>
+                    occupancy.HeroId.Equals(heroId) && occupancy.Body == settled);
+                if (acting >= 0)
+                {
+                    return acting;
+                }
+            }
+
             var only = -1;
             var firstBody = -1;
             var count = 0;
@@ -531,8 +593,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             throw new InvalidOperationException(
                 $"{heroId} stands on {count} spaces and none of them is body {HeroOccupancy.FirstBody}, " +
-                "the default acting body; a read that names the hero rather than a body cannot say " +
-                "which space it means (RZ-Q4's acting-body pick is milestone 9.21b).");
+                "the default acting body, and no acting body is settled; a read that names the hero " +
+                "rather than a body cannot say which space it means (RZ-Q4).");
         }
 
         /// <summary>Milestone 9.21a. The index of the body of this hero standing on this space, or -1.</summary>
@@ -650,7 +712,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 CurrentBattleZoneId,
                 minionBattleExclusions,
                 lastCompletedMovementWalk,
-                HeroBodySupplies);
+                HeroBodySupplies,
+                ActingBodies);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -707,6 +770,21 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 state.PlacedTokens,
                 reserve,
                 state.HeroBodySupplies);
+
+            // Milestone 9.21b, schema v50. Read after the supplies the constructor has just declared,
+            // because an acting body belongs only to a hero that declares bodies.
+            foreach (var acting in state.ActingBodies)
+            {
+                if (restored.HeroBodySupplyOf(acting.HeroId) < acting.Body ||
+                    restored.HeroBodySupplyOf(acting.HeroId) < 2)
+                {
+                    throw new ArgumentException(
+                        "A restored acting body names a hero that declares bodies, within its supply.",
+                        nameof(state));
+                }
+
+                restored.actingBodies[acting.HeroId] = acting.Body;
+            }
 
             // Milestone 6.10. The constructor has already opened the board at the zone the map flags,
             // and this replaces that opening value with the restored one - never the other way round.
@@ -952,6 +1030,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 occupancyIndex.Remove(body.Coordinate);
             }
 
+            // Milestone 9.21b. A hero with no body standing has no acting body; a respawn settles one.
+            actingBodies.Remove(heroId);
             return removed;
         }
 
@@ -1007,7 +1087,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         /// <summary>
         /// Where the hero stands as ONE space: its only body, or - for a many-bodied hero (milestone
-        /// 9.21a) - its acting body, body 1 until milestone 9.21b makes the acting body a pick. Every
+        /// 9.21a) - its acting body, the one settled for the current action (9.21b's pick). Every
         /// caller of this read is either the actor's own space or has been moved to
         /// <see cref="IsHeroOnBoard"/>, <see cref="GetHeroBodies"/> or
         /// <see cref="TryGetHeroBodyCoordinate"/>; see the site list in Rules/HERO_RAZZLE.md.

@@ -288,7 +288,7 @@ namespace GuardsDigital.Core.Snapshots
         {
             var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
                 currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk,
-                heroBodySupplies) = board.CaptureRestoreState();
+                heroBodySupplies, actingBodies) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
 
@@ -360,12 +360,15 @@ namespace GuardsDigital.Core.Snapshots
             }
 
             // Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1), by hero
-            // id; empty for every match the build deals today.
+            // id; empty for every match the build deals today. Milestone 9.21b, schema v50: each row
+            // ends with the acting body settled for that hero's current action (RZ-Q4), 0 for none.
             writer.Write(heroBodySupplies.Count);
             foreach (var supply in heroBodySupplies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
             {
                 writer.Write(supply.HeroId.Value);
                 writer.Write(supply.Bodies);
+                var acting = actingBodies.Where(value => value.HeroId.Equals(supply.HeroId)).ToArray();
+                writer.Write(acting.Length == 0 ? 0 : acting[0].Body);
             }
         }
 
@@ -470,6 +473,7 @@ namespace GuardsDigital.Core.Snapshots
                 lastWalk = new GuardsDigital.Core.Rules.AdjacentMove.CompletedMovementWalk(mover, route);
             }
 
+            var actingBodies = new List<HeroActingBody>();
             var bodySupplies = ReadMany(reader, "hero body supplies", () =>
             {
                 var heroId = new HeroId(reader.ReadString());
@@ -479,13 +483,25 @@ namespace GuardsDigital.Core.Snapshots
                     throw Malformed("Snapshot hero body supply must name a hero with more than one body.");
                 }
 
+                // Milestone 9.21b, schema v50: the acting body of the current action, 0 for none.
+                var acting = reader.ReadInt32();
+                if (acting < 0 || acting > bodies)
+                {
+                    throw Malformed("Snapshot acting body must be 0 or a body within the hero's supply.");
+                }
+
+                if (acting > 0)
+                {
+                    actingBodies.Add(new HeroActingBody(heroId, acting));
+                }
+
                 return new HeroBodySupply(heroId, bodies);
             });
 
             return AdjacentMoveAuthority.Restore(
                 new BoardRestoreState(
                     heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId,
-                    exclusions, lastWalk, bodySupplies),
+                    exclusions, lastWalk, bodySupplies, actingBodies),
                 mapDefinition,
                 availableMinions);
         }

@@ -78,7 +78,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.35g. The eleventh, and the one every ordinary turn reaches - so of all
                 // eleven it is the family whose lifecycle across replay, Undo, restore, restart and
                 // rebuild the rest of the suite leans on most heavily.
-                PendingDecisionFamilies.TurnRelease
+                PendingDecisionFamilies.TurnRelease,
+                // Milestone 9.21b. The twelfth, on 9.21a's staged two-body board.
+                PendingDecisionFamilies.ActingBody
             }), "Replay, Undo, restore, restart, and rebuild are witnessed for every family.");
 
             AssertDeliberateViolationsAreObserved(firstObservation);
@@ -315,6 +317,13 @@ namespace GuardsDigital.Tests.EditMode
                     HeroRespawnCommandKind.Respawn, choice.HeroId, choice.CardInstanceId,
                     new HexCoordinate(99, 99)));
             }
+            if (projection.PendingActingBodyChoice != null)
+            {
+                // Milestone 9.21b. A body of the right hero and card that does not stand.
+                var choice = projection.PendingActingBodyChoice;
+                return DirectorCommand.ChooseActingBody(new ActingBodyCommand(
+                    choice.HeroId, choice.CardInstanceId, 99));
+            }
             if (projection.PendingSystemTransitionStep != null)
             {
                 var choice = projection.PendingSystemTransitionStep;
@@ -439,6 +448,17 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(SystemTransitionFingerprint(after),
                     Is.Not.EqualTo(SystemTransitionFingerprint(before)));
+                return;
+            }
+
+            if (pauseCase.FamilyId.Equals(PendingDecisionFamilies.ActingBody))
+            {
+                // Milestone 9.21b. The pick is gone, the card still waits for its action, and the
+                // actions now offered are the named body's.
+                Assert.That(before.PendingActingBodyChoice, Is.Not.Null);
+                Assert.That(after.PendingActingBodyChoice, Is.Null);
+                Assert.That(after.SelectedActor, Is.EqualTo(before.SelectedActor));
+                Assert.That(after.AvailableTurnActions, Is.Not.Empty);
                 return;
             }
 
@@ -573,6 +593,12 @@ namespace GuardsDigital.Tests.EditMode
             // TURN rather than falling through to the removal-prevention arm below.
             if (contract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
                 return new[] { round.EndTurnInvocation.Command };
+            // Milestone 9.21b. PARKED, owner 9.21i: "which of you acts" has no visible surface yet -
+            // presenting it (the standee pick) is 9.21i's outcome, and no dealt hero can reach it
+            // until 9.21j. The contract stands in for the surface here, and ParkedSurfaceFamilies
+            // keeps the parking visible: 9.21i replaces this arm with the standee pick's commands.
+            if (ParkedSurfaceFamilies.ContainsKey(contract.FamilyId))
+                return contract.Commands;
             if (contract.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
                 return round.SystemTransitionPrompt.Options.Select(value => value.Command).ToArray();
             return round.RemovalPreventionPrompt.Payments.Select(value => value.Command)
@@ -617,8 +643,9 @@ namespace GuardsDigital.Tests.EditMode
                 .OrderBy(value => value, StringComparer.Ordinal).ToArray();
             Assert.That(familyIds, Is.EqualTo(new[]
             {
-                "attack-target", "correction", "defense", "effect", "hero-respawn", "initiative",
-                "minion-battle", "movement", "removal-prevention", "system-transition", "turn-release"
+                "acting-body", "attack-target", "correction", "defense", "effect", "hero-respawn",
+                "initiative", "minion-battle", "movement", "removal-prevention", "system-transition",
+                "turn-release"
             }));
             Assert.That(DecisionFamilyInventory.AuditProductionInventory(), Is.Empty);
             // Milestone 8.35u adds the tenth: the per-open-item transition descriptions p.15's
@@ -626,10 +653,11 @@ namespace GuardsDigital.Tests.EditMode
             // twelfth family for the same reason the singular description is one - it describes the
             // pause the system-transition family already stands on and adds no decision of its own.
             Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(10));
-            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(11));
+            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(12));
             // Milestone 8.35g: thirty until the turn release, which adds exactly one answer row
-            // because pressing the release is the whole of what that family admits.
-            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(31));
+            // because pressing the release is the whole of what that family admits. Milestone 9.21b's
+            // acting-body pick adds one more: naming a standing body is all it admits.
+            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(32));
         }
 
         private static void AssertNonPendingOffersStayOutsideTheContract()
@@ -767,8 +795,31 @@ namespace GuardsDigital.Tests.EditMode
             // release that did not survive replay, Undo, restore and rebuild would strand the turn.
             Case("turn release", PendingDecisionFamilies.TurnRelease, "Turn release",
                 CreateTurnReleasePause, true,
-                Row("Turn release", "Turn release", "Release the finished turn"))
+                Row("Turn release", "Turn release", "Release the finished turn")),
+            // Milestone 9.21b. "Which of you acts" on 9.21a's staged two-body board: the Blue hero's
+            // card resolves first, with two bodies standing.
+            Case("acting body pick", PendingDecisionFamilies.ActingBody, "Acting body",
+                () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _), true,
+                Row("Acting body", "Acting body", "Pick a standing body"))
         };
+
+        /// <summary>
+        /// Milestone 9.21b. Families whose visible surface is owed by a named later block, with the
+        /// block. The contract stands in for the surface only for these; the set is asserted exactly,
+        /// so a parked surface cannot be added or outlive its owner silently.
+        /// </summary>
+        internal static readonly IReadOnlyDictionary<PendingDecisionFamilyId, string> ParkedSurfaceFamilies =
+            new Dictionary<PendingDecisionFamilyId, string>
+            {
+                [PendingDecisionFamilies.ActingBody] = "9.21i presents the pick of the acting body"
+            };
+
+        [Test]
+        public void ParkedSurfaces_AreExactlyTheAcknowledgedOwedOnes()
+        {
+            Assert.That(ParkedSurfaceFamilies.Keys, Is.EquivalentTo(new[] { PendingDecisionFamilies.ActingBody }),
+                "A parked surface is recorded on the owning block's acceptance (9.21i) and removed there.");
+        }
 
         private static PauseCase Case(string name, PendingDecisionFamilyId familyId,
             string inventoryFamily, Func<MatchSession> create, bool lifecycle, params string[] rows) =>

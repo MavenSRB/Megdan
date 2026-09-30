@@ -1054,7 +1054,12 @@ namespace GuardsDigital.Application
             {
                 PendingDecisionFamilies.Movement,
                 PendingDecisionFamilies.AttackTarget,
-                PendingDecisionFamilies.Effect
+                PendingDecisionFamilies.Effect,
+
+                // Milestone 9.21b. Which body performs the action is how it is performed (RZ-Q4 picks it
+                // as the action is chosen), so it goes to the seat that starts the action - the same seat
+                // the start commands already go to under a delegation.
+                PendingDecisionFamilies.ActingBody
             });
 
         /// <summary>Milestone 8.71b. The families a delegation never re-homes, stated rather than omitted.</summary>
@@ -1147,6 +1152,12 @@ namespace GuardsDigital.Application
             if (family.Equals(PendingDecisionFamilies.HeroRespawn))
             {
                 return PendingDecisionOwner.ForHero(family, source.PendingHeroRespawnChoice.HeroId);
+            }
+
+            if (family.Equals(PendingDecisionFamilies.ActingBody))
+            {
+                // Milestone 9.21b. The hero whose card resolved picks which of him acts (RZ-Q4).
+                return PendingDecisionOwner.ForHero(family, source.PendingActingBodyChoice.HeroId);
             }
 
             if (family.Equals(PendingDecisionFamilies.SystemTransition))

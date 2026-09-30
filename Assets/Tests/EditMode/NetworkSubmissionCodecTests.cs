@@ -122,6 +122,11 @@ namespace GuardsDigital.Tests.EditMode
                 HeroRespawnCommandKind.ResolveWithoutAction,
                 new HeroId("hero-tigerclaw"),
                 new CardInstanceId("tigerclaw-card-05"))),
+            // Milestone 9.21b: "which of you acts" names the hero, the card and the body.
+            DirectorCommand.ChooseActingBody(new ActingBodyCommand(
+                new HeroId("hero-staged-bodies"),
+                new CardInstanceId("staged-card-01"),
+                3)),
             DirectorCommand.BeginSystemTransition(new SystemTransitionDefinitionId("transition-1")),
             DirectorCommand.AnswerSystemTransitionStep(new SystemTransitionChoiceCommand(
                 new SystemTransitionInstanceId("instance-1"),
@@ -246,7 +251,10 @@ namespace GuardsDigital.Tests.EditMode
                 ("respawn", HeroRespawnTests.CreatePendingRespawnSession(),
                     new[] { DirectorCommandKind.RespawnHero, DirectorCommandKind.ResolveCardWithoutRespawn }),
                 ("removal-prevention", ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause(),
-                    new[] { DirectorCommandKind.AnswerRemovalPrevention })
+                    new[] { DirectorCommandKind.AnswerRemovalPrevention }),
+                // Milestone 9.21b. The acting-body pick, on 9.21a's staged two-body board.
+                ("acting-body", HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _),
+                    new[] { DirectorCommandKind.ChooseActingBody })
             };
 
             foreach (var (name, session, expected) in sessions)

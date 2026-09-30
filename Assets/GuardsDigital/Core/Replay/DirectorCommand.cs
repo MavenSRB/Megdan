@@ -84,7 +84,16 @@ namespace GuardsDigital.Core.Replay
         /// would simply not exist in a replayed or Undone match, and the turn would then advance by
         /// itself during replay - which is exactly the auto-advance this milestone removed.
         /// </remarks>
-        ReleaseTurn = 24
+        ReleaseTurn = 24,
+
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4): a hero standing on several spaces names the
+        /// body that performs the action his card is about to choose. A new authority-level operation
+        /// with its own pending family and its own resume path - the respawn precedent, which is the
+        /// other question p.7 asks as a card resolves - so it gets a command kind rather than riding
+        /// another family's.
+        /// </summary>
+        ChooseActingBody = 25
     }
 
 
@@ -157,7 +166,8 @@ namespace GuardsDigital.Core.Replay
         /// <summary>
         /// Milestone 9.21a (RZ-Q3). Which body of <see cref="HeroId"/> an Attack-target answer names, or
         /// 0 when it names the hero alone - which is every answer about a hero only one of whose bodies
-        /// is a legal target, and so every answer about every hero the build deals today.
+        /// is a legal target, and so every answer about every hero the build deals today. Milestone
+        /// 9.21b: the body a <see cref="DirectorCommandKind.ChooseActingBody"/> answer picks (RZ-Q4).
         /// </summary>
         public int HeroBody { get; }
         public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
@@ -298,6 +308,22 @@ namespace GuardsDigital.Core.Replay
                 heroId: invocation.HeroId,
                 cardInstanceId: invocation.CardInstanceId,
                 coordinate: invocation.Destination);
+        }
+
+        /// <summary>Milestone 9.21b. The exact projected answer to "which of you acts" (RZ-Q4).</summary>
+        public static DirectorCommand ChooseActingBody(ActingBodyCommand invocation)
+        {
+            if (invocation == null)
+            {
+                throw new ArgumentException(
+                    "An acting-body answer requires the exact projected invocation.", nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ChooseActingBody,
+                heroId: invocation.HeroId,
+                cardInstanceId: invocation.CardInstanceId,
+                heroBody: invocation.Body);
         }
 
         public static DirectorCommand ResolveCardWithoutRespawn(HeroRespawnCommand invocation)

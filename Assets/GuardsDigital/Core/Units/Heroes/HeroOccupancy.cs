@@ -125,4 +125,46 @@ namespace GuardsDigital.Core.Units.Heroes
 
         public override string ToString() => $"{HeroId} x{Bodies}";
     }
+
+    /// <summary>
+    /// Milestone 9.21b, schema v50. The body that performs the current action of a hero declaring
+    /// more than one body (RZ-Q4): picked when his card resolves, or settled by the turn when one body
+    /// stands, and read by every actor-space read until the next actor is selected.
+    /// </summary>
+    public readonly struct HeroActingBody : IEquatable<HeroActingBody>
+    {
+        public HeroActingBody(HeroId heroId, int body)
+        {
+            if (!heroId.IsDefined)
+            {
+                throw new ArgumentException("An acting body requires a defined hero ID.", nameof(heroId));
+            }
+
+            if (body < HeroOccupancy.FirstBody)
+            {
+                throw new ArgumentOutOfRangeException(nameof(body), body, "A body ordinal is 1 or more.");
+            }
+
+            HeroId = heroId;
+            Body = body;
+        }
+
+        public HeroId HeroId { get; }
+
+        public int Body { get; }
+
+        public bool Equals(HeroActingBody other) => HeroId.Equals(other.HeroId) && Body == other.Body;
+
+        public override bool Equals(object obj) => obj is HeroActingBody other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (HeroId.GetHashCode() * 397) ^ Body;
+            }
+        }
+
+        public override string ToString() => $"{HeroId} acting as body {Body}";
+    }
 }

@@ -405,7 +405,12 @@ namespace GuardsDigital.Core.Snapshots
         // carries the heroes that declare more than one body with their supply. v48 lacks both and is
         // rejected: a v48 reader would take the body ordinal for the coordinate, and a v48 payload
         // cannot say that a second occupancy of one hero is a second body rather than a duplicate.
-        public const int CurrentSchemaVersion = 49;
+        // v50 (milestone 9.21b): the acting body of a many-bodied hero's current action (RZ-Q4). Each
+        // hero body supply row ends with the body settled to perform that hero's current action - his
+        // pick of "which of you acts" or the one body standing - or 0 for none. v49 lacks it and is
+        // rejected: a v49 reader would take the acting body for the next row's hero id, and a v49
+        // payload restored at a standing action could not say which body performs it.
+        public const int CurrentSchemaVersion = 50;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

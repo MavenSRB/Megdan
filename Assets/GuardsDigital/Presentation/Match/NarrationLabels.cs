@@ -35,7 +35,10 @@ namespace GuardsDigital.Presentation.Match
                 [PendingDecisionFamilies.HeroRespawn] = "CHOOSING A RESPAWN SPACE",
                 [PendingDecisionFamilies.SystemTransition] = "MAKING A ROUND-END CHOICE",
                 [PendingDecisionFamilies.RemovalPrevention] = "CHOOSING A REMOVAL RESPONSE",
-                [PendingDecisionFamilies.TurnRelease] = "TURN COMPLETE, AWAITING RELEASE"
+                [PendingDecisionFamilies.TurnRelease] = "TURN COMPLETE, AWAITING RELEASE",
+
+                // Milestone 9.21b. The public words only; the pick itself is drawn by 9.21i.
+                [PendingDecisionFamilies.ActingBody] = "CHOOSING WHICH OF THEM ACTS"
             };
 
         /// <summary>The public family only: never another seat's candidates, selected card or bounds.</summary>

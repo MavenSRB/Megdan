@@ -123,7 +123,7 @@ namespace GuardsDigital.Tests.EditMode
                     captured.CurrentBattleZoneId,
                     captured.MinionBattleExclusions,
                     captured.LastCompletedMovementWalk,
-                    captured.HeroBodySupplies),
+                    captured.HeroBodySupplies, captured.ActingBodies),
                 board.MapDefinition,
                 Array.Empty<QuickGameMinionSetupState>());
 

@@ -43,7 +43,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             ZoneId? currentBattleZoneId,
             IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
             CompletedMovementWalk lastCompletedMovementWalk,
-            IEnumerable<HeroBodySupply> heroBodySupplies)
+            IEnumerable<HeroBodySupply> heroBodySupplies,
+            IEnumerable<HeroActingBody> actingBodies)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
@@ -57,6 +58,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             HeroOccupancies = heroOccupancies.ToArray();
             HeroBodySupplies = (heroBodySupplies ??
                 throw new ArgumentNullException(nameof(heroBodySupplies))).ToArray();
+            ActingBodies = (actingBodies ??
+                throw new ArgumentNullException(nameof(actingBodies))).ToArray();
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
             PlacedTokens = placedTokens.ToArray();
@@ -67,6 +70,13 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentException("Restored hero occupancies must have unique hero IDs.", nameof(heroOccupancies));
             if (HeroBodySupplies.Select(value => value.HeroId).Distinct().Count() != HeroBodySupplies.Count)
                 throw new ArgumentException("Restored hero body supplies must name each hero once.", nameof(heroBodySupplies));
+            // Milestone 9.21b: an acting body belongs to a hero that declares bodies, once, within its supply.
+            if (ActingBodies.Select(value => value.HeroId).Distinct().Count() != ActingBodies.Count ||
+                ActingBodies.Any(acting => !HeroBodySupplies.Any(supply =>
+                    supply.HeroId.Equals(acting.HeroId) && acting.Body <= supply.Bodies)))
+                throw new ArgumentException(
+                    "A restored acting body names a hero that declares bodies, once, within its supply.",
+                    nameof(actingBodies));
             if (ObstacleOccupancies.Select(value => value.ObstacleId).Distinct().Count() != ObstacleOccupancies.Count)
                 throw new ArgumentException("Restored obstacle occupancies must have unique obstacle IDs.", nameof(obstacleOccupancies));
             if (RemainingMinions.Select(value => value.MinionId).Distinct().Count() != RemainingMinions.Count)
@@ -103,6 +113,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// <summary>Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1).</summary>
         public IReadOnlyList<HeroBodySupply> HeroBodySupplies { get; }
 
+        /// <summary>
+        /// Milestone 9.21b, schema v50. The acting body settled for a many-bodied hero's current
+        /// action (RZ-Q4); empty for every hero with one body.
+        /// </summary>
+        public IReadOnlyList<HeroActingBody> ActingBodies { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
@@ -111,7 +127,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             out ZoneId? currentBattleZoneId,
             out IReadOnlyList<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
             out CompletedMovementWalk lastCompletedMovementWalk,
-            out IReadOnlyList<HeroBodySupply> heroBodySupplies)
+            out IReadOnlyList<HeroBodySupply> heroBodySupplies,
+            out IReadOnlyList<HeroActingBody> actingBodies)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
@@ -121,6 +138,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             minionBattleExclusions = MinionBattleExclusions;
             lastCompletedMovementWalk = LastCompletedMovementWalk;
             heroBodySupplies = HeroBodySupplies;
+            actingBodies = ActingBodies;
         }
     }
 }

@@ -302,7 +302,7 @@ namespace GuardsDigital.Tests.EditMode
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
                         captured.RemainingMinions, captured.PlacedTokens, new ZoneId("top-jungle"),
                         captured.MinionBattleExclusions, captured.LastCompletedMovementWalk,
-                        captured.HeroBodySupplies),
+                        captured.HeroBodySupplies, captured.ActingBodies),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException,
@@ -315,7 +315,7 @@ namespace GuardsDigital.Tests.EditMode
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
                         captured.RemainingMinions, captured.PlacedTokens, null,
                         captured.MinionBattleExclusions, captured.LastCompletedMovementWalk,
-                        captured.HeroBodySupplies),
+                        captured.HeroBodySupplies, captured.ActingBodies),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException);

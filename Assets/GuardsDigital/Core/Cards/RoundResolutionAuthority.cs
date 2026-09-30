@@ -1385,6 +1385,12 @@ namespace GuardsDigital.Core.Cards
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerHeroRespawn(command));
         }
 
+        /// <summary>Milestone 9.21b. "Which of you acts" (RZ-Q4).</summary>
+        public RoundResolutionResult TryAnswerActingBody(ActingBodyCommand command)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerActingBody(command));
+        }
+
         public RoundResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
         {
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerDefenseResponse(command));

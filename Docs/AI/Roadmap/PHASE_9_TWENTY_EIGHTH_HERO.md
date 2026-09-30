@@ -136,7 +136,7 @@ Outcome:
 - An acting cue that follows a "different you" repeat.
 - Rail, overview and victory screen showing one hero.
 
-Acceptance: Play Mode cases for two and four bodies, the pick, an attack on a body, the fade of every body on Defeat, and one rail entry. Captures are approved by the user. Tier T3. Non-goals: new standee art.
+Acceptance: Play Mode cases for two and four bodies, the pick, an attack on a body, the fade of every body on Defeat, and one rail entry. The acting-body family's surface arm in `PendingDecisionContractConformanceTests` (parked by 9.21b in `ParkedSurfaceFamilies`) is replaced by the standee pick's commands and the parking removed. Captures are approved by the user. Tier T3. Non-goals: new standee art.
 
 ### [ ] 9.21j Deal Razzle with his artwork
 

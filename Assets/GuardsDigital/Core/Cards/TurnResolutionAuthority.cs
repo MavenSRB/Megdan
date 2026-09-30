@@ -98,7 +98,16 @@ namespace GuardsDigital.Core.Cards
         /// Milestone 9.7. A standing rule forbids this hero this kind of action - the same answer the
         /// offer set greys the action for.
         /// </summary>
-        ActionRestricted = 31
+        ActionRestricted = 31,
+
+        /// <summary>
+        /// Milestone 9.21b. A hero standing on several spaces has not yet said which of him acts
+        /// (RZ-Q4), and the pick precedes every action of the card.
+        /// </summary>
+        ActingBodyChoicePending = 32,
+
+        /// <summary>Milestone 9.21b. The answer names no body the standing pick offers.</summary>
+        ActingBodyCommandRejected = 33
     }
 
     public enum TurnResolutionEventKind
@@ -150,7 +159,13 @@ namespace GuardsDigital.Core.Cards
         TurnReleaseAwaited = 18,
 
         /// <summary>Milestone 8.35g: that player released it, and the turn is handed on.</summary>
-        TurnReleased = 19
+        TurnReleased = 19,
+
+        /// <summary>
+        /// Milestone 9.21b: a hero standing on several spaces said which of him acts (RZ-Q4). The event
+        /// names the hero, the card and the space the acting body stands on.
+        /// </summary>
+        ActingBodyChosen = 20
     }
 
     public readonly struct TurnResolutionEvent
@@ -295,6 +310,21 @@ namespace GuardsDigital.Core.Cards
             HexCoordinate coordinate) =>
             new TurnResolutionEvent(
                 TurnResolutionEventKind.HeroRespawned,
+                default,
+                cardInstanceId,
+                heroId,
+                default,
+                ActionInvocationContext.None,
+                default,
+                coordinate: coordinate);
+
+        /// <summary>Milestone 9.21b. The acting body picked, by the space it stands on (RZ-Q4).</summary>
+        public static TurnResolutionEvent ActingBodyWasChosen(
+            HeroId heroId,
+            CardInstanceId cardInstanceId,
+            HexCoordinate coordinate) =>
+            new TurnResolutionEvent(
+                TurnResolutionEventKind.ActingBodyChosen,
                 default,
                 cardInstanceId,
                 heroId,
@@ -740,6 +770,21 @@ namespace GuardsDigital.Core.Cards
                     participants,
                     cardActions.Board);
 
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4): standing while the selected hero stands on
+        /// several spaces and his card's acting body is not yet settled. Derived like the respawn
+        /// choice above - the settled body is board state (<see cref="GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority.TryGetActingBody"/>),
+        /// so nothing here is held that a restore would have to carry separately.
+        /// </summary>
+        public PendingActingBodyChoice PendingActingBodyChoice =>
+            !IsStarted || IsEnded || IsResolutionStoppedByGameEnd ||
+            !initiative.SelectedActor.IsDefined || cardActions?.Board == null
+                ? null
+                : ActingBodyRules.CreateChoice(
+                    initiative.SelectedActor.ActorId,
+                    initiative.SelectedActor.CardInstanceId,
+                    cardActions.Board);
+
         public PendingCardActionResolution PendingMovementResolution =>
             IsResolutionStoppedByGameEnd ? null : cardActions?.PendingResolution;
 
@@ -909,6 +954,11 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 heroItems,
                 CurrentModifications());
+            if (result.Accepted)
+            {
+                SettleActingBodyForTheSelectedActor();
+            }
+
             return result.Accepted
                 ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromInitiative))
                 : TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);
@@ -949,6 +999,8 @@ namespace GuardsDigital.Core.Cards
                         TurnResolutionRejectionReason.HeroRespawnCommandRejected);
                 }
 
+                // Milestone 9.21b. He stands on one space again, so that body acts.
+                SettleActingBodyForTheSelectedActor();
                 return TurnResolutionResult.Accept(new[]
                 {
                     TurnResolutionEvent.HeroWasRespawned(
@@ -987,6 +1039,81 @@ namespace GuardsDigital.Core.Cards
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
             return AdvanceInitiative(events);
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. Answers "which of you acts" (RZ-Q4, settled by the user as (A)): the named
+        /// body performs the action this card is about to choose, and every actor-space read of the
+        /// action - before and after text, the secondary Movement, Fast Travel, Clear and Hold - reads
+        /// it until the turn selects its next actor.
+        /// </summary>
+        public TurnResolutionResult TryAnswerActingBody(ActingBodyCommand command)
+        {
+            if (command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+
+            if (!IsStarted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.TurnNotStarted);
+            }
+
+            if (IsEnded)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.TurnAlreadyEnded);
+            }
+
+            var choice = PendingActingBodyChoice;
+            if (choice == null || !choice.Invocations.Contains(command))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.ActingBodyCommandRejected);
+            }
+
+            var board = cardActions.Board;
+            board.SettleActingBody(command.HeroId, command.Body);
+            board.TryGetHeroBodyCoordinate(command.HeroId, command.Body, out var standing);
+            return TurnResolutionResult.Accept(new[]
+            {
+                TurnResolutionEvent.ActingBodyWasChosen(
+                    command.HeroId, command.CardInstanceId, standing)
+            });
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. Each time the turn selects an actor, the acting bodies settled for the
+        /// previous one are forgotten; a many-bodied actor standing on one space acts with that body
+        /// at once, and one standing on several is asked (<see cref="PendingActingBodyChoice"/>).
+        /// Settling the one body here, rather than leaving the read to fall back, is what keeps the
+        /// acting body fixed if a body is added during the action (RZ-Q4: fixed for the whole action).
+        /// A hero declaring one body - every hero dealt today - is never touched.
+        /// </summary>
+        private void SettleActingBodyForTheSelectedActor()
+        {
+            var board = cardActions?.Board;
+            if (board == null)
+            {
+                return;
+            }
+
+            board.ClearActingBodies();
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return;
+            }
+
+            var actor = initiative.SelectedActor.ActorId;
+            if (board.HeroBodySupplyOf(actor) < 2)
+            {
+                return;
+            }
+
+            var bodies = board.GetHeroBodies(actor);
+            if (bodies.Count == 1)
+            {
+                board.SettleActingBody(actor, bodies[0].Body);
+            }
         }
 
         public TurnResolutionResult TryPerformHold(CardInstanceId cardInstanceId)
@@ -3923,6 +4050,8 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);
             }
 
+            SettleActingBodyForTheSelectedActor();
+
             events.AddRange(result.Events.Select(TurnResolutionEvent.FromInitiative));
             if (result.Events.Any(ruleEvent =>
                     ruleEvent.Kind == InitiativeResolutionEventKind.NoUnresolvedCardsRemaining))
@@ -4328,6 +4457,12 @@ namespace GuardsDigital.Core.Cards
             if (PendingHeroRespawnChoice != null)
             {
                 return TurnResolutionRejectionReason.HeroRespawnChoicePending;
+            }
+
+            // Milestone 9.21b. "Which of you acts" precedes every action of the card (RZ-Q4).
+            if (PendingActingBodyChoice != null)
+            {
+                return TurnResolutionRejectionReason.ActingBodyChoicePending;
             }
 
             // Milestone 6.9. The gate is "a request is held and the action that caused it has closed",

@@ -372,6 +372,12 @@ namespace GuardsDigital.Application
                         HeroRespawnCommandKind.ResolveWithoutAction,
                         command.HeroId,
                         command.CardInstanceId)));
+                case DirectorCommandKind.ChooseActingBody:
+                    return command.HeroId.IsDefined && command.CardInstanceId.IsDefined &&
+                        command.HeroBody >= HeroOccupancy.FirstBody
+                        ? DispatchResult.From(round.TryAnswerActingBody(new ActingBodyCommand(
+                            command.HeroId, command.CardInstanceId, command.HeroBody)))
+                        : DispatchResult.Unavailable("An acting-body answer names the hero, the card and the body.");
                 case DirectorCommandKind.BeginSystemTransition:
                     return DispatchResult.From(
                         round.TryBeginSystemTransition(command.SystemTransitionDefinitionId));
@@ -825,15 +831,18 @@ namespace GuardsDigital.Application
             // Milestone 6.5af: the turn authority's judged offer set rather than the card query's raw
             // one, so an action the rules can prove would do nothing arrives already marked. It is the
             // same judgement the start command is refused by, asked once.
+            // Milestone 9.21b. "Which of you acts" precedes the action choice exactly as the respawn
+            // choice does (RZ-Q4), so no action is offered until the body is picked.
+            var actingBodyChoice = turn?.PendingActingBodyChoice;
             var availableActions = turn != null && turn.SelectedActor.IsDefined &&
-                turn.PendingHeroRespawnChoice == null
+                turn.PendingHeroRespawnChoice == null && actingBodyChoice == null
                 ? turn.GetTurnActionOffers()
                 : Array.Empty<ActionOffer>();
             // The same modifications the turn authority resolves commands against, so an offer the
             // rules would refuse never appears in a projection as available.
             var turnModifications = turn?.CurrentModifications() ?? RuleModificationSet.Empty;
             var hasPendingAction = turn?.PendingChoice != null ||
-                turn?.PendingHeroRespawnChoice != null ||
+                turn?.PendingHeroRespawnChoice != null || actingBodyChoice != null ||
                 turn?.PendingMovementChoice != null || turn?.PendingMovementResolution != null ||
                 turn?.PendingAttackTargetChoice != null || turn?.PendingDefenseChoice != null ||
                 turn?.PendingAttackResolution != null ||
@@ -890,7 +899,8 @@ namespace GuardsDigital.Application
             // consults the rules in effect, and two derivations of one rules answer is exactly the
             // shape the 7.9a review found as F-PRES-01 - a control drawn live beside a command that
             // refuses it.
-            var availableHoldOffer = turn != null && turn.SelectedActor.IsDefined
+            var availableHoldOffer = turn != null && turn.SelectedActor.IsDefined &&
+                actingBodyChoice == null
                 ? GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
                     turn.SelectedActor.CardInstanceId,
                     turn.SelectedActor.ActorId,
@@ -1041,7 +1051,9 @@ namespace GuardsDigital.Application
                 // Milestone 8.53. The victory screen's board, read off the authority that
                 // accumulates it at the commit boundary - beside the Levels above, because the
                 // screen prints the two together.
-                round.Scoreboard.Entries);
+                round.Scoreboard.Entries,
+                // Milestone 9.21b. "Which of you acts" (RZ-Q4), read from the turn that derives it.
+                actingBodyChoice);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

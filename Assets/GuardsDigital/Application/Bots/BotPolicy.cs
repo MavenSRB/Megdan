@@ -411,6 +411,9 @@ namespace GuardsDigital.Application.Bots
                     return 0;
                 case DirectorCommandKind.RespawnHero when !Enabled(families, BotPolicyFamilies.Respawn):
                     return 0;
+                case DirectorCommandKind.ChooseActingBody:
+                    return Enabled(families, BotPolicyFamilies.Geometry)
+                        ? ActingBodyDelta(candidate, readModel, ownHeroId, weights, policy) : 0;
                 case DirectorCommandKind.Pass:
                     // Passing forfeits the turn. It stays legal and stays reachable - a hand with
                     // nothing committable leaves it as the only candidate, where a penalty changes
@@ -614,6 +617,35 @@ namespace GuardsDigital.Application.Bots
             }
 
             return delta;
+        }
+
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4), judged the way a movement destination is: the
+        /// answer names the space this hero's action will be performed from, so the engagement term
+        /// is recomputed there. The body nearest the fight scores best, and a body already beside an
+        /// enemy unit - where the card's Attack can reach something - gains the Attack start's own
+        /// weight, because that is the offer the pick opens. Equal bodies tie and go to the seeded
+        /// die, so the answer is a deterministic function of the seed. No card is read.
+        /// </summary>
+        private static int ActingBodyDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
+            BotEvaluationWeights weights,
+            BotPolicyWeights policy)
+        {
+            var enemies = EnemyPositions(readModel, ownHeroId);
+            var body = (readModel.Heroes ?? Array.Empty<HeroOccupancy>())
+                .Where(value => value.HeroId.Equals(candidate.HeroId) && value.Body == candidate.HeroBody)
+                .Select(value => (HexCoordinate?)value.Coordinate)
+                .FirstOrDefault();
+            if (enemies.Count == 0 || !body.HasValue)
+            {
+                return 0;
+            }
+
+            var nearest = enemies.Min(position => HexDistanceQuery.Calculate(body.Value, position));
+            var proximity = BotEvaluation.ProximityCap - Math.Min(nearest, BotEvaluation.ProximityCap);
+            return (proximity * weights.EngagementProximity) +
+                (nearest <= 1 ? policy.AttackAction : 0);
         }
 
         /// <summary>
