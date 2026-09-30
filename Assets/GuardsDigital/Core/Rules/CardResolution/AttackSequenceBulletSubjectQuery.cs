@@ -407,7 +407,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return admitted
                     .Where(target => target.Kind == AttackTargetKind.Hero &&
                         ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                            spaces, target.HeroId, modifications))
+                            spaces, target.HeroId, modifications, target.HeroBody))
                     .ToArray();
             }
 

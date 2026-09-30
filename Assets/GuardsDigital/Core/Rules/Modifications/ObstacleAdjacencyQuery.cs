@@ -114,7 +114,8 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool HeroIsAdjacentToThreeOrMoreObstacles(
             ITokenPlacementAuthority spaces,
             HeroId hero,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            int body = 0)
         {
             if (spaces == null)
             {
@@ -138,9 +139,12 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             // Milestone 9.21a (RZ-Q2). Adjacency is read per body: a hero standing on several spaces
             // is adjacent to what any of its bodies is adjacent to. A hero with one body reads its one
-            // space exactly as before.
-            return spaces.GetHeroBodies(hero).Any(body =>
-                IsAdjacentToThreeOrMoreObstacles(spaces, body.Coordinate, modifications));
+            // space exactly as before. Milestone 9.21c: a read that knows WHICH body it means - the
+            // body an Attack took, or the body a selection picked as its space - names it, and only
+            // that body's space is read.
+            return spaces.GetHeroBodies(hero).Any(standing =>
+                (body <= 0 || standing.Body == body) &&
+                IsAdjacentToThreeOrMoreObstacles(spaces, standing.Coordinate, modifications));
         }
     }
 }

@@ -878,7 +878,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (requiresThreeObstaclesBeside &&
                     (context.Components?.Tokens == null ||
                         !ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                            context.Components.Tokens, target.HeroId, context.Modifications)))
+                            context.Components.Tokens, target.HeroId, context.Modifications,
+                            // Milestone 9.21c: the body this candidate is (RZ-Q2).
+                            target.HeroBody)))
                 {
                     return false;
                 }

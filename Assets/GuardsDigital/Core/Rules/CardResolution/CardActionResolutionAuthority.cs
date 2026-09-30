@@ -2989,7 +2989,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // walk and the snapshot restore that re-asks a paused capability read the identical
                 // narrowing - the same reason p.13's printed subtype is read here rather than stored.
                 AttackDefenseCardActionStrategyBackend.RepeatedSubjectNarrowingOf(
-                    attack, definitions));
+                    attack, definitions),
+                // Milestone 9.21c. The attacked body (RZ-Q3), which the resolution persists.
+                attack.Target.Kind == AttackTargetKind.Hero ? attack.Target.HeroBody : 0);
         }
 
         /// <summary>
@@ -5919,14 +5921,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>Milestone 8.116. The forced mover and their defended card, or default.</summary>
         private readonly struct ForcedMovement
         {
-            public ForcedMovement(HeroId mover, CardInstanceId defendedCard, HexCoordinate from)
+            public ForcedMovement(HeroId mover, CardInstanceId defendedCard, HexCoordinate from, int body)
             {
                 Mover = mover;
                 DefendedCard = defendedCard;
                 From = from;
+                Body = body;
             }
 
             public HeroId Mover { get; }
+
+            /// <summary>Milestone 9.21c. The attacked body that moves; 0 for "the hero".</summary>
+            public int Body { get; }
+
+            public Components.BoardObjectReference MoverReference =>
+                Body > 0
+                    ? Components.BoardObjectReference.ForHeroBody(Mover, Body)
+                    : Components.BoardObjectReference.ForHero(Mover);
             public CardInstanceId DefendedCard { get; }
             public HexCoordinate From { get; }
         }
@@ -5950,14 +5961,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var attack = EnclosingAttackOf(standing.Attack, definitions, board);
+            // Milestone 9.21c. The defender that moves is the body the Attack took: a Defense is the
+            // attacked body's (RZ-Q4), so its forced Movement starts from that body's space.
             if (!attack.HeroTargetId.IsDefined || !attack.DefenseCardInstanceId.IsDefined ||
-                !board.TryGetSoleHeroCoordinate(
-                    attack.HeroTargetId, "the defender a Defense card moves", out var from))
+                !board.TryGetObjectCoordinate(attack.HeroTargetReference, out var from))
             {
                 return default;
             }
 
-            return new ForcedMovement(attack.HeroTargetId, attack.DefenseCardInstanceId, from);
+            return new ForcedMovement(
+                attack.HeroTargetId, attack.DefenseCardInstanceId, from, attack.HeroTargetBody);
         }
 
         /// <summary>
@@ -5984,7 +5997,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             List<ResolutionStep> steps)
         {
             if (pendingCardText != null || board == null || remainderAttack == null ||
-                !board.TryGetSoleHeroCoordinate(forced.Mover, "the defender a Defense card moves", out var now) || now.Equals(forced.From))
+                !board.TryGetObjectCoordinate(forced.MoverReference, out var now) || now.Equals(forced.From))
             {
                 return false;
             }

@@ -626,7 +626,13 @@ namespace GuardsDigital.Tests.EditMode
 
             withheldPause.AssertNoDifferences("NarrowResolution, withheld pause");
             withheldPause.AssertEveryOmissionReached("NarrowResolution, withheld pause");
-            withheldPause.AssertExercised("NarrowResolution, withheld pause");
+            withheldPause.AssertExercised("NarrowResolution, withheld pause",
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    // Milestone 9.21c. A frame's repeat captures its bound piece at hero grain, because
+                    // the snapshot persists the identity and not a body; a frame never holds one.
+                    { "BoardObjectReference.HeroBody", "a frame's bound repeat target is captured at hero grain (9.21c)" }
+                });
             unnamedCards.AssertNoDifferences("NarrowResolution, unnamed cards");
             unnamedCards.AssertEveryOmissionReached("NarrowResolution, unnamed cards");
         }
@@ -1051,6 +1057,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "DirectorCommand.TokenInstanceIds", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "MinionBattleChoiceCommand.HeroId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 // Never non-default on a SEAT by construction.
+                { "BoardObjectReference.HeroBody", "9.21c: a projection names board objects at hero grain - a candidate's own space says which body of a many-bodied hero it is - so a preview's occupant is normalized before it is projected" },
                 { "PendingSystemTransitionStep.IsConcurrent", "a seat's pause is narrowed to its own one item (8.35u), so it is never concurrent on a seat" },
                 { "MarkerAttachment.PropertySources", "derived from the trusted marker definition, which no dealt marker gives a property" },
                 { "PlacedToken.PropertySources", "derived from the trusted token definition; no token the walks place prints a property" },

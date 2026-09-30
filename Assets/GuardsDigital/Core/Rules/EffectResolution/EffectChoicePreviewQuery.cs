@@ -200,6 +200,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     }
                 }
 
+                // Milestone 9.21c. The preview names its occupant at HERO grain: the candidate's own
+                // space already says which body of a many-bodied hero it is, and a projection that
+                // carried a body the seat wire does not would differ on the far side of it.
+                if (occupant.Kind == BoardObjectKind.Hero && occupant.HeroBody > 0)
+                {
+                    occupant = BoardObjectReference.ForHero(occupant.HeroId);
+                }
+
                 previews.Add(new EffectChoiceCandidatePreview(
                     value,
                     space,

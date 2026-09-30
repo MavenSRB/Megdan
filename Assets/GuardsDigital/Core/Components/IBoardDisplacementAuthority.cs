@@ -26,25 +26,46 @@ namespace GuardsDigital.Core.Components
         Token = 3
     }
 
-    /// <summary>The stable identity of one displaceable object on the board.</summary>
+    /// <summary>
+    /// The stable identity of one displaceable object on the board.
+    ///
+    /// <para><b>Milestone 9.21c: a hero reference may name one of the hero's bodies.</b> A hero that
+    /// stands on several spaces (Razzle, RZ-Q2) is one hero to everybody else, so equality and the
+    /// hash stay at HERO grain - "another unit", "not the actor", a Swap of an object with itself and
+    /// every set of references keep counting him once. <see cref="HeroBody"/> is the address beside
+    /// that identity: the body a selection picked as the space it reads. It is 0 - "the hero, no body
+    /// named" - for every reference to a hero with one body, and the board
+    /// answers such a reference from the acting body exactly as before; a reference the board hands out
+    /// for a space a many-bodied hero stands on (<see cref="IBoardDisplacementAuthority.TryGetObjectAt"/>)
+    /// names that body, so the space it is read back at, pushed from, swapped or moved is that body's.
+    /// It is never persisted: every stored identity of a board object is its space or its hero id.</para>
+    /// </summary>
     public readonly struct BoardObjectReference : IEquatable<BoardObjectReference>
     {
         private BoardObjectReference(
             BoardObjectKind kind,
             HeroId heroId,
             MinionId minionId,
-            TokenInstanceId tokenInstanceId)
+            TokenInstanceId tokenInstanceId,
+            int heroBody = 0)
         {
             Kind = kind;
             HeroId = heroId;
             MinionId = minionId;
             TokenInstanceId = tokenInstanceId;
+            HeroBody = heroBody;
         }
 
         public BoardObjectKind Kind { get; }
         public HeroId HeroId { get; }
         public MinionId MinionId { get; }
         public TokenInstanceId TokenInstanceId { get; }
+
+        /// <summary>
+        /// Milestone 9.21c. The body of a many-bodied hero this reference addresses, from 1; 0 names the
+        /// hero without a body (its only body, or the acting body). Not part of equality - see the type.
+        /// </summary>
+        public int HeroBody { get; }
 
         public bool IsDefined => Kind != BoardObjectKind.None;
 
@@ -56,6 +77,25 @@ namespace GuardsDigital.Core.Components
             }
 
             return new BoardObjectReference(BoardObjectKind.Hero, heroId, default, default);
+        }
+
+        /// <summary>
+        /// Milestone 9.21c. One body of a hero - the space a selection picked for a hero standing on
+        /// several (RZ-Q2). Equal to <see cref="ForHero"/> of the same hero.
+        /// </summary>
+        public static BoardObjectReference ForHeroBody(HeroId heroId, int body)
+        {
+            if (!heroId.IsDefined)
+            {
+                throw new ArgumentException("A hero board object requires a defined hero ID.", nameof(heroId));
+            }
+
+            if (body < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(body), body, "A hero body is numbered from 1.");
+            }
+
+            return new BoardObjectReference(BoardObjectKind.Hero, heroId, default, default, body);
         }
 
         public static BoardObjectReference ForMinion(MinionId minionId)
@@ -122,7 +162,7 @@ namespace GuardsDigital.Core.Components
             switch (Kind)
             {
                 case BoardObjectKind.Hero:
-                    return $"Hero {HeroId.Value}";
+                    return HeroBody > 0 ? $"Hero {HeroId.Value} body {HeroBody}" : $"Hero {HeroId.Value}";
                 case BoardObjectKind.Minion:
                     return $"Minion {MinionId.Value}";
                 case BoardObjectKind.Token:

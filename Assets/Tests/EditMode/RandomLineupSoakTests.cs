@@ -8,6 +8,8 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
 
@@ -123,6 +125,101 @@ namespace GuardsDigital.Tests.EditMode
                 $"{Soaked(lineup).Restores} restores, {Soaked(lineup).Rewinds} rewinds, " +
                 $"{Soaked(lineup).OffersSubmitted} offers submitted, {Soaked(lineup).ShadowSteps} shadow " +
                 $"steps, {Soaked(lineup).Elapsed.TotalSeconds:F1}s at stride {Stride}.");
+        }
+
+        /// <summary>
+        /// Milestone 9.21c. Which Blue hero of line-up 0 stands on four spaces: the third (Sabina). The
+        /// first two (Arien, Brogan) print radius auras centred on themselves ("in radius" of "you"),
+        /// and a radius anchored on a many-bodied hero is 9.21a's named refusal - a reading only a
+        /// many-bodied hero's OWN faces reach, which Razzle's do not print; it is exercised by
+        /// <c>HeroBodiesRosterSweepTests</c> instead of being walked into here.
+        /// </summary>
+        private const int ManyBodiedBluePosition = 2;
+
+        /// <summary>
+        /// Milestone 9.21c. The same soak over one line-up with a many-bodied hero in it: a Blue
+        /// hero declares Razzle's supply of four bodies (RZ-Q1) and stands on four spaces from setup -
+        /// its own and the three free spaces nearest the minions' centre - through the internal-test
+        /// supply seam, since no Razzle content is dealt. Every other hero's selections, counts and
+        /// presence checks then meet a hero on several spaces (RZ-Q2) under the soak's restore, replay,
+        /// rewind and offer-submission checks, and the acting-body pick (9.21b) is walked by the seed.
+        /// </summary>
+        [Test]
+        public void AManyBodiedLineup_RestoresReplaysAndRewindsIntoTheSameMatch()
+        {
+            var soak = ManyBodied.Value;
+            foreach (var kind in soak.Findings
+                .GroupBy(finding => finding.Substring(finding.IndexOf(']') + 1))
+                .OrderByDescending(group => group.Count()))
+            {
+                TestContext.WriteLine($"{kind.Count()} x {kind.First()}");
+            }
+
+            Assert.That(soak.Findings, Is.Empty,
+                "The many-bodied soak found these disagreements or broken invariants:\n" +
+                string.Join("\n", soak.Findings.Take(40)));
+            Assert.That(soak.CommandsWalked, Is.GreaterThan(CommandsPerMatch / 2),
+                "The many-bodied soak is stopping early rather than walking its line-up.");
+            Assert.That(soak.Restores, Is.GreaterThan(soak.CommandsWalked / Stride / 2));
+            Assert.That(soak.Rewinds, Is.GreaterThan(soak.CommandsWalked / Stride / 2));
+            TestContext.WriteLine(
+                $"9.21c many-bodied soak: {soak.CommandsWalked} commands, {soak.Restores} restores, " +
+                $"{soak.Rewinds} rewinds, {soak.OffersSubmitted} offers submitted, " +
+                $"{soak.Elapsed.TotalSeconds:F1}s.");
+        }
+
+        private static readonly Lazy<Soak> ManyBodied = new Lazy<Soak>(() =>
+        {
+            var soak = new Soak();
+            var clock = Stopwatch.StartNew();
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var picked = OfferOutcomeTests.RotatedLineups()[0];
+            foreach (var seed in Seeds)
+            {
+                Play(soak, ComposeManyBodied(map, picked, ManyBodiedBluePosition), picked, seed);
+            }
+
+            soak.Elapsed = clock.Elapsed;
+            return soak;
+        });
+
+        /// <summary>
+        /// Milestone 9.21c. <see cref="OfferOutcomeTests.Compose"/> with the first Blue hero on four
+        /// spaces and a supply of four.
+        /// </summary>
+        internal static MatchSessionInitialState ComposeManyBodied(
+            BoardMapDefinition map, RegisteredHero[] picked, int bluePosition = 0)
+        {
+            var composed = OfferOutcomeTests.Compose(map, picked);
+            var setup = composed.Setup;
+            var scenario = composed.Scenario;
+            var blue = setup.Heroes.Where(hero => hero.TeamSide == TeamSide.Blue).ElementAt(bluePosition).HeroId;
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate).Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var centreQ = setup.Minions.Average(minion => (double)minion.Coordinate.Q);
+            var centreR = setup.Minions.Average(minion => (double)minion.Coordinate.R);
+            var centre = new HexCoordinate((int)Math.Round(centreQ), (int)Math.Round(centreR));
+            var bodies = map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable && !occupied.Contains(space.Coordinate))
+                .Select(space => space.Coordinate)
+                .OrderBy(at => HexDistanceQuery.Calculate(at, centre))
+                .ThenBy(at => at.Q).ThenBy(at => at.R)
+                .Take(3)
+                .ToArray();
+            var heroes = scenario.InitialHeroes
+                .Concat(bodies.Select((at, index) => new HeroOccupancy(blue, index + 2, at)))
+                .ToArray();
+            var staged = new InitialScenarioDescription(
+                scenario.Participants,
+                scenario.CardDefinitions,
+                scenario.InitialCards,
+                scenario.InitialTieBreakerState,
+                scenario.SetupSeed,
+                scenario.SelectedMap,
+                heroes,
+                scenario.InitialObstacles,
+                new[] { new HeroBodySupply(blue, 4) });
+            return new MatchSessionInitialState(staged, setup, new[] { map });
         }
 
         [Test]
@@ -790,9 +887,10 @@ namespace GuardsDigital.Tests.EditMode
                     }
                 }
 
-                foreach (var hero in after.Heroes.GroupBy(value => value.HeroId).Where(group => group.Count() > 1))
+                // Milestone 9.21c: one place per BODY - a many-bodied hero stands once per body.
+                foreach (var hero in after.Heroes.GroupBy(value => (value.HeroId, value.Body)).Where(group => group.Count() > 1))
                 {
-                    yield return $"hero {hero.Key} stands in {hero.Count()} places.";
+                    yield return $"hero {hero.Key.HeroId} body {hero.Key.Body} stands in {hero.Count()} places.";
                 }
 
                 var occupied = after.Heroes.Select(hero => (Unit: "hero " + hero.HeroId, hero.Coordinate))

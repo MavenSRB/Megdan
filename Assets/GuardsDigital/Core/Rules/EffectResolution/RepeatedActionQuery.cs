@@ -233,7 +233,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             {
                 if (fact.Value.Kind == EffectValueKind.Coordinate)
                 {
-                    return components.Board.TryGetObjectAt(fact.Value.Coordinate, out boundTarget);
+                    // Milestone 9.21c. Captured at HERO grain: the snapshot persists the piece's
+                    // identity and not a body (BoundTargetIdentity), so a body named here would be
+                    // lost on a restore and the live and restored frames would read different spaces.
+                    // A many-bodied hero bound so is the hero; which of his bodies a "same target"
+                    // repeat is supplied is 9.21h's (RZ-Q11), and "a different target" excludes
+                    // every body either way.
+                    if (!components.Board.TryGetObjectAt(fact.Value.Coordinate, out boundTarget))
+                    {
+                        return false;
+                    }
+
+                    if (boundTarget.Kind == BoardObjectKind.Hero && boundTarget.HeroBody > 0)
+                    {
+                        boundTarget = BoardObjectReference.ForHero(boundTarget.HeroId);
+                    }
+
+                    return true;
                 }
             }
 

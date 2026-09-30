@@ -104,6 +104,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     .Select(target => target.Kind == BoardObjectKind.Hero
                         ? EffectValue.Hero(target.HeroId)
                         : EffectValue.Minion(target.MinionId))
+                    // Milestone 9.21c: a hero on several spaces in reach is one target (RZ-Q2).
+                    .Distinct()
                     .ToArray();
 
             public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(

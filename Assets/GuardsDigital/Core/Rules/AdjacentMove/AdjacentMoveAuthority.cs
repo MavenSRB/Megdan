@@ -1120,7 +1120,13 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             switch (occupant.Kind)
             {
                 case BoardOccupantKind.Hero:
-                    subject = BoardObjectReference.ForHero(occupant.HeroId);
+                    // Milestone 9.21c. A many-bodied hero's space names the body standing on it, so a
+                    // selection that picked this space reads, pushes, swaps and moves that body
+                    // (RZ-Q2). A hero with one body is named as it always was.
+                    subject = HeroBodySupplyOf(occupant.HeroId) > 1
+                        ? BoardObjectReference.ForHeroBody(
+                            occupant.HeroId, occupancies[BodyIndexAt(occupant.HeroId, coordinate)].Body)
+                        : BoardObjectReference.ForHero(occupant.HeroId);
                     return true;
                 case BoardOccupantKind.StandardMinion:
                     subject = BoardObjectReference.ForMinion(occupant.MinionId);
@@ -1141,7 +1147,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             switch (subject.Kind)
             {
                 case BoardObjectKind.Hero:
-                    return TryGetHeroCoordinate(subject.HeroId, out coordinate);
+                    // Milestone 9.21c. A reference naming a body is read at that body; one naming the
+                    // hero alone at its only (or acting) body, as before.
+                    return subject.HeroBody > 0
+                        ? TryGetHeroBodyCoordinate(subject.HeroId, subject.HeroBody, out coordinate)
+                        : TryGetHeroCoordinate(subject.HeroId, out coordinate);
                 case BoardObjectKind.Minion:
                 {
                     var index = minions.FindIndex(minion => minion.MinionId.Equals(subject.MinionId));

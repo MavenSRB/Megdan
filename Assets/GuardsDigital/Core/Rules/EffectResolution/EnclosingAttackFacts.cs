@@ -46,8 +46,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HexCoordinate? actorSpaceAtActionStart = null,
             CardInstanceId defenseCardInstanceId = default,
             bool targetWasRemoved = false,
-            RepeatedAttackSubjectNarrowing repeatedSubject = default)
+            RepeatedAttackSubjectNarrowing repeatedSubject = default,
+            int heroTargetBody = 0)
         {
+            HeroTargetBody = heroTargetId.IsDefined ? heroTargetBody : 0;
             DefenseCardInstanceId = defenseCardInstanceId;
             TargetWasRemoved = targetWasRemoved;
             RepeatedSubject = repeatedSubject;
@@ -89,6 +91,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// target either, so "no hero" is an ordinary answer rather than a missing one.
         /// </summary>
         public HeroId HeroTargetId { get; }
+
+        /// <summary>
+        /// Milestone 9.21c. The BODY of <see cref="HeroTargetId"/> the Attack took (RZ-Q3) - 1 for every
+        /// hero with one body, 0 where no hero was taken or the facts were built without one. A
+        /// derived address like <see cref="Components.BoardObjectReference.HeroBody"/>, so it is not
+        /// part of equality; the attack resolution it is read from persists the body.
+        /// </summary>
+        public int HeroTargetBody { get; }
+
+        /// <summary>
+        /// Milestone 9.21c. The Attack's target as a board object: the attacked body where one is
+        /// named, so "the target" of card text is read, measured and moved at the body the Attack took
+        /// rather than at the hero's acting body (RZ-Q3). The undefined reference where the Attack took
+        /// no hero.
+        /// </summary>
+        public Components.BoardObjectReference HeroTargetReference =>
+            !HeroTargetId.IsDefined
+                ? default
+                : HeroTargetBody > 0
+                    ? Components.BoardObjectReference.ForHeroBody(HeroTargetId, HeroTargetBody)
+                    : Components.BoardObjectReference.ForHero(HeroTargetId);
 
         /// <summary>
         /// The minion the Attack took, or the undefined minion when it took a hero. Milestone 8.19a:

@@ -159,10 +159,10 @@ namespace GuardsDigital.Core.Cards.Verified
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var candidates = Subjects(context);
-                return candidates.Count < Slots
+                return candidates.Distinct().Count() < Slots
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), Slots, Slots));
+                        EffectChooserRole.Actor, Offer(context, candidates), Slots, Slots));
             }
 
             /// <summary>
@@ -178,8 +178,13 @@ namespace GuardsDigital.Core.Cards.Verified
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                // Milestone 9.21c: a body of a many-bodied friendly hero is answered as its space,
+                // and two of his bodies are one unit, never a pair (RZ-Q2, RZ-Q5's allies' side).
                 var subjects = Subjects(context);
+                var chosen = (selected ?? Array.Empty<EffectValue>())
+                    .Select(value => RosterPresenceQuery.ResolveUnit(
+                        subjects, context.Components?.Board, ReadsSpace(context), value))
+                    .ToArray();
                 if (chosen.Length != Slots || chosen.Distinct().Count() != Slots ||
                     chosen.Any(value => !value.IsDefined || !subjects.Contains(value)))
                 {
@@ -198,7 +203,7 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Subjects(context).Count < Slots
+                Subjects(context).Distinct().Count() < Slots
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
 
@@ -254,7 +259,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         components.Board,
                         context.Participants,
                         context.Modifications,
-                        BoardObjectReference.ForHero(context.ActorId))
+                        BoardObjectReference.ForHero(context.ActorId),
+                        everyBody: true)
                     .Where(candidate => Admits(context, candidate))
                     .ToArray();
             }
@@ -352,22 +358,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 }
             }
 
-            private static EffectValue AsValue(BoardObjectReference candidate) =>
-                candidate.Kind == BoardObjectKind.Hero
-                    ? EffectValue.Hero(candidate.HeroId)
-                    : EffectValue.Minion(candidate.MinionId);
+            private static IReadOnlyList<EffectValue> Offer(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> candidates) =>
+                RosterPresenceQuery.OfferUnits(candidates, context.Components?.Board, ReadsSpace(context));
 
-            private static BoardObjectReference FromValue(EffectValue value)
-            {
-                if (value.Kind == EffectValueKind.Hero)
-                {
-                    return BoardObjectReference.ForHero(value.HeroId);
-                }
-
-                return value.Kind == EffectValueKind.Minion
-                    ? BoardObjectReference.ForMinion(value.MinionId)
-                    : default;
-            }
+            private static bool ReadsSpace(EffectCapabilityContext context) =>
+                context.Publishes(FirstSpaceOutputName) || context.Publishes(SecondSpaceOutputName);
         }
     }
 }

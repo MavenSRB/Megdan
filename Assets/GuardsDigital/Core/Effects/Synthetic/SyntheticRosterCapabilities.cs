@@ -1959,7 +1959,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.Participants,
                         context.Modifications,
                         BoardObjectReference.ForHero(context.ActorId),
-                        excludeEnclosingTarget ? EnclosingTarget(context) : default)
+                        excludeEnclosingTarget ? EnclosingTarget(context) : default,
+                        // Milestone 9.21c: every body of a many-bodied hero in reach (RZ-Q2); the
+                        // handlers offer them through Offer, once or per body.
+                        everyBody: true)
                     .Where(target => AdmitsClass(admittedClass, target, board))
                     .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(),
@@ -2062,6 +2065,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 target.Kind == BoardObjectKind.Hero
                     ? new EffectOutcomeFact(heroOutput, EffectValue.Hero(target.HeroId))
                     : new EffectOutcomeFact(minionOutput, EffectValue.Minion(target.MinionId));
+
+            /// <summary>
+            /// Milestone 9.21c. The answers a set of pieces is offered as (RZ-Q2): see
+            /// <see cref="RosterPresenceQuery.OfferUnits"/>. The node reads the picked piece's space when
+            /// it declares a coordinate output.
+            /// </summary>
+            protected static IReadOnlyList<EffectValue> Offer(
+                EffectCapabilityContext context, IEnumerable<BoardObjectReference> targets) =>
+                RosterPresenceQuery.OfferUnits(targets, context.Components?.Board, ReadsSpace(context));
+
+            /// <summary>Milestone 9.21c. See <see cref="RosterPresenceQuery.ResolveUnit"/>.</summary>
+            protected static BoardObjectReference Resolve(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> targets, EffectValue answer) =>
+                RosterPresenceQuery.ResolveUnit(targets, context.Components?.Board, ReadsSpace(context), answer);
+
+            private static bool ReadsSpace(EffectCapabilityContext context) =>
+                context.DeclaredOutputs.Any(output => output.ValueKind == EffectValueKind.Coordinate);
 
             protected static BoardObjectReference FromValue(EffectValue value)
             {
@@ -2486,14 +2506,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return candidates.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), 1, 1));
+                        EffectChooserRole.Actor, Offer(context, candidates), 1, 1));
             }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                var chosen = selected?.Count == 1 ? FromValue(selected[0]) : default;
-                if (!chosen.IsDefined || !Candidates(context).Contains(chosen))
+                var chosen = selected?.Count == 1 ? Resolve(context, Candidates(context), selected[0]) : default;
+                if (!chosen.IsDefined)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -2547,21 +2567,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out var minimum, out var maximum))
                     return EffectExecutionResult.ImpossibleMandatory();
                 if (maximum == 0)
                     return SetOutcome(context, Array.Empty<BoardObjectReference>());
                 return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                    EffectChooserRole.Actor, candidates.Select(AsValue), minimum, maximum));
+                    EffectChooserRole.Actor, Offer(context, candidates), minimum, maximum));
             }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out var minimum, out var maximum))
                     return EffectExecutionResult.ImpossibleMandatory();
-                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                // Milestone 9.21c: a hero on several spaces is one unit, so two of his bodies are
+                // not two of the set (the hero-grain Distinct below refuses them, RZ-Q2).
+                var chosen = (selected ?? Array.Empty<EffectValue>())
+                    .Select(value => Resolve(context, candidates, value)).ToArray();
                 if (chosen.Any(value => !value.IsDefined || !candidates.Contains(value)) ||
                     chosen.Distinct().Count() != chosen.Length ||
                     chosen.Length < minimum || chosen.Length > maximum)
@@ -2572,7 +2595,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out _, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out _, out var maximum))
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 return maximum == 0
                     ? EffectExecutionResultKind.Applied
@@ -2661,7 +2684,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out var minimum, out var maximum))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -2669,19 +2692,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return maximum == 0
                     ? SetOutcome(Array.Empty<BoardObjectReference>())
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), minimum, maximum));
+                        EffectChooserRole.Actor, Offer(context, candidates), minimum, maximum));
             }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out var minimum, out var maximum))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                var chosen = (selected ?? Array.Empty<EffectValue>())
+                    .Select(value => Resolve(context, candidates, value)).ToArray();
                 if (chosen.Any(value => !value.IsDefined || !candidates.Contains(value)) ||
                     chosen.Distinct().Count() != chosen.Length ||
                     chosen.Length < minimum || chosen.Length > maximum)
@@ -2695,7 +2719,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
                 var candidates = DeclaredTargets(context);
-                if (!Bounds(context, candidates.Count, out _, out var maximum))
+                if (!Bounds(context, candidates.Distinct().Count(), out _, out var maximum))
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
@@ -2818,7 +2842,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return candidates.Count < 2
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), 2, 2));
+                        EffectChooserRole.Actor, Offer(context, candidates), 2, 2));
             }
 
             public EffectExecutionResult Resume(
@@ -2919,7 +2943,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             RuleObject.ForHero(context.ActorId), board, context.Participants,
                             context.Modifications, context.ImmunityOverrides))
                         continue;
-                    result.Add(target.HeroId);
+                    // Milestone 9.21c: "up to 1 enemy hero in any of the N spaces" names a hero once,
+                    // however many of his bodies stand in the file (RZ-Q2, W3).
+                    if (!result.Contains(target.HeroId))
+                        result.Add(target.HeroId);
                 }
 
                 return result;
@@ -3166,15 +3193,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return options.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, options.Select(value => AsValue(value.Target)), 1, 1));
+                        EffectChooserRole.Actor, Offer(context, options.Select(value => value.Target)), 1, 1));
             }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                var target = selected?.Count == 1 ? FromValue(selected[0]) : default;
+                // Milestone 9.21c: the option of the body the answer names (RZ-Q2).
+                var options = Options(context);
+                var target = selected?.Count == 1
+                    ? Resolve(context, options.Select(value => value.Target).ToArray(), selected[0])
+                    : default;
                 var option = target.IsDefined
-                    ? Options(context).SingleOrDefault(value => value.Target.Equals(target))
+                    ? options.FirstOrDefault(value => value.Target.Equals(target) &&
+                        value.Target.HeroBody == target.HeroBody)
                     : null;
                 if (option == null) return EffectExecutionResult.ImpossibleMandatory();
                 return EffectExecutionResult.Applied(new[]
@@ -3775,8 +3807,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return null;
                 }
 
+                // Milestone 9.21c: the attacked body (RZ-Q3).
                 var target = attack.HeroTargetId.IsDefined
-                    ? BoardObjectReference.ForHero(attack.HeroTargetId)
+                    ? attack.HeroTargetReference
                     : BoardObjectReference.ForMinion(attack.MinionTargetId);
 
                 // A removed target has no coordinate, which is the answer rather than an error: the
@@ -5076,8 +5109,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return true;
                 }
 
+                // Milestone 9.21c: the attacked body (RZ-Q3).
                 var target = attack.HeroTargetId.IsDefined
-                    ? BoardObjectReference.ForHero(attack.HeroTargetId)
+                    ? attack.HeroTargetReference
                     : BoardObjectReference.ForMinion(attack.MinionTargetId);
                 return !board.TryGetObjectCoordinate(target, out var targetAt) ||
                     !board.TryGetObjectCoordinate(
@@ -5138,7 +5172,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return candidates.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), 1, 1));
+                        EffectChooserRole.Actor, Offer(context, candidates), 1, 1));
             }
 
             public EffectExecutionResult Resume(
@@ -5149,8 +5183,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var chosen = FromValue(selected[0]);
-                if (!chosen.IsDefined || !Candidates(context).Contains(chosen))
+                var chosen = Resolve(context, Candidates(context), selected[0]);
+                if (!chosen.IsDefined)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -5275,10 +5309,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var candidates = Candidates(context);
-                return candidates.Count < 2
+                return candidates.Distinct().Count() < 2
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), 2, 2));
+                        EffectChooserRole.Actor, Offer(context, candidates), 2, 2));
             }
 
             public EffectExecutionResult Resume(
@@ -5291,12 +5325,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Candidates(context).Count < 2
+                Candidates(context).Distinct().Count() < 2
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
-                Candidates(context).Select(AsValue).ToArray();
+                Offer(context, Candidates(context)).ToArray();
 
             /// <summary>Naming the pair mutates nothing; the Swap after it does. Milestone 8.35l.</summary>
             public bool PublishesWithoutApplying => true;
@@ -5322,7 +5356,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 var candidates = Candidates(context);
-                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                // Milestone 9.21c: two bodies of one hero are one unit, never a pair (RZ-Q2).
+                var chosen = (selected ?? Array.Empty<EffectValue>())
+                    .Select(value => Resolve(context, candidates, value)).ToArray();
                 if (chosen.Length != 2 || chosen.Distinct().Count() != 2 ||
                     chosen.Any(value => !value.IsDefined || !candidates.Contains(value)) ||
                     !StandAtOneDistance(context, chosen[0], chosen[1]))
@@ -5390,7 +5426,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var inRadius = RosterPresenceQuery.FindUnitsWithin(
                         actorAt, reach, RosterUnitKind.Unit, SourceTeamRelation.AnyTeam,
                         context.ActorId, board, context.Participants, context.Modifications,
-                        BoardObjectReference.ForHero(context.ActorId))
+                        BoardObjectReference.ForHero(context.ActorId),
+                        // Milestone 9.21c: each body of a many-bodied hero, as its own space (RZ-Q2).
+                        everyBody: true)
                     .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(), RuleActivity.Swap,
                         RuleObject.ForHero(context.ActorId), board, context.Participants,
@@ -5470,7 +5508,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private static BoardObjectReference EnclosingTarget(EffectCapabilityContext context)
         {
             if (context.EnclosingAttack.HeroTargetId.IsDefined)
-                return BoardObjectReference.ForHero(context.EnclosingAttack.HeroTargetId);
+                return context.EnclosingAttack.HeroTargetReference;
             if (context.EnclosingAttack.MinionTargetId.IsDefined)
                 return BoardObjectReference.ForMinion(context.EnclosingAttack.MinionTargetId);
             return default;
@@ -5563,7 +5601,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 // Milestone 8.61e. The forced move runs one of p.19's six files at full distance, so
                 // what it entered and left is p.18's realised line to where it stopped.
-                var forcedMover = BoardObjectReference.ForHero(moverId);
+                // Milestone 9.21c: the attacked body, the one Destinations measured from.
+                var forcedMover = context.EnclosingAttack.HeroTargetReference;
                 context.Components.Board.TryGetObjectCoordinate(forcedMover, out var forcedFrom);
                 var committed = context.Components.Board.CommitValidatedDisplacement(
                     forcedMover,
@@ -5610,7 +5649,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 // "If able" covers the hero the page removed at step 6: a defeated defender is not
                 // standing anywhere, so there is nothing to move.
-                var mover = BoardObjectReference.ForHero(attack.HeroTargetId);
+                // Milestone 9.21c: the defender that moves is the body the Attack took (RZ-Q4).
+                var mover = attack.HeroTargetReference;
                 if (!components.Board.TryGetObjectCoordinate(mover, out var moverAt))
                 {
                     return Array.Empty<HexCoordinate>();
@@ -5926,7 +5966,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return candidates.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, candidates.Select(AsValue), 1, 1));
+                        EffectChooserRole.Actor, Offer(context, candidates), 1, 1));
             }
 
             public EffectExecutionResult Resume(
@@ -5937,8 +5977,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var chosen = FromValue(selected[0]);
-                if (!chosen.IsDefined || !Subjects(context).Contains(chosen) ||
+                var chosen = Resolve(context, Subjects(context), selected[0]);
+                if (!chosen.IsDefined ||
                     !context.Components.Board.TryGetObjectCoordinate(chosen, out var at))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();

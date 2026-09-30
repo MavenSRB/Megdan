@@ -295,7 +295,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         return excluded.Kind == BoardObjectKind.Minion &&
                             excluded.MinionId.Equals(candidate.MinionId);
                     case EffectValueKind.Coordinate:
-                        return excludedAt.HasValue && excludedAt.Value.Equals(candidate.Coordinate);
+                        // Milestone 9.21c. A space names the piece standing on it, and a hero on
+                        // several spaces is ONE unit for "a different target" (RZ-Q2): his other
+                        // bodies' spaces name him too, so they are excluded with the one he was taken
+                        // on. A hero reference compares at hero grain, which is exactly that reading.
+                        return (excludedAt.HasValue && excludedAt.Value.Equals(candidate.Coordinate)) ||
+                            (excluded.Kind == BoardObjectKind.Hero &&
+                                context.Components != null && context.Components.CanDisplace &&
+                                context.Components.Board.TryGetObjectAt(candidate.Coordinate, out var standing) &&
+                                standing.Equals(excluded));
                     default:
                         return false;
                 }
@@ -361,6 +369,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     case EffectValueKind.Minion:
                         return narrowing.Admits(BoardObjectReference.ForMinion(candidate.MinionId));
                     case EffectValueKind.Coordinate:
+                        // Milestone 9.21c. A space a unit stands on names that unit - a body of a
+                        // many-bodied hero is offered as its space (RZ-Q2) - so it is narrowed as the
+                        // unit; an empty or token space by kind alone, as before.
+                        if (context.Components != null && context.Components.CanDisplace &&
+                            context.Components.Board.TryGetObjectAt(candidate.Coordinate, out var unit) &&
+                            unit.Kind == BoardObjectKind.Hero && unit.HeroBody > 0)
+                        {
+                            return narrowing.Admits(unit);
+                        }
+
                         return narrowing.AdmitsKind(BoardObjectKind.Hero) ||
                             narrowing.AdmitsKind(BoardObjectKind.Minion);
                     default:

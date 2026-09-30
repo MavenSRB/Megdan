@@ -241,7 +241,10 @@ namespace GuardsDigital.Core.Cards.Verified
                     (occupant.Kind == BoardObjectKind.Hero || occupant.Kind == BoardObjectKind.Minion) &&
                     !TargetQuery.IsPrevented(
                         occupant.AsRuleObject(), RuleActivity.Movement, actor, board,
-                        context.Participants, context.Modifications, context.ImmunityOverrides))
+                        context.Participants, context.Modifications, context.ImmunityOverrides) &&
+                    // Milestone 9.21c: "each enemy hero you moved through" counts a hero once,
+                    // however many of his bodies the walk crossed (RZ-Q2).
+                    !result.Contains(occupant))
                 {
                     result.Add(occupant);
                 }

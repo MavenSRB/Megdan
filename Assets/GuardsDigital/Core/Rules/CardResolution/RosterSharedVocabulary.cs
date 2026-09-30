@@ -392,7 +392,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             BoardObjectReference excludedFirst = default,
-            BoardObjectReference excludedSecond = default)
+            BoardObjectReference excludedSecond = default,
+            bool everyBody = false)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
@@ -405,11 +406,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("A presence query requires a team relation.", nameof(relation));
 
             // Milestone 9.21a (RZ-Q2): each hero BODY is measured from its own space, and a hero within
-            // reach by several bodies is one unit present.
-            var units = board.Occupancies
+            // reach by several bodies is one unit present. Milestone 9.21c: a many-bodied hero's unit
+            // names a body in reach (the board's own reference for its space), and a SELECTION asks
+            // for every body in reach (everyBody) so it may pick any of them as the space it reads;
+            // references compare at hero grain, so a count still counts him once.
+            var heroes = board.Occupancies
                 .Where(value => HexDistanceQuery.Calculate(origin, value.Coordinate) <= distance)
-                .Select(value => BoardObjectReference.ForHero(value.HeroId))
-                .Distinct()
+                .Select(value => board.TryGetObjectAt(value.Coordinate, out var standing)
+                    ? standing
+                    : BoardObjectReference.ForHero(value.HeroId));
+            var units = (everyBody ? heroes : heroes.Distinct())
                 .Concat(board.Minions
                     .Where(value => HexDistanceQuery.Calculate(origin, value.Coordinate) <= distance)
                     .Select(value => BoardObjectReference.ForMinion(value.MinionId)))
@@ -422,6 +428,68 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .ThenBy(Identity, StringComparer.Ordinal)
                 .ToArray();
             return Array.AsReadOnly(units);
+        }
+
+        /// <summary>
+        /// Milestone 9.21c. The answers a selection over these units is offered as (RZ-Q2). A hero is
+        /// offered ONCE, as the hero, where the selection only names what it picked; where it reads
+        /// the picked unit's space (<paramref name="readsSpace"/>), a many-bodied hero is offered once
+        /// per body among <paramref name="units"/>, each as the space it stands on - the way a space
+        /// already names the one piece standing there. Minions and one-bodied heroes are offered as
+        /// before, and the order is the units' own.
+        /// </summary>
+        public static IReadOnlyList<Effects.EffectValue> OfferUnits(
+            IEnumerable<BoardObjectReference> units, IBoardDisplacementAuthority board, bool readsSpace)
+        {
+            var offered = new List<Effects.EffectValue>();
+            foreach (var unit in units)
+            {
+                var value = readsSpace && board != null && unit.Kind == BoardObjectKind.Hero &&
+                    unit.HeroBody > 0 && board.TryGetObjectCoordinate(unit, out var at)
+                        ? Effects.EffectValue.Space(at)
+                        : unit.Kind == BoardObjectKind.Hero
+                            ? Effects.EffectValue.Hero(unit.HeroId)
+                            : Effects.EffectValue.Minion(unit.MinionId);
+                if (!offered.Contains(value))
+                {
+                    offered.Add(value);
+                }
+            }
+
+            return offered;
+        }
+
+        /// <summary>
+        /// Milestone 9.21c. The unit of <paramref name="units"/> an answer names, or the undefined
+        /// reference where the answer is not one <see cref="OfferUnits"/> made: a space names the body
+        /// standing on it, and a hero offered once names the first of its bodies among the units.
+        /// </summary>
+        public static BoardObjectReference ResolveUnit(
+            IReadOnlyList<BoardObjectReference> units,
+            IBoardDisplacementAuthority board,
+            bool readsSpace,
+            Effects.EffectValue answer)
+        {
+            if (!OfferUnits(units, board, readsSpace).Contains(answer))
+            {
+                return default;
+            }
+
+            switch (answer.Kind)
+            {
+                case Effects.EffectValueKind.Coordinate:
+                    return units.FirstOrDefault(unit => unit.Kind == BoardObjectKind.Hero &&
+                        board != null && board.TryGetObjectCoordinate(unit, out var at) &&
+                        at.Equals(answer.Coordinate));
+                case Effects.EffectValueKind.Hero:
+                    return units.FirstOrDefault(unit => unit.Kind == BoardObjectKind.Hero &&
+                        unit.HeroId.Equals(answer.HeroId));
+                case Effects.EffectValueKind.Minion:
+                    return units.FirstOrDefault(unit => unit.Kind == BoardObjectKind.Minion &&
+                        unit.MinionId.Equals(answer.MinionId));
+                default:
+                    return default;
+            }
         }
 
         private static bool AdmitsKind(
@@ -736,7 +804,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                     return target.Kind == AttackTargetKind.Hero &&
                         ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                            spaces, target.HeroId, modifications)
+                            spaces, target.HeroId, modifications, target.HeroBody)
                         ? 1
                         : 0;
 

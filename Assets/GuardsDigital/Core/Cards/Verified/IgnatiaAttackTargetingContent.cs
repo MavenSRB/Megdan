@@ -244,9 +244,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 var filtered = FilteredTargets(context);
                 if (subject == TargetSubject.Hero)
                 {
+                    // Milestone 9.21c: a hero on several spaces in reach is one target (RZ-Q2).
                     return filtered
                         .Where(target => target.Kind == BoardObjectKind.Hero)
                         .Select(target => EffectValue.Hero(target.HeroId))
+                        .Distinct()
                         .ToArray();
                 }
 
@@ -255,6 +257,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 return filtered
                     .Where(target => target.Kind == BoardObjectKind.Hero)
                     .Select(target => EffectValue.Hero(target.HeroId))
+                    .Distinct()
                     .Concat(filtered
                         .Where(target => target.Kind == BoardObjectKind.Minion)
                         .Select(target => EffectValue.Minion(target.MinionId)))

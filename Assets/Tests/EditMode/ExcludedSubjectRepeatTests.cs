@@ -54,6 +54,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly ZoneId Battle = new ZoneId("excluded-subject-zone");
         private static readonly HexCoordinate TakenAt = new HexCoordinate(1, 0);
         private static readonly HexCoordinate SpareAt = new HexCoordinate(2, 0);
+        private static readonly HexCoordinate TakenSecondBodyAt = new HexCoordinate(3, 0);
 
         // -------------------------------------------------------------------------------------------
         // What the declaration is
@@ -168,6 +169,28 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 Eligible(definition, frame, offered, Components()).Select(value => value.Coordinate),
+                Is.EqualTo(new[] { SpareAt }));
+        }
+
+        /// <summary>
+        /// Milestone 9.21c (RZ-Q2). A hero standing on several spaces is ONE unit for "a different
+        /// target": where the selection offers spaces, every space he stands on is taken out with the
+        /// one the asking instance took him on - his second body is not a different target.
+        /// </summary>
+        [Test]
+        public void TheOffer_LosesEveryBodyOfAManyBodiedSubject_WhereItPublishesCoordinates()
+        {
+            var definition = DefinitionWith(RepeatTargetBinding.DifferentSelectionSubject);
+            // Captured at hero grain, as RepeatedActionQuery captures a many-bodied hero's space.
+            var frame = RepeatedFrame(definition, BoardObjectReference.ForHero(Taken));
+            var offered = new[]
+            {
+                EffectValue.Space(TakenAt), EffectValue.Space(TakenSecondBodyAt), EffectValue.Space(SpareAt)
+            };
+
+            Assert.That(
+                Eligible(definition, frame, offered, Components(takenHasTwoBodies: true))
+                    .Select(value => value.Coordinate),
                 Is.EqualTo(new[] { SpareAt }));
         }
 
@@ -482,7 +505,7 @@ namespace GuardsDigital.Tests.EditMode
         /// A two-space board carrying the two heroes these cases name, for the one case that is about
         /// matching a piece to the coordinate it stands on.
         /// </summary>
-        private static MatchComponents Components()
+        private static MatchComponents Components(bool takenHasTwoBodies = false)
         {
             var map = new BoardMapDefinition(
                 Map, 1, "Excluded Subject Map",
@@ -491,7 +514,8 @@ namespace GuardsDigital.Tests.EditMode
                     new BoardMapSpace(new SpaceId("s0"), new HexCoordinate(0, 0),
                         BoardMapSpaceKind.Playable, Battle),
                     new BoardMapSpace(new SpaceId("s1"), TakenAt, BoardMapSpaceKind.Playable, Battle),
-                    new BoardMapSpace(new SpaceId("s2"), SpareAt, BoardMapSpaceKind.Playable, Battle)
+                    new BoardMapSpace(new SpaceId("s2"), SpareAt, BoardMapSpaceKind.Playable, Battle),
+                    new BoardMapSpace(new SpaceId("s3"), TakenSecondBodyAt, BoardMapSpaceKind.Playable, Battle)
                 },
                 new[] { new BoardMapZone(Battle, "Battle", "lane", null, false, true) },
                 Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
@@ -503,9 +527,12 @@ namespace GuardsDigital.Tests.EditMode
                     new HeroOccupancy(Actor, new HexCoordinate(0, 0)),
                     new HeroOccupancy(Taken, TakenAt),
                     new HeroOccupancy(Spare, SpareAt)
-                },
+                }.Concat(takenHasTwoBodies
+                    ? new[] { new HeroOccupancy(Taken, 2, TakenSecondBodyAt) }
+                    : Array.Empty<HeroOccupancy>()),
                 Array.Empty<GuardsDigital.Core.Obstacles.ObstacleOccupancy>(),
-                Array.Empty<QuickGameMinionSetupState>());
+                Array.Empty<QuickGameMinionSetupState>(),
+                takenHasTwoBodies ? new[] { new HeroBodySupply(Taken, 4) } : Array.Empty<HeroBodySupply>());
 
             return new MatchComponents(
                 SyntheticComponentDefinitions.CreateCatalog(),

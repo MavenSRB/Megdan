@@ -287,8 +287,11 @@ namespace GuardsDigital.Core.Cards.Verified
                         continue;
                     }
 
+                    // Milestone 9.21c: each body is tested from its own space, and the hero is
+                    // named once (RZ-Q2).
                     if (board.TryGetObjectCoordinate(target, out var at) &&
-                        IsAdjacentToATokenOrAMinion(board, tokens, at))
+                        IsAdjacentToATokenOrAMinion(board, tokens, at) &&
+                        !heroes.Contains(target.HeroId))
                     {
                         heroes.Add(target.HeroId);
                     }

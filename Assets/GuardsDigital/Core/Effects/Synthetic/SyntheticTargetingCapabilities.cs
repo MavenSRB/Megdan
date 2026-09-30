@@ -1366,6 +1366,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         return null;
                     }
 
+                    // Milestone 9.21c. A body of a many-bodied hero, answered as its space (RZ-Q2).
+                    if (TryNameOfferedBody(context, selected[0], out var unitBody))
+                    {
+                        var unitOutcomes = new List<EffectOutcomeFact>
+                        {
+                            new EffectOutcomeFact(ChosenHeroOutputName, EffectValue.Hero(unitBody.HeroId))
+                        };
+                        if (context.Publishes(ChosenMinionSpaceOutputName))
+                        {
+                            unitOutcomes.Add(new EffectOutcomeFact(
+                                ChosenMinionSpaceOutputName, EffectValue.Space(selected[0].Coordinate)));
+                        }
+
+                        return unitOutcomes;
+                    }
+
                     if (selected[0].Kind == EffectValueKind.Hero &&
                         HeroCandidates(context).Contains(selected[0].HeroId))
                     {
@@ -1391,6 +1407,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (subject == PrintedIconSelectionSubject.Hero)
                 {
+                    // Milestone 9.21c. A body of a many-bodied hero, answered as its space (RZ-Q2).
+                    if (selected != null && selected.Count == 1 &&
+                        TryNameOfferedBody(context, selected[0], out var heroBody))
+                    {
+                        var bodyOutcomes = new List<EffectOutcomeFact>
+                        {
+                            new EffectOutcomeFact(ChosenHeroOutputName, EffectValue.Hero(heroBody.HeroId))
+                        };
+                        if (context.Publishes(ChosenHeroSpaceOutputName))
+                        {
+                            bodyOutcomes.Add(new EffectOutcomeFact(
+                                ChosenHeroSpaceOutputName, EffectValue.Space(selected[0].Coordinate)));
+                        }
+
+                        return bodyOutcomes;
+                    }
+
                     if (selected == null || selected.Count != 1 ||
                         selected[0].Kind != EffectValueKind.Hero ||
                         !HeroCandidates(context).Contains(selected[0].HeroId))
@@ -1478,17 +1511,88 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 subject == PrintedIconSelectionSubject.Hero
-                    ? HeroCandidates(context).Select(EffectValue.Hero).ToArray()
+                    ? HeroOffer(context).ToArray()
                     : subject == PrintedIconSelectionSubject.Minion
                         ? MinionCandidates(context).Select(EffectValue.Minion).ToArray()
                     : subject == PrintedIconSelectionSubject.Unit
                         // p.19's two unit kinds in one offer, heroes first and each kind in its own
                         // stable order, because a card that says "a unit" says both and says nothing
                         // about which it prefers.
-                        ? HeroCandidates(context).Select(EffectValue.Hero)
+                        ? HeroOffer(context)
                             .Concat(MinionCandidates(context).Select(EffectValue.Minion))
                             .ToArray()
                     : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+
+            /// <summary>
+            /// Milestone 9.21c. Whether this node reads the chosen hero's SPACE - it publishes the
+            /// space beside the identity - rather than only naming the hero.
+            /// </summary>
+            private bool ReadsTheHerosSpace(EffectCapabilityContext context) =>
+                subject == PrintedIconSelectionSubject.Hero
+                    ? context.Publishes(ChosenHeroSpaceOutputName)
+                    : subject == PrintedIconSelectionSubject.Unit &&
+                        context.Publishes(ChosenMinionSpaceOutputName);
+
+            /// <summary>
+            /// Milestone 9.21c. The heroes this arm offers, as answers (RZ-Q2). A hero is offered once,
+            /// as the hero, where the node only names him - a hero on several spaces in reach is still
+            /// one hero, and a hero-level result (a discard, a marker, a Defeat) happens once. Where the
+            /// node reads the chosen hero's space, a many-bodied hero is offered once PER BODY in
+            /// reach, each as the space it stands on - "a selection may pick any body as the space it
+            /// reads", and a space is how this family already names the one piece standing on it.
+            /// Every hero with one body is offered exactly as before.
+            /// </summary>
+            private IEnumerable<EffectValue> HeroOffer(EffectCapabilityContext context)
+            {
+                var readsSpace = ReadsTheHerosSpace(context);
+                var board = context.Components?.Board;
+                var named = new HashSet<HeroId>();
+                foreach (var target in Offered(context).Where(value => value.Kind == BoardObjectKind.Hero))
+                {
+                    if (readsSpace && target.HeroBody > 0 && board != null)
+                    {
+                        if (board.TryGetObjectCoordinate(target, out var at))
+                        {
+                            yield return EffectValue.Space(at);
+                        }
+
+                        continue;
+                    }
+
+                    if (named.Add(target.HeroId))
+                    {
+                        yield return EffectValue.Hero(target.HeroId);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Milestone 9.21c. The body a space answer names, where this node offered that body as its
+            /// space - and only there, so a space never answers a node that offered the hero.
+            /// </summary>
+            private bool TryNameOfferedBody(
+                EffectCapabilityContext context, EffectValue answer, out BoardObjectReference body)
+            {
+                body = default;
+                var board = context.Components?.Board;
+                if (answer.Kind != EffectValueKind.Coordinate || board == null ||
+                    !ReadsTheHerosSpace(context))
+                {
+                    return false;
+                }
+
+                foreach (var target in Offered(context))
+                {
+                    if (target.Kind == BoardObjectKind.Hero && target.HeroBody > 0 &&
+                        board.TryGetObjectCoordinate(target, out var at) && at.Equals(answer.Coordinate))
+                    {
+                        body = target;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
 
             /// <summary>
             /// Milestone 8.88. The minions this arm offers, from the family's one pipeline.
@@ -1504,9 +1608,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// hero is among them only where the sentence includes them.
             /// </summary>
             private IReadOnlyList<HeroId> HeroCandidates(EffectCapabilityContext context) =>
-                Offered(context)
-                    .Where(target => target.Kind == BoardObjectKind.Hero)
-                    .Select(target => target.HeroId)
+                HeroOffer(context)
+                    .Where(value => value.Kind == EffectValueKind.Hero)
+                    .Select(value => value.HeroId)
                     .ToArray();
 
             /// <summary>

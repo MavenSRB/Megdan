@@ -128,8 +128,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 // Where the hero is now, which for every target the page did not remove is the space
                 // the Attack bound - an Attack does not move its defender. The overlay is inside this
                 // call, so Over the Top reaches the clause without this handler naming an Ultimate.
+                // Milestone 9.21c: the body the Attack took (RZ-Q3), not any body of the hero.
                 if (ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                        spaces, target, context.Modifications))
+                        spaces, target, context.Modifications, attack.HeroTargetBody))
                 {
                     return true;
                 }

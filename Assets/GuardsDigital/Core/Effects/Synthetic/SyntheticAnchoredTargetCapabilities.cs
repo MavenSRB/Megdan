@@ -88,8 +88,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } = Array.Empty<ActiveEffectDefinition>();
             public bool PublishesWithoutApplying => true;
             public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+            // Milestone 9.21c: a hero with several bodies beside the anchor is one hero (RZ-Q2).
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
-                Candidates(context).Select(ToValue).ToArray();
+                Candidates(context).Select(ToValue).Distinct().ToArray();
             public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(EffectCapabilityContext context,
                 IReadOnlyList<EffectValue> chosen)
             {
@@ -138,7 +139,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
                 return RosterPresenceQuery.FindUnitsWithin(withinPrintedRange ? actorAt : anchor, reach, kind,
                         relation, context.ActorId, board, context.Participants, context.Modifications,
-                        BoardObjectReference.ForHero(context.ActorId))
+                        BoardObjectReference.ForHero(context.ActorId),
+                        // Milestone 9.21c: every body, each tested against the anchor from its own space.
+                        everyBody: true)
                     // Typed Hero/Minion consumers name that miniature, as the printed-icon selectors do.
                     .Where(t => kind == RosterUnitKind.Unit || (kind == RosterUnitKind.Hero
                         ? t.Kind == BoardObjectKind.Hero : t.Kind == BoardObjectKind.Minion))

@@ -1638,6 +1638,11 @@ namespace GuardsDigital.Core.Snapshots
                 enclosingAttack: resolution.EnclosingAttack,
                 rosterState: resolution.RosterState,
                 immunityOverrides: node.ImmunityOverrides,
+                // Milestone 9.21c, the sixth link. A selection that reads its chosen hero's SPACE
+                // offers a many-bodied hero once per body (RZ-Q2), and whether it reads the space is
+                // the node's own declared outputs - so the re-ask carries them, as live execution does.
+                // Before 9.21c no capability derived its candidates from them, so no restored set moves.
+                declaredOutputs: node.Outputs,
                 capabilities: resolution.Catalog,
                 // Milestone 8.54, and the fifth link in the chain this method's remarks describe. A
                 // capability may now read which performance the frame is - the payload restored one,
