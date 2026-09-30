@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21c Roster reading evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21c | Every capability the dealt roster composes classified and proven for a many-bodied hero: bodies as spaces, the hero counted once, presence over every body, the attacked body for "the target", a body-naming `BoardObjectReference`; a restore-fidelity defect fixed. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921c-make-every-other-hero-read-a-many-bodied-hero). | `milestone/9.21c` |
+
 ## Milestone 9.21b Acting body evidence
 
 | Milestone | Outcome and definition | Commit |
