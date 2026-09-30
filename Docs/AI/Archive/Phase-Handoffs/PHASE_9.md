@@ -2,6 +2,24 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21j Dealing evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21j | Razzle the Ringmaster dealt as the twenty-eighth hero with his eighteen faces, six handlers, body supply of four, staged boards, private art and the acting body on the wire (/28), every pin moved with its cause. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921j-deal-razzle-with-his-artwork). | `milestone/9.21j` |
+
+## Milestone 9.21i Standees and acting cue evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21i | One standee per body with pips, the acting-body pick by a click on a standee, the gold acting ring on the settled body and a faint one on his other bodies, cues and fades per body. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921i-present-several-standees-and-the-acting-cue). | `milestone/9.21i` |
+
+## Milestone 9.21h Different-body repeat evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21h | Twin Strike and Spectacle as "may" repeats performed by a different body, measured from that body with the first target excluded, and the Active-effect radius read from any body (RZ-Q13). [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921h-implement-the-repeat-by-a-different-body). | `milestone/9.21h` |
+
 ## Milestone 9.21g Counting faces evidence
 
 | Milestone | Outcome and definition | Commit |

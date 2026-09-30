@@ -280,3 +280,11 @@ Result: the text was never in the art. Tali's three prepared faces are clean; "I
 Completed 2026-09-30.
 
 Historical evidence: [9.25 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-925-token-captions-and-size-evidence).
+
+### [ ] 9.23 Min's stance subjects declare what they publish
+
+Queued 2026-09-30 by 9.21f: `choose-target@2` always publishes the chosen unit's identity, and snapshot load refuses an outcome the node did not declare (Magic Trick's restore first failed exactly so and now declares all three outputs). Min's Crane, Tiger and Dragon Stance subjects declare only `chosenSpace`, so restoring a match paused mid-push on those faces is expected to be refused. Outcome: a regression restoring each stance at its push, failing on the base with the refused outcome, then the declarations corrected (content only; the identity pin re-measured if the declaration feeds it, with the reason recorded) or, if the restore actually holds, the reason recorded and the item closed. Closing check: the three regressions, Min's printed-set and journey fixtures, harness and Edit Mode green. T1.
+
+### [ ] 9.26 The bot tier-two seed sweep fits Unity's per-case budget
+
+Queued 2026-09-30 by 9.21k: `BotTierTwoTests.TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn` took 197 s in the full Edit Mode run of the twenty-eight-hero roster, over the 180 s per-case budget the launcher enforces, and passed only because the budget is applied at the case's next yield. No bot code changed in the Razzle sequence; the sweep grew with the roster. Outcome: the case split by seed group or its line-up sample bounded so every case stays under 120 s, with the same seeds covered and the tier-two-not-worse claim unchanged; the split named in `Docs/AI/Testing` where the bot sweep is described. Closing check: the split cases green in Edit Mode with their durations recorded, and the full Edit Mode run green. T1.
