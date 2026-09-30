@@ -316,3 +316,9 @@ Result: `Builds/Playtest-9.27-razzle` and its ZIP (90,013,616 bytes, 185 entries
 Completed 2026-10-01.
 
 Historical evidence: [9.27 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-927-package-evidence).
+
+## Turn-release cue, authorized 2026-10-01
+
+### [ ] 9.28 A turn waiting on its own END TURN says so, and every banner stays up longer
+
+Authorized 2026-10-01 by the user, on 8.35g's release pause (the strip's "TURN COMPLETE, AWAITING RELEASE"): "when the player seat reach that state, their end turn button should start flashing, and big blood red lights should say "end turn", same way they say "commit a card"...etc. Also, all those warnings should linger little bit longer." Outcome: when the viewer's own turn stands at its release (`PendingTurnRelease` naming the viewer's hero), the phase banner announces `END TURN` once per turn in 8.47's look, to that seat only (never another seat or the Director); it yields to an expanded decision window as the other banners do, is not raised while that seat's own END TURN press is already composing the release, and is taken down the moment the release no longer stands. The END TURN control flashes blood red outside its face for as long as it releases the turn, so its words stay readable. Every phase banner holds one second longer (hold 1.3 s to 2.3 s, total 1.9 s to 2.9 s). No rule, command, snapshot or wire change. Closing check: detector and presenter regressions for the release banner (viewer only, once per turn, withheld mid-press, taken down when released) and a view regression for the flash (drawn exactly while the control releases the turn), each failing on the base and passing after; `PhaseBannerTests`, `HudButtonTreatmentTests`, the END TURN presentation fixtures and `PhaseBannerPlayModeTests` green in Unity; a capture of the banner and the flashing control sent to the user. T2 with a visual inspection.
