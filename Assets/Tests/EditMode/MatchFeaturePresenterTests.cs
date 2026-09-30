@@ -514,7 +514,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(parameter => parameter.ParameterType.Name)
                 .ToArray();
 
-            Assert.That(DecisionFamilyInventory.ChoiceProjectionMembers, Has.Length.EqualTo(11),
+            // Milestone 9.21b: twelve - "which of you acts" joins through the same contract argument.
+            Assert.That(DecisionFamilyInventory.ChoiceProjectionMembers, Has.Length.EqualTo(12),
                 "The declared inventory is the list this rule is about; a shrunk one is a broken " +
                 "rule rather than a pass.");
             Assert.That(carried, Has.Length.EqualTo(DecisionFamilyInventory.ChoiceProjectionMembers.Length),
@@ -4733,6 +4734,8 @@ namespace GuardsDigital.Tests.EditMode
                 inner.PendingMinionBattleChoice;
             public virtual PendingHeroRespawnChoice PendingHeroRespawnChoice =>
                 inner.PendingHeroRespawnChoice;
+            public virtual PendingActingBodyChoice PendingActingBodyChoice =>
+                inner.PendingActingBodyChoice;
             public virtual GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 PendingSystemTransitionStep => inner.PendingSystemTransitionStep;
             public virtual RemovalPreventionPrompt PendingRemovalPrevention =>

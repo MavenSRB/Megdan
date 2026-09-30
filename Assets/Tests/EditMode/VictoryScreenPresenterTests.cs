@@ -637,6 +637,8 @@ namespace GuardsDigital.Tests.EditMode
 
             public PendingHeroRespawnChoice PendingHeroRespawnChoice =>
                 inner.PendingHeroRespawnChoice;
+            public PendingActingBodyChoice PendingActingBodyChoice =>
+                inner.PendingActingBodyChoice;
 
             public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 PendingSystemTransitionStep => inner.PendingSystemTransitionStep;

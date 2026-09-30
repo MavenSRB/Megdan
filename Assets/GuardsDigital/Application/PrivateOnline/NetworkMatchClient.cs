@@ -866,6 +866,30 @@ namespace GuardsDigital.Application
                         new SpawnPointId(value.AdjacentSpawnPointId), value.IsFallback)));
             }
         }
+        /// <summary>
+        /// Milestone 9.21b. Re-derived rather than carried: the owning seat's contract names the hero,
+        /// the card and each standing body, and the hero rows hold where each body stands - so the
+        /// pick needs no projection row, and a seat that does not own it has no contract to derive from.
+        /// </summary>
+        public PendingActingBodyChoice PendingActingBodyChoice
+        {
+            get
+            {
+                var contract = DecisionContract;
+                if (contract == null || !contract.FamilyId.Equals(PendingDecisionFamilies.ActingBody))
+                {
+                    return null;
+                }
+
+                var hero = contract.Commands[0].HeroId;
+                var bodies = contract.Commands.Select(command => command.HeroBody).ToArray();
+                return new PendingActingBodyChoice(
+                    hero,
+                    contract.Commands[0].CardInstanceId,
+                    Heroes.Where(value => value.HeroId.Equals(hero) && bodies.Contains(value.Body)));
+            }
+        }
+
         public PendingSystemTransitionStep PendingSystemTransitionStep
         {
             get

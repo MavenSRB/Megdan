@@ -341,6 +341,7 @@ namespace GuardsDigital.Application
             DisplacedMinionCorrection = ownsDecision ? source.PendingDisplacedMinionCorrection : null;
             MinionBattleChoice = ownsDecision ? source.PendingMinionBattleChoice : null;
             HeroRespawnChoice = ownsDecision ? source.PendingHeroRespawnChoice : null;
+            ActingBodyChoice = ownsDecision ? source.PendingActingBodyChoice : null;
             // Milestone 8.35u. Narrowed to this seat's own open item rather than handed over whole.
             // A pause that stands on several heroes carries several option lists, and an option list
             // names cards in that hero's HAND - so another hero's options are the deck-and-hand
@@ -603,6 +604,9 @@ namespace GuardsDigital.Application
 
         public PendingMinionBattleChoice MinionBattleChoice { get; }
         public PendingHeroRespawnChoice HeroRespawnChoice { get; }
+
+        /// <summary>Milestone 9.21b. "Which of you acts", for the seat that owns it only.</summary>
+        public PendingActingBodyChoice ActingBodyChoice { get; }
 
         public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
             SystemTransitionStep { get; }
@@ -892,6 +896,7 @@ namespace GuardsDigital.Application
 
         public PendingMinionBattleChoice PendingMinionBattleChoice => pending.MinionBattleChoice;
         public PendingHeroRespawnChoice PendingHeroRespawnChoice => pending.HeroRespawnChoice;
+        public PendingActingBodyChoice PendingActingBodyChoice => pending.ActingBodyChoice;
 
         public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
             PendingSystemTransitionStep => pending.SystemTransitionStep;

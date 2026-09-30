@@ -592,6 +592,12 @@ namespace GuardsDigital.Tests.EditMode
                     nameof(NetworkProjectionDetailRecord.PendingMinionBattleChoice) },
                 { "PendingHeroRespawnChoice",
                     nameof(NetworkProjectionDetailRecord.PendingHeroRespawnChoice) },
+                // Milestone 9.21b. CARRIED by the owning seat's contract: every ChooseActingBody answer
+                // names the hero, the card and one standing body, and the hero rows hold each body's
+                // space, so the client rebuilds the whole pick from what already crosses.
+                { "PendingActingBodyChoice",
+                    nameof(NetworkSeatProjectionRecord.DecisionContractCommands) + " plus " +
+                        nameof(NetworkSeatProjectionRecord.Heroes) },
                 { "PendingSystemTransitionStep",
                     nameof(NetworkProjectionDetailRecord.PendingSystemTransitionStep) },
                 { "PendingSystemTransitionDescription",

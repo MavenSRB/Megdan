@@ -1508,9 +1508,9 @@ namespace GuardsDigital.Application
 
         /// <summary>
         /// Milestone 9.21b. "Which of you acts" (RZ-Q4), standing before the action choice of a hero
-        /// on several spaces. Carried on the Director's projection only: a seat reads the decision
-        /// through its <see cref="DecisionContract"/>, whose answers name the hero, the card and each
-        /// body, and the bodies' spaces are already on <see cref="Heroes"/>.
+        /// on several spaces. A seat carries it only when it owns the decision; over the wire it is
+        /// re-derived from the <see cref="DecisionContract"/>, whose answers name the hero, the card and
+        /// each body, and from <see cref="Heroes"/>, which hold the bodies' spaces - no row of its own.
         /// </summary>
         public PendingActingBodyChoice PendingActingBodyChoice { get; }
 

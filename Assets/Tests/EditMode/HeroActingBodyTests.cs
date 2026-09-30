@@ -295,6 +295,23 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(client.Heroes.Where(hero => hero.HeroId.Equals(blue)).Select(hero => hero.Body),
                     Is.EqualTo(new[] { 1, 2 }));
+
+                // The typed pick is re-derived on the client from the contract and the hero rows.
+                if (seat.HeroId.Equals(blue))
+                {
+                    Assert.That(view.PendingActingBodyChoice, Is.Not.Null);
+                    Assert.That(client.PendingActingBodyChoice.HeroId, Is.EqualTo(view.PendingActingBodyChoice.HeroId));
+                    Assert.That(client.PendingActingBodyChoice.CardInstanceId,
+                        Is.EqualTo(view.PendingActingBodyChoice.CardInstanceId));
+                    Assert.That(client.PendingActingBodyChoice.Bodies, Is.EqualTo(view.PendingActingBodyChoice.Bodies));
+                    Assert.That(client.PendingActingBodyChoice.Invocations,
+                        Is.EqualTo(view.PendingActingBodyChoice.Invocations));
+                }
+                else
+                {
+                    Assert.That(view.PendingActingBodyChoice, Is.Null, "Only the owning seat carries the pick.");
+                    Assert.That(client.PendingActingBodyChoice, Is.Null);
+                }
             }
 
             var command = session.Projection.DecisionContract.Commands[1];

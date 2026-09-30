@@ -95,6 +95,25 @@ namespace GuardsDigital.Tests.EditMode
                 Does.StartWith("YOUR CARD CHOICE").And.Contain("to discard"));
         }
 
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4) on 9.21a's staged two-body board: the owner is
+        /// told to pick, every other seat reads the owning hero and the family's public words, and
+        /// the Director - who answers every family - reads it as its own.
+        /// </summary>
+        [Test]
+        public void TheActingBodyPick_IsNamedToItsOwnerAndToEveryOtherSeat()
+        {
+            var session = HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out var red, out var blue);
+            var host = new MatchHost(session);
+            var own = NarrationLabels.Own("ACTING BODY", "CHOOSE WHICH OF YOU ACTS");
+
+            Assert.That(RoundActionPresenter.CreateViewModel(Projection(host, blue), blue).Status,
+                Is.EqualTo(own));
+            Assert.That(RoundActionPresenter.CreateViewModel(Projection(host, red), red).Status,
+                Is.EqualTo(Name(host, blue) + " — CHOOSING WHICH OF THEM ACTS"));
+            Assert.That(RoundActionPresenter.CreateViewModel(host.Projection).Status, Is.EqualTo(own));
+        }
+
         private static SeatProjection Projection(MatchHost host, HeroId hero) =>
             host.ProjectionForSeat(host.Seats.Seats.Single(seat => seat.HeroId.Equals(hero)).Id);
 

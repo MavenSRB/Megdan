@@ -245,6 +245,12 @@ namespace GuardsDigital.Application
             PendingDisplacedMinionCorrection { get; }
         PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
+
+        /// <summary>
+        /// Milestone 9.21b. "Which of you acts" (RZ-Q4), carried to the seat that owns it like every
+        /// other pending family, so the status bar can name the step.
+        /// </summary>
+        PendingActingBodyChoice PendingActingBodyChoice { get; }
         GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
             PendingSystemTransitionStep { get; }
         RemovalPreventionPrompt PendingRemovalPrevention { get; }

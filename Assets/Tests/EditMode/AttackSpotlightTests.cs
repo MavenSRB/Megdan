@@ -960,6 +960,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public PendingMinionBattleChoice PendingMinionBattleChoice => null;
             public PendingHeroRespawnChoice PendingHeroRespawnChoice => null;
+            public PendingActingBodyChoice PendingActingBodyChoice => null;
 
             public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
                 PendingSystemTransitionStep => null;

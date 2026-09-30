@@ -2400,6 +2400,21 @@ namespace GuardsDigital.Presentation.Match
                     "RESPAWN", "CHOOSE A SPACE, OR RESOLVE WITHOUT ACTING");
             }
 
+            // Milestone 9.21b: the twelfth pending family, "which of you acts" (RZ-Q4). It stands
+            // before any action of the card, beside the respawn question above - the other thing p.7
+            // asks as a card resolves. The owner is told to pick; anyone else reads the owning hero
+            // and the family's public words, the sentence FormatPublicDecisionWait gives observers.
+            // The pick itself (the standee click) is 9.21i's.
+            var actingBody = projection.PendingActingBodyChoice;
+            if (actingBody != null)
+            {
+                return !viewerHeroId.IsDefined || actingBody.HeroId.Equals(viewerHeroId)
+                    ? NarrationLabels.Own("ACTING BODY", "CHOOSE WHICH OF YOU ACTS")
+                    : NarrationLabels.HeroDeciding(
+                        HeroDisplayName(projection.Setup.Heroes, actingBody.HeroId).ToUpperInvariant(),
+                        NarrationLabels.PublicDecisionActivity(PendingDecisionFamilies.ActingBody));
+            }
+
             if (projection.PendingAttackTargetChoice != null)
             {
                 return NarrationLabels.Own("ATTACK", "CHOOSE A TARGET");

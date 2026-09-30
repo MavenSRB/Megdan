@@ -388,7 +388,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingLanePushRequest", "Director-only: an automatic step with no decision for any seat (6.9)" },
                 { "PendingImmediateLanePush", "Director-only: an automatic step with no decision for any seat (6.9)" },
                 { "PendingSystemTransitionDescriptions", "owner-scoped: every hero's description; a seat carries its own as PendingSystemTransitionDescription (8.35u)" },
-                { "PendingActingBodyChoice", "reaches the owning seat as its DecisionContract (9.21b): each ChooseActingBody answer names the hero, the card and one standing body, and the bodies' spaces are the seat's Heroes rows" },
             };
 
         /// <summary>
