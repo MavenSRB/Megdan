@@ -185,8 +185,33 @@ Completed 2026-09-30 (`f4d226d7`, rebased as `7099e9d3` over 9.21i with its wire
 
 Historical evidence: [9.21j completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-921j-dealing-evidence).
 
-### [ ] 9.21k Gate Razzle on the player path
+### [x] 9.21k Gate Razzle on the player path
 
 Outcome: the permanent player-path gate passes for him. Every face's journey reads what its answer changed: bodies spawned, removed, moved or swapped, the retrieve, the Defense total, and the repeat by a different body. The board is measured first by a headless probe.
 
 Acceptance: the gate's checks green offline and in Play Mode. Tier T3.
+
+Completed 2026-09-30 (`d85050a4`, `71b3f8ff` and `17a67ebe`, rebased as `19b1e44f`, `13c2b0af` and `5f99960d`).
+- `RazzlePlayerPathGateTests` maps every shape derived from his content (eighteen dealt faces, the boxed Stunted Doubles, and five components: piece, session, footprint, items, bodies) to nineteen real-input journeys in `RazzleUiJourneyPlayModeTests`. `HeroPlayerPathMatrix` classifies his four capability ids (spawn, removal and "another one of you" as a board space; the retreat's line end as none), reads Crowd Control's "remove all other you" (`EveryOtherBody`) off the node as asking nothing, and gains two shapes: `DifferentBodyRepeatPerformer`, derived from a RepeatAction publishing `RepeatActorBodyOutput` (Twin Strike, Spectacle; every earlier row unchanged), and the non-required component shape `ActingBodyStandeePick`.
+- **Board measured first.** A headless probe composed the staged scenes and drove every face group with DirectorCommands before any journey was written. Razzle stands on (-3, 1) and Wasp on (-2, 1); (-4, 1), (-3, 0) and (-2, 0) are the empty spaces in Radius 1, and further bodies are staged on (-4, 1) and (-3, 0) through 9.21i's body seam. The gate's seven content checks then passed offline against journey stubs.
+- **Journeys**, each answering "which of you acts" by clicking a standee where several bodies stand and reading what the answer changed:
+  - Stunt Doubles spawns two bodies (standees with their pips) and declines the third.
+  - Phantom Strike, Hit and Gone and Into Thin Air remove bodies; no Life counter moves, and Into Thin Air leaves no standee.
+  - Crowd Control as a Skill from a picked body 2 leaves only that body; discarded to defend it shows Defense 5 (+4 for two other bodies) on the window's breakdown and holds.
+  - Rummage retrieves one card and Ransack two.
+  - The Alleyoop faces swap with Arien (a 2v2 line-up) and move another body.
+  - Magic Trick and Aaaand it's gone! push Wasp 2 and 3 and retreat the same distance.
+  - The Tightrope faces move another body after the whole walk; High Wire's "may" is declined.
+  - Theatrics swaps the picked body 2 with a minion, the acting cue on it.
+  - Spectacle's and Twin Strike's repeat is performed by body 2, the cue moves to it and the first target is excluded; Twin Strike's spawn is measured from body 2 (RZ-Q11).
+  - Every secondary Movement and Defense.
+  - A Hit and Gone removal restored with body 2 acting; a spawn undone and replayed.
+  - Every standee fades on his Defeat, he respawns as one body, and a restart rebuilds three.
+  - His piece, footprint and level-up.
+- `RazzleDealingPlayModeTests` on Mortimer's terms: his pick card on the rail, four standees wearing his prepared face with pips 1-4, and the Tier III hand with Twin Strike faceup.
+- `LocalSixSeatPlayerExperienceTests` gains a fourth recorded match seating Razzle (seed 4 of an offline scan, three acting-body picks); ActingBody joins its required families.
+- Corrected in scope, all test-side: the journey outcome audit now reads a body read as a board read; three journeys answered a "may" through a shared helper that reads one view per hero; the Tightrope journey pressed END TURN, which declines the optional step (8.35v). First focused pass 293/297, then 27/27 on the journeys.
+- Open: no match-log row names a spawned, removed or moved body (the journeys read the standees); the lobby's four-star pin that Razzle moved is the coordinator's correction.
+- T3; evidence in the milestone commits.
+
+Historical evidence: [9.21k completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-921k-player-path-gate-evidence).

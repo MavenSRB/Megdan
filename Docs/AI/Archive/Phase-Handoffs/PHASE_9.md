@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.21k Player-path gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.21k | Razzle passes the permanent player-path gate: his content-derived table, nineteen journeys reading what each answer changed on the board, his dealing fixture, and a recorded six-seat match reaching the acting-body pick; three journey defects fixed in test code. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921k-gate-razzle-on-the-player-path). | `milestone/9.21k` |
+
 ## Milestone 9.21j Dealing evidence
 
 | Milestone | Outcome and definition | Commit |
