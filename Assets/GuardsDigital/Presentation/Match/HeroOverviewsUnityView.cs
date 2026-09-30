@@ -775,7 +775,7 @@ namespace GuardsDigital.Presentation.Match
 
                 outline.Add(element);
                 var turnMarker = BuildTurnSlotMarker(
-                    slot.TurnSlotMarker, "gd-turn-slot-marker", true);
+                    slot.TurnSlotMarker, "gd-turn-slot-marker");
                 if (turnMarker != null)
                 {
                     // Milestone 9.20: centred on the slot, across and down, over the card that may
@@ -1390,13 +1390,16 @@ namespace GuardsDigital.Presentation.Match
             VisualElement slot, HeroOverviewViewModel hero)
         {
             var currentTurnMarker = BuildTurnSlotMarker(
-                hero.CurrentTurnMarker, "gd-current-turn-marker", false);
+                hero.CurrentTurnMarker, "gd-current-turn-marker");
             if (currentTurnMarker != null)
             {
                 currentTurnMarker.style.position = Position.Absolute;
-                // Inside the slot's top edge: the header clips anything drawn above it.
-                currentTurnMarker.style.top = 0f;
-                currentTurnMarker.style.left = (CurrentCardWidth - TurnSlotMarkerWidth) / 2f;
+                // Inside the slot's top edge: the header clips anything drawn above it. Milestone
+                // 9.20: at the tray's own glyph scale, centred in the band the card reserves for it.
+                var markerWidth = currentTurnMarker.style.width.value.value;
+                var markerHeight = currentTurnMarker.style.height.value.value;
+                currentTurnMarker.style.top = Mathf.Max(0f, (TurnSlotMarkerHeight - markerHeight) / 2f);
+                currentTurnMarker.style.left = (CurrentCardWidth - markerWidth) / 2f;
                 slot.Add(currentTurnMarker);
             }
 
@@ -1409,20 +1412,22 @@ namespace GuardsDigital.Presentation.Match
         private const float TurnSlotMarkerHeight = 24f;
 
         // Milestone 9.20. A tray glyph's size: the UI units one prepared source pixel is drawn at,
-        // the same for every glyph so the four read at their printed relative sizes - about one
-        // screen pixel per source pixel at 1920x1080, as the printed tile was drawn before.
-        private const float TrayGlyphUnitsPerSourcePixel = 1.2f;
+        // the same for every glyph so the four read at their printed relative sizes. The user's
+        // "a tad bit smaller so they fit the card": at 0.75 the widest glyph (the anvil, 22 source
+        // pixels plus its outline) stands about 18 units wide on the 24-unit mini card, a clear
+        // margin each side; the live-turn rune in the header uses the same scale.
+        private const float TrayGlyphUnitsPerSourcePixel = 0.75f;
 
         /// <summary>
         /// A turn-slot marker as its printed glyph alone (milestone 9.20): cut off the prepared
         /// tile's card stock by <see cref="PrintedGlyphCutout"/>, transparent around it and outlined.
-        /// <paramref name="glyphSized"/> sizes the element to the glyph at the tray's one scale;
-        /// otherwise the glyph is fitted into the fixed live-turn footprint. The prepared tile, and
-        /// failing that the slot's number, still stand in when no glyph can be cut. The marker takes
-        /// no pointer, so the card under it keeps its own hover.
+        /// The element is sized to the glyph at the tray's one scale, in the tray and over the live
+        /// turn's card alike. When no glyph can be cut, the prepared tile, and failing that the slot's
+        /// number, stand in at the fixed footprint. The marker takes no pointer, so the card under it
+        /// keeps its own hover.
         /// </summary>
         private static VisualElement BuildTurnSlotMarker(
-            TurnSlotMarkerViewModel marker, string elementName, bool glyphSized)
+            TurnSlotMarkerViewModel marker, string elementName)
         {
             if (marker == null) return null;
             var icon = new VisualElement { name = elementName, pickingMode = PickingMode.Ignore };
@@ -1433,7 +1438,7 @@ namespace GuardsDigital.Presentation.Match
             var tile = Resources.Load<Texture2D>(marker.ResourcePath);
             var glyph = tile == null ? null : PrintedGlyphCutout.Cut(tile);
             var texture = glyph != null ? glyph : tile;
-            if (glyph != null && glyphSized)
+            if (glyph != null)
             {
                 const float unitsPerTexel =
                     TrayGlyphUnitsPerSourcePixel / PrintedGlyphCutout.Magnification;

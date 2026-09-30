@@ -213,11 +213,49 @@ namespace GuardsDigital.Tests.PlayMode
                     misses.Add("rune " + rune + "'s ground is not transparent");
                 if (pixels.Count(pixel => pixel.a == 255) <= pixels.Length / 8)
                     misses.Add("rune " + rune + "'s glyph is not drawn solid");
+
+                // The user's "a tad bit smaller so they fit the card": what the glyph draws - its
+                // figure and outline, not its transparent margin - stays inside the card with a
+                // visible margin on every side.
+                int minX = width, maxX = -1, minY = texture.height, maxY = -1;
+                for (var index = 0; index < pixels.Length; index++)
+                {
+                    if (pixels[index].a == 0) continue;
+                    minX = System.Math.Min(minX, index % width);
+                    maxX = System.Math.Max(maxX, index % width);
+                    minY = System.Math.Min(minY, index / width);
+                    maxY = System.Math.Max(maxY, index / width);
+                }
+
+                var drawnWidth = marker.worldBound.width * (maxX - minX + 1) / width;
+                var drawnHeight = marker.worldBound.height * (maxY - minY + 1) / texture.height;
+                if (drawnWidth > slot.worldBound.width - (2f * CardMargin) ||
+                    drawnHeight > slot.worldBound.height - (2f * CardMargin))
+                    misses.Add("rune " + rune + " draws " + drawnWidth.ToString("0.0") + " x " +
+                        drawnHeight.ToString("0.0") + " on a " + slot.worldBound.width.ToString("0.0") +
+                        " x " + slot.worldBound.height.ToString("0.0") + " card, leaving under " +
+                        CardMargin + " each side");
             }
+
+            // The live turn's rune over the header's card is the same glyph at the same size, to
+            // within the one screen pixel (4/3 of a panel unit at 1920x1080) layout snapping moves it.
+            var live = Named(hud, "gd-current-turn-marker").Where(UiPlayer.IsShown).ToArray();
+            var trayTwin = slotMarkers.Single(value => value.tooltip == "Rune 2 assigned to turn 1");
+            if (live.Length != 1 || live[0].tooltip != trayTwin.tooltip)
+                misses.Add("the live turn shows " + live.Length + " rune(s), not rune 2");
+            else if (live[0].resolvedStyle.backgroundImage.texture !=
+                     trayTwin.resolvedStyle.backgroundImage.texture ||
+                     UnityEngine.Mathf.Abs(live[0].worldBound.width - trayTwin.worldBound.width) > 1.5f ||
+                     UnityEngine.Mathf.Abs(live[0].worldBound.height - trayTwin.worldBound.height) > 1.5f)
+                misses.Add("the live turn's rune is " + live[0].worldBound.size + ", the tray's " +
+                    trayTwin.worldBound.size);
 
             Assert.That(misses, Is.Empty, string.Join("; ", misses));
             Healthy(runtime);
         }
+
+        // Milestone 9.20: the least clear card a tray glyph leaves on each side, in panel units.
+        private const float CardMargin = 2f;
 
         private static VisualElement[] Named(VisualElement root, string name) =>
             UiPlayer.Descendants(root).Where(element => element.name == name).ToArray();

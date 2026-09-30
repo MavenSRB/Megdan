@@ -25,10 +25,10 @@ namespace GuardsDigital.Presentation.Match
         public const int Magnification = 6;
 
         /// <summary>
-        /// The outline's radius in prepared source pixels: about one screen pixel at play scale,
-        /// where the tray draws a source pixel at roughly one screen pixel.
+        /// The outline's radius in prepared source pixels: just under one screen pixel at play
+        /// scale, where the tray draws a source pixel at about half a screen pixel at 1920x1080.
         /// </summary>
-        public const float OutlineSourcePixels = 1.2f;
+        public const float OutlineSourcePixels = 1.6f;
 
         /// <summary>The face colour: the card stock's own ivory.</summary>
         public static readonly Color32 Face = new Color32(236, 228, 206, 255);
