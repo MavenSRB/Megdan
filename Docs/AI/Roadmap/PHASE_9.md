@@ -231,7 +231,7 @@ Completed 2026-09-29.
 
 Historical evidence: [9.17a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-917a-runestone-binding-evidence).
 
-### [ ] 9.19 A card-text discard is narrated and logged
+### [~] 9.19 A card-text discard is narrated and logged
 
 Queued 2026-09-29 by 9.17a: an enemy hero's card-text discard (Charged Runestone, the Seismic faces, Trample) produces no match-log row and no narration line - only the Defense discard has a row kind - so a discard that happens is invisible at the table. Outcome: every card-text discard writes a seat-public match-log row naming the hero and the card's colour, and the status strip narrates it; a new `MatchLogEntryKind` moves the wire to `/26` (`NetworkMatchLog` rejects unknown kinds), recorded with the move. Closing check: a regression on the event channel and the wire log round trip failing on the base; the narration fixture; harness and the private-online fixtures green. T2.
 
