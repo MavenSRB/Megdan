@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.28 End Turn cue evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.28 | A seat whose own finished turn waits on its release sees a TURN COMPLETE / END TURN banner once per turn and its END TURN control flashing blood red until pressed; every phase banner holds 2.9 s. Presentation only; no rule, snapshot or wire change. [Definition](../../Roadmap/PHASE_9.md#x-928-a-turn-waiting-on-its-own-end-turn-says-so-and-every-banner-stays-up-longer). | `milestone/9.28` |
+
 ## Milestone 9.23 Stance declarations evidence
 
 | Milestone | Outcome and definition | Commit |
