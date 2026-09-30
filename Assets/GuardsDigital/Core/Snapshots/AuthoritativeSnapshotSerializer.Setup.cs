@@ -287,7 +287,8 @@ namespace GuardsDigital.Core.Snapshots
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
             var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
-                currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk) = board.CaptureRestoreState();
+                currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk,
+                heroBodySupplies) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
 
@@ -297,9 +298,14 @@ namespace GuardsDigital.Core.Snapshots
             // reader that saw one would be reading a lane the map does not have.
             writer.Write(currentBattleZoneId.HasValue ? currentBattleZoneId.Value.Value : string.Empty);
             writer.Write(heroOccupancies.Count);
-            foreach (var occupancy in heroOccupancies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
+            // Milestone 9.21a, schema v49. Each row is one BODY of a hero, written in (hero, body) order;
+            // every single-bodied hero writes body 1.
+            foreach (var occupancy in heroOccupancies
+                .OrderBy(value => value.HeroId.Value, StringComparer.Ordinal)
+                .ThenBy(value => value.Body))
             {
                 writer.Write(occupancy.HeroId.Value);
+                writer.Write(occupancy.Body);
                 WriteCoordinate(writer, occupancy.Coordinate);
             }
 
@@ -352,6 +358,15 @@ namespace GuardsDigital.Core.Snapshots
                     WriteCoordinate(writer, space);
                 }
             }
+
+            // Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1), by hero
+            // id; empty for every match the build deals today.
+            writer.Write(heroBodySupplies.Count);
+            foreach (var supply in heroBodySupplies.OrderBy(value => value.HeroId.Value, StringComparer.Ordinal))
+            {
+                writer.Write(supply.HeroId.Value);
+                writer.Write(supply.Bodies);
+            }
         }
 
         private static AdjacentMoveAuthority ReadBoard(
@@ -396,9 +411,17 @@ namespace GuardsDigital.Core.Snapshots
                 currentBattleZoneId = candidate;
             }
 
-            var heroes = ReadMany(reader, "hero occupancies", () => new HeroOccupancy(
-                new HeroId(reader.ReadString()),
-                ReadCoordinate(reader)));
+            var heroes = ReadMany(reader, "hero occupancies", () =>
+            {
+                var heroId = new HeroId(reader.ReadString());
+                var body = reader.ReadInt32();
+                if (body < HeroOccupancy.FirstBody)
+                {
+                    throw Malformed("Snapshot hero occupancy names a body ordinal below 1.");
+                }
+
+                return new HeroOccupancy(heroId, body, ReadCoordinate(reader));
+            });
             var obstacles = ReadMany(reader, "obstacle occupancies", () => new ObstacleOccupancy(
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
@@ -447,10 +470,22 @@ namespace GuardsDigital.Core.Snapshots
                 lastWalk = new GuardsDigital.Core.Rules.AdjacentMove.CompletedMovementWalk(mover, route);
             }
 
+            var bodySupplies = ReadMany(reader, "hero body supplies", () =>
+            {
+                var heroId = new HeroId(reader.ReadString());
+                var bodies = reader.ReadInt32();
+                if (!heroId.IsDefined || bodies < 2)
+                {
+                    throw Malformed("Snapshot hero body supply must name a hero with more than one body.");
+                }
+
+                return new HeroBodySupply(heroId, bodies);
+            });
+
             return AdjacentMoveAuthority.Restore(
                 new BoardRestoreState(
                     heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId,
-                    exclusions, lastWalk),
+                    exclusions, lastWalk, bodySupplies),
                 mapDefinition,
                 availableMinions);
         }

@@ -140,7 +140,7 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write((int)subject.Kind);
             writer.Write((int)subject.CompletedAttackTarget.Kind);
             if (subject.CompletedAttackTarget.Kind == AttackTargetKind.Hero)
-                writer.Write(subject.CompletedAttackTarget.HeroId.Value);
+                WriteHeroAttackTarget(writer, subject.CompletedAttackTarget);
             if (subject.CompletedAttackTarget.Kind == AttackTargetKind.Minion)
                 writer.Write(subject.CompletedAttackTarget.MinionId.Value);
         }
@@ -163,7 +163,7 @@ namespace GuardsDigital.Core.Snapshots
             switch (targetKind)
             {
                 case AttackTargetKind.Hero:
-                    target = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    target = ReadHeroAttackTarget(reader);
                     break;
                 case AttackTargetKind.Minion:
                     target = AttackTarget.Minion(new MinionId(reader.ReadString()));
@@ -327,7 +327,7 @@ namespace GuardsDigital.Core.Snapshots
         private static void WriteAttackTarget(BinaryWriter writer, AttackTarget target)
         {
             writer.Write((int)target.Kind);
-            if (target.Kind == AttackTargetKind.Hero) writer.Write(target.HeroId.Value);
+            if (target.Kind == AttackTargetKind.Hero) WriteHeroAttackTarget(writer, target);
             if (target.Kind == AttackTargetKind.Minion) writer.Write(target.MinionId.Value);
         }
 
@@ -337,12 +337,32 @@ namespace GuardsDigital.Core.Snapshots
             switch (kind)
             {
                 case AttackTargetKind.Hero:
-                    return AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    return ReadHeroAttackTarget(reader);
                 case AttackTargetKind.Minion:
                     return AttackTarget.Minion(new MinionId(reader.ReadString()));
                 default:
                     return default;
             }
+        }
+
+        // Milestone 9.21a, schema v49. A hero Attack target names a body (RZ-Q3): the id, then the
+        // body ordinal, which is 1 for every hero with one body.
+        private static void WriteHeroAttackTarget(BinaryWriter writer, AttackTarget target)
+        {
+            writer.Write(target.HeroId.Value);
+            writer.Write(target.HeroBody);
+        }
+
+        private static AttackTarget ReadHeroAttackTarget(BinaryReader reader)
+        {
+            var heroId = new HeroId(reader.ReadString());
+            var body = reader.ReadInt32();
+            if (body < HeroOccupancy.FirstBody)
+            {
+                throw Malformed("Snapshot hero Attack target names a body ordinal below 1.");
+            }
+
+            return AttackTarget.HeroBodyOf(heroId, body);
         }
 
         private static PendingAttackCardTextRemainder ReadCardTextRemainder(BinaryReader reader)
@@ -1909,7 +1929,7 @@ namespace GuardsDigital.Core.Snapshots
                 pending.InvocationContext, pending.CurrentStepId);
             writer.Write((int)pending.Phase);
             writer.Write((int)pending.Target.Kind);
-            if (pending.Target.Kind == AttackTargetKind.Hero) writer.Write(pending.TargetHeroId.Value);
+            if (pending.Target.Kind == AttackTargetKind.Hero) WriteHeroAttackTarget(writer, pending.Target);
             if (pending.Target.Kind == AttackTargetKind.Minion) writer.Write(pending.TargetMinionId.Value);
             WritePrintedValue(writer, pending.AttackValue);
             writer.Write(pending.DefenseOffer.HasValue);
@@ -1922,7 +1942,7 @@ namespace GuardsDigital.Core.Snapshots
             // would offer the target the card just forbade.
             writer.Write((int)pending.ExcludedTarget.Kind);
             if (pending.ExcludedTarget.Kind == AttackTargetKind.Hero)
-                writer.Write(pending.ExcludedTarget.HeroId.Value);
+                WriteHeroAttackTarget(writer, pending.ExcludedTarget);
             if (pending.ExcludedTarget.Kind == AttackTargetKind.Minion)
                 writer.Write(pending.ExcludedTarget.MinionId.Value);
 
@@ -1972,7 +1992,7 @@ namespace GuardsDigital.Core.Snapshots
             switch (targetKind)
             {
                 case AttackTargetKind.Hero:
-                    target = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    target = ReadHeroAttackTarget(reader);
                     break;
                 case AttackTargetKind.Minion:
                     target = AttackTarget.Minion(new MinionId(reader.ReadString()));
@@ -1992,7 +2012,7 @@ namespace GuardsDigital.Core.Snapshots
             switch (excludedKind)
             {
                 case AttackTargetKind.Hero:
-                    excludedTarget = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    excludedTarget = ReadHeroAttackTarget(reader);
                     break;
                 case AttackTargetKind.Minion:
                     excludedTarget = AttackTarget.Minion(new MinionId(reader.ReadString()));

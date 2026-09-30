@@ -85,7 +85,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatRewardResult reward,
             DefeatRemovalAttempt removalAttempt,
             DefeatRemovalResult removalResult,
-            HeroOccupancy? removedHero,
+            IReadOnlyList<HeroOccupancy> removedBodies,
             CardInstanceId resolvedUnresolvedCardId,
             TeamLifeSpend lifeSpend,
             bool hasLifeSpend,
@@ -118,7 +118,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             RemovalAttempt = removalAttempt;
             RemovalResult = removalResult;
-            RemovedHero = removedHero;
+            RemovedBodies = removedBodies ?? Array.Empty<HeroOccupancy>();
             ResolvedUnresolvedCardId = resolvedUnresolvedCardId;
             LifeSpend = lifeSpend;
             HasLifeSpend = hasLifeSpend;
@@ -159,11 +159,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public DefeatRemovalResult RemovalResult { get; }
 
         /// <summary>
-        /// The hero occupancy that left the board, or <c>null</c> when the removal was prevented - the
-        /// same distinction <c>MinionDefeatResolution.RemovedMinion</c> draws, and for the same reason:
-        /// naming an occupancy for a piece that never moved would name a fact that did not happen.
+        /// Every body of the hero that left the board, in body order, or none when the removal was
+        /// prevented - the same distinction <c>MinionDefeatResolution.RemovedMinion</c> draws, and for the
+        /// same reason: naming an occupancy for a piece that never moved would name a fact that did not
+        /// happen. Milestone 9.21a (RZ-Q3, "If defeated, remove all of you"): one Defeat removes every
+        /// body, so this is a list; a hero with one body lists exactly the one occupancy it always named.
         /// </summary>
-        public HeroOccupancy? RemovedHero { get; }
+        public IReadOnlyList<HeroOccupancy> RemovedBodies { get; }
 
         /// <summary>
         /// The card p.13's second line resolved without an action, or an undefined id when the defeated
@@ -199,15 +201,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatRewardResult reward,
             DefeatRemovalAttempt removalAttempt,
             DefeatRemovalResult removalResult,
-            HeroOccupancy removedHero,
+            IReadOnlyList<HeroOccupancy> removedBodies,
             CardInstanceId resolvedUnresolvedCardId,
             TeamLifeSpend lifeSpend,
             bool hasLifeSpend,
             LanePushQualification lanePush)
         {
             if (defeat == null) throw new ArgumentNullException(nameof(defeat));
+            if (removedBodies == null) throw new ArgumentNullException(nameof(removedBodies));
             if (removalResult.Kind != DefeatRemovalResultKind.Removed ||
-                !string.Equals(defeat.TargetId.Value, removedHero.HeroId.Value, StringComparison.Ordinal))
+                removedBodies.Count == 0 ||
+                removedBodies.Any(body =>
+                    !string.Equals(defeat.TargetId.Value, body.HeroId.Value, StringComparison.Ordinal)))
             {
                 throw new ArgumentException(
                     "A removed hero Defeat stage names the miniature that left the board.");
@@ -215,7 +220,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             RequireDefeatCause(lanePush);
             return new HeroDefeatResolution(
-                defeat, reward, removalAttempt, removalResult, removedHero,
+                defeat, reward, removalAttempt, removalResult, Array.AsReadOnly(removedBodies.ToArray()),
                 resolvedUnresolvedCardId, lifeSpend, hasLifeSpend, lanePush);
         }
 

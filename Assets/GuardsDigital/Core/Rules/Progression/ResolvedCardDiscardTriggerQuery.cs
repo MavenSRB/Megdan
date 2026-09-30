@@ -20,7 +20,7 @@ namespace GuardsDigital.Core.Rules.Progression
             if (board == null) throw new ArgumentNullException(nameof(board));
             var card = instances.SingleOrDefault(value => value.Id.Equals(discardedCardId));
             if (card == null || !CardLifecycleAuthority.IsDiscardedRestingCard(card) ||
-                !card.State.HasBeenPlayed || !board.TryGetHeroCoordinate(card.OwnerId, out _))
+                !card.State.HasBeenPlayed || !board.IsHeroOnBoard(card.OwnerId))
                 return null;
             // Rulebook p.16 gives each hero exactly one Ultimate; do not silently choose one.
             return ultimates.Ultimates.SingleOrDefault(value =>

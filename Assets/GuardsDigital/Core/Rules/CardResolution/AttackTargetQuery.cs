@@ -89,7 +89,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackRange = policy.Reach == AttackTargetReach.AdjacentOnly
                 ? AttackRangeKind.NonRanged
                 : AttackRangeKind.Ranged;
-            var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
+            // Milestone 9.21a. The attacker's space is the acting body's (RZ-Q4; body 1 until 9.21b
+            // makes it a pick), read through the port rather than as the single row of a hero that may
+            // stand on several spaces. A hero standing nowhere reads as the undefined occupancy the
+            // checks below were written against.
+            var attackerOccupancy = board.TryGetObjectCoordinate(
+                    BoardObjectReference.ForHero(attackerId), out var attackerAt)
+                ? new HeroOccupancy(attackerId, attackerAt)
+                : default;
             var occupancies = board.Occupancies.ToArray();
             var minionOccupancies = board.Minions.ToArray();
 
@@ -238,11 +245,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var minionsOnly = policy.TargetableUnits == AttackTargetableUnits.MinionsOnly;
             var heroes = minionsOnly
                 ? Enumerable.Empty<AttackTarget>()
-                : FindLegalEnemyHeroes(
+                : FindLegalEnemyHeroBodies(
                         attackerId, attackRange, rangeTotal, participants, board, modifications)
-                    .Where(heroId => IsAdmitted(
-                        occupancies.Single(value => value.HeroId.Equals(heroId)).Coordinate))
-                    .Select(AttackTarget.Hero);
+                    .Where(body => IsAdmitted(body.Coordinate))
+                    .Select(body => AttackTarget.HeroBodyOf(body.HeroId, body.Body));
 
             // p.13's narrowing, and the only place it is applied: Crackling Dagger prints "Target a
             // hero adjacent to you", so a minion standing beside her is not a legal target of it even
@@ -251,6 +257,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 return Array.AsReadOnly(heroes
                     .OrderBy(target => target.HeroId.Value, StringComparer.Ordinal)
+                    .ThenBy(target => target.HeroBody)
                     .ToArray());
             }
             if (!attackerOccupancy.HeroId.IsDefined)
@@ -280,10 +287,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .ThenBy(target => target.Kind == AttackTargetKind.Hero
                     ? target.HeroId.Value
                     : target.MinionId.Value, StringComparer.Ordinal)
+                .ThenBy(target => target.HeroBody)
                 .ToArray());
         }
 
         public static IReadOnlyList<HeroId> FindLegalEnemyHeroes(
+            HeroId attackerId,
+            AttackRangeKind attackRange,
+            int rangeTotal,
+            MatchParticipants participants,
+            IBoardDisplacementAuthority board,
+            RuleModificationSet modifications) =>
+            // Milestone 9.21a. A hero is a legal target when any of its bodies is (RZ-Q2: presence
+            // and reach per body); each hero is named once.
+            Array.AsReadOnly(FindLegalEnemyHeroBodies(
+                    attackerId, attackRange, rangeTotal, participants, board, modifications)
+                .Select(body => body.HeroId)
+                .Distinct()
+                .ToArray());
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3). The enemy hero BODIES this attacker may target, in (hero, body)
+        /// order: an Attack targets one body, and p.14's reach and the Defense are measured from it.
+        /// A hero with one body contributes exactly the row it always did.
+        /// </summary>
+        public static IReadOnlyList<HeroOccupancy> FindLegalEnemyHeroBodies(
             HeroId attackerId,
             AttackRangeKind attackRange,
             int rangeTotal,
@@ -316,19 +344,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentOutOfRangeException(nameof(rangeTotal), rangeTotal, "Attack Range Total must be positive.");
             }
 
-            var occupancyArray = board.Occupancies.ToArray();
-            var attackerOccupancies = occupancyArray
-                .Where(occupancy => occupancy.HeroId.Equals(attackerId))
-                .ToArray();
-            if (attackerOccupancies.Length != 1)
+            // The attacker's acting body (milestone 9.21a); an attacker standing nowhere reaches
+            // nothing, exactly as before.
+            if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(attackerId), out var attackerCoordinate))
             {
-                return Array.Empty<HeroId>();
+                return Array.Empty<HeroOccupancy>();
             }
 
+            var occupancyArray = board.Occupancies.ToArray();
             var participantHeroIds = new HashSet<HeroId>(participants.Heroes.Select(hero => hero.Id));
             var attackerTeamId = participants.GetTeamForHero(attackerId).Id;
             var maximumDistance = attackRange == AttackRangeKind.NonRanged ? 1 : rangeTotal;
-            var attackerCoordinate = attackerOccupancies[0].Coordinate;
 
             var attacker = RuleObject.ForHero(attackerId);
             return Array.AsReadOnly(occupancyArray
@@ -340,8 +366,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     !TargetQuery.IsPrevented(
                         RuleObject.ForHero(occupancy.HeroId), RuleActivity.Attack, attacker,
                         board, participants, modifications))
-                .Select(occupancy => occupancy.HeroId)
-                .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
+                .OrderBy(occupancy => occupancy.HeroId.Value, StringComparer.Ordinal)
+                .ThenBy(occupancy => occupancy.Body)
                 .ToArray());
         }
 

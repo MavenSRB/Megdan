@@ -157,15 +157,19 @@ namespace GuardsDigital.Application
     /// <summary>One Attack target: a hero or a minion, in the target choice's own kind space.</summary>
     public sealed class NetworkAttackTargetRow
     {
-        public NetworkAttackTargetRow(int kind, string heroId, string minionId)
+        public NetworkAttackTargetRow(int kind, string heroId, int heroBody, string minionId)
         {
             Kind = kind;
             HeroId = heroId;
+            HeroBody = heroBody;
             MinionId = minionId;
         }
 
         public int Kind { get; }
         public string HeroId { get; }
+
+        /// <summary>Milestone 9.21a, protocol /26. The attacked body of a hero target; 0 for a minion.</summary>
+        public int HeroBody { get; }
         public string MinionId { get; }
     }
 
@@ -637,13 +641,17 @@ namespace GuardsDigital.Application
     public sealed class NetworkAttackTargetDefensePreviewRow
     {
         public NetworkAttackTargetDefensePreviewRow(
-            string heroId, IReadOnlyList<NetworkValueContributionRow> minionContributions)
+            string heroId, int heroBody, IReadOnlyList<NetworkValueContributionRow> minionContributions)
         {
             HeroId = heroId;
+            HeroBody = heroBody;
             MinionContributions = minionContributions;
         }
 
         public string HeroId { get; }
+
+        /// <summary>Milestone 9.21a, protocol /26. The body the preview is measured from.</summary>
+        public int HeroBody { get; }
         public IReadOnlyList<NetworkValueContributionRow> MinionContributions { get; }
     }
 

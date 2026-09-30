@@ -301,7 +301,8 @@ namespace GuardsDigital.Tests.EditMode
                     new BoardRestoreState(
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
                         captured.RemainingMinions, captured.PlacedTokens, new ZoneId("top-jungle"),
-                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk),
+                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk,
+                        captured.HeroBodySupplies),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException,
@@ -313,7 +314,8 @@ namespace GuardsDigital.Tests.EditMode
                     new BoardRestoreState(
                         captured.HeroOccupancies, captured.ObstacleOccupancies,
                         captured.RemainingMinions, captured.PlacedTokens, null,
-                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk),
+                        captured.MinionBattleExclusions, captured.LastCompletedMovementWalk,
+                        captured.HeroBodySupplies),
                     board.MapDefinition,
                     ConfiguredMinions()),
                 Throws.ArgumentException);

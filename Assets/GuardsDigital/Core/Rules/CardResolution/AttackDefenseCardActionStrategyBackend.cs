@@ -179,8 +179,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal AttackActionResolutionResult FinishAfterDefenderRemovedBeforeDefense()
         {
             if (pendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
-                adjacentMoveAuthority.TryGetHeroCoordinate(
-                    pendingAttackResolution.TargetHeroId, out _))
+                // Milestone 9.21a: the attacked BODY, the same question the turn authority asks.
+                adjacentMoveAuthority.TryGetHeroBodyCoordinate(
+                    pendingAttackResolution.TargetHeroId, pendingAttackResolution.Target.HeroBody, out _))
                 throw new InvalidOperationException(
                     "Only a Defense window whose target was removed can end without a response.");
             return StopAttackWithoutATarget(
@@ -1064,7 +1065,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         modifications),
                     materializedDefinitions);
                 if (!legal.Contains(boundTarget) ||
-                    resolution.ExcludedTargets.Contains(boundTarget))
+                    resolution.ExcludedTargets.Any(excluded => excluded.IsSameUnit(boundTarget)))
                 {
                     return StopAttackWithoutATarget(resolution, steps);
                 }
@@ -1365,20 +1366,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Milestone 8.23: Tigerclaw's Combat Reflexes asks at p.14's step 7 whether he moved before
         /// the attack, and the only way to answer it at step 7 is to have recorded where he was.
         /// </summary>
+        // Milestone 9.21a: the acting body's space (RZ-Q4), not whichever row is listed first.
         private HexCoordinate? ActorSpaceOf(HeroId actorId) =>
-            adjacentMoveAuthority.Occupancies
-                .Where(occupancy => occupancy.HeroId.Equals(actorId))
-                .Select(occupancy => (HexCoordinate?)occupancy.Coordinate)
-                .FirstOrDefault();
+            adjacentMoveAuthority.TryGetHeroCoordinate(actorId, out var actorAt)
+                ? actorAt
+                : (HexCoordinate?)null;
 
         private HexCoordinate? TargetSpaceOf(AttackTarget target)
         {
             if (target.Kind == AttackTargetKind.Hero)
             {
-                return adjacentMoveAuthority.Occupancies
-                    .Where(occupancy => occupancy.HeroId.Equals(target.HeroId))
-                    .Select(occupancy => (HexCoordinate?)occupancy.Coordinate)
-                    .FirstOrDefault();
+                // Milestone 9.21a: the space of the BODY the Attack targets (RZ-Q3).
+                return adjacentMoveAuthority.TryGetHeroBodyCoordinate(
+                        target.HeroId, target.HeroBody, out var targetAt)
+                    ? targetAt
+                    : (HexCoordinate?)null;
             }
 
             if (target.Kind == AttackTargetKind.Minion)
@@ -2215,6 +2217,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     defenseOffer,
                     materializedDefinitions,
                     pendingAttackResolution.TargetHeroId,
+                    pendingAttackResolution.Target.HeroBody,
                     participants,
                     adjacentMoveAuthority,
                     modifications,
@@ -2358,7 +2361,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances,
                     participants,
                     modifications,
-                    events);
+                    events,
+                    defeatedBody: completedResolution.Target.HeroBody);
                 if (heroDefeat == null)
                 {
                     return RejectAttack(
@@ -2430,7 +2434,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ICollection<ResolutionStep> events,
             int assistCoinMultiplier =
                 GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
-                    .UnmultipliedAssistCoins)
+                    .UnmultipliedAssistCoins,
+            int defeatedBody = 0)
         {
             if (heroLevels == null || teamLives == null)
             {
@@ -2525,14 +2530,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 LanePushCauseKind.Defeat);
             var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
             var prevented = removalStage.IsPrevented(subject);
-            var origin = adjacentMoveAuthority.Occupancies
-                .Where(occupancy => occupancy.HeroId.Equals(defeatedHeroId))
-                .Select(occupancy => occupancy.Coordinate)
-                .FirstOrDefault();
-            var removedHero = default(HeroOccupancy);
+            // Milestone 9.21a. The space p.8's cause is asked from is the defeated BODY's - the one the
+            // Attack targeted - or the hero's acting body for a Defeat no Attack aimed (an effect-invoked
+            // Defeat names the hero, not a body). A hero with one body reads its one space either way.
+            var origin = default(HexCoordinate);
+            if (defeatedBody < HeroOccupancy.FirstBody ||
+                !adjacentMoveAuthority.TryGetHeroBodyCoordinate(defeatedHeroId, defeatedBody, out origin))
+            {
+                adjacentMoveAuthority.TryGetHeroCoordinate(defeatedHeroId, out origin);
+            }
+
+            // p.13's removal, RZ-Q3: a Defeat is the hero's, so every body leaves the board at once.
+            IReadOnlyList<HeroOccupancy> removedBodies = Array.Empty<HeroOccupancy>();
             if (!prevented)
             {
-                removedHero = adjacentMoveAuthority.CommitValidatedHeroRemoval(defeatedHeroId);
+                removedBodies = adjacentMoveAuthority.CommitValidatedHeroRemoval(defeatedHeroId);
             }
 
             var lanePush = removalStage.QualifyLanePush(subject, origin);
@@ -2600,7 +2612,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     outcome, reward, removalAttempt,
                     new DefeatRemovalResult(
                         outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed),
-                    removedHero, resolvedCardId, lifeSpend, hasLifeSpend, lanePush);
+                    removedBodies, resolvedCardId, lifeSpend, hasLifeSpend, lanePush);
 
             // This is the only completed hero-Defeat seam. Record after every p.13 mutation has
             // succeeded and before publishing its facts, so a refused or incomplete Attack cannot
@@ -2968,7 +2980,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.InvocationContext,
                 new ActionResolutionStepId("attack-outcome-comparison"),
                 AttackResolutionPhase.CompareOutcome,
-                pendingAttackResolution.TargetHeroId,
+                pendingAttackResolution.Target,
                 pendingAttackResolution.AttackValue,
                 defenseOffer,
                 defenseValue,
@@ -2996,7 +3008,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 SequenceBulletFor(resolution), cardInstances);
             if (resolution.ExcludedTargets.Count > 0)
             {
-                legal = legal.Where(target => !resolution.ExcludedTargets.Contains(target)).ToArray();
+                legal = legal.Where(target =>
+                    !resolution.ExcludedTargets.Any(excluded => excluded.IsSameUnit(target))).ToArray();
             }
 
             // Milestone 8.35z27. Ruling 19's "(on different targets)" is the card's own
@@ -3010,7 +3023,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 var alreadyTaken = pendingSequenceChain.ExcludedTargets;
                 if (alreadyTaken.Count > 0)
                 {
-                    legal = legal.Where(target => !alreadyTaken.Contains(target)).ToArray();
+                    legal = legal.Where(target =>
+                        !alreadyTaken.Any(taken => taken.IsSameUnit(target))).ToArray();
                 }
             }
 
@@ -3882,6 +3896,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 definitions,
                 resolution.TargetHeroId,
+                resolution.Target.HeroBody,
                 participants,
                 board,
                 modifications,

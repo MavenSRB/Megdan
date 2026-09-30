@@ -25,8 +25,18 @@ namespace GuardsDigital.Core.Components
         /// <summary>
         /// Where a hero currently stands, or <c>false</c> when that hero is not on the board. A defeated
         /// hero has no space, and a capability must be able to tell that apart from an occupied one.
+        ///
+        /// <para>Milestone 9.21a. For a hero standing on several spaces this is the ACTING body's space (body
+        /// 1 until milestone 9.21b makes it a pick); a read about the hero rather than about the actor
+        /// asks <see cref="IsHeroOnBoard"/> or <see cref="GetHeroBodies"/>.</para>
         /// </summary>
         bool TryGetHeroCoordinate(HeroId heroId, out HexCoordinate coordinate);
+
+        /// <summary>Milestone 9.21a. Whether any body of this hero stands on the board.</summary>
+        bool IsHeroOnBoard(HeroId heroId);
+
+        /// <summary>Milestone 9.21a. Every body of this hero on the board, in body order.</summary>
+        IReadOnlyList<HeroOccupancy> GetHeroBodies(HeroId heroId);
 
         /// <summary>
         /// Whether this space is playable and holds no occupant of any kind. Rulebook p.18: "A game

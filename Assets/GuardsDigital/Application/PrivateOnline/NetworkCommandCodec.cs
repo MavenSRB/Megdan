@@ -115,6 +115,8 @@ namespace GuardsDigital.Application
                     WriteOptionalId(writer, command.HeroId.IsDefined, command.HeroId.Value);
                     WriteOptionalId(writer, command.MinionId.IsDefined, command.MinionId.Value);
                     WriteResolutionPair(writer, command);
+                    // Milestone 9.21a, protocol /26: the body an answer names, 0 for the hero alone.
+                    writer.Write(command.HeroBody);
                     return;
                 case DirectorCommandKind.ChooseDefenseCard:
                     writer.Write(command.CardInstanceId.Value);
@@ -309,7 +311,21 @@ namespace GuardsDigital.Application
                             return false;
                         }
 
-                        if (hero != null)
+                        var heroBody = reader.ReadInt32();
+                        if (heroBody < 0 || (heroBody > 0 && (hero == null || resolution == null)))
+                        {
+                            return false;
+                        }
+
+                        if (hero != null && heroBody > 0)
+                        {
+                            command = DirectorCommand.ChooseAttackTarget(
+                                new ActionResolutionId(resolution),
+                                new ActionResolutionStepId(choice),
+                                new HeroId(hero),
+                                heroBody);
+                        }
+                        else if (hero != null)
                         {
                             command = resolution == null
                                 ? DirectorCommand.ChooseAttackTarget(new HeroId(hero))

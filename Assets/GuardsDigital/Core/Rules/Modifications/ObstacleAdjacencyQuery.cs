@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Units.Heroes;
@@ -135,8 +136,11 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return true;
             }
 
-            return spaces.TryGetHeroCoordinate(hero, out var at) &&
-                IsAdjacentToThreeOrMoreObstacles(spaces, at, modifications);
+            // Milestone 9.21a (RZ-Q2). Adjacency is read per body: a hero standing on several spaces
+            // is adjacent to what any of its bodies is adjacent to. A hero with one body reads its one
+            // space exactly as before.
+            return spaces.GetHeroBodies(hero).Any(body =>
+                IsAdjacentToThreeOrMoreObstacles(spaces, body.Coordinate, modifications));
         }
     }
 }

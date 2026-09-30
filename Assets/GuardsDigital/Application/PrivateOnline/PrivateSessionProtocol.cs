@@ -368,7 +368,12 @@ namespace GuardsDigital.Application
         // as that flag). A v24 reader would take the new trailing bytes as the next row, so v24
         // peers are refused from the header. Projection-only: no snapshot or schema field moves
         // (v48 stands) - both facts are derived afresh every time a projection is built.
-        public const int Version = 25;
+        // v26 (milestone 9.21a): a hero may stand on several spaces as one hero (Razzle, RZ-Q1-RZ-Q3).
+        // The board's hero rows carry the body ordinal, an Attack target and its Defense preview name
+        // the attacked body, and an Attack-target answer carries the body it names (0 for the hero
+        // alone). A v25 reader would take the body ordinal for the next field, so v25 peers are
+        // refused from the header. The admission tuple's snapshot schema advances to 49 with it.
+        public const int Version = 26;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

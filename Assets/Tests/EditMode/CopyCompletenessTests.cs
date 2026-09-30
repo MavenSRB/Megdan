@@ -1055,7 +1055,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "MarkerAttachment.PropertySources", "derived from the trusted marker definition, which no dealt marker gives a property" },
                 { "PlacedToken.PropertySources", "derived from the trusted token definition; no token the walks place prints a property" },
                 // Not reached by the walks: a drop here would go unseen until a walk or fixture reaches it.
-                { "AttackTarget.HeroId", NotReached("an Attack target choice naming a hero") },
                 { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
                 { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
                 { "DefenseChoicePreviewProjection.BlockResult", NotReached("a Defense preview whose choice blocks") },
@@ -1066,12 +1065,9 @@ namespace GuardsDigital.Tests.EditMode
                 { "EffectValue.NodeId", NotReached("a node value in a projected effect choice") },
                 { "EndOfRoundStageOutcome.Kind", NotReached("a non-default end-of-round stage outcome in the retained window") },
                 { "HeroRespawnDestination.IsFallback", NotReached("a respawn with only fallback destinations") },
-                { "IMatchReadModel.PendingAttackTargetDefensePreviews", NotReached("an Attack target choice with hero previews") },
                 { "MatchOutcome.HasSoloWinner", NotReached("a solo victory") },
                 { "MatchOutcome.WinningHeroId", NotReached("a solo victory") },
                 { "MinionBattleCandidate.HeroId", NotReached("a hero counted as a Minion Battle candidate") },
-                { "PendingAttackTargetChoice.LegalTargetHeroIds", NotReached("an Attack target choice naming a hero") },
-                { "PendingDefensePreviewProjection.MinionContributions", NotReached("a Defense preview with minion support") },
                 { "PendingDisplacedMinionCorrection.SubjectCandidates", NotReached("a correction at its subject stage") },
                 { "PendingEffectChoice.StopInvocation", NotReached("a mode selection whose every option is refused") },
                 { "PendingSystemTransitionStep.CompletedStepIds", NotReached("a transition paused after a completed step") },
@@ -1087,11 +1083,8 @@ namespace GuardsDigital.Tests.EditMode
                 { "TurnCardAssignment.PassedWithEmptyHand", NotReached("a pass with an empty hand") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
-                { "ValueContribution.HasSourceMinionId", NotReached("a contribution sourced from a minion") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.SourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
-                { "ValueContribution.SourceMinionId", NotReached("a contribution sourced from a minion") },
-                { "ValueContributionProjection.SourceMinionId", NotReached("a contribution sourced from a minion") },
             };
 
         private static string Covered(string check) => "exercised with every field populated by " + check;
@@ -1144,6 +1137,13 @@ namespace GuardsDigital.Tests.EditMode
                 new MatchHost(HeroRespawnTests.CreatePendingRespawnSession()), 0, 1);
             yield return new Walk("removal-prevention fixture",
                 new MatchHost(ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause()), 0, 1);
+            // Milestone 9.21a. A hero standing on two spaces (Razzle's many bodies, staged): the board's
+            // hero rows carry a second body, the Attack choice offers each body with its own Defense
+            // preview and names the body in every answer, and the Defense window stands on the second.
+            yield return new Walk("two-body attack-target fixture",
+                new MatchHost(HeroBodiesBoard.CreateSessionAtTheAttackTargetChoice(out _, out _, out _)), 0, 1);
+            yield return new Walk("two-body defense fixture",
+                new MatchHost(HeroBodiesBoard.CreateSessionAtTheDefenseOfBodyTwo()), 0, 1);
         }
 
         /// <summary>

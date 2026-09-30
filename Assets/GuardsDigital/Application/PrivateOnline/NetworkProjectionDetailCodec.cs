@@ -36,6 +36,7 @@ namespace GuardsDigital.Application
             foreach (var preview in projection.PendingAttackTargetDefensePreviews)
             {
                 writer.Write(preview.HeroId.Value);
+                writer.Write(preview.HeroBody);
                 WriteContributions(writer, preview.MinionContributions);
             }
 
@@ -143,13 +144,14 @@ namespace GuardsDigital.Application
             for (var index = 0; index < attackPreviewCount; index++)
             {
                 var heroId = reader.ReadString();
-                if (string.IsNullOrWhiteSpace(heroId) ||
+                var heroBody = reader.ReadInt32();
+                if (string.IsNullOrWhiteSpace(heroId) || heroBody < 1 ||
                     !TryReadContributions(reader, out var contributions))
                 {
                     return false;
                 }
 
-                attackPreviews.Add(new NetworkAttackTargetDefensePreviewRow(heroId, contributions));
+                attackPreviews.Add(new NetworkAttackTargetDefensePreviewRow(heroId, heroBody, contributions));
             }
 
             if (!TryReadDefenseChoice(reader, out var defenseChoice) ||
@@ -2164,7 +2166,9 @@ namespace GuardsDigital.Application
             writer.Write((int)target.Kind);
             if (target.Kind == AttackTargetKind.Hero)
             {
+                // Milestone 9.21a, protocol /26: the attacked body follows the hero.
                 writer.Write(target.HeroId.Value);
+                writer.Write(target.HeroBody);
             }
             else if (target.Kind == AttackTargetKind.Minion)
             {
@@ -2185,12 +2189,13 @@ namespace GuardsDigital.Application
             if (kind == (int)AttackTargetKind.Hero)
             {
                 var heroId = reader.ReadString();
-                if (string.IsNullOrWhiteSpace(heroId))
+                var heroBody = reader.ReadInt32();
+                if (string.IsNullOrWhiteSpace(heroId) || heroBody < 1)
                 {
                     return false;
                 }
 
-                target = new NetworkAttackTargetRow(kind, heroId, null);
+                target = new NetworkAttackTargetRow(kind, heroId, heroBody, null);
                 return true;
             }
 
@@ -2202,7 +2207,7 @@ namespace GuardsDigital.Application
                     return false;
                 }
 
-                target = new NetworkAttackTargetRow(kind, null, minionId);
+                target = new NetworkAttackTargetRow(kind, null, 0, minionId);
                 return true;
             }
 

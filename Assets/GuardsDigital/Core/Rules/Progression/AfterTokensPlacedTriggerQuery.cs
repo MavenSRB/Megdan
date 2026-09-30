@@ -103,7 +103,7 @@ namespace GuardsDigital.Core.Rules.Progression
                 .Where(ultimate =>
                     Watches(ultimate) &&
                     ultimate.OwnerId.Equals(placerId) &&
-                    board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
+                    board.IsHeroOnBoard(ultimate.OwnerId))
                 .ToArray();
             if (watching.Length == 0)
             {
@@ -134,8 +134,9 @@ namespace GuardsDigital.Core.Rules.Progression
                 .Where(hero =>
                     !hero.Equals(placerId) &&
                     participants.GetTeamForHero(hero).Side != placerSide &&
-                    board.TryGetHeroCoordinate(hero, out var at) &&
-                    spaces.Any(space => HexDistanceQuery.Calculate(space, at) == 1))
+                    // Milestone 9.21a (RZ-Q2): adjacency per body; the hero triggers once.
+                    board.GetHeroBodies(hero).Any(body =>
+                        spaces.Any(space => HexDistanceQuery.Calculate(space, body.Coordinate) == 1)))
                 .OrderBy(hero => hero.Value, StringComparer.Ordinal)
                 .Select(hero => new AfterTokensPlacedTriggerSource(
                     ultimate.Source.SourceId,

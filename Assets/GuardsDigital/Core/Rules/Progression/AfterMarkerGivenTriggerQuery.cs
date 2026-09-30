@@ -116,7 +116,7 @@ namespace GuardsDigital.Core.Rules.Progression
                 .Where(ultimate =>
                     Watches(ultimate) &&
                     ultimate.OwnerId.Equals(giverId) &&
-                    board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
+                    board.IsHeroOnBoard(ultimate.OwnerId))
                 .ToArray();
             if (watching.Length == 0)
             {

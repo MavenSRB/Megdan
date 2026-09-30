@@ -106,8 +106,15 @@ namespace GuardsDigital.Core.Replay
             RemovalPreventionCommand removalPrevention = null,
             IEnumerable<TokenInstanceId> tokenInstanceIds = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId systemTransitionDefinitionId = default,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand systemTransitionChoice = default)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand systemTransitionChoice = default,
+            int heroBody = 0)
         {
+            if (heroBody < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(heroBody), heroBody, "A hero body ordinal is 1 or more, or 0 for none named.");
+            }
+
             var materializedTokenIds = tokenInstanceIds?.ToArray() ?? Array.Empty<TokenInstanceId>();
             if (materializedTokenIds.Any(id => !id.IsDefined) ||
                 materializedTokenIds.Distinct().Count() != materializedTokenIds.Length)
@@ -131,6 +138,7 @@ namespace GuardsDigital.Core.Replay
             RemovalPrevention = removalPrevention;
             SystemTransitionDefinitionId = systemTransitionDefinitionId;
             SystemTransitionChoice = systemTransitionChoice;
+            HeroBody = heroBody;
             TokenInstanceIds = Array.AsReadOnly(materializedTokenIds
                 .OrderBy(id => id.Value, StringComparer.Ordinal)
                 .ToArray());
@@ -145,6 +153,13 @@ namespace GuardsDigital.Core.Replay
         public ActionResolutionId ResolutionId { get; }
         public ActionResolutionStepId ChoiceId { get; }
         public MinionId MinionId { get; }
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3). Which body of <see cref="HeroId"/> an Attack-target answer names, or
+        /// 0 when it names the hero alone - which is every answer about a hero only one of whose bodies
+        /// is a legal target, and so every answer about every hero the build deals today.
+        /// </summary>
+        public int HeroBody { get; }
         public EndOfRoundResolutionId EndOfRoundResolutionId { get; }
         public EndOfRoundChoiceId EndOfRoundChoiceId { get; }
         public IReadOnlyList<TokenInstanceId> TokenInstanceIds { get; }
@@ -362,6 +377,30 @@ namespace GuardsDigital.Core.Replay
                 resolutionId: resolutionId,
                 choiceId: choiceId);
 
+        /// <summary>
+        /// Milestone 9.21a. An Attack-target answer naming one body of a hero - required when several
+        /// of that hero's bodies are legal targets of the same choice.
+        /// </summary>
+        public static DirectorCommand ChooseAttackTarget(
+            ActionResolutionId resolutionId,
+            ActionResolutionStepId choiceId,
+            HeroId heroId,
+            int heroBody)
+        {
+            if (heroBody < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(heroBody), heroBody, "A named hero body ordinal starts at 1.");
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.ChooseAttackTarget,
+                heroId,
+                resolutionId: resolutionId,
+                choiceId: choiceId,
+                heroBody: heroBody);
+        }
+
         public static DirectorCommand ChooseAttackTarget(MinionId minionId) =>
             new DirectorCommand(DirectorCommandKind.ChooseAttackTarget, minionId: minionId);
 
@@ -503,7 +542,7 @@ namespace GuardsDigital.Core.Replay
                 CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
                 ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate) &&
                 ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId) &&
-                MinionId.Equals(other.MinionId) &&
+                MinionId.Equals(other.MinionId) && HeroBody == other.HeroBody &&
                 EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
                 EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId) &&
                 Equals(EffectChoice, other.EffectChoice) &&
@@ -528,6 +567,7 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ ResolutionId.GetHashCode();
                 hash = (hash * 397) ^ ChoiceId.GetHashCode();
                 hash = (hash * 397) ^ MinionId.GetHashCode();
+                hash = (hash * 397) ^ HeroBody;
                 hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
                 hash = (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);

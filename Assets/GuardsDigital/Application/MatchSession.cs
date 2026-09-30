@@ -614,8 +614,30 @@ namespace GuardsDigital.Application
                     new AttackTargetChoiceCommand(choice.ResolutionId, choice.ChoiceId, command.MinionId)));
             }
 
-            return DispatchResult.From(round.TryAnswerAttackTarget(
-                new AttackTargetChoiceCommand(choice.ResolutionId, choice.ChoiceId, command.HeroId)));
+            // Milestone 9.21a (RZ-Q3). An answer names the body it attacks, or names the hero alone -
+            // which is unambiguous exactly when one of that hero's bodies is a legal target, and is how
+            // every answer about a single-bodied hero has always been written. A hero-only answer about
+            // a hero several of whose bodies are legal is refused rather than aimed at one of them.
+            if (command.HeroBody > 0)
+            {
+                return DispatchResult.From(round.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                    choice.ResolutionId, choice.ChoiceId,
+                    AttackTarget.HeroBodyOf(command.HeroId, command.HeroBody))));
+            }
+
+            var bodies = choice.LegalTargets
+                .Where(target => target.Kind == AttackTargetKind.Hero && target.HeroId.Equals(command.HeroId))
+                .ToArray();
+            if (bodies.Length > 1)
+            {
+                return DispatchResult.Unavailable(
+                    $"{command.HeroId} stands on several spaces that are legal Attack targets; the " +
+                    "answer must name the body it attacks.");
+            }
+
+            return DispatchResult.From(round.TryAnswerAttackTarget(new AttackTargetChoiceCommand(
+                choice.ResolutionId, choice.ChoiceId,
+                bodies.Length == 1 ? bodies[0] : AttackTarget.Hero(command.HeroId))));
         }
 
         private DispatchResult AnswerDefense(DirectorCommand command, bool decline)
@@ -951,7 +973,9 @@ namespace GuardsDigital.Application
                 configuration.Participants,
                 configuration.CardDefinitions,
                 configuration.CardInstances,
-                board.Occupancies.OrderBy(hero => hero.HeroId.Value, StringComparer.Ordinal),
+                board.Occupancies
+                    .OrderBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                    .ThenBy(hero => hero.Body),
                 board.ObstacleOccupancies.OrderBy(obstacle => obstacle.ObstacleId.Value, StringComparer.Ordinal),
                 round.RoundIndex,
                 round.TurnIndex,
@@ -1134,8 +1158,10 @@ namespace GuardsDigital.Application
                 return null;
             }
 
+            // Milestone 9.21a: measured from the attacked body (RZ-Q3).
             var minionContributions = DefenseValueQuery.CalculateMinionContributions(
                 choice.ChooserId,
+                attack.Target.HeroBody,
                 configuration.Participants,
                 board);
             var projectedChoices = new List<DefenseChoicePreviewProjection>();
@@ -1190,6 +1216,7 @@ namespace GuardsDigital.Application
                     offer,
                     configuration.CardDefinitions,
                     choice.ChooserId,
+                    attack.Target.HeroBody,
                     configuration.Participants,
                     board,
                     modifications,
@@ -1239,32 +1266,22 @@ namespace GuardsDigital.Application
                 TurnResolutionAuthority turn,
                 IReadOnlyList<EffectChoiceCandidatePreview> effectChoicePreviews)
         {
-            var heroIds = new List<HeroId>();
-            var attackChoice = turn?.PendingAttackTargetChoice;
-            if (attackChoice != null)
-            {
-                heroIds.AddRange(attackChoice.LegalTargetHeroIds);
-            }
-
-            var effectChoice = turn?.PendingEffectChoice;
-            if (effectChoice != null)
-            {
-                heroIds.AddRange((effectChoicePreviews ??
-                        throw new ArgumentNullException(nameof(effectChoicePreviews)))
-                    .Where(preview =>
-                        preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack &&
-                        preview.Occupant.Kind == BoardObjectKind.Hero &&
-                        effectChoice.SelectInvocations.Any(invocation =>
-                            invocation.Candidate.Equals(
-                                EffectChoiceCandidate.Value_(preview.CandidateValue))))
-                    .Select(preview => preview.Occupant.HeroId));
-            }
-
-            return Array.AsReadOnly(heroIds.Distinct()
-                .Select(heroId => new AttackTargetDefensePreviewProjection(
-                    heroId,
+            // Milestone 9.21a (RZ-Q3). One preview per legal target BODY, each measured from its own
+            // space; the keys come from the derivation the projection checks them against.
+            var keys = AttackTargetDefensePreviewProjection.ExpectedKeys(
+                turn?.PendingAttackTargetChoice,
+                turn?.PendingEffectChoice,
+                turn?.PendingEffectChoice == null
+                    ? null
+                    : effectChoicePreviews ?? throw new ArgumentNullException(nameof(effectChoicePreviews)),
+                board.Occupancies);
+            return Array.AsReadOnly(keys
+                .Select(key => new AttackTargetDefensePreviewProjection(
+                    key.Key,
+                    key.Value,
                     DefenseValueQuery.CalculateMinionContributions(
-                            heroId,
+                            key.Key,
+                            key.Value,
                             configuration.Participants,
                             board)
                         .Select(ProjectContribution)))

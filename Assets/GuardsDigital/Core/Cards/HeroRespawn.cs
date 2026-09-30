@@ -126,7 +126,7 @@ namespace GuardsDigital.Core.Cards
             MatchParticipants participants,
             AdjacentMoveAuthority board)
         {
-            if (board.TryGetHeroCoordinate(heroId, out _))
+            if (board.IsHeroOnBoard(heroId))
             {
                 return null;
             }

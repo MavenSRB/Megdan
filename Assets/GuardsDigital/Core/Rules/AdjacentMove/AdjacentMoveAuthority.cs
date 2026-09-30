@@ -25,6 +25,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly HashSet<MinionId> minionBattleExclusions = new HashSet<MinionId>();
         private CompletedMovementWalk lastCompletedMovementWalk;
 
+        // Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1), and how
+        // many each has in all. A hero absent from this map has one body, which is every hero the
+        // build deals today; the one-space-per-hero rule is relaxed for the heroes named here only.
+        private readonly Dictionary<HeroId, int> heroBodySupplies = new Dictionary<HeroId, int>();
+
         public IReadOnlyCollection<MinionId> MinionsExcludedFromMinionBattle =>
             minionBattleExclusions.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray();
 
@@ -159,6 +164,30 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         {
         }
 
+        /// <summary>
+        /// Milestone 9.21a. A board on which the named heroes may stand on several spaces at once,
+        /// each up to its declared supply of bodies (RZ-Q1). Every other hero keeps one space.
+        /// </summary>
+        public AdjacentMoveAuthority(
+            BoardMapDefinition mapDefinition,
+            IEnumerable<HeroOccupancy> initialOccupancies,
+            IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
+            IEnumerable<QuickGameMinionSetupState> initialMinions,
+            IEnumerable<HeroBodySupply> heroBodySupplies)
+            : this(
+                mapDefinition,
+                initialOccupancies,
+                initialObstacleOccupancies,
+                (initialMinions ?? throw new ArgumentNullException(nameof(initialMinions)))
+                    .Select(minion => minion == null
+                        ? throw new ArgumentException("Initial minions must be non-null and have unique IDs.", nameof(initialMinions))
+                        : MinionOccupancy.FromSetup(minion)),
+                Enumerable.Empty<PlacedToken>(),
+                Enumerable.Empty<MinionOccupancy>(),
+                heroBodySupplies)
+        {
+        }
+
         // Tokens enter only through a restore. No configured setup places one: a token reaches the
         // board when an effect places it, which is why this arm is not part of the public setup
         // surface the other constructors form.
@@ -170,7 +199,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<PlacedToken> initialTokens)
             : this(
                 mapDefinition, initialOccupancies, initialObstacleOccupancies, initialMinions,
-                initialTokens, Enumerable.Empty<MinionOccupancy>())
+                initialTokens, Enumerable.Empty<MinionOccupancy>(), Enumerable.Empty<HeroBodySupply>())
         {
         }
 
@@ -183,9 +212,27 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<ObstacleOccupancy> initialObstacleOccupancies,
             IEnumerable<MinionOccupancy> initialMinions,
             IEnumerable<PlacedToken> initialTokens,
-            IEnumerable<MinionOccupancy> initialReserveMinions)
+            IEnumerable<MinionOccupancy> initialReserveMinions,
+            IEnumerable<HeroBodySupply> initialHeroBodySupplies)
         {
             MapDefinition = mapDefinition ?? throw new ArgumentNullException(nameof(mapDefinition));
+
+            // Milestone 9.21a. Read before the occupancies, because they are what decides whether a
+            // second occupancy of one hero is a second body or a duplicate.
+            foreach (var supply in initialHeroBodySupplies ??
+                throw new ArgumentNullException(nameof(initialHeroBodySupplies)))
+            {
+                if (!supply.HeroId.IsDefined || heroBodySupplies.ContainsKey(supply.HeroId))
+                {
+                    throw new ArgumentException(
+                        "A hero body supply names a defined hero once.", nameof(initialHeroBodySupplies));
+                }
+
+                if (supply.Bodies > 1)
+                {
+                    heroBodySupplies.Add(supply.HeroId, supply.Bodies);
+                }
+            }
 
             if (initialOccupancies == null)
             {
@@ -231,9 +278,21 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     throw new ArgumentException("Initial occupancy must be on the board.", nameof(initialOccupancies));
                 }
 
-                if (occupancies.Any(existing => existing.HeroId.Equals(occupancy.HeroId)))
+                // Milestone 9.21a. A hero that declares no bodies still stands on one space - the
+                // guard every earlier board had, unchanged for it. A hero that declares a supply may
+                // stand once per body up to that supply, and never twice as the same body.
+                if (occupancies.Any(existing => existing.HeroId.Equals(occupancy.HeroId) &&
+                        (existing.Body == occupancy.Body || HeroBodySupplyOf(occupancy.HeroId) == 1)))
                 {
                     throw new ArgumentException("Initial occupancies must have unique hero IDs.", nameof(initialOccupancies));
+                }
+
+                if (occupancy.Body > HeroBodySupplyOf(occupancy.HeroId))
+                {
+                    throw new ArgumentException(
+                        $"Initial occupancy names body {occupancy.Body} of {occupancy.HeroId}, whose " +
+                        $"supply is {HeroBodySupplyOf(occupancy.HeroId)}.",
+                        nameof(initialOccupancies));
                 }
 
                 occupancyIndex.Add(occupancy.Coordinate, BoardOccupant.ForHero(occupancy.HeroId), nameof(initialOccupancies));
@@ -351,6 +410,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             reserveMinions = new List<MinionOccupancy>(source.reserveMinions);
             tokens = new List<PlacedToken>(source.tokens);
             minionBattleExclusions = new HashSet<MinionId>(source.minionBattleExclusions);
+            heroBodySupplies = new Dictionary<HeroId, int>(source.heroBodySupplies);
             lastCompletedMovementWalk = source.lastCompletedMovementWalk;
             occupancyIndex = source.occupancyIndex.Clone();
             occupanciesView = occupancies.AsReadOnly();
@@ -360,7 +420,125 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             boardCoordinatesView = source.boardCoordinatesView;
         }
 
+        /// <summary>
+        /// Every hero body on the board. Milestone 9.21a: a many-bodied hero appears once per body
+        /// standing, so a presence, adjacency or obstacle read over this list sees every body (RZ-Q2);
+        /// a read that wants one space per hero asks <see cref="TryGetHeroCoordinate"/> (the acting
+        /// body) or <see cref="GetHeroBodies"/> (all of them) instead of taking a single row.
+        /// </summary>
         public IReadOnlyList<HeroOccupancy> Occupancies => occupanciesView;
+
+        /// <summary>
+        /// Milestone 9.21a. The heroes that declare more than one body, by hero id. Every hero not
+        /// listed has one body.
+        /// </summary>
+        public IReadOnlyList<HeroBodySupply> HeroBodySupplies =>
+            Array.AsReadOnly(heroBodySupplies
+                .OrderBy(entry => entry.Key.Value, StringComparer.Ordinal)
+                .Select(entry => new HeroBodySupply(entry.Key, entry.Value))
+                .ToArray());
+
+        /// <summary>Milestone 9.21a. How many bodies this hero has in all; 1 unless it declares more.</summary>
+        public int HeroBodySupplyOf(HeroId heroId) =>
+            heroBodySupplies.TryGetValue(heroId, out var bodies) ? bodies : 1;
+
+        /// <summary>
+        /// Milestone 9.21a. Whether any body of this hero stands on the board - p.7's respawn question,
+        /// p.16's "as long as your hero is on the board", and every other presence check that asks
+        /// about the hero rather than one of its spaces.
+        /// </summary>
+        public bool IsHeroOnBoard(HeroId heroId) =>
+            occupancies.Any(occupancy => occupancy.HeroId.Equals(heroId));
+
+        /// <summary>Milestone 9.21a. Every body of this hero on the board, in body order.</summary>
+        public IReadOnlyList<HeroOccupancy> GetHeroBodies(HeroId heroId) =>
+            Array.AsReadOnly(occupancies
+                .Where(occupancy => occupancy.HeroId.Equals(heroId))
+                .OrderBy(occupancy => occupancy.Body)
+                .ToArray());
+
+        /// <summary>
+        /// Milestone 9.21a. Where one named body of a hero stands - the read for a seam that knows
+        /// which body it means (the attacked body of an Attack, the defending body of a Defense).
+        /// </summary>
+        public bool TryGetHeroBodyCoordinate(HeroId heroId, int body, out HexCoordinate coordinate)
+        {
+            var index = occupancies.FindIndex(occupancy =>
+                occupancy.HeroId.Equals(heroId) && occupancy.Body == body);
+            coordinate = index < 0 ? default : occupancies[index].Coordinate;
+            return index >= 0;
+        }
+
+        /// <summary>
+        /// Milestone 9.21a. Where a hero stands, for a read the twelve RZ readings do not settle for a
+        /// hero on several spaces - the anchor of an Active effect's radius the hero controls ("in
+        /// radius of you" when nobody is acting), or the defender a Defense card moves. A hero with one
+        /// body answers exactly as <see cref="TryGetHeroCoordinate"/>; a hero standing on several
+        /// spaces is refused loudly, naming the read, rather than answered from one body.
+        /// </summary>
+        public bool TryGetSoleHeroCoordinate(HeroId heroId, string reading, out HexCoordinate coordinate)
+        {
+            var bodies = GetHeroBodies(heroId);
+            if (bodies.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"{heroId} stands on {bodies.Count} spaces, and {reading} names no body; which of " +
+                    "his spaces it is measured from is not settled for a many-bodied hero (milestone " +
+                    "9.21a leaves it to the block that deals a face reaching it).");
+            }
+
+            coordinate = bodies.Count == 0 ? default : bodies[0].Coordinate;
+            return bodies.Count == 1;
+        }
+
+        /// <summary>
+        /// Milestone 9.21a. The index of the body that answers for the hero as a whole: the only body
+        /// when one stands, and the ACTING body when several do. Until milestone 9.21b makes the acting
+        /// body a player's pick (RZ-Q4), the acting body is <see cref="HeroOccupancy.FirstBody"/>; a
+        /// board on which several bodies stand and that one does not has no acting body to name, and
+        /// the read refuses loudly rather than silently taking whichever body happens to be listed
+        /// first. -1 when no body stands.
+        /// </summary>
+        private int ActingBodyIndex(HeroId heroId)
+        {
+            var only = -1;
+            var firstBody = -1;
+            var count = 0;
+            for (var index = 0; index < occupancies.Count; index++)
+            {
+                if (!occupancies[index].HeroId.Equals(heroId))
+                {
+                    continue;
+                }
+
+                count++;
+                only = index;
+                if (occupancies[index].Body == HeroOccupancy.FirstBody)
+                {
+                    firstBody = index;
+                }
+            }
+
+            if (count <= 1)
+            {
+                return only;
+            }
+
+            if (firstBody >= 0)
+            {
+                return firstBody;
+            }
+
+            throw new InvalidOperationException(
+                $"{heroId} stands on {count} spaces and none of them is body {HeroOccupancy.FirstBody}, " +
+                "the default acting body; a read that names the hero rather than a body cannot say " +
+                "which space it means (RZ-Q4's acting-body pick is milestone 9.21b).");
+        }
+
+        /// <summary>Milestone 9.21a. The index of the body of this hero standing on this space, or -1.</summary>
+        private int BodyIndexAt(HeroId heroId, HexCoordinate coordinate) =>
+            occupancies.FindIndex(occupancy =>
+                occupancy.HeroId.Equals(heroId) && occupancy.Coordinate.Equals(coordinate));
 
         public BoardMapDefinition MapDefinition { get; }
 
@@ -471,7 +649,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 tokens,
                 CurrentBattleZoneId,
                 minionBattleExclusions,
-                lastCompletedMovementWalk);
+                lastCompletedMovementWalk,
+                HeroBodySupplies);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -526,7 +705,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 state.ObstacleOccupancies,
                 remaining,
                 state.PlacedTokens,
-                reserve);
+                reserve,
+                state.HeroBodySupplies);
 
             // Milestone 6.10. The constructor has already opened the board at the zone the map flags,
             // and this replaces that opening value with the restored one - never the other way round.
@@ -564,10 +744,17 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public AdjacentMoveResult TryCommit(AdjacentMoveCommand command)
         {
-            var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(command.HeroId));
-            if (heroIndex < 0)
+            if (!IsHeroOnBoard(command.HeroId))
             {
                 return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.UnknownHero);
+            }
+
+            // Milestone 9.21a. The command names its origin, which for a many-bodied hero is also the
+            // name of the body that steps; a hero with one body is found exactly as before.
+            var heroIndex = BodyIndexAt(command.HeroId, command.Origin);
+            if (heroIndex < 0)
+            {
+                return AdjacentMoveResult.Reject(AdjacentMoveRejectionReason.WrongOrigin);
             }
 
             var currentOccupancy = occupancies[heroIndex];
@@ -594,7 +781,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
 
             occupancyIndex.Move(command.Origin, command.Destination);
-            occupancies[heroIndex] = new HeroOccupancy(command.HeroId, command.Destination);
+            occupancies[heroIndex] = occupancies[heroIndex].MovedTo(command.Destination);
             return AdjacentMoveResult.Accept(new AdjacentMoveEvent(
                 command.HeroId,
                 command.Origin,
@@ -626,7 +813,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(route));
             }
 
-            var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            var heroIndex = ActingBodyIndex(heroId);
             if (heroIndex < 0)
             {
                 return AdjacentMoveRouteResult.Reject(AdjacentMoveRejectionReason.UnknownHero, 0);
@@ -686,7 +873,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
 
             occupancyIndex.Move(origin, destination);
-            occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
+            occupancies[heroIndex] = occupancies[heroIndex].MovedTo(destination);
 
             // Milestone 8.61e. Every space of the route but its last was entered AND left, which is
             // exactly p.18's "moves through" - the page's own reason this commit is whole rather than
@@ -699,7 +886,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         internal FastTravelEvent CommitValidatedFastTravel(HeroId heroId, HexCoordinate destination)
         {
-            var heroIndex = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            var heroIndex = ActingBodyIndex(heroId);
             if (heroIndex < 0)
             {
                 throw new InvalidOperationException("A validated Fast Travel actor is no longer on the board.");
@@ -722,7 +909,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 MapDefinition.GetZoneForSpace(originSpace.Id).Id,
                 MapDefinition.GetZoneForSpace(destinationSpace.Id).Id);
             occupancyIndex.Move(origin, destination);
-            occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
+            occupancies[heroIndex] = occupancies[heroIndex].MovedTo(destination);
             return travelEvent;
         }
 
@@ -745,30 +932,43 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return removed;
         }
 
-        internal HeroOccupancy CommitValidatedHeroRemoval(HeroId heroId)
+        /// <summary>
+        /// p.13's "Remove the defeated hero from the board", every body at once. Milestone 9.21a
+        /// (RZ-Q3, Stunt Doubles' "If defeated, remove all of you"): a Defeat is the hero's, so it
+        /// takes every body that stands, in body order; a hero with one body loses exactly the one
+        /// occupancy it always did.
+        /// </summary>
+        internal IReadOnlyList<HeroOccupancy> CommitValidatedHeroRemoval(HeroId heroId)
         {
-            var index = occupancies.FindIndex(hero => hero.HeroId.Equals(heroId));
-            if (index < 0)
+            var removed = GetHeroBodies(heroId);
+            if (removed.Count == 0)
             {
                 throw new InvalidOperationException("A validated hero target is no longer on the board.");
             }
 
-            var removed = occupancies[index];
-            occupancies.RemoveAt(index);
-            occupancyIndex.Remove(removed.Coordinate);
+            foreach (var body in removed)
+            {
+                occupancies.Remove(body);
+                occupancyIndex.Remove(body.Coordinate);
+            }
+
             return removed;
         }
 
+        /// <summary>
+        /// p.7's respawn: a hero with no body on the board returns as one body, body 1, however many
+        /// it had before (milestone 9.21a). A hero any of whose bodies still stands is not respawned.
+        /// </summary>
         internal bool CommitValidatedHeroRespawn(HeroId heroId, HexCoordinate destination)
         {
-            if (occupancies.Any(hero => hero.HeroId.Equals(heroId)) ||
+            if (IsHeroOnBoard(heroId) ||
                 !IsEmptyPlayableSpace(destination))
             {
                 return false;
             }
 
             occupancyIndex.Add(destination, BoardOccupant.ForHero(heroId), nameof(heroId));
-            occupancies.Add(new HeroOccupancy(heroId, destination));
+            occupancies.Add(new HeroOccupancy(heroId, HeroOccupancy.FirstBody, destination));
             return true;
         }
 
@@ -805,9 +1005,16 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return MinionMoveResult.Accept(moved, current.Coordinate);
         }
 
+        /// <summary>
+        /// Where the hero stands as ONE space: its only body, or - for a many-bodied hero (milestone
+        /// 9.21a) - its acting body, body 1 until milestone 9.21b makes the acting body a pick. Every
+        /// caller of this read is either the actor's own space or has been moved to
+        /// <see cref="IsHeroOnBoard"/>, <see cref="GetHeroBodies"/> or
+        /// <see cref="TryGetHeroBodyCoordinate"/>; see the site list in Rules/HERO_RAZZLE.md.
+        /// </summary>
         public bool TryGetHeroCoordinate(HeroId heroId, out HexCoordinate coordinate)
         {
-            var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(heroId));
+            var index = ActingBodyIndex(heroId);
             coordinate = index < 0 ? default : occupancies[index].Coordinate;
             return index >= 0;
         }
@@ -1194,9 +1401,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             {
                 case BoardObjectKind.Hero:
                 {
-                    var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(subject.HeroId));
+                    var index = BodyIndexAt(subject.HeroId, origin);
                     occupancyIndex.Move(origin, destination);
-                    occupancies[index] = new HeroOccupancy(subject.HeroId, destination);
+                    occupancies[index] = occupancies[index].MovedTo(destination);
                     break;
                 }
 
@@ -1329,8 +1536,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             // other currently stands in, so both are playable spaces this board already admits an
             // occupant in, and the exchange leaves exactly as many occupants as it found.
             occupancyIndex.Exchange(firstOrigin, secondOrigin);
-            Reposition(first, secondOrigin);
-            Reposition(second, firstOrigin);
+            Reposition(first, firstOrigin, secondOrigin);
+            Reposition(second, secondOrigin, firstOrigin);
             return BoardObjectSwapCommitResult.Accept(first, second, firstOrigin, secondOrigin);
         }
 
@@ -1437,14 +1644,14 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// Records an already exchanged object's new space in its own occupancy list. It never touches
         /// the index, because <see cref="BoardOccupancyIndex.Exchange"/> has already moved both at once.
         /// </summary>
-        private void Reposition(BoardObjectReference subject, HexCoordinate destination)
+        private void Reposition(BoardObjectReference subject, HexCoordinate origin, HexCoordinate destination)
         {
             switch (subject.Kind)
             {
                 case BoardObjectKind.Hero:
                 {
-                    var index = occupancies.FindIndex(occupancy => occupancy.HeroId.Equals(subject.HeroId));
-                    occupancies[index] = new HeroOccupancy(subject.HeroId, destination);
+                    var index = BodyIndexAt(subject.HeroId, origin);
+                    occupancies[index] = occupancies[index].MovedTo(destination);
                     break;
                 }
 

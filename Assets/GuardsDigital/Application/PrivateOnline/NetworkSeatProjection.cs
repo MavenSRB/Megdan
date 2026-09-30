@@ -286,14 +286,18 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkHeroRow
     {
-        public NetworkHeroRow(string heroId, int q, int r)
+        public NetworkHeroRow(string heroId, int body, int q, int r)
         {
             HeroId = heroId;
+            Body = body;
             Q = q;
             R = r;
         }
 
         public string HeroId { get; }
+
+        /// <summary>Milestone 9.21a, protocol /26. Which body of the hero stands here (1 for a single-bodied hero).</summary>
+        public int Body { get; }
         public int Q { get; }
         public int R { get; }
     }
@@ -651,6 +655,7 @@ namespace GuardsDigital.Application
                 foreach (var hero in projection.Heroes)
                 {
                     writer.Write(hero.HeroId.Value);
+                    writer.Write(hero.Body);
                     writer.Write(hero.Coordinate.Q);
                     writer.Write(hero.Coordinate.R);
                 }
@@ -925,14 +930,15 @@ namespace GuardsDigital.Application
                     for (var index = 0; index < heroCount; index++)
                     {
                         var id = reader.ReadString();
+                        var body = reader.ReadInt32();
                         var q = reader.ReadInt32();
                         var r = reader.ReadInt32();
-                        if (string.IsNullOrWhiteSpace(id))
+                        if (string.IsNullOrWhiteSpace(id) || body < 1)
                         {
                             return false;
                         }
 
-                        heroes.Add(new NetworkHeroRow(id, q, r));
+                        heroes.Add(new NetworkHeroRow(id, body, q, r));
                     }
 
                     if (!TryReadCount(reader, out var minionCount))

@@ -55,11 +55,9 @@ namespace GuardsDigital.Core.Rules.Movement
                 throw new ArgumentNullException(nameof(state));
             }
 
-            var matchingOccupancies = adjacentMoveAuthority.Occupancies
-                .Where(occupancy => occupancy.HeroId.Equals(state.HeroId))
-                .ToArray();
-            if (matchingOccupancies.Length != 1 ||
-                !matchingOccupancies[0].Coordinate.Equals(state.Route[state.Route.Count - 1]))
+            // Milestone 9.21a: the moving body is the hero's acting body (RZ-Q4).
+            if (!adjacentMoveAuthority.TryGetHeroCoordinate(state.HeroId, out var movingAt) ||
+                !movingAt.Equals(state.Route[state.Route.Count - 1]))
             {
                 throw new ArgumentException(
                     "Restored movement state must end at the moving hero's authoritative coordinate.",
@@ -95,8 +93,19 @@ namespace GuardsDigital.Core.Rules.Movement
                 stepEvents);
         }
 
-        public HeroOccupancy CurrentOccupancy =>
-            adjacentMoveAuthority.Occupancies.Single(occupancy => occupancy.HeroId.Equals(heroId));
+        // Milestone 9.21a: the acting body of the moving hero (RZ-Q4), the body a Movement action moves.
+        public HeroOccupancy CurrentOccupancy
+        {
+            get
+            {
+                if (!adjacentMoveAuthority.TryGetHeroCoordinate(heroId, out var at))
+                {
+                    throw new InvalidOperationException("The moving hero is not on the board.");
+                }
+
+                return adjacentMoveAuthority.GetHeroBodies(heroId).Single(body => body.Coordinate.Equals(at));
+            }
+        }
 
         /// <summary>One space, which is the one-element case of <see cref="TryCommitRoute"/>.</summary>
         public MovementSessionStepResult TryCommitStep(

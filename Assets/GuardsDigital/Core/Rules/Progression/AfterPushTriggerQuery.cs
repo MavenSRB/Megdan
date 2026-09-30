@@ -122,7 +122,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     ultimate.Rule.AfterPush.IsDeclared &&
                     ultimate.Rule.TriggeredEffect.HasValue &&
                     ultimate.OwnerId.Equals(pusherId) &&
-                    board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
+                    board.IsHeroOnBoard(ultimate.OwnerId))
                 .ToArray();
             if (watching.Length == 0)
             {

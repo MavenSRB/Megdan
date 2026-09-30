@@ -897,17 +897,20 @@ namespace GuardsDigital.Tests.EditMode
         // 9.8f re-pins all nine for dealing Mortimer: his eight capabilities and Zombie token
         // definition join the recorded registration lists - the same +274 bytes the sibling corpus
         // measures on all sixteen captures. No scenario plays Mortimer; the three groups still hold.
+        // 9.21a re-pins all nine for schema v49: every hero occupancy row carries its body ordinal, the
+        // board carries the (empty) list of heroes that declare several bodies, and a persisted hero
+        // Attack target names its body. No scenario stages a second body; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "81b0cba30b3409d346b0ad6733672eefa3863b540713328ae7a426e10a42fe41", "93b8c1c0f3aee92298560def1dbf3d66c51d3a8b3b7ac8a453b036745ba9dc9b"),
-            new ScenarioDigest("rejected", "81b0cba30b3409d346b0ad6733672eefa3863b540713328ae7a426e10a42fe41", "93b8c1c0f3aee92298560def1dbf3d66c51d3a8b3b7ac8a453b036745ba9dc9b"),
-            new ScenarioDigest("stale", "81b0cba30b3409d346b0ad6733672eefa3863b540713328ae7a426e10a42fe41", "93b8c1c0f3aee92298560def1dbf3d66c51d3a8b3b7ac8a453b036745ba9dc9b"),
-            new ScenarioDigest("restored", "81b0cba30b3409d346b0ad6733672eefa3863b540713328ae7a426e10a42fe41", "93b8c1c0f3aee92298560def1dbf3d66c51d3a8b3b7ac8a453b036745ba9dc9b"),
-            new ScenarioDigest("replayed", "81b0cba30b3409d346b0ad6733672eefa3863b540713328ae7a426e10a42fe41", "93b8c1c0f3aee92298560def1dbf3d66c51d3a8b3b7ac8a453b036745ba9dc9b"),
-            new ScenarioDigest("undo-truncated", "73042b355169937df53284232a394d90b2c70d7efcc647ccd3489526cdcf045a", "101329583f509112a41165e3b6590dd11dd7b4746cf38f59c764302534c1636f"),
-            new ScenarioDigest("defense-discarded", "a99fc31f865524f4b21bcc5990895aae7d6bb4079c1b3aecc1e382f9e1503da4", "f0b4e7d24417bf5e3cfc6b318ac3c4192edb0fa04bd4f721a848ad253098282b"),
-            new ScenarioDigest("defense-discarded-restored", "a99fc31f865524f4b21bcc5990895aae7d6bb4079c1b3aecc1e382f9e1503da4", "f0b4e7d24417bf5e3cfc6b318ac3c4192edb0fa04bd4f721a848ad253098282b"),
-            new ScenarioDigest("defense-discarded-replayed", "a99fc31f865524f4b21bcc5990895aae7d6bb4079c1b3aecc1e382f9e1503da4", "f0b4e7d24417bf5e3cfc6b318ac3c4192edb0fa04bd4f721a848ad253098282b"),
+            new ScenarioDigest("accepted", "180a9d9c4f9bf8b7cf8b8c2d9eee5b0d31a29992915d3eb4a9e420bb3aa84dfa", "9c22293bcea0bc125331f2d6bd4817f2e389d5ec9b1fd66f30b8520ac7eea313"),
+            new ScenarioDigest("rejected", "180a9d9c4f9bf8b7cf8b8c2d9eee5b0d31a29992915d3eb4a9e420bb3aa84dfa", "9c22293bcea0bc125331f2d6bd4817f2e389d5ec9b1fd66f30b8520ac7eea313"),
+            new ScenarioDigest("stale", "180a9d9c4f9bf8b7cf8b8c2d9eee5b0d31a29992915d3eb4a9e420bb3aa84dfa", "9c22293bcea0bc125331f2d6bd4817f2e389d5ec9b1fd66f30b8520ac7eea313"),
+            new ScenarioDigest("restored", "180a9d9c4f9bf8b7cf8b8c2d9eee5b0d31a29992915d3eb4a9e420bb3aa84dfa", "9c22293bcea0bc125331f2d6bd4817f2e389d5ec9b1fd66f30b8520ac7eea313"),
+            new ScenarioDigest("replayed", "180a9d9c4f9bf8b7cf8b8c2d9eee5b0d31a29992915d3eb4a9e420bb3aa84dfa", "9c22293bcea0bc125331f2d6bd4817f2e389d5ec9b1fd66f30b8520ac7eea313"),
+            new ScenarioDigest("undo-truncated", "a676bd0a645d9a1b10ce68df1f4421f898230c10885a46a353f272abb2cbafba", "1e2d00aa5c0b39b71916f2615cc027ee31d6c2559a908c900c47930f5a8b22bc"),
+            new ScenarioDigest("defense-discarded", "d89f02bff941e3c94b8ac0a67df126ee1f29ab57a271c33ccc7c75a7b7356f94", "d2db8ea781d900b1f81e8a7c539a8c1acbcfc9400a885d56fbeb5524d3e77f7b"),
+            new ScenarioDigest("defense-discarded-restored", "d89f02bff941e3c94b8ac0a67df126ee1f29ab57a271c33ccc7c75a7b7356f94", "d2db8ea781d900b1f81e8a7c539a8c1acbcfc9400a885d56fbeb5524d3e77f7b"),
+            new ScenarioDigest("defense-discarded-replayed", "d89f02bff941e3c94b8ac0a67df126ee1f29ab57a271c33ccc7c75a7b7356f94", "d2db8ea781d900b1f81e8a7c539a8c1acbcfc9400a885d56fbeb5524d3e77f7b"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

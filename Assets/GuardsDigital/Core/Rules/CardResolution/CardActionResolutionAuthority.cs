@@ -5951,7 +5951,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var attack = EnclosingAttackOf(standing.Attack, definitions, board);
             if (!attack.HeroTargetId.IsDefined || !attack.DefenseCardInstanceId.IsDefined ||
-                !board.TryGetHeroCoordinate(attack.HeroTargetId, out var from))
+                !board.TryGetSoleHeroCoordinate(
+                    attack.HeroTargetId, "the defender a Defense card moves", out var from))
             {
                 return default;
             }
@@ -5983,7 +5984,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             List<ResolutionStep> steps)
         {
             if (pendingCardText != null || board == null || remainderAttack == null ||
-                !board.TryGetHeroCoordinate(forced.Mover, out var now) || now.Equals(forced.From))
+                !board.TryGetSoleHeroCoordinate(forced.Mover, "the defender a Defense card moves", out var now) || now.Equals(forced.From))
             {
                 return false;
             }

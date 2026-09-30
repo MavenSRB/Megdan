@@ -1704,6 +1704,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             context.Modifications,
                             context.ImmunityOverrides)))
                     .Select(occupancy => occupancy.HeroId)
+                    .Distinct()
                     .OrderBy(id => id.Value, StringComparer.Ordinal)
                     .ToArray();
             }

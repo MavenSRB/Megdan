@@ -245,13 +245,13 @@ namespace GuardsDigital.Core.Rules.Modifications
                     RuleObject.ForMinion(value.MinionId),
                     value.TeamSide,
                     value.MinionType == StandardMinionType.Heavy));
+            // Milestone 9.21a (RZ-Q2): a hero counting as a minion is in the zone when any of its bodies
+            // is, and it is one unit of the battle however many bodies stand there.
             var counting = board.Occupancies
+                .Where(value => IsInCurrentBattleZone(board, value.Coordinate))
                 .Select(value => RuleObject.ForHero(value.HeroId))
+                .Distinct()
                 .Where(unit => EffectiveUnitKindQuery.Is(unit, EffectiveUnitKind.Minion, modifications))
-                .Where(unit =>
-                    board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(unit.HeroId), out var coordinate) &&
-                    IsInCurrentBattleZone(board, coordinate))
                 .Select(unit => new EffectiveBattleZoneMinion(
                     unit, participants.GetTeamForHero(unit.HeroId).Side, false));
             return Array.AsReadOnly(miniatures.Concat(counting).ToArray());

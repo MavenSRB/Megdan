@@ -504,7 +504,8 @@ namespace GuardsDigital.Tests.EditMode
                     state.PlacedTokens,
                     state.CurrentBattleZoneId,
                     state.MinionBattleExclusions,
-                    state.LastCompletedMovementWalk),
+                    state.LastCompletedMovementWalk,
+                    state.HeroBodySupplies),
                 map,
                 setup.Minions);
         }

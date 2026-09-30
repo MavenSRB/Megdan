@@ -188,10 +188,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             var materializedMinions = minions?.ToArray() ?? throw new ArgumentNullException(nameof(minions));
 
-            var actorOccupancies = board.Occupancies
-                .Where(occupancy => occupancy.HeroId.Equals(actorId))
-                .ToArray();
-            if (actorOccupancies.Length != 1)
+            // Milestone 9.21a: the acting body travels (RZ-Q4); a hero standing nowhere cannot.
+            if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var origin))
             {
                 return CardActionResolutionRejectionReason.ActorUnavailable;
             }
@@ -201,7 +199,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CardActionResolutionRejectionReason.FastTravelDestinationUnavailable;
             }
 
-            var origin = actorOccupancies[0].Coordinate;
             var originZone = ZoneFor(board.MapDefinition, origin);
             var destinationZone = ZoneFor(board.MapDefinition, destination);
             var relationship = board.MapDefinition.GetZoneRelationship(originZone, destinationZone);

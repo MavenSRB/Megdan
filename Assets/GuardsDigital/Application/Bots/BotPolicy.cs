@@ -537,7 +537,9 @@ namespace GuardsDigital.Application.Bots
 
             var bonus = (readModel.PendingAttackTargetDefensePreviews ??
                     Array.Empty<AttackTargetDefensePreviewProjection>())
-                .FirstOrDefault(value => value.HeroId.Equals(candidate.HeroId));
+                // Milestone 9.21a: the preview of the body the answer names (a hero-only answer has one).
+                .FirstOrDefault(value => value.HeroId.Equals(candidate.HeroId) &&
+                    (candidate.HeroBody == 0 || value.HeroBody == candidate.HeroBody));
             if (bonus?.MinionContributions != null)
             {
                 delta -= bonus.MinionContributions.Sum(value => value.Amount) * weights.MinionPressure;
@@ -1194,7 +1196,8 @@ namespace GuardsDigital.Application.Bots
                 {
                     var team = readModel.Participants.GetTeamForHero(command.HeroId);
                     var life = lifeByTeam.TryGetValue(team.Id, out var counters) ? counters : int.MaxValue;
-                    var preview = previews.FirstOrDefault(value => value.HeroId.Equals(command.HeroId));
+                    var preview = previews.FirstOrDefault(value => value.HeroId.Equals(command.HeroId) &&
+                        (command.HeroBody == 0 || value.HeroBody == command.HeroBody));
                     var defenseBonus = preview?.MinionContributions.Sum(value => value.Amount) ?? 0;
                     return (Command: command, Life: life, Bonus: defenseBonus);
                 })

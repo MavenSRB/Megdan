@@ -118,7 +118,7 @@ namespace GuardsDigital.Core.Rules.Progression
                             BeforeActionTriggerFrequency.EveryActionIncludingReactions) &&
                     ultimate.Rule.TriggeredEffect.HasValue &&
                     ultimate.OwnerId.Equals(offer.ActorId) &&
-                    board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
+                    board.IsHeroOnBoard(ultimate.OwnerId) &&
                     !consumedSourceIds.Contains(ultimate.Source.SourceId))
                 .Select(ultimate => new BeforeActionTriggerSource(
                     ultimate.Source.SourceId,
@@ -182,7 +182,7 @@ namespace GuardsDigital.Core.Rules.Progression
                         effect.ControllerHeroId.Equals(offer.ActorId)) ||
                         EnemyInLiveDisk(effect, timing, board, participants, offer.ActorId,
                             heroItems)) &&
-                    board.TryGetHeroCoordinate(effect.ControllerHeroId, out _) &&
+                    board.IsHeroOnBoard(effect.ControllerHeroId) &&
                     !consumedSourceIds.Contains(effect.Id.Value))
                 .OrderBy(effect => effect.CreationSequence)
                 .Select(effect => new BeforeActionTriggerSource(
@@ -218,7 +218,8 @@ namespace GuardsDigital.Core.Rules.Progression
                     BoardObjectReference.ForHero(actor), effect.ControllerHeroId,
                     participants, board))
                 return false;
-            if (!board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+            if (!board.TryGetSoleHeroCoordinate(
+                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
                 return false;
             if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var kind) &&
                 !board.TryGetObstacleCoordinate(
@@ -254,7 +255,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     ultimate.Rule.BeforeAction.Frequency ==
                         BeforeActionTriggerFrequency.EveryActionIncludingReactions &&
                     ultimate.Rule.TriggeredEffect.HasValue &&
-                    board.TryGetHeroCoordinate(defenderId, out _))
+                    board.IsHeroOnBoard(defenderId))
                 .Select(ultimate => new BeforeActionTriggerSource(
                     ultimate.Source.SourceId, ultimate.OwnerId,
                     ultimate.SourceCardInstanceId, ultimate.SourceDefinitionReference,

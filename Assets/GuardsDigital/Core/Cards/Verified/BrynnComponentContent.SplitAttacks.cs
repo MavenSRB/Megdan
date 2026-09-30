@@ -136,7 +136,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
                 // p.14 step 6 has removed the target, and the clause is about the moment it was
                 // chosen. Milestone 8.19a captured that space for exactly this.
-                return !spaces.TryGetHeroCoordinate(target, out _) &&
+                return !spaces.IsHeroOnBoard(target) &&
                     attack.TargetSpaceBeforeConsequences.HasValue &&
                     ObstacleAdjacencyQuery.IsAdjacentToThreeOrMoreObstacles(
                         spaces,

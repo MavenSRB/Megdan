@@ -50,15 +50,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
     public readonly struct AttackTarget : IEquatable<AttackTarget>
     {
-        private AttackTarget(AttackTargetKind kind, HeroId heroId, MinionId minionId)
+        private AttackTarget(AttackTargetKind kind, HeroId heroId, int heroBody, MinionId minionId)
         {
             Kind = kind;
             HeroId = heroId;
+            HeroBody = heroBody;
             MinionId = minionId;
         }
 
         public AttackTargetKind Kind { get; }
         public HeroId HeroId { get; }
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3). Which body of the target hero the Attack is aimed at: its space is
+        /// where p.14's minion modifiers and the Defense are measured from. 1 for every hero with one
+        /// body, and 0 for a minion target or no target. The Defeat it leads to is still the hero's and
+        /// removes every body.
+        /// </summary>
+        public int HeroBody { get; }
         public MinionId MinionId { get; }
         public bool IsDefined => Kind == AttackTargetKind.Hero ? HeroId.IsDefined :
             Kind == AttackTargetKind.Minion && MinionId.IsDefined;
@@ -66,23 +75,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static AttackTarget Hero(HeroId heroId)
         {
             if (!heroId.IsDefined) throw new ArgumentException("Attack hero target requires a defined ID.", nameof(heroId));
-            return new AttackTarget(AttackTargetKind.Hero, heroId, default);
+            return new AttackTarget(AttackTargetKind.Hero, heroId, HeroOccupancy.FirstBody, default);
+        }
+
+        /// <summary>Milestone 9.21a. An Attack aimed at one named body of a hero.</summary>
+        public static AttackTarget HeroBodyOf(HeroId heroId, int body)
+        {
+            if (!heroId.IsDefined) throw new ArgumentException("Attack hero target requires a defined ID.", nameof(heroId));
+            if (body < HeroOccupancy.FirstBody) throw new ArgumentOutOfRangeException(nameof(body), body, "A hero body ordinal starts at 1.");
+            return new AttackTarget(AttackTargetKind.Hero, heroId, body, default);
         }
 
         public static AttackTarget Minion(MinionId minionId)
         {
             if (!minionId.IsDefined) throw new ArgumentException("Attack minion target requires a defined ID.", nameof(minionId));
-            return new AttackTarget(AttackTargetKind.Minion, default, minionId);
+            return new AttackTarget(AttackTargetKind.Minion, default, 0, minionId);
         }
 
-        public bool Equals(AttackTarget other) =>
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q2). Whether the two name the same UNIT, whichever body of a hero each
+        /// names: a repeat that "cannot target the same unit" or "on a different target" counts a
+        /// many-bodied hero once, so its exclusions are compared at this grain rather than by body.
+        /// </summary>
+        public bool IsSameUnit(AttackTarget other) =>
             Kind == other.Kind && HeroId.Equals(other.HeroId) && MinionId.Equals(other.MinionId);
+
+        public bool Equals(AttackTarget other) =>
+            Kind == other.Kind && HeroId.Equals(other.HeroId) && HeroBody == other.HeroBody &&
+            MinionId.Equals(other.MinionId);
 
         public override bool Equals(object obj) => obj is AttackTarget other && Equals(other);
 
         public override int GetHashCode()
         {
-            unchecked { return (((int)Kind * 397) ^ HeroId.GetHashCode()) * 397 ^ MinionId.GetHashCode(); }
+            unchecked { return ((((int)Kind * 397) ^ HeroId.GetHashCode()) * 397 ^ HeroBody) * 397 ^ MinionId.GetHashCode(); }
         }
     }
 
@@ -378,9 +404,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ChoiceId = choiceId;
             ChooserId = chooserId;
             LegalTargets = Array.AsReadOnly(targets);
+            // Milestone 9.21a: each hero once, however many of its bodies are legal targets.
             LegalTargetHeroIds = Array.AsReadOnly(targets
                 .Where(target => target.Kind == AttackTargetKind.Hero)
-                .Select(target => target.HeroId).ToArray());
+                .Select(target => target.HeroId).Distinct().ToArray());
             LegalTargetMinionIds = Array.AsReadOnly(targets
                 .Where(target => target.Kind == AttackTargetKind.Minion)
                 .Select(target => target.MinionId).ToArray());

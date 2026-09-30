@@ -36,6 +36,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             AdjacentMoveAuthority board,
             RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            Calculate(defenseOffer, definitions, defenderId, OnlyBody, participants, board,
+                modifications, heroItems);
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3, RZ-Q4). The same value for the named DEFENDING body: the Attack
+        /// targeted one body, so p.14's minion modifiers are measured from that body's space.
+        /// </summary>
+        public static ValueResult Calculate(
+            ActionOffer defenseOffer,
+            IEnumerable<CardDefinition> definitions,
+            HeroId defenderId,
+            int defenderBody,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
         {
             if (!defenderId.IsDefined)
@@ -80,7 +96,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (action.MinionDefenseContributions == MinionDefenseContributionPolicy.IncludeAll)
             {
-                contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
+                contributions.AddRange(CalculateMinionContributions(
+                    defenderId, defenderBody, participants, board));
             }
 
             // Milestone 8.35z28. p.14's printed `+` on a Defense value, which that page illustrates on
@@ -115,6 +132,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
             HeroId defenderId,
             MatchParticipants participants,
+            AdjacentMoveAuthority board) =>
+            CalculateMinionContributions(defenderId, OnlyBody, participants, board);
+
+        /// <summary>
+        /// Milestone 9.21a. The body a caller that names only the hero means: the hero's only body.
+        /// Such a caller is refused for a hero standing on several spaces rather than handed one of
+        /// them, because which body was attacked is exactly what it did not say.
+        /// </summary>
+        private const int OnlyBody = 0;
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3). p.14's minion modifiers measured from the attacked BODY's space.
+        /// </summary>
+        public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
+            HeroId defenderId,
+            int defenderBody,
+            MatchParticipants participants,
             AdjacentMoveAuthority board)
         {
             if (!defenderId.IsDefined)
@@ -133,11 +167,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var defenderOccupancies = board.Occupancies
-                .Where(occupancy => occupancy.HeroId.Equals(defenderId))
+                .Where(occupancy => occupancy.HeroId.Equals(defenderId) &&
+                    (defenderBody == OnlyBody || occupancy.Body == defenderBody))
                 .ToArray();
             if (defenderOccupancies.Length != 1)
             {
-                throw new ArgumentException("Defense value query requires the defender to occupy exactly one space.", nameof(defenderId));
+                throw new ArgumentException(
+                    defenderBody == OnlyBody
+                        ? "Defense value query requires the defender to occupy exactly one space, or the " +
+                          "defending body to be named (milestone 9.21a)."
+                        : $"Defense value query requires body {defenderBody} of the defender to be on the board.",
+                    nameof(defenderId));
             }
 
             var defenderTeam = participants.GetTeamForHero(defenderId).Side;

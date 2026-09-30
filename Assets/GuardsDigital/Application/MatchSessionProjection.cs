@@ -210,7 +210,24 @@ namespace GuardsDigital.Application
         public AttackTargetDefensePreviewProjection(
             HeroId heroId,
             IEnumerable<ValueContributionProjection> minionContributions)
+            : this(heroId, HeroOccupancy.FirstBody, minionContributions)
         {
+        }
+
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q3). The preview for one BODY of the hero: an Attack targets a body, and
+        /// p.14's minion modifiers are measured from that body's space.
+        /// </summary>
+        public AttackTargetDefensePreviewProjection(
+            HeroId heroId,
+            int heroBody,
+            IEnumerable<ValueContributionProjection> minionContributions)
+        {
+            if (heroBody < HeroOccupancy.FirstBody)
+            {
+                throw new ArgumentOutOfRangeException(nameof(heroBody), heroBody, "A hero body ordinal starts at 1.");
+            }
+
             if (!heroId.IsDefined)
             {
                 throw new ArgumentException("An Attack-target Defense preview requires a hero.", nameof(heroId));
@@ -231,11 +248,59 @@ namespace GuardsDigital.Application
             }
 
             HeroId = heroId;
+            HeroBody = heroBody;
             MinionContributions = Array.AsReadOnly(contributions);
         }
 
         public HeroId HeroId { get; }
+
+        /// <summary>Milestone 9.21a. Which body of the hero this preview is measured from.</summary>
+        public int HeroBody { get; }
         public IReadOnlyList<ValueContributionProjection> MinionContributions { get; }
+
+        /// <summary>
+        /// Milestone 9.21a. The (hero, body) pairs a projection previews, in order: every legal hero
+        /// body of an ordinary Attack choice, then every hero a typed Attack-intent effect choice may
+        /// select, as the body standing on the candidate's space. The session builds its previews from
+        /// this list and the projection checks them against it, so the two cannot disagree.
+        /// </summary>
+        public static IReadOnlyList<KeyValuePair<HeroId, int>> ExpectedKeys(
+            PendingAttackTargetChoice attackChoice,
+            GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice effectChoice,
+            IEnumerable<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview> effectChoicePreviews,
+            IEnumerable<HeroOccupancy> heroes)
+        {
+            var bodies = (heroes ?? Enumerable.Empty<HeroOccupancy>()).ToArray();
+            var keys = new List<KeyValuePair<HeroId, int>>();
+            if (attackChoice != null)
+            {
+                keys.AddRange(attackChoice.LegalTargets
+                    .Where(target => target.Kind == AttackTargetKind.Hero)
+                    .Select(target => new KeyValuePair<HeroId, int>(target.HeroId, target.HeroBody)));
+            }
+
+            if (effectChoice != null)
+            {
+                keys.AddRange((effectChoicePreviews ??
+                        Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
+                    .Where(preview =>
+                        preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack &&
+                        preview.Occupant.Kind == BoardObjectKind.Hero &&
+                        effectChoice.SelectInvocations.Any(invocation =>
+                            invocation.Candidate.Equals(
+                                EffectChoiceCandidate.Value_(preview.CandidateValue))))
+                    .Select(preview => new KeyValuePair<HeroId, int>(
+                        preview.Occupant.HeroId,
+                        bodies
+                            .Where(body => body.HeroId.Equals(preview.Occupant.HeroId) &&
+                                body.Coordinate.Equals(preview.Coordinate))
+                            .Select(body => body.Body)
+                            .DefaultIfEmpty(HeroOccupancy.FirstBody)
+                            .First())));
+            }
+
+            return Array.AsReadOnly(keys.Distinct().ToArray());
+        }
     }
 
     public sealed class FastTravelOptionProjection
@@ -630,9 +695,18 @@ namespace GuardsDigital.Application
             {
                 standing.Add(new PendingDecisionContract(
                     PendingDecisionFamilies.AttackTarget,
-                    attackTarget.LegalTargetHeroIds.Select(heroId =>
-                            DirectorCommand.ChooseAttackTarget(
-                                attackTarget.ResolutionId, attackTarget.ChoiceId, heroId))
+                    // Milestone 9.21a. One answer per legal BODY; a hero with one legal body is answered
+                    // by its id alone, exactly as before, and a body is named only where it must be.
+                    attackTarget.LegalTargets
+                        .Where(target => target.Kind == AttackTargetKind.Hero)
+                        .Select(target =>
+                            attackTarget.LegalTargets.Count(other =>
+                                    other.Kind == AttackTargetKind.Hero && other.HeroId.Equals(target.HeroId)) > 1
+                                ? DirectorCommand.ChooseAttackTarget(
+                                    attackTarget.ResolutionId, attackTarget.ChoiceId,
+                                    target.HeroId, target.HeroBody)
+                                : DirectorCommand.ChooseAttackTarget(
+                                    attackTarget.ResolutionId, attackTarget.ChoiceId, target.HeroId))
                         .Concat(attackTarget.LegalTargetMinionIds.Select(minionId =>
                             DirectorCommand.ChooseAttackTarget(
                                 attackTarget.ResolutionId, attackTarget.ChoiceId, minionId)))));
@@ -996,26 +1070,16 @@ namespace GuardsDigital.Application
                 .ToArray());
             var attackTargetDefensePreviews = (pendingAttackTargetDefensePreviews ??
                 Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray();
-            var expectedAttackTargetPreviewHeroIds = (PendingAttackTargetChoice == null
-                    ? Enumerable.Empty<HeroId>()
-                    : PendingAttackTargetChoice.LegalTargetHeroIds)
-                .Concat(PendingEffectChoice == null
-                    ? Enumerable.Empty<HeroId>()
-                    : PendingEffectChoicePreview
-                        .Where(preview =>
-                            preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack &&
-                            preview.Occupant.Kind == BoardObjectKind.Hero &&
-                            PendingEffectChoice.SelectInvocations.Any(invocation =>
-                                invocation.Candidate.Equals(
-                                    EffectChoiceCandidate.Value_(preview.CandidateValue))))
-                        .Select(preview => preview.Occupant.HeroId))
-                .Distinct()
-                .ToArray();
+            // Milestone 9.21a: keyed by (hero, body), from the one derivation the session builds from.
+            var expectedAttackTargetPreviewKeys = AttackTargetDefensePreviewProjection.ExpectedKeys(
+                PendingAttackTargetChoice,
+                PendingEffectChoice,
+                PendingEffectChoicePreview,
+                Heroes);
             if (attackTargetDefensePreviews.Any(value => value == null) ||
-                attackTargetDefensePreviews.Select(value => value.HeroId).Distinct().Count() !=
-                    attackTargetDefensePreviews.Length ||
-                !attackTargetDefensePreviews.Select(value => value.HeroId).SequenceEqual(
-                    expectedAttackTargetPreviewHeroIds))
+                !attackTargetDefensePreviews
+                    .Select(value => new KeyValuePair<HeroId, int>(value.HeroId, value.HeroBody))
+                    .SequenceEqual(expectedAttackTargetPreviewKeys))
             {
                 throw new ArgumentException(
                     "Attack-target Defense previews must match the ordered legal hero targets " +

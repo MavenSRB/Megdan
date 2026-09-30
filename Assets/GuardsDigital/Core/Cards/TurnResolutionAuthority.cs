@@ -3222,7 +3222,7 @@ namespace GuardsDigital.Core.Cards
             // still be one accepted, replayable turn transition. Falling through to the held
             // Attack/Movement would reject for an absent actor and roll the defeat back.
             if (cardActions.PendingPreActionResolution?.Frame == null &&
-                !cardActions.Board.TryGetHeroCoordinate(offer.ActorId, out _))
+                !cardActions.Board.IsHeroOnBoard(offer.ActorId))
             {
                 cardActions.ClearPreActionContinuation();
                 return CompleteDefeatedBeforeAction(offer, events);
@@ -4130,7 +4130,9 @@ namespace GuardsDigital.Core.Cards
                     "A configured pre-Defense active effect could not start.");
             events.AddRange(MaterializeSteps(
                 started.Steps, TurnResolutionEvent.FromTriggeredEffect));
-            if (!cardActions.Board.TryGetHeroCoordinate(attack.TargetHeroId, out _))
+            // Milestone 9.21a: whether the attacked BODY still stands (RZ-Q3).
+            if (!cardActions.Board.TryGetHeroBodyCoordinate(
+                    attack.TargetHeroId, attack.Target.HeroBody, out _))
             {
                 var ended = cardActions.FinishAfterDefenderRemovedBeforeDefense();
                 events.AddRange(MaterializeSteps(

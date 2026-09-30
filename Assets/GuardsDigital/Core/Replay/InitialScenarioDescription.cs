@@ -17,6 +17,7 @@ namespace GuardsDigital.Core.Replay
         private readonly IReadOnlyList<CardInstance> initialCards;
         private readonly IReadOnlyList<HeroOccupancy> initialHeroes;
         private readonly IReadOnlyList<ObstacleOccupancy> initialObstacles;
+        private readonly IReadOnlyList<HeroBodySupply> heroBodySupplies;
 
         /// <summary>
         /// A scenario whose Tie Breaker side was explicitly selected rather than flipped, so there is
@@ -30,7 +31,8 @@ namespace GuardsDigital.Core.Replay
             TieBreakerState initialTieBreakerState,
             MapDefinitionReference selectedMap,
             IEnumerable<HeroOccupancy> initialHeroes,
-            IEnumerable<ObstacleOccupancy> initialObstacles)
+            IEnumerable<ObstacleOccupancy> initialObstacles,
+            IEnumerable<HeroBodySupply> heroBodySupplies = null)
             : this(
                 participants,
                 definitions,
@@ -39,7 +41,8 @@ namespace GuardsDigital.Core.Replay
                 SetupRandomnessSeed.Unrecorded,
                 selectedMap,
                 initialHeroes,
-                initialObstacles)
+                initialObstacles,
+                heroBodySupplies)
         {
         }
 
@@ -51,7 +54,8 @@ namespace GuardsDigital.Core.Replay
             SetupRandomnessSeed setupSeed,
             MapDefinitionReference selectedMap,
             IEnumerable<HeroOccupancy> initialHeroes,
-            IEnumerable<ObstacleOccupancy> initialObstacles)
+            IEnumerable<ObstacleOccupancy> initialObstacles,
+            IEnumerable<HeroBodySupply> heroBodySupplies = null)
         {
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             this.definitions = Array.AsReadOnly(
@@ -76,6 +80,11 @@ namespace GuardsDigital.Core.Replay
                 (initialHeroes ?? throw new ArgumentNullException(nameof(initialHeroes))).ToArray());
             this.initialObstacles = Array.AsReadOnly(
                 (initialObstacles ?? throw new ArgumentNullException(nameof(initialObstacles))).ToArray());
+            // Milestone 9.21a. The heroes that begin the scenario on several bodies, with their supply.
+            // No configured match declares any; a staged scenario that does is what lets a many-bodied
+            // board be restarted, rewound and replayed exactly as it began.
+            this.heroBodySupplies = Array.AsReadOnly(
+                (heroBodySupplies ?? Enumerable.Empty<HeroBodySupply>()).ToArray());
         }
 
         public MatchParticipants Participants { get; }
@@ -92,6 +101,7 @@ namespace GuardsDigital.Core.Replay
         public IReadOnlyList<CardInstance> InitialCards => initialCards.Select(CloneCard).ToArray();
         public IReadOnlyList<HeroOccupancy> InitialHeroes => initialHeroes;
         public IReadOnlyList<ObstacleOccupancy> InitialObstacles => initialObstacles;
+        public IReadOnlyList<HeroBodySupply> HeroBodySupplies => heroBodySupplies;
 
         public MatchConfiguration CreateConfiguration()
         {
@@ -122,7 +132,8 @@ namespace GuardsDigital.Core.Replay
                     $"Initial scenario map {SelectedMap.MapId.Value} revision {SelectedMap.ContentRevision} is unavailable or ambiguous.");
             }
 
-            return new AdjacentMoveAuthority(matches[0], initialHeroes, initialObstacles, minions);
+            return new AdjacentMoveAuthority(
+                matches[0], initialHeroes, initialObstacles, minions, heroBodySupplies);
         }
 
         private static CardInstance CloneCard(CardInstance card)

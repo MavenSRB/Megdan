@@ -38,7 +38,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     Applies(
                         ultimate.Rule.TriggerCondition,
                         basicAction, primaryAction, movementAction, attackAction, cardResolution) &&
-                    board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
+                    board.IsHeroOnBoard(ultimate.OwnerId) &&
                     ultimate.OwnerId.Equals(
                         ActorOf(
                             ultimate.Rule.TriggerCondition,

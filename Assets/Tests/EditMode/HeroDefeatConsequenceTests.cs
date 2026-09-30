@@ -103,8 +103,8 @@ namespace GuardsDigital.Tests.EditMode
             var defeat = fixture.DefeatTheDefender();
 
             Assert.That(defeat.RemovalResult.Kind, Is.EqualTo(DefeatRemovalResultKind.Removed));
-            Assert.That(defeat.RemovedHero.HasValue, Is.True);
-            Assert.That(defeat.RemovedHero.Value.HeroId, Is.EqualTo(fixture.DefenderId));
+            Assert.That(defeat.RemovedBodies.Count, Is.EqualTo(1));
+            Assert.That(defeat.RemovedBodies.Single().HeroId, Is.EqualTo(fixture.DefenderId));
             Assert.That(
                 fixture.Board.Occupancies.Any(occupancy => occupancy.HeroId.Equals(fixture.DefenderId)),
                 Is.False,

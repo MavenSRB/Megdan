@@ -136,7 +136,8 @@ namespace GuardsDigital.Core.Rules.Consequences
             int bonusPerItem)
         {
             if (!effect.ControllerHeroId.IsDefined ||
-                !board.TryGetHeroCoordinate(effect.ControllerHeroId, out var controllerAt))
+                !board.TryGetSoleHeroCoordinate(
+                    effect.ControllerHeroId, "the anchor of a Defeat-bounty promise", out var controllerAt))
             {
                 // p.16 ends an Ultimate's ability while its hero is off the board and p.17 says the
                 // same of an Active effect's controller; a promise whose maker is not standing

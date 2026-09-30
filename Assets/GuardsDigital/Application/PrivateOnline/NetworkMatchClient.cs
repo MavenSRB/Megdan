@@ -497,7 +497,7 @@ namespace GuardsDigital.Application
 
         public IReadOnlyList<HeroOccupancy> Heroes => wire == null ? trusted.Heroes :
             Array.AsReadOnly(wire.Heroes.Select(row =>
-                new HeroOccupancy(new HeroId(row.HeroId), new HexCoordinate(row.Q, row.R))).ToArray());
+                new HeroOccupancy(new HeroId(row.HeroId), row.Body, new HexCoordinate(row.Q, row.R))).ToArray());
 
         public IReadOnlyList<MinionOccupancy> Minions => wire == null ? trusted.Minions :
             Array.AsReadOnly(wire.Minions.Select(row =>
@@ -682,7 +682,7 @@ namespace GuardsDigital.Application
             Detail == null ? Array.Empty<AttackTargetDefensePreviewProjection>() :
             Array.AsReadOnly(Detail.PendingAttackTargetDefensePreviews.Select(row =>
                 new AttackTargetDefensePreviewProjection(
-                    new HeroId(row.HeroId), row.MinionContributions.Select(ToContribution))).ToArray());
+                    new HeroId(row.HeroId), row.HeroBody, row.MinionContributions.Select(ToContribution))).ToArray());
         public PendingDefenseResponseChoice PendingDefenseChoice
         {
             get
@@ -1158,7 +1158,7 @@ namespace GuardsDigital.Application
 
         private static AttackTarget ToAttackTarget(NetworkAttackTargetRow row) =>
             (AttackTargetKind)row.Kind == AttackTargetKind.Hero
-                ? AttackTarget.Hero(new HeroId(row.HeroId))
+                ? AttackTarget.HeroBodyOf(new HeroId(row.HeroId), row.HeroBody)
                 : AttackTarget.Minion(new MinionId(row.MinionId));
 
         private static ActionOffer ToOffer(NetworkActionOfferRow row)

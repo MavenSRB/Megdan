@@ -596,7 +596,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(25),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(26),
                 "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
                 + "row gained the attacking card's instance id, its definition id and that "
                 + "definition's content revision, and the action definition id, all written "
@@ -656,7 +656,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(EffectInterruptKind.AfterMoveThroughTrapTrigger));
             }
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(48),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(49),
                 "A fourth reason an effect frame can be standing costs no schema version: the " +
                 "card-action payload has written the kind as an int since milestone 8.19c1." +
                 "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +

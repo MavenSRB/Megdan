@@ -275,6 +275,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Where(occupancy =>
                     context.Participants.GetTeamForHero(occupancy.HeroId).Side == actorSide)
                 .Select(occupancy => occupancy.HeroId)
+                .Distinct()
                 .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
                 .ToArray();
         }

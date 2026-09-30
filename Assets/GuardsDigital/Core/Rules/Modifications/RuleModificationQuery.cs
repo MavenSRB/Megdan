@@ -144,7 +144,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             {
                 if (effect.Phase != ActiveEffectPhase.Active ||
                     effect.Definition.ObstacleOverlays.Count == 0 ||
-                    !board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+                    !board.TryGetSoleHeroCoordinate(
+                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
                 {
                     continue;
                 }
@@ -326,7 +327,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     "cannot be decided without the board they are standing on.");
             }
 
-            if (!board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+            if (!board.TryGetSoleHeroCoordinate(
+                        effect.ControllerHeroId, "the anchor of an Active effect's radius", out var anchor))
             {
                 yield break;
             }
@@ -361,13 +363,16 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             if (admitsHeroes)
             {
+                // Milestone 9.21a (RZ-Q2): a hero is affected once, whichever of its bodies stand inside.
+                var affectedHeroes = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>();
                 foreach (var occupancy in board.Occupancies)
                 {
                     var hero = BoardObjectReference.ForHero(occupancy.HeroId);
                     if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
                         RadiusQuery.Contains(anchor, radius, occupancy.Coordinate) &&
                         TargetQuery.StandsInRelationTo(
-                            relation, hero, effect.ControllerHeroId, participants, board))
+                            relation, hero, effect.ControllerHeroId, participants, board) &&
+                        affectedHeroes.Add(occupancy.HeroId))
                     {
                         yield return RuleObject.ForHero(occupancy.HeroId);
                     }
@@ -510,7 +515,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return 0;
             }
 
-            var count = 0;
+            // Milestone 9.21a (RZ-Q2): a hero adjacent by several bodies is counted once.
+            var counted = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>();
             foreach (var occupancy in board.Occupancies)
             {
                 var hero = BoardObjectReference.ForHero(occupancy.HeroId);
@@ -520,9 +526,11 @@ namespace GuardsDigital.Core.Rules.Modifications
                         SourceTeamRelation.OpposingSource, hero, sourceControllerHeroId, participants,
                         board))
                 {
-                    count++;
+                    counted.Add(occupancy.HeroId);
                 }
             }
+
+            var count = counted.Count;
 
             foreach (var minion in board.Minions)
             {
@@ -640,6 +648,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             MatchParticipants participants,
             TeamSide controllerSide)
         {
+            // Milestone 9.21a (RZ-Q2): a hero beside the token by several bodies is affected once.
+            var affectedByToken = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>();
             switch (scope)
             {
                 case TokenPropertyAffectedObject.Controller:
@@ -654,7 +664,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     foreach (var occupancy in board.Occupancies)
                     {
                         if (HexDistanceQuery.Calculate(token.Coordinate, occupancy.Coordinate) == 1 &&
-                            participants.GetTeamForHero(occupancy.HeroId).Side != controllerSide)
+                            participants.GetTeamForHero(occupancy.HeroId).Side != controllerSide &&
+                            affectedByToken.Add(occupancy.HeroId))
                         {
                             yield return RuleObject.ForHero(occupancy.HeroId);
                         }
@@ -666,7 +677,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     foreach (var occupancy in board.Occupancies)
                     {
                         if (HexDistanceQuery.Calculate(token.Coordinate, occupancy.Coordinate) == 1 &&
-                            participants.GetTeamForHero(occupancy.HeroId).Side == controllerSide)
+                            participants.GetTeamForHero(occupancy.HeroId).Side == controllerSide &&
+                            affectedByToken.Add(occupancy.HeroId))
                         {
                             yield return RuleObject.ForHero(occupancy.HeroId);
                         }
@@ -795,7 +807,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             for (var index = 0; index < ultimates.Ultimates.Count; index++)
             {
                 var ultimate = ultimates.Ultimates[index];
-                if (!board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
+                if (!board.IsHeroOnBoard(ultimate.OwnerId))
                 {
                     continue;
                 }

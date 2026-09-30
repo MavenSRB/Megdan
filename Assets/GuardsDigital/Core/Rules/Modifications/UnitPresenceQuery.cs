@@ -50,7 +50,9 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             var heroes = board.Occupancies
                 .Where(occupancy => HexDistanceQuery.Calculate(origin, occupancy.Coordinate) <= distance)
-                .Select(occupancy => RuleObject.ForHero(occupancy.HeroId));
+                .Select(occupancy => RuleObject.ForHero(occupancy.HeroId))
+                // Milestone 9.21a (RZ-Q2): presence is read per body, and a hero is one unit.
+                .Distinct();
             var minions = board.Minions
                 .Where(minion => HexDistanceQuery.Calculate(origin, minion.Coordinate) <= distance)
                 .Select(minion => RuleObject.ForMinion(minion.MinionId));
@@ -102,7 +104,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .Where(occupancy =>
                     playableByCoordinate.TryGetValue(occupancy.Coordinate, out var spaceId) &&
                     board.MapDefinition.GetZoneForSpace(spaceId).Id.Equals(zoneId))
-                .Select(occupancy => RuleObject.ForHero(occupancy.HeroId));
+                .Select(occupancy => RuleObject.ForHero(occupancy.HeroId))
+                // Milestone 9.21a (RZ-Q2): presence is read per body, and a hero is one unit.
+                .Distinct();
             var minions = board.Minions
                 .Where(minion =>
                     board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(zoneId))

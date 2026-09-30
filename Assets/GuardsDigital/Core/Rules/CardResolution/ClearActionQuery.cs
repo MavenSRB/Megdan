@@ -97,7 +97,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return CardActionResolutionRejectionReason.UnavailableOffer;
             }
 
-            if (!board.TryGetHeroCoordinate(replacementOffer.ActorId, out _))
+            if (!board.IsHeroOnBoard(replacementOffer.ActorId))
             {
                 return CardActionResolutionRejectionReason.ActorUnavailable;
             }

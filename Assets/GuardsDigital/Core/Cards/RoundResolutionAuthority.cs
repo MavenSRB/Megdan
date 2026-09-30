@@ -1777,6 +1777,19 @@ namespace GuardsDigital.Core.Cards
             return RoundResolutionResult.Accept(events);
         }
 
+        /// <summary>
+        /// Milestone 9.21a (RZ-Q2). Whether a hero that counts as a minion stands in the Battle Zone:
+        /// presence is read per body, so a hero any of whose bodies stands there is in it, and it is
+        /// one unit of the battle however many of its bodies do.
+        /// </summary>
+        private bool HeroStandsInCurrentBattleZone(HeroId heroId) =>
+            board.GetHeroBodies(heroId).Any(body =>
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                    board,
+                    board.MapDefinition.Spaces.Single(candidate =>
+                        candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
+                        candidate.Coordinate.Equals(body.Coordinate)).Id));
+
         private BattleRemovalCandidate? ResolveBattleCandidate(
             GuardsDigital.Core.Rules.Modifications.RuleObject unit,
             GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications,
@@ -1791,13 +1804,9 @@ namespace GuardsDigital.Core.Cards
             if (suppliedStrength == GuardsDigital.Core.Rules.Consequences.MinionBattleStrength.HeavyMinion &&
                 GuardsDigital.Core.Rules.Modifications.IntrinsicKindQuery.Of(unit) ==
                     GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Hero &&
-                board.TryGetHeroCoordinate(unit.HeroId, out var suppliedAt))
+                board.IsHeroOnBoard(unit.HeroId))
             {
-                var suppliedSpace = board.MapDefinition.Spaces.Single(candidate =>
-                    candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
-                    candidate.Coordinate.Equals(suppliedAt));
-                return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
-                        board, suppliedSpace.Id)
+                return HeroStandsInCurrentBattleZone(unit.HeroId)
                     ? new BattleRemovalCandidate(
                         unit, participants.GetTeamForHero(unit.HeroId).Side, true)
                     : (BattleRemovalCandidate?)null;
@@ -1823,16 +1832,12 @@ namespace GuardsDigital.Core.Cards
 
             if (GuardsDigital.Core.Rules.Modifications.IntrinsicKindQuery.Of(unit) !=
                     GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Hero ||
-                !board.TryGetHeroCoordinate(unit.HeroId, out var coordinate))
+                !board.IsHeroOnBoard(unit.HeroId))
             {
                 return null;
             }
 
-            var space = board.MapDefinition.Spaces.Single(candidate =>
-                candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
-                candidate.Coordinate.Equals(coordinate));
-            return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
-                    board, space.Id)
+            return HeroStandsInCurrentBattleZone(unit.HeroId)
                 ? new BattleRemovalCandidate(
                     unit, participants.GetTeamForHero(unit.HeroId).Side, false)
                 : (BattleRemovalCandidate?)null;

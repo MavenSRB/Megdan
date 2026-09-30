@@ -404,11 +404,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 !Enum.IsDefined(typeof(SourceTeamRelation), relation))
                 throw new ArgumentException("A presence query requires a team relation.", nameof(relation));
 
+            // Milestone 9.21a (RZ-Q2): each hero BODY is measured from its own space, and a hero within
+            // reach by several bodies is one unit present.
             var units = board.Occupancies
+                .Where(value => HexDistanceQuery.Calculate(origin, value.Coordinate) <= distance)
                 .Select(value => BoardObjectReference.ForHero(value.HeroId))
-                .Concat(board.Minions.Select(value => BoardObjectReference.ForMinion(value.MinionId)))
-                .Where(value => board.TryGetObjectCoordinate(value, out var at) &&
-                    HexDistanceQuery.Calculate(origin, at) <= distance)
+                .Distinct()
+                .Concat(board.Minions
+                    .Where(value => HexDistanceQuery.Calculate(origin, value.Coordinate) <= distance)
+                    .Select(value => BoardObjectReference.ForMinion(value.MinionId)))
                 .Where(value => AdmitsKind(value, unitKind, modifications))
                 .Where(value => TargetQuery.StandsInRelationTo(
                     relation, value, sourceHero, participants, board))

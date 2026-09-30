@@ -42,7 +42,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<PlacedToken> placedTokens,
             ZoneId? currentBattleZoneId,
             IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
-            CompletedMovementWalk lastCompletedMovementWalk)
+            CompletedMovementWalk lastCompletedMovementWalk,
+            IEnumerable<HeroBodySupply> heroBodySupplies)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
@@ -54,12 +55,18 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(minionBattleExclusions))).Distinct().ToArray();
             LastCompletedMovementWalk = lastCompletedMovementWalk;
             HeroOccupancies = heroOccupancies.ToArray();
+            HeroBodySupplies = (heroBodySupplies ??
+                throw new ArgumentNullException(nameof(heroBodySupplies))).ToArray();
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
             PlacedTokens = placedTokens.ToArray();
 
-            if (HeroOccupancies.Select(value => value.HeroId).Distinct().Count() != HeroOccupancies.Count)
+            // Milestone 9.21a: unique by hero AND body. Whether a hero may have a second body at all is
+            // the board's own rule, asked again by the constructor the restore builds.
+            if (HeroOccupancies.Select(value => (value.HeroId, value.Body)).Distinct().Count() != HeroOccupancies.Count)
                 throw new ArgumentException("Restored hero occupancies must have unique hero IDs.", nameof(heroOccupancies));
+            if (HeroBodySupplies.Select(value => value.HeroId).Distinct().Count() != HeroBodySupplies.Count)
+                throw new ArgumentException("Restored hero body supplies must name each hero once.", nameof(heroBodySupplies));
             if (ObstacleOccupancies.Select(value => value.ObstacleId).Distinct().Count() != ObstacleOccupancies.Count)
                 throw new ArgumentException("Restored obstacle occupancies must have unique obstacle IDs.", nameof(obstacleOccupancies));
             if (RemainingMinions.Select(value => value.MinionId).Distinct().Count() != RemainingMinions.Count)
@@ -93,6 +100,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// <summary>Milestone 8.114b1, schema v47. The last completed Movement action walk, or null.</summary>
         public CompletedMovementWalk LastCompletedMovementWalk { get; }
 
+        /// <summary>Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1).</summary>
+        public IReadOnlyList<HeroBodySupply> HeroBodySupplies { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
@@ -100,7 +110,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             out IReadOnlyList<PlacedToken> placedTokens,
             out ZoneId? currentBattleZoneId,
             out IReadOnlyList<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
-            out CompletedMovementWalk lastCompletedMovementWalk)
+            out CompletedMovementWalk lastCompletedMovementWalk,
+            out IReadOnlyList<HeroBodySupply> heroBodySupplies)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
@@ -109,6 +120,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             currentBattleZoneId = CurrentBattleZoneId;
             minionBattleExclusions = MinionBattleExclusions;
             lastCompletedMovementWalk = LastCompletedMovementWalk;
+            heroBodySupplies = HeroBodySupplies;
         }
     }
 }

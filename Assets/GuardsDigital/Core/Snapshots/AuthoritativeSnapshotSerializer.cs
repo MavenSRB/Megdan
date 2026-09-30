@@ -400,7 +400,12 @@ namespace GuardsDigital.Core.Snapshots
         // same text still owes behind it (Wuk's Angry Stampede naming two minions, the first guarded).
         // v47 lacks the list and is rejected: a v47 payload taken on that question would restore a
         // match that never defeats the second minion.
-        public const int CurrentSchemaVersion = 48;
+        // v49 (milestone 9.21a): a hero may stand on several spaces as one hero (Razzle, RZ-Q1-RZ-Q3).
+        // Each hero occupancy row carries its body ordinal, written in (hero, body) order, and the board
+        // carries the heroes that declare more than one body with their supply. v48 lacks both and is
+        // rejected: a v48 reader would take the body ordinal for the coordinate, and a v48 payload
+        // cannot say that a second occupancy of one hero is a second body rather than a duplicate.
+        public const int CurrentSchemaVersion = 49;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
