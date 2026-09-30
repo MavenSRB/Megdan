@@ -236,6 +236,10 @@ namespace GuardsDigital.Tests.EditMode
             // `MortimerCardContent` exists, dealt or not. Awaken! is a Skill of token placements and
             // binds no Attack target, so he adds no at-risk gate yet.
             foreach (var card in MortimerCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("mortimer", d);
+            // Milestone 9.21d. The twenty-eighth hero's line, owed as his content class exists. Stunt
+            // Doubles' spawn is three optional body placements after the Attack and binds no Attack
+            // target, so it adds no at-risk gate. 9.21j swaps the block list for the aggregate.
+            foreach (var card in RazzleCardContent.DoublesDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Components
@@ -183,5 +184,23 @@ namespace GuardsDigital.Core.Components
         /// Spawn point taken between derivation and commit is a real race an effect must report.
         /// </summary>
         UnitSpawnCommitResult CommitValidatedUnitSpawn(MinionId minionId);
+
+        /// <summary>
+        /// Milestone 9.21d. The bodies of a hero that are not on the board, in body order - the supply
+        /// p.19's Spawn takes a body from ("must be taken from the supply and cannot be taken from the
+        /// board"; RZ-Q1: the declared supply, with no reclaim). Derived on every call from the
+        /// declared supply and the bodies standing, never stored, for the reason
+        /// <see cref="FindUnitSupply"/> is. Empty for a hero that declares one body.
+        /// </summary>
+        IReadOnlyList<int> FindHeroBodySupply(HeroId heroId);
+
+        /// <summary>
+        /// Milestone 9.21d. Puts the lowest body of <see cref="FindHeroBodySupply"/> onto an empty
+        /// playable space, as one more body of a hero already standing on the board. Refused (false)
+        /// when the hero has no body standing - off the board he returns only by p.7's respawn, as one
+        /// body - when no body is left in the supply, or when the space is not empty: a space taken
+        /// between derivation and commit is a real race the effect must report.
+        /// </summary>
+        bool CommitValidatedHeroBodySpawn(HeroId heroId, HexCoordinate destination, out HeroOccupancy spawned);
     }
 }

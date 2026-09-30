@@ -1864,5 +1864,45 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             minions.Add(spawned);
             return UnitSpawnCommitResult.Accept(spawned, destination, clearedToken);
         }
+
+        /// <summary>
+        /// Milestone 9.21d. The declared bodies not standing, in body order (RZ-Q1: the supply, never
+        /// the board). A hero that declares one body has none to spawn.
+        /// </summary>
+        public IReadOnlyList<int> FindHeroBodySupply(HeroId heroId)
+        {
+            var supply = HeroBodySupplyOf(heroId);
+            if (supply < 2)
+            {
+                return Array.Empty<int>();
+            }
+
+            var standing = new HashSet<int>(GetHeroBodies(heroId).Select(body => body.Body));
+            return Enumerable.Range(HeroOccupancy.FirstBody, supply)
+                .Where(body => !standing.Contains(body))
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 9.21d. p.19's Spawn of one more body of a hero already on the board: the lowest
+        /// body left in the supply, onto an empty playable space. The acting body settled for the
+        /// current action (9.21b) is untouched, so a body spawned during an action never changes who
+        /// performs it.
+        /// </summary>
+        public bool CommitValidatedHeroBodySpawn(
+            HeroId heroId, HexCoordinate destination, out HeroOccupancy spawned)
+        {
+            spawned = default;
+            var supply = FindHeroBodySupply(heroId);
+            if (supply.Count == 0 || !IsHeroOnBoard(heroId) || !IsEmptyPlayableSpace(destination))
+            {
+                return false;
+            }
+
+            spawned = new HeroOccupancy(heroId, supply[0], destination);
+            occupancyIndex.Add(destination, BoardOccupant.ForHero(heroId), nameof(heroId));
+            occupancies.Add(spawned);
+            return true;
+        }
     }
 }

@@ -85,6 +85,25 @@ namespace GuardsDigital.Tests.EditMode
                 "A probe that only reads must not be reported.");
         }
 
+        /// <summary>
+        /// Milestone 9.21d. The hero-body spawn is registered only when Razzle is dealt (9.21j), so the
+        /// two rules above do not reach it yet; they are asked of its type here, so the first build
+        /// that registers it already knows its probe reads its own derivation and commits nothing.
+        /// </summary>
+        [Test]
+        public void TheUnregisteredHeroBodySpawn_DerivesItsProbeFromItsExecution_AndCommitsNothing()
+        {
+            var spawn = new[]
+            {
+                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCapabilities
+                    .SpawnActorBodyHandler(GuardsDigital.Core.Cards.Verified.RazzleEffectContent.SpawnBodyV1)
+                    .GetType()
+            };
+            Assert.That(ILConformanceScanner.UnresolvedTokens(spawn), Is.Empty);
+            Assert.That(FindUnsharedDerivations(spawn), Is.Empty);
+            Assert.That(FindPerformingProbes(spawn), Is.Empty);
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {
@@ -92,7 +111,9 @@ namespace GuardsDigital.Tests.EditMode
             // (`ReplaceOperation.ReplaceMinion`) over a new board commit
             // (`IBoardObjectExchangeAuthority.CommitValidatedMinionReplacement`), and both mutate the
             // board, so both are members no probe may reach.
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(20),
+            // Milestone 9.21d moves it by one: p.19's Spawn of one more body of a many-bodied hero
+            // (`IUnitSpawnAuthority.CommitValidatedHeroBodySpawn`) mutates the board.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(21),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -522,6 +543,8 @@ namespace GuardsDigital.Tests.EditMode
                 nameof(IBoardDisplacementAuthority.CommitValidatedDisplacement)),
             ILConformanceScanner.Method(
                 typeof(IUnitSpawnAuthority), nameof(IUnitSpawnAuthority.CommitValidatedUnitSpawn)),
+            ILConformanceScanner.Method(
+                typeof(IUnitSpawnAuthority), nameof(IUnitSpawnAuthority.CommitValidatedHeroBodySpawn)),
             ILConformanceScanner.Method(
                 typeof(ITokenPlacementAuthority),
                 nameof(ITokenPlacementAuthority.CommitValidatedTokenPlacement)),
