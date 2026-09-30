@@ -88,6 +88,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(marker != null && marker.IsVisible, Is.True, "The acting cue is drawn.");
             Assert.That(Flat(marker.transform.position), Is.EqualTo(Flat(bodyTwo.transform.position)),
                 "The acting cue stands on the body that acts.");
+            var faint = runtime.BoardView.FaintActingMarkers.Where(value => value != null && value.IsVisible).ToArray();
+            Assert.That(faint.Select(value => Flat(value.transform.position)),
+                Is.EqualTo(new[] { Flat(bodyOne.transform.position) }),
+                "His other standing body wears the faint ring (user-settled): one bright, the rest faint.");
             yield return BoardPieceCapturePlayModeTests.Capture(
                 runtime.BoardView, "tmp/9-21i-standees", new[] { bodyOneAt, bodyTwoAt, redAt });
             Healthy(runtime);
@@ -147,6 +151,27 @@ namespace GuardsDigital.Tests.PlayMode
                 .All(selector => Object.FindAnyObjectByType<PrimitiveHeroPointerInput>().Selectors
                     .Contains(selector)), Is.True, "Every standee is offered to the pointer.");
             AssertOneRailEntry(runtime, blue);
+            Healthy(runtime);
+
+            // Body 3 is picked by a click: one bright ring on it, a faint ring on each other body.
+            var red = runtime.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red).HeroId;
+            Commit(runtime, blue, WaspCardContent.MagneticDagger);
+            Commit(runtime, red, WaspCardContent.Shock);
+            yield return null;
+            Assert.That(runtime.ReadModel.PendingActingBodyChoice, Is.Not.Null, Detail(runtime));
+            var root = Root();
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, standees[2].transform.position), Is.True,
+                UiPlayer.DescribeBoardRay(pointer, standees[2].transform.position));
+            yield return null;
+            Assert.That(runtime.ReadModel.ActingBodies.Single(), Is.EqualTo(new HeroActingBody(blue, 3)));
+            Assert.That(Flat(runtime.BoardView.ActingHeroMarker.transform.position),
+                Is.EqualTo(Flat(standees[2].transform.position)));
+            Assert.That(runtime.BoardView.FaintActingMarkers
+                    .Where(value => value != null && value.IsVisible)
+                    .Select(value => Flat(value.transform.position)),
+                Is.EquivalentTo(new[] { standees[0], standees[1], standees[3] }
+                    .Select(view => Flat(view.transform.position))));
             Healthy(runtime);
             yield return BoardPieceCapturePlayModeTests.Capture(
                 runtime.BoardView, "tmp/9-21i-four", new[] { blueAt }.Concat(others).ToArray());

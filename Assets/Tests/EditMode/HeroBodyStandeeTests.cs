@@ -144,6 +144,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(view.ActingHeroMarker.IsVisible, Is.True);
                 Assert.That(Flat(view.ActingHeroMarker.transform.position),
                     Is.EqualTo(Flat(bodyTwo.transform.position)), "The acting cue stands on body 2.");
+                // USER-SETTLED: the other standing body wears the same ring faintly.
+                var faint = VisibleFaint(view);
+                Assert.That(faint, Has.Length.EqualTo(1));
+                Assert.That(faint[0].IsFaint, Is.True);
+                Assert.That(Flat(faint[0].transform.position), Is.EqualTo(Flat(blueView.transform.position)));
+                Assert.That(faint[0].RingColor.maxColorComponent,
+                    Is.LessThan(view.ActingHeroMarker.RingColor.maxColorComponent), "Faint, not bright.");
                 Assert.That(bodyTwo.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
                 Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
                     "A cue naming body 2 is body 2's alone.");
@@ -152,10 +159,13 @@ namespace GuardsDigital.Tests.EditMode
                 view.Render(Model(2, new[] { redAt, blueOne, blueTwo }, blue, 1));
                 Assert.That(Flat(view.ActingHeroMarker.transform.position),
                     Is.EqualTo(Flat(blueView.transform.position)));
+                Assert.That(VisibleFaint(view).Select(marker => Flat(marker.transform.position)),
+                    Is.EqualTo(new[] { Flat(bodyTwo.transform.position) }), "The faint ring follows too.");
 
                 // No body settled (the pick stands): the ring stands on no body.
                 view.Render(Model(3, new[] { redAt, blueOne, blueTwo }, blue, 0));
                 Assert.That(view.ActingHeroMarker.IsVisible, Is.False);
+                Assert.That(VisibleFaint(view), Is.Empty, "No body settled: no ring, bright or faint.");
 
                 // Body 2 removed without a Defeat: its standee fades like a Defeat's, body 1 stays.
                 view.Render(Model(4, new[] { redAt, blueOne }, blue, 1));
@@ -165,11 +175,13 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(view.HeroDefeatGhostFor(blueView), Is.Null);
                 Assert.That(blueView.BodyMark.IsVisible, Is.False,
                     "Body 1 alone stands again, so it reads as the one piece it is.");
+                Assert.That(VisibleFaint(view), Is.Empty, "One body standing: no faint ring.");
 
                 // Spawned again, the same standee returns; the Defeat then fades every body.
                 view.Render(Model(5, new[] { redAt, blueOne, blueTwo }, red, 0));
                 Assert.That(bodyTwo.gameObject.activeSelf, Is.True);
                 Assert.That(view.HeroViews, Has.Count.EqualTo(3), "A returning body reuses its standee.");
+                Assert.That(VisibleFaint(view), Is.Empty, "A single-bodied actor wears only the bright ring.");
                 view.Render(Model(6, new[] { redAt }, red, 0));
                 Assert.That(view.HeroDefeatGhostFor(bodyTwo), Is.Not.Null);
                 Assert.That(view.HeroDefeatGhostFor(blueView), Is.Not.Null);
@@ -178,6 +190,8 @@ namespace GuardsDigital.Tests.EditMode
             {
                 BoardTargetCuePresentation.Treatment = treatment;
                 if (view.ActingHeroMarker != null) objects.Add(view.ActingHeroMarker.gameObject);
+                objects.AddRange(view.FaintActingMarkers.Where(value => value != null)
+                    .Select(value => value.gameObject));
                 objects.AddRange(view.HeroViews.Where(value => value != null).Select(value => value.gameObject));
                 DestroyAll(objects);
             }
@@ -220,6 +234,9 @@ namespace GuardsDigital.Tests.EditMode
                 DestroyAll(objects);
             }
         }
+
+        private static ActingHeroMarker[] VisibleFaint(BoardInteractionUnityView view) =>
+            view.FaintActingMarkers.Where(marker => marker != null && marker.IsVisible).ToArray();
 
         private static Vector2 Flat(Vector3 position) =>
             new Vector2((float)Math.Round(position.x, 3), (float)Math.Round(position.z, 3));

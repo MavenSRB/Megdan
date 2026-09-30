@@ -29,6 +29,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly HexCornerHighlightTemplate cornerHighlightTemplate;
         private ActingHeroMarker actingHeroMarker;
+        private readonly List<ActingHeroMarker> faintActingMarkers = new List<ActingHeroMarker>();
         private GuardsDigital.Core.Board.HexCoordinate? hoveredCoordinate;
         private HeroId hoveredHeroId;
         private HeroId pointerHoveredHeroId;
@@ -124,6 +125,12 @@ namespace GuardsDigital.Presentation.Match
         /// position and to hide.
         /// </summary>
         public ActingHeroMarker ActingHeroMarker => actingHeroMarker;
+
+        /// <summary>
+        /// Milestone 9.21i. The faint gold rings on the acting hero's OTHER standing bodies, pooled;
+        /// only the visible ones are drawn. Empty for every single-bodied hero.
+        /// </summary>
+        public IReadOnlyList<ActingHeroMarker> FaintActingMarkers => faintActingMarkers;
 
         /// <summary>Every token view this board has ever built, active or pooled.</summary>
         public IReadOnlyList<PlacedTokenView> TokenViews => tokens;
@@ -364,6 +371,7 @@ namespace GuardsDigital.Presentation.Match
             // body), so two bodies of one hero never collapse into one piece.
             EnsureHeroBodyViews(model);
             PrimitiveHeroView actingHero = null;
+            var otherActingBodies = new List<PrimitiveHeroView>();
             foreach (var hero in heroes)
             {
                 var occupancy = FindHeroRow(model, hero.Occupancy.HeroId, hero.Body);
@@ -442,9 +450,18 @@ namespace GuardsDigital.Presentation.Match
                 {
                     actingHero = hero;
                 }
+                // Milestone 9.21i, USER-SETTLED: while a body is settled, every OTHER standing body
+                // of that hero wears the same ring faintly - one bright, the rest faint.
+                else if (severalBodies && model.FocusedHeroId.IsDefined &&
+                         occupancy.HeroId.Equals(model.FocusedHeroId) &&
+                         model.FocusedHeroBody >= HeroOccupancy.FirstBody)
+                {
+                    otherActingBodies.Add(hero);
+                }
             }
 
             RenderActingHeroMarker(actingHero);
+            RenderFaintActingMarkers(actingHero == null ? null : otherActingBodies);
 
             RenderMinions(model);
             RenderTokens(model);
@@ -870,6 +887,31 @@ namespace GuardsDigital.Presentation.Match
 
             actingHeroMarker.SetVisible(actingHero.transform.position, actingHero.SelectionRadius,
                 actingHero.HasActiveEffectMark);
+        }
+
+        /// <summary>
+        /// Milestone 9.21i. One faint ring per other standing body of the acting hero, drawn only
+        /// while the bright ring stands on his settled body; pooled rather than destroyed.
+        /// </summary>
+        private void RenderFaintActingMarkers(IReadOnlyList<PrimitiveHeroView> others)
+        {
+            var count = others?.Count ?? 0;
+            for (var index = 0; index < count; index++)
+            {
+                if (index >= faintActingMarkers.Count)
+                {
+                    faintActingMarkers.Add(ActingHeroMarker.Create(true));
+                }
+
+                var body = others[index];
+                faintActingMarkers[index].SetVisible(
+                    body.transform.position, body.SelectionRadius, body.HasActiveEffectMark);
+            }
+
+            for (var index = count; index < faintActingMarkers.Count; index++)
+            {
+                if (faintActingMarkers[index] != null) faintActingMarkers[index].SetHidden();
+            }
         }
 
         private void ApplyHoveredHero()

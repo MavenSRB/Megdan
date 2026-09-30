@@ -45,6 +45,7 @@ namespace GuardsDigital.Presentation.Match
         public const float SurfaceOffset = 0.05f;
 
         private Mesh ownedMesh;
+        private bool isFaint;
         private Material ownedMaterial;
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
@@ -62,13 +63,37 @@ namespace GuardsDigital.Presentation.Match
         /// than restored, unlike the piece hosts <see cref="Board.BoardTargetRing.GetOrCreate"/>
         /// exists to protect.
         /// </summary>
-        public static ActingHeroMarker Create()
+        public static ActingHeroMarker Create() => Create(false);
+
+        /// <summary>
+        /// Milestone 9.21i, USER-SETTLED 2026-09-30 ("I like both proposed + faint gold ring on other
+        /// bodies"): <paramref name="faint"/> builds the same ring in the same gold at
+        /// <see cref="FaintIntensity"/> of its light, for a many-bodied hero's standing bodies other
+        /// than the acting one, so the set reads as one hero - one bright, the rest faint.
+        /// </summary>
+        public static ActingHeroMarker Create(bool faint)
         {
-            var obj = new GameObject(MarkerObjectName);
+            var obj = new GameObject(faint ? MarkerObjectName + " (Other Body)" : MarkerObjectName);
             var created = obj.AddComponent<ActingHeroMarker>();
+            created.isFaint = faint;
             created.EnsureResources();
             return created;
         }
+
+        /// <summary>Milestone 9.21i. The share of the acting gold a faint (other-body) ring adds.</summary>
+        public const float FaintIntensity = 0.35f;
+
+        /// <summary>Milestone 9.21i. Whether this is a faint ring on one of the acting hero's other bodies.</summary>
+        public bool IsFaint => isFaint;
+
+        /// <summary>Milestone 9.21i. The gold this ring adds to the board.</summary>
+        public Color RingColor => isFaint
+            ? new Color(
+                MatchHudTheme.ActingHeroMarkerColor.r * FaintIntensity,
+                MatchHudTheme.ActingHeroMarkerColor.g * FaintIntensity,
+                MatchHudTheme.ActingHeroMarkerColor.b * FaintIntensity,
+                MatchHudTheme.ActingHeroMarkerColor.a)
+            : MatchHudTheme.ActingHeroMarkerColor;
 
         /// <summary>
         /// Places and shows the marker at exactly one world position, ringed around a piece of the
@@ -163,7 +188,7 @@ namespace GuardsDigital.Presentation.Match
                 // this is a blend factor rather than the Bloom the volume profile declares and the
                 // renderer does not run.
                 ownedMaterial = BoardOverlayMaterial.CreateLuminous(
-                    MarkerObjectName + " Ring", MatchHudTheme.ActingHeroMarkerColor);
+                    MarkerObjectName + (isFaint ? " Faint Ring" : " Ring"), RingColor);
             }
 
             meshRenderer.sharedMaterial = ownedMaterial;
