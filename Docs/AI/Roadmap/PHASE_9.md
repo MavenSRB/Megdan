@@ -246,3 +246,9 @@ Result: each tray rune sat in a fixed 30x24 box 12 units above its slot's top ed
 Completed 2026-09-30.
 
 Historical evidence: [9.20 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-920-rune-marks-evidence).
+
+## Adjacent targets, authorized 2026-09-30
+
+### [ ] 9.22 Get over here! and Grappling Bolt offer an already-adjacent target
+
+Authorized 2026-09-30 by the user while settling Razzle's RZ-Q9: "If 0 move is still a move then we were wrong on some hook cards. We should offer adjacent targets as well. I remember we talked about it and I said no. But with that rule, they should be offered." Ruling W9 supersedes W6 ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md)). Outcome: Bain's Get over here! offers a unit or token in a straight line and in range with no obstacles between even when it is already adjacent (the pull moves it 0 spaces and the card resolves), and Cutter's Grappling Bolt offers an obstacle she already stands beside; each face is greyed only when no legal target exists at all. The 9.6 narrowing that excluded the do-nothing target is removed from the shared selection contract, never per card; any other face 9.6 narrowed under W6's reasoning is found by the sweep and listed. Closing check: regressions on both faces failing on the base (the adjacent target absent from the offer) and passing after; the 9.6 fixtures that pinned W6 corrected; `OfferOutcomeTests`, `BeforeActionStepOfferTests`, the expected-outcome tables, Bain's and Cutter's printed-set fixtures and journeys green; harness green; Unity Edit and Play Mode for the affected fixtures. A bounded corrective run beside 9.21a in its own worktree. T2.
