@@ -56,6 +56,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.21 | Razzle's nineteen fronts, profile, dashboard and standee evidence inventoried; the one-space-per-hero engine seams named; RZ-Q1-RZ-Q12 recorded with recommendations; blocks 9.21a-9.21k mapped. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921-inventory-razzle-and-map-the-implementation-sequence). | `milestone/9.21` |
 
+## Milestone 9.25 Token captions and size evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.25 | Tali's Ice and both Totems drawn with no caption over their prepared faces and every placed token, the Turret with it, at 0.78 of its space instead of 0.68 with the outline still inside the space's corners, proven by a caption regression failing on the base and a content-derived fit regression, with the capture sheet sent to the user. [Definition](../../Roadmap/PHASE_9.md#x-925-talis-pieces-lose-their-captions-and-every-token-grows). | `milestone/9.25` |
+
 ## Milestone 9.20 Rune marks evidence
 
 | Milestone | Outcome and definition | Commit |
