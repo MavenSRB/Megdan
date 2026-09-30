@@ -56,6 +56,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.21 | Razzle's nineteen fronts, profile, dashboard and standee evidence inventoried; the one-space-per-hero engine seams named; RZ-Q1-RZ-Q12 recorded with recommendations; blocks 9.21a-9.21k mapped. [Definition](../../Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md#x-921-inventory-razzle-and-map-the-implementation-sequence). | `milestone/9.21` |
 
+## Milestone 9.24 Package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.24 | `Builds/Playtest-9.24-roster27` cut from `0cbbb652` with stamp `1.0-9.24-roster27+20260930174509-e2ca6150`, protocol /27, schema 50, 27 heroes and everything landed since 9.12 through 9.25, after the T3 gate (harness 5487, Edit 6529 with 37 established skips, Play 985) and the build-and-launch smoke. [Definition](../../Roadmap/PHASE_9.md#x-924-package-the-2026-09-30-build-without-razzle). | `milestone/9.24` |
+
 ## Milestone 9.25 Token captions and size evidence
 
 | Milestone | Outcome and definition | Commit |
