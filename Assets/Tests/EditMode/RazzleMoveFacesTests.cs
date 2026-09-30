@@ -93,11 +93,11 @@ namespace GuardsDigital.Tests.EditMode
                     "\"After you move\" is p.11's \"otherwise\".");
                 Assert.That(face.ActionDefinitions.Single(action => action.Kind == ActionKind.Defense)
                     .BaseValues.Single().Amount, Is.EqualTo(defense));
-                Assert.That(face.ActionDefinitions, Has.Count.EqualTo(2));
+                Assert.That(face.ActionDefinitions.Count, Is.EqualTo(2));
             }
 
             Assert.That(RazzleCardContent.MoveDefinitions.Select(face => face.Id), Is.Unique);
-            Assert.That(RazzleCardContent.MoveDefinitions, Has.Count.EqualTo(9));
+            Assert.That(RazzleCardContent.MoveDefinitions.Count, Is.EqualTo(9));
             Assert.That(RazzleCardContent.MoveDefinitions.Select(face => face.ContentRevision),
                 Is.All.EqualTo(RazzleCardContent.ContentRevision));
         }
