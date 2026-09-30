@@ -470,7 +470,10 @@ namespace GuardsDigital.Tests.EditMode
                 int radiusItems = 0,
                 bool enemyStrikes = false,
                 IReadOnlyList<int> stagedBodyNumbers = null,
-                bool secondCardInHand = false)
+                bool secondCardInHand = false,
+                // ===== 9.21g: Razzle's cards in hand (HandCard) and in his discard (DiscardedCard) =====
+                IReadOnlyList<CardDefinition> hand = null,
+                int discarded = 0)
             {
                 face = face ?? RazzleCardContent.StuntDoublesDefinition;
                 var participants = StagedBoardParticipants.Create();
@@ -520,6 +523,16 @@ namespace GuardsDigital.Tests.EditMode
                     ? new[] { source, enemyCard, wall,
                         CardInstance.CreateInHand(SecondCard, EnemyHold.Reference, Razzle) }
                     : new[] { source, enemyCard, wall };
+                // ===== 9.21g: more of his cards - in hand (a Defense card to answer with) and resting
+                // in his discard (plain Movement cards, for a retrieval) =====
+                var hands = hand ?? Array.Empty<CardDefinition>();
+                definitions = definitions.Concat(hands.Where(value => !definitions.Contains(value))).ToArray();
+                instances = instances
+                    .Concat(hands.Select((value, at) => CardInstance.CreateInHand(HandCard(at + 1), value.Reference, Razzle)))
+                    .Concat(Enumerable.Range(1, discarded).Select(at => new CardInstance(
+                        DiscardedCard(at), EnemyHold.Reference, Razzle, CardStateFacts.DiscardedUnplayed())))
+                    .ToArray();
+                // ===== END 9.21g =====
                 catalogs = new MatchContentCatalogs(
                     SyntheticEffectCapabilities.CreateCatalog(RazzleEffectContent.Handlers()),
                     new ComponentDefinitionCatalog(
@@ -552,6 +565,19 @@ namespace GuardsDigital.Tests.EditMode
             internal CardInstanceId Source => source.Id;
 
             internal static readonly CardInstanceId SecondCard = new CardInstanceId("razzle-second");
+
+            // ===== 9.21g: the staged hand and discard =====
+            internal static CardInstanceId HandCard(int index) => new CardInstanceId($"razzle-hand-{index}");
+
+            internal static CardInstanceId DiscardedCard(int index) => new CardInstanceId($"razzle-discard-{index}");
+
+            internal IReadOnlyList<CardDefinition> Definitions => definitions;
+
+            internal bool HasCard(CardInstanceId card) => instances.Any(value => value.Id.Equals(card));
+
+            internal CardLocation LocationOf(CardInstanceId card) =>
+                instances.Single(value => value.Id.Equals(card)).State.Location;
+            // ===== END 9.21g =====
 
             internal string PendingNode => Turn.PendingEffectChoice?.NodeId.Value;
 

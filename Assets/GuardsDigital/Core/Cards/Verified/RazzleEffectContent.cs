@@ -40,7 +40,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticHeroBodyCapabilities.ActorHasSeveralBodiesHandler(SeveralBodiesV1)
             }
                 // ===== MERGE BLOCK (9.21f) =====
-                .Concat(MoveHandlers());
+                .Concat(MoveHandlers())
+            // ===== 9.21g: the "other you in radius" count (RazzleCountingFaces.cs) =====
+                .Concat(CountingHandlers());
                 // ===== END MERGE BLOCK =====
 
         /// <summary>

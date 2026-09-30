@@ -219,7 +219,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// A named marker is below the current numbered turn slot. The query reads the live
         /// physical-marker register; it does not infer activation from a card's zone.
         /// </summary>
-        ActiveTurnSlotMarker = 11
+        ActiveTurnSlotMarker = 11,
+
+        /// <summary>
+        /// Milestone 9.21g. How many OTHER bodies of the defending hero stand within the Defense
+        /// action's printed Radius (p.16's Radius item composed onto it, R1) of the ATTACKED body -
+        /// Razzle's Crowd Control, "When used as a defense action, +2 [Defense] Defense for each other
+        /// you in radius." A count, so the printed amount is per body (0-3 others: +0/+2/+4/+6).
+        ///
+        /// <para><b>Measured from the attacked body, which it excludes</b> (RZ-Q3: an Attack targets
+        /// one body; "other you" is every body but that one). The body is the one the Attack target
+        /// names, handed to <see cref="RosterDynamicValueQuery.DefenseContributions"/> by
+        /// <see cref="DefenseValueQuery"/> - so the Defense preview and the resolution count the same
+        /// bodies. A hero declaring one body always answers zero.</para>
+        /// </summary>
+        DefenderOtherBodiesInPrintedRadius = 12
     }
 
     /// <summary>
@@ -251,13 +265,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // joins the two the Attack Total already had. The pairing runs both ways, because the one
             // verified sentence that raises a Defense and the one query that answers it are the same
             // sentence: nothing else may claim the channel, and this query answers about nothing else.
-            if ((channel == PrintedValueChannel.Defense) !=
-                (query == RosterValueQueryKind
-                    .TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius))
+            // Milestone 9.21g adds the second verified Defense sentence and its query - Razzle's Crowd
+            // Control, "+2 Defense for each other you in radius" - on the same two-way pairing.
+            if ((channel == PrintedValueChannel.Defense) != IsDefenseQuery(query))
             {
                 throw new ArgumentException(
-                    "The only verified Defense contribution is Dodger's empty-minion-spawn-point " +
-                    "threshold, and that threshold raises nothing else.",
+                    "The verified Defense contributions are Dodger's empty-minion-spawn-point threshold " +
+                    "and the defender's other bodies in radius, and those queries raise nothing else.",
                     nameof(channel));
             }
 
@@ -309,6 +323,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ObstacleKind = obstacleKind;
             MarkerDefinition = markerDefinition;
         }
+
+        /// <summary>The queries a Defense declaration may name, and the only channel they raise.</summary>
+        private static bool IsDefenseQuery(RosterValueQueryKind query) =>
+            query == RosterValueQueryKind.TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius ||
+            query == RosterValueQueryKind.DefenderOtherBodiesInPrintedRadius;
 
         public PrintedValueChannel Channel { get; }
         public RosterValueQueryKind Query { get; }
@@ -492,6 +511,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
         }
 
+        /// <summary>
+        /// Milestone 9.21g. "Other you in radius": how many of <paramref name="bodies"/> (one hero's
+        /// standing bodies) stand within <paramref name="radius"/> of <paramref name="from"/>, the body
+        /// standing there itself excluded. The one count Crowd Control's Defense (from the attacked
+        /// body) and the counting Attacks' gates (from the acting body) ask; a radius below one is no
+        /// disk (p.16 raises a printed icon and never invents one).
+        /// </summary>
+        public static int CountOtherBodiesWithin(
+            IEnumerable<GuardsDigital.Core.Units.Heroes.HeroOccupancy> bodies, HexCoordinate from, int radius) =>
+            radius < 1 || bodies == null
+                ? 0
+                : bodies.Count(body => !body.Coordinate.Equals(from) &&
+                    HexDistanceQuery.Calculate(from, body.Coordinate) <= radius);
+
         private static bool AdmitsKind(
             BoardObjectReference value,
             RosterUnitKind kind,
@@ -615,7 +648,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // changed by a modification - Dodger's Tide of Darkness widens the count it measures - so a
             // caller that forgot the live set would silently resolve against none. Passing nothing is
             // spelled `RuleModificationSet.Empty`, which is a decision rather than an omission.
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            // Milestone 9.21g (RZ-Q3). The DEFENDING body the Attack targeted, which
+            // `DefenderOtherBodiesInPrintedRadius` measures from and excludes; 0 names the hero's only
+            // body. `DefenseValueQuery` hands the Attack target's body, so the preview and the
+            // resolution count from the same space.
+            int defenderBody = 0)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -640,7 +678,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     // "perform a Defense action", Tide of Darkness says "an action" and narrows
                     // nothing, so the Ultimate is up while she defends. Milestone 8.35z28.
                     SpawnPointOverlay.ForActor(
-                        modifications, participants, defenseOffer.ActorId));
+                        modifications, participants, defenseOffer.ActorId),
+                    defenderBody);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -667,8 +706,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             RuleModificationSet modifications,
-            SpawnPointOverlay overlay)
+            SpawnPointOverlay overlay,
+            int defenderBody)
         {
+            if (query == RosterValueQueryKind.DefenderOtherBodiesInPrintedRadius)
+            {
+                return DefenderOtherBodiesInRadius(
+                    defenseOffer, definitions, board, heroItems, modifications, defenderBody);
+            }
+
             if (query != RosterValueQueryKind
                     .TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius)
             {
@@ -698,6 +744,43 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 board, board, defenderAt, radius.Total, overlay) >= PrintedSpawnPointThreshold
                 ? 1
                 : 0;
+        }
+
+        /// <summary>
+        /// Milestone 9.21g. <see cref="RosterValueQueryKind.DefenderOtherBodiesInPrintedRadius"/>: the
+        /// defender's bodies other than the attacked one within the Defense action's printed Radius
+        /// (with items) of the attacked body. A hero standing on several spaces must be told which body
+        /// was attacked; a read that does not name it is refused rather than answered from one, as
+        /// <see cref="DefenseValueQuery"/>'s minion modifiers are (milestone 9.21a).
+        /// </summary>
+        private static int DefenderOtherBodiesInRadius(
+            ActionOffer defenseOffer,
+            IReadOnlyList<CardDefinition> definitions,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
+            int defenderBody)
+        {
+            var bodies = board.GetHeroBodies(defenseOffer.ActorId);
+            var attacked = bodies
+                .Where(body => defenderBody == 0 || body.Body == defenderBody)
+                .ToArray();
+            if (attacked.Length == 0)
+            {
+                // The attacked body is not standing: nothing is measured from it.
+                return 0;
+            }
+
+            if (attacked.Length > 1)
+            {
+                throw new InvalidOperationException(
+                    "The defender's other bodies in radius are counted from the attacked body, and this " +
+                    "read did not name which of the defender's bodies was attacked (milestone 9.21g, RZ-Q3).");
+            }
+
+            var radius = RadiusValueQuery.Calculate(
+                defenseOffer, definitions, heroItems, modifications ?? RuleModificationSet.Empty);
+            return RosterPresenceQuery.CountOtherBodiesWithin(bodies, attacked[0].Coordinate, radius.Total);
         }
 
         private static int MatchCount(

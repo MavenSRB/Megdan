@@ -142,6 +142,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(FindPerformingProbes(moves), Is.Empty);
         }
 
+        /// <summary>
+        /// Milestone 9.21g. The "other you in radius" count behind Rummage's and Ransack's gates is
+        /// registered only when Razzle is dealt (9.21j), so it is asked of its type here too.
+        /// </summary>
+        [Test]
+        public void TheUnregisteredOtherBodiesCount_DerivesItsProbeFromItsExecution_AndCommitsNothing()
+        {
+            var count = new[]
+            {
+                GuardsDigital.Core.Effects.Synthetic.SyntheticHeroBodyCountCapabilities
+                    .ActorOtherBodiesInRadiusHandler(
+                        GuardsDigital.Core.Cards.Verified.RazzleEffectContent.OtherBodiesInRadiusV1)
+                    .GetType()
+            };
+            Assert.That(ILConformanceScanner.UnresolvedTokens(count), Is.Empty);
+            Assert.That(FindUnsharedDerivations(count), Is.Empty);
+            Assert.That(FindPerformingProbes(count), Is.Empty);
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {

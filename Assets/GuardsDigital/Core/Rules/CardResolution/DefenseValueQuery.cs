@@ -112,7 +112,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // which is the same separation the Attack channel has had since milestone 8.19c.
             contributions.AddRange(RosterDynamicValueQuery.DefenseContributions(
                 action, defenseOffer, definitions.ToArray(), board, heroItems,
-                participants, modifications));
+                participants, modifications, defenderBody));
 
             if (modifications != null)
             {

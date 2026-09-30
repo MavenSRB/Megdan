@@ -246,6 +246,9 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.21f. The moves and swaps: Skills and Movement text with no Attack, so they
             // bind no Attack target and add no at-risk gate.
             foreach (var card in RazzleCardContent.MoveDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.21g. The counting faces: Rummage's and Ransack's Conditionals gate optional
+            // retrievals after the Attack and bind no Attack target, so they add no at-risk gate.
+            foreach (var card in RazzleCardContent.CountingDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

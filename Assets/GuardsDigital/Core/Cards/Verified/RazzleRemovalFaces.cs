@@ -84,8 +84,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// ribbon. p.14's Defense/Skill card declares two printed primaries, as Mortimer's Awaken! does.
         /// Its text is split by how the card is used, so each half composes onto its own primary only:
         /// the Skill carries "remove all other you in play" (greyed with no other body, RZ-Q7); the
-        /// Defense carries "+2 Defense for each other you in radius", which is 9.21g's and not composed
-        /// here - until then the Defense primary is the printed value alone.
+        /// Defense carries "+2 Defense for each other you in radius", composed by 9.21g as
+        /// <see cref="CrowdControlDefenseText"/>.
         /// </summary>
         public static CardDefinition CrowdControlDefinition => LazyCrowdControl.Value;
 
@@ -111,7 +111,9 @@ namespace GuardsDigital.Core.Cards.Verified
                         },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
                         AttackRangeKind.None,
-                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile))
+                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
+                        // ===== 9.21g: the Defense text (RazzleCountingFaces.cs) =====
+                        rosterValueContributions: CrowdControlDefenseText)
                 },
                 null, CardSourceContent.Transcribed(CrowdControlText)));
 

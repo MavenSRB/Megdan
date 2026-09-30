@@ -185,8 +185,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Enum.GetValues(typeof(RosterValueQueryKind)).Cast<RosterValueQueryKind>()
                     .Count(value => value != RosterValueQueryKind.None),
-                Is.EqualTo(11),
-                "The eleven queries preserve the original seven identities.");
+                Is.EqualTo(12),
+                "The twelve queries preserve the original seven identities.");
             Assert.That((int)RosterValueQueryKind.OwnedDiscardCount, Is.EqualTo(8));
 
             // Milestone 8.69a. Brynn the Seeker's "+2 attack if you target a hero adjacent to 3 or
@@ -199,6 +199,8 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(10), "Trinkets' live dual-straight-line query appends an identity.");
             Assert.That((int)RosterValueQueryKind.ActiveTurnSlotMarker,
                 Is.EqualTo(11), "Snorri's marker query appends without renumbering earlier identities.");
+            Assert.That((int)RosterValueQueryKind.DefenderOtherBodiesInPrintedRadius,
+                Is.EqualTo(12), "Razzle's Crowd Control Defense count (9.21g) appends the twelfth.");
         }
 
         // -------------------------------------------------------------------------------------------
