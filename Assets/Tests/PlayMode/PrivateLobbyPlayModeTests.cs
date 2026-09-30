@@ -2017,8 +2017,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Select(button =>
                     ((PrivateLobbyHeroOption)button.userData).Complexity),
                 Is.All.EqualTo(HeroComplexity.Wizard));
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(2),
-                "and she and Snorri (8.93f), the only other four-star hero, are the two behind it.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(3),
+                "and she, Snorri (8.93f) and Razzle (9.21j), the other four-star heroes, are the three behind it.");
 
             UiPlayer.Click(Role(HeroRole.Sniper));
             yield return null;

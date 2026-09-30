@@ -729,18 +729,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, tile.transform.position), Is.True);
             yield return null;
             Assert.That(SpaceOf(runtime, mortimer), Is.EqualTo(respawn));
-            // After the respawn the turn controls stand over the Director control; take whichever
-            // is enabled until it returns.
-            for (var press = 0; press < 6 && !UiPlayer.HasButton(root.Hud, "DIRECTOR"); press++)
-            {
-                var next = new[] { "CONTINUE", "END TURN" }
-                    .Where(label => UiPlayer.HasButton(root.Hud, label))
-                    .Select(label => UiPlayer.Button(root.Hud, label))
-                    .FirstOrDefault(button => button.enabledInHierarchy);
-                Assert.That(next, Is.Not.Null, UiPlayer.Describe(root.Hud));
-                UiPlayer.Click(next);
-                yield return null;
-            }
+            // After the respawn the turn controls stand over the Director control, and the spotlight
+            // of the Defeat that sent him there may still be entering: take whichever is enabled,
+            // waiting for the spotlight to arm, until the Director control returns.
+            yield return UiPlayer.WaitForControl(root.Hud, "DIRECTOR");
 
             OpenDirectorDrawer(root.Hud);
             yield return null;

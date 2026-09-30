@@ -827,6 +827,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, tile.transform.position), Is.True);
             yield return null;
             Assert.That(SpaceOf(runtime, mrak), Is.EqualTo(respawn));
+            // The spotlight of the Defeat that sent him to respawn may still be entering (see
+            // UiPlayer.WaitForControl); take the turn controls until the Director control returns.
+            yield return UiPlayer.WaitForControl(root.Hud, "DIRECTOR");
             OpenDirectorDrawer(root.Hud);
             yield return null;
             UiPlayer.Click(UiPlayer.Button(root.Hud, "RESET"));

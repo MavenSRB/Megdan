@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
@@ -29,6 +30,48 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     internal static class UiPlayer
     {
+        /// <summary>
+        /// Milestone 9.21j landing. Waits until the control named <paramref name="label"/> is shown,
+        /// taking CONTINUE (once the spotlight arms it) or END TURN when one of them is the only way
+        /// forward, at most <paramref name="pressBudget"/> presses and <paramref name="frameBudget"/>
+        /// frames. The attack spotlight of the Defeat that sent a hero to respawn can still be
+        /// entering when the respawn resolves, and a journey that judged the HUD one frame after each
+        /// press found CONTINUE shown but not yet armed and nothing else enabled - on main alone,
+        /// under load, before any Razzle change. Waiting for the arm is what a player does.
+        /// </summary>
+        public static IEnumerator WaitForControl(
+            ConfiguredMatchHudRenderer hud, string label, int pressBudget = 6, int frameBudget = 600)
+        {
+            var presses = 0;
+            // Shown AND laid out: the control returns one frame before its layout does, and Click
+            // refuses an unlaid control.
+            bool Ready() => HasButton(hud, label) &&
+                Button(hud, label).worldBound.width > 0f && Button(hud, label).worldBound.height > 0f;
+            for (var frame = 0; frame < frameBudget && !Ready(); frame++)
+            {
+                var next = new[] { "CONTINUE", "END TURN" }
+                    .Where(candidate => HasButton(hud, candidate))
+                    .Select(candidate => Button(hud, candidate))
+                    .FirstOrDefault(button => button.enabledInHierarchy &&
+                        // A control enabled this frame may not have its layout yet; Click refuses
+                        // an unlaid control, and a player could not have found it either.
+                        button.worldBound.width > 0f && button.worldBound.height > 0f);
+                if (next != null)
+                {
+                    Assert.That(presses, Is.LessThan(pressBudget),
+                        "The turn controls did not give " + label + " back within " + pressBudget +
+                        " presses: " + Describe(hud));
+                    presses++;
+                    Click(next);
+                }
+
+                yield return null;
+            }
+
+            Assert.That(Ready(), Is.True,
+                label + " did not return within " + frameBudget + " frames: " + Describe(hud));
+        }
+
         /// <summary>
         /// Milestone 8.35g. Hands a finished turn on when one is waiting for its own player, and
         /// says whether it had to.
