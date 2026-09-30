@@ -1332,23 +1332,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The third pull position: a target already adjacent would be pulled nowhere.
+        /// The third pull position: a target already adjacent is pulled 0 spaces.
         ///
-        /// <para>Milestone 9.6, user ruling W6: such a target is not offered at all. The selection
-        /// names the Move as its consumer, so only a target the Move would bring closer is a
-        /// candidate - the adjacent ally is not, and the enemy two spaces down the file is.</para>
+        /// <para>Milestone 9.22, user ruling W9 (superseding 9.6's W6): "a Movement of 0 spaces is
+        /// still a move", so the adjacent ally is offered beside the enemy down the file, the pull
+        /// moves it nowhere, and the card resolves. Failed on d5f7aa38, where the ally was absent from
+        /// the offer.</para>
         /// </summary>
         [Test]
-        public void ThePull_DoesNotOfferATargetAlreadyAdjacent()
+        public void ThePull_OffersATargetAlreadyAdjacent_AndPullsItNowhere()
         {
             var board = new BainBoard();
 
             var offered = board.PullCandidates();
 
-            Assert.That(offered, Has.No.Member(BainBoard.AllySpace),
-                "A target already beside Bain would take no step.");
+            Assert.That(offered, Has.Member(BainBoard.AllySpace),
+                "W9: a target already beside Bain is still a target; the pull moves it 0 spaces.");
             Assert.That(offered, Has.Member(BainBoard.EnemySpace));
+
+            var step = board.RunPull(BainBoard.AllySpace);
+
+            Assert.That(step.IsComplete, Is.True,
+                "The clause resolves rather than stopping on a Move with nowhere to go.");
             Assert.That(board.SpaceOf(BainBoard.Ally), Is.EqualTo(BainBoard.AllySpace));
+            Assert.That(board.SpaceOf(BainBoard.Bain), Is.EqualTo(BainBoard.BainSpace));
+        }
+
+        /// <summary>
+        /// Milestone 9.22, W9 and rule 14: with the only target on the board already beside Bain, Get
+        /// over here! is still playable - it is greyed only when no legal target exists at all. Failed
+        /// on d5f7aa38, where the card was greyed.
+        /// </summary>
+        [Test]
+        public void ThePull_WithOnlyAnAdjacentTarget_IsNotGreyed()
+        {
+            var board = new BainBoard(enemyOffEveryFile: true);
+
+            Assert.That(board.PullCandidates(), Is.EqualTo(new[] { BainBoard.AllySpace }),
+                "The enemy stands on no straight line from Bain and the other enemy is behind terrain, " +
+                "so the adjacent ally is the only legal target.");
+            Assert.That(board.CanPlayPull(), Is.True,
+                "W9: a legal target the pull would move 0 spaces keeps the card offered.");
         }
 
         /// <summary>
@@ -1666,6 +1690,7 @@ namespace GuardsDigital.Tests.EditMode
             public static readonly HexCoordinate EnemySpace = new HexCoordinate(2, 0);
             public static readonly HexCoordinate PullApproachSpace = new HexCoordinate(1, 0);
             public static readonly HexCoordinate TerrainShadowSpace = new HexCoordinate(-2, 0);
+            public static readonly HexCoordinate EnemyOffEveryFileSpace = new HexCoordinate(2, -1);
 
             private static readonly HexCoordinate TerrainSpace = new HexCoordinate(-1, 0);
             private static readonly TeamId RedTeam = new TeamId("bain-red");
@@ -1678,7 +1703,9 @@ namespace GuardsDigital.Tests.EditMode
             private readonly ActiveEffectLifecycle timing = new ActiveEffectLifecycle();
             private readonly EffectCapabilityCatalog catalog = Catalog();
 
-            public BainBoard()
+            /// <param name="enemyOffEveryFile">Milestone 9.22: stands the enemy two spaces off, on
+            /// no straight line from Bain, so the adjacent ally is the pull's only legal target.</param>
+            public BainBoard(bool enemyOffEveryFile = false)
             {
                 participants = BuildParticipants();
                 Board = new AdjacentMoveAuthority(
@@ -1687,7 +1714,8 @@ namespace GuardsDigital.Tests.EditMode
                     {
                         new HeroOccupancy(Bain, BainSpace),
                         new HeroOccupancy(Ally, AllySpace),
-                        new HeroOccupancy(Enemy, EnemySpace),
+                        new HeroOccupancy(
+                            Enemy, enemyOffEveryFile ? EnemyOffEveryFileSpace : EnemySpace),
                         new HeroOccupancy(OtherEnemy, TerrainShadowSpace)
                     },
                     Array.Empty<GuardsDigital.Core.Obstacles.ObstacleOccupancy>(),
@@ -1802,9 +1830,32 @@ namespace GuardsDigital.Tests.EditMode
             // ---- The pull
 
             public IReadOnlyList<HexCoordinate> PullCandidates() =>
-                StartPull().Frame.PendingChoice.Candidates
+                StartPull().Frame?.PendingChoice?.Candidates
                     .Select(candidate => candidate.Value.Coordinate)
-                    .ToArray();
+                    .ToArray() ?? Array.Empty<HexCoordinate>();
+
+            /// <summary>
+            /// Milestone 9.22: the question the turn's offer asks before it lets the face start
+            /// (6.5af) - whether the whole effect can apply anything from the frame a start begins
+            /// from.
+            /// </summary>
+            public bool CanPlayPull()
+            {
+                var definition = Primary(BainCardContent.GetOverHere).EffectRoot;
+                ContextState = new WalkState(definition, ActionKind.Skill, false);
+                var context = Context(ContextState);
+                return EffectOptionFeasibilityQuery.CanApplyAnything(
+                    EffectResolutionSession.BuildStartFrame(
+                        new EffectResolutionId("bain-printed-set-offer"),
+                        SourceInstanceOf(BainCardContent.GetOverHere).Id,
+                        BainCardContent.Definition(BainCardContent.GetOverHere).Reference,
+                        Primary(BainCardContent.GetOverHere).Id,
+                        Bain,
+                        Bain,
+                        ActionInvocationContext.PrintedPrimary,
+                        context),
+                    context);
+            }
 
             public EffectResolutionStepResult RunPull(HexCoordinate target) =>
                 Answer(StartPull(), EffectValue.Space(target));

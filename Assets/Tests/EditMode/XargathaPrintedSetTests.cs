@@ -225,8 +225,10 @@ namespace GuardsDigital.Tests.EditMode
         /// space beside her full, no target could be moved at all, so the card can do nothing.
         ///
         /// <para>Milestone 9.6: such a card is greyed (6.5af) rather than offered, targeted, and spent
-        /// with nothing moved - the same reading as the user's ruling W6 for a target the step would
-        /// do nothing to.</para>
+        /// with nothing moved. 9.6 likened this to W6, which W9 has since superseded for a target a
+        /// Move would take 0 spaces; milestone 9.22 left this grey unchanged because it is not that
+        /// case - "to a space adjacent to you" has no free space to name, so the Move has no
+        /// destination at all rather than a 0-space one - and listed it for the user.</para>
         /// </summary>
         [Test]
         public void SirensCall_WithNoLegalAdjacentLanding_IsNotOffered()

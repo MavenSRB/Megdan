@@ -512,6 +512,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             /// kind, and is why the only declared consumers in the roster were three of Wasp's. Now the
             /// selection says what this answer would publish, and each consumed parameter is given the
             /// output it actually reads.</para>
+            ///
+            /// <para>Milestone 9.22, user ruling W9 (superseding W6): a Move that would move this
+            /// answer 0 spaces still acts on it. "A Movement of 0 spaces is still a move", so a piece
+            /// already where the step would put it - Get over here!'s target already beside Bain,
+            /// Grappling Bolt's obstacle Cutter already stands beside - is a legal target, the step
+            /// moves it nowhere and the card resolves. The consumer says so through
+            /// <see cref="IEffectZeroSpaceMoveCapabilityHandler"/>; nothing here knows which capability
+            /// or card is asking.</para>
             /// </summary>
             public bool Accepts(IReadOnlyList<EffectValue> answer)
             {
@@ -523,10 +531,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     return true;
                 }
 
-                var kind = handler.Anticipate(EffectResolutionSession.BuildCapabilityContext(
-                    frame, consumer, outcomes, context, resolvedInputs, substituted));
+                var consumerContext = EffectResolutionSession.BuildCapabilityContext(
+                    frame, consumer, outcomes, context, resolvedInputs, substituted);
+                var kind = handler.Anticipate(consumerContext);
                 return kind == EffectExecutionResultKind.Applied ||
-                    kind == EffectExecutionResultKind.NeedsChoice;
+                    kind == EffectExecutionResultKind.NeedsChoice ||
+                    (handler is IEffectZeroSpaceMoveCapabilityHandler zeroSpace &&
+                        zeroSpace.WouldMoveZeroSpaces(consumerContext));
             }
 
             /// <summary>

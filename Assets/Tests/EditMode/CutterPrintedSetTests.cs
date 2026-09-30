@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
@@ -10,6 +11,7 @@ using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Rules.Victory;
@@ -591,7 +593,115 @@ namespace GuardsDigital.Tests.EditMode
                 ChildOrder(root, "grapple-root"),
                 Is.EqualTo(new[] { "grapple-actor-space", "grapple-obstacle", "grapple-move" }),
                 "The sentence targets, then moves. Milestone 9.6 reads her own space first - it applies " +
-                "nothing - so the Move can judge each obstacle and one she stands beside is not offered (W6).");
+                "nothing - so the Move can judge each obstacle; since 9.22 (W9) one she stands beside " +
+                "is judged a 0-space move and stays offered.");
+        }
+
+        /// <summary>
+        /// Milestone 9.22, user ruling W9 (superseding 9.6's W6), the mirror of Get over here!: an
+        /// obstacle Cutter already stands beside is a legal target - "until you are adjacent" is
+        /// satisfied where she stands, so she moves 0 spaces and the card resolves - and with it the
+        /// only obstacle in range the face is not greyed (rule 14). Failed on d5f7aa38, where the
+        /// adjacent obstacle was absent from the offer and the card was greyed.
+        /// </summary>
+        [Test]
+        public void GrapplingBolt_OffersAnObstacleSheAlreadyStandsBeside_AndMovesHerNowhere()
+        {
+            var beside = GrappleLineBoard.At(HexDirection.East, 1);
+            var grapple = new GrappleFixture(
+                GrappleLineBoard.CreateBoard(enemyMinionsAt: new[] { beside }, withTerrainRing: false));
+
+            Assert.That(grapple.CanPlay(), Is.True,
+                "W9: the one obstacle in range is beside her, and it is still a legal target.");
+            var opened = grapple.Start();
+            Assert.That(
+                opened.Frame?.PendingChoice?.Candidates.Select(candidate => candidate.Value.Coordinate),
+                Is.EqualTo(new[] { beside }),
+                "The files run off the map everywhere else, so the adjacent minion is the only target.");
+
+            var resolved = grapple.Answer(opened, EffectValue.Space(beside));
+
+            Assert.That(resolved.IsComplete, Is.True,
+                "The Move of 0 spaces takes no step and the card resolves.");
+            Assert.That(grapple.Board.TryGetHeroCoordinate(GrappleLineBoard.Actor, out var at), Is.True);
+            Assert.That(at, Is.EqualTo(GrappleLineBoard.Origin));
+        }
+
+        /// <summary>
+        /// Milestone 9.22: Grappling Bolt's own composed root, driven through the production
+        /// resolution session on <see cref="GrappleLineBoard"/> with Cutter as the grappling hero.
+        /// </summary>
+        private sealed class GrappleFixture
+        {
+            private readonly EffectResolutionContext context;
+            private readonly CardInstance source;
+
+            public GrappleFixture(GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board)
+            {
+                Board = board;
+                source = CardInstance.CreateInHand(
+                    new CardInstanceId("cutter-grapple-source"),
+                    CutterCardContent.Definition(CutterCardContent.GrapplingBolt).Reference,
+                    GrappleLineBoard.Actor);
+                context = new EffectResolutionContext(
+                    Primary(CutterCardContent.GrapplingBolt).EffectRoot,
+                    Catalog(),
+                    GrappleLineBoard.Participants(),
+                    new ActiveEffectLifecycle(),
+                    1,
+                    1,
+                    RuleModificationSet.Empty,
+                    EffectCardState.Of(CutterCardContent.AllDefinitions, new[] { source }),
+                    ActionKind.Skill,
+                    components: new GuardsDigital.Core.Components.MatchComponents(
+                        GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions.CreateCatalog(),
+                        board,
+                        new GuardsDigital.Core.Components.MarkerAttachmentRegister(),
+                        board,
+                        board,
+                        board,
+                        board));
+            }
+
+            public GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority Board { get; }
+
+            /// <summary>The question the turn's offer asks before the face may start (6.5af).</summary>
+            public bool CanPlay() =>
+                EffectOptionFeasibilityQuery.CanApplyAnything(
+                    EffectResolutionSession.BuildStartFrame(
+                        new EffectResolutionId("cutter-grapple-offer"),
+                        source.Id,
+                        source.DefinitionReference,
+                        Primary(CutterCardContent.GrapplingBolt).Id,
+                        GrappleLineBoard.Actor,
+                        GrappleLineBoard.Actor,
+                        ActionInvocationContext.PrintedPrimary,
+                        context),
+                    context);
+
+            public EffectResolutionStepResult Start() =>
+                EffectResolutionSession.Start(
+                    new EffectResolutionId("cutter-grapple"),
+                    source.Id,
+                    source.DefinitionReference,
+                    Primary(CutterCardContent.GrapplingBolt).Id,
+                    GrappleLineBoard.Actor,
+                    GrappleLineBoard.Actor,
+                    ActionInvocationContext.PrintedPrimary,
+                    context);
+
+            public EffectResolutionStepResult Answer(EffectResolutionStepResult step, EffectValue value)
+            {
+                var select = step.Frame.PendingChoice.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.Equals(value));
+                var selected = EffectResolutionSession.Answer(step.Frame, select, context);
+                return selected.Frame?.PendingChoice != null &&
+                    selected.Frame.PendingChoice.SelectedCandidates.Count > 0 &&
+                    selected.Frame.PendingChoice.ConfirmInvocation != null
+                        ? EffectResolutionSession.Answer(
+                            selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, context)
+                        : selected;
+            }
         }
 
         // -------------------------------------------------------------------------------------------

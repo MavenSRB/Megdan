@@ -916,8 +916,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectCapabilityParameter(
                             ExcludeTerrainParameterName, EffectValueKind.Boolean, isRequired: false),
 
-                        // Milestone 9.6. The Move the target is chosen FOR, so a target it would move
-                        // nobody for - one already adjacent - is not offered (user ruling 2026-09-28).
+                        // Milestone 9.6. The Move the target is chosen FOR, so the offer can ask it
+                        // about each target (since 9.22, W9: an adjacent one moves 0 spaces, still offered).
                         new EffectCapabilityParameter(
                             EffectSelectionDeclaration.ConsumerParameterName,
                             EffectValueKind.Node,

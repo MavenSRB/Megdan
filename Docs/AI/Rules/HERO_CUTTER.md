@@ -14,7 +14,7 @@ the same reason.
 
 > Milestone 9.2: Bombardment, Barrage, Broadside and X Marks the Spot measure the printed Radius with p.16's items (rulebook reading **R1** in [PRINTED_WORDING](PRINTED_WORDING.md)); each was the icon's number written as a literal before, which a Radius item did not raise.
 
-> Milestone 9.6: Grappling Bolt offers only an obstacle she would move towards - one she already stands beside is not offered (user ruling **W6**, [PRINTED_WORDING](PRINTED_WORDING.md), Get over here!'s mirror).
+> Milestone 9.22: Grappling Bolt offers an obstacle she already stands beside - she moves 0 spaces and the card resolves - and is greyed only when no legal target exists at all (user ruling **W9**, superseding 9.6's **W6**, [PRINTED_WORDING](PRINTED_WORDING.md), Get over here!'s mirror).
 
 ## Cutter content ledger
 

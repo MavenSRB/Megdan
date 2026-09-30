@@ -14,7 +14,7 @@ rulebook names him but assigns him no pronoun - its one mention is a first-perso
 convention Misa's, Whisper's, Swift's and Cutter's shards use for the dashboards' unnamed heroes,
 because his dashboard and both standee faces show a man. It uses "he".
 
-> Milestone 9.6: Get over here! offers only a target the pull would bring closer - one already adjacent is not offered, and a board with no other greys the card (user ruling **W6**, [PRINTED_WORDING](PRINTED_WORDING.md)).
+> Milestone 9.22: Get over here! offers a target already adjacent - the pull moves it 0 spaces and the card resolves - and is greyed only when no legal target exists at all (user ruling **W9**, superseding 9.6's **W6**, [PRINTED_WORDING](PRINTED_WORDING.md)).
 
 ## Bain content ledger
 

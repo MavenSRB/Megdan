@@ -594,9 +594,10 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticTargetingCapabilities.ExcludeTerrainParameterName,
                                 EffectValue.Boolean(true)),
 
-                            // Milestone 9.6, user ruling 2026-09-28: only a target the Move would
-                            // bring closer is offered. One already adjacent moves nowhere, and a board
-                            // holding no other target greys the card.
+                            // Milestone 9.6 named the Move as this selection's consumer (W6). Since
+                            // 9.22 (user ruling W9, superseding W6) a target already adjacent is a Move
+                            // of 0 spaces, which is still a move: it is offered, and the card is greyed
+                            // only when no legal target exists at all.
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(move))

@@ -528,12 +528,20 @@ namespace GuardsDigital.Tests.PlayMode
             // ROUND ONE: a card into the turn slot the grant will read back.
             yield return HerTurnOn(root, cutterId, CutterCardContent.GrapplingBolt);
 
-            // Milestone 9.6. Round one only has to put Grappling Bolt into her turn slot, and it
-            // used to do that by reeling her to an obstacle she already stood beside - a target the
-            // user's ruling W6 no longer offers, because it reels her nowhere. She Holds the card
-            // instead (p.12): it enters the slot the grant reads, and she does not move, so round
-            // two's board is the board it always was.
-            Assert.That(runtime.SubmitEndTurn(), Is.True, Remaining(runtime));
+            // Milestone 9.22, the user's ruling W9 (superseding 9.6's W6, under which this round
+            // Held the card instead): she reels to an obstacle she already stands beside, which is
+            // still a target - the Move takes her 0 spaces and the card resolves into her turn slot,
+            // so round two's board is the board it always was.
+            yield return PointTrayAt(root, cutterId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            var adjacentObstacle = new HexCoordinate(-4, 2);
+            Assert.That(OfferedSpaces(runtime), Has.Member(adjacentObstacle), Remaining(runtime));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(adjacentObstacle).transform.position),
+                Is.True,
+                UiPlayer.DescribeBoardRay(pointerInput, Tile(adjacentObstacle).transform.position));
             yield return null;
             yield return null;
 

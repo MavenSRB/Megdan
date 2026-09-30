@@ -92,6 +92,8 @@ namespace GuardsDigital.Tests.EditMode
         // names its consumer; Swift's subject excludes a hero beside terrain; Bain's and Cutter's line
         // targets name their Move (W6), and Cutter reads her own space first. Every other pin is
         // byte-identical, which is the measurement that the engine's new reading changed no content.
+        // Milestone 9.22 (W9, superseding W6) moved no pin: Bain's and Cutter's targets still name
+        // their Move, and the engine now reads a Move of 0 spaces as a move.
         private static readonly IdentityPin[] Pins =
         {
             new IdentityPin("arien", "arien-8-35l-rev-1", "a980d139925f8bfe87fe6b501978697944d0a7473c0d42cf6df70ee85c1758a5"),

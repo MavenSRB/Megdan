@@ -1462,6 +1462,16 @@ RefusalExplanation explanation = null)
                     return Verdict.Performable;
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
+                    // Milestone 9.22, user ruling W9 (superseding W6): a Move of 0 spaces is still a
+                    // move. A subject already where the sentence sends it - the target already beside
+                    // Bain, the obstacle Cutter already stands beside - is a legal target, so the play
+                    // is offered and the card resolves; it is greyed only when no legal target exists.
+                    if (handler is IEffectZeroSpaceMoveCapabilityHandler zeroSpace &&
+                        zeroSpace.WouldMoveZeroSpaces(capabilityContext))
+                    {
+                        return Verdict.Performable;
+                    }
+
                     // Milestone 8.35l. Ask what refused, before reading the failure policy: the node
                     // itself where it can explain its own refusal, and otherwise the consumer this
                     // selection was narrowed by, which is where a selection's refusal actually lives.

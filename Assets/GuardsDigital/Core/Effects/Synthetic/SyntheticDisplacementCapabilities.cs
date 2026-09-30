@@ -511,7 +511,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private sealed class DirectMoveHandler :
             IEffectCapabilityHandler,
             IEffectImmunityOverrideCapabilityHandler,
-            IEffectActorRelocationCapabilityHandler
+            IEffectActorRelocationCapabilityHandler,
+            IEffectZeroSpaceMoveCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
             private readonly bool requiresAdjacentEnemyHeroForPush;
@@ -712,6 +713,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         .IntegerValue == DirectMoveDestinationPolicy.NamedSpace
                         ? EffectExecutionResultKind.Applied
                         : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Milestone 9.22, user ruling W9: a Move whose sentence names where the mover goes, and
+            /// whose mover already stands there, moves it 0 spaces - Get over here!'s target already
+            /// beside Bain ("until you are adjacent" is satisfied where it stands), Grappling Bolt's
+            /// obstacle Cutter already stands beside. Such a mover is still a legal subject; the Move
+            /// itself has no destination to walk to, which its own failure policy decides at
+            /// resolution exactly as before. Only a named destination is read: every other policy
+            /// offers destinations, and one that offers none has not moved anything 0 spaces.
+            /// </summary>
+            public bool WouldMoveZeroSpaces(EffectCapabilityContext context)
+            {
+                var named = context.Input(NamedDestinationParameterName);
+                return (DirectMoveDestinationPolicy)context.Input(DestinationPolicyParameterName)
+                        .IntegerValue == DirectMoveDestinationPolicy.NamedSpace &&
+                    named.Kind == EffectValueKind.Coordinate &&
+                    TryResolveChooser(context, out _) &&
+                    TryResolveMover(context, out _, out var moverAt) &&
+                    moverAt.Equals(named.Coordinate);
+            }
 
             /// <summary>
             /// Milestone 8.57b. The hero this Move's declaration hands the decision to, or the
