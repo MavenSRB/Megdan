@@ -441,6 +441,14 @@ namespace GuardsDigital.Tests.EditMode
                 ["rowenna-throw-the-gauntlet-skill | gauntlet-move"] =
                     "Throw the Gauntlet: \"that hero may move 1 space\"",
 
+                // Milestone 9.21f. Razzle's two exact moves of another body; the four siblings print
+                // "up to 2 / up to 3 spaces" and declare UpTo, and the retreat's distance is the push's
+                // realised count, bound from a node rather than a literal.
+                ["razzle-alleyoop-skill-text | razzle-alleyoop-other-body-move"] =
+                    "Alleyoop: \"Move one other you 1 space\" (Group Performance and Team Spirit print \"up to 2 / 3 spaces\")",
+                ["razzle-tightrope-movement-text | razzle-tightrope-other-body-move"] =
+                    "Tightrope: \"you may move another one of you 1 space\" (High Wire and Wire Dancers print \"up to 2 / 3 spaces\")",
+
                 ["sabina-point-blank-shot-attack-text | shot-push"] =
                     "Point Blank Shot: \"If the target is adjacent to you, push it 1 space\"",
                 ["sabina-troop-movement-skill | troop-move"] =

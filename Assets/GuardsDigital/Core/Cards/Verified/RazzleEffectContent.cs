@@ -29,7 +29,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// Razzle's capabilities so far: the spawn of one body (9.21d), and the removal of his own
-        /// bodies with the "more than one of you" gate (9.21e).
+        /// bodies with the "more than one of you" gate (9.21e), and the other-body selection and the
+        /// retreat's line end of the moves and swaps (9.21f, <see cref="MoveHandlers"/>).
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new[]
@@ -37,7 +38,10 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticHeroBodyCapabilities.SpawnActorBodyHandler(SpawnBodyV1),
                 SyntheticHeroBodyCapabilities.RemoveActorBodiesHandler(RemoveBodiesV1),
                 SyntheticHeroBodyCapabilities.ActorHasSeveralBodiesHandler(SeveralBodiesV1)
-            };
+            }
+                // ===== MERGE BLOCK (9.21f) =====
+                .Concat(MoveHandlers());
+                // ===== END MERGE BLOCK =====
 
         /// <summary>
         /// "After the attack: Spawn up to 3 more of you in radius." Three optional spawns of one body

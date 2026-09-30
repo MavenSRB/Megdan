@@ -243,6 +243,9 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.21e. The removal faces: Phantom Strike's Conditional gates an optional removal
             // after the Attack and binds no Attack target, so it adds no at-risk gate either.
             foreach (var card in RazzleCardContent.RemovalDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.21f. The moves and swaps: Skills and Movement text with no Attack, so they
+            // bind no Attack target and add no at-risk gate.
+            foreach (var card in RazzleCardContent.MoveDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
         }
 
         /// <summary>

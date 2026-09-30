@@ -225,6 +225,36 @@ Left to later blocks after 9.21d: registration at 9.21j (the handler type is new
 
 Left to later blocks after 9.21e: Crowd Control's Defense text (9.21g, onto `CrowdControlDefinition`'s `PrimaryDefense`); registration and the `HeroBodiesRosterSweepTests` classification of `razzle-remove-bodies@1` (acting body) and `razzle-several-bodies@1` (9.21j); the removal's presentation and log row (9.21i).
 
+**What 9.21f built** (the moves and swaps of his bodies; unregistered, revision `razzle-9-21d-prep` kept):
+- **The faces** (`RazzleMoveFaces.cs`, block list `RazzleCardContent.MoveDefinitions`, added to the conditional-choose corpus sweep; `RosterMoveLeashSweepTests` reads it by reflection and lists the two exact moves):
+  - Alleyoop, Group Performance, Team Spirit (Blue Skill - Ranged 3 / 4 / 4): `synthetic-range-hero-target@1` on his side naming `synthetic-swap-actor@1` as consumer, the Swap of the acting body, then `razzle-other-body@1` (`if able`) and card-text `synthetic-direct-move@3` of that body, exact 1 (`if able`) or `up to` 2 / 3. No other body (or none able to step): the Swap resolves and the move is not performed (RZ-Q8); the offer is judged on the Swap.
+  - Magic Trick, Aaaand it's gone! (Blue Skill, no icon): `choose-target@2` at reach 1 on either side (push activity), `synthetic-push-target@3` `up to` 2 / 3 from 0, then `actor-space@1`, `razzle-retreat-line-end@1` and a `NamedSpace` direct Move, both `if able`, bound to the push's realised travel.
+  - Tightrope, High Wire, Wire Dancers (Green Movement 2 primary, `CardTextTiming.AfterTheMovement`): `razzle-other-body@1` (`may`) and the same direct Move, exact 1 (`if able`) or `up to` 2 / 3.
+  - Theatrics (Green Skill - Ranged 2): `synthetic-range-minion-target@1` on either side naming the Swap, Arien's shape.
+- **New shapes** (`SyntheticHeroBodyMoveCapabilities`, generic, card-free; `RazzleEffectContent.MoveHandlers()` concatenated into `Handlers()` in one MERGE BLOCK):
+  - `ChooseOtherActorBodyHandler` ("another one of you"): the actor's standing bodies other than the acting body, anywhere, as spaces, with a consumer so a body the Move cannot move is not offered.
+  - `ContinuedLineEndHandler`: the farthest space of at most N straight steps along the line from a named space through the acting body, by the board's own direct-move reachability, so it stops before a block or the edge (RZ-Q10). Nought, or blocked at once, is impossible (skipped under `if able`). It asks nothing.
+- **Existing vocabulary widened:**
+  - `synthetic-push-target@3` gains the output `pushedSpaces` (`SyntheticDisplacementCapabilities.PushedSpacesOutputName`), the named target's realised travel. The push's own `distance` is the distance chosen, which a block shortens. It is published only to a node that declares it; no digest moved.
+  - The printed-icon selection family now leaves out every body of the actor unless the sentence includes self (RZ-Q5, p.17). Before, it left out only the acting body's space; a one-bodied actor's candidates are unchanged.
+- **Found on the way:** a `choose-target@2` node publishes the named unit's identity whether or not it declares it, so a node that declares only `chosenSpace` records an outcome the snapshot refuses to read back. Magic Trick's subject declares all three. Min's stance pushes declare only `chosenSpace`; a restore mid-push there is not covered and is reported for its own block.
+- **No schema, wire or match-log move** (v50, `/27`).
+- **Evidence.** `RazzleMoveFacesTests` (own staged round: Razzle Blue with four bodies, a Blue ally where a face names a friendly hero) covers:
+  - the printed values, upgrade lines and compositions;
+  - the friendly hero never his body or an enemy, Range 3 against Range 4;
+  - the Swap of the acting body, and the other body anywhere keeping its identity;
+  - no other body, and a boxed-in other body;
+  - body 2 acting, and up to 2 / 3 with 0 admitted;
+  - every offered body answered on a restored copy;
+  - Magic Trick's push target never his body, the retreat after a 0, 1 and 2 push, a push stopped short, a push blocked at once, a retreat blocked by a unit, by the edge and at once, an enemy hero pushed from body 2, and Aaaand it's gone! at 3;
+  - Tightrope after a Movement, after 0 spaces, never after a Fast Travel, with one body, declined, and High Wire / Wire Dancers from body 2;
+  - Theatrics on either side, from body 2;
+  - a friendly-hero selection with no consumer never naming his other body (fails on the old family);
+  - restore and replay at the friendly hero, the other body, its move, the push target and distance, and the minion.
+  - `CapabilityFeasibilityConformanceTests` asks both new handler types its probe rules (member count unchanged at 22).
+
+Left to later blocks after 9.21f: registration and the `HeroBodiesRosterSweepTests` classification of `razzle-other-body@1` (acting body, his own bodies) and `razzle-retreat-line-end@1` (acting body) at 9.21j, with milestone 7.9's first-arrival gate and the registered-type count; the moved and swapped bodies' presentation (9.21i); Spectacle's repeat by a different body (9.21h).
+
 ## Presentation needs
 
 - Several standees for one hero, all drawn from element 8596252's team face. A quiet per-body mark keeps them apart in the log and the pick. Hover, the target cue (8.62) and the Defeat fade apply per body.

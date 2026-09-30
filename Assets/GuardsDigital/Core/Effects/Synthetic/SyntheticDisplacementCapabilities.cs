@@ -388,6 +388,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string RealisedDistanceOutputName = "distance";
 
         /// <summary>
+        /// Milestone 9.21f. How many spaces the ONE unit a named Push took actually travelled - Razzle's
+        /// Magic Trick and Aaaand it's gone!, "for every space the target moved" (RZ-Q10).
+        ///
+        /// <para>The Push's own <c>distance</c> fact is the distance CHOSEN, which p.18 then stops short
+        /// wherever an obstacle stands behind the target, so it is not "every space the target moved".
+        /// This is the resolved path's realised length, 0 for a push the geometry left standing or
+        /// the commit refused. Declared on the named Push alone, because a batch has no one target;
+        /// published only to a node that declares it, so every Push composed before it produces
+        /// exactly the facts it did - and an added OUTPUT moves no corpus digest (the identity walker
+        /// digests a capability's reference and Active effects, never its schema).</para>
+        /// </summary>
+        public const string PushedSpacesOutputName = "pushedSpaces";
+
+        /// <summary>
         /// Direct self Move ending beside an eligible enemy hero for a following Push. The player
         /// chooses the destination here and the named hero through the ordinary adjacent selection.
         /// GA-Q1 permits the current space when it already satisfies that target requirement.
@@ -1444,6 +1458,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new EffectOutputBinding(FirstHeroCrossedAZoneOutputName, EffectValueKind.Boolean)
             };
 
+            if (named)
+            {
+                // Milestone 9.21f. The one named target's realised travel - see PushedSpacesOutputName.
+                outputs.Add(new EffectOutputBinding(PushedSpacesOutputName, EffectValueKind.Integer));
+            }
+
             if (!named)
             {
                 // Milestone 8.8, and the batch's alone. Which side of the board a push may take and
@@ -1825,6 +1845,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // anything is asked to enter it, and the batch never refuses itself.
             var moved = 0;
 
+            // Milestone 9.21f. The realised travel of the committed paths, which a named Push (one
+            // target) publishes as PushedSpacesOutputName; nought when nothing moved.
+            var realised = 0;
+
             // Milestone 8.19c1. What a Push applied to, in the order it was committed. p.18's "if you
             // push" is the displacement rather than the attempt, so this list is built from accepted
             // commits alone: a target the geometry left standing where it was is not in it, and a push
@@ -1847,6 +1871,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (committed.Accepted)
                 {
                     moved++;
+                    realised = Math.Max(realised, entry.Value.ActualDistance);
                     var subject = entry.Key.AsRuleObject();
                     if (subject.IsDefined)
                     {
@@ -1856,7 +1881,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             return EffectExecutionResult.Applied(
-                PushOutcomeFacts(context, distance, moved, stopped, crossedAZone),
+                PushOutcomeFacts(context, distance, moved, stopped, crossedAZone, realised),
                 appliedPushes: displaced);
         }
 
@@ -1905,7 +1930,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             int distance,
             int moved,
             IReadOnlyList<HeroId> stopped,
-            IReadOnlyList<HeroId> crossedAZone)
+            IReadOnlyList<HeroId> crossedAZone,
+            int realised)
         {
             var facts = new List<EffectOutcomeFact>();
             if (context.Publishes("distance"))
@@ -1944,6 +1970,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 facts.Add(new EffectOutcomeFact(
                     FirstZoneCrossingHeroOutputName, EffectValue.Hero(crossedAZone[0])));
+            }
+
+            // Milestone 9.21f. Declared by the named Push alone (see PushedSpacesOutputName).
+            if (context.Publishes(PushedSpacesOutputName))
+            {
+                facts.Add(new EffectOutcomeFact(PushedSpacesOutputName, EffectValue.Integer(realised)));
             }
 
             return facts;

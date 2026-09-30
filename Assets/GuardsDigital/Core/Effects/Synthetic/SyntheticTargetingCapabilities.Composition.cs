@@ -562,7 +562,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     continue;
                 }
 
-                if (moved && !includeSelf && target.Equals(actor))
+                // Milestone 9.21f (RZ-Q5). Unmoved, the disk has already left the acting body's own
+                // space out; references compare at hero grain, so this also leaves out every OTHER
+                // body of a many-bodied actor - none is "a unit" or "a friendly hero" for his own text
+                // (p.17 "Friendly ... never includes you"). A one-bodied actor stands nowhere else, so
+                // every selection composed before it keeps its exact candidate set.
+                if (!includeSelf && target.Equals(actor))
                 {
                     continue;
                 }

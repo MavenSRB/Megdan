@@ -125,6 +125,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(FindPerformingProbes(removal), Is.Empty);
         }
 
+        /// <summary>
+        /// Milestone 9.21f. The other-body selection and the retreat's line end are registered only when
+        /// Razzle is dealt (9.21j), so they are asked of their types here too. Neither commits anything:
+        /// the Moves after them are the registered direct Move.
+        /// </summary>
+        [Test]
+        public void TheUnregisteredHeroBodyMoves_DeriveTheirProbesFromTheirExecution_AndCommitNothing()
+        {
+            var moves = GuardsDigital.Core.Cards.Verified.RazzleEffectContent.MoveHandlers()
+                .Select(handler => handler.GetType())
+                .ToArray();
+            Assert.That(moves, Has.Length.EqualTo(2));
+            Assert.That(ILConformanceScanner.UnresolvedTokens(moves), Is.Empty);
+            Assert.That(FindUnsharedDerivations(moves), Is.Empty);
+            Assert.That(FindPerformingProbes(moves), Is.Empty);
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {
