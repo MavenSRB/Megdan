@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.35 Up-to line move evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.35 | `choose-line-destination@1` offers the mover's own space when its floor is bound to nought, beside at least one walked space; Cutter's two shots, Misa's five Blue Skills and Silverarrow's Divert Attention and Lead Astray bind it, so their printed "up to" moves offer 0 (W5). Three content revisions move to `-9-35-rev-1`. [Definition](../../Roadmap/PHASE_9.md#x-935-the-up-to-line-moves-of-cutter-misa-and-silverarrow-offer-0-spaces). | `milestone/9.35` |
+
 ## Milestone 9.32e Blue and Green faces evidence
 
 | Milestone | Outcome and definition | Commit |

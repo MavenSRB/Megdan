@@ -114,33 +114,25 @@ namespace GuardsDigital.Tests.PlayMode
                 "The rider stops the page after the attack has been applied. " + Remaining(runtime));
             Assert.That(retreat.NodeId.Value, Is.EqualTo("retreat-line"), Remaining(runtime));
 
-            // **MEASURED, AND RECORDED RATHER THAN ASSERTED AWAY.** The printed "up to" draws NO
-            // control of its own: `choose-line-destination@1` offers 1..N spaces and declares a floor
-            // of one, so the pause stands with neither a confirm nor a decline and the whole answer is
-            // a board click. That is what this milestone's derivation refinement now reads, and
-            // Silverarrow's own nought-distance journey says the same thing in as many words - "the
-            // zero-distance answer is the occupied origin on the board, not a decline button".
-            //
-            // It is ALSO a gap against this face's own composition, which states in its remarks that
-            // the `UpTo` policy is what turns "an offer she declines" into a step not taken: on this
-            // board the offer holds one space and she cannot decline it. Raised in the completion
-            // evidence; the same is true of Misa's five Blue Skills and Silverarrow's line faces, so
-            // it is a standing question about the handler's floor rather than anything Cutter
-            // introduced.
+            // The printed "up to" draws no control of its own: the whole answer is a board click, as
+            // Silverarrow's own nought-distance journey says - "the zero-distance answer is the
+            // occupied origin on the board, not a decline button". Until milestone 9.35 this offer
+            // held the walked spaces alone, so she could not move 0 (the gap this journey recorded).
+            // Since 9.35 (W5, from live play: "Cutters evasive shot should give option to move 0
+            // spaces") her own space is offered beside them, and clicking her answers 0.
             Assert.That(retreat.MinimumSelections, Is.EqualTo(1), Remaining(runtime));
             Assert.That(retreat.DeclineInvocation, Is.Null,
-                "Recording the measured state: the printed \"up to\" opens no decline of its own. " +
-                "If this ever becomes non-null the handler has lowered its floor and this assertion " +
-                "is what will say so. " + Remaining(runtime));
+                "The 0 answer is her own space on the board, not a decline button. " +
+                Remaining(runtime));
 
             var landings = OfferedSpaces(runtime);
-            Assert.That(landings, Is.EqualTo(new[] { retreatTo }).AsCollection,
-                "Every offered space lies on the heading AWAY from the space the attack captured, " +
-                "and the second one along it is occupied. Offer was: " +
+            Assert.That(landings, Is.EquivalentTo(new[] { from, retreatTo }),
+                "Moving 0 (her own space) and every space on the heading AWAY from the space the " +
+                "attack captured, the second one along it occupied. Offer was: " +
                 string.Join(", ", landings.Select(value => value.ToString())));
             Assert.That(
-                StraightLineQuery.AreInStraightLine(from, landings[0]) &&
-                HexDistanceQuery.Calculate(shotAt, landings[0]) >
+                StraightLineQuery.AreInStraightLine(from, retreatTo) &&
+                HexDistanceQuery.Calculate(shotAt, retreatTo) >
                     HexDistanceQuery.Calculate(shotAt, from),
                 Is.True,
                 "and the retreat moves her further from what she shot, which is what \"the opposite " +
@@ -153,6 +145,53 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(cutterId)).Coordinate,
                 Is.EqualTo(retreatTo),
                 "She backed away down the file she fired along. " + Remaining(runtime));
+        }
+
+        /// <summary>
+        /// Milestone 9.35, from live play: "Cutters evasive shot should give option to move 0 spaces".
+        /// The same shot as the journey above, answered with 0: a click on her own space, where she
+        /// stands, keeps her there and finishes the card (W5: under "up to", moving 0 is doing it).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator EvasiveShotRetreat_AnsweredWithAClickOnHerself_MovesHerZeroSpaces()
+        {
+            yield return LoadStagedScene(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedCutter);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var cutterId = CutterSeat(runtime).HeroId;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var from = runtime.Heroes.Single(hero => hero.HeroId.Equals(cutterId)).Coordinate;
+
+            yield return HerTurnOn(root, cutterId, CutterCardContent.EvasiveShot);
+            yield return PointTrayAt(root, cutterId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            yield return null;
+
+            var near = runtime.ReadModel.Minions.Single(minion =>
+                minion.Coordinate.Equals(new HexCoordinate(-4, 2)));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, MinionView(near.MinionId).transform.position),
+                Is.True, "She shoots the near minion, which opens a retreat. " + Remaining(runtime));
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Is.EqualTo("retreat-line"),
+                Remaining(runtime));
+            Assert.That(OfferedSpaces(runtime), Has.Member(from),
+                "Moving 0 is offered as her own space. " + Remaining(runtime));
+
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(from).transform.position), Is.True,
+                "A click on the space she stands on answers 0.");
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(cutterId)).Coordinate,
+                Is.EqualTo(from), "She moved 0 spaces. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The retreat is answered and nothing else is asked. " + Remaining(runtime));
         }
 
         /// <summary>

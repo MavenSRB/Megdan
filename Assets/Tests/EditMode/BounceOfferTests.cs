@@ -131,9 +131,14 @@ namespace GuardsDigital.Tests.EditMode
                 "The composed set is Cutter's five Reds, Misa's five Blues, Silverarrow's two Greens " +
                 "and her Ultimate, and Swift's Silver basic.");
 
+            // Milestone 9.35. A floor of exactly nought is a different declaration: "up to" makes 0 a
+            // real choice (W5), and the bodies printing it bind nought so the mover's own space is
+            // offered. Those nine faces are pinned below on their own, so this set stays the faces
+            // printing an exact distance.
             Assert.That(
                 found.Where(offer => offer.Node.Inputs.Any(input =>
-                        input.ParameterName == FloorParameter))
+                        input.ParameterName == FloorParameter) &&
+                        Literal(offer.Node, FloorParameter).IntegerValue != 0)
                     .Select(offer => offer.Owner)
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
@@ -157,6 +162,23 @@ namespace GuardsDigital.Tests.EditMode
                 "Suggestion joined them at milestone 9.30f: \"If able, an enemy hero in radius moves " +
                 "3 spaces in a straight line\" is exactly three or not at all (GY-Q6, Whisper Ruling " +
                 "16a), on the enemy's feet, with that hero's seat choosing the line.");
+
+            Assert.That(
+                found.Where(offer => offer.Node.Inputs.Any(input =>
+                        input.ParameterName == FloorParameter) &&
+                        Literal(offer.Node, FloorParameter).IntegerValue == 0)
+                    .Select(offer => offer.Owner)
+                    .Distinct()
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "cutter-evasive-shot", "cutter-tumble-shot", "misa-crushing-squall",
+                    "misa-dash-and-slash", "misa-death-from-above", "misa-gust-of-wind",
+                    "misa-sudden-breeze", "silverarrow-divert-attention", "silverarrow-lead-astray"
+                }.OrderBy(value => value, StringComparer.Ordinal)),
+                "Milestone 9.35: the faces printing \"up to\" through this offer bind a floor of " +
+                "nought, so moving 0 (the mover's own space) is offered (W5). A further name here is " +
+                "a face printing \"up to\"; a missing one is an \"up to\" face that lost its 0 answer.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -166,8 +188,12 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// The claim every optional narrowing in this catalog owes, and the one this milestone's own
         /// safety rests on: a body that binds nothing gets exactly the set it got before the parameter
-        /// existed. Asserted twice - unbound, and bound to the nought an unbound optional Integer
-        /// reads as - because those are two different ways to write "I said nothing about a floor".
+        /// existed.
+        ///
+        /// <para><b>Milestone 9.35 changed what a BOUND nought says.</b> Until then nought and unbound
+        /// were one reading. Since 9.35 a floor bound to nought is the "up to" declaration (W5): the
+        /// same walked set, plus the mover's own space as the 0 answer. An unbound floor is untouched,
+        /// so every body that binds none keeps its exact set.</para>
         /// </summary>
         [Test]
         public void ADeclarationBindingNoFloor_KeepsItsExactCandidateSet()
@@ -179,9 +205,10 @@ namespace GuardsDigital.Tests.EditMode
                 "before milestone 8.59 and what every body that binds no floor still gets.");
             Assert.That(
                 Destinations(board, floor: 0, ceiling: 3),
-                Is.EqualTo(Destinations(board, floor: null, ceiling: 3)),
-                "A floor of nought is the absence of a floor: standing still was never on this offer, " +
-                "so nought and unbound are one reading rather than two.");
+                Is.EquivalentTo(Destinations(board, floor: null, ceiling: 3)
+                    .Concat(new[] { ContinuedLineBoard.Origin })),
+                "Milestone 9.35: a floor bound to nought is the walked set plus standing still - the " +
+                "0 answer \"up to\" makes real (W5).");
             Assert.That(
                 Destinations(board, floor: 1, ceiling: 3),
                 Is.EqualTo(Destinations(board, floor: null, ceiling: 3)),

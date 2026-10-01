@@ -313,6 +313,49 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 9.35, from live play: "Cutters evasive shot should give option to move 0
+        /// spaces". "Up to" makes 0 a real choice (W5), so a floor BOUND to nought offers the mover's
+        /// own space beside the spaces along the file, and answering it names that space.
+        /// </summary>
+        [Test]
+        public void AFloorBoundToNought_OffersStandingStillBesideTheFile()
+        {
+            var board = ContinuedLineBoard.CreateBoard();
+            var handler = Handler(SyntheticRosterCapabilities.ChooseLineDestinationV1);
+            var context = LineContext(
+                board, EffectFailurePolicy.UpTo, 3, CameFrom(1), minimumDistance: 0);
+
+            Assert.That(
+                handler.Execute(context).Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Is.EqualTo(new[] { ContinuedLineBoard.Origin, Ahead(1), Ahead(2), Ahead(3) }
+                    .OrderBy(space => space.Q).ThenBy(space => space.R).ToArray()),
+                "W5: moving 0 spaces is offered as her own space, beside 1..3 along the file.");
+            Assert.That(
+                handler.Resume(context, new[] { EffectValue.Space(ContinuedLineBoard.Origin) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied),
+                "and answering it is an accepted answer.");
+            Assert.That(Destinations(board, maximum: 3, awayFrom: CameFrom(1)),
+                Has.No.Member(ContinuedLineBoard.Origin),
+                "An unbound floor is still one: every body written before 9.35 is unchanged.");
+        }
+
+        /// <summary>
+        /// Milestone 9.35. With no space along the file, standing still is not offered on its own: there
+        /// is nothing to choose between, so the empty offer stays the step not taken it was.
+        /// </summary>
+        [Test]
+        public void AWalledInRetreat_WithAFloorOfNought_IsStillAStepNotTaken()
+        {
+            var walledIn = ContinuedLineBoard.CreateBoard(
+                Array.Empty<HexCoordinate>(), new[] { Ahead(1) }, Array.Empty<HexCoordinate>());
+
+            Assert.That(
+                Handler(SyntheticRosterCapabilities.ChooseLineDestinationV1).Anticipate(
+                    LineContext(walledIn, EffectFailurePolicy.UpTo, 3, CameFrom(1), minimumDistance: 0)),
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+        }
+
+        /// <summary>
         /// The retreat's half of the same claim the lunge's makes: the set the offer opens with and the
         /// set the answer is checked against are one set, so a space on another file cannot be
         /// submitted even though the unnarrowed clause would have offered it.
@@ -472,12 +515,18 @@ namespace GuardsDigital.Tests.EditMode
             AdjacentMoveAuthority board,
             EffectFailurePolicy policy,
             int maximum,
-            HexCoordinate? awayFrom)
+            HexCoordinate? awayFrom,
+            int? minimumDistance = null)
         {
             var inputs = new Dictionary<string, EffectValue>
             {
                 ["maximumDistance"] = EffectValue.Integer(maximum)
             };
+            if (minimumDistance.HasValue)
+            {
+                inputs["minimumDistance"] = EffectValue.Integer(minimumDistance.Value);
+            }
+
             if (awayFrom.HasValue)
             {
                 inputs[SyntheticRosterCapabilities.ContinuedLineFromParameter] =

@@ -20,7 +20,7 @@ and Tier, upgrade relationships, printed values, exact rules text, ordered steps
 effect-node bindings, capability identities, item contributions, Active-effect versus continuous-source
 classification, and the source-linked scenarios each row rests on.
 
-Her current content revision is `misa-8-36f-rev-1`. Watch How I Soar's Defeat selection admits only
+Her current content revision is `misa-9-35-rev-1`. Watch How I Soar's Defeat selection admits only
 opposing minions: rulebook printed p.13 prohibits defeating friendly heroes or minions, and this card's
 generic "a minion" does not override that prohibition. The original `AnyTeam` selection was incorrect.
 The ordinary Skill path now settles the requested Defeat through the shared reward/removal-prevention

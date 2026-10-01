@@ -134,8 +134,8 @@ namespace GuardsDigital.Tests.PlayMode
             // journey answers by making it rather than by inspecting the question.
             var travelling = herLine.Where(space => !space.Equals(silverarrowAt)).ToArray();
             Assert.That(travelling, Is.Not.Empty,
-                "A bound of one admits a step of one, so the only space offered cannot be the one " +
-                "she is already standing on. " + Remaining(runtime));
+                "A bound of one admits a step of one; her own space (the 0 answer, milestone 9.35) is " +
+                "not a step. " + Remaining(runtime));
             var herStep = FirstClickableSpace(pointerInput, travelling);
             var stepNode = StandingNode(runtime);
             Assert.That(

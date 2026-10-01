@@ -450,6 +450,12 @@ namespace GuardsDigital.Tests.EditMode
                     pair.Card.Value + " prints \"up to\", so a hero with no straight line available " +
                     "has moved zero of them legally rather than failed.");
                 Assert.That(
+                    line.Inputs.Any(input => input.ParameterName == "minimumDistance" &&
+                        input.Literal.IntegerValue == 0),
+                    Is.True,
+                    pair.Card.Value + ": milestone 9.35 (W5) - \"up to\" makes 0 a real choice, so the " +
+                    "floor is bound to nought and her own space is offered beside the line.");
+                Assert.That(
                     (RosterUnitKind)traversed.Inputs
                         .Single(input => input.ParameterName ==
                             SyntheticRosterCapabilities.UnitKindParameter)

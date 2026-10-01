@@ -579,6 +579,12 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromLiteral(
                             "maximumDistance", EffectValue.Integer(distance)),
 
+                        // Milestone 9.35 (W5): "up to" makes 0 a real choice, so the floor is bound
+                        // to nought and her own space is offered beside the line. Moving 0 crosses
+                        // nobody, so the rider then finds nobody and does nothing.
+                        EffectInputBinding.FromLiteral(
+                            "minimumDistance", EffectValue.Integer(0)),
+
                         // "ignoring obstacles", declared rather than assumed. The shared
                         // `choose-line-destination@1` defaults to walking p.18's obstacles - milestone
                         // 8.35z30's three faces print no crossing - so all five of these Blue Skills

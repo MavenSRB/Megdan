@@ -423,6 +423,12 @@ namespace GuardsDigital.Tests.EditMode
                     bound.SourceOutputName,
                     Is.EqualTo(SyntheticDisplacementCapabilities.RealisedDistanceOutputName),
                     id.Value);
+                Assert.That(
+                    line.Inputs.Any(input => input.ParameterName == "minimumDistance" &&
+                        input.Literal.IntegerValue == 0),
+                    Is.True,
+                    id.Value + ": milestone 9.35 (W5) - \"up to that number\" makes 0 a real choice, so " +
+                    "the floor is bound to nought and her own space is offered beside the line.");
             }
         }
 

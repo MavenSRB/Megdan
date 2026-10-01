@@ -1690,12 +1690,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// raised to one rather than treated as a narrower question. A body that binds the
             /// parameter says the distance its printed sentence states, and a floor above the ceiling
             /// is a legal question with no answer, on the same reading as a ceiling of nought.</para>
+            ///
+            /// <para><b>Milestone 9.35: a floor BOUND to nought offers standing still.</b> "Move up to N
+            /// spaces" makes 0 a real choice (W5), so a body printing "up to" binds the floor to nought
+            /// and the mover's own space is offered beside the walked ones - the 0 answer Shocking
+            /// Grasp's move offers by the same space - whenever at least one walked space is offered.
+            /// The walk itself still starts at one, and an unbound floor keeps every body written
+            /// before this milestone exactly as it was.</para>
             /// </summary>
             public static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
                 var maximum = context.Input("maximumDistance").IntegerValue;
                 var minimum = Math.Max(1, context.Input("minimumDistance").IntegerValue);
+                var offersStandingStill = context.Inputs.ContainsKey("minimumDistance") &&
+                    context.Input("minimumDistance").Kind == EffectValueKind.Integer &&
+                    context.Input("minimumDistance").IntegerValue == 0;
                 var crosses = context.Inputs.ContainsKey(IgnoresObstaclesParameter) &&
                     context.Input(IgnoresObstaclesParameter).BooleanValue;
 
@@ -1794,6 +1804,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
 
                     found.Add(route.Destination);
+                }
+
+                // Milestone 9.35. The 0 answer "up to" makes real (W5): the mover's own space, offered
+                // beside a move that can be made. With no space to move to there is nothing to choose
+                // between, and the empty offer stays the step not taken it always was.
+                if (offersStandingStill && found.Count > 0)
+                {
+                    found.Add(moverAt);
                 }
 
                 return found

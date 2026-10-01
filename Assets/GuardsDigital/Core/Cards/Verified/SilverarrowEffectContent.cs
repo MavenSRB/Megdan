@@ -485,7 +485,13 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectInputBinding.FromNodeOutput(
                                 "maximumDistance", shove,
                                 SyntheticDisplacementCapabilities.RealisedDistanceOutputName,
-                                EffectValueKind.Integer)
+                                EffectValueKind.Integer),
+
+                            // Milestone 9.35 (W5): "up to that number" makes 0 a real choice, so her
+                            // own space is offered beside the line. An enemy moved 0 still bounds this
+                            // at nought, which offers nothing.
+                            EffectInputBinding.FromLiteral(
+                                "minimumDistance", EffectValue.Integer(0))
                         },
                         outputs: new[]
                         {

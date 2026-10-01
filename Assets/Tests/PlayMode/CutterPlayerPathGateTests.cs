@@ -70,6 +70,10 @@ namespace GuardsDigital.Tests.PlayMode
         private const string RetreatJourney =
             "EvasiveShotFiresDownAFile_ThenRetreatsInTheOppositeDirection";
 
+        // Milestone 9.35 (W5): the same retreat answered with 0, a click on her own space.
+        private const string RetreatZeroJourney =
+            "EvasiveShotRetreat_AnsweredWithAClickOnHerself_MovesHerZeroSpaces";
+
         private const string EnemyModalJourney =
             "XMarksTheSpotPutsItsModalToTheEnemySeat_WhoChoosesToBeMoved";
 
@@ -210,7 +214,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
                         Prove(AfterAttackTextPause, RetreatJourney),
-                        Prove(BoardSpaceSelection, RetreatJourney)
+                        Prove(BoardSpaceSelection, RetreatJourney),
+                        Prove(BoardSpaceSelection, RetreatZeroJourney)
                     },
                     new[]
                     {

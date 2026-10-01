@@ -890,6 +890,12 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(SyntheticRosterCapabilities.FormerTargetSpaceV1));
             Assert.That(bound.SourceNodeId, Is.EqualTo(new EffectNodeId("retreat-target-space")));
             Assert.That(IntegerInput(line, "maximumDistance"), Is.EqualTo(spaces));
+            Assert.That(
+                line.Inputs.Any(input => input.ParameterName == "minimumDistance") &&
+                    IntegerInput(line, "minimumDistance") == 0,
+                Is.True,
+                "Milestone 9.35 (W5): \"up to\" makes 0 a real choice, so the floor is bound to nought " +
+                "and her own space is offered beside the file.");
             Assert.That(line.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo));
             Assert.That(
                 NodeOf(root, "retreat-move").FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),

@@ -863,10 +863,12 @@ namespace GuardsDigital.Core.Cards.Verified
         /// retreat works identically whether the Attack killed or not.</para>
         ///
         /// <para><b>Both nodes carry "up to" and that is the printed distance's own optionality.</b>
-        /// The chooser offers 1..N and never nought, and the <see cref="EffectFailurePolicy.UpTo"/>
-        /// policy is what turns an offer she declines - or an empty one, when the file is blocked or
-        /// the target space is her own - into a step simply not taken rather than a Skill that
-        /// stops.</para>
+        /// Milestone 9.35, reported from live play ("Cutters evasive shot should give option to move
+        /// 0 spaces"): "up to" makes 0 a real choice (W5), so the chooser's floor is bound to nought
+        /// and her own space is offered beside the 1..N spaces along the file - the 0 answer, as
+        /// Shocking Grasp's move offers it. Answering it names the space she stands on, which the
+        /// Move has no step to; the <see cref="EffectFailurePolicy.UpTo"/> policy turns that, or an
+        /// empty file, into a step simply not taken rather than an action that stops.</para>
         /// </summary>
         private static EffectDefinition CreateRetreat(
             CardDefinitionId cardId, string contentRevision, int spaces)
@@ -901,6 +903,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             EffectInputBinding.FromLiteral(
                                 "maximumDistance", EffectValue.Integer(spaces)),
+                            EffectInputBinding.FromLiteral(
+                                "minimumDistance", EffectValue.Integer(0)),
                             EffectInputBinding.FromNodeOutput(
                                 SyntheticRosterCapabilities.ContinuedLineFromParameter,
                                 targetSpace, TargetSpaceOutput, EffectValueKind.Coordinate)

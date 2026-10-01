@@ -174,7 +174,7 @@ namespace GuardsDigital.Tests.EditMode
             // deliberately wrong value and the digest read off this oracle's own failure output. A
             // filtered pin run has been green while digests moved, which is why the rule is the
             // complete run rather than the cheap one.
-            new IdentityPin("misa", "misa-8-36f-rev-1", "e9ec21d33cb946e6465f6979575e3e75f26ff41f4fe3e888843714be68b6b84e"),
+            new IdentityPin("misa", "misa-9-35-rev-1", "9eab4b6ae7c87a46b177f8dbae8993a5129ba917a490cbf0ff96d70bba8e3ccc"),
             // Milestone 8.35z46. THE NINTH PIN, arriving on exactly the terms the seventh and eighth
             // did: a pin is a claim about content a configured match loads, and milestone 8.35z30
             // composed Silverarrow without dealing her.
@@ -187,7 +187,7 @@ namespace GuardsDigital.Tests.EditMode
             // its offer a ceiling and no floor, so the free move lit the spaces ONE away too; the
             // floor is now bound on `wild-hunt-line`, which is a literal added to one node of one
             // face and is the whole of this digest's move.
-            new IdentityPin("silverarrow", "silverarrow-8-66-rev-1", "11f25c816cc90e87ed915834a97f7846b3e9f33fa9ae082f8dc57e15fb51e4b9"),
+            new IdentityPin("silverarrow", "silverarrow-9-35-rev-1", "48492b0579622190647a58361492ce444bd845cc119af9e7b3444f520d7e15fb"),
             // Milestone 8.35z50. THE TENTH PIN, arriving on exactly the terms the seventh through
             // ninth did: a pin is a claim about content a configured match loads, and milestone
             // 8.35z31 composed Ursafar without dealing him.
@@ -262,7 +262,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("cutter", "cutter-9-6-rev-1", "f63814cf2d1c4265c638fe39ab433ff222e6464f8725fdd08cd7c3a1297c243e"),
+            new IdentityPin("cutter", "cutter-9-35-rev-1", "167a310510e22b92b46a0475e6fb6dcb388ed9a1324b97b64b927bb97105b3ee"),
             // Milestone 8.40j. THE FIFTEENTH PIN, on exactly the terms the seventh through fourteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.40i composed Bain's eighteen faces without dealing him.
