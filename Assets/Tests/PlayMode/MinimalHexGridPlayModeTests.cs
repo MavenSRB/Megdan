@@ -801,6 +801,83 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30a, by the user's 2026-10-01 decision (approved mockup D): every unlocked
+        /// Ultimate is a small card in its plaque's items strip. Measured where the strip is fullest -
+        /// one rail carrying all six item channels, so its chips wrap, beside the mirrored rail with
+        /// its own items - at the three validated viewports, and captured there for the user's review.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_UnlockedUltimateSitsInsideTheItemsStripAtTheThreeValidatedViewports()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            MatchSceneCompositionRoot.NextComposedCardContent =
+                SceneCardContent.VerifiedTierThreeEngagedMirror;
+            yield return LoadComposedScene();
+            var root = Root();
+            RenderAllChannelItemPlaque(root.Runtime);
+            try
+            {
+                foreach (var size in new[]
+                {
+                    new Vector2Int(2560, 1440), new Vector2Int(2048, 1152), new Vector2Int(2560, 540)
+                })
+                {
+                    var where = size.x + "x" + size.y;
+                    UiPlayer.SetPlayerViewport(
+                        (uint)size.x, (uint)size.y, "9.30a Ultimate in the items strip");
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+
+                    Assert.That(
+                        Descendants(root.Hud.RootElement).Any(element => element.name == "gd-ultimate"),
+                        Is.False, $"No plaque draws a separate ULTIMATE row at {where}.");
+                    var cards = Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element))
+                        .ToArray();
+                    Assert.That(cards, Has.Length.EqualTo(2),
+                        $"Both mirrored Wasps unlocked High Voltage, and each plaque draws it at {where}.");
+                    foreach (var card in cards)
+                    {
+                        var strip = card.parent?.parent;
+                        Assert.That(strip?.name, Is.EqualTo("gd-bonus-strip"),
+                            "The card is drawn among the item chips, inside the items strip.");
+                        var box = card.worldBound;
+                        var stripBox = strip.worldBound;
+                        Assert.That(
+                            box.xMin >= stripBox.xMin - 0.5f && box.xMax <= stripBox.xMax + 0.5f &&
+                                box.yMin >= stripBox.yMin - 0.5f && box.yMax <= stripBox.yMax + 0.5f,
+                            Is.True,
+                            $"The card {box} stays inside its strip {stripBox} at {where}.");
+                        var coin = Descendants(strip).Single(element => element.name == "gd-hero-coins");
+                        Assert.That(box.height,
+                            Is.LessThanOrEqualTo(coin.worldBound.height + UiPlayer.PixelSnapping()),
+                            $"The card is no taller than the coin that sets the strip's line at {where}.");
+                    }
+
+                    // The coin stays on its line, clear of the card and the wrapped chips, and the
+                    // strip's line is still the taller of the chips and the coin, never their sum.
+                    HeroRailCoinCheck.AssertTheCountStandsClear(root.Hud, "9.30a at " + where);
+                    TestContext.WriteLine(
+                        "9.30a plaques at " + where + ": " + string.Join(", ",
+                            Descendants(root.Hud.RootElement)
+                                .Where(element => element.name == "gd-hero-rail")
+                                .Select(rail => rail.worldBound.height)) + " tall.");
+                    yield return UiPlayer.CaptureScreen(
+                        "tmp/9-30a-ultimate-strip/ultimate-in-items-strip-" + where + ".png");
+                }
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(
+                    restoreWidth, restoreHeight, "9.30a restore the viewport this session was running at");
+            }
+
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator Scene_LevelUpUsesOneContainedCardRowWithoutMovingTheStandingHud()
         {
