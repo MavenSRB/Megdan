@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30a Ultimate in the items strip evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30a | Every hero's unlocked Ultimate is a small purple card in the plaque's items strip; the separate ULTIMATE row is removed; fifteen journeys and two rail checks moved; two regressions and a three-viewport capture case added. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930a-every-unlocked-ultimate-is-a-purple-card-in-the-items-strip). | `milestone/9.30a` |
+
 ## Milestone 9.30 Gydion inventory evidence
 
 | Milestone | Outcome and definition | Commit |
