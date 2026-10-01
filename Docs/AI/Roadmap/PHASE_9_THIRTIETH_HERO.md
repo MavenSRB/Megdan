@@ -33,9 +33,11 @@ Outcome: a card text lets a chosen friendly hero swap their unresolved card with
 Completed 2026-10-01. A teammate's unresolved card and a hand card (or a faceup discarded card) exchange every state in one round operation with this turn's slot and revealed record; the turn order reads the swapped-in Initiative because unresolved cards are read live (p.7). Takahide chooses among teammates the swap can act on; the teammate's `May` and card choice are asked of their seat. The revealed record now also follows 9.32a's resolving swap (found here; regression added). No schema or wire move. The network seat answering for itself needs a configured match, so it is owed by 9.32h with 9.32a's wire check. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32b".
 Historical evidence: [9.32b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932b-unresolved-card-swap-evidence).
 
-### [ ] 9.32c Spaces that are obstacles for the enemy units
+### [x] 9.32c Spaces that are obstacles for the enemy units
 
 Outcome: an Active effect may make spaces count as obstacles for the units of one side only, for the rest of the turn, read around its source hero's current space ("adjacent to you", "in radius"). Every obstacle reader names the piece that moves, ends, is placed, pushed or respawned (lesson 30); friendly pieces and tokens are unaffected (TK-Q3). Composed on synthetic test content only. Closing check: movement, ignoring-obstacles, push, placement and respawn tests failing on the base, for an enemy and a friendly unit; the overlay restored from a snapshot; bots' move generation reads it. T2. Needs TK-Q3.
+Completed 2026-10-01. A unit overlay (`ConditionalObstacleOverlay.DeclareForUnits`) makes the empty spaces of its disk, read around its controller's current space, obstacles for the units of one side only; every movement, push, straight-line, coupled-move, placement and respawn reader that names the piece asks it, and no question naming no piece does (TK-Q3). A piece ignoring obstacles passes through but cannot end there; the effect ends with the turn and survives a restore. Wasp's overlay declaration gained the `UnitRelation` property, so her content identity was re-pinned with no content change; no schema or wire move. Two readings are recorded in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32c".
+Historical evidence: [9.32c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932c-enemy-obstacle-evidence).
 
 ### [ ] 9.32d Compose the gold, silver and Red faces
 

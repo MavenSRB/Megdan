@@ -382,7 +382,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     components.Tokens,
                     actingBody,
                     Array.Empty<HexCoordinate>(),
-                    context.Modifications);
+                    context.Modifications,
+                    // Milestone 9.32c: a spawned body is the hero being placed (TK-Q3).
+                    placedPiece: GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(context.ActorId));
             }
         }
     }

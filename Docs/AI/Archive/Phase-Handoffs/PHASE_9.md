@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32c Enemy obstacle evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32c | Spaces an Active effect makes obstacles for one side's units only, around its hero's live space; every reader naming the moving, pushed, placed or respawning piece asks it, and no question naming no piece does. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932c-spaces-that-are-obstacles-for-the-enemy-units). | `milestone/9.32c` |
+
 ## Milestone 9.32b Unresolved card swap evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -65,7 +65,8 @@ namespace GuardsDigital.Core.Rules.Placement
             IReadOnlyList<HexCoordinate> scopedCoordinates,
             RuleModificationSet modifications,
             IUnitSpawnAuthority spawnPoints = null,
-            IBoardDisplacementAuthority board = null)
+            IBoardDisplacementAuthority board = null,
+            RuleObject placedPiece = default)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
@@ -90,7 +91,7 @@ namespace GuardsDigital.Core.Rules.Placement
             {
                 case PlaceDestinationScope.EmptySpacesWithinRadius:
                     return ExcludingSpawnPoints(
-                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications),
+                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
                         policy.SpawnPointExclusion,
                         spaces,
                         spawnPoints,
@@ -98,7 +99,7 @@ namespace GuardsDigital.Core.Rules.Placement
 
                 case PlaceDestinationScope.EmptySpacesAtExactlyRadius:
                     return ExcludingSpawnPoints(
-                        AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications),
+                        AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
                         policy.SpawnPointExclusion,
                         spaces,
                         spawnPoints,
@@ -114,7 +115,7 @@ namespace GuardsDigital.Core.Rules.Placement
                     }
 
                     return ExcludingSpawnPoints(
-                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications)
+                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece)
                             .Where(candidate => scopedCoordinates.Contains(candidate))
                             .ToArray(),
                         policy.SpawnPointExclusion,
@@ -130,7 +131,7 @@ namespace GuardsDigital.Core.Rules.Placement
                             "A nearest-in-scope Place is measured over a declared coordinate set.");
                     }
 
-                    return NearestEmptyInScope(spaces, origin, scopedCoordinates, modifications);
+                    return NearestEmptyInScope(spaces, origin, scopedCoordinates, modifications, placedPiece);
 
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -149,7 +150,8 @@ namespace GuardsDigital.Core.Rules.Placement
             int radius,
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            RuleObject placedPiece)
         {
             var found = new List<HexCoordinate>();
             for (var dq = -radius; dq <= radius; dq++)
@@ -158,7 +160,7 @@ namespace GuardsDigital.Core.Rules.Placement
                 {
                     var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
                     if (coordinate.Equals(origin) ||
-                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications))
+                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications, placedPiece))
                     {
                         continue;
                     }
@@ -187,7 +189,8 @@ namespace GuardsDigital.Core.Rules.Placement
             int radius,
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            RuleObject placedPiece)
         {
             var found = new List<HexCoordinate>();
             for (var dq = -radius; dq <= radius; dq++)
@@ -196,7 +199,7 @@ namespace GuardsDigital.Core.Rules.Placement
                 {
                     var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
                     if (HexDistanceQuery.Calculate(origin, coordinate) != radius ||
-                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications))
+                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications, placedPiece))
                     {
                         continue;
                     }
@@ -316,11 +319,12 @@ namespace GuardsDigital.Core.Rules.Placement
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
             IReadOnlyList<HexCoordinate> scopedCoordinates,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            RuleObject placedPiece)
         {
             var empty = scopedCoordinates
                 .Where(candidate => !candidate.Equals(origin) &&
-                    !ObstacleQuery.BlocksPlacement(spaces, candidate, modifications))
+                    !ObstacleQuery.BlocksPlacement(spaces, candidate, modifications, placedPiece))
                 .ToArray();
             return empty.Length == 0
                 ? Array.Empty<HexCoordinate>()

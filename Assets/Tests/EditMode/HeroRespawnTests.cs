@@ -56,7 +56,8 @@ namespace GuardsDigital.Tests.EditMode
                 blueHero,
                 new CardInstanceId("hero-respawn-card"),
                 participants,
-                board);
+                board,
+                GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
 
             Assert.That(choice.Destinations, Has.Count.EqualTo(6));
             Assert.That(choice.Destinations.Select(value => value.Coordinate),

@@ -27,6 +27,7 @@ namespace GuardsDigital.Core.Rules.Modifications
     {
         private readonly bool actorQualifies;
         private readonly bool actorIsInside;
+        private readonly System.Collections.Generic.IReadOnlyCollection<RuleObject> barredUnits;
 
         private AppliedObstacleOverlay(
             ConditionalObstacleOverlay declaration,
@@ -36,7 +37,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
             bool actorQualifies,
-            bool actorIsInside)
+            bool actorIsInside,
+            System.Collections.Generic.IReadOnlyCollection<RuleObject> barredUnits)
         {
             Declaration = declaration;
             Anchors = anchors;
@@ -46,6 +48,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             ControllerTeamSide = controllerTeamSide;
             this.actorQualifies = actorQualifies;
             this.actorIsInside = actorIsInside;
+            this.barredUnits = barredUnits ?? Array.Empty<RuleObject>();
         }
 
         /// <summary>
@@ -89,7 +92,25 @@ namespace GuardsDigital.Core.Rules.Modifications
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
             TeamSide? actingHeroSide,
-            HexCoordinate actingHeroSpace)
+            HexCoordinate actingHeroSpace) =>
+            Bind(declaration, anchors, radius, sourceId, controllerHeroId, controllerTeamSide,
+                actingHeroSide, actingHeroSpace, null);
+
+        /// <param name="barredUnits">
+        /// Milestone 9.32c. For a <see cref="ObstacleOverlayArm.EmptySpacesInsideForUnits"/> overlay,
+        /// the units its <see cref="ConditionalObstacleOverlay.UnitRelation"/> names, resolved by the
+        /// derivation that holds the board and the participants, as the anchor and radius are.
+        /// </param>
+        public static AppliedObstacleOverlay Bind(
+            ConditionalObstacleOverlay declaration,
+            System.Collections.Generic.IReadOnlyList<HexCoordinate> anchors,
+            int radius,
+            string sourceId,
+            HeroId controllerHeroId,
+            TeamSide controllerTeamSide,
+            TeamSide? actingHeroSide,
+            HexCoordinate actingHeroSpace,
+            System.Collections.Generic.IReadOnlyCollection<RuleObject> barredUnits)
         {
             if (anchors == null || anchors.Count == 0)
             {
@@ -121,7 +142,10 @@ namespace GuardsDigital.Core.Rules.Modifications
                 IsInside(anchors, radius, actingHeroSpace);
             return new AppliedObstacleOverlay(
                 declaration, System.Linq.Enumerable.ToArray(anchors), radius, sourceId, controllerHeroId, controllerTeamSide,
-                qualifies, inside);
+                qualifies, inside,
+                barredUnits == null
+                    ? null
+                    : new System.Collections.Generic.HashSet<RuleObject>(barredUnits));
         }
 
         public ConditionalObstacleOverlay Declaration { get; }
@@ -174,6 +198,20 @@ namespace GuardsDigital.Core.Rules.Modifications
                 ? !spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesOutsideWhileActorInside)
                 : spaceIsInside && Declaration.Declares(ObstacleOverlayArm.SpacesInsideWhileActorOutside);
         }
+
+        /// <summary>
+        /// Milestone 9.32c. Whether an EMPTY space counts as an obstacle for <paramref name="piece"/>:
+        /// the overlay bars that unit (TK-Q3) and the space lies inside the disk drawn around its
+        /// source hero right now (p.17), other than the hero's own space. The caller has already found
+        /// the space empty - an occupied space is an obstacle for every piece without asking this, and
+        /// a token's "may be moved through" is its own sentence - so nothing here reads the board.
+        /// </summary>
+        public bool CountsAsObstacleFor(HexCoordinate space, RuleObject piece) =>
+            piece.IsDefined &&
+            Declaration.Declares(ObstacleOverlayArm.EmptySpacesInsideForUnits) &&
+            System.Linq.Enumerable.Contains(barredUnits, piece) &&
+            IsInside(Anchors, Radius, space) &&
+            !System.Linq.Enumerable.Contains(Anchors, space);
 
         private static bool Qualifies(
             SourceTeamRelation relation, TeamSide actingSide, TeamSide controllerSide)

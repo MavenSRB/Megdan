@@ -120,12 +120,26 @@ namespace GuardsDigital.Core.Cards
 
     public static class HeroRespawnRules
     {
+        /// <summary>
+        /// Milestone 9.32c. p.7 respawns into an empty space, and an empty space a unit overlay bars to
+        /// this hero is not one for it (Takahide's Spinning Blade, TK-Q3: "cannot be ... respawned into
+        /// them"). Asked with the turn's live set; <see cref="GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty"/> is the board's own question.
+        /// </summary>
+        private static bool IsEmptyFor(
+            AdjacentMoveAuthority board, GuardsDigital.Core.Board.HexCoordinate space, HeroId heroId,
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications) =>
+            board.IsEmptyPlayableSpace(space) &&
+            !modifications.AnyOverlayMakesAnObstacleFor(
+                space, GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId));
+
         public static PendingHeroRespawnChoice CreateChoice(
             HeroId heroId,
             CardInstanceId cardInstanceId,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board,
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
         {
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
             if (board.IsHeroOnBoard(heroId))
             {
                 return null;
@@ -150,7 +164,7 @@ namespace GuardsDigital.Core.Cards
                 .ToArray();
 
             var emptySpawns = heroSpawns
-                .Where(value => board.IsEmptyPlayableSpace(value.Coordinate))
+                .Where(value => IsEmptyFor(board, value.Coordinate, heroId, modifications))
                 .Select(value => new HeroRespawnDestination(
                     value.Coordinate, value.Spawn.Id, false))
                 .ToArray();
@@ -176,7 +190,7 @@ namespace GuardsDigital.Core.Cards
             // respawn is off the board and has no position to measure from.
             var candidates = board.MapDefinition.Spaces
                 .Select(space => space.Coordinate)
-                .Where(board.IsEmptyPlayableSpace)
+                .Where(coordinate => IsEmptyFor(board, coordinate, heroId, modifications))
                 .Select(coordinate => new
                 {
                     Coordinate = coordinate,

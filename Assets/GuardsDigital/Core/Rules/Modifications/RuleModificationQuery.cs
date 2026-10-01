@@ -156,17 +156,53 @@ namespace GuardsDigital.Core.Rules.Modifications
                     effect, heroItems, ItemBonusPerItemFor(effect.ControllerHeroId, timing));
                 for (var index = 0; index < effect.Definition.ObstacleOverlays.Count; index++)
                 {
+                    var declaration = effect.Definition.ObstacleOverlays[index];
                     yield return AppliedObstacleOverlay.Bind(
-                        effect.Definition.ObstacleOverlays[index],
+                        declaration,
                         anchors,
                         radius,
                         $"{effect.Id.Value}:overlay:{index}",
                         effect.ControllerHeroId,
                         effect.ControllerTeamSide,
                         actingSide,
-                        actingSpace);
+                        actingSpace,
+                        declaration.Declares(ObstacleOverlayArm.EmptySpacesInsideForUnits)
+                            ? BarredUnits(declaration.UnitRelation, effect.ControllerTeamSide, board, participants)
+                            : null);
                 }
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.32c. The units a unit overlay bars - "the enemy units" - resolved at
+        /// derivation, where the participants and the board are, as the anchor and the radius are:
+        /// every hero and every minion on the board whose side stands in <paramref name="relation"/>
+        /// to the source's controller. A hero is named whether or not he is on the board, so a respawn
+        /// is barred too.
+        /// </summary>
+        private static IReadOnlyCollection<RuleObject> BarredUnits(
+            SourceTeamRelation relation,
+            TeamSide controllerSide,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            bool Barred(TeamSide side) =>
+                relation == SourceTeamRelation.AnyTeam ||
+                (relation == SourceTeamRelation.OpposingSource && side != controllerSide) ||
+                (relation == SourceTeamRelation.AlliedWithSource && side == controllerSide);
+
+            var barred = new List<RuleObject>();
+            if (participants != null)
+            {
+                barred.AddRange(participants.Heroes
+                    .Where(hero => Barred(participants.GetTeamForHero(hero.Id).Side))
+                    .Select(hero => RuleObject.ForHero(hero.Id)));
+            }
+
+            barred.AddRange(board.Minions
+                .Where(minion => Barred(minion.TeamSide))
+                .Select(minion => RuleObject.ForMinion(minion.MinionId)));
+            return barred;
         }
 
         private static IEnumerable<AppliedRuleModification> FromActiveEffects(

@@ -113,7 +113,7 @@ namespace GuardsDigital.Core.Rules.Movement
                 coordinate => ObstacleQuery.BlocksTransit(
                     board, coordinate, mover, modifications, moverIgnoresObstacles,
                     permittedActivity),
-                coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate, modifications),
+                coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate, modifications, mover),
                 movementAllowance);
         }
 

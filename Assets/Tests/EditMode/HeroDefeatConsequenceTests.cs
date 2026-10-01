@@ -391,7 +391,8 @@ namespace GuardsDigital.Tests.EditMode
             var board = OfficialBoardWithout(BlueHeroId);
 
             var choice = HeroRespawnRules.CreateChoice(
-                BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board);
+                BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board,
+                RuleModificationSet.Empty);
 
             Assert.That(choice, Is.Not.Null);
             Assert.That(choice.Destinations, Is.Not.Empty);
@@ -412,7 +413,8 @@ namespace GuardsDigital.Tests.EditMode
             var blocked = SpawnPointsAndTheirNeighbours(spawns);
 
             var choice = HeroRespawnRules.CreateChoice(
-                BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board);
+                BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board,
+                RuleModificationSet.Empty);
 
             Assert.That(choice.Destinations, Is.Not.Empty,
                 "Before milestone 7.4 the fallback searched the adjacent ring alone, so a hero whose " +
@@ -516,7 +518,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 HeroRespawnRules.CreateChoice(
-                    BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board),
+                    BlueHeroId, new CardInstanceId("respawn-card"), OfficialParticipants(), board,
+                    RuleModificationSet.Empty),
                 Is.Null);
         }
 

@@ -772,11 +772,16 @@ namespace GuardsDigital.Core.Cards
             !IsStarted || IsEnded || IsResolutionStoppedByGameEnd ||
             !initiative.SelectedActor.IsDefined || cardActions?.Board == null
                 ? null
-                : HeroRespawnRules.CreateChoice(
-                    initiative.SelectedActor.ActorId,
-                    initiative.SelectedActor.CardInstanceId,
-                    participants,
-                    cardActions.Board);
+                : cardActions.Board.IsHeroOnBoard(initiative.SelectedActor.ActorId)
+                    ? null
+                    // Milestone 9.32c: asked with the turn's modifications, so a space a unit overlay
+                    // bars to this hero is not offered (TK-Q3); derived only while the hero is off it.
+                    : HeroRespawnRules.CreateChoice(
+                        initiative.SelectedActor.ActorId,
+                        initiative.SelectedActor.CardInstanceId,
+                        participants,
+                        cardActions.Board,
+                        CurrentModifications());
 
         /// <summary>
         /// Milestone 9.21b. "Which of you acts" (RZ-Q4): standing while the selected hero stands on

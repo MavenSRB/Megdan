@@ -440,16 +440,16 @@ namespace GuardsDigital.Tests.EditMode
             // The overlay reaches movement, push and place because all three ask the one query. Each
             // link is asserted rather than assumed: a caller that stopped asking would leave this rule
             // passing while its own spaces quietly reopened.
-            var obstacleMembers = new MemberInfo[]
-            {
-                ILConformanceScanner.Method(typeof(ObstacleQuery), nameof(ObstacleQuery.IsObstacle)),
-                ILConformanceScanner.Method(
-                    typeof(ObstacleQuery), nameof(ObstacleQuery.BlocksTransit)),
-                ILConformanceScanner.Method(
-                    typeof(ObstacleQuery), nameof(ObstacleQuery.BlocksEndOfMovement)),
-                ILConformanceScanner.Method(
-                    typeof(ObstacleQuery), nameof(ObstacleQuery.BlocksPlacement))
-            };
+            // Milestone 9.32c: every overload of the four questions, since the piece-naming ones a unit
+            // overlay needs are what movement, push and place now ask.
+            var obstacleMembers = typeof(ObstacleQuery)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(method => method.Name == nameof(ObstacleQuery.IsObstacle) ||
+                    method.Name == nameof(ObstacleQuery.BlocksTransit) ||
+                    method.Name == nameof(ObstacleQuery.BlocksEndOfMovement) ||
+                    method.Name == nameof(ObstacleQuery.BlocksPlacement))
+                .Cast<MemberInfo>()
+                .ToArray();
             Assert.That(obstacleMembers, Has.None.Null,
                 "An obstacle question no longer resolves; correct the rule rather than deleting it.");
 
@@ -1073,6 +1073,14 @@ namespace GuardsDigital.Tests.EditMode
                 fixture.OverlaySet(ObstacleOverlayArm.SpacesOutsideWhileActorInside),
                 set => fixture.ReadObstacle(fixture.OverlayProbeSpace, set)));
 
+            // Milestone 9.32c. A unit overlay is read only by a question that names the piece: the
+            // same empty probe space becomes an end the Red hero may not take.
+            cases.Add(new ConsumptionCase(
+                "ObstacleOverlay/EmptySpacesInsideForUnits",
+                "ObstacleQuery.BlocksEndOfMovement (naming the piece)",
+                fixture.OverlaySet(ObstacleOverlayArm.EmptySpacesInsideForUnits),
+                set => fixture.ReadObstacleFor(fixture.OverlayProbeSpace, set, fixture.Red)));
+
             return cases;
         }
 
@@ -1377,6 +1385,11 @@ namespace GuardsDigital.Tests.EditMode
                 ObstacleQuery.IsObstacle(Board, space, modifications)
                     .ToString(CultureInfo.InvariantCulture);
 
+            /// <summary>Milestone 9.32c. The end-of-movement question asked of one piece.</summary>
+            public string ReadObstacleFor(HexCoordinate space, RuleModificationSet modifications, HeroId hero) =>
+                ObstacleQuery.BlocksEndOfMovement(Board, space, modifications, RuleObject.ForHero(hero))
+                    .ToString(CultureInfo.InvariantCulture);
+
             public string ReadSwapAnticipation(
                 ActionKind enclosing, RuleModificationSet modifications) =>
                 Handler(SyntheticExchangeCapabilities.SwapV2)
@@ -1446,6 +1459,27 @@ namespace GuardsDigital.Tests.EditMode
                 var anchor = arm == ObstacleOverlayArm.SpacesOutsideWhileActorInside
                     ? RedAt
                     : OverlayProbeSpace;
+                if (arm == ObstacleOverlayArm.EmptySpacesInsideForUnits)
+                {
+                    return new RuleModificationSet(
+                        Array.Empty<AppliedRuleModification>(),
+                        new[]
+                        {
+                            AppliedObstacleOverlay.Bind(
+                                ConditionalObstacleOverlay.DeclareForUnits(SourceTeamRelation.OpposingSource),
+                                // Beside the probe space: a unit overlay never bars its own anchor.
+                                new[] { OverlayProbeSpace.GetNeighbors().First() },
+                                OverlayRadius,
+                                "modification-seam-probe-overlay",
+                                Blue,
+                                TeamSide.Blue,
+                                TeamSide.Red,
+                                RedAt,
+                                new[] { RuleObject.ForHero(Red) })
+                        },
+                        TieBreakerState.Unrevealed);
+                }
+
                 return new RuleModificationSet(
                     Array.Empty<AppliedRuleModification>(),
                     new[]

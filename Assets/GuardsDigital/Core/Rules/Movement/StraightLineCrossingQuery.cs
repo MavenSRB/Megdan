@@ -124,7 +124,7 @@ namespace GuardsDigital.Core.Rules.Movement
                     }
 
                     route.Add(space);
-                    if (!ObstacleQuery.BlocksEndOfMovement(board, space, modifications))
+                    if (!ObstacleQuery.BlocksEndOfMovement(board, space, modifications, RuleObject.ForHero(hero)))
                     {
                         lines.Add(new ReachableMovementDestination(space, route.ToArray(), step));
                     }

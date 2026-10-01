@@ -807,12 +807,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                if (!TryDeclare(context, out var policy, out _, out var origin))
+                if (!TryDeclare(context, out var policy, out var subject, out var origin))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var destinations = Destinations(context, policy, origin);
+                var destinations = Destinations(context, policy, origin, subject);
                 if (destinations.Count == 0)
                 {
                     return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
@@ -873,12 +873,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
-                if (!TryDeclare(context, out var policy, out _, out var origin))
+                if (!TryDeclare(context, out var policy, out var subject, out var origin))
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var destinations = Destinations(context, policy, origin);
+                var destinations = Destinations(context, policy, origin, subject);
                 if (destinations.Count > 0)
                 {
                     return EffectExecutionResultKind.NeedsChoice;
@@ -894,12 +894,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// the query's own order.
             /// </summary>
             private IReadOnlyList<HexCoordinate> Destinations(
-                EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin)
+                EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin,
+                BoardObjectReference subject)
             {
                 var clauses = Clauses(context, policy, origin);
+                // Milestone 9.32c: the piece being placed, so an empty space a unit overlay bars to it
+                // is no destination for it (TK-Q3).
                 return PlaceDestinationQuery.FindDestinations(
                         policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
-                        context.Modifications, context.Components.Units, context.Components.Board)
+                        context.Modifications, context.Components.Units, context.Components.Board,
+                        subject.AsRuleObject())
                     .Where(clauses.Admit)
                     .ToArray();
             }

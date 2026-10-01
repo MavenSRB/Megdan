@@ -162,8 +162,12 @@ namespace GuardsDigital.Core.Rules.Modifications
                     mover, modifications, moverIgnoresObstacles, permittedActivity);
             }
 
+            // Milestone 9.32c. An empty space a unit overlay bars to THIS piece is an obstacle to it
+            // (Takahide's Spinning Blade, TK-Q3), and only to it: crossing it is then the ordinary
+            // question below, so a piece that ignores obstacles still passes through.
             if (!board.IsOccupied(coordinate) &&
-                !modifications.AnyOverlayMakesAnObstacleOf(coordinate))
+                !modifications.AnyOverlayMakesAnObstacleOf(coordinate) &&
+                !modifications.AnyOverlayMakesAnObstacleFor(coordinate, mover))
             {
                 return false;
             }
@@ -266,7 +270,12 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         public static bool BlocksEndAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
             RuleModificationSet modifications, IReadOnlyCollection<BoardObjectReference> vacating) =>
-            BlocksEndOfMovement(board, coordinate, modifications) &&
+            BlocksEndAfterVacating(board, coordinate, modifications, vacating, default);
+
+        /// <summary>Milestone 9.32c: <see cref="BlocksEndAfterVacating(AdjacentMoveAuthority, HexCoordinate, RuleModificationSet, IReadOnlyCollection{BoardObjectReference})"/> asked of the piece that would end there.</summary>
+        public static bool BlocksEndAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
+            RuleModificationSet modifications, IReadOnlyCollection<BoardObjectReference> vacating, RuleObject mover) =>
+            BlocksEndOfMovement(board, coordinate, modifications, mover) &&
             !IsOnlyVacatingOccupancy(board, coordinate, modifications, vacating);
 
         private static bool IsOnlyVacatingOccupancy(AdjacentMoveAuthority board, HexCoordinate coordinate,
@@ -284,6 +293,18 @@ namespace GuardsDigital.Core.Rules.Modifications
             IsObstacle(board, coordinate, modifications);
 
         /// <summary>
+        /// Milestone 9.32c. The end-of-movement question asked of the piece that would end there: an
+        /// empty space a unit overlay bars to it is not an end for it (TK-Q3). With no piece named it
+        /// is exactly the question above.
+        /// </summary>
+        public static bool BlocksEndOfMovement(
+            AdjacentMoveAuthority board, HexCoordinate coordinate, RuleModificationSet modifications,
+            RuleObject mover) =>
+            IsObstacle(board, coordinate, modifications) ||
+            (mover.IsDefined && board.IsPlayable(coordinate) && !board.IsOccupied(coordinate) &&
+                modifications.AnyOverlayMakesAnObstacleFor(coordinate, mover));
+
+        /// <summary>
         /// Whether <paramref name="coordinate"/> may receive a placed piece.
         ///
         /// The same classification for a caller holding the narrow placement port rather than the
@@ -298,5 +319,18 @@ namespace GuardsDigital.Core.Rules.Modifications
             HexCoordinate coordinate,
             RuleModificationSet modifications) =>
             IsObstacle(spaces, coordinate, modifications);
+
+        /// <summary>
+        /// Milestone 9.32c. Placement asked of the piece being placed: p.18 places only into an empty
+        /// space, and an empty space a unit overlay bars to that piece is not one for it (TK-Q3).
+        /// </summary>
+        public static bool BlocksPlacement(
+            ITokenPlacementAuthority spaces,
+            HexCoordinate coordinate,
+            RuleModificationSet modifications,
+            RuleObject placedPiece) =>
+            IsObstacle(spaces, coordinate, modifications) ||
+            (placedPiece.IsDefined && spaces.IsEmptyPlayableSpace(coordinate) &&
+                modifications.AnyOverlayMakesAnObstacleFor(coordinate, placedPiece));
     }
 }

@@ -977,7 +977,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
                 var isEndpoint = index == route.Count - 1;
                 var refused = isEndpoint
-                    ? ObstacleQuery.BlocksEndOfMovement(this, space, modifications)
+                    ? ObstacleQuery.BlocksEndOfMovement(this, space, modifications, mover)
                     // Milestone 8.35z30, RULING 47. This validates the route a Movement
                     // action walked, so it asks the permission question as that action - the same ask
                     // MovementReachabilityQuery's hero overload made when it offered the route.

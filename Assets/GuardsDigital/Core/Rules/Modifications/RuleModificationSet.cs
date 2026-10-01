@@ -135,6 +135,30 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// now. <see cref="ObstacleQuery"/> is the consumer; nothing else may ask, because p.18 gives
         /// the classification one owner.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.32c. Whether an EMPTY space counts as an obstacle for this one piece because an
+        /// overlay bars that unit there (Takahide's Spinning Blade and Blade Helix, TK-Q3). Asked only
+        /// by the questions that name the piece entering a space; a question with no piece asks
+        /// <see cref="AnyOverlayMakesAnObstacleOf"/>, which a unit overlay never answers.
+        /// </summary>
+        public bool AnyOverlayMakesAnObstacleFor(HexCoordinate space, RuleObject piece)
+        {
+            if (!piece.IsDefined)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < ObstacleOverlays.Count; index++)
+            {
+                if (ObstacleOverlays[index].CountsAsObstacleFor(space, piece))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool AnyOverlayMakesAnObstacleOf(HexCoordinate space)
         {
             for (var index = 0; index < ObstacleOverlays.Count; index++)

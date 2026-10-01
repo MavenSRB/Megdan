@@ -56,7 +56,18 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// "While an enemy hero in radius is performing an action, spaces outside of radius count as
         /// obstacles."
         /// </summary>
-        SpacesOutsideWhileActorInside = 2
+        SpacesOutsideWhileActorInside = 2,
+
+        /// <summary>
+        /// Milestone 9.32a's sibling, 9.32c. "This turn: Empty spaces adjacent to you [in radius] count
+        /// as obstacles for the enemy units" - Takahide's Spinning Blade and Blade Helix. The condition
+        /// is on the PIECE entering a space, not on who is acting (TK-Q3): an enemy unit cannot move
+        /// through, end on, be placed, pushed or respawned into an empty space inside the disk, and
+        /// nothing else is changed - friendly units, tokens, and every question asked of a space with
+        /// no piece named (a presence, a line, a range). Declared only through
+        /// <see cref="ConditionalObstacleOverlay.DeclareForUnits"/>, and never with the two arms above.
+        /// </summary>
+        EmptySpacesInsideForUnits = 3
     }
 
     /// <summary>
@@ -84,10 +95,35 @@ namespace GuardsDigital.Core.Rules.Modifications
     {
         private ConditionalObstacleOverlay(
             SourceTeamRelation actingHeroRelation,
-            IReadOnlyList<ObstacleOverlayArm> arms)
+            IReadOnlyList<ObstacleOverlayArm> arms,
+            SourceTeamRelation unitRelation = SourceTeamRelation.None)
         {
             ActingHeroRelation = actingHeroRelation;
             Arms = arms;
+            UnitRelation = unitRelation;
+        }
+
+        /// <summary>
+        /// Milestone 9.32c. Spaces inside the disk count as obstacles for the units standing in
+        /// <paramref name="unitRelation"/> to the source - "for the enemy units" is
+        /// <see cref="SourceTeamRelation.OpposingSource"/> - whoever is acting
+        /// (<see cref="ObstacleOverlayArm.EmptySpacesInsideForUnits"/>, TK-Q3).
+        /// </summary>
+        public static ConditionalObstacleOverlay DeclareForUnits(SourceTeamRelation unitRelation)
+        {
+            if (unitRelation != SourceTeamRelation.OpposingSource &&
+                unitRelation != SourceTeamRelation.AlliedWithSource &&
+                unitRelation != SourceTeamRelation.AnyTeam)
+            {
+                throw new ArgumentException(
+                    "A unit overlay names the units it bars by their side of the source.",
+                    nameof(unitRelation));
+            }
+
+            return new ConditionalObstacleOverlay(
+                SourceTeamRelation.AnyTeam,
+                new ReadOnlyCollection<ObstacleOverlayArm>(new[] { ObstacleOverlayArm.EmptySpacesInsideForUnits }),
+                unitRelation);
         }
 
         public static ConditionalObstacleOverlay Declare(
@@ -110,6 +146,13 @@ namespace GuardsDigital.Core.Rules.Modifications
                     nameof(arms));
             }
 
+            if (arms.Contains(ObstacleOverlayArm.EmptySpacesInsideForUnits))
+            {
+                throw new ArgumentException(
+                    "A unit overlay conditions on the piece, not the actor; declare it with DeclareForUnits.",
+                    nameof(arms));
+            }
+
             if (arms.Any(arm => arm == ObstacleOverlayArm.None) ||
                 !arms.All(arm => Enum.IsDefined(typeof(ObstacleOverlayArm), arm)) ||
                 arms.Distinct().Count() != arms.Length)
@@ -128,6 +171,13 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         /// <summary>The declared arms, in the order the card prints them.</summary>
         public IReadOnlyList<ObstacleOverlayArm> Arms { get; }
+
+        /// <summary>
+        /// Milestone 9.32c. Which units a <see cref="ObstacleOverlayArm.EmptySpacesInsideForUnits"/>
+        /// overlay bars, by their side of the source; <see cref="SourceTeamRelation.None"/> for the
+        /// acting-hero arms.
+        /// </summary>
+        public SourceTeamRelation UnitRelation { get; }
 
         public bool Declares(ObstacleOverlayArm arm)
         {

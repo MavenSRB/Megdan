@@ -26,8 +26,8 @@ namespace GuardsDigital.Core.Rules.Displacement
                         ignoresObstacles, RuleActivity.DirectMove, vacating) ||
                     ObstacleQuery.BlocksTransitAfterVacating(board, b, second.AsRuleObject(), modifications,
                         ignoresObstacles, RuleActivity.DirectMove, vacating)) return false;
-                if (step == distance && (ObstacleQuery.BlocksEndAfterVacating(board, a, modifications, vacating) ||
-                    ObstacleQuery.BlocksEndAfterVacating(board, b, modifications, vacating))) return false;
+                if (step == distance && (ObstacleQuery.BlocksEndAfterVacating(board, a, modifications, vacating, first.AsRuleObject()) ||
+                    ObstacleQuery.BlocksEndAfterVacating(board, b, modifications, vacating, second.AsRuleObject()))) return false;
             }
             return true;
         }

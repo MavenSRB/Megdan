@@ -130,7 +130,12 @@ namespace GuardsDigital.Tests.EditMode
             // and still declare `may`, which is what makes this one card's correction rather than a
             // family's.
             new IdentityPin("tigerclaw", "tigerclaw-8-83-rev-1", "f345dba4c309cfa0ff7f55dc0f9b848e68a014d4745b6bde8b11fcd3758a018a"),
-            new IdentityPin("wasp", "wasp-8-25e7-rev-1", "fe324ede4c28c4370115e7b94e8651a30ed5f8286ae935ce9a0cb5b2295f3889"),
+            // MILESTONE 9.32c MOVED WASP ALONE, revision unchanged: `ConditionalObstacleOverlay` gained
+            // `UnitRelation` (Takahide's unit overlays), and Static Barrier is the only dealt face that
+            // declares an overlay, so her canonical string gained one `UnitRelation=None;` segment
+            // while her printed content did not move. Isolated before re-pinning: with `UnitRelation`
+            // excluded from the walk every pin, hers included, measured byte-identical.
+            new IdentityPin("wasp", "wasp-8-25e7-rev-1", "c25857f69c000e47c9b1b5fb68a5c392c945305cb429c4eac31ab6491c3a77e4"),
             // MILESTONE 8.83 moved Xargatha for the same clause on three faces: Charm, Control and
             // Dominate print "you may move an enemy minion in radius UP TO 2 spaces" and their move
             // declared `Mandatory` at 2, so the minion could only ever be put in the second ring.
