@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30b Spellbook zone evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30b | A hero may own spell cards in a facedown spellbook and a faceup removed pile, moved by two lifecycle transitions; the book's count and removed faces reach every seat, its faces only the owner; snapshot v51 and wire `/31`. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930b-build-the-spellbook-zone). | `milestone/9.30b` |
+
 ## Milestone 9.30a Ultimate in the items strip evidence
 
 | Milestone | Outcome and definition | Commit |

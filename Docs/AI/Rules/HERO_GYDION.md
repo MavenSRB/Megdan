@@ -146,19 +146,21 @@ Probed 2026-10-01 against main `da35b72d` (snapshot schema v50, `AuthoritativeSn
 
 All settled by the user on 2026-10-01 as recommended ("as recommended"):
 - **GY-Q1:** all twenty-two spells, Wish included, are in the book at setup.
-- **GY-Q2 (provisional, revisit if the designer answers):** Wish is removed when cast, like every spell, so the next refill must be an ordinary one.
+- **GY-Q2:** Wish is removed when cast, like every spell, so the next refill must be an ordinary one (settled 2026-10-01, no longer provisional).
 - **GY-Q3:** the played card is a Skill action; the spell's action is then performed as its own printed type with his items (an Attack opens Defense; Expeditious Retreat is a Movement action). Spell Break-style restrictions read the played card; immunities read the spell's action type; "played an Attack card" reads the played card (a Skill).
 - **GY-Q4:** his seat sees the book; every seat sees tier backs, counts and the faceup pile. The spell choice is in the decision window as spell faces; the drawer and plaque per the approved mockups.
 - **GY-Q5:** one Familiar; placing it again moves it; an ordinary obstacle token.
 - **GY-Q6:** Suggestion follows Whisper's Rulings 16/16a: Gydion picks the hero, that hero's seat picks the direction, exactly 3 spaces or not at all, a plain move (not a Movement action - the card does not say "movement action").
 
-## Open questions (recorded 2026-10-01, recommendations pending the user)
+Settled by the user on 2026-10-01, one by one:
 
-- **GY-Q7:** Prepare Spells with nothing removed adds nothing and is greyed; with the Ultimate unlocked, "whenever you would add cards" does not arise either. *Recommended.*
-- **GY-Q8:** Dominate Person offers only an enemy hero with a defeatable enemy minion in radius adjacent to it (6.8l). *Recommended;* alternative: any enemy hero in radius, the Defeat skipped.
-- **GY-Q9:** Wish casts any spell still in the book, of any tier. *Recommended.*
-- **GY-Q10:** the Wish count rises when Wish is cast; the team wins once the third Wish's whole action has resolved; an ending the inner spell already caused stands. The count is public and survives rounds and Defeat. *Recommended.*
-- **GY-Q11:** Energy Drain regains a Life only if the team has a spent one, whether or not an enemy discards. *Recommended.*
+- **GY-Q7 (the user, against the recommendation):** Prepare Spells is always playable, even with nothing removed. With the Ultimate unlocked a full book still counts as "would add cards", so he may cast Wish instead. An empty refill changes nothing, so 9.30i's offer-against-outcome check carries an allow-list row quoting this ruling.
+- **GY-Q8:** Dominate Person offers only an enemy hero with an enemy minion in radius adjacent to it (6.8l: a selection offers what its step can act on).
+- **GY-Q9:** Wish casts any spell still in the book, of any tier, including spells none of his cards list.
+- **GY-Q10:** the Wish count rises when Wish is cast; his team wins once the third Wish's whole action, its inner spell included, has resolved; an ending the inner spell already caused stands. The count is public and survives rounds and his Defeat.
+- **GY-Q11:** Energy Drain regains a Life only when his team has a spent one (never above its starting Lives), whether or not the enemy hero discards.
+- **GY-Q12 (raised at 9.30c):** a cast is playable whenever its spell is in the book, even when the spell's action then does nothing: removing the spell faceup is the cast's own effect and changes what Sunburst, Dimension Door and Midas' Touch count. A card whose every listed spell is removed is greyed.
+- **9.30a presentation:** the strip's Ultimate card stays 17x24, beside the coin on a mirrored rail.
 
 ## Presentation (approved by the user on 2026-10-01 as mockups)
 
