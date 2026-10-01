@@ -410,7 +410,14 @@ namespace GuardsDigital.Core.Snapshots
         // pick of "which of you acts" or the one body standing - or 0 for none. v49 lacks it and is
         // rejected: a v49 reader would take the acting body for the next row's hero id, and a v49
         // payload restored at a standing action could not say which body performs it.
-        public const int CurrentSchemaVersion = 50;
+        // v51 (milestone 9.30b): the spellbook zone. A card row's location may name a hero's spellbook
+        // (facedown) or the spells removed from it (faceup), and a hero's spell instances are part of
+        // the persisted card list from setup. The row's shape is unchanged; the location domain grew.
+        // v50 is rejected rather than migrated: a v50 reader meeting either new location would refuse
+        // the card section mid-read as an unrecognized enum value, and the header refuses it first -
+        // the same reasoning wire /29 recorded for a new log kind. No fixture without a spellbook
+        // changes length.
+        public const int CurrentSchemaVersion = 51;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

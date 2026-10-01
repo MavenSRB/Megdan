@@ -83,6 +83,21 @@ namespace GuardsDigital.Core.Cards
             return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInDeck());
         }
 
+        /// <summary>
+        /// Milestone 9.30b. A spell card a hero's content declares, created in its owner's spellbook
+        /// at setup - the way <see cref="CreateInHand"/> and <see cref="CreateInDeck"/> create the
+        /// cards p.6 deals and leaves in the deck. It is an ordinary instance the hero owns, so every
+        /// reader that names a card by instance (the borrow path, an Active effect's source, the log,
+        /// the snapshot) reads a spell as it reads any card.
+        /// </summary>
+        public static CardInstance CreateInSpellbook(
+            CardInstanceId id,
+            CardDefinitionReference definitionReference,
+            HeroId ownerId)
+        {
+            return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInSpellbook());
+        }
+
         internal bool TryApplyLocationTransition(ActionCardStateTransition transition)
         {
             if (!transition.IsDefined || State.Location != transition.RequiredLocation)

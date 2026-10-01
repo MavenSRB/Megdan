@@ -66,10 +66,11 @@ namespace GuardsDigital.Core.Cards
             string parameterName)
         {
             var progression = definition.Progression;
-            if (!progression.IsNonBasic)
+            if (!progression.IsNonBasic || progression.IsSpell)
             {
                 // A Basic card and a definition stating no progression both reach here with no
-                // candidates, because the profile refuses to give either any.
+                // candidates, because the profile refuses to give either any. Milestone 9.30b: so
+                // does a spell, Tier or none - it is never upgraded, so p.15's count does not apply.
                 return;
             }
 
@@ -101,6 +102,18 @@ namespace GuardsDigital.Core.Cards
                 }
 
                 var candidateProgression = candidate.Progression;
+
+                // Milestone 9.30b. A spell lives in the spellbook and is never dealt, so it is never
+                // something p.15's Upgrade a Card finds "in your deck", whatever its colour and Tier.
+                if (candidateProgression.IsSpell)
+                {
+                    throw new ArgumentException(
+                        $"Card definition '{definition.Id}' names '{candidateId}' as a next-Tier " +
+                        "candidate, but a spell card is never upgraded into: it lives in the spellbook, " +
+                        "not the deck p.15 searches.",
+                        parameterName);
+                }
+
                 if (!candidateProgression.IsNonBasic)
                 {
                     // Milestone 7.3 splits this refusal's two reasons, because they are two different

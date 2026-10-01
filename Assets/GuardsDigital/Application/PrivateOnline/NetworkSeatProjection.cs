@@ -461,16 +461,20 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkHandSummaryRow
     {
-        public NetworkHandSummaryRow(string heroId, int handCount, int deckCount)
+        public NetworkHandSummaryRow(string heroId, int handCount, int deckCount, int spellbookCount)
         {
             HeroId = heroId;
             HandCount = handCount;
             DeckCount = deckCount;
+            SpellbookCount = spellbookCount;
         }
 
         public string HeroId { get; }
         public int HandCount { get; }
         public int DeckCount { get; }
+
+        /// <summary>Milestone 9.30b, protocol /31: the facedown spellbook's size, naming no spell.</summary>
+        public int SpellbookCount { get; }
     }
 
     public sealed class NetworkCardRow
@@ -748,6 +752,8 @@ namespace GuardsDigital.Application
                     writer.Write(summary.HeroId.Value);
                     writer.Write(summary.HandCount);
                     writer.Write(summary.DeckCount);
+                    // Milestone 9.30b, protocol /31: the facedown spellbook's size, naming no spell.
+                    writer.Write(summary.SpellbookCount);
                 }
 
                 WriteCards(writer, projection.OwnCards);
@@ -1115,12 +1121,14 @@ namespace GuardsDigital.Application
                         var id = reader.ReadString();
                         var handCount = reader.ReadInt32();
                         var deckCount = reader.ReadInt32();
-                        if (string.IsNullOrWhiteSpace(id) || handCount < 0 || deckCount < 0)
+                        var spellbookCount = reader.ReadInt32();
+                        if (string.IsNullOrWhiteSpace(id) || handCount < 0 || deckCount < 0 ||
+                            spellbookCount < 0)
                         {
                             return false;
                         }
 
-                        summaries.Add(new NetworkHandSummaryRow(id, handCount, deckCount));
+                        summaries.Add(new NetworkHandSummaryRow(id, handCount, deckCount, spellbookCount));
                     }
 
                     if (!TryReadCards(reader, out var ownCards) || !TryReadCards(reader, out var publicCards))

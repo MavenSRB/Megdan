@@ -4711,6 +4711,7 @@ namespace GuardsDigital.Tests.EditMode
                 inner.IsActiveEffectSource(cardInstanceId);
             public virtual TeamAgreementProjection TeamAgreement => inner.TeamAgreement;
             public virtual IReadOnlyList<CardInstance> Cards => inner.Cards;
+            public virtual IReadOnlyList<SeatHandSummary> HandSummaries => inner.HandSummaries;
             public virtual PendingDecisionContract DecisionContract => inner.DecisionContract;
             public virtual PendingInitiativeChoice PendingInitiativeChoice =>
                 inner.PendingInitiativeChoice;

@@ -542,6 +542,10 @@ namespace GuardsDigital.Tests.EditMode
                 { "IsActiveEffectSource", "derived: a lookup over ActiveEffectSourceCardInstanceIds" },
                 { "TeamAgreement", nameof(NetworkProjectionDetailRecord.TeamAgreement) },
                 { "Cards", "carried as OwnCards plus PublicCards" },
+                // Milestone 9.30b. The seat record has carried every hero's hand and deck counts
+                // since 8.32; the read model now declares them, with the spellbook count protocol
+                // /31 adds - the one way a seat counts another hero's facedown book.
+                { "HandSummaries", nameof(NetworkSeatProjectionRecord.HandSummaries) },
                 { "DecisionContract", nameof(NetworkSeatProjectionRecord.DecisionContractCommands) },
                 // Milestone 8.35r. CARRIED, and it cost no new bytes: the seat record has carried
                 // the decision owner since milestone 8.32, and what was missing was the read-model

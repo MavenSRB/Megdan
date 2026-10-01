@@ -253,6 +253,29 @@ namespace GuardsDigital.Core.Cards
             TryMove(card, CardLocation.Deck, CardLocation.UltimateArea, CardFaceOrientation.FaceUp);
 
         /// <summary>
+        /// Milestone 9.30b. Prepare Spells' "As the spell is cast, remove it from the spellbook
+        /// faceup": a spell leaves the book for the removed pile, where every player can read it.
+        ///
+        /// <para>It decides the lifecycle shape and nothing else, as every transition here does.
+        /// Which spell, whether this hero may cast it, and what the cast then performs are the
+        /// casting capability's questions. It refuses every source but the book, so a spell never
+        /// reaches a hand, deck, discard pile, turn slot, item slot or Ultimate area through it - and
+        /// no other transition in this type admits a card from either spellbook location.</para>
+        /// </summary>
+        public static bool TryRemoveFromSpellbookFaceup(CardInstance card) =>
+            TryMove(card, CardLocation.Spellbook, CardLocation.RemovedFromSpellbook, CardFaceOrientation.FaceUp);
+
+        /// <summary>
+        /// Milestone 9.30b. Prepare Spells' "Add all spell cards to the spellbook", asked of one
+        /// removed spell: it returns to the book facedown, in exactly the state setup created it in.
+        /// The turn to facedown is the state change that ends an Active effect this spell is the
+        /// source of (the designer's answer, GY-05); cancelling those effects is the refill's
+        /// caller's, as it is for every other transition.
+        /// </summary>
+        public static bool TryReturnToSpellbook(CardInstance card) =>
+            TryMove(card, CardLocation.RemovedFromSpellbook, CardLocation.Spellbook, CardFaceOrientation.FaceDown);
+
+        /// <summary>
         /// One unplayed card moving between two resting places. Every caller above is a rulebook
         /// sentence; this is the single shape all three share, so none of them can accidentally admit a
         /// played or resolved card.

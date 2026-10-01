@@ -51,9 +51,23 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException("Card instances must have unique instance IDs.", nameof(instances));
                 }
 
-                if (!definitionsByReference.ContainsKey(instance.DefinitionReference))
+                if (!definitionsByReference.TryGetValue(instance.DefinitionReference, out var definition))
                 {
                     throw new ArgumentException("Card instance references an unresolved definition ID or content revision.", nameof(instances));
+                }
+
+                // Milestone 9.30b. A spell card starts in one place and only a spell starts there: its
+                // owner's spellbook, unplayed and facedown. Widened for exactly that location and that
+                // kind of card, so a spell dealt to a hand and an action card put in the book are both
+                // refused.
+                if (definition.Progression.IsSpell)
+                {
+                    if (!instance.State.IsInitialInSpellbook)
+                    {
+                        throw new ArgumentException("A spell card starts in its owner's spellbook, unplayed and facedown.", nameof(instances));
+                    }
+
+                    continue;
                 }
 
                 // Milestone 7.5. p.6's setup puts a hero's cards in two places, not one: five in hand,

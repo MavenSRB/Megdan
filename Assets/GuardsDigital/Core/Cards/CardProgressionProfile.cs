@@ -54,13 +54,71 @@ namespace GuardsDigital.Core.Cards
             CardClassification classification,
             CardTier tier,
             PrintedValueChannel itemIcon,
-            IReadOnlyList<CardDefinitionId> nextTierCandidateIds)
+            IReadOnlyList<CardDefinitionId> nextTierCandidateIds,
+            bool isSpell = false)
         {
             Color = color;
             Classification = classification;
             Tier = tier;
             ItemIcon = itemIcon;
             NextTierCandidateIds = nextTierCandidateIds;
+            IsSpell = isSpell;
+        }
+
+        /// <summary>
+        /// Milestone 9.30b. Whether this definition is a spell card: one that lives in its owner's
+        /// spellbook rather than in the hand, deck or discard pile, and is cast rather than played.
+        ///
+        /// <para><b>Why it is stated here, beside the classification and not as one.</b> A spell
+        /// prints a classification of its own that the rules read - the three Gold spells are basic,
+        /// every other spell is not, and Shield and Invulnerability ask exactly that of an attack - so
+        /// "spell" cannot take the classification's place. What it adds is the half of progression the
+        /// classification cannot say: a spell is never dealt (setup puts it in the book), never
+        /// upgraded and never upgraded into, prints no Item icon and no Initiative. Those are
+        /// progression facts, and this profile is where a definition states its progression.</para>
+        /// </summary>
+        public bool IsSpell { get; }
+
+        /// <summary>
+        /// Milestone 9.30b. A spell card's printed colour, classification and Tier.
+        ///
+        /// <para>A spell with no Tier is basic, and like p.15's basic pair it is Gold or Silver (the
+        /// printed basic spells are Gold). A spell with a Tier is non-basic and prints a colour; Tier IV
+        /// and Purple are admitted here, unlike <see cref="NonBasicCard"/>, because a spell prints
+        /// them (Wish: a Tier IV purple Skill) without being p.16's Ultimate - a spell is never
+        /// unlocked, upgraded or dealt, so neither reason those factories refuse them applies. No Item
+        /// icon (a spell prints none) and no next-Tier candidates (a spell is never upgraded).</para>
+        /// </summary>
+        public static CardProgressionProfile SpellCard(CardColor color, CardTier tier)
+        {
+            if (!Enum.IsDefined(typeof(CardColor), color) || color == CardColor.None)
+            {
+                throw new ArgumentException("A spell card states its printed colour.", nameof(color));
+            }
+
+            if (!Enum.IsDefined(typeof(CardTier), tier))
+            {
+                throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unknown card Tier.");
+            }
+
+            var isBasic = tier == CardTier.None;
+            var isBasicColor = color == CardColor.Gold || color == CardColor.Silver;
+            if (isBasic != isBasicColor)
+            {
+                throw new ArgumentException(
+                    isBasic
+                        ? "A spell with no Tier is basic, and a basic card is Gold or Silver (rulebook p.15)."
+                        : "A spell with a Tier is non-basic and prints a colour other than Gold or Silver.",
+                    nameof(color));
+            }
+
+            return new CardProgressionProfile(
+                color,
+                isBasic ? CardClassification.Basic : CardClassification.NonBasic,
+                tier,
+                PrintedValueChannel.None,
+                Array.AsReadOnly(NoCandidates),
+                isSpell: true);
         }
 
         /// <summary>

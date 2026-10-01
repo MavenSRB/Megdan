@@ -929,6 +929,7 @@ namespace GuardsDigital.Tests.EditMode
             public bool IsActiveEffectSource(CardInstanceId cardInstanceId) => false;
             public TeamAgreementProjection TeamAgreement => null;
             public IReadOnlyList<CardInstance> Cards => CardList;
+            public IReadOnlyList<SeatHandSummary> HandSummaries => Array.Empty<SeatHandSummary>();
             public PendingDecisionContract DecisionContract => null;
             public PendingDecisionOwner DecisionOwner => default;
             public IReadOnlyList<MatchLogEntry> MatchLog => LogRows;

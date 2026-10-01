@@ -53,6 +53,9 @@ namespace GuardsDigital.Tests.EditMode
                     CardInstance.CreateInHand(populator.Create<CardInstanceId>(),
                         populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>()),
                     CardInstance.CreateInDeck(populator.Create<CardInstanceId>(),
+                        populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>()),
+                    // Milestone 9.30b: the spellbook's starting state.
+                    CardInstance.CreateInSpellbook(populator.Create<CardInstanceId>(),
                         populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>())
                 });
             foreach (var card in cards)
@@ -1198,6 +1201,11 @@ namespace GuardsDigital.Tests.EditMode
             // carries one ChooseActingBody answer per body, each naming its body.
             yield return new Walk("two-body acting-body pick fixture",
                 new MatchHost(HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _)), 0, 1);
+            // Milestone 9.30b. A hero owning a spellbook with one spell removed faceup: every seat's
+            // hand summaries carry a non-zero book count, and the removed spell crosses as a public
+            // card in its new location while the book's facedown spells reach their owner alone.
+            yield return new Walk("spellbook fixture",
+                new MatchHost(SpellbookZoneTests.CreateSession(true)), 0, 1);
         }
 
         /// <summary>

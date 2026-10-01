@@ -18,7 +18,8 @@ namespace GuardsDigital.Core.Cards
         public ConfiguredHandRestoreState(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            IEnumerable<CardInstance> deckInstances)
+            IEnumerable<CardInstance> deckInstances,
+            IEnumerable<CardInstance> spellbookInstances)
         {
             Definitions = Array.AsReadOnly(
                 (definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
@@ -26,6 +27,8 @@ namespace GuardsDigital.Core.Cards
                 (instances ?? throw new ArgumentNullException(nameof(instances))).ToArray());
             DeckInstances = Array.AsReadOnly(
                 (deckInstances ?? throw new ArgumentNullException(nameof(deckInstances))).ToArray());
+            SpellbookInstances = Array.AsReadOnly(
+                (spellbookInstances ?? throw new ArgumentNullException(nameof(spellbookInstances))).ToArray());
         }
 
         public IReadOnlyList<CardDefinition> Definitions { get; }
@@ -38,14 +41,22 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public IReadOnlyList<CardInstance> DeckInstances { get; }
 
+        /// <summary>
+        /// Milestone 9.30b. The spell cards setup put in the spellbook - a setup fact like the deck
+        /// split, recovered on restore from each card's definition (<c>CardProgressionProfile.IsSpell</c>).
+        /// </summary>
+        public IReadOnlyList<CardInstance> SpellbookInstances { get; }
+
         public void Deconstruct(
             out IReadOnlyList<CardDefinition> definitions,
             out IReadOnlyList<CardInstance> instances,
-            out IReadOnlyList<CardInstance> deckInstances)
+            out IReadOnlyList<CardInstance> deckInstances,
+            out IReadOnlyList<CardInstance> spellbookInstances)
         {
             definitions = Definitions;
             instances = Instances;
             deckInstances = DeckInstances;
+            spellbookInstances = SpellbookInstances;
         }
     }
 }

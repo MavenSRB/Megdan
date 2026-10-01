@@ -609,6 +609,16 @@ namespace GuardsDigital.Application
         public IReadOnlyList<CardInstance> Cards => wire == null ? trusted.Cards :
             Array.AsReadOnly(wire.OwnCards.Concat(wire.PublicCards).Select(ToCard).ToArray());
 
+        /// <summary>
+        /// Milestone 9.30b, protocol /31. The host's hand, deck and spellbook counts, decoded row
+        /// for row. Before the first frame arrives this reads the locally composed match's counts,
+        /// the same fall-back every other carried member takes.
+        /// </summary>
+        public IReadOnlyList<SeatHandSummary> HandSummaries => wire == null
+            ? trusted.HandSummaries
+            : Array.AsReadOnly(wire.HandSummaries.Select(row => new SeatHandSummary(
+                new HeroId(row.HeroId), row.HandCount, row.DeckCount, row.SpellbookCount)).ToArray());
+
         private NetworkProjectionDetailRecord PublicDetail => wire?.Detail;
         private NetworkProjectionDetailRecord Detail => actionable ? PublicDetail : null;
 

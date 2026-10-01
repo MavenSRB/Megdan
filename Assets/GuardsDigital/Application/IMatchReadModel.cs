@@ -150,6 +150,14 @@ namespace GuardsDigital.Application
         IReadOnlyList<CardInstance> Cards { get; }
 
         /// <summary>
+        /// Milestone 9.30b. Every hero's hand, deck and spellbook counts, naming no card - the same
+        /// list for the Director and every seat. It is the one way a seat counts another hero's
+        /// facedown spellbook, whose cards <see cref="Cards"/> never holds; the removed spells lie
+        /// faceup and arrive in <see cref="Cards"/> like any open-zone card.
+        /// </summary>
+        IReadOnlyList<SeatHandSummary> HandSummaries { get; }
+
+        /// <summary>
         /// The standing decision's exact answers, or <c>null</c>. A seat that does not own the
         /// standing decision reads <c>null</c> here and finds every pending member below empty too.
         /// </summary>

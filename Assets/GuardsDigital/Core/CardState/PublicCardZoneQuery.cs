@@ -16,7 +16,8 @@ namespace GuardsDigital.Core.Cards
     /// p.4 makes "cards in the deck", "cards in hand" and "any facedown cards" hidden;
     /// <c>IsPublic</c>'s switch still ends in <c>default: return false</c>, so a location nobody has
     /// considered is withheld rather than published. This query adds no zone and removes none - it is
-    /// the same four members, written down once.</para>
+    /// the same four members, written down once. Milestone 9.30b adds a fifth, the spells removed from
+    /// a spellbook faceup; the spellbook itself stays closed.</para>
     ///
     /// <para><b>Set aside is deliberately NOT open.</b> Rulebook p.15 tucks the untaken card of an
     /// upgrade pair under the dashboard facedown, so its identity is not readable and it falls through
@@ -36,6 +37,10 @@ namespace GuardsDigital.Core.Cards
                 case CardLocation.DiscardPile:
                 case CardLocation.ItemSlot:
                 case CardLocation.UltimateArea:
+                // Milestone 9.30b. "Remove it from the spellbook faceup": the removed pile is read by
+                // every player, which is what lets a defender see the cast spell's Attack. The book
+                // itself is not open - its cards are facedown and its owner's alone.
+                case CardLocation.RemovedFromSpellbook:
                     return true;
                 default:
                     return false;

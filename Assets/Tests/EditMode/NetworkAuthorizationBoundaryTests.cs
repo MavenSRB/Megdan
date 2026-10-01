@@ -326,7 +326,8 @@ namespace GuardsDigital.Tests.EditMode
             var openLocations = new[]
             {
                 (int)CardLocation.TurnArea, (int)CardLocation.DiscardPile,
-                (int)CardLocation.ItemSlot, (int)CardLocation.UltimateArea
+                (int)CardLocation.ItemSlot, (int)CardLocation.UltimateArea,
+                (int)CardLocation.RemovedFromSpellbook // Milestone 9.30b
             };
             foreach (var row in record.PublicCards)
             {

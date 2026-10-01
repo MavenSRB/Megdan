@@ -29,6 +29,20 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             IEnumerable<CardInstance> deckInstances)
+            : this(definitions, instances, deckInstances, Array.Empty<CardInstance>())
+        {
+        }
+
+        /// <summary>
+        /// Milestone 9.30b. A hand whose hero also owns spell cards, created in the spellbook at setup
+        /// (<see cref="CardInstance.CreateInSpellbook"/>). Their definitions belong in
+        /// <paramref name="definitions"/> like every other card's.
+        /// </summary>
+        public ConfiguredHand(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            IEnumerable<CardInstance> deckInstances,
+            IEnumerable<CardInstance> spellbookInstances)
         {
             Definitions = Array.AsReadOnly(
                 (definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
@@ -36,7 +50,10 @@ namespace GuardsDigital.Core.Cards
                 (instances ?? throw new ArgumentNullException(nameof(instances))).ToArray());
             DeckInstances = Array.AsReadOnly(
                 (deckInstances ?? throw new ArgumentNullException(nameof(deckInstances))).ToArray());
-            AllInstances = Array.AsReadOnly(Instances.Concat(DeckInstances).ToArray());
+            SpellbookInstances = Array.AsReadOnly(
+                (spellbookInstances ?? throw new ArgumentNullException(nameof(spellbookInstances))).ToArray());
+            AllInstances = Array.AsReadOnly(
+                Instances.Concat(DeckInstances).Concat(SpellbookInstances).ToArray());
             DealtDefinitions = Array.AsReadOnly(Instances
                 .Select(instance => Definitions.First(definition =>
                     definition.Reference.Equals(instance.DefinitionReference)))
@@ -75,7 +92,13 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public IReadOnlyList<CardInstance> DeckInstances { get; }
 
-        /// <summary>Every card this hand supplies, hand then deck. What a match is composed with.</summary>
+        /// <summary>
+        /// Milestone 9.30b. The spell cards this hand's hero owns, which setup puts in the spellbook
+        /// rather than dealing or leaving in the deck. Empty for every hero who owns no spell.
+        /// </summary>
+        public IReadOnlyList<CardInstance> SpellbookInstances { get; }
+
+        /// <summary>Every card this hand supplies, hand, deck, then spellbook. What a match is composed with.</summary>
         public IReadOnlyList<CardInstance> AllInstances { get; }
 
         /// <summary>
@@ -90,14 +113,14 @@ namespace GuardsDigital.Core.Cards
         public IReadOnlyList<CardDefinition> DealtDefinitions { get; }
 
         public ConfiguredHandRestoreState CaptureRestoreState() =>
-            new ConfiguredHandRestoreState(Definitions, Instances, DeckInstances);
+            new ConfiguredHandRestoreState(Definitions, Instances, DeckInstances, SpellbookInstances);
 
         public static ConfiguredHand Restore(ConfiguredHandRestoreState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
-            var (definitions, instances, deckInstances) = state;
+            var (definitions, instances, deckInstances, spellbookInstances) = state;
             var definitionArray = definitions.ToArray();
-            var allInstances = instances.Concat(deckInstances).ToArray();
+            var allInstances = instances.Concat(deckInstances).Concat(spellbookInstances).ToArray();
             if (definitionArray.Length == 0 || !instances.Any() ||
                 allInstances.Select(instance => instance.OwnerId).Distinct().Count() != 1 ||
                 allInstances.Any(instance => !definitionArray.Any(definition =>
@@ -108,7 +131,7 @@ namespace GuardsDigital.Core.Cards
                     nameof(state));
             }
 
-            return new ConfiguredHand(definitionArray, instances, deckInstances);
+            return new ConfiguredHand(definitionArray, instances, deckInstances, spellbookInstances);
         }
     }
 }

@@ -140,6 +140,8 @@ Probed 2026-10-01 against main `da35b72d` (snapshot schema v50, `AuthoritativeSn
 
 **Expected schema and wire moves:** 9.30b moves the snapshot to v51 (new card locations, spell instances) and the wire to `/31` (the book count, the removed zone). 9.30g adds the Wish count (snapshot, wire). Others move neither unless a new pending choice must cross the wire (9.30f's foreign-steered move is expected to reuse Whisper's).
 
+**Built by 9.30b** (engine only, proven on synthetic spells): `CardLocation` members `Spellbook` (facedown) and `RemovedFromSpellbook` (faceup, open in `PublicCardZoneQuery`); `CardLifecycleAuthority.TryRemoveFromSpellbookFaceup` and `TryReturnToSpellbook`, each refusing every other source; `CardInstance.CreateInSpellbook` with `ConfiguredHand.SpellbookInstances`, the setup validator admitting exactly a spell in the book. A spell definition states `CardProgressionProfile.SpellCard(colour, tier)`: `IsSpell`, basic with no Tier (Gold or Silver) or non-basic with a Tier (Tier IV and Purple admitted), no Item icon, no next-Tier candidates, no Initiative; no card may name a spell as an upgrade. Every seat reads `SeatHandSummary.SpellbookCount` on `IMatchReadModel.HandSummaries`; the removed spells reach every seat as open-zone cards. Snapshot v51, wire `/31`.
+
 ## Settled questions
 
 All settled by the user on 2026-10-01 as recommended ("as recommended"):

@@ -1284,6 +1284,16 @@ namespace GuardsDigital.Application
         /// </remarks>
         public IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog => matchLog.Value;
 
+        /// <summary>
+        /// Milestone 9.30b. The countable shape of every hero's hidden cards - hand, deck and
+        /// spellbook - naming none of them. Table-public, so every seat is handed this same list
+        /// (<see cref="SeatProjectionFactory"/>) and a network seat reads it off the wire.
+        /// </summary>
+        public IReadOnlyList<SeatHandSummary> HandSummaries =>
+            handSummaries ?? (handSummaries = SeatHandSummary.Derive(Participants, Cards));
+
+        private IReadOnlyList<SeatHandSummary> handSummaries;
+
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
         public MatchParticipants Participants { get; }

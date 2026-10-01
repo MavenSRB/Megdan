@@ -3289,12 +3289,20 @@ namespace GuardsDigital.Core.Participants
                     (definitionsById.TryGetValue(instance.DefinitionReference.DefinitionId, out var owned) &&
                         owned.Progression.IsUltimate);
 
+                // Milestone 9.30b. A spell card is one setup put in the spellbook, read off its own
+                // definition exactly as the Ultimate is above - a setup fact, so where the spell is
+                // right now (book or removed) does not decide it.
+                bool IsSpellCard(CardInstance instance) =>
+                    definitionsById.TryGetValue(instance.DefinitionReference.DefinitionId, out var owned) &&
+                    owned.Progression.IsSpell;
+
                 return ConfiguredHand.Restore(new ConfiguredHandRestoreState(
                     definitionArray.Where(definition =>
                         ownedReferences.Contains(definition.Reference) ||
                         upgradeTargets.Contains(definition.Id)),
-                    ownedInstances.Where(instance => !IsDeckCard(instance)),
-                    ownedInstances.Where(IsDeckCard)));
+                    ownedInstances.Where(instance => !IsDeckCard(instance) && !IsSpellCard(instance)),
+                    ownedInstances.Where(instance => IsDeckCard(instance) && !IsSpellCard(instance)),
+                    ownedInstances.Where(IsSpellCard)));
             }
 
             // Milestone 7.1. A hand carries the cards its cards can become, and since the upgrade
@@ -3450,6 +3458,21 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 SyntheticShowcaseHand.CreateRedWithKinesisSkill,
                 SyntheticShowcaseHand.CreateBlueWithKinesisSkill);
+        }
+
+        /// <summary>
+        /// Milestone 9.30b. The ordinary configuration with the Red hero owning the three synthetic
+        /// spells in a spellbook (<see cref="SyntheticSpellbook"/>) and the Blue hero owning none, so a
+        /// fixture can read the book from its owner's seat and from a seat that does not own it.
+        /// Separate for the reason the fixtures above are: no other configuration may change.
+        /// </summary>
+        public static MatchConfiguration CreateForSpellbookFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticSpellbook.CreateRedWithSpellbook,
+                SyntheticShowcaseHand.CreateBlue);
         }
 
         /// <summary>

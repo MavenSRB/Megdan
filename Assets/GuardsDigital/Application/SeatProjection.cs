@@ -289,16 +289,49 @@ namespace GuardsDigital.Application
     /// </remarks>
     public sealed class SeatHandSummary
     {
-        internal SeatHandSummary(HeroId heroId, int handCount, int deckCount)
+        internal SeatHandSummary(HeroId heroId, int handCount, int deckCount, int spellbookCount)
         {
             HeroId = heroId;
             HandCount = handCount;
             DeckCount = deckCount;
+            SpellbookCount = spellbookCount;
         }
 
         public HeroId HeroId { get; }
         public int HandCount { get; }
         public int DeckCount { get; }
+
+        /// <summary>
+        /// Milestone 9.30b. How many spell cards lie facedown in this hero's spellbook - zero for a
+        /// hero who owns none. Public for the reason the hand size is: every seat can count the book,
+        /// while only its owner may read the faces. The removed spells need no count here: they lie
+        /// faceup in an open zone, so every seat already holds them as cards.
+        /// </summary>
+        public int SpellbookCount { get; }
+
+        /// <summary>
+        /// Milestone 9.30b. Every hero's summary, in participant order, derived once for the
+        /// Director's projection and handed to every seat unchanged.
+        /// </summary>
+        internal static IReadOnlyList<SeatHandSummary> Derive(
+            MatchParticipants participants, IReadOnlyList<CardInstance> cards)
+        {
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (cards == null) throw new ArgumentNullException(nameof(cards));
+
+            return Array.AsReadOnly(participants.Heroes
+                .Select(hero => new SeatHandSummary(
+                    hero.Id,
+                    // Milestone 8.40f. The count a printed hand-size narrowing reads is THIS count,
+                    // asked of one query rather than written twice, so a player can check a greyed
+                    // candidate against the number their own screen already shows them.
+                    HeroHandQuery.Count(cards, hero.Id),
+                    cards.Count(card => card.OwnerId.Equals(hero.Id) &&
+                        card.State.Location == CardLocation.Deck),
+                    cards.Count(card => card.OwnerId.Equals(hero.Id) &&
+                        card.State.Location == CardLocation.Spellbook)))
+                .ToArray());
+        }
     }
 
     /// <summary>
@@ -786,7 +819,7 @@ namespace GuardsDigital.Application
 
         /// <summary>
         /// Every card this seat's own hero owns, wherever it is - hand, deck, turn area, discard,
-        /// item slot or Ultimate area.
+        /// item slot, Ultimate area, spellbook (its faces this seat's alone) or removed-spell pile.
         /// </summary>
         public IReadOnlyList<CardInstance> OwnCards { get; }
 
@@ -951,16 +984,9 @@ namespace GuardsDigital.Application
                 .Where(card => !card.OwnerId.Equals(seat.HeroId))
                 .Where(card => IsPublic(card, source.MatchLog))
                 .ToArray();
-            var handSummaries = source.Participants.Heroes
-                .Select(hero => new SeatHandSummary(
-                    hero.Id,
-                    // Milestone 8.40f. The count a printed hand-size narrowing reads is THIS count,
-                    // asked of one query rather than written twice, so a player can check a greyed
-                    // candidate against the number their own screen already shows them.
-                    HeroHandQuery.Count(source.Cards, hero.Id),
-                    source.Cards.Count(card => card.OwnerId.Equals(hero.Id) &&
-                        card.State.Location == CardLocation.Deck)))
-                .ToArray();
+            // Milestone 9.30b. The source's own list, taken whole as the match log is: every count in
+            // it is table-public, so there is nothing to scope away.
+            var handSummaries = source.HandSummaries;
 
             // Milestone 8.71b. The seat that PERFORMS the selected actor's action, which is that
             // hero's own seat unless Hanu the Trickster's The Ultimate Trick stands over it: "You
@@ -983,7 +1009,7 @@ namespace GuardsDigital.Application
                 source,
                 Array.AsReadOnly(ownCards),
                 Array.AsReadOnly(publicCards),
-                Array.AsReadOnly(handSummaries),
+                handSummaries,
                 owner,
                 ownsDecision ? NarrowContract(source.DecisionContract, seat) : null,
                 AuthorizedCommands(source, seat, owner),
@@ -1504,6 +1530,8 @@ namespace GuardsDigital.Application
             // the two disagreed about would rule out a colour no seat can actually see. The list is
             // the same four members; nothing is added and nothing removed, and the switch below is
             // still fail-closed, so a location this rule has not considered withholds the card.
+            // Milestone 9.30b made the list five: the faceup removed-spell pile is open, while the
+            // facedown spellbook falls through to the fail-closed default.
             if (PublicCardZoneQuery.IsAnOpenZone(card.State.Location))
             {
                 return true;

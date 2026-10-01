@@ -77,7 +77,24 @@ namespace GuardsDigital.Core.Cards
                 CardFaceOrientation.FaceUp);
         }
 
+        /// <summary>
+        /// Milestone 9.30b. The shape a spell card starts a match in: in its owner's spellbook,
+        /// unplayed, facedown. A spell is never played (it is cast from the book by another card), so
+        /// it carries no resolution status, and facedown is the book's own orientation.
+        /// </summary>
+        public static CardStateFacts InitialInSpellbook()
+        {
+            return new CardStateFacts(
+                CardLocation.Spellbook,
+                false,
+                CardResolutionStatus.None,
+                CardFaceOrientation.FaceDown);
+        }
+
         public bool IsInitialInHand => Equals(InitialInHand());
+
+        /// <summary>Milestone 9.30b: whether this is exactly the shape <see cref="InitialInSpellbook"/> states.</summary>
+        public bool IsInitialInSpellbook => Equals(InitialInSpellbook());
 
         /// <summary>Milestone 7.5: whether this is exactly the shape <see cref="InitialInDeck"/> states.</summary>
         public bool IsInitialInDeck => Equals(InitialInDeck());

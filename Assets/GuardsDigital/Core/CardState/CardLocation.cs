@@ -21,6 +21,29 @@ namespace GuardsDigital.Core.Cards
         /// pile end-of-round retrieval reads, so every one of those questions excludes it by asking
         /// where the card is.
         /// </summary>
-        UltimateArea = 7
+        UltimateArea = 7,
+
+        /// <summary>
+        /// Milestone 9.30b. A hero's spellbook: the spell cards that hero owns outside the hand, deck
+        /// and discard pile, lying facedown. Gydion's Prepare Spells: "Add all spell cards to the
+        /// spellbook. Only Gydion can look at the cards in the spellbook."
+        ///
+        /// <para>A location of its own for the reason <see cref="UltimateArea"/> is one: every
+        /// question p.10, p.15 and p.8 ask names its location, so a card here is not in the hand a
+        /// turn commits from, the deck an upgrade searches or the discard pile retrieval reads,
+        /// without any of them having to say so. Facedown is the card's own orientation, so the
+        /// projection's fail-closed rule withholds its face from every seat but its owner's.</para>
+        ///
+        /// <para>Appended, never renumbered: the snapshot and the wire store the int.</para>
+        /// </summary>
+        Spellbook = 8,
+
+        /// <summary>
+        /// Milestone 9.30b. The spells removed from the spellbook, lying faceup where every player
+        /// can read them: "As the spell is cast, remove it from the spellbook faceup." One of p.4's
+        /// open zones (<see cref="PublicCardZoneQuery"/>), and a card leaves it only by returning to
+        /// <see cref="Spellbook"/>.
+        /// </summary>
+        RemovedFromSpellbook = 9
     }
 }

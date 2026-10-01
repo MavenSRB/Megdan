@@ -398,7 +398,12 @@ namespace GuardsDigital.Application
         // preferred card. A v29 reader would misread every participant after the first, so v29 peers
         // are refused from the header. Snapshot schema unmoved at v50: picks are host-local agreement
         // state and never persisted.
-        public const int Version = 30;
+        // v31 (milestone 9.30b): the spellbook zone. Each hand-summary row ends with the hero's
+        // facedown spellbook count (IMatchReadModel.HandSummaries, the one way a seat counts another
+        // hero's book), and a card row's location may now name the spellbook or the faceup removed
+        // pile. A v30 reader would take the count for the next row's hero id, so v30 peers are refused
+        // from the header. The admission tuple's snapshot schema advances to 51 with it.
+        public const int Version = 31;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

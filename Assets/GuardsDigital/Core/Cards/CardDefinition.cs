@@ -151,6 +151,17 @@ namespace GuardsDigital.Core.Cards
                         nameof(initiative));
                 }
             }
+            else if (progression.IsSpell)
+            {
+                // Milestone 9.30b. A spell card prints no Initiative either: it is never played, only
+                // cast from the spellbook by the card that is.
+                if (initiative.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A spell card prints no Initiative; it is cast, never played.",
+                        nameof(initiative));
+                }
+            }
             else if (!initiative.IsDefined)
             {
                 throw new ArgumentException(

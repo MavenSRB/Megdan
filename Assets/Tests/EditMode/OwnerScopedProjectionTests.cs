@@ -247,7 +247,9 @@ namespace GuardsDigital.Tests.EditMode
                 CardLocation.TurnArea,
                 CardLocation.DiscardPile,
                 CardLocation.ItemSlot,
-                CardLocation.UltimateArea
+                CardLocation.UltimateArea,
+                // Milestone 9.30b: the spells removed from a spellbook lie faceup.
+                CardLocation.RemovedFromSpellbook
             };
 
             foreach (var seat in host.Seats.Seats)

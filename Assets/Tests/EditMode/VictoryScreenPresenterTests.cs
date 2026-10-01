@@ -595,6 +595,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public TeamAgreementProjection TeamAgreement => inner.TeamAgreement;
             public IReadOnlyList<CardInstance> Cards => inner.Cards;
+            public IReadOnlyList<SeatHandSummary> HandSummaries => inner.HandSummaries;
             public PendingDecisionContract DecisionContract => inner.DecisionContract;
             public PendingDecisionOwner DecisionOwner => inner.DecisionOwner;
 

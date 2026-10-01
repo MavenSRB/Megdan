@@ -906,17 +906,20 @@ namespace GuardsDigital.Tests.EditMode
         // 9.21j re-pins all nine for dealing Razzle: his six capabilities join the recorded registration
         // list (the same bytes the sibling corpus measures on all sixteen captures). No scenario seats
         // him or declares a supply; the three groups still hold.
+        // 9.30b re-pins all nine for schema v51: a card row's location may now name a spellbook or the
+        // spells removed from it. No scenario deals a spell, so only the version moved, and the three
+        // groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
-            new ScenarioDigest("rejected", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
-            new ScenarioDigest("stale", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
-            new ScenarioDigest("restored", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
-            new ScenarioDigest("replayed", "3d0bb9e41fe5d1e5f599e65be0178ea540b94b675d2f9e9aa1bdab9b394f067c", "f5c1731db786a20d66454087bd6c3529384735f3edf1541ed04241e76a6c8d7d"),
-            new ScenarioDigest("undo-truncated", "efa76b3c8eebb0c1f6c5e39a397865ea83936f416657c30490bf360b9d95bdc8", "77ac57b237d88b4a161e42b752a63f85bcd3c69325f359a04e2dab91bb14888f"),
-            new ScenarioDigest("defense-discarded", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
-            new ScenarioDigest("defense-discarded-restored", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
-            new ScenarioDigest("defense-discarded-replayed", "a3c7627c92064ea646cb8d8b58f9d34d85b5b9798563ec1108d7de4c02dd4a02", "84f3c1705ab35914423aaf7d661da2e9abfdc73b0c6e4da5fa1640761faada47"),
+            new ScenarioDigest("accepted", "10d74ae72aa765a63292cb70e1ca5e85d0e475a1c7b194a7e38380163385497c", "40168a679254009b651c0c071bd1624534ba5460d7db2b47c394fa8c73480a82"),
+            new ScenarioDigest("rejected", "10d74ae72aa765a63292cb70e1ca5e85d0e475a1c7b194a7e38380163385497c", "40168a679254009b651c0c071bd1624534ba5460d7db2b47c394fa8c73480a82"),
+            new ScenarioDigest("stale", "10d74ae72aa765a63292cb70e1ca5e85d0e475a1c7b194a7e38380163385497c", "40168a679254009b651c0c071bd1624534ba5460d7db2b47c394fa8c73480a82"),
+            new ScenarioDigest("restored", "10d74ae72aa765a63292cb70e1ca5e85d0e475a1c7b194a7e38380163385497c", "40168a679254009b651c0c071bd1624534ba5460d7db2b47c394fa8c73480a82"),
+            new ScenarioDigest("replayed", "10d74ae72aa765a63292cb70e1ca5e85d0e475a1c7b194a7e38380163385497c", "40168a679254009b651c0c071bd1624534ba5460d7db2b47c394fa8c73480a82"),
+            new ScenarioDigest("undo-truncated", "b92660356e159ae1d9a7df412f04c7cef9e35899619e418971feebcab5255777", "cca728798f0ea1ef6519fbd2aea9d513238138c72746d80ab8eaaffe17442a49"),
+            new ScenarioDigest("defense-discarded", "1060edfbf01b71ee50392a7f910a612af2eed61cd8e8cd757b44f82ffefaf0fe", "3b591a7a9fdc3df0dcb3d2338161cfc4e0257c24a0a995d554f33858a1c26552"),
+            new ScenarioDigest("defense-discarded-restored", "1060edfbf01b71ee50392a7f910a612af2eed61cd8e8cd757b44f82ffefaf0fe", "3b591a7a9fdc3df0dcb3d2338161cfc4e0257c24a0a995d554f33858a1c26552"),
+            new ScenarioDigest("defense-discarded-replayed", "1060edfbf01b71ee50392a7f910a612af2eed61cd8e8cd757b44f82ffefaf0fe", "3b591a7a9fdc3df0dcb3d2338161cfc4e0257c24a0a995d554f33858a1c26552"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:
