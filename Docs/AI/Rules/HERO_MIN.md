@@ -98,6 +98,8 @@ These routes identify the composed contracts. Registration at the dealing block 
 
 ## Integration identity and private artwork
 
+Milestone 9.23 (2026-10-01): content revision `min-9-1-rev-1` -> `min-9-23-rev-1`, identity pin `4cdc31db...`. The three pushing stances' shared subject node (`PushAnAdjacentEnemyUnit`) now declares the `chosenHero` and `chosenMinion` outputs `choose-target@2` always publishes beside `chosenSpace`, so a match paused at the push restores (it was refused as an undeclared outcome: `MinStanceRestoreTests`). No printed value or reading moved; the artwork catalog follows the revision.
+
 Not yet recorded: the dealing block records schema/wire (v43 and `/17` at the time of writing), the content identity pin, the selection front's SHA-256, the standee and the three token arts.
 
 ## Open verification points

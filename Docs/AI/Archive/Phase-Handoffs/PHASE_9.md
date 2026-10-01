@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.23 Stance declarations evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.23 | Min's three pushing stances declare the unit identity their target selection publishes, so a match paused at the push restores; revision min-9-23-rev-1 with its pin re-measured; a three-stance regression failing on the base. [Definition](../../Roadmap/PHASE_9.md#x-923-mins-stance-subjects-declare-what-they-publish). | `milestone/9.23` |
+
 ## Milestone 9.15 Triggered Defeat and card-text Removal rows evidence
 
 | Milestone | Outcome and definition | Commit |

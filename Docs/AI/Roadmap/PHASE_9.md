@@ -293,9 +293,15 @@ Completed 2026-09-30.
 
 Historical evidence: [9.25 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-925-token-captions-and-size-evidence).
 
-### [ ] 9.23 Min's stance subjects declare what they publish
+### [x] 9.23 Min's stance subjects declare what they publish
 
 Queued 2026-09-30 by 9.21f: `choose-target@2` always publishes the chosen unit's identity, and snapshot load refuses an outcome the node did not declare (Magic Trick's restore first failed exactly so and now declares all three outputs). Min's Crane, Tiger and Dragon Stance subjects declare only `chosenSpace`, so restoring a match paused mid-push on those faces is expected to be refused. Outcome: a regression restoring each stance at its push, failing on the base with the refused outcome, then the declarations corrected (content only; the identity pin re-measured if the declaration feeds it, with the reason recorded) or, if the restore actually holds, the reason recorded and the item closed. Closing check: the three regressions, Min's printed-set and journey fixtures, harness and Edit Mode green. T1.
+
+Result: the refusal was real for all three. `choose-target@2` publishes the identity of the unit it named (`chosenHero` or `chosenMinion`) whether or not the node declares it and publishes `chosenSpace` only when declared; the resolution records every published outcome; and the snapshot reader refuses an outcome the node did not declare - so a match captured at the push of Crane, Tiger or Dragon Stance, whose shared subject node (`PushAnAdjacentEnemyUnit`) declared only `chosenSpace`, could not be restored: "Snapshot effect outcome declares output 'chosenHero' that node 'crane-subject' does not publish at that type", the same for `tiger-push-subject` and `dragon-push-subject`. The subject node now declares all three outputs on Magic Trick's terms (9.21f); the printed text, the push and every other node are unchanged, and `min-9-1-rev-1` stands because no printed value or reading moved - the identity pins the declaration feeds are re-measured with this reason. `MinStanceRestoreTests` stages Min (Blue) beside Wasp and one of his Red minions on the official map, commits the stance against Wasp's lower-Initiative card, attacks the minion, names Wasp as the push's subject, captures at the distance question, restores, and pushes him one space: the three cases fail on the base with the refusal above and pass after.
+
+Completed 2026-10-01.
+
+Historical evidence: [9.23 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-923-stance-declarations-evidence).
 
 ### [ ] 9.26 The bot tier-two seed sweep fits Unity's per-case budget
 
