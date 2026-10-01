@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-29
+Last updated: 2026-10-01
 
 ## Purpose and authority
 
@@ -15,8 +15,8 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **9.29**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **9.26**.
+- Active authorized milestone: **9.30**.
+- Next proposed milestone: **9.30**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -24,9 +24,11 @@ On 2026-09-27 the user cleared the next hero; the agent chose **Mrak the Rocksha
 
 On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.114-8.114g](Roadmap/PHASE_8_TWENTY_SIXTH_HERO.md) is complete ([his shard](Rules/HERO_WUK.md); schema v47). **[8.116](Roadmap/PHASE_8.md)** then made Whisper's forced move fire Widget's Dragon Knight right after the move (Ruling 16c). **8.117** (every gate walks its Active effects' trigger bodies) and **8.118** (Defeats held behind a removal-prevention question are settled by its answer; schema v48) are complete. The user then closed Phase 8 and started **[Phase 9](Roadmap/PHASE_9.md)**, the printed-wording audit **9.1 -> 9.2 -> 9.3 -> 9.4 -> 9.5**; the earlier presentation plan is retired. **9.1** (optionality, W1-W3), **9.2** (targeting, W4, R1) **9.3** (conditions, W5), **9.4** (journeys read outcomes) and **9.5** (the new-hero checklist) are complete; the user then authorized **9.6 -> 9.7** (offer against outcome) ([PRINTED_WORDING](Rules/PRINTED_WORDING.md)). **9.6** and **9.7** are complete: offers checked against outcomes both ways; restrictions refused at start. **[8.115](Roadmap/PHASE_8.md)** is complete: Whisper's forced move is a full-distance Movement action (Rulings 16a-16b, [her shard](Rules/HERO_WHISPER.md)). W8 (2026-09-29, Boulder Rush) was ruled during 9.8f.
 
+On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero and authorized the sequence **9.30 -> 9.30a .. 9.30j** ([roadmap](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md), [shard](Rules/HERO_GYDION.md)), built by agents as Razzle was; GY-Q1-GY-Q6 settled as recommended, GY-Q7-GY-Q11 await the user; the presentation was approved as mockups. 9.26 stays queued.
+
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
-On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)**: **9.9** (a play reached only through its before-the-action step is offered at every layer), **9.11** (every copy and codec carries every field; wire `/25`) and **9.10** (random line-ups restore, rewind and replay identically) and **9.9a** (the three items 9.9 recorded) are complete; **9.12** cut `Builds/Playtest-9.12-bugnet` at 18:50. **9.13** (expected-outcome corpus: format, executor, blind-reader pilot on Mortimer, Mrak and Wuk; two engine faults fixed) is complete; 9.13a-e, 9.14-9.15 queued; OQ-9.13 (does one decline end an "up to N"?) awaits the user. **9.17a** (Charged Runestone: its blue clause is the anvil rune; 9.19 queued) is complete. **9.16** (the Turret piece redrawn as the user picked) is complete; **9.18** (a thin black outline on every token) is complete, approved on its sheet; **9.20** (Snorri's rune marks centred, glyph only, approved) is complete. On 2026-09-30 the user authorized **Razzle** as the TWENTY-EIGHTH hero: [9.21](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md) (inventory) is complete; RZ-Q1-RZ-Q12 settled by the user as recommended; the sequence **9.21a -> 9.21k** is authorized; **9.21a** (the many-bodies model) and **9.21b** (which of you acts; schema v50, wire /27) , **9.21c**, **9.21d**, **9.21e** (removals), **9.21f** (body moves) and **9.21g** (Crowd Control's Defense, Rummage, Ransack) are complete; 9.21h-9.21j are built and await landing. On 2026-09-30 the user authorized **[9.24](Roadmap/PHASE_9.md)**, a package without Razzle; it is active. The same day the user reversed W6 as **W9** (an already-adjacent target is offered) and **[9.22](Roadmap/PHASE_9.md)** built it: Get over here! and Grappling Bolt offer an adjacent target.
+On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)** (complete; `Builds/Playtest-9.12-bugnet`) and then **9.13** (expected-outcome corpus; 9.13a-e and 9.14 queued; OQ-9.13 awaits the user), **9.15-9.20** and **9.22-9.29**, all complete except the queued 9.26 - [Phase 9](Roadmap/PHASE_9.md) owns each result. On 2026-09-30 the user authorized **Razzle** as the TWENTY-EIGHTH hero: [9.21-9.21k](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md) are complete (RZ-Q1-RZ-Q14 settled by the user; schema v50). The same day the user reversed W6 as **W9** (an already-adjacent target is offered), built at 9.22.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
