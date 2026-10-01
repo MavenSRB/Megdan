@@ -367,3 +367,9 @@ Result: the host agreement coordinator holds one pick set per choosing-team seat
 Completed 2026-10-01.
 
 Historical evidence: [9.29 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-929-minion-battle-picks-evidence).
+
+## Package, authorized 2026-10-01 (Gydion)
+
+### [~] 9.31 Package the 2026-10-01 build with Gydion
+
+Authorized 2026-10-01 by the user ("make a new build after", once Gydion was gated and the worktrees cleaned). Outcome: a Windows playtest package `Builds/Playtest-9.31-gydion` cut from main after 9.30j, carrying everything in Playtest-9.27-razzle plus 9.19 (card-text discards logged), 9.15 (triggered-effect Defeats and card-text Removals logged), 9.23 (Min's stances restore mid-push), 9.28 (a turn waiting on its own END TURN says so), 9.29 (each teammate picks their own Minion Battle removals) and Gydion the Archwizard dealt and gated (9.30-9.30j with 9.30h1; every hero's unlocked Ultimate a purple card in the items strip), so the roster is twenty-nine heroes, protocol /33, schema 53. Recipe as 9.27: version stamp first, the build-and-launch smoke, copy without logs or debug information, launcher, read-me, manifest and identity, ZIP inspected, packaged executable launched from its own folder, content digest measured. Closing check: the T3 pre-build gate green on the packaged revision - the full harness and the full Play Mode run at the root on the stamped tree, and the full Edit Mode run reused from 9.30j's landing where the code is identical, with the reason recorded; package folder, ZIP and archive row recorded. T3.
