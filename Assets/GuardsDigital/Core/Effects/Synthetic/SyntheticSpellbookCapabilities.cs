@@ -198,6 +198,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityReference reference, CardDefinitionId spell) =>
             new SpellInBook(reference, spell);
 
+        /// <summary>Milestone 9.30g. Whether the named spell lies in the book, as a predicate publishes it.</summary>
+        public const string PresentOutput = "present";
+
+        /// <summary>
+        /// Milestone 9.30g. "... cast the "Wish" spell in the spellbook instead" asks whether that one
+        /// spell is in the book before it offers the replacement: a <c>Conditional</c>'s predicate,
+        /// bound to <paramref name="spell"/> at registration as <see cref="SpellInBookHandler"/> is,
+        /// publishing <see cref="PresentOutput"/> for the book of the node's <see cref="OwnerParameter"/>.
+        /// It reads the same <see cref="SpellbookQuery.InBook"/> the naming step reads, so the offer
+        /// and the cast it leads to cannot disagree. It changes nothing.
+        /// </summary>
+        public static IEffectCapabilityHandler SpellInBookPresentHandler(
+            EffectCapabilityReference reference, CardDefinitionId spell) =>
+            new SpellInBookPresent(reference, spell);
+
         /// <summary>
         /// One "cast" bullet: a mandatory <c>Sequence</c> <paramref name="armId"/> of the spell's naming
         /// step (<paramref name="spellInBook"/>, reading the actor's own book) and the cast. A "Choose and
@@ -455,6 +470,67 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var found = Found(context);
                 return found == null ? Array.Empty<EffectOutcomeFact>() : Published(found);
             }
+        }
+
+        /// <summary>Milestone 9.30g. See <see cref="SpellInBookPresentHandler"/>.</summary>
+        private sealed class SpellInBookPresent
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
+        {
+            private readonly CardDefinitionId spell;
+
+            public SpellInBookPresent(EffectCapabilityReference reference, CardDefinitionId spell)
+            {
+                if (!reference.IsDefined)
+                    throw new ArgumentException("A spell's presence predicate needs a reference.", nameof(reference));
+                if (!spell.IsDefined)
+                    throw new ArgumentException("A spell's presence predicate names its spell.", nameof(spell));
+                Reference = reference;
+                this.spell = spell;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(OwnerParameter, EffectValueKind.Hero) },
+                new[] { new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>A predicate reads the state and changes none of it.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            private IReadOnlyList<EffectOutcomeFact> Read(EffectCapabilityContext context)
+            {
+                var owner = context.Input(OwnerParameter);
+                if (!context.CardState.IsAvailable || owner.Kind != EffectValueKind.Hero)
+                {
+                    return null;
+                }
+
+                var present = SpellbookQuery.InBook(context.CardState.Instances, owner.HeroId, spell) != null;
+                return new[] { new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(present)) };
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var read = Read(context);
+                return read == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(read);
+            }
+
+            public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Read(context) == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                Read(context) ?? Array.Empty<EffectOutcomeFact>();
         }
 
         private sealed class CastSpellHandler : IEffectCapabilityHandler

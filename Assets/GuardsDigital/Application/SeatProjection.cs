@@ -851,6 +851,7 @@ namespace GuardsDigital.Application
             IsTurnActive = source.IsTurnActive;
             TeamLifeCounters = source.TeamLifeCounters;
             RemainingWaveCounters = source.RemainingWaveCounters;
+            TeamVictoryTallies = source.TeamVictoryTallies;
             HeroProgression = source.HeroProgression;
             Outcome = source.Outcome;
             OwnCards = ownCards;
@@ -911,6 +912,13 @@ namespace GuardsDigital.Application
         /// the Director's.
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        /// <summary>
+        /// Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish), taken
+        /// from the source - public and un-scoped (GY-Q10), so a seat's copy is the Director's.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
+
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
 
         /// <summary>

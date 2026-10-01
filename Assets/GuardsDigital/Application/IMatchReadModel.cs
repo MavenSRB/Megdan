@@ -109,6 +109,14 @@ namespace GuardsDigital.Application
         /// </remarks>
         int RemainingWaveCounters { get; }
 
+        /// <summary>
+        /// Milestone 9.30g. Every team's count toward a printed team victory - Gydion's Wish, "After
+        /// you cast the "Wish" spell three times your team wins the game" - ordered by team id, each
+        /// with its printed threshold. Public (GY-Q10), the same list for the Director and every seat,
+        /// and carried on the wire from protocol /32; empty until a team first counts.
+        /// </summary>
+        IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
+
         IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
 
         /// <summary>

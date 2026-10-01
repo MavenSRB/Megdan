@@ -566,6 +566,15 @@ namespace GuardsDigital.Application
             : Array.AsReadOnly(wire.TeamLifeCounters.Select(row =>
                 new KeyValuePair<TeamId, int>(new TeamId(row.TeamId), row.Count)).ToArray());
 
+        /// <summary>
+        /// Milestone 9.30g, protocol /32. The host's team-victory tallies, decoded row for row; before
+        /// the first frame this reads the locally composed match's, as every carried member does.
+        /// </summary>
+        public IReadOnlyList<TeamVictoryTally> TeamVictoryTallies => wire == null
+            ? trusted.TeamVictoryTallies
+            : Array.AsReadOnly(wire.TeamVictoryTallies.Select(row =>
+                new TeamVictoryTally(new TeamId(row.TeamId), row.Count, row.Threshold)).ToArray());
+
         public IReadOnlyList<HeroProgressionProjection> HeroProgression => wire == null
             ? trusted.HeroProgression
             : Array.AsReadOnly(wire.HeroProgression.Select(row => new HeroProgressionProjection(

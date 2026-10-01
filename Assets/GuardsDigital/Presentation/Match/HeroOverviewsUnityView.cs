@@ -717,15 +717,38 @@ namespace GuardsDigital.Presentation.Match
                 // The user's "just purple card sitting there": the profile states no colour for an
                 // Ultimate, so the plaque draws the printed Ultimate purple rather than an empty slot.
                 ultimate.style.backgroundColor = MatchHudTheme.UltimateFace;
+
+                // Milestone 9.30g (approved mockup D): "1/3" beside the purple card - the team's public
+                // count toward a printed team victory (Gydion's Wish). It stays on the card's outer
+                // side, so the mirrored rail mirrors it with the card.
+                Label tally = null;
+                if (hero.UltimateTallyLabel != null)
+                {
+                    tally = HudElements.Text(hero.UltimateTallyLabel, 10f, MatchHudTheme.PrimaryText);
+                    tally.name = "gd-ultimate-tally";
+                    tally.tooltip = hero.UltimateTallyAssistiveLabel;
+                    tally.style.unityTextAlign = TextAnchor.MiddleCenter;
+                }
+
                 if (mirrored)
                 {
                     ultimate.style.marginRight = StripCardGap;
                     itemChips.Insert(0, ultimate);
+                    if (tally != null)
+                    {
+                        tally.style.marginRight = StripCardGap;
+                        itemChips.Insert(0, tally);
+                    }
                 }
                 else
                 {
                     ultimate.style.marginLeft = StripCardGap;
                     itemChips.Add(ultimate);
+                    if (tally != null)
+                    {
+                        tally.style.marginLeft = StripCardGap;
+                        itemChips.Add(tally);
+                    }
                 }
             }
 

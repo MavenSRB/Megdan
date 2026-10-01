@@ -4723,6 +4723,8 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.35z60. Virtual and delegating like the rest, so a case about the
             // wave label the same growth-forces-a-decision way every other member here does.
             public virtual int RemainingWaveCounters => inner.RemainingWaveCounters;
+            public virtual IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
+                inner.TeamVictoryTallies;
 
             public virtual IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 inner.HeroProgression;

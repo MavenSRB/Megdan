@@ -234,7 +234,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
                 // Purple (lamp), Tier IV.
                 Spell(Wish, "Wish", CardColor.Purple, CardTier.IV, WishText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, WishBlock))
+                    WishPrimary())
             }));
 
         /// <summary>

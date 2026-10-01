@@ -25,6 +25,7 @@ namespace GuardsDigital.Core.Cards
 
     public sealed class RoundResolutionAuthority
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
+            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
             IResolvedTurnSlotSwap, IItemCardSwap
     {
@@ -240,7 +241,7 @@ namespace GuardsDigital.Core.Cards
             // otherwise could not name. It is `this` rather than a delegate because the claim is this
             // authority's own state and the interface is already the narrowing.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
-                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this));
+                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -619,12 +620,80 @@ namespace GuardsDigital.Core.Cards
             return true;
         }
 
+        /// <summary>
+        /// Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish), keyed by
+        /// team. Match-scoped and accumulated: no round boundary or Defeat touches it (GY-Q10).
+        /// </summary>
+        private readonly Dictionary<TeamId, GuardsDigital.Core.Rules.Victory.TeamVictoryTally>
+            teamVictoryTallies = new Dictionary<TeamId, GuardsDigital.Core.Rules.Victory.TeamVictoryTally>();
+
+        /// <summary>Milestone 9.30g. Every team's tally, ordered by team id - public to every seat.</summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
+            Array.AsReadOnly(teamVictoryTallies.Values
+                .OrderBy(tally => tally.TeamId.Value, StringComparer.Ordinal)
+                .ToArray());
+
+        /// <summary>
+        /// Milestone 9.30g. The team a printed team victory was claimed for, or the named absence -
+        /// the second victory fact this build records rather than derives, beside
+        /// <see cref="SoloVictoryHeroId"/> and for its reason.
+        /// </summary>
+        public TeamId TeamVictoryTeamId { get; private set; }
+
+        /// <summary>
+        /// Milestone 9.30g. "After you cast the Wish spell three times": one more for the hero's team,
+        /// toward the card's printed <paramref name="threshold"/>. Refused once the match has ended,
+        /// for an unknown hero, and for a non-positive threshold.
+        /// </summary>
+        public bool TryAdvanceTeamVictoryTally(
+            GuardsDigital.Core.Units.Heroes.HeroId heroId, int threshold)
+        {
+            if (!heroId.IsDefined || threshold < 1 || Phase == RoundResolutionPhase.GameEnded ||
+                !participants.Heroes.Any(hero => hero.Id.Equals(heroId)))
+            {
+                return false;
+            }
+
+            var team = participants.GetPlayerForHero(heroId).TeamId;
+            var count = teamVictoryTallies.TryGetValue(team, out var tally) ? tally.Count : 0;
+            teamVictoryTallies[team] = new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(
+                team, count + 1, threshold);
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 9.30g. "... your team wins the game": records the hero's team once its tally has
+        /// reached its threshold, and does NOT end the match - the post-command check does, as for the
+        /// solo claim. GY-Q10: refused while any ending is already describable from the state (the
+        /// inner spell spent the opposing team's last Life, say), so that ending stands; and refused,
+        /// as two endings cannot both be the ending, once the match has ended or been claimed.
+        /// </summary>
+        public bool TryClaimTeamVictory(GuardsDigital.Core.Units.Heroes.HeroId heroId)
+        {
+            if (!heroId.IsDefined || Phase == RoundResolutionPhase.GameEnded ||
+                SoloVictoryHeroId.IsDefined || TeamVictoryTeamId.IsDefined ||
+                !participants.Heroes.Any(hero => hero.Id.Equals(heroId)))
+            {
+                return false;
+            }
+
+            var team = participants.GetPlayerForHero(heroId).TeamId;
+            if (!teamVictoryTallies.TryGetValue(team, out var tally) || !tally.IsReached ||
+                AnUnrecordedEndingExists())
+            {
+                return false;
+            }
+
+            TeamVictoryTeamId = team;
+            return true;
+        }
+
         private GuardsDigital.Core.Rules.Victory.MatchOutcomeReading ReadOutcome(
             bool gameIsRecordedAsEnded)
         {
             var reading = GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery.Read(
                 participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded,
-                SoloVictoryHeroId);
+                SoloVictoryHeroId, TeamVictoryTeamId);
             if (!reading.IsCoherent)
             {
                 throw new InvalidOperationException(
@@ -664,7 +733,9 @@ namespace GuardsDigital.Core.Cards
                     // match won outright went on asking its winner for their next command. The check's
                     // own remarks already said what it was for: "the list of rules that can end the
                     // match grows with the content; the list of endings does not."
-                    SoloVictoryHeroId)
+                    SoloVictoryHeroId,
+                    // Milestone 9.30g. And the team claim, for the same reason.
+                    TeamVictoryTeamId)
                 .Fault == GuardsDigital.Core.Rules.Victory.MatchOutcomeFault.UnrecordedGameEnd;
 
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
@@ -958,7 +1029,8 @@ namespace GuardsDigital.Core.Cards
                 : HeroCoinLedgerRestoreStateHolder.Present(CardActions.CoinLedger.CaptureRestoreState());
             return new RoundResolutionRestoreState(
                 new RoundCursorRestoreState(
-                    RoundIndex, TurnIndex, Phase, TieBreakerState, SoloVictoryHeroId),
+                    RoundIndex, TurnIndex, Phase, TieBreakerState, SoloVictoryHeroId,
+                    TeamVictoryTeamId, TeamVictoryTallies),
                 new RoundHistoryRestoreState(
                     TurnSlots,
                     HeroDefeatHistory.CaptureRestoreState(),
@@ -1018,6 +1090,20 @@ namespace GuardsDigital.Core.Cards
             // before anything asks for the outcome - a restored match that had ended alone must read
             // the same ending it ended with.
             authority.SoloVictoryHeroId = state.Cursor.SoloVictoryHeroId;
+
+            // Milestone 9.30g. The team claim and every team's tally, put back on the same terms: a
+            // restored match reads the count it saved (GY-Q10) and the ending it ended with.
+            authority.TeamVictoryTeamId = state.Cursor.TeamVictoryTeamId;
+            foreach (var tally in state.Cursor.TeamVictoryTallies)
+            {
+                participants.GetTeam(tally.TeamId);
+                if (authority.teamVictoryTallies.ContainsKey(tally.TeamId))
+                {
+                    throw new ArgumentException("A restored team counts toward one team victory tally.");
+                }
+
+                authority.teamVictoryTallies.Add(tally.TeamId, tally);
+            }
 
             authority.HeroProgression = GuardsDigital.Core.Rules.Progression.HeroProgressionState.Restore(
                 participants, state.HeroProgression);
@@ -1086,7 +1172,7 @@ namespace GuardsDigital.Core.Cards
                 cardActions.EnsureCoinLedger(participants),
                 // Milestone 8.39g1. A restored round is as claimable as a composed one - the claim is
                 // refused on its own terms when the payload already carries a winner.
-                authority, authority, authority));
+                authority, authority, authority, authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:

@@ -39,6 +39,11 @@ namespace GuardsDigital.Presentation.Match
                 // Coins - which is why it reads as the card rather than as a page.
                 case MatchVictoryCause.CoinHoardClaimed:
                     return "thirteen coins were hoarded";
+
+                // Milestone 9.30g. Gydion's Wish: "After you cast the "Wish" spell three times your
+                // team wins the game" - a card sentence about a team, read as the card.
+                case MatchVictoryCause.WishesCast:
+                    return "three Wishes were cast";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "An ended match requires one rulebook victory cause.");

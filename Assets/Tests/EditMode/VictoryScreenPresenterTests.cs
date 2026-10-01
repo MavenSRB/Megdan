@@ -81,6 +81,7 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase(MatchVictoryCause.ThroneCaptured, TeamSide.Blue)]
         [TestCase(MatchVictoryCause.LifeCountersExhausted, TeamSide.Red)]
         [TestCase(MatchVictoryCause.CoinHoardClaimed, TeamSide.Blue)]
+        [TestCase(MatchVictoryCause.WishesCast, TeamSide.Red)]
         public void ATeamWin_NamesTheSideItsColourAndTheSentenceThatEndedIt(
             MatchVictoryCause cause, TeamSide winningSide)
         {
@@ -101,6 +102,23 @@ namespace GuardsDigital.Tests.EditMode
                 "and the sentence under it is the SAME formatter the status line has been saying " +
                 "all match - one source, so the two surfaces cannot disagree about why it ended.");
             Assert.That(model.Cause, Is.EqualTo(cause));
+            Assert.That(model.HasSoloWinner, Is.False);
+        }
+
+        /// <summary>
+        /// Milestone 9.30g. Gydion's third Wish ends the match for his team (GY-Q10), and the screen
+        /// names the card's sentence - "three Wishes were cast" - under the winning side's banner.
+        /// </summary>
+        [Test]
+        public void TheThreeWishesEnding_IsNamedAsTheCardSaysIt()
+        {
+            Assert.That(VictoryCauseLabels.Describe(MatchVictoryCause.WishesCast), Is.EqualTo("three Wishes were cast"));
+
+            var session = ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession();
+            var model = VictoryScreenPresenter.Derive(
+                EndedProjection.TeamWin(session.Projection, MatchVictoryCause.WishesCast, TeamSide.Blue));
+            Assert.That(model.BannerText, Is.EqualTo("BLUE WINS"), "a team ending: the side wins, not a hero");
+            Assert.That(model.CauseText, Is.EqualTo("THREE WISHES WERE CAST"));
             Assert.That(model.HasSoloWinner, Is.False);
         }
 
@@ -586,6 +604,8 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters => inner.TeamLifeCounters;
 
             public int RemainingWaveCounters => inner.RemainingWaveCounters;
+            public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
+                inner.TeamVictoryTallies;
 
             public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
                 inner.ActiveEffectSourceCardInstanceIds;

@@ -410,7 +410,13 @@ namespace GuardsDigital.Application
         // peer's Enum.IsDefined check would refuse. A v31 reader would take the back count for the
         // next row's hero id, so v31 peers are refused from the header. Snapshot schema unmoved at
         // v51: the backs are derived from the persisted cards and the log from the rule-event log.
-        public const int Version = 32;
+        // v33 (milestone 9.30g): Gydion's Wish (GY-Q10). The seat record carries every team's count
+        // toward a printed team victory (team id, count, printed threshold) after the Wave pool, so
+        // every seat's plaque reads "n/3"; and an outcome row's cause may be WishesCast, a team ending
+        // in the existing two-team shape. A v32 reader would take the tally count for the hero rows'
+        // count, so v32 peers are refused from the header. The admission tuple's snapshot schema
+        // advances to 52 with it.
+        public const int Version = 33;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

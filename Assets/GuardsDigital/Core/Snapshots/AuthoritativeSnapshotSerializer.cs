@@ -417,7 +417,14 @@ namespace GuardsDigital.Core.Snapshots
         // the card section mid-read as an unrecognized enum value, and the header refuses it first -
         // the same reasoning wire /29 recorded for a new log kind. No fixture without a spellbook
         // changes length.
-        public const int CurrentSchemaVersion = 51;
+        // v52 (milestone 9.30g): Gydion's Wish (GY-Q10). The round cursor ends, after the solo winner,
+        // with the team a printed team victory was claimed for (the empty string for none) and every
+        // team's count toward it (a count of rows, then team id, count and printed threshold). Neither
+        // is derivable - a cast Wish lies faceup only until the next refill - and the claim is the
+        // ending MatchVictoryCause.WishesCast reads. v51 is rejected: a v51 reader would take the claim
+        // for the first turn slot's count, and a v51 payload cannot say how many Wishes a team has
+        // cast. Every fixture grows by five authoritative bytes (an empty string and a zero count).
+        public const int CurrentSchemaVersion = 52;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

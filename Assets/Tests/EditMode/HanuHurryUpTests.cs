@@ -775,7 +775,7 @@ namespace GuardsDigital.Tests.EditMode
                 "difference between the two payloads is the whole of what a rewrite adds, and the " +
                 "four bytes every payload now carries are the count that is zero in the first.");
             Assert.That(
-                AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(51),
+                AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(52),
                 "v44 is this section. See SnapshotCompatibilityCorpusTests for the +4 measured on " +
                 "all sixteen captures and the reject-rather-than-migrate decision.");
         }

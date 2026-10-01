@@ -1015,7 +1015,8 @@ namespace GuardsDigital.Application
             int? remainingWaveCounters = null,
             IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null,
             PendingActingBodyChoice pendingActingBodyChoice = null,
-            IEnumerable<HeroActingBody> actingBodies = null)
+            IEnumerable<HeroActingBody> actingBodies = null,
+            IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1131,6 +1132,12 @@ namespace GuardsDigital.Application
             // never pushed anything off the pool, so the setup's own starting total is the honest
             // reading rather than a substituted zero.
             RemainingWaveCounters = remainingWaveCounters ?? Setup.WaveCount;
+
+            // Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish), read
+            // off the round authority that records it; empty for a composition with no round behind it
+            // and for every match in which no team has counted, the same honest absence as above.
+            TeamVictoryTallies = Array.AsReadOnly((teamVictoryTallies ??
+                Enumerable.Empty<GuardsDigital.Core.Rules.Victory.TeamVictoryTally>()).ToArray());
             Outcome = outcome;
             HeroProgression = Array.AsReadOnly((heroProgression ??
                 Enumerable.Empty<HeroProgressionProjection>()).ToArray());
@@ -1552,6 +1559,12 @@ namespace GuardsDigital.Application
         /// rather than <see cref="Setup"/>'s starting total. See <see cref="IMatchReadModel.RemainingWaveCounters"/>.
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        /// <summary>
+        /// Milestone 9.30g: every team's count toward a printed team victory, ordered by team id. See
+        /// <see cref="IMatchReadModel.TeamVictoryTallies"/>.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
 
         /// <summary>
         /// Milestone 7.7: who won this match and which of the rulebook's three victory sentences ended

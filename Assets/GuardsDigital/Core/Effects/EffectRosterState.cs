@@ -37,6 +37,7 @@ namespace GuardsDigital.Core.Effects
         private readonly GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory;
         private readonly IResolvedTurnSlotSwap resolvedTurnSlotSwap;
         private readonly IItemCardSwap itemCardSwap;
+        private readonly GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory;
 
         private EffectRosterState()
         {
@@ -48,7 +49,8 @@ namespace GuardsDigital.Core.Effects
             HeroCoinLedger coins,
             GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory,
             IResolvedTurnSlotSwap resolvedTurnSlotSwap,
-            IItemCardSwap itemCardSwap)
+            IItemCardSwap itemCardSwap,
+            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
@@ -56,6 +58,7 @@ namespace GuardsDigital.Core.Effects
             this.soloVictory = soloVictory;
             this.resolvedTurnSlotSwap = resolvedTurnSlotSwap;
             this.itemCardSwap = itemCardSwap;
+            this.teamVictory = teamVictory;
         }
 
         /// <summary>
@@ -78,12 +81,13 @@ namespace GuardsDigital.Core.Effects
             HeroCoinLedger coins,
             GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory = null,
             IResolvedTurnSlotSwap resolvedTurnSlotSwap = null,
-            IItemCardSwap itemCardSwap = null) =>
+            IItemCardSwap itemCardSwap = null,
+            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
-                soloVictory, resolvedTurnSlotSwap, itemCardSwap);
+                soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -112,6 +116,14 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim SoloVictory =>
             IsAvailable ? soloVictory : null;
+
+        /// <summary>
+        /// Milestone 9.30g. The round's team-victory tally and claim (Gydion's Wish), or <c>null</c>
+        /// where this state was composed without one - optional on the terms
+        /// <see cref="SoloVictory"/> states.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.ITeamVictoryTally TeamVictory =>
+            IsAvailable ? teamVictory : null;
 
         private T Available<T>(T value)
             where T : class

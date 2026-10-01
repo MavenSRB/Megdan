@@ -604,11 +604,14 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(32),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(33),
                 "9.30h carries THE SPELLBOOK AS THE TABLE SEES IT: each hand-summary row ends with " +
                 "the facedown book counted by the back each spell shows, and the seat-public log " +
                 "gained SpellCast, SpellRemovedFaceup and SpellbookRefilled, so a /31 peer refuses " +
                 "the frame rather than misreading a back count or going dark on a kind it cannot name. " +
+                "9.30g carries THE WISH TALLIES: the seat record gained every team's count toward a " +
+                "printed team victory after the Wave pool, so a /32 peer would take the tally count " +
+                "for the hero rows' count. " +
                 "9.19 carries the CARD-TEXT DISCARD ROW: the seat-public match log gained " +
                 "CardDiscardedByCardText, the row for a card that card text sent out of a hand, so " +
                 "a /28 peer refuses the frame rather than going dark on a kind it cannot name. " +

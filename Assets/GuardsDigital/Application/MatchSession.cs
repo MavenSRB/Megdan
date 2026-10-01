@@ -1056,7 +1056,10 @@ namespace GuardsDigital.Application
                 actingBodyChoice,
                 // Milestone 9.21i. The settled acting bodies, the engine's own read, so the board's
                 // acting cue follows whichever body acts.
-                board.ActingBodies);
+                board.ActingBodies,
+                // Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish),
+                // read off the round authority that records it.
+                round.TeamVictoryTallies);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

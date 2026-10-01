@@ -914,6 +914,8 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.35z60. This stub answers a spotlight/kinetic-stream read, neither
             // of which reads the Wave pool; a fixed value keeps the "narrowest projection" shape.
             public int RemainingWaveCounters => 0;
+            public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
+                Array.Empty<GuardsDigital.Core.Rules.Victory.TeamVictoryTally>();
 
             public IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 Array.Empty<HeroProgressionProjection>();

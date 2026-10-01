@@ -44,6 +44,21 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(state.Cursor.SoloVictoryHeroId.IsDefined
                 ? state.Cursor.SoloVictoryHeroId.Value
                 : string.Empty);
+
+            // Milestone 9.30g, schema v52. The team a printed team victory was claimed for (Gydion's
+            // third Wish), the empty string for none, and every team's count toward it - neither has
+            // another source: a cast Wish lies faceup only until the next refill.
+            writer.Write(state.Cursor.TeamVictoryTeamId.IsDefined
+                ? state.Cursor.TeamVictoryTeamId.Value
+                : string.Empty);
+            writer.Write(state.Cursor.TeamVictoryTallies.Count);
+            foreach (var tally in state.Cursor.TeamVictoryTallies)
+            {
+                writer.Write(tally.TeamId.Value);
+                writer.Write(tally.Count);
+                writer.Write(tally.Threshold);
+            }
+
             WriteSlots(writer, state.History.TurnSlots);
             WriteHeroDefeatHistory(writer, state.History.HeroDefeats);
         }
@@ -123,6 +138,31 @@ namespace GuardsDigital.Core.Snapshots
             var soloVictoryHeroId = string.IsNullOrEmpty(soloVictoryHeroIdValue)
                 ? default(GuardsDigital.Core.Units.Heroes.HeroId)
                 : new GuardsDigital.Core.Units.Heroes.HeroId(soloVictoryHeroIdValue);
+
+            // Milestone 9.30g, schema v52. The team claim and the tallies, each naming a team this
+            // match has; a count below one or a threshold below one is refused by the tally itself.
+            var teamVictoryTeamIdValue = reader.ReadString();
+            var teamVictoryTeamId = string.IsNullOrEmpty(teamVictoryTeamIdValue)
+                ? default(TeamId)
+                : new TeamId(teamVictoryTeamIdValue);
+            if (teamVictoryTeamId.IsDefined &&
+                !participants.Teams.Any(team => team.Id.Equals(teamVictoryTeamId)))
+            {
+                throw Malformed("Snapshot records a team victory for a team this match does not have.");
+            }
+
+            var teamVictoryTallies = ReadMany(reader, "team victory tallies", () =>
+            {
+                var teamId = new TeamId(reader.ReadString());
+                var count = reader.ReadInt32();
+                var threshold = reader.ReadInt32();
+                if (!participants.Teams.Any(team => team.Id.Equals(teamId)) || count < 1 || threshold < 1)
+                {
+                    throw Malformed("Snapshot records a team victory tally outside the legal range.");
+                }
+
+                return new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(teamId, count, threshold);
+            });
             var slots = ReadSlots(reader, cards, participants);
             var heroDefeats = ReadHeroDefeatHistory(reader);
             var completed = ReadMany(reader, "completed rounds", () =>
@@ -260,7 +300,11 @@ namespace GuardsDigital.Core.Snapshots
                 participants,
                 lanePushAuthority,
                 GuardsDigital.Core.Rules.Consequences.TeamLifeState.Restore(participants, teamLives),
-                phase == RoundResolutionPhase.GameEnded);
+                phase == RoundResolutionPhase.GameEnded,
+                // Milestone 9.30g. The two recorded endings are read here as the live round reads
+                // them; without them a payload of a match a card ended reads as an unexplained end.
+                soloVictoryHeroId,
+                teamVictoryTeamId);
             if (!outcomeReading.IsCoherent)
             {
                 throw new SnapshotLoadException(
@@ -275,7 +319,8 @@ namespace GuardsDigital.Core.Snapshots
                 participants,
                 new RoundResolutionRestoreState(
                     new RoundCursorRestoreState(
-                        roundIndex, turnIndex, phase, tieBreaker, soloVictoryHeroId),
+                        roundIndex, turnIndex, phase, tieBreaker, soloVictoryHeroId,
+                        teamVictoryTeamId, teamVictoryTallies),
                     new RoundHistoryRestoreState(slots, heroDefeats, completed),
                     new EndOfRoundRestoreState(
                         stage,

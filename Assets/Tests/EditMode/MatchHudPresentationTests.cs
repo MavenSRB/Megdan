@@ -320,6 +320,79 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30g, approved mockup D: "after Tier IV his Wish count reads 1/3 beside the purple
+        /// card". The team's public count (GY-Q10) is drawn beside the strip's Ultimate on every rail of
+        /// that team, on the card's outer side so a mirrored rail mirrors it, and on no other rail.
+        /// </summary>
+        [Test]
+        public void TheRail_DrawsTheTeamsWishCountBesideThePurpleCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    TeamSide.Red),
+                out _, out _, out _);
+            var redTeam = session.Projection.Setup.Heroes.First(hero => hero.TeamSide == TeamSide.Red).TeamId;
+
+            var plain = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, plain).Refresh();
+            Assert.That(Descendants(plain.Root).Any(element => element.name == "gd-ultimate-tally"), Is.False,
+                "Arrange: no team has counted, so no rail draws a count.");
+
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(
+                new TallyClient(new TallyReadModel(session.Projection,
+                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(redTeam, 1, 3))),
+                view).Refresh();
+            foreach (var hero in view.Model.Heroes)
+            {
+                var column = Descendants(view.Root).Single(element => element.name ==
+                    (hero.TeamSide == TeamSide.Red ? "gd-hero-rail-red" : "gd-hero-rail-blue"));
+                var rail = Descendants(column).Single(element => element.name == "gd-hero-rail");
+                var tallies = Descendants(rail).Where(element => element.name == "gd-ultimate-tally").ToArray();
+                if (hero.TeamSide != TeamSide.Red)
+                {
+                    Assert.That(tallies, Is.Empty, "the other team has not counted");
+                    continue;
+                }
+
+                var tally = (Label)tallies.Single();
+                Assert.That(tally.text, Is.EqualTo("1/3"), "the count over the printed three");
+                var card = Descendants(rail).Single(element => element.name == "gd-ultimate-card");
+                Assert.That(tally.parent, Is.SameAs(card.parent), "beside the purple card, in the items strip");
+                Assert.That(card.parent.IndexOf(tally), Is.EqualTo(card.parent.IndexOf(card) + 1),
+                    "on the card's outer side");
+                Assert.That(tally.tooltip, Is.EqualTo("1 of 3 toward the team's card victory"));
+            }
+        }
+
+        private sealed class TallyReadModel : MatchFeaturePresenterTests.DelegatingReadModel
+        {
+            private readonly IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> tallies;
+
+            public TallyReadModel(IMatchReadModel inner, GuardsDigital.Core.Rules.Victory.TeamVictoryTally tally)
+                : base(inner) => tallies = new[] { tally };
+
+            public override IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
+                tallies;
+        }
+
+        private sealed class TallyClient : IMatchClient
+        {
+            public TallyClient(IMatchReadModel projection) => Projection = projection;
+            public IMatchReadModel Projection { get; }
+            public bool IsDirector => false;
+
+            public MatchClientResult Submit(DirectorCommand command) =>
+                throw new NotSupportedException("This client answers Refresh() reads only.");
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                throw new NotSupportedException("This client answers Refresh() reads only.");
+
+            public MatchClientResult SubmitUndo() =>
+                throw new NotSupportedException("This client answers Refresh() reads only.");
+        }
+
         [Test]
         public void TheRail_DrawsNoUltimateRowWhileTheCardWaitsInTheDeck()
         {

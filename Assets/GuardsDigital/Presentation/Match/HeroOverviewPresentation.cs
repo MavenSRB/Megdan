@@ -807,7 +807,8 @@ namespace GuardsDigital.Presentation.Match
             bool isAwaited = false,
             int worth = 0,
             TurnSlotMarkerViewModel currentTurnMarker = null,
-            SpellbookViewModel spellbook = null)
+            SpellbookViewModel spellbook = null,
+            GuardsDigital.Core.Rules.Victory.TeamVictoryTally? ultimateTally = null)
         {
             if (!heroId.IsDefined)
             {
@@ -849,6 +850,15 @@ namespace GuardsDigital.Presentation.Match
             IsAwaited = isAwaited;
             CurrentCard = currentCard;
             UltimateCard = ultimateCard;
+
+            // Milestone 9.30g (approved mockup D): "after Tier IV his Wish count reads 1/3 beside the
+            // purple card" - drawn only beside an unlocked Ultimate, and only once the team counts.
+            UltimateTallyLabel = ultimateCard != null && ultimateTally.HasValue
+                ? ultimateTally.Value.ToString()
+                : null;
+            UltimateTallyAssistiveLabel = UltimateTallyLabel == null
+                ? null
+                : $"{ultimateTally.Value.Count} of {ultimateTally.Value.Threshold} toward the team's card victory";
             CurrentTurnMarker = currentTurnMarker;
             HeldMarkers = Array.AsReadOnly((heldMarkers ??
                 Enumerable.Empty<HeroMarkerViewModel>()).ToArray());
@@ -1024,6 +1034,18 @@ namespace GuardsDigital.Presentation.Match
         public TrayCardViewModel UltimateCard { get; }
 
         /// <summary>
+        /// Milestone 9.30g. "n/3" - this hero's team's count toward a printed team victory (Gydion's
+        /// Wish) over its printed threshold, drawn beside <see cref="UltimateCard"/>; null while there
+        /// is no unlocked Ultimate or the team has not counted. It is
+        /// <c>IMatchReadModel.TeamVictoryTallies</c> read straight through, on the terms
+        /// <see cref="Coins"/> is, so it survives a restore, a replay and an Undo with no state here.
+        /// </summary>
+        public string UltimateTallyLabel { get; }
+
+        /// <summary>The same count in words, for the hover and assistive reading.</summary>
+        public string UltimateTallyAssistiveLabel { get; }
+
+        /// <summary>
         /// Milestone 8.23a: rulebook p.18's markers this hero is currently holding, and what each one
         /// does to them.
         ///
@@ -1191,7 +1213,10 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.TurnSlotMarker(
                     projection, heroId, projection.TurnIndex),
                 // Milestone 9.30h. Read off this seat's own projection, so privacy is the projection's.
-                SpellbookPresentation.ForHero(projection, heroId, displayName));
+                SpellbookPresentation.ForHero(projection, heroId, displayName),
+                // Milestone 9.30g. The team's public Wish count, beside the purple card.
+                GuardsDigital.Core.Rules.Victory.TeamVictoryTallyQuery.ForHero(
+                    projection.Participants, projection.TeamVictoryTallies, heroId));
         }
     }
 

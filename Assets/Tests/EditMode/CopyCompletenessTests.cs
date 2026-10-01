@@ -864,6 +864,12 @@ namespace GuardsDigital.Tests.EditMode
                 ["scoreboard"] = heroes.Select(hero => new GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry(
                     hero, populator.NextInt(), populator.NextInt(), populator.NextInt(),
                     populator.NextInt(), populator.NextInt(), populator.NextInt())).ToArray(),
+                // Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish),
+                // which no walk reaches before Gydion is dealt (9.30i).
+                // One reached and one short, so every fact of a row is stated.
+                ["teamVictoryTallies"] = source.Participants.Teams.Select((team, index) =>
+                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(
+                        team.Id, index == 0 ? 3 : 1, 3)).ToArray(),
             });
 
             var checkedViews = 0;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
 
@@ -14,13 +15,18 @@ namespace GuardsDigital.Core.Cards
             int turnIndex,
             RoundResolutionPhase phase,
             TieBreakerState tieBreakerState,
-            GuardsDigital.Core.Units.Heroes.HeroId soloVictoryHeroId = default)
+            GuardsDigital.Core.Units.Heroes.HeroId soloVictoryHeroId = default,
+            TeamId teamVictoryTeamId = default,
+            IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null)
         {
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
             TieBreakerState = tieBreakerState;
             SoloVictoryHeroId = soloVictoryHeroId;
+            TeamVictoryTeamId = teamVictoryTeamId;
+            TeamVictoryTallies = Array.AsReadOnly((teamVictoryTallies ??
+                Enumerable.Empty<GuardsDigital.Core.Rules.Victory.TeamVictoryTally>()).ToArray());
         }
 
         public int RoundIndex { get; }
@@ -41,6 +47,19 @@ namespace GuardsDigital.Core.Cards
         /// holding thirteen or more, and nothing else in the match records it.</para>
         /// </summary>
         public GuardsDigital.Core.Units.Heroes.HeroId SoloVictoryHeroId { get; }
+
+        /// <summary>
+        /// Milestone 9.30g. The team a printed team victory was claimed for (Gydion's third Wish), or
+        /// the named absence - recorded beside <see cref="SoloVictoryHeroId"/> for its reason: the
+        /// Wish that won lies faceup only until the next refill, so nothing else records it.
+        /// </summary>
+        public TeamId TeamVictoryTeamId { get; }
+
+        /// <summary>
+        /// Milestone 9.30g. Every team's count toward that victory, ordered by team id - match-scoped,
+        /// public, and surviving rounds and Defeats (GY-Q10). Empty until a team first counts.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
 
         public void Deconstruct(
             out int roundIndex,

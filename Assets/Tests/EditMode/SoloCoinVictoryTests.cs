@@ -248,9 +248,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(cause => cause != MatchVictoryCause.None)
                 .ToArray();
 
-            Assert.That(causes.Length, Is.EqualTo(4),
-                "Three at milestone 7.7, four since 8.39g.");
+            Assert.That(causes.Length, Is.EqualTo(5),
+                "Three at milestone 7.7, four since 8.39g, five since 9.30g's Wish.");
             Assert.That(causes, Does.Contain(MatchVictoryCause.CoinHoardClaimed));
+            Assert.That(causes, Does.Contain(MatchVictoryCause.WishesCast));
         }
 
         /// <summary>
@@ -260,7 +261,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaMovedBecauseThisEndingHasNoOtherSource()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(51),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(52),
                 "v42 carries the solo winner. The three team causes are re-derived on restore from " +
                 "the Lane-Push transition and p.13's counters; this one has no such source, because " +
                 "holding thirteen coins is not the same fact as having resolved the branch while " +

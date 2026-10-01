@@ -68,9 +68,11 @@ namespace GuardsDigital.Application
             string decisionContractFamilyId,
             IReadOnlyList<DirectorCommand> decisionContractCommands,
             IReadOnlyList<DirectorCommand> authorizedCommands,
-            NetworkProjectionDetailRecord detail)
+            NetworkProjectionDetailRecord detail,
+            IReadOnlyList<NetworkTeamVictoryTallyRow> teamVictoryTallies = null)
         {
             Version = version;
+            TeamVictoryTallies = teamVictoryTallies ?? Array.Empty<NetworkTeamVictoryTallyRow>();
             SeatId = seatId;
             PlayerId = playerId;
             HeroId = heroId;
@@ -139,6 +141,14 @@ namespace GuardsDigital.Application
         /// be taken, and this codebase does not ship a branch it cannot reach.</para>
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        /// <summary>
+        /// Milestone 9.30g, protocol /32. Every team's count toward a printed team victory (Gydion's
+        /// Wish) with its printed threshold - the same rows for every seat (GY-Q10: public), carried
+        /// rather than derived, because no seat holds the history that would count them.
+        /// </summary>
+        public IReadOnlyList<NetworkTeamVictoryTallyRow> TeamVictoryTallies { get; }
+
         public IReadOnlyList<NetworkHeroRow> Heroes { get; }
         public IReadOnlyList<NetworkMinionRow> Minions { get; }
         public IReadOnlyList<NetworkObstacleRow> Obstacles { get; }
@@ -284,6 +294,21 @@ namespace GuardsDigital.Application
 
         public string TeamId { get; }
         public int Count { get; }
+    }
+
+    /// <summary>Milestone 9.30g, protocol /32. One team's count toward a printed team victory.</summary>
+    public sealed class NetworkTeamVictoryTallyRow
+    {
+        public NetworkTeamVictoryTallyRow(string teamId, int count, int threshold)
+        {
+            TeamId = teamId;
+            Count = count;
+            Threshold = threshold;
+        }
+
+        public string TeamId { get; }
+        public int Count { get; }
+        public int Threshold { get; }
     }
 
     public sealed class NetworkHeroRow
@@ -678,6 +703,16 @@ namespace GuardsDigital.Application
                 // counter facts belong together.
                 writer.Write(projection.RemainingWaveCounters);
 
+                // Milestone 9.30g, protocol /32. Every team's count toward a printed team victory,
+                // beside the two other counter facts of the table.
+                writer.Write(projection.TeamVictoryTallies.Count);
+                foreach (var tally in projection.TeamVictoryTallies)
+                {
+                    writer.Write(tally.TeamId.Value);
+                    writer.Write(tally.Count);
+                    writer.Write(tally.Threshold);
+                }
+
                 writer.Write(projection.Heroes.Count);
                 foreach (var hero in projection.Heroes)
                 {
@@ -957,6 +992,27 @@ namespace GuardsDigital.Application
                     if (remainingWaveCounters < 0)
                     {
                         return false;
+                    }
+
+                    // Milestone 9.30g, protocol /32. A tally exists once it has counted, toward a
+                    // positive threshold; a row claiming otherwise is refused whole.
+                    if (!TryReadCount(reader, out var tallyCount))
+                    {
+                        return false;
+                    }
+
+                    var tallies = new List<NetworkTeamVictoryTallyRow>(tallyCount);
+                    for (var index = 0; index < tallyCount; index++)
+                    {
+                        var tallyTeamId = reader.ReadString();
+                        var tallyCountValue = reader.ReadInt32();
+                        var tallyThreshold = reader.ReadInt32();
+                        if (string.IsNullOrWhiteSpace(tallyTeamId) || tallyCountValue < 1 || tallyThreshold < 1)
+                        {
+                            return false;
+                        }
+
+                        tallies.Add(new NetworkTeamVictoryTallyRow(tallyTeamId, tallyCountValue, tallyThreshold));
                     }
 
                     if (!TryReadCount(reader, out var heroCount))
@@ -1341,7 +1397,8 @@ namespace GuardsDigital.Application
                         contractFamily,
                         contractCommands,
                         authorizedCommands,
-                        detail);
+                        detail,
+                        Array.AsReadOnly(tallies.ToArray()));
                     return true;
                 }
             }

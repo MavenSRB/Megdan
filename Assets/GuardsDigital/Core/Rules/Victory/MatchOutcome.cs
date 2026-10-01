@@ -56,7 +56,18 @@ namespace GuardsDigital.Core.Rules.Victory
         /// <see cref="MatchOutcome.WinningHeroId"/>. It is the first ending in this build where two
         /// heroes on one team do not share a result.</para>
         /// </summary>
-        CoinHoardClaimed = 4
+        CoinHoardClaimed = 4,
+
+        /// <summary>
+        /// Milestone 9.30g. Gydion's Wish: "After you cast the "Wish" spell three times your team wins
+        /// the game." A card sentence that names a TEAM, so it ends the match as the three rulebook
+        /// endings do - one winning team, one losing team - while its winning fact, like
+        /// <see cref="CoinHoardClaimed"/>'s, has no other home and is recorded
+        /// (<c>RoundCursorRestoreState.TeamVictoryTeamId</c>). GY-Q10 (user, 2026-10-01): it is taken
+        /// once the third Wish's whole action, its inner spell included, has resolved, and an ending
+        /// the inner spell already caused stands.
+        /// </summary>
+        WishesCast = 5
     }
 
     /// <summary>
@@ -288,14 +299,16 @@ namespace GuardsDigital.Core.Rules.Victory
             LanePushTransitionAuthority lanePush,
             TeamLifeState teamLives,
             bool gameIsRecordedAsEnded,
-            HeroId soloVictoryHeroId = default) =>
+            HeroId soloVictoryHeroId = default,
+            TeamId teamVictoryTeamId = default) =>
             Read(
                 participants,
                 lanePush?.GameEndingCause ?? LanePushGameEndingCause.None,
                 lanePush?.WinningSide ?? TeamSide.None,
                 teamLives,
                 gameIsRecordedAsEnded,
-                soloVictoryHeroId);
+                soloVictoryHeroId,
+                teamVictoryTeamId);
 
         /// <summary>
         /// The same reading over the two facts themselves, so a caller holding a restored payload's
@@ -307,7 +320,8 @@ namespace GuardsDigital.Core.Rules.Victory
             TeamSide lanePushWinningSide,
             TeamLifeState teamLives,
             bool gameIsRecordedAsEnded,
-            HeroId soloVictoryHeroId = default)
+            HeroId soloVictoryHeroId = default,
+            TeamId teamVictoryTeamId = default)
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             if (teamLives == null) throw new ArgumentNullException(nameof(teamLives));
@@ -330,13 +344,19 @@ namespace GuardsDigital.Core.Rules.Victory
             // than resolved by preference - which is what ConflictingVictoryPaths has existed for
             // since milestone 7.7.
             var soloEnding = soloVictoryHeroId.IsDefined;
+
+            // Milestone 9.30g. The fifth ending is a card's TEAM sentence, read from the one fact that
+            // records it, and it is as much a second ending as the others: the claim is refused while
+            // any other ending is describable (GY-Q10), so two at once is an engine defect here too.
+            var teamClaimEnding = teamVictoryTeamId.IsDefined;
             if ((pushEnding && lifeEnding) || eliminated.Length > 1 ||
-                (soloEnding && (pushEnding || lifeEnding)))
+                (soloEnding && (pushEnding || lifeEnding)) ||
+                (teamClaimEnding && (pushEnding || lifeEnding || soloEnding)))
             {
                 return MatchOutcomeReading.Faulted(MatchOutcomeFault.ConflictingVictoryPaths);
             }
 
-            if (!pushEnding && !lifeEnding && !soloEnding)
+            if (!pushEnding && !lifeEnding && !soloEnding && !teamClaimEnding)
             {
                 return gameIsRecordedAsEnded
                     ? MatchOutcomeReading.Faulted(MatchOutcomeFault.UnexplainedGameEnd)
@@ -349,6 +369,7 @@ namespace GuardsDigital.Core.Rules.Victory
             }
 
             if (soloEnding) return ReadSoloEnding(participants, soloVictoryHeroId);
+            if (teamClaimEnding) return ReadTeamClaimEnding(participants, teamVictoryTeamId);
 
             return pushEnding
                 ? ReadPushEnding(participants, lanePushCause, lanePushWinningSide)
@@ -375,6 +396,28 @@ namespace GuardsDigital.Core.Rules.Victory
                 ? MatchOutcomeReading.Coherent(
                     MatchOutcome.WonAlone(MatchVictoryCause.CoinHoardClaimed, winningHeroId))
                 : MatchOutcomeReading.Faulted(MatchOutcomeFault.UndeclaredSoloWinner);
+
+        /// <summary>
+        /// Milestone 9.30g. The ending Gydion's third Wish reaches: "your team wins the game" - one
+        /// winning team, and the one team left is the loser, exactly as p.13's ending names its two.
+        /// A recorded team this match does not have, or a match of other than two teams, is refused
+        /// with the fault the team endings already share.
+        /// </summary>
+        private static MatchOutcomeReading ReadTeamClaimEnding(
+            MatchParticipants participants, TeamId winningTeamId)
+        {
+            var losers = participants.Teams
+                .Where(team => !team.Id.Equals(winningTeamId))
+                .Select(team => team.Id)
+                .ToArray();
+            if (losers.Length != 1 || !participants.Teams.Any(team => team.Id.Equals(winningTeamId)))
+            {
+                return MatchOutcomeReading.Faulted(MatchOutcomeFault.UndeclaredOutcomeTeams);
+            }
+
+            return MatchOutcomeReading.Coherent(
+                MatchOutcome.Won(MatchVictoryCause.WishesCast, winningTeamId, losers[0]));
+        }
 
         private static MatchOutcomeReading ReadPushEnding(
             MatchParticipants participants, LanePushGameEndingCause cause, TeamSide winningSide)

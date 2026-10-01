@@ -104,7 +104,7 @@ namespace GuardsDigital.Tests.EditMode
             new Row(GydionCardContent.CloudKill, "Cloud Kill", CardColor.Green, CardTier.III,
                 ActionKind.Skill, AttackRangeKind.None, "9.30f", (Rad, 3)),
             new Row(GydionCardContent.Wish, "Wish", CardColor.Purple, CardTier.IV,
-                ActionKind.Skill, AttackRangeKind.None, "9.30g")
+                ActionKind.Skill, AttackRangeKind.None, null)
         };
 
         [Test]

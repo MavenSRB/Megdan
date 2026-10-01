@@ -527,6 +527,10 @@ namespace GuardsDigital.Tests.EditMode
                 // therefore deleted rather than reworded, and the floor is back at 7.
                 { "RemainingWaveCounters",
                     nameof(NetworkSeatProjectionRecord.RemainingWaveCounters) },
+                // Milestone 9.30g, CARRIED at protocol /32: every team's count toward a printed team
+                // victory (Gydion's Wish), public (GY-Q10) and with no other source a seat could
+                // count it from.
+                { "TeamVictoryTallies", nameof(NetworkSeatProjectionRecord.TeamVictoryTallies) },
                 { "HeroProgression", nameof(NetworkSeatProjectionRecord.HeroProgression) },
                 // Milestone 8.53, CARRIED at protocol version 17. An exclusion was never available
                 // and neither was a derivation, which is the stronger statement: every fact the six
