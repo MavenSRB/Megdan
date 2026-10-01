@@ -2,6 +2,24 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30j Gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30j | Gydion passes the permanent player-path gate: 41 face rows and 6 components mapped to 31 real-input journeys plus the dealing scenes; two presentation defects the journeys found fixed. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930j-gate-gydion-on-the-player-path). | `milestone/9.30j` |
+
+## Milestone 9.30i Dealing evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30i | Gydion dealt as the twenty-ninth hero: fronts composed, everything registered, art prepared, bots answering, the new-hero checklist run. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930i-deal-gydion-with-his-artwork). | `milestone/9.30i` |
+
+## Milestone 9.30h1 Spell face proportions and size evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30h1 | Every spell face keeps the printed 372:260 and reads larger; the import and fit causes fixed; the items strip holds the chip at every viewport (user-directed amendment). [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930h1-spell-faces-keep-their-printed-proportions-and-read-larger). | `milestone/9.30h1` |
+
 ## Milestone 9.30h Spellbook presentation evidence
 
 | Milestone | Outcome and definition | Commit |

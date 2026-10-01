@@ -69,13 +69,25 @@ Outcome: approved mockups A-D. The spell choice draws spell faces in the decisio
 Completed 2026-10-01. Approved mockups A-D built: spell faces in the decision window (removed greyed, counting spells captioned with the value the cast will use, items included), Find Familiar's up-to-three pick, the SPELLBOOK drawer and chip, tier backs on every seat, log rows for casts, removals and refills (wire /31 -> /32), the landscape spell footprint and the private spell art. Unity found each spell drawn twice and removed spells in Find Familiar's pick; both fixed before landing. Detail in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30h".
 Historical evidence: [9.30h completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930h-spellbook-presentation-evidence).
 
-### [ ] 9.30i Deal Gydion with his artwork
+### [x] 9.30h1 Spell faces keep their printed proportions and read larger
+
+Authorized 2026-10-01 by the user from the 9.30h captures ("looks to me scaling is a bit off for those spells, and that they might be too small"), a user-directed amendment to the approved mockups. Outcome: every spell face and back keeps the printed 372:260 wherever it is drawn; the spell choice and the drawer draw faces at the action card's width (about 300x210), Find Familiar's pick at two thirds in rows of at most seven; the drawer stays above the hand's band and scrolls. Closing check: a ratio regression failing on the base, minimum widths per surface, in-game captures for the user. T2 with a visual inspection.
+Completed 2026-10-01. The squeeze had two causes: Unity imported the 372x260 scans at 256x256 (the non-power-of-two rescale; `ConfiguredCardArtImporter` now covers `Private/Spells`, version 3) and the face fitted that square scan inside its 372:260 box (now `StretchToFill`). Faces are full size in the choice and the drawer (`DrawerScale` 1), two thirds in the pick, greyed faces dimmed less; the drawer is bounded to the reserved rail columns with a scrolling body. At 2560x540 the SPELLBOOK chip spilled out of the items strip because the chips row measured itself on one line and wrapped at another width; the row now takes the strip's width beside the coin (`flexBasis 0`, `flexGrow 1`) and every strip word is `NoWrap`. Captures `tmp/9-30h1-spellbook/` sent to the user.
+Historical evidence: [9.30h1 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930h1-spell-face-proportions-and-size-evidence).
+
+### [x] 9.30i Deal Gydion with his artwork
 
 Outcome: Gydion registered in the roster, pickable with his profile, standee and art; decision labels; the new-hero checklist ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md#required-for-a-new-hero)) run, `OfferOutcomeTests` included; bots answer his decisions. Closing check: as Razzle's 9.21j. T3.
 
-### [ ] 9.30j Gate Gydion on the player path
+Completed 2026-10-01. `hero-gydion` joins the roster as "Gydion the Archwizard" (four stars; Sniper, Tactician, Farming, Damager, Pusher, Tokens): Cantrip and the fifteen coloured fronts compose "Choose and cast one" as a `Choose` of cast arms in printed order, Cheap Trick boxed; the p.6 hand Cantrip, Prepare Spells and the three Elementaries over a thirteen-card deck, twenty-two spells in the book (GY-Q1). Revision `gydion-9-30i-rev-1`; every deferred list registered (handler types 134 -> 143, capabilities 312 -> 350, the Familiar token), 78 decision labels, staged scenes 142 and 143, bots answering every new family, the new-hero checklist run with `OfferOutcomeTests` allow-listing the empty refill under GY-Q7. Corpus re-pinned (+1,208 bytes, no schema move); private art `Cards/gydion/` (18), `HeroSelection/hero-gydion.png`, `Heroes/gydion-red|blue.png`; shine sprites regenerated from the Edit run's manifest (66 written). Detail in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30i".
+Historical evidence: [9.30i completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930i-dealing-evidence).
+
+### [x] 9.30j Gate Gydion on the player path
 
 Outcome: the permanent player-path gate for Gydion, journeys reading outcomes (lesson 4), full harness, Edit Mode and Play Mode green with zero skips. T3.
+
+Completed 2026-10-01. `GydionPlayerPathGateTests` maps 41 face rows and 6 components (piece, session, footprint, items, spellbook, Familiar; Cheap Trick boxed) to 31 real-input journeys in `GydionUiJourneyPlayModeTests` and `GydionSpellUiJourneyPlayModeTests` plus `GydionDealingPlayModeTests`, every one reading what its answer changed; `HeroPlayerPathMatrix` gains `SpellCastFromTheBook` and `SpellFaceChoice` with every earlier hero's rows unchanged, and Suggestion's enemy-seat direction is answered on that seat's own HUD. The board was measured first by a headless probe. The journeys found two presentation defects, fixed with regressions: Find Familiar's third pick auto-confirmed (a spell pick now waits for CONFIRM, as the user ruled), and Prepare Spells' Wish-instead face lost its caption and its window was worded as a spell choice (now "THE ARCHWIZARD", "Add all spell cards to the spellbook, or cast Wish instead."). Not covered: Hanu's delegated seat answering a Gydion spell choice in Play Mode (proved at the rules layer by `SpellCastTests`).
+Historical evidence: [9.30j completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930j-gate-evidence).
 
 ## Wave plan (agents, as Razzle)
 
