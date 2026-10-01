@@ -31,6 +31,17 @@ namespace GuardsDigital.Core.Effects
     }
 
     /// <summary>
+    /// Milestone 9.32b. A round-owned p.10 swap of a hero's unresolved card (Takahide's Set an Example:
+    /// "A friendly hero in radius may swap their unresolved card with a card in their hand"): both
+    /// cards' states, this turn's slot and the revealed record in one operation (lesson 28). The turn
+    /// order reads the new card because it reads unresolved cards live (p.7).
+    /// </summary>
+    public interface IUnresolvedCardSwap
+    {
+        bool TrySwapUnresolvedCard(HeroId owner, CardInstanceId unresolvedCard, CardInstanceId partnerCard);
+    }
+
+    /// <summary>
     /// The round-owned rules state roster capabilities may read or mutate, or its named absence.
     ///
     /// <para>The references are live authorities, not copies. Turn slots are appended by the round,
@@ -51,6 +62,7 @@ namespace GuardsDigital.Core.Effects
         private readonly GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory;
         private readonly TeamLifeState teamLives;
         private readonly IDeckCardSwap deckCardSwap;
+        private readonly IUnresolvedCardSwap unresolvedCardSwap;
 
         private EffectRosterState()
         {
@@ -65,7 +77,8 @@ namespace GuardsDigital.Core.Effects
             IItemCardSwap itemCardSwap,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory,
             TeamLifeState teamLives,
-            IDeckCardSwap deckCardSwap)
+            IDeckCardSwap deckCardSwap,
+            IUnresolvedCardSwap unresolvedCardSwap)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
@@ -76,6 +89,7 @@ namespace GuardsDigital.Core.Effects
             this.teamVictory = teamVictory;
             this.teamLives = teamLives;
             this.deckCardSwap = deckCardSwap;
+            this.unresolvedCardSwap = unresolvedCardSwap;
         }
 
         /// <summary>
@@ -101,12 +115,14 @@ namespace GuardsDigital.Core.Effects
             IItemCardSwap itemCardSwap = null,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory = null,
             TeamLifeState teamLives = null,
-            IDeckCardSwap deckCardSwap = null) =>
+            IDeckCardSwap deckCardSwap = null,
+            IUnresolvedCardSwap unresolvedCardSwap = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
-                soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives, deckCardSwap);
+                soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives, deckCardSwap,
+                unresolvedCardSwap);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -135,6 +151,10 @@ namespace GuardsDigital.Core.Effects
         /// <summary>Milestone 9.32a. The round's p.10 swap with the deck, or <c>null</c>.</summary>
         public IDeckCardSwap DeckCardSwap =>
             IsAvailable ? deckCardSwap : null;
+
+        /// <summary>Milestone 9.32b. The round's swap of an unresolved card, or <c>null</c>.</summary>
+        public IUnresolvedCardSwap UnresolvedCardSwap =>
+            IsAvailable ? unresolvedCardSwap : null;
 
         /// <summary>
         /// Milestone 8.39g1. The round's solo-victory claim, or <c>null</c> where this state was

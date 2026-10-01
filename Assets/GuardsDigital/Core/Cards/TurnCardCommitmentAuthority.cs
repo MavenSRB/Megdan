@@ -238,6 +238,25 @@ namespace GuardsDigital.Core.Cards
                 : TurnCardCommitmentStatus.CardCommittedFacedown;
         }
 
+        /// <summary>
+        /// Milestone 9.32b. p.10's Swap a Card moved this turn's revealed card for a hero to another
+        /// card, which now carries its played state: Takahide's Sting like a Bee swapping itself with a
+        /// deck card (9.32a), or a teammate swapping their unresolved card (Set an Example). The revealed
+        /// record names the card that is played now, so every reader of it - the HUD's played card, the
+        /// snapshot - names the same card the turn slot does. Asked only by the round's swaps.
+        /// </summary>
+        internal bool TryReplaceRevealedCard(HeroId heroId, CardInstanceId revealed, CardInstanceId replacement)
+        {
+            if (!IsRevealed || !replacement.IsDefined ||
+                !committedCards.TryGetValue(heroId, out var current) || !current.Equals(revealed))
+            {
+                return false;
+            }
+
+            committedCards[heroId] = replacement;
+            return true;
+        }
+
         public CardInstanceId? GetRevealedCardInstanceId(HeroId heroId)
         {
             if (!IsExpectedHero(heroId))

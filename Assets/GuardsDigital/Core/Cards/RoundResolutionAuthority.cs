@@ -27,7 +27,7 @@ namespace GuardsDigital.Core.Cards
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
-            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap
+            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap
     {
         public const int TurnsPerRound = 4;
 
@@ -246,7 +246,7 @@ namespace GuardsDigital.Core.Cards
             // the resolved-slot swap is: it edits the turn slot and the selected card together.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
-                TeamLives, this));
+                TeamLives, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -431,6 +431,61 @@ namespace GuardsDigital.Core.Cards
             if (resolving && !CurrentTurnAuthority.TryReplaceSelectedCard(card, deckCard))
                 throw new InvalidOperationException(
                     "A swap of the resolving card could not move the Initiative's selected card.");
+
+            // Milestone 9.32b. The turn's revealed record names the card played now (9.32a left it on
+            // the card that went to the deck). Only the card revealed this turn can be named there.
+            if (resolving)
+                CurrentCommitmentAuthority?.TryReplaceRevealedCard(owner, card, deckCard);
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 9.32b. Rulebook p.10's Swap a Card on a hero's unresolved card, as one operation
+        /// (lesson 28): both cards exchange every state
+        /// (<see cref="CardLifecycleAuthority.TrySwapUnresolvedWithRestingCard"/>), this turn's slot and
+        /// revealed record name the partner, and the turn order then reads the partner's Initiative,
+        /// because p.7 names the next actor by "the highest Initiative on their unresolved card" and the
+        /// Initiative authority reads unresolved cards live. Everything is checked before anything moves.
+        ///
+        /// <para>The card must be the owner's card in this turn's slot, and the owner must not be the
+        /// hero acting now: that card is resolving, which is 9.32a's swap with the deck, not this.</para>
+        /// </summary>
+        public bool TrySwapUnresolvedCard(HeroId owner, CardInstanceId unresolvedCard, CardInstanceId partnerCard)
+        {
+            if (!owner.IsDefined || !unresolvedCard.IsDefined || !partnerCard.IsDefined ||
+                unresolvedCard.Equals(partnerCard) ||
+                Phase != RoundResolutionPhase.ResolvingTurn || CurrentTurnAuthority == null)
+                return false;
+
+            var selected = CurrentTurnAuthority.SelectedActor;
+            if (selected.IsDefined && selected.ActorId.Equals(owner))
+                return false;
+
+            var unresolved = instances.SingleOrDefault(candidate => candidate.Id.Equals(unresolvedCard));
+            var partner = instances.SingleOrDefault(candidate => candidate.Id.Equals(partnerCard));
+            if (unresolved == null || partner == null ||
+                !unresolved.OwnerId.Equals(owner) || !partner.OwnerId.Equals(owner) ||
+                !CardLifecycleAuthority.IsResolvingCardInTurnArea(unresolved) ||
+                !CardLifecycleAuthority.IsUnresolvedSwapPartner(partner, admitsDiscarded: true))
+                return false;
+
+            var index = turnSlots.FindIndex(slot => slot.RoundIndex == RoundIndex && slot.TurnIndex == TurnIndex);
+            if (index < 0 || !turnSlots[index].Assignments.Any(assignment =>
+                    assignment.HeroId.Equals(owner) && assignment.CardInstanceId.HasValue &&
+                    assignment.CardInstanceId.Value.Equals(unresolvedCard)))
+                return false;
+
+            var slot = turnSlots[index];
+            var replacement = new RoundTurnSlot(
+                slot.RoundIndex, slot.TurnIndex,
+                slot.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
+                    ? new TurnCardAssignment(owner, partnerCard, false)
+                    : assignment),
+                instances, participants);
+            if (!CardLifecycleAuthority.TrySwapUnresolvedWithRestingCard(unresolved, partner))
+                return false;
+            turnSlots[index] = replacement;
+            CurrentCommitmentAuthority?.TryReplaceRevealedCard(owner, unresolvedCard, partnerCard);
             return true;
         }
 
@@ -1255,6 +1310,8 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 9.30f. The restored Life state, restored a few lines above.
                 authority.TeamLives,
                 // Milestone 9.32a. The p.10 swap with the deck, as the composed round binds it.
+                authority,
+                // Milestone 9.32b. And the swap of an unresolved card.
                 authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the

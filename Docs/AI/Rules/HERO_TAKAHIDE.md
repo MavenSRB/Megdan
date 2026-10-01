@@ -109,6 +109,12 @@ Expected compatibility moves (9.32's survey): CardStateFacts already carries loc
 - Lesson 29's readers: `PlayedAttackCardThisTurnQuery`, the borrowed primary (`BorrowedPrimaryAction.InPool`) and borrowed card text refuse a facedown resting card; readers that only count cards in a location (a discard pile's presence) count it, as p.10 still makes it a card there.
 - **The slot records the facedown fact** (`TurnCardAssignment.IsFacedown`). A card instance id names its definition, the turn slots reach every seat and the wire, and the completed-round history keeps them after the card has returned to the hand, where its own state no longer says it was facedown. `FacedownSlotMask` therefore shows every seat but the owner's a withheld assignment (`TurnCardAssignment.Withheld`: a card is there, not which). Snapshot schema v53 -> v54 (each slot assignment ends with the flag); wire `/33` -> `/34` (each slot row, current and completed, ends with it).
 
+**Built by 9.32b** (engine only, proven on `SyntheticUnresolvedSwapHand`; registered with the dealing at 9.32h):
+
+- `CardLifecycleAuthority.TrySwapUnresolvedWithRestingCard`: a waiting unresolved card and a fresh hand card or a faceup discarded card (`IsUnresolvedSwapPartner`) exchange states exactly, so Hold my Saké's discard partner becomes played and unresolved and the old card takes the discard's shape (p.10's own example). An Initiative rewrite on the old card ends with its state.
+- `RoundResolutionAuthority.TrySwapUnresolvedCard` (`IUnresolvedCardSwap`): the owner's card in this turn's slot, never the acting hero's, exchanged as one operation with the slot and the turn's revealed record (`TurnCardCommitmentAuthority.TryReplaceRevealedCard`). The order needs nothing: the Initiative authority reads unresolved cards live, so the swapped-in Initiative decides when the teammate acts (p.7). The revealed record now also follows 9.32a's resolving swap, which had left it on the card that went to the deck (regression in `TakahideGoldSwapTests`).
+- `swap-unresolved-card@1` (`SyntheticUnresolvedSwapCapabilities`, `fromDiscard`): asked of the owner's seat. Composed as Takahide's friend selection naming the swap as its consumer (only a teammate with an unresolved card and a partner is offered, 6.8l), then the teammate's `May` (`BoundHero` chooser), then the swap.
+
 ## Settled questions
 
 On 2026-10-01 the user settled all five one by one, each shown with its card faces, and chose (A), the recommendation, every time. Each names the block that builds it.

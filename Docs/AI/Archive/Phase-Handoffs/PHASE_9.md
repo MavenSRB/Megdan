@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32b Unresolved card swap evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32b | A teammate's unresolved card swaps with a hand or discard card in one round operation (both cards, this turn's slot, the revealed record) and the turn order reads the new Initiative; the teammate decides on their seat; the revealed record also follows 9.32a's resolving swap. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932b-swap-a-teammates-unresolved-card). | `milestone/9.32b` |
+
 ## Milestone 9.32a Gold card swap evidence
 
 | Milestone | Outcome and definition | Commit |

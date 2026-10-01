@@ -247,6 +247,47 @@ namespace GuardsDigital.Core.Cards
             return true;
         }
 
+        /// <summary>
+        /// Milestone 9.32b. A card a teammate's unresolved card may swap with: a fresh card in the hand
+        /// (Set an Example, "with a card in their hand") or a faceup discarded card (Hold my Saké, "or
+        /// in their discard"). A facedown discarded card has no face to play.
+        /// </summary>
+        public static bool IsUnresolvedSwapPartner(CardInstance card, bool admitsDiscarded) =>
+            card != null &&
+            (card.State.Equals(CardStateFacts.InitialInHand()) ||
+             (admitsDiscarded && IsDiscardedRestingCard(card) &&
+                card.State.FaceOrientation == CardFaceOrientation.FaceUp));
+
+        /// <summary>
+        /// Milestone 9.32b. Rulebook p.10's Swap a Card on an unresolved card: "When two cards are
+        /// swapped, all their card states are swapped. If you need to swap a played and resolved card
+        /// with a discarded card, the discarded card becomes played and resolved, and the other card
+        /// becomes discarded." The partner takes the unresolved card's state - played, unresolved,
+        /// faceup in the turn area, so p.7 reads its Initiative for the turn order - and the unresolved
+        /// card takes the partner's: a fresh hand card, or the discard pile shape the partner had. Both
+        /// are shapes the build already knows. Any Initiative rewrite on the old card ends with its
+        /// state (Hanu's "until it is resolved or otherwise changes state").
+        ///
+        /// <para>It decides the lifecycle shape and nothing else; the turn slot, the revealed record and
+        /// who may ask are the round's (<c>RoundResolutionAuthority.TrySwapUnresolvedCard</c>).</para>
+        /// </summary>
+        public static bool TrySwapUnresolvedWithRestingCard(CardInstance unresolved, CardInstance partner)
+        {
+            if (unresolved == null) throw new ArgumentNullException(nameof(unresolved));
+            if (partner == null) throw new ArgumentNullException(nameof(partner));
+            if (!unresolved.OwnerId.Equals(partner.OwnerId) ||
+                unresolved.Id.Equals(partner.Id) ||
+                !IsResolvingCardInTurnArea(unresolved) ||
+                !IsUnresolvedSwapPartner(partner, admitsDiscarded: true))
+                return false;
+
+            var unresolvedState = unresolved.State;
+            var partnerState = partner.State;
+            unresolved.ApplyState(partnerState);
+            partner.ApplyState(unresolvedState);
+            return true;
+        }
+
         /// <summary>The two legal discarded shapes; an unresolved played discard is not supported.</summary>
         public static bool IsDiscardedRestingCard(CardInstance card) =>
             card != null && card.State.Location == CardLocation.DiscardPile &&

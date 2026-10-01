@@ -87,6 +87,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(stage.Turn.SelectedActor.ActorId, Is.EqualTo(Stage.Enemy), "and the order moved on");
         }
 
+        /// <summary>
+        /// Milestone 9.32b's regression on 9.32a: the turn's revealed record (what the HUD shows as the
+        /// card a hero played) was left naming the card that went to the deck.
+        /// </summary>
+        [Test]
+        public void AfterTheResolvingSwap_TheRevealedRecordNamesTheSwappedInCard()
+        {
+            var stage = new Stage(played: Bee, deck: new[] { Butterfly, Tiger });
+            Assert.That(stage.Round.CurrentCommitmentAuthority.GetRevealedCardInstanceId(Stage.Taka),
+                Is.EqualTo(stage.Id(Bee)));
+            stage.AttackTheEnemy();
+            stage.EnemyDefendsWithTheWall();
+            stage.ChooseCard(Tiger);
+            Assert.That(stage.Round.CurrentCommitmentAuthority.GetRevealedCardInstanceId(Stage.Taka),
+                Is.EqualTo(stage.Id(Tiger)), "the card played now, as the turn slot names it (TK-Q2)");
+            Assert.That(stage.Restore(stage.Snapshot()).Round.CurrentCommitmentAuthority
+                .GetRevealedCardInstanceId(Stage.Taka), Is.EqualTo(stage.Id(Tiger)));
+        }
+
         [Test]
         public void AfterASwap_OnlyTheSwappedInCardIsThePlayedCard_TkQ2()
         {

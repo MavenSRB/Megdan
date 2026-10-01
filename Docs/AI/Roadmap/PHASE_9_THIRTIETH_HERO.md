@@ -27,9 +27,11 @@ Outcome: Float like a Butterfly starts in the hand and Sting like a Bee and Stri
 Completed 2026-10-01. p.10's swap with the deck is one round operation over both cards' states, the turn slot that names a played card and, for the card resolving its own action, the Initiative's selected card, so Sting's and Float's actions resolve the gold card they swapped in (TK-Q1, TK-Q2); two unregistered capabilities ask the actor for the deck card on his seat alone. Bushido's facedown result has no type, colour or actions for the played-attack query and both borrow paths. Measured against the survey's expectation: because a card instance id names its definition and the turn slots reach every seat and the completed-round history, the slot records that its card was placed facedown and every other seat is shown it withheld, so snapshot schema v53 -> v54 and wire `/33` -> `/34`. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32a"; two follow-ups are owed by 9.32h.
 Historical evidence: [9.32a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932a-gold-card-swap-evidence).
 
-### [ ] 9.32b Swap a teammate's unresolved card
+### [x] 9.32b Swap a teammate's unresolved card
 
 Outcome: a card text lets a chosen friendly hero swap their unresolved card with a card in their hand, or in their hand or discard; that hero's seat decides whether and with which card; only heroes the step can act on are offered (6.8l); the turn slot's identity changes and the next actor is read from the swapped-in card's Initiative (p.7, Hanu's precedent); the old card takes the hand's or the discard's states (p.10). Composed on synthetic test content only. Closing check: tests failing on the base, including a swap that moves the teammate ahead of or behind another hero still to act, a swap with a resolved discarded card, a network seat answering for itself, and a restore at the paused choice. T2.
+Completed 2026-10-01. A teammate's unresolved card and a hand card (or a faceup discarded card) exchange every state in one round operation with this turn's slot and revealed record; the turn order reads the swapped-in Initiative because unresolved cards are read live (p.7). Takahide chooses among teammates the swap can act on; the teammate's `May` and card choice are asked of their seat. The revealed record now also follows 9.32a's resolving swap (found here; regression added). No schema or wire move. The network seat answering for itself needs a configured match, so it is owed by 9.32h with 9.32a's wire check. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32b".
+Historical evidence: [9.32b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932b-unresolved-card-swap-evidence).
 
 ### [ ] 9.32c Spaces that are obstacles for the enemy units
 
@@ -53,7 +55,7 @@ Outcome: the six-card hand, a facedown gold in a turn slot and in the discard pi
 
 ### [ ] 9.32h Deal Takahide with his artwork
 
-Outcome: Takahide registered in the roster and pickable with his profile, standee (TK-02) and card art; Shameful Display boxed; decision labels; the new-hero checklist ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md#required-for-a-new-hero)) run, `OfferOutcomeTests` included; bots answer his decisions. Owed by 9.32a: a configured match carries a facedown turn-slot card through `NetworkSeatProjectionCodec` to another seat withheld and to its owner named, and `CopyCompletenessTests` drops its two declared-unreached entries (`TurnCardAssignment.IsFacedown`, `IsWithheld`). Closing check: as Gydion's 9.30i. T3.
+Outcome: Takahide registered in the roster and pickable with his profile, standee (TK-02) and card art; Shameful Display boxed; decision labels; the new-hero checklist ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md#required-for-a-new-hero)) run, `OfferOutcomeTests` included; bots answer his decisions. Owed by 9.32a: a configured match carries a facedown turn-slot card through `NetworkSeatProjectionCodec` to another seat withheld and to its owner named, and `CopyCompletenessTests` drops its two declared-unreached entries (`TurnCardAssignment.IsFacedown`, `IsWithheld`). Owed by 9.32b: a teammate's network seat answers their own May and card choice for an unresolved-card swap. Closing check: as Gydion's 9.30i. T3.
 
 ### [ ] 9.32i Gate Takahide on the player path
 
