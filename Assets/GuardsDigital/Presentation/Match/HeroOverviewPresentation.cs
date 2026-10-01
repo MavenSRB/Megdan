@@ -806,12 +806,20 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroMarkerViewModel> heldMarkers = null,
             bool isAwaited = false,
             int worth = 0,
-            TurnSlotMarkerViewModel currentTurnMarker = null)
+            TurnSlotMarkerViewModel currentTurnMarker = null,
+            SpellbookViewModel spellbook = null)
         {
             if (!heroId.IsDefined)
             {
                 throw new ArgumentException("An overview names its hero.", nameof(heroId));
             }
+
+            if (spellbook != null && !spellbook.HeroId.Equals(heroId))
+            {
+                throw new ArgumentException("A rail draws its own hero's spellbook.", nameof(spellbook));
+            }
+
+            Spellbook = spellbook;
 
             if (worth < 0 || worth > 3)
             {
@@ -1040,6 +1048,13 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>`MARKERS`, the held-marker row's caption.</summary>
         public string MarkersLabel => "MARKERS";
+
+        /// <summary>
+        /// Milestone 9.30h: this hero's spellbook as this seat's projection shows it - the items
+        /// strip's "SPELLBOOK n | m" chip and the drawer it opens (approved mockups B to D) - or null
+        /// for a hero who owns no spell, which is every hero but a spellbook's owner.
+        /// </summary>
+        public SpellbookViewModel Spellbook { get; }
     }
 
     public sealed class HeroOverviewsViewModel
@@ -1174,7 +1189,9 @@ namespace GuardsDigital.Presentation.Match
                 GuardsDigital.Core.Rules.Consequences.HeroDefeatCostQuery.Worth(
                     heroId, projection.Definitions, projection.Cards),
                 CurrentRoundCards.TurnSlotMarker(
-                    projection, heroId, projection.TurnIndex));
+                    projection, heroId, projection.TurnIndex),
+                // Milestone 9.30h. Read off this seat's own projection, so privacy is the projection's.
+                SpellbookPresentation.ForHero(projection, heroId, displayName));
         }
     }
 

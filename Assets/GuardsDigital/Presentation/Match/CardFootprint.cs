@@ -130,4 +130,68 @@ namespace GuardsDigital.Presentation.Match
             face.style.alignSelf = Align.FlexStart;
         }
     }
+
+    /// <summary>
+    /// Milestone 9.30h. The declared size of a complete SPELL face - the one landscape card in the
+    /// game, beside <see cref="CardFootprint"/>'s portrait action card.
+    ///
+    /// <para><b>Where the numbers come from.</b> Gydion's twenty-two spell fronts are verified
+    /// 372-by-260 scans (<c>cards/other-cards/spells-tt*__front.png</c>, 9.30e): the action card's
+    /// own width and half its height, so a spell is drawn at the action card's
+    /// <see cref="CardFootprint.StandardWidth"/> and the height that width gives at 372:260 - one
+    /// card size family, the two printed shapes, and no scale of the spell's own. Approved mockup A
+    /// draws the spell choice's faces at this size beside the played card.</para>
+    ///
+    /// <para>A surface that draws many spells at once (the SPELLBOOK drawer, approved mockups B and
+    /// C) draws them at a stated <see cref="DrawerScale"/> of this footprint, and a pointer rest
+    /// reveals the full face, as every rail card does.</para>
+    /// </summary>
+    public static class SpellCardFootprint
+    {
+        /// <summary>The verified private spell front's native pixel width.</summary>
+        public const float ArtworkSourceWidth = 372f;
+
+        /// <summary>The verified private spell front's native pixel height.</summary>
+        public const float ArtworkSourceHeight = 260f;
+
+        /// <summary>The action card's own width, so the two printed shapes are one size family.</summary>
+        public const float Width = CardFootprint.StandardWidth;
+
+        /// <summary>The height <see cref="Width"/> gives at the verified 372:260 ratio.</summary>
+        public const float Height = Width * ArtworkSourceHeight / ArtworkSourceWidth;
+
+        /// <summary>
+        /// The SPELLBOOK drawer's faces: eight to a row between the rails, as mockup B lays the book
+        /// out, with the full face one pointer rest away.
+        /// </summary>
+        public const float DrawerScale = 0.62f;
+
+        /// <summary>
+        /// The decision window's faces when a choice lists more spells than two rows of full faces
+        /// hold - Find Familiar's twenty, Wish's book - so every option stays on screen without a
+        /// scroller.
+        /// </summary>
+        public const float CrowdedChoiceScale = 0.6f;
+
+        /// <summary>Pins the landscape footprint at <paramref name="scale"/>, both ends, as <see cref="CardFootprint.Apply"/> does.</summary>
+        public static void Apply(VisualElement face, float scale = 1f)
+        {
+            if (face == null)
+            {
+                return;
+            }
+
+            var width = Width * scale;
+            var height = Height * scale;
+            face.style.width = width;
+            face.style.minWidth = width;
+            face.style.maxWidth = width;
+            face.style.height = height;
+            face.style.minHeight = height;
+            face.style.maxHeight = height;
+            face.style.flexGrow = 0f;
+            face.style.flexShrink = 0f;
+            face.style.alignSelf = Align.FlexStart;
+        }
+    }
 }

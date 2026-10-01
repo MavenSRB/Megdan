@@ -58,6 +58,13 @@ namespace GuardsDigital.Presentation.Match
         private object highlighted;
         private HeroId highlightedHero;
 
+        // Milestone 9.30h. The SPELLBOOK drawer (approved mockups B and C): a host spanning the open
+        // area between the two rails, holding one panel sized to its content. Which hero's book is
+        // open is a reading preference of this surface, like the hover - no command, no projection.
+        private readonly VisualElement spellbookHost;
+        private readonly VisualElement spellbookPanel;
+        private HeroId openSpellbookHero;
+
         public HeroOverviewsUnityView()
         {
             Root = new VisualElement { name = "gd-hero-rails" };
@@ -69,8 +76,21 @@ namespace GuardsDigital.Presentation.Match
             preview.style.position = Position.Absolute;
             preview.style.display = DisplayStyle.None;
             preview.pickingMode = PickingMode.Ignore;
+            spellbookHost = new VisualElement { name = "gd-spellbook-drawer-host", pickingMode = PickingMode.Ignore };
+            spellbookHost.style.position = Position.Absolute;
+            spellbookHost.style.display = DisplayStyle.None;
+            spellbookHost.style.flexDirection = FlexDirection.Column;
+            spellbookHost.style.alignItems = Align.Center;
+            spellbookPanel = HudElements.Panel(MatchHudTheme.PanelBackground);
+            spellbookPanel.name = "gd-spellbook-drawer";
+            spellbookPanel.style.flexDirection = FlexDirection.Column;
+            spellbookPanel.style.maxWidth = Length.Percent(100f);
+            HudElements.Padding(spellbookPanel, SpellbookDrawerPadding);
+            HudElements.Border(spellbookPanel, MatchHudTheme.PanelBorder, 2f, 12f);
+            spellbookHost.Add(spellbookPanel);
             Root.Add(redColumn);
             Root.Add(blueColumn);
+            Root.Add(spellbookHost);
             Root.Add(preview);
             redColumn.RegisterCallback<GeometryChangedEvent>(_ =>
                 ColumnGeometryChanged?.Invoke());
@@ -124,6 +144,49 @@ namespace GuardsDigital.Presentation.Match
         /// same terms as a resolved turn.
         /// </summary>
         public TrayCardViewModel HighlightedDiscardCard => highlighted as TrayCardViewModel;
+
+        /// <summary>
+        /// Milestone 9.30h. The spell face in the SPELLBOOK drawer the pointer is resting on, or null:
+        /// its full face is revealed by the same one preview every rail card uses.
+        /// </summary>
+        public SpellCardViewModel HighlightedSpell => highlighted as SpellCardViewModel;
+
+        /// <summary>Milestone 9.30h. The hero whose SPELLBOOK drawer is open, or undefined when none is.</summary>
+        public HeroId OpenSpellbookHeroId => openSpellbookHero;
+
+        /// <summary>Milestone 9.30h. The drawer's panel - what blocks the board while it is open.</summary>
+        public VisualElement SpellbookDrawer => spellbookPanel;
+
+        /// <summary>Milestone 9.30h. Whether the SPELLBOOK drawer is drawn.</summary>
+        public bool IsSpellbookOpen => openSpellbookHero.IsDefined;
+
+        /// <summary>
+        /// Milestone 9.30h. Opens <paramref name="heroId"/>'s SPELLBOOK drawer - what pressing the
+        /// plaque's chip does, for a driver with no pointer - or refuses a hero who owns no book.
+        /// Opening submits nothing and changes no match state.
+        /// </summary>
+        public bool OpenSpellbook(HeroId heroId)
+        {
+            var hero = Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(heroId));
+            if (hero?.Spellbook == null)
+            {
+                return false;
+            }
+
+            openSpellbookHero = heroId;
+            RebuildSpellbook();
+            return true;
+        }
+
+        /// <summary>Milestone 9.30h. `CLOSE`: the drawer goes away; nothing else changes.</summary>
+        public void CloseSpellbook()
+        {
+            openSpellbookHero = default;
+            RebuildSpellbook();
+        }
+
+        /// <summary>Milestone 9.30h: reports a pointed-at drawer spell directly, for a driver with no pointer.</summary>
+        public void ForwardSpellHighlight(SpellCardViewModel spell) => SetHighlight(spell);
 
         public event Action<HeroTurnSlotViewModel> TurnSlotHighlighted;
 
@@ -229,7 +292,10 @@ namespace GuardsDigital.Presentation.Match
             var card = CardOf(model);
             var face = model is HeroOverviewViewModel hero
                 ? BuildHeroProfile(hero)
-                : card == null ? null : DirectorHandsUnityView.BuildStandaloneCard(card);
+                : model is SpellCardViewModel spell
+                    // Milestone 9.30h: a drawer spell reveals its full landscape face.
+                    ? SpellCardFaceView.Build(spell)
+                    : card == null ? null : DirectorHandsUnityView.BuildStandaloneCard(card);
             if (face == null)
             {
                 highlighted = null;
@@ -343,6 +409,13 @@ namespace GuardsDigital.Presentation.Match
             Root.style.height = Mathf.Max(playfield.height + playfield.y, Mathf.Max(red.yMax, blue.yMax));
             Place(redColumn, red);
             Place(blueColumn, blue);
+
+            // Milestone 9.30h. The drawer opens over the board between the two rails, below the
+            // status strip the rails themselves start under, as the decision window does.
+            var left = red.xMax + SpellbookDrawerGap;
+            spellbookHost.style.left = left;
+            spellbookHost.style.top = Mathf.Min(red.y, blue.y);
+            spellbookHost.style.width = Mathf.Max(0f, blue.xMin - SpellbookDrawerGap - left);
         }
 
         private static void Place(VisualElement element, Rect rect)
@@ -398,6 +471,10 @@ namespace GuardsDigital.Presentation.Match
 
             redColumn.style.display = redColumn.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             blueColumn.style.display = blueColumn.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Milestone 9.30h. An open drawer follows the projection it was opened over: redrawn from
+            // the new model, and closed if that hero no longer has a book to show.
+            RebuildSpellbook();
         }
 
         private static VisualElement Column(string name)
@@ -652,6 +729,24 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            // Milestone 9.30h, approved mockup D: "SPELLBOOK n | m" (in the book | removed), the last of
+            // the strip's chips - after the Ultimate card - so it wraps onto its own line when the
+            // items fill one; mirrored, it is the first. Drawn only for a hero who owns a book.
+            if (hero.Spellbook != null)
+            {
+                var chip = BuildSpellbookChip(hero.HeroId, hero.Spellbook);
+                if (mirrored)
+                {
+                    chip.style.marginRight = StripCardGap;
+                    itemChips.Insert(0, chip);
+                }
+                else
+                {
+                    chip.style.marginLeft = StripCardGap;
+                    itemChips.Add(chip);
+                }
+            }
+
             var coins = BuildCoinDisc(hero);
             if (mirrored)
             {
@@ -877,6 +972,202 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return rail;
+        }
+
+        /// <summary>The SPELLBOOK drawer's inside padding and its distance from each rail.</summary>
+        private const float SpellbookDrawerPadding = 18f;
+
+        private const float SpellbookDrawerGap = 16f;
+
+        /// <summary>The space between two spell faces in the drawer.</summary>
+        private const float SpellbookFaceGap = 10f;
+
+        /// <summary>A stack of backs is drawn larger than a drawer face, as mockup C draws it.</summary>
+        private const float SpellbookBackScale = 0.8f;
+
+        /// <summary>
+        /// Milestone 9.30h, approved mockup D. The strip's "SPELLBOOK n | m" chip: gold words on the
+        /// coin's dark gold, the mockup's chip, and a control - pressing it opens the drawer. Named
+        /// <c>gd-spellbook-chip</c>.
+        /// </summary>
+        private Button BuildSpellbookChip(HeroId heroId, SpellbookViewModel spellbook)
+        {
+            var chip = new Button(() => OpenSpellbook(heroId))
+            {
+                name = "gd-spellbook-chip",
+                text = spellbook.ChipLabel,
+                tooltip = spellbook.ChipAssistiveLabel
+            };
+            chip.style.fontSize = 10f;
+            chip.style.unityFontStyleAndWeight = FontStyle.Bold;
+            chip.style.color = MatchHudTheme.CoinFace;
+            chip.style.backgroundColor = new Color(0.184f, 0.141f, 0.063f, 1f);
+            chip.style.whiteSpace = WhiteSpace.NoWrap;
+            chip.style.flexShrink = 0f;
+            chip.style.height = StripCardHeight - 4f;
+            chip.style.marginTop = 2f;
+            chip.style.marginBottom = 2f;
+            chip.style.paddingLeft = 7f;
+            chip.style.paddingRight = 7f;
+            chip.style.paddingTop = 0f;
+            chip.style.paddingBottom = 0f;
+            chip.style.letterSpacing = 0.6f;
+            chip.style.unityTextAlign = TextAnchor.MiddleCenter;
+            HudElements.Border(chip, new Color(0.753f, 0.706f, 0.522f, 1f), 1f, 4f);
+            HudElements.ApplyButtonMotion(chip);
+            return chip;
+        }
+
+        /// <summary>
+        /// Milestone 9.30h, approved mockups B and C. Redraws the open SPELLBOOK drawer from the
+        /// current model, or hides it: SPELLBOOK over the hero's name and the seat's sentence, CLOSE,
+        /// "IN THE BOOK - n" as the faces this seat's projection names or the backs it only counts,
+        /// and "REMOVED, FACEUP - n" as faces for everyone.
+        /// </summary>
+        private void RebuildSpellbook()
+        {
+            spellbookPanel.Clear();
+            foreach (var stale in revealAnchors.Keys.OfType<SpellCardViewModel>().ToArray())
+            {
+                revealAnchors.Remove(stale);
+            }
+
+            var hero = openSpellbookHero.IsDefined
+                ? Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(openSpellbookHero))
+                : null;
+            if (hero?.Spellbook == null)
+            {
+                openSpellbookHero = default;
+                spellbookHost.style.display = DisplayStyle.None;
+                if (highlighted is SpellCardViewModel)
+                {
+                    SetHighlight(null);
+                }
+
+                return;
+            }
+
+            var book = hero.Spellbook;
+            spellbookHost.style.display = DisplayStyle.Flex;
+            spellbookHost.BringToFront();
+
+            var header = new VisualElement { name = "gd-spellbook-header" };
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.FlexStart;
+            var titles = HudElements.Column(2f);
+            titles.style.flexGrow = 1f;
+            titles.style.alignItems = Align.Center;
+            var eyebrow = HudElements.Text(book.Eyebrow, 11f, MatchHudTheme.MutedText, FontStyle.Bold);
+            eyebrow.name = "gd-spellbook-eyebrow";
+            eyebrow.style.letterSpacing = 0.8f;
+            var title = HudElements.Text(book.Title, 22f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            title.name = "gd-spellbook-title";
+            var subtitle = HudElements.Text(book.Subtitle, 13f, MatchHudTheme.PrimaryText);
+            subtitle.name = "gd-spellbook-subtitle";
+            titles.Add(eyebrow);
+            titles.Add(title);
+            titles.Add(subtitle);
+            var close = HudElements.Control(book.CloseLabel, CloseSpellbook, 28f);
+            close.name = "gd-spellbook-close";
+            close.style.fontSize = 11f;
+            header.Add(titles);
+            header.Add(close);
+            spellbookPanel.Add(header);
+
+            spellbookPanel.Add(SpellbookSectionLabel("gd-spellbook-in-book-label", book.InBookLabel));
+            var inBook = SpellbookRow("gd-spellbook-in-book");
+            foreach (var spell in book.InBookFaces)
+            {
+                inBook.Add(SpellbookFace(spell));
+            }
+
+            foreach (var stack in book.InBookBacks)
+            {
+                inBook.Add(SpellbookBackStack(stack));
+            }
+
+            spellbookPanel.Add(inBook);
+            spellbookPanel.Add(SpellbookSectionLabel("gd-spellbook-removed-label", book.RemovedLabel));
+            var removed = SpellbookRow("gd-spellbook-removed");
+            foreach (var spell in book.RemovedFaces)
+            {
+                removed.Add(SpellbookFace(spell));
+            }
+
+            spellbookPanel.Add(removed);
+        }
+
+        private static Label SpellbookSectionLabel(string name, string text)
+        {
+            var label = HudElements.Text(text, 11f, MatchHudTheme.MutedText, FontStyle.Bold);
+            label.name = name;
+            label.style.letterSpacing = 0.8f;
+            label.style.marginTop = 14f;
+            label.style.marginBottom = 8f;
+            return label;
+        }
+
+        private static VisualElement SpellbookRow(string name)
+        {
+            var row = new VisualElement { name = name };
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.flexWrap = Wrap.Wrap;
+            row.style.alignItems = Align.FlexStart;
+            return row;
+        }
+
+        /// <summary>One drawer face, revealing its full face on a pointer rest as every rail card does.</summary>
+        private VisualElement SpellbookFace(SpellCardViewModel spell)
+        {
+            var host = new VisualElement { name = "gd-spellbook-spell", tooltip = spell.AssistiveLabel };
+            host.style.marginRight = SpellbookFaceGap;
+            host.style.marginBottom = SpellbookFaceGap;
+            host.Add(SpellCardFaceView.Build(spell, SpellCardFootprint.DrawerScale));
+            revealAnchors[spell] = host;
+            HudElements.OnPointedAt(host, pointedAt =>
+            {
+                if (pointedAt)
+                {
+                    SetHighlight(spell);
+                }
+                else if (ReferenceEquals(highlighted, spell))
+                {
+                    SetHighlight(null);
+                }
+            });
+            return host;
+        }
+
+        /// <summary>One stack of facedown backs with its count - mockup C's `x7`. It reveals nothing.</summary>
+        private static VisualElement SpellbookBackStack(SpellBackStackViewModel stack)
+        {
+            var host = new VisualElement { name = "gd-spellbook-back-stack", tooltip = stack.AssistiveLabel };
+            host.style.marginRight = SpellbookFaceGap * 2f;
+            host.style.marginBottom = SpellbookFaceGap;
+            host.userData = stack.Back;
+            // Two offset edges under the top back read as a pile, as the mockup draws it.
+            for (var layer = Mathf.Min(2, stack.Count - 1); layer >= 1; layer--)
+            {
+                var under = SpellCardFaceView.BuildBack(stack.Back, SpellbookBackScale);
+                under.name = "gd-spell-back-under";
+                under.style.position = Position.Absolute;
+                under.style.left = 4f * layer;
+                under.style.top = 4f * layer;
+                host.Add(under);
+            }
+
+            host.Add(SpellCardFaceView.BuildBack(stack.Back, SpellbookBackScale));
+            var count = HudElements.Text(stack.CountLabel, 12f, MatchHudTheme.CoinFace, FontStyle.Bold);
+            count.name = "gd-spellbook-back-count";
+            count.style.position = Position.Absolute;
+            count.style.right = -8f;
+            count.style.top = -8f;
+            count.style.paddingLeft = 6f;
+            count.style.paddingRight = 6f;
+            count.style.backgroundColor = new Color(0.184f, 0.141f, 0.063f, 1f);
+            HudElements.Border(count, new Color(0.753f, 0.706f, 0.522f, 1f), 1f, 10f);
+            host.Add(count);
+            return host;
         }
 
         /// <summary>

@@ -798,6 +798,11 @@ namespace GuardsDigital.Presentation.Match
                 (decisionWindow?.HasWindow == true &&
                     TryLiveRect(decisionWindow.Root, out var liveDecisionWindow) &&
                     liveDecisionWindow.Contains(panelPosition)) ||
+                // Milestone 9.30h. An open SPELLBOOK drawer lies over the board between the rails, so
+                // a press on it - CLOSE, or a pointer resting on a spell - must not reach a hex below.
+                (heroOverviews?.IsSpellbookOpen == true &&
+                    TryLiveRect(heroOverviews.SpellbookDrawer, out var liveSpellbook) &&
+                    liveSpellbook.Contains(panelPosition)) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 UnavailableCardsBlockPointerAt(panelPosition) ||
                 // Milestone 8.72. The "deciding for X" slot is the one tray card that reaches past

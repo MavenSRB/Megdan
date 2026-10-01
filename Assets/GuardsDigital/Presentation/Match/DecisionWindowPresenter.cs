@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -880,7 +881,8 @@ namespace GuardsDigital.Presentation.Match
             var controls = new List<DecisionWindowControlViewModel>();
             DecisionWindowControlViewModel corner = null;
             BuildEffectControls(
-                projection, choice, subject, sourceDefinitionId, previews, boardAnswered, controls);
+                projection, choice, subject, sourceDefinitionId, previews, boardAnswered, controls,
+                out var spellArms);
 
             if (choice.DeclineInvocation != null)
             {
@@ -931,8 +933,18 @@ namespace GuardsDigital.Presentation.Match
                 Scoped(
                     TitleOf(subject, sourceCardId, projection),
                     HeroName(projection, choice.ChooserId), viewerHeroId),
-                EffectChoicePromptLabels.SectionLabel(subject),
-                family == DecisionWindowFamily.RuneSlots
+                // Milestone 9.30h. A choice whose options are spells is a SPELL CHOICE (approved
+                // mockup A), and says what the card printed: cast one, or remove up to N.
+                spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
+                    ? SpellbookPresentation.SpellChoiceEyebrow
+                    : EffectChoicePromptLabels.SectionLabel(subject),
+                spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Cast
+                    ? SpellbookPresentation.CastQuestion
+                    : spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Remove
+                    ? "Remove up to " + choice.MaximumSelections.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture) +
+                        " other spells from the spellbook faceup, then confirm."
+                    : family == DecisionWindowFamily.RuneSlots
                     ? "Drag each rune onto one turn slot."
                     : family == DecisionWindowFamily.Direction
                     ? "Choose a direction"
@@ -959,8 +971,11 @@ namespace GuardsDigital.Presentation.Match
             CardDefinitionId sourceDefinitionId,
             HashSet<EffectValue> previews,
             bool boardAnswered,
-            List<DecisionWindowControlViewModel> controls)
+            List<DecisionWindowControlViewModel> controls,
+            out SyntheticSpellbookCapabilities.SpellArmKind spellArms)
         {
+            spellArms = SyntheticSpellbookCapabilities.SpellArmKind.None;
+            var spellOptions = new Dictionary<DecisionWindowControlViewModel, EffectNodeId>();
             var ordinals = new Dictionary<EffectChoiceCandidate, int>();
             for (var index = 0; index < choice.Candidates.Count; index++)
             {
@@ -990,8 +1005,32 @@ namespace GuardsDigital.Presentation.Match
                 var select = choice.SelectInvocations.FirstOrDefault(invocation =>
                     invocation.Candidate.Equals(candidate));
                 var invocation = deselect ?? select;
+
+                // Milestone 9.30h. An option that names a spell is drawn as that spell's FACE, the
+                // definition read off the public effect graph and the caption off the public removed
+                // pile (approved mockup A). The commands are the contract's own, exactly as for a
+                // worded bullet; the face is only what the control looks like.
+                var spell = SpellbookPresentation.OptionFace(
+                    projection, sourceDefinitionId, candidate, invocation != null, out var armKind);
+                if (spell != null)
+                {
+                    spellArms = armKind;
+                }
+
                 if (invocation == null)
                 {
+                    // A spell multi-pick that has reached its maximum keeps every face where it stands,
+                    // inert, rather than reflowing the window under the pointer.
+                    if (spell != null)
+                    {
+                        var inert = new DecisionWindowControlViewModel(
+                            spell.Caption,
+                            unavailableReason: ActionUnavailabilityLabels.Generic,
+                            spell: spell);
+                        controls.Add(inert);
+                        spellOptions[inert] = candidate.OptionNodeId;
+                    }
+
                     continue;
                 }
 
@@ -1000,8 +1039,9 @@ namespace GuardsDigital.Presentation.Match
                     PendingDecisionFamilies.Effect,
                     value => value.Kind == DirectorCommandKind.AnswerEffectChoice &&
                         ReferenceEquals(value.EffectChoice, invocation));
-                controls.Add(new DecisionWindowControlViewModel(
-                    CandidateLabel(projection, choice, candidate, ordinals[candidate], sourceDefinitionId),
+                var answer = new DecisionWindowControlViewModel(
+                    spell?.Caption ??
+                        CandidateLabel(projection, choice, candidate, ordinals[candidate], sourceDefinitionId),
                     command,
                     role: deselect != null
                         ? DecisionWindowControlRole.Deselect
@@ -1017,23 +1057,70 @@ namespace GuardsDigital.Presentation.Match
                     runeOrdinal: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
                         ? ((candidate.Value.IntegerValue - 1) / 4) + 1 : 0,
                     turnSlotIndex: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
-                        ? ((candidate.Value.IntegerValue - 1) % 4) + 1 : 0));
+                        ? ((candidate.Value.IntegerValue - 1) % 4) + 1 : 0,
+                    spell: spell);
+                controls.Add(answer);
+                if (spell != null)
+                {
+                    spellOptions[answer] = candidate.OptionNodeId;
+                }
             }
 
             foreach (var unavailable in boardAnswered
                 ? Enumerable.Empty<EffectChoiceCandidate>()
                 : choice.UnavailableCandidates)
             {
-                controls.Add(new DecisionWindowControlViewModel(
-                    CandidateLabel(
+                // Milestone 9.30h. A cast bullet whose spell is not in the book is its face GREYED,
+                // captioned REMOVED (mockup A). A removal option for a spell already removed is not
+                // drawn at all: Find Familiar offers "the spells still in his book" (the user,
+                // 2026-10-01), and a spell cannot be removed twice.
+                var spell = SpellbookPresentation.OptionFace(
+                    projection, sourceDefinitionId, unavailable, false, out var armKind);
+                if (spell != null)
+                {
+                    spellArms = armKind;
+                    if (armKind == SyntheticSpellbookCapabilities.SpellArmKind.Remove)
+                    {
+                        continue;
+                    }
+                }
+
+                var refused = new DecisionWindowControlViewModel(
+                    spell?.Caption ?? CandidateLabel(
                         projection, choice, unavailable,
                         ordinals.TryGetValue(unavailable, out var ordinal) ? ordinal : 1,
                         sourceDefinitionId),
                     unavailableReason: ActionUnavailabilityLabels.Generic,
+                    spell: spell,
                     runeOrdinal: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
                         ? ((unavailable.Value.IntegerValue - 1) / 4) + 1 : 0,
                     turnSlotIndex: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
-                        ? ((unavailable.Value.IntegerValue - 1) % 4) + 1 : 0));
+                        ? ((unavailable.Value.IntegerValue - 1) % 4) + 1 : 0);
+                controls.Add(refused);
+                if (spell != null)
+                {
+                    spellOptions[refused] = unavailable.OptionNodeId;
+                }
+            }
+
+            // Milestone 9.30h. Spell faces stand in the order the card PRINTS its spells (mockup A:
+            // Burning Hands, the greyed Fireball, Sunburst), not available-first: a removed spell keeps
+            // its printed place, so the row reads like the card beside it.
+            if (spellOptions.Count > 1)
+            {
+                var printed = SpellbookPresentation.PrintedOptionOrder(
+                    projection, sourceDefinitionId, choice.NodeId);
+                var first = controls.FindIndex(control => spellOptions.ContainsKey(control));
+                var ordered = controls
+                    .Where(control => spellOptions.ContainsKey(control))
+                    .OrderBy(control =>
+                    {
+                        var index = printed.IndexOf(spellOptions[control]);
+                        return index < 0 ? int.MaxValue : index;
+                    })
+                    .ToArray();
+                controls.RemoveAll(control => spellOptions.ContainsKey(control));
+                controls.InsertRange(first, ordered);
             }
 
             // DONE stands only where the selection may really be unfinished. An exactly-one choice
@@ -1045,7 +1132,10 @@ namespace GuardsDigital.Presentation.Match
                 choice.MaximumSelections > 1)
             {
                 controls.Add(new DecisionWindowControlViewModel(
-                    EffectChoiceLabels.CompletionLabel,
+                    // Milestone 9.30h. A spell multi-pick is confirmed in the user's own word.
+                    spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
+                        ? SpellbookPresentation.ConfirmLabel
+                        : EffectChoiceLabels.CompletionLabel,
                     PendingDecisionCommandBinding.Require(
                         projection,
                         PendingDecisionFamilies.Effect,

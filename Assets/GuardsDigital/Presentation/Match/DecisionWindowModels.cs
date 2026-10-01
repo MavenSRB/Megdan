@@ -110,7 +110,8 @@ namespace GuardsDigital.Presentation.Match
             SystemTransitionOptionViewModel upgradeOption = null,
             DefenseBreakdownViewModel defenseBreakdown = null,
             int runeOrdinal = 0,
-            int turnSlotIndex = 0)
+            int turnSlotIndex = 0,
+            SpellCardViewModel spell = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -152,7 +153,20 @@ namespace GuardsDigital.Presentation.Match
             Hero = hero;
             UpgradeOption = upgradeOption;
             DefenseBreakdown = defenseBreakdown;
+            if (spell != null && card != null)
+            {
+                throw new ArgumentException("A control is one face: a card or a spell, never both.", nameof(spell));
+            }
+
+            Spell = spell;
         }
+
+        /// <summary>
+        /// Milestone 9.30h. The spell face this control IS - a "Choose and cast one" bullet, or one of
+        /// Find Familiar's "remove up to three other spells" - or null for every other control
+        /// (approved mockup A). <see cref="Label"/> is then the face's caption.
+        /// </summary>
+        public SpellCardViewModel Spell { get; }
 
         /// <summary>
         /// Milestone 8.46g. Rulebook p.15's own upgrade option, when this control IS one - and

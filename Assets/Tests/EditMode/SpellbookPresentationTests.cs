@@ -1,0 +1,475 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
+using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Match;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 9.30h. The spellbook as the user approved it on 2026-10-01 (mockups A-D in
+    /// <c>tmp/9-30-gydion-approved-mockups/</c>): the spell choice draws spell FACES in the decision
+    /// window, a removed spell greyed and captioned REMOVED and a counting spell captioned with its
+    /// values; Find Familiar's removal is a 0-3 pick of the spells still in the book, then CONFIRM; the
+    /// SPELLBOOK drawer shows the owner's seat its book as faces and every other seat tier backs with
+    /// counts, the removed pile faceup for all; the items strip's "SPELLBOOK n | m" chip opens it; a
+    /// spell is a landscape card; the art is catalogued; and the log never names a spell back in the
+    /// book to a seat that may not read it.
+    ///
+    /// <para>The spell choice is posed through <see cref="MatchFeaturePresenterTests.DelegatingReadModel"/>
+    /// over a REAL pause: Gydion's real spells cast by a staged casting card on 9.30e's round fixture
+    /// (nothing of his is registered until 9.30i), with the contract the session would publish for it.</para>
+    /// </summary>
+    public sealed class SpellbookPresentationTests
+    {
+        private static readonly HeroId Caster = GydionCountingSpellTests.GydionRound.Caster;
+        private static readonly HeroId Owner = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Other = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
+
+        // -------------------------------------------------------------------------------------------
+        // Approved mockup A: the spell choice
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheSpellChoice_DrawsTheListedSpellsAsFaces_ARemovedOneGreyedAndCaptionedRemoved_ACountingOneCaptionedWithItsValues()
+        {
+            var round = MockupARound();
+            var model = DecisionWindowPresenter.CreateViewModel(SpellChoice(round, ownerSeat: true), Caster);
+
+            Assert.That(model, Is.Not.Null, "the caster owns the standing cast choice");
+            Assert.That(model.State, Is.EqualTo(DecisionWindowState.Expanded));
+            Assert.That(model.Eyebrow, Is.EqualTo("SPELL CHOICE"), "mockup A's eyebrow");
+            Assert.That(model.Question, Is.EqualTo("Choose and cast one spell in the spellbook."));
+            Assert.That(model.ContextCards.Select(card => card.Card.CardInstanceId),
+                Is.EqualTo(new[] { GydionCountingSpellTests.GydionRound.Played }),
+                "the played card stands on the left");
+
+            var spells = model.Controls.Where(control => control.Spell != null).ToArray();
+            Assert.That(spells.Select(control => control.Label), Is.EqualTo(new[]
+            {
+                "BURNING HANDS",
+                "FIREBALL - REMOVED",
+                "SUNBURST - 5 OUT: ATTACK 5, RANGE 5"
+            }), "in the card's printed order, as mockup A draws them. " + Describe(model));
+            Assert.That(model.Controls, Has.Count.EqualTo(3), "and no worded bullet beside the faces");
+            Assert.That(spells.Select(control => control.Spell.DefinitionReference.DefinitionId), Is.EqualTo(new[]
+            {
+                GydionCardContent.BurningHands, GydionCardContent.Fireball, GydionCardContent.Sunburst
+            }), "each option is the face of the spell its bullet names");
+
+            Assert.That(spells[0].IsAnswerable && spells[2].IsAnswerable, Is.True,
+                "an in-book spell carries the contract's own command");
+            Assert.That(spells[1].IsAnswerable, Is.False, "a spell not in the book answers nothing");
+            Assert.That(spells[1].Spell.IsGreyed, Is.True, "and is its face greyed");
+            Assert.That(spells[0].Spell.IsGreyed || spells[2].Spell.IsGreyed, Is.False);
+        }
+
+        [Test]
+        public void TheSpellChoice_OnASeatThatCannotReadTheBook_DrawsTheSameFacesAndCaptions_AndNamesNoBookCard()
+        {
+            // Hanu's delegated seat (RZ-Q14, 9.30c): offered the in-book NAMES and nothing else.
+            var round = MockupARound();
+            var projection = SpellChoice(round, ownerSeat: false);
+            Assert.That(projection.Cards.Any(card => card.State.Location == CardLocation.Spellbook), Is.False);
+            var model = DecisionWindowPresenter.CreateViewModel(projection, Caster);
+
+            Assert.That(model.Controls.Where(control => control.Spell != null).Select(control => control.Label),
+                Is.EqualTo(new[] { "BURNING HANDS", "FIREBALL - REMOVED", "SUNBURST - 5 OUT: ATTACK 5, RANGE 5" }),
+                "the faces are definitions and the count is the public removed pile");
+            var book = round.Cards.Where(card => card.State.Location == CardLocation.Spellbook)
+                .Select(card => card.Id.Value).ToArray();
+            var drawn = string.Join("|", model.Controls.Select(control =>
+                control.Label + " " + control.Spell?.AssistiveLabel + " " + control.Spell?.DefinitionReference));
+            foreach (var id in book)
+            {
+                Assert.That(drawn, Does.Not.Contain(id), "no facedown spell's identity is drawn: " + id);
+            }
+        }
+
+        [Test]
+        public void FindFamiliarsRemoval_DrawsOnlyTheSpellsStillInTheBook_PicksUpToThree_ThenConfirm()
+        {
+            var round = new GydionCountingSpellTests.GydionRound(
+                GydionCountingSpellTests.GydionRound.CastingCard(GydionCardContent.FindFamiliar),
+                removed: new[] { GydionCardContent.Wish });
+            round.StartCasting();
+            round.PickSpace(new HexCoordinate(1, 0));
+
+            var model = DecisionWindowPresenter.CreateViewModel(SpellChoice(round, ownerSeat: true), Caster);
+            var spells = model.Controls.Where(control => control.Spell != null).ToArray();
+            Assert.That(model.Eyebrow, Is.EqualTo("SPELL CHOICE"));
+            Assert.That(model.Question, Does.StartWith("Remove up to 3 other spells"));
+            Assert.That(spells, Has.Length.EqualTo(20),
+                "the other spells still in his book (the user: 'the spells still in his book'); Wish is removed. " +
+                Describe(model));
+            Assert.That(spells.Select(control => control.Spell.DefinitionReference.DefinitionId),
+                Has.No.Member(GydionCardContent.Wish).And.No.Member(GydionCardContent.FindFamiliar));
+            Assert.That(spells.All(control => control.IsAnswerable && !control.Spell.IsGreyed), Is.True);
+            Assert.That(spells.Select(control => control.Label), Has.Member("SUNBURST"),
+                "a removal casts nothing, so a counting spell is its name alone");
+            Assert.That(model.Count, Is.EqualTo("0 of 3 chosen"));
+            var confirm = model.Controls.Single(control => control.Role == DecisionWindowControlRole.Confirm);
+            Assert.That(confirm.Label, Is.EqualTo("CONFIRM"), "pick 0-3, then CONFIRM (the user, 2026-10-01)");
+            Assert.That(confirm.IsAnswerable, Is.True, "removing none is an answer");
+
+            foreach (var spell in new[] { GydionCardContent.Sunburst, GydionCardContent.Shield, GydionCardContent.Fireball })
+            {
+                round.SelectArm(GydionCardContent.FindFamiliarRemovalArm(spell));
+            }
+
+            model = DecisionWindowPresenter.CreateViewModel(SpellChoice(round, ownerSeat: true), Caster);
+            spells = model.Controls.Where(control => control.Spell != null).ToArray();
+            Assert.That(model.Count, Is.EqualTo("3 of 3 chosen"));
+            Assert.That(spells, Has.Length.EqualTo(20), "every face keeps its place once three are chosen");
+            Assert.That(spells.Count(control => control.IsChosen && control.Role == DecisionWindowControlRole.Deselect),
+                Is.EqualTo(3), "the three chosen wear the selection and un-choose on a press");
+            Assert.That(spells.Count(control => !control.IsAnswerable && control.Spell.IsGreyed), Is.EqualTo(17),
+                "the rest stand inert, greyed, in place");
+            Assert.That(model.Controls.Single(control => control.Role == DecisionWindowControlRole.Confirm).Label,
+                Is.EqualTo("CONFIRM"));
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Approved mockups B, C and D: the drawer and the chip
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheSpellbookDrawer_ShowsItsOwnersSeatTheBookAsFaces_AndEveryOtherSeatOnlyBacksWithCounts()
+        {
+            var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
+            var bookNames = host.Projection.Cards
+                .Where(card => card.State.Location == CardLocation.Spellbook)
+                .Select(card => host.Projection.Definitions.Single(value => value.Reference.Equals(card.DefinitionReference)))
+                .ToArray();
+            Assert.That(bookNames, Has.Length.EqualTo(2));
+
+            var owner = Drawer(host, Owner, out var ownerView);
+            Assert.That(TextOf(Named(owner, "gd-spellbook-in-book-label").Single()), Is.EqualTo("IN THE BOOK - 2"));
+            Assert.That(TextOf(Named(owner, "gd-spellbook-removed-label").Single()), Is.EqualTo("REMOVED, FACEUP - 1"));
+            Assert.That(Named(Named(owner, "gd-spellbook-in-book").Single(), "gd-spell-face").Count(), Is.EqualTo(2),
+                "the owner's seat reads its book as faces (mockup B)");
+            Assert.That(Named(owner, "gd-spell-back").Any(), Is.False, "and draws no back of its own book");
+            Assert.That(TextOf(Named(owner, "gd-spellbook-subtitle").Single()),
+                Does.StartWith("Only you can see the spells in the book."));
+
+            var other = Drawer(host, Other, out var otherView);
+            var inBook = Named(other, "gd-spellbook-in-book").Single();
+            Assert.That(Named(inBook, "gd-spell-face").Any(), Is.False, "no other seat sees a book face (mockup C)");
+            var stacks = Named(inBook, "gd-spellbook-back-stack").ToArray();
+            Assert.That(stacks.Select(stack => (CardTier)stack.userData), Is.EqualTo(new[] { CardTier.I, CardTier.IV }),
+                "the book as the table sees it: the basic spell's Tier I back and the Tier IV back");
+            Assert.That(stacks.Select(stack => TextOf(Named(stack, "gd-spellbook-back-count").Single())),
+                Is.EqualTo(new[] { "x1", "x1" }));
+            Assert.That(Named(Named(other, "gd-spellbook-removed").Single(), "gd-spell-face").Count(), Is.EqualTo(1),
+                "and every seat reads the removed pile faceup");
+            Assert.That(TextOf(Named(other, "gd-spellbook-title").Single()), Does.EndWith("'S SPELLBOOK"));
+
+            // Privacy comes from the projection: nothing the other seat's HUD drew names a book spell.
+            foreach (var element in Descendants(otherView.Root).Concat(Descendants(otherView.HoverPreviewRoot)))
+            {
+                foreach (var spell in bookNames)
+                {
+                    Assert.That(element.userData, Is.Not.EqualTo(spell.Reference),
+                        "an element carries a facedown spell's reference: " + element.name);
+                    Assert.That(element.tooltip ?? string.Empty, Does.Not.Contain(spell.DisplayName),
+                        "an element names a facedown spell: " + element.name);
+                    Assert.That((element as TextElement)?.text ?? string.Empty, Does.Not.Contain(spell.DisplayName),
+                        "a label names a facedown spell: " + element.name);
+                }
+            }
+
+            otherView.CloseSpellbook();
+            Assert.That(otherView.IsSpellbookOpen, Is.False);
+            Assert.That(otherView.SpellbookDrawer.parent.style.display.value, Is.EqualTo(DisplayStyle.None),
+                "CLOSE takes the drawer away and changes nothing else");
+            Assert.That(ownerView.OpenSpellbook(Other), Is.False, "a hero who owns no book has no drawer");
+        }
+
+        [Test]
+        public void TheItemsStrip_DrawsTheSpellbookChip_InBookAndRemoved_OnlyForAHeroWithABook_AndItOpensTheDrawer()
+        {
+            var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(new SeatMatchClient(host.ClientForSeat(host.Seats.FindByHero(Other).Id)), view)
+                .Refresh();
+
+            var chips = Named(view.Root, "gd-spellbook-chip").ToArray();
+            Assert.That(chips, Has.Length.EqualTo(1), "only the hero who owns a book draws the chip (mockup D)");
+            var chip = (Button)chips[0];
+            Assert.That(chip.text, Is.EqualTo("SPELLBOOK 2 | 1"), "in the book | removed");
+            Assert.That(chip.parent.name, Is.EqualTo("gd-item-chips"));
+            Assert.That(chip.parent.parent.name, Is.EqualTo("gd-bonus-strip"), "it lives in the items strip");
+            Assert.That(chip.tooltip, Does.Contain("2 in the book").And.Contain("1 removed"));
+
+            Assert.That(view.OpenSpellbook(Owner), Is.True, "the chip opens its hero's drawer");
+            Assert.That(view.OpenSpellbookHeroId, Is.EqualTo(Owner));
+            Assert.That(view.SpellbookDrawer.parent.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+        }
+
+        [Test]
+        public void ADrawerSpell_RevealsItsFullFaceOnAPointerRest_AsEveryRailCardDoes()
+        {
+            var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
+            var drawer = Drawer(host, Owner, out var view);
+            var spell = view.Model.Heroes.Single(hero => hero.HeroId.Equals(Owner)).Spellbook.RemovedFaces.Single();
+
+            view.ForwardSpellHighlight(spell);
+            Assert.That(view.HighlightedSpell, Is.SameAs(spell));
+            var revealed = Named(view.HoverPreviewRoot, "gd-spell-face").Single();
+            Assert.That(revealed.style.width.value.value, Is.EqualTo(SpellCardFootprint.Width),
+                "the full landscape face, not the drawer's smaller one");
+            Assert.That(revealed.userData, Is.EqualTo(spell.DefinitionReference));
+            Assert.That(Named(drawer, "gd-spell-face").First().style.width.value.value,
+                Is.EqualTo(SpellCardFootprint.Width * SpellCardFootprint.DrawerScale).Within(0.01f));
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // The landscape face and its art
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ASpellFace_IsLandscape372By260_AtTheActionCardsOwnWidth()
+        {
+            Assert.That(SpellCardFootprint.Width, Is.EqualTo(CardFootprint.StandardWidth),
+                "the action card's width - one card size family, two printed shapes");
+            Assert.That(SpellCardFootprint.Height / SpellCardFootprint.Width,
+                Is.EqualTo(260f / 372f).Within(0.0001f), "the verified 372x260 landscape scan");
+            Assert.That(SpellCardFootprint.Height, Is.LessThan(SpellCardFootprint.Width));
+
+            using (ConfiguredSpellArtwork.UseTextureLoader(_ => null))
+            {
+                var face = SpellCardFaceView.Build(
+                    new SpellCardViewModel(GydionCardContent.Definition(GydionCardContent.Sunburst)));
+                Assert.That(face.style.width.value.value, Is.EqualTo(SpellCardFootprint.Width));
+                Assert.That(face.style.height.value.value, Is.EqualTo(SpellCardFootprint.Height));
+                Assert.That(face.style.minHeight.value.value, Is.EqualTo(face.style.maxHeight.value.value),
+                    "pinned at both ends, as every card face is");
+            }
+        }
+
+        [Test]
+        public void ASpellFace_DrawsItsPreparedFront_OrAGeneratedFaceWithoutTheArt_AndABackTheSame()
+        {
+            var sunburst = new SpellCardViewModel(GydionCardContent.Definition(GydionCardContent.Sunburst));
+            var texture = new Texture2D(372, 260);
+            var asked = new List<string>();
+            using (ConfiguredSpellArtwork.UseTextureLoader(path =>
+            {
+                asked.Add(path);
+                return texture;
+            }))
+            {
+                var face = SpellCardFaceView.Build(sunburst);
+                Assert.That(Named(face, "gd-spell-artwork").Count(), Is.EqualTo(1));
+                Assert.That(Named(face, "gd-spell-generated").Any(), Is.False);
+                Assert.That(Named(SpellCardFaceView.BuildBack(CardTier.II), "gd-spell-back-artwork").Count(), Is.EqualTo(1));
+            }
+
+            Assert.That(asked, Is.EqualTo(new[] { "Private/Spells/gydion-sunburst", "Private/Spells/Backs/II" }),
+                "the prepared resource is addressed by the definition and the back, never by a name");
+
+            using (ConfiguredSpellArtwork.UseTextureLoader(_ => null))
+            {
+                var face = SpellCardFaceView.Build(sunburst);
+                Assert.That(Named(face, "gd-spell-generated").Count(), Is.EqualTo(1),
+                    "a clean checkout still draws the spell, from its typed regions");
+                Assert.That(TextOf(Named(face, "gd-spell-name").Single()), Is.EqualTo("Sunburst"));
+                Assert.That(Named(SpellCardFaceView.BuildBack(CardTier.IV), "gd-spell-back-generated").Count(),
+                    Is.EqualTo(1));
+            }
+
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
+
+        [Test]
+        public void TheArtCatalog_NamesEverySpellsFrontOnce_AndTheFourBacks_EachTheBackItsSpellsShow()
+        {
+            var catalog = ConfiguredSpellArtwork.Catalog;
+            Assert.That(catalog.Fronts.Select(entry => entry.Reference),
+                Is.EquivalentTo(GydionCardContent.SpellDefinitions.Select(definition => definition.Reference)),
+                "one row per spell definition, at its current revision");
+            Assert.That(catalog.Fronts.Select(entry => entry.ResourcePath), Is.EquivalentTo(
+                GydionCardContent.SpellDefinitions.Select(definition => "Private/Spells/" + definition.Id.Value)));
+            Assert.That(catalog.Backs.Select(entry => entry.Back),
+                Is.EqualTo(new[] { CardTier.I, CardTier.II, CardTier.III, CardTier.IV }));
+
+            // Each back is the back of a spell that shows it: the stem the back is cut from is a front
+            // of that Tier (a basic spell shows Tier I).
+            foreach (var back in catalog.Backs)
+            {
+                var stem = back.SourcePath.Replace("__back.png", string.Empty);
+                var front = catalog.Fronts.Single(entry => entry.SourcePath == stem + "__front.png");
+                var definition = GydionCardContent.SpellDefinitions.Single(value => value.Reference.Equals(front.Reference));
+                Assert.That(SpellbookBackCount.BackOf(definition.Progression), Is.EqualTo(back.Back),
+                    back.SourcePath + " is the back " + definition.DisplayName + " shows");
+            }
+
+            var json = Resources.Load<TextAsset>(ConfiguredCardArtworkCatalog.ResourcePath).text;
+            var withoutWish = json.Replace(
+                ",\n    { \"definitionId\": \"gydion-wish\", \"contentRevision\": \"" + GydionCardContent.ContentRevision +
+                "\", \"sourcePath\": \"cards/other-cards/spells-tt22__7711655__front.png\" }", string.Empty);
+            Assert.That(withoutWish, Is.Not.EqualTo(json), "the fixture edit removed Wish's row");
+            Assert.That(() => SpellArtworkCatalog.ParseAndValidate(withoutWish, ConfiguredSpellArtwork.ConfiguredReferences),
+                Throws.InvalidOperationException.With.Message.Contains("omits spell"));
+            Assert.That(() => SpellArtworkCatalog.ParseAndValidate(
+                    json.Replace("{ \"back\": 4,", "{ \"back\": 3,"), ConfiguredSpellArtwork.ConfiguredReferences),
+                Throws.InvalidOperationException.With.Message.Contains("appears twice"));
+            Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(504),
+                "the action-card rows are untouched by the spell arrays beside them");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // The log
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheLog_NamesASpellWhileItIsFaceup_AndNeverNamesASpellBackInTheBook_ToASeatThatCannotReadIt()
+        {
+            var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
+            var removed = host.Projection.Cards.Single(card => card.State.Location == CardLocation.RemovedFromSpellbook);
+            var inBook = host.Projection.Cards.First(card => card.State.Location == CardLocation.Spellbook);
+            string NameOf(CardInstance card) => host.Projection.Definitions
+                .Single(value => value.Reference.Equals(card.DefinitionReference)).DisplayName.ToUpperInvariant();
+            var entries = new[]
+            {
+                new MatchLogEntry(1, MatchLogEntryKind.SpellCast, 1, 1, subjectHeroId: Owner,
+                    subjectCardInstanceId: removed.Id),
+                // A spell cast earlier and since returned to the book by a refill: facedown again.
+                new MatchLogEntry(2, MatchLogEntryKind.SpellCast, 1, 1, subjectHeroId: Owner,
+                    subjectCardInstanceId: inBook.Id),
+                new MatchLogEntry(3, MatchLogEntryKind.SpellRemovedFaceup, 1, 1, subjectHeroId: Owner,
+                    subjectCardInstanceId: removed.Id),
+                new MatchLogEntry(4, MatchLogEntryKind.SpellbookRefilled, 1, 1, subjectHeroId: Owner, amount: 2)
+            };
+
+            var other = MatchLogFormatter.ComposeOldestFirst(
+                new LogReadModel(host.ProjectionForSeat(host.Seats.FindByHero(Other).Id), entries));
+            Assert.That(other.Select(line => line.Text).ToArray(), Has.Length.EqualTo(4));
+            Assert.That(other[0].Text, Does.Contain("CAST " + NameOf(removed)), "a faceup spell is named to every seat");
+            Assert.That(other[1].Text, Does.Contain("CAST A SPELL"));
+            Assert.That(other[1].Text, Does.Not.Contain(NameOf(inBook)),
+                "a spell back in the book is never named to a seat that cannot read the book");
+            Assert.That(other[2].Text, Does.Contain("REMOVED " + NameOf(removed) + " FROM THE SPELLBOOK"));
+            Assert.That(other[3].Text, Does.Contain("RETURNED 2 SPELLS TO THE SPELLBOOK"));
+
+            var owner = MatchLogFormatter.ComposeOldestFirst(
+                new LogReadModel(host.ProjectionForSeat(host.Seats.FindByHero(Owner).Id), entries));
+            Assert.That(owner[1].Text, Does.Contain("CAST " + NameOf(inBook)), "while its owner still reads it");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Helpers
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Mockup A's pause: Greater Evocation's three spells - Burning Hands, Fireball, Sunburst - with
+        /// Magic Missile, Shield, Fireball, Suggestion and Find Familiar removed, so Sunburst counts five.
+        /// </summary>
+        private static GydionCountingSpellTests.GydionRound MockupARound()
+        {
+            var round = new GydionCountingSpellTests.GydionRound(
+                GydionCountingSpellTests.GydionRound.ChooseAndCastCard(
+                    GydionCardContent.BurningHands, GydionCardContent.Fireball, GydionCardContent.Sunburst),
+                removed: new[]
+                {
+                    GydionCardContent.MagicMissile, GydionCardContent.Shield, GydionCardContent.Fireball,
+                    GydionCardContent.Suggestion, GydionCardContent.FindFamiliar
+                });
+            round.StartCasting();
+            Assert.That(round.Choice, Is.Not.Null, "the cast choice stands");
+            return round;
+        }
+
+        /// <summary>
+        /// The round's standing effect choice as the seat that owns it reads it - or, with
+        /// <paramref name="ownerSeat"/> false, as a seat that cannot read the book (no facedown spell).
+        /// </summary>
+        private static IMatchReadModel SpellChoice(GydionCountingSpellTests.GydionRound round, bool ownerSeat) =>
+            new SpellChoiceReadModel(SpellbookZoneTests.CreateSession(false).Projection, round, ownerSeat);
+
+        private sealed class SpellChoiceReadModel : MatchFeaturePresenterTests.DelegatingReadModel
+        {
+            private readonly GydionCountingSpellTests.GydionRound round;
+            private readonly IReadOnlyList<CardInstance> cards;
+
+            public SpellChoiceReadModel(IMatchReadModel inner, GydionCountingSpellTests.GydionRound round, bool ownerSeat)
+                : base(inner)
+            {
+                this.round = round;
+                cards = round.Cards
+                    .Where(card => ownerSeat || card.State.Location != CardLocation.Spellbook)
+                    .ToArray();
+            }
+
+            public override IReadOnlyList<CardInstance> Cards => cards;
+            public override IReadOnlyList<CardDefinition> Definitions => round.Definitions;
+            public override PendingEffectChoice PendingEffectChoice => round.Choice;
+            public override IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview =>
+                Array.Empty<EffectChoiceCandidatePreview>();
+            public override PendingDecisionContract DecisionContract => PendingDecisionContract.Create(
+                null, null, null, null, round.Choice, null, null, null, null, null, null);
+            public override PendingDecisionOwner DecisionOwner =>
+                PendingDecisionOwner.ForHero(PendingDecisionFamilies.Effect, Caster);
+            public override CardInstanceId ResolvingSourceCardInstanceId => GydionCountingSpellTests.GydionRound.Played;
+            public override PendingResolution PendingSkillResolution => null;
+            public override GuardsDigital.Core.Cards.SelectedInitiativeActor SelectedActor => round.Turn.SelectedActor;
+            public override bool IsInputEnabled => true;
+            public override GuardsDigital.Core.Cards.RoundResolutionPhase Phase =>
+                GuardsDigital.Core.Cards.RoundResolutionPhase.ResolvingTurn;
+        }
+
+        private sealed class LogReadModel : MatchFeaturePresenterTests.DelegatingReadModel
+        {
+            private readonly IReadOnlyList<MatchLogEntry> log;
+
+            public LogReadModel(IMatchReadModel inner, IReadOnlyList<MatchLogEntry> log) : base(inner) => this.log = log;
+
+            public override IReadOnlyList<MatchLogEntry> MatchLog => log;
+        }
+
+        /// <summary>One seat's rails, rendered from its own projection, with <paramref name="hero"/>'s book open.</summary>
+        private static VisualElement Drawer(MatchHost host, HeroId seatHero, out HeroOverviewsUnityView view)
+        {
+            view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(
+                new SeatMatchClient(host.ClientForSeat(host.Seats.FindByHero(seatHero).Id)), view).Refresh();
+            Assert.That(view.OpenSpellbook(Owner), Is.True, "the book's owner has a drawer on every seat");
+            return view.SpellbookDrawer;
+        }
+
+        private static string TextOf(VisualElement element) => ((TextElement)element).text;
+
+        private static IEnumerable<VisualElement> Named(VisualElement root, string name) =>
+            Descendants(root).Where(element => element.name == name);
+
+        private static IEnumerable<VisualElement> Descendants(VisualElement element)
+        {
+            yield return element;
+            foreach (var child in element.Children())
+            {
+                foreach (var descendant in Descendants(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        private static string Describe(DecisionWindowViewModel model) =>
+            model == null
+                ? "(no window)"
+                : model.Title + " | " + string.Join(" / ", model.Controls.Select(control =>
+                    control.Label + (control.Spell == null ? string.Empty : "[spell]") +
+                    (control.IsAnswerable ? string.Empty : "[inert]")));
+    }
+}

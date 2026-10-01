@@ -686,7 +686,9 @@ namespace GuardsDigital.Presentation.Match
                 Model.ContextCards.Count > 0 &&
                 (Model.Family == DecisionWindowFamily.Defense ||
                     Model.Family == DecisionWindowFamily.RemovalPrevention ||
-                    Model.Family == DecisionWindowFamily.CardChoice)
+                    Model.Family == DecisionWindowFamily.CardChoice ||
+                    // Milestone 9.30h, approved mockup A: the played card, a rule, then the spells.
+                    Model.Controls.Any(control => control.Spell != null))
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
 
@@ -726,7 +728,14 @@ namespace GuardsDigital.Presentation.Match
                 // to bottom beside the card they are printed on, so a modal's worded arms stack. Faces,
                 // values and an optional step's two answers stay a row.
                 var worded = Model.Controls.Count > 0 &&
-                    Model.Controls.All(control => control.Card == null);
+                    Model.Controls.All(control => control.Card == null && control.Spell == null);
+                // Milestone 9.30h. Spell faces are drawn at the full landscape footprint while two
+                // rows of them hold the whole choice, and smaller past that (Find Familiar's twenty,
+                // Wish's book) so every option stays on screen without a scroller.
+                var spellCount = Model.Controls.Count(control => control.Spell != null);
+                var spellScale = spellCount > SpellFacesAtFullSize
+                    ? SpellCardFootprint.CrowdedChoiceScale
+                    : 1f;
                 // The mockup's `.stack` of `.btn.tall{flex:1}`: a card's printed answers are STACKED
                 // beside the card and together fill its height. The user settled the optional step onto
                 // the same shape after seeing both - "Arrange the buttons like on Swift's gold in this
@@ -770,7 +779,9 @@ namespace GuardsDigital.Presentation.Match
                     // are the strip's own controls and not this window's.
                     var element = control.Card != null
                         ? BuildCardControl(control)
-                        : (VisualElement)BuildWordedControl(control);
+                        : control.Spell != null
+                            ? BuildSpellControl(control, spellScale)
+                            : (VisualElement)BuildWordedControl(control);
                     if (control.Hero.IsDefined)
                     {
                         var hero = control.Hero;
@@ -840,7 +851,7 @@ namespace GuardsDigital.Presentation.Match
 
             // "at most one verb" - the docked bar's own rule. A docked decision that offers several
             // answers is answered on the board; the one verb here is the ratification.
-            var verb = Model.Controls.FirstOrDefault(control => control.Card == null);
+            var verb = Model.Controls.FirstOrDefault(control => control.Card == null && control.Spell == null);
             if (verb != null)
             {
                 var element = (VisualElement)BuildWordedControl(verb);
@@ -1280,6 +1291,79 @@ namespace GuardsDigital.Presentation.Match
             if (control.IsChosen)
             {
                 HudElements.MarkSelectedWithoutResizing(element, true);
+            }
+
+            return element;
+        }
+
+        /// <summary>
+        /// Milestone 9.30h. How many spell faces the window draws at the full landscape footprint -
+        /// two rows of five between the played card and the window's edge - before it draws them at
+        /// <see cref="SpellCardFootprint.CrowdedChoiceScale"/>.
+        /// </summary>
+        public const int SpellFacesAtFullSize = 10;
+
+        /// <summary>
+        /// Milestone 9.30h. One spell-faced answer (approved mockup A): the spell's whole face, its
+        /// caption beneath it - the spell's name, <c>FIREBALL - REMOVED</c>, or a counting spell's
+        /// values - and nothing composed beside it. A spell not in the book is its face greyed, inert
+        /// and still in its place; a chosen one (Find Familiar's multi-pick) wears the selection
+        /// outline. Named <c>gd-spell-option</c>, its caption <c>gd-spell-option-caption</c>.
+        /// </summary>
+        private VisualElement BuildSpellControl(DecisionWindowControlViewModel control, float scale)
+        {
+            var captured = control;
+            var element = new Button(() =>
+            {
+                if (captured.IsAnswerable)
+                {
+                    ControlActivated?.Invoke(captured);
+                }
+            })
+            {
+                name = "gd-spell-option",
+                text = string.Empty
+            };
+            var width = SpellCardFootprint.Width * scale;
+            element.style.flexDirection = FlexDirection.Column;
+            element.style.alignItems = Align.Center;
+            element.style.flexShrink = 0f;
+            element.style.width = width + 6f;
+            element.style.backgroundColor = Color.clear;
+            HudElements.Padding(element, 0f);
+            HudElements.Border(element, Color.clear, 0f, 0f);
+            element.tooltip = control.Spell.AssistiveLabel;
+            element.Add(SpellCardFaceView.Build(control.Spell, scale));
+
+            var caption = HudElements.Text(
+                control.Label, CaptionFontSize, control.IsAnswerable
+                    ? MatchHudTheme.PrimaryText
+                    : MatchHudTheme.MutedText,
+                FontStyle.Bold);
+            caption.name = "gd-spell-option-caption";
+            caption.style.unityTextAlign = TextAnchor.MiddleCenter;
+            caption.style.marginTop = 6f;
+            caption.style.width = width;
+            caption.pickingMode = PickingMode.Ignore;
+            Wrapping(caption);
+            element.Add(caption);
+
+            if (control.IsAnswerable)
+            {
+                HudElements.ApplyButtonMotion(element);
+                HudElements.MarkSelectedWithoutResizing(element, control.IsChosen);
+                if (!control.IsChosen)
+                {
+                    // The outline is reserved on every face and only coloured when chosen, so
+                    // picking a spell moves nothing (8.5a's rule).
+                    HudElements.Border(element, Color.clear, 3f, 6f);
+                }
+            }
+            else
+            {
+                // Inert, and kept in its place: its face is already greyed by the builder.
+                element.SetEnabled(false);
+                HudElements.Border(element, Color.clear, 3f, 6f);
             }
 
             return element;

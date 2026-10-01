@@ -78,6 +78,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatHudAgreementTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatScopedMatchHudTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SeatScopedPresenterBindingTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/SpellbookPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StandardMinionViewTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StatusDerivationConformanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/UrpMigrationTests.cs" />
