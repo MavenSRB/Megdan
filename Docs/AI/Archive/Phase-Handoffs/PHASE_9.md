@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32 Takahide inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32 | Takahide's twenty-one fronts, profile, dashboard, stat bars, items and standee evidence inventoried; the three gold cards and their starting places recorded; the swap-with-the-deck, facedown-card, unresolved-swap, one-sided-obstacle and six-card-hand contracts named; TK-Q1-TK-Q5 recorded with recommendations; blocks 9.32a-9.32i mapped. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932-inventory-takahide-and-map-the-implementation-sequence). | `milestone/9.32` |
+
 ## Milestone 9.31 Package evidence
 
 | Milestone | Outcome and definition | Commit |
