@@ -472,6 +472,36 @@ namespace GuardsDigital.Tests.EditMode
                 "and no taller than it, so a plaque without items keeps its height");
         }
 
+        /// <summary>
+        /// Milestone 9.30h1, the second 2560x540 failure: with "NO ITEMS" pinned, the strip came out 32
+        /// tall around a chips row wrapped onto two 24-unit lines, and the SPELLBOOK chip on the second
+        /// hung below it. The row sized itself to its chips on one line and was then shrunk beside the
+        /// coin, so it wrapped at a width other than the one it was measured at. It now takes the
+        /// strip's width beside the coin outright (basis 0, grow 1) and wraps once, at the width it is
+        /// drawn at; the coin keeps its disc. On 5d182d93 the row's basis was its own content.
+        /// </summary>
+        [Test]
+        public void TheItemsStrip_ChipsRowTakesTheWidthBesideTheCoin_SoItWrapsAtTheWidthItIsDrawnAt()
+        {
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(SpellbookZoneTests.CreateSession(true), view).Refresh();
+            var rows = Descendants(view.Root).Where(element => element.name == "gd-item-chips").ToArray();
+            Assert.That(rows, Has.Length.EqualTo(2), "Arrange: one items strip on each plaque.");
+            Assert.That(rows.Any(row => row.Children().Any(child => child.name == "gd-spellbook-chip")), Is.True,
+                "Arrange: one of them carries the SPELLBOOK chip.");
+            foreach (var row in rows)
+            {
+                Assert.That(row.parent.name, Is.EqualTo("gd-bonus-strip"));
+                Assert.That(row.style.flexBasis.keyword, Is.EqualTo(StyleKeyword.Undefined),
+                    "the chips row states its basis rather than measuring its chips on one line");
+                Assert.That(row.style.flexBasis.value.value, Is.Zero);
+                Assert.That(row.style.flexGrow.value, Is.EqualTo(1f),
+                    "and takes the strip's whole width beside the coin");
+                var coins = row.parent.Children().Single(element => element.name == "gd-hero-coins");
+                Assert.That(coins.style.flexShrink.value, Is.Zero, "the coin keeps its disc beside it");
+            }
+        }
+
         private sealed class TallyReadModel : MatchFeaturePresenterTests.DelegatingReadModel
         {
             private readonly IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> tallies;

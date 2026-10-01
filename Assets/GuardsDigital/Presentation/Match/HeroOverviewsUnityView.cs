@@ -692,6 +692,17 @@ namespace GuardsDigital.Presentation.Match
             itemChips.style.flexWrap = Wrap.Wrap;
             itemChips.style.alignItems = Align.Center;
             itemChips.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
+            // Milestone 9.30h1, measured at 2560x540: the chips row TAKES the strip's width beside the
+            // coin (basis 0, grow 1) instead of sizing itself to its chips on one line and then
+            // shrinking. Sized that way it was measured on one line and drawn wrapped onto two once
+            // "NO ITEMS" and the SPELLBOOK chip just failed to fit (the strip was 32 tall around a
+            // two-line row), so the chip hung out of the strip. Taking the width, it wraps exactly once,
+            // at the width it is drawn at, and the strip's line is the row it holds. It still reads
+            // from the screen edge, the coin still stands inward of it, and nothing moves on a line.
+            itemChips.style.flexBasis = 0f;
+            itemChips.style.flexGrow = 1f;
+            itemChips.style.flexShrink = 1f;
+            itemChips.style.minWidth = 0f;
             foreach (var bonus in hero.ItemBonuses)
             {
                 itemChips.Add(BuildPrintedItemBonus(bonus));
@@ -699,12 +710,9 @@ namespace GuardsDigital.Presentation.Match
 
             if (hero.ItemBonuses.Count == 0)
             {
-                // Milestone 9.30h1, measured at 2560x540: beside "NO ITEMS" the SPELLBOOK chip wraps
-                // onto a line of its own there, and it stood one text line lower than the strip had
-                // measured, spilling 8 units out of the strip's bottom. The line above it held only
-                // "NO ITEMS", then the one word in the strip free to wrap: the strip measured it on
-                // one line and laid it out on two. It is one reading on one line, standing on the
-                // strip's own line height, so the line it starts is exactly the line measured.
+                // Milestone 9.30h1: one reading on one line, standing on the strip's own line height
+                // (the coin's), so a line it starts - the line above a SPELLBOOK chip that wrapped, at
+                // 2560x540 - is exactly one strip line. It was the one word in the strip free to wrap.
                 var noItems = HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText);
                 noItems.name = "gd-no-items";
                 noItems.style.whiteSpace = WhiteSpace.NoWrap;

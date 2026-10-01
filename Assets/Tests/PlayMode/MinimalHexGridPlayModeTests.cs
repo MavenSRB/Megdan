@@ -938,6 +938,9 @@ namespace GuardsDigital.Tests.PlayMode
                         .Single(element => element.name == "gd-spellbook-chip" && UiPlayer.IsShown(element));
                     var strip = chip.parent?.parent;
                     Assert.That(strip?.name, Is.EqualTo("gd-bonus-strip"), "the chip lives in the items strip");
+                    // 9.30h1: the strip's line is the chips row it holds, however many lines the row
+                    // wrapped onto - at 2560x540 it was once 32 tall around a two-line row.
+                    AssertInside(chip.parent.worldBound, strip.worldBound, "the chips row at " + where);
                     AssertInside(chip.worldBound, strip.worldBound, "the chip at " + where);
                     Assert.That(((Button)chip).text, Is.EqualTo("SPELLBOOK 17 | 5"));
                     HeroRailCoinCheck.AssertTheCountStandsClear(root.Hud, "9.30h chip at " + where);
