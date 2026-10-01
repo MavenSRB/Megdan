@@ -565,16 +565,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications)
         {
             var currentOccupancy = movementSession.CurrentOccupancy;
-            var legalDestinations = StraightLineCrossingQuery.Widen(
-                MovementReachabilityQuery.FindReachableDestinations(
-                    currentOccupancy,
+            // Milestone 9.30d. Expeditious Retreat's "Move only in a straight line" narrows what the walk
+            // offers to its own file, after Trample's permission has widened it - so the offered choice
+            // and the answer validated against it (AnswerMovement re-derives this list) read one set.
+            var legalDestinations = StraightLineCrossingQuery.Narrow(
+                StraightLineCrossingQuery.Widen(
+                    MovementReachabilityQuery.FindReachableDestinations(
+                        currentOccupancy,
+                        adjacentMoveAuthority,
+                        movementSession.RemainingAllowance,
+                        modifications),
+                    movementSession.Route,
+                    currentOccupancy.HeroId,
                     adjacentMoveAuthority,
                     movementSession.RemainingAllowance,
                     modifications),
                 movementSession.Route,
                 currentOccupancy.HeroId,
-                adjacentMoveAuthority,
-                movementSession.RemainingAllowance,
                 modifications);
 
             return new PendingMovementChoice(

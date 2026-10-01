@@ -47,6 +47,39 @@ namespace GuardsDigital.Core.Rules.Movement
         }
 
         /// <summary>
+        /// Milestone 9.30d. Whether <paramref name="hero"/>'s Movement action may walk only one straight
+        /// line - Gydion's Expeditious Retreat, "Move only in a straight line"
+        /// (<see cref="RuleModificationKind.MovementActionOnlyInAStraightLine"/>).
+        /// </summary>
+        public static bool RestrictsToAStraightLine(HeroId hero, RuleModificationSet modifications) =>
+            hero.IsDefined && modifications != null &&
+            modifications.MovesOnlyInAStraightLine(RuleObject.ForHero(hero));
+
+        /// <summary>
+        /// Milestone 9.30d. The destinations a Movement action offers under "Move only in a straight
+        /// line": unchanged without the restriction; otherwise only those whose route continues the
+        /// walk so far as one straight line (<see cref="IsStraightWalk"/>). The routes are the ordinary
+        /// ones, so p.11's obstacle rule is untouched: a space on the file beyond an obstacle is reached
+        /// only by bending round it, and is not offered. From the start every file is open; after the
+        /// first leg only its continuation is.
+        /// </summary>
+        public static IReadOnlyList<ReachableMovementDestination> Narrow(
+            IReadOnlyList<ReachableMovementDestination> offered,
+            IReadOnlyList<HexCoordinate> walked,
+            HeroId hero,
+            RuleModificationSet modifications)
+        {
+            if (offered == null) throw new ArgumentNullException(nameof(offered));
+            if (walked == null || walked.Count == 0) throw new ArgumentException("A walk starts somewhere.", nameof(walked));
+            if (!RestrictsToAStraightLine(hero, modifications))
+            {
+                return offered;
+            }
+
+            return offered.Where(destination => IsStraightWalk(walked, destination.Route)).ToArray();
+        }
+
+        /// <summary>
         /// The destinations a Movement action offers from where its walk now stands, given the
         /// ordinary ones: unchanged without the permission or once the walk has bent; otherwise every
         /// endpoint along the walk's file (or any file, from the start) up to the allowance, through

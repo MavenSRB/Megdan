@@ -122,10 +122,15 @@ namespace GuardsDigital.Tests.EditMode
                 "Throw the Gauntlet and her three Green Movements are cards a configured match deals.");
             // Milestone 9.30e refills the list, narrowed again rather than dropped: the one declaration
             // held back is Dimension Door's Place at maximum radius, for Gydion, until his dealing
-            // (9.30i) moves it across.
-            Assert.That(deferred, Is.EqualTo(new[] { SyntheticPlacementCapabilities.PlaceAtMaximumRadiusV1 }),
+            // (9.30i) moves it across. Milestone 9.30d adds the same hero's Create Undead Respawn on the
+            // Range channel, on the same terms.
+            Assert.That(deferred, Is.EqualTo(new[]
+                {
+                    SyntheticPlacementCapabilities.PlaceAtMaximumRadiusV1,
+                    SyntheticPlacementCapabilities.RespawnFriendlyMinionInRangeV1
+                }),
                 "and the file's deferred list holds exactly what is held back for a hero this build does " +
-                "not deal yet - Gydion's Dimension Door (9.30e, registered at 9.30i).");
+                "not deal yet - Gydion's Dimension Door (9.30e) and Create Undead (9.30d), registered at 9.30i.");
             Assert.That(registered.Intersect(deferred), Is.Empty,
                 "and nothing is in both lists, which is what the gate means either way round.");
         }

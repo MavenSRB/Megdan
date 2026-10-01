@@ -158,6 +158,7 @@ namespace GuardsDigital.Tests.EditMode
                 ["min | min-holy-death-grenade"] = "W3: \"Up to 2 enemy heroes ... discard\" hits the heroes present.",
                 ["trinkets | trinkets-self-destruct"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
                 ["trinkets | trinkets-emergency-protocol"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
+                ["gydion | gydion-burning-hands"] = "W3: \"Up to 1 enemy hero adjacent to the target discards\" hits the hero present.",
                 ["mortimer | mortimer-master-of-puppets"] = "The Ultimate composes no node: \"up to five times\" is the two extra UpTo passes on the seven faces it raises (MortimerRepeatedChoice)."
             };
 

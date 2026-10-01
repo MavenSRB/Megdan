@@ -62,39 +62,39 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly Row[] ShardTable =
         {
             new Row(GydionCardContent.MagicMissile, "Magic Missile", CardColor.Gold, CardTier.None,
-                ActionKind.Attack, AttackRangeKind.Ranged, "9.30d", (A, 1), (R, 3)),
+                ActionKind.Attack, AttackRangeKind.Ranged, null, (A, 1), (R, 3)),
             new Row(GydionCardContent.ShockingGrasp, "Shocking Grasp", CardColor.Gold, CardTier.None,
-                ActionKind.Attack, AttackRangeKind.NonRanged, "9.30d", (A, 3)),
+                ActionKind.Attack, AttackRangeKind.NonRanged, null, (A, 3)),
             new Row(GydionCardContent.ExpeditiousRetreat, "Expeditious Retreat", CardColor.Gold, CardTier.None,
-                ActionKind.Movement, AttackRangeKind.None, "9.30d", (M, 5)),
+                ActionKind.Movement, AttackRangeKind.None, null, (M, 5)),
             new Row(GydionCardContent.BurningHands, "Burning Hands", CardColor.Red, CardTier.I,
-                ActionKind.Attack, AttackRangeKind.NonRanged, "9.30d", (A, 5)),
+                ActionKind.Attack, AttackRangeKind.NonRanged, null, (A, 5)),
             new Row(GydionCardContent.Fireball, "Fireball", CardColor.Red, CardTier.II,
-                ActionKind.Attack, AttackRangeKind.Ranged, "9.30d", (A, 5), (R, 3)),
+                ActionKind.Attack, AttackRangeKind.Ranged, null, (A, 5), (R, 3)),
             new Row(GydionCardContent.Sunburst, "Sunburst", CardColor.Red, CardTier.III,
                 ActionKind.Attack, AttackRangeKind.Ranged, null, (A, 0), (R, 0)),
             new Row(GydionCardContent.VampiricTouch, "Vampiric Touch", CardColor.Red, CardTier.II,
-                ActionKind.Attack, AttackRangeKind.NonRanged, "9.30d", (A, 5)),
+                ActionKind.Attack, AttackRangeKind.NonRanged, null, (A, 5)),
             new Row(GydionCardContent.CreateUndead, "Create Undead", CardColor.Red, CardTier.II,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d", (R, 3)),
+                ActionKind.Skill, AttackRangeKind.None, null, (R, 3)),
             new Row(GydionCardContent.EnergyDrain, "Energy Drain", CardColor.Red, CardTier.III,
                 ActionKind.Skill, AttackRangeKind.None, "9.30f", (R, 3)),
             new Row(GydionCardContent.Suggestion, "Suggestion", CardColor.Blue, CardTier.I,
                 ActionKind.Skill, AttackRangeKind.None, "9.30f", (Rad, 3)),
             new Row(GydionCardContent.DominatePerson, "Dominate Person", CardColor.Blue, CardTier.II,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d", (Rad, 3)),
+                ActionKind.Skill, AttackRangeKind.None, null, (Rad, 3)),
             new Row(GydionCardContent.PowerWordKill, "Power Word Kill", CardColor.Blue, CardTier.III,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d", (Rad, 3)),
+                ActionKind.Skill, AttackRangeKind.None, null, (Rad, 3)),
             new Row(GydionCardContent.MidasTouch, "Midas' Touch", CardColor.Blue, CardTier.II,
                 ActionKind.Skill, AttackRangeKind.None, null),
             new Row(GydionCardContent.Disintegrate, "Disintegrate", CardColor.Blue, CardTier.II,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d"),
+                ActionKind.Skill, AttackRangeKind.None, null),
             new Row(GydionCardContent.Polymorph, "Polymorph", CardColor.Blue, CardTier.III,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d", (Rad, 3)),
+                ActionKind.Skill, AttackRangeKind.None, null, (Rad, 3)),
             new Row(GydionCardContent.Shield, "Shield", CardColor.Green, CardTier.I,
                 ActionKind.Skill, AttackRangeKind.None, "9.30f"),
             new Row(GydionCardContent.Banishment, "Banishment", CardColor.Green, CardTier.II,
-                ActionKind.Skill, AttackRangeKind.None, "9.30d", (Rad, 3)),
+                ActionKind.Skill, AttackRangeKind.None, null, (Rad, 3)),
             new Row(GydionCardContent.Invulnerability, "Invulnerability", CardColor.Green, CardTier.III,
                 ActionKind.Skill, AttackRangeKind.None, "9.30f"),
             new Row(GydionCardContent.FindFamiliar, "Find Familiar", CardColor.Green, CardTier.II,
@@ -138,7 +138,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (row.OwedTo == null)
                 {
-                    Assert.That(primary.TextComposition.IsAwaited, Is.False, at + "composed at 9.30e");
+                    Assert.That(primary.TextComposition.IsAwaited, Is.False, at + "composed (9.30d, 9.30e)");
                 }
                 else
                 {

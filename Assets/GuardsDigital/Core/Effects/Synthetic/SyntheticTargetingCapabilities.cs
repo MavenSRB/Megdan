@@ -1882,6 +1882,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     EffectValueKind.TokenKind,
                     isRequired: false));
 
+                // Milestone 9.30d. Gydion's Disintegrate, "Remove a token or an enemy NON-HEAVY minion
+                // adjacent to you" - p.22's class adjective on this written-distance object selection,
+                // spelled and read exactly as the printed-icon family's own `admittedMinionClass`
+                // (`RangedOrMelee` is "non-heavy"). It narrows minions alone; a hero or a token is not
+                // a minion and is untouched by it. Optional and unbound everywhere else, so every
+                // selection written before it keeps its exact candidate set.
+                parameters.Add(new EffectCapabilityParameter(
+                    AdmittedMinionClassParameterName,
+                    EffectValueKind.Integer,
+                    isRequired: false,
+                    integerDomain: EffectIntegerDomain.All<RosterMinionClass>()));
+
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
                     new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) });
@@ -2031,12 +2043,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var tokenKind = context.Input(TokenKindParameterName);
                 var narrowsToKind = tokenKind.Kind == EffectValueKind.TokenKind;
 
+                // Milestone 9.30d. An unbound class reads as AnyClass and narrows nothing; a class the
+                // vocabulary cannot answer is refused rather than widened, as the printed-icon family
+                // refuses it.
+                var admittedClass = (RosterMinionClass)context.Input(AdmittedMinionClassParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(RosterMinionClass), admittedClass))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
                 var spaces = new List<HexCoordinate>(targets.Count);
                 foreach (var target in targets)
                 {
                     if (relation != SourceTeamRelation.None &&
                         !TargetQuery.StandsInRelationTo(
                             relation, target, context.ActorId, context.Participants, board))
+                    {
+                        continue;
+                    }
+
+                    if (target.Kind == BoardObjectKind.Minion && !AdmitsClass(admittedClass, target.MinionId, board))
                     {
                         continue;
                     }

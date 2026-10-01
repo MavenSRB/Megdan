@@ -478,6 +478,31 @@ namespace GuardsDigital.Core.Rules.Modifications
             return false;
         }
 
+        /// <summary>
+        /// Milestone 9.30d. Whether <paramref name="affectedObject"/>'s Movement action walks one
+        /// straight line - Gydion's Expeditious Retreat. Its one reader is the Movement action's walk
+        /// (<c>StraightLineCrossingQuery</c>).
+        /// </summary>
+        public bool MovesOnlyInAStraightLine(RuleObject affectedObject)
+        {
+            if (!affectedObject.IsDefined)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < Modifications.Count; index++)
+            {
+                if (Modifications[index].AffectedObject.Equals(affectedObject) &&
+                    Modifications[index].Modification.Kind ==
+                        RuleModificationKind.MovementActionOnlyInAStraightLine)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool CountsAs(RuleObject affectedObject, EffectiveUnitKind effectiveUnitKind)
         {
             if (effectiveUnitKind == EffectiveUnitKind.None)

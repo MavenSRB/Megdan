@@ -67,7 +67,33 @@ namespace GuardsDigital.Core.Cards
         /// members above keep theirs, so no persisted bullet and no shipped action definition decodes
         /// as a different policy; nothing in the roster names it.</para>
         /// </summary>
-        MinionsOnly = 3
+        MinionsOnly = 3,
+
+        /// <summary>
+        /// Milestone 9.30d. The second half of Gydion's Fireball: "Target a unit in range, not adjacent
+        /// to you <b>or to your friendly unit</b>." Every unit p.13's default admits, except one
+        /// standing beside a unit friendly to the attacker.
+        ///
+        /// <para><b>A noun of this enum for the reason
+        /// <see cref="IsolatedUnitsOrUnitsAdjacentToYou"/> is one.</b> Silverarrow's union is the
+        /// precedent for a sentence about the candidate's NEIGHBOURHOOD on a single Attack: it says
+        /// which units the Attack may take, so it belongs to the Attack's own target set and the offer,
+        /// the target choice and the resolution read one answer. The "not adjacent to you" half is the
+        /// reach's (<see cref="AttackTargetReach.PrintedRangeBeyondAdjacent"/>, Swift's), so this member
+        /// carries only the friendly half and is refused beside p.13's adjacent-only reach, where every
+        /// candidate stands beside the attacker and no face prints the pair.</para>
+        ///
+        /// <para><b>"Your friendly unit" is p.17's Friendly read literally</b>: another unit - hero or
+        /// minion - on the attacker's team, never the attacker (and none of a many-bodied attacker's
+        /// bodies, RZ-Q5). It is asked of <c>RosterPresenceQuery.FindUnitsWithin</c>, the one owner of
+        /// "units within a disk in a team relation", as Hanu's "adjacent to your friendly hero" is.
+        /// Standing beside a unit is not something done to it, so no immunity is asked of the
+        /// neighbour. A token is not a unit (p.19).</para>
+        ///
+        /// <para>Its value is 4 and the four members above keep theirs, so no persisted bullet and no
+        /// shipped action definition decodes as a different policy.</para>
+        /// </summary>
+        UnitsNotAdjacentToAFriendlyUnitOfTheAttacker = 4
     }
 
     /// <summary>How far a printed Attack reaches, and what says so.</summary>
@@ -341,6 +367,19 @@ namespace GuardsDigital.Core.Cards
                     nameof(targetableUnits));
             }
 
+            // Milestone 9.30d. Fireball prints its friendly half beside "in range, not adjacent to you",
+            // so the narrowing is declared over a printed Range. Beside p.13's adjacent-only reach every
+            // candidate stands next to the attacker, which is a pairing no face prints, and this file
+            // would be deciding what it meant.
+            if (targetableUnits == AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker &&
+                reach == AttackTargetReach.AdjacentOnly)
+            {
+                throw new ArgumentException(
+                    "Fireball prints \"not adjacent to your friendly unit\" over a printed Range, so the " +
+                    "narrowing is not declared beside rulebook p.13's adjacent-only reach.",
+                    nameof(targetableUnits));
+            }
+
             TargetableUnits = targetableUnits;
             Reach = reach;
             Line = line;
@@ -421,6 +460,15 @@ namespace GuardsDigital.Core.Cards
         public PrintedAttackTargetPolicy AtThePrintedRange() =>
             new PrintedAttackTargetPolicy(
                 TargetableUnits, AttackTargetReach.PrintedRange, Line, Binding);
+
+        /// <summary>
+        /// Milestone 9.30d. The same policy with every unit standing beside a unit friendly to the
+        /// attacker taken out of it - Fireball's "not adjacent ... to your friendly unit". See
+        /// <see cref="AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker"/>.
+        /// </summary>
+        public PrintedAttackTargetPolicy NotAdjacentToAFriendlyUnitOfTheAttacker() =>
+            new PrintedAttackTargetPolicy(
+                AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker, Reach, Line, Binding);
 
         /// <summary>The same policy narrowed to p.13's heroes alone, which is Crackling Dagger's shape.</summary>
         public PrintedAttackTargetPolicy NarrowedToHeroes() =>

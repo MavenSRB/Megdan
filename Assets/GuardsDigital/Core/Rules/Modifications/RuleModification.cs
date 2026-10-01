@@ -440,7 +440,25 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// team-scoped declaration is expanded. What any consumer sees is therefore a declaration
         /// addressed to one hero that is either in the live set or is not.</para>
         /// </summary>
-        CountsAsAdjacentToThreeOrMoreObstacles = 18
+        CountsAsAdjacentToThreeOrMoreObstacles = 18,
+
+        /// <summary>
+        /// Milestone 9.30d. The affected hero's Movement action walks one straight line - Gydion's
+        /// Expeditious Retreat, a Basic Movement 5 printing "Move only in a straight line."
+        ///
+        /// <para><b>A property of the Movement action's own walk</b>, read where milestone 8.114b1's
+        /// <see cref="RulePermissionKind.MoveThroughObstaclesInAStraightLine"/> is read - on the walk
+        /// itself, by <c>StraightLineCrossingQuery</c> - and nowhere else: a card-text Move is not a
+        /// Movement action (p.11), so it is untouched. Every leg of the walk, from where it started, is
+        /// one p.19 straight line; the walk still never enters an obstacle (p.11), so a file stops at
+        /// the first one and a destination reached only by bending is not offered. Stopping is always
+        /// offered (p.11's "up to").</para>
+        ///
+        /// <para>It carries nothing, for the reason the members above record: an added member no
+        /// earlier declaration names moves nothing, while a property would move every hero's content
+        /// digest.</para>
+        /// </summary>
+        MovementActionOnlyInAStraightLine = 19
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -1267,6 +1285,23 @@ namespace GuardsDigital.Core.Rules.Modifications
                 // "While you are performing actions" - the printed condition, and the only thing this
                 // declaration carries beyond its own name.
                 RuleValueApplicability.ControllerAction,
+                SourceValueQueryKind.None);
+
+        /// <summary>
+        /// Milestone 9.30d. Gydion's Expeditious Retreat, "Move only in a straight line": the affected
+        /// hero's Movement action walks one straight line. See
+        /// <see cref="RuleModificationKind.MovementActionOnlyInAStraightLine"/>.
+        /// </summary>
+        public static RuleModification ForMovementActionOnlyInAStraightLine() =>
+            new RuleModification(
+                RuleModificationKind.MovementActionOnlyInAStraightLine,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
 
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)

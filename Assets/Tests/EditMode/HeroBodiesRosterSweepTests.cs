@@ -239,11 +239,18 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             Assert.That(composed.Length, Is.GreaterThan(200), "The dealt roster composes its capabilities.");
 
+            // Milestone 9.30d. The corpus holds Gydion's composed spells before his dealing (9.30i), so a
+            // capability they name may still be deferred rather than registered; it is classified all
+            // the same, which is what this sweep asks of a hero's faces.
+            var lookup = new EffectCapabilityCatalog(catalogs.Capabilities.Registered
+                .Select(catalogs.Capabilities.Load)
+                .Concat(GydionCardContent.ReuseSpellDeferredHandlers())
+                .Concat(SyntheticPlacementCapabilities.DeferredHandlers()));
             var handlers = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
             foreach (var capability in composed)
             {
-                Assert.That(catalogs.Capabilities.TryLoad(capability, out var handler), Is.True,
-                    capability + " is registered.");
+                Assert.That(lookup.TryLoad(capability, out var handler), Is.True,
+                    capability + " is registered, or deferred for a hero composed before his dealing.");
                 var key = HandlerKey(handler);
                 if (!handlers.TryGetValue(key, out var ids))
                 {

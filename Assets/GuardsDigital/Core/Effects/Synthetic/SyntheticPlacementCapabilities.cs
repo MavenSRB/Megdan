@@ -386,6 +386,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference RespawnFriendlyMinionInRadiusV1 =>
             new EffectCapabilityReference(RespawnFriendlyMinionInRadius, 1);
 
+        /// <summary>
+        /// Milestone 9.30d. `respawn-friendly-minion-in-range@1` - the printed-RANGE twin, for Gydion's
+        /// Create Undead: "Respawn a friendly minion in an empty friendly spawn point <b>in range</b> in
+        /// the battle zone", on a Skill printing a Range 3 icon that p.16's Range item raises.
+        ///
+        /// <para>A third declaration over the same handler rather than a parameter on the Radius one,
+        /// by the rule every Range/Radius pair here records: p.9 gives the two icons two meanings and
+        /// p.16 two items, so a declaration that could name either would let a Range card be widened by
+        /// a Radius item. Everything else - p.19's eligibility count, the printed point deciding the
+        /// type, RULING 48's second question - is the handler's, unchanged.</para>
+        /// </summary>
+        public static EffectCapabilityId RespawnFriendlyMinionInRange { get; } =
+            new EffectCapabilityId("synthetic-respawn-friendly-minion-in-range");
+
+        public static EffectCapabilityReference RespawnFriendlyMinionInRangeV1 =>
+            new EffectCapabilityReference(RespawnFriendlyMinionInRange, 1);
+
         /// <summary>The minion a Respawn put back on the board.</summary>
         public const string RespawnedOutputName = "respawned";
 
@@ -419,9 +436,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // showcase half of the gate is answered by that milestone's Red Gravedigger, because
                 // RespawnFriendlyMinionHandler is a handler type this build had never registered.
                 new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
+                    RespawnFriendlyMinionAdjacentV1, PrintedValueChannel.None),
                 new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true),
+                    RespawnFriendlyMinionInRadiusV1, PrintedValueChannel.Radius),
 
                 // Milestone 8.35z38. Misa's two, moved across by the milestone that deals her: Watch
                 // How I Soar starts the exact-Range ring and Swoop In the qualified Radius, and both
@@ -509,13 +526,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <see cref="PlaceAtMaximumRadiusV1"/> and no configured match deals him until 9.30i, which
         /// moves it to <see cref="RegisteredHandlers"/>. A further declaration over
         /// <see cref="PlaceHandler"/>, so it owes the gate's handler-type half nothing.</para>
+        ///
+        /// <para>Milestone 9.30d adds the same hero's Create Undead,
+        /// <see cref="RespawnFriendlyMinionInRangeV1"/>, on the same terms: a further declaration over
+        /// <c>RespawnFriendlyMinionHandler</c>, a type registered since 8.35z34, held here until 9.30i
+        /// deals him.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new PlaceHandler(
                     PlaceAtMaximumRadiusV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesAtExactlyRadius)
+                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionInRangeV1, PrintedValueChannel.Range)
             };
 
         /// <summary>
@@ -1254,13 +1278,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class RespawnFriendlyMinionHandler : IEffectCapabilityHandler
         {
-            private readonly bool readsPrintedRadius;
+            /// <summary>
+            /// Where the reach comes from: <see cref="PrintedValueChannel.None"/> for p.19's innermost
+            /// ring written into the sentence, or the printed icon - Radius (Necromastery) or, since
+            /// milestone 9.30d, Range (Gydion's Create Undead) - with p.16's item composed on.
+            /// </summary>
+            private readonly PrintedValueChannel reach;
 
             public RespawnFriendlyMinionHandler(
-                EffectCapabilityReference reference, bool readsPrintedRadius)
+                EffectCapabilityReference reference, PrintedValueChannel reach)
             {
+                if (reach != PrintedValueChannel.None && reach != PrintedValueChannel.Radius &&
+                    reach != PrintedValueChannel.Range)
+                {
+                    throw new ArgumentException(
+                        "A Respawn reaches p.19's innermost ring or a printed Range or Radius icon.",
+                        nameof(reach));
+                }
+
                 Reference = reference;
-                this.readsPrintedRadius = readsPrintedRadius;
+                this.reach = reach;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -1571,7 +1608,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var distance = 1;
-                if (readsPrintedRadius)
+                if (reach == PrintedValueChannel.Radius)
                 {
                     if (!context.CardState.IsAvailable)
                     {
@@ -1594,6 +1631,34 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
 
                     distance = radius.Total;
+                }
+                else if (reach == PrintedValueChannel.Range)
+                {
+                    // Milestone 9.30d. Create Undead's "in range": p.9's printed Range icon with p.16's
+                    // Range item, the Range Total every printed-Range consumer reads.
+                    if (!context.CardState.IsAvailable)
+                    {
+                        return Array.Empty<EmptyMinionSpawnPointFact>();
+                    }
+
+                    var range = RangeValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems,
+                        context.Modifications,
+                        ActionValueApplicabilityQuery.For(
+                            context.SourceDefinitionReference,
+                            context.ActionDefinitionId,
+                            context.CardState.Definitions));
+                    if (range.Total <= 0)
+                    {
+                        return Array.Empty<EmptyMinionSpawnPointFact>();
+                    }
+
+                    distance = range.Total;
                 }
 
                 return MinionRespawnEligibilityQuery.FindRespawnDestinationsWithin(

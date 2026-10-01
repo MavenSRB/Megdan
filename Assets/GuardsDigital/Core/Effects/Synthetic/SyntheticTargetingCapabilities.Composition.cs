@@ -32,7 +32,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         TokensOnly = 2,
 
         /// <summary>A unit or token, excluding an obstacle or other board object.</summary>
-        UnitsAndTokens = 3
+        UnitsAndTokens = 3,
+
+        /// <summary>
+        /// Milestone 9.30d. A minion or a token, and no hero - Gydion's Polymorph, "Swap an enemy hero
+        /// in radius with <b>a token in radius or with an enemy minion in radius</b>". One selection
+        /// over the union, for the reason <c>choose-swap-subject@1</c> records: the face offers one
+        /// choice, not a choice of which kind of choice to make. The side ("enemy" minion, any token) is
+        /// the selection's relation, <c>OpposingSourceOrUnaligned</c>.
+        /// </summary>
+        MinionsAndTokens = 4
     }
 
     public static partial class SyntheticTargetingCapabilities
@@ -478,6 +487,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             else if (admittedKind == PrintedIconObjectKind.UnitsAndTokens)
             {
                 kinds &= PrintedIconKinds.Units | PrintedIconKinds.Tokens;
+            }
+            else if (admittedKind == PrintedIconObjectKind.MinionsAndTokens)
+            {
+                kinds &= PrintedIconKinds.Minions | PrintedIconKinds.Tokens;
             }
 
             var printedTotal = channel == PrintedValueChannel.Radius

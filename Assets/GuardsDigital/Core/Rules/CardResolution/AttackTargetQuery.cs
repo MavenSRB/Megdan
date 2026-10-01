@@ -241,10 +241,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
                      !value.Coordinate.Equals(candidate) &&
                      HexDistanceQuery.Calculate(value.Coordinate, candidate) == 1));
 
+            // Milestone 9.30d. Fireball's "not adjacent ... to your friendly unit": no unit on the
+            // attacker's team other than the attacker stands beside the candidate (p.17's Friendly
+            // never includes you, nor any other body of a many-bodied attacker). Asked of the one owner
+            // of "units within a disk in a team relation", as Hanu's friendly-hero bullet asks it;
+            // standing beside a unit is not something done to it, so no immunity is asked of it.
+            bool IsBesideNoFriendlyUnitOfTheAttacker(HexCoordinate candidate) =>
+                policy.TargetableUnits != AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker ||
+                RosterPresenceQuery.FindUnitsWithin(
+                    candidate,
+                    1,
+                    RosterUnitKind.Unit,
+                    SourceTeamRelation.AlliedWithSource,
+                    attackerId,
+                    board,
+                    participants,
+                    modifications,
+                    excludedFirst: BoardObjectReference.ForHero(attackerId)).Count == 0;
+
             bool IsAdmitted(HexCoordinate candidate) =>
                 StandsOnAnAdmittedLine(candidate) &&
                 StandsAtAnAdmittedDistance(candidate) &&
-                IsIsolatedOrAdjacentToTheAttacker(candidate);
+                IsIsolatedOrAdjacentToTheAttacker(candidate) &&
+                IsBesideNoFriendlyUnitOfTheAttacker(candidate);
 
             // Milestone 8.71c. The mirror narrowing: Hanu's Outnumber and Pile On print "Target a
             // minion in range", so an enemy HERO in exactly that position is not a legal target of the
