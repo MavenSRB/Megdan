@@ -39,9 +39,11 @@ Outcome: an Active effect may make spaces count as obstacles for the units of on
 Completed 2026-10-01. A unit overlay (`ConditionalObstacleOverlay.DeclareForUnits`) makes the empty spaces of its disk, read around its controller's current space, obstacles for the units of one side only; every movement, push, straight-line, coupled-move, placement and respawn reader that names the piece asks it, and no question naming no piece does (TK-Q3). A piece ignoring obstacles passes through but cannot end there; the effect ends with the turn and survives a restore. Wasp's overlay declaration gained the `UnitRelation` property, so her content identity was re-pinned with no content change; no schema or wire move. Two readings are recorded in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32c".
 Historical evidence: [9.32c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932c-enemy-obstacle-evidence).
 
-### [ ] 9.32d Compose the gold, silver and Red faces
+### [x] 9.32d Compose the gold, silver and Red faces
 
 Outcome: Sting like a Bee (maximum range, RULING 1), Strike like a Tiger and Float like a Butterfly with their swaps, Bushido, Set an Example, Lead from the Front, Hold my Saké, Spinning Blade and Blade Helix composed on 9.32a-9.32c, read against [PRINTED_WORDING](../Rules/PRINTED_WORDING.md). Closing check: one staged Edit Mode outcome test per face, each failing before composition; `PrintedWordingConformanceTests` on the new faces. T2. After 9.32a, 9.32b and 9.32c.
+Completed 2026-10-01. Takahide's three gold cards, Bushido and five Red faces are composed (`TakahideCardContent`, `TakahideRedFaces`, unregistered until 9.32h), each with a staged outcome test and every printed value read against the fronts. `PrintedWordingConformanceTests` reads only dealt heroes, so it holds these faces from 9.32h; the checklist's reading pass was done here. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32d".
+Historical evidence: [9.32d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932d-gold-silver-and-red-faces-evidence).
 
 ### [ ] 9.32e Compose the Blue and Green faces
 

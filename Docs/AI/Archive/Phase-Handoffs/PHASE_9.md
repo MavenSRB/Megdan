@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32d Gold, silver and Red faces evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32d | Takahide's three gold cards, Bushido and five Red faces composed on 9.32a-9.32c with one staged outcome per face and every printed value read against the fronts. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932d-compose-the-gold-silver-and-red-faces). | `milestone/9.32d` |
+
 ## Milestone 9.34 Spell attack spotlight evidence
 
 | Milestone | Outcome and definition | Commit |

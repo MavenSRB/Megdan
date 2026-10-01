@@ -247,6 +247,12 @@ namespace GuardsDigital.Tests.EditMode
             // Attack's own reach and the three composed Skills bind no Attack target, so he adds no
             // at-risk gate.
             foreach (var card in GydionCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("gydion", d);
+            // Milestone 9.32d. The thirtieth hero's line is owed the moment a `TakahideCardContent`
+            // exists, dealt or not, and it reads his per-block lists through the shared corpus helper
+            // so each block's faces join as they are composed. His Attacks bind their targets by
+            // printed policy (Sting like a Bee at maximum range, every other one adjacent) and his
+            // after-attack swaps and obstacles bind none, so he adds no at-risk gate.
+            foreach (var card in VerifiedContentCorpus.AllDefinitionsOf(typeof(TakahideCardContent))) foreach (var d in EffectRoots(card)) yield return ("takahide", d);
         }
 
         /// <summary>
