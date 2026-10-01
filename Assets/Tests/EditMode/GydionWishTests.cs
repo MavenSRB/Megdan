@@ -193,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
                 "nor while its second sentence is asked");
             round.Confirm();
 
-            Assert.That(round.Familiars(), Has.Count.EqualTo(1), "the inner spell resolved whole");
+            Assert.That(round.Familiars().ToArray(), Has.Length.EqualTo(1), "the inner spell resolved whole");
             Assert.That(round.Round.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded),
                 "\"After you cast the Wish spell three times your team wins the game\"");
             Assert.That(round.Round.Outcome, Is.EqualTo(MatchOutcome.Won(
