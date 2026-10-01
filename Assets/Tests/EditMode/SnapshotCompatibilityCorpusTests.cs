@@ -1700,6 +1700,15 @@ namespace GuardsDigital.Tests.EditMode
         // still resolve at the same revisions; no fixture deals Razzle or declares a body supply, and no
         // persisted field changes. Schema v50 stands; wire moves to /28 for the acting-body flag on the
         // hero rows, a projection-only field no capture carries.
+        // 9.15 MIGRATE, not reject: the rule-event log unpacks a triggered effect's card-action facts
+        // as it always did a Skill's, so the one capture whose history holds a triggered effect
+        // (parked-pre-action: the placeholder Charmer's "before or after" text fires as a triggered
+        // effect before its Movement) carries two Action.CardTextApplied rows where it carried two
+        // opaque Turn.TriggeredEffectProgressed rows. Measured on both trees with the same driver:
+        // authoritative payload byte-identical (23,208 base64 characters, 17,404 bytes), envelope
+        // 24,823 -> 24,959 decoded bytes (+136, the two facts' references and detail), twelve
+        // entries both ways. The other fifteen captures hold no triggered effect and are unmoved.
+        // Schema v50 and wire /29 stand.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
             new CompatibilityFixture("setup-v50", "a981210ce6d6a14d11d21b6747740728f9cf0fcaf610b4b57863a214247f2c06"),
@@ -1717,7 +1726,7 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("paused-card-text-v50", "bf0368a9c51ef47bc9ab0eee5b5bc8c93dfa695bd901d306bdff519f27c4c465"),
             new CompatibilityFixture("paused-block-rider-v50", "3fb9ed97e9287e739565a4b6e701ae8f6a21b4d4348ac1cedb18809285617dd4"),
             new CompatibilityFixture("paused-repeated-attack-v50", "ef2ea87bcc80fe6b019ec7b58bc4b85d6a0beb8e3ed14c02f4df9bd2a6f37c65"),
-            new CompatibilityFixture("parked-pre-action-v50", "3dfb81576494922f01e575edb41d704265622d7ee8d17c7f3c60bb33aa420d05")
+            new CompatibilityFixture("parked-pre-action-v50", "6cdfc80d26d76c8e16e8d7993c7569999dfc268e53c59923c91091453058e432")
         };
 
         [Test]
