@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.15 Triggered Defeat and card-text Removal rows evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.15 | A Defeat inside a triggered effect and a minion removed by card text both reach the rule-event log and the seat-public rows like their card-action siblings, the executor's scoreboard fallback retired; two regressions failing on the base; wire and schema unmoved. [Definition](../../Roadmap/PHASE_9.md#x-915-the-match-log-records-triggered-effect-defeats-and-card-text-removals). | `milestone/9.15` |
+
 ## Milestone 9.19 Card-text discard row evidence
 
 | Milestone | Outcome and definition | Commit |
