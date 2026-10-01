@@ -229,6 +229,30 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cast.Card(Cast.NextCard).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
+        /// <summary>
+        /// GY-Q7, the user's answer (2026-10-01, "Always playable"), against the recommendation that
+        /// greyed it: Prepare Spells is offered with nothing removed, and resolves returning nothing.
+        /// </summary>
+        [Test]
+        public void AnEmptyRefill_IsAlwaysPlayable_AndResolvesChangingNoSpell_GyQ7()
+        {
+            var empty = new Cast(SyntheticSpellbook.PrepareSpellsId);
+            Assert.That(empty.IsOffered, Is.True,
+                "GY-Q7 (user): Prepare Spells is always playable, even with nothing removed");
+
+            empty.StartCasting();
+            foreach (var spell in new[] { Attack, Movement, Ward })
+            {
+                Assert.That(empty.Spell(spell).State, Is.EqualTo(CardStateFacts.InitialInSpellbook()),
+                    spell + " stays in the book, untouched");
+            }
+
+            Assert.That(empty.Round.Timing.Effects, Is.Empty, "nothing is created or cancelled");
+            Assert.That(empty.Turn.PendingEffectChoice, Is.Null, "nothing is asked");
+            Assert.That(empty.Card(Cast.Played).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved),
+                "and the card resolves");
+        }
+
         // -------------------------------------------------------------------------------------------
         // Pauses
         // -------------------------------------------------------------------------------------------
