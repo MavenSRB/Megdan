@@ -769,7 +769,9 @@ namespace GuardsDigital.Tests.PlayMode
             // replacement's own words. (The round strip's "MODE #n <node>" is the Director's diagnostic
             // vocabulary, 8.58; the window is what the player reads.)
             var window = runtime.DecisionWindowView.Model;
-            Assert.That(window?.Controls.Where(control => control.Spell == null && control.IsAnswerable)
+            Assert.That(window?.Eyebrow, Is.EqualTo("THE ARCHWIZARD"), "headed by the Ultimate that offers it");
+            Assert.That(window.Question, Is.EqualTo("Add all spell cards to the spellbook, or cast Wish instead."));
+            Assert.That(window.Controls.Where(control => control.Spell == null && control.IsAnswerable)
                     .Select(control => control.Label),
                 Is.EqualTo(new[] { "ADD ALL SPELL CARDS TO THE SPELLBOOK" }), Remaining(runtime));
             var wishInstead = SpellOption(runtime, GydionCardContent.Wish);

@@ -178,9 +178,46 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePrepareSpellsReplacement_DrawsTheRefillWorded_AndWishsFaceCaptionedCastWishInstead()
         {
-            var session = GydionDealingTests.StagedSession(tierThree: true, out var wasp, out var gydion);
+            var model = DecisionWindowPresenter.CreateViewModel(ThePrepareSpellsReplacement(out var gydion), gydion);
+            var refill = model.Controls.Single(control => control.Spell == null && control.IsAnswerable);
+            Assert.That(refill.Label, Is.EqualTo("ADD ALL SPELL CARDS TO THE SPELLBOOK"), "the refill in its declared words");
+            var wish = model.Controls.Single(control => control.Spell != null);
+            Assert.That(wish.Spell.DefinitionReference.DefinitionId, Is.EqualTo(GydionCardContent.Wish), "Wish drawn as its face");
+            Assert.That(wish.Spell.Caption, Is.EqualTo("CAST WISH INSTEAD"));
+            Assert.That(wish.Label, Is.EqualTo("CAST WISH INSTEAD"), "the face's caption is the replacement's declared words");
+        }
+
+        /// <summary>
+        /// Milestone 9.30j. The same window must not read "SPELL CHOICE" over "Choose and cast one spell
+        /// in the spellbook.": it is The Archwizard's replacement of a refill, not a cast among spells.
+        /// Its words come from the printed cards: the eyebrow is the unlocked Ultimate whose standing rule
+        /// gates the choice (the Choose sits under Prepare Spells' "ultimate unlocked" branch), and the
+        /// question is the two options' own declared words in printed order. A cast among spells is
+        /// unchanged.
+        /// </summary>
+        [Test]
+        public void ThePrepareSpellsReplacement_IsHeadedByTheArchwizard_AndAsksItsTwoPrintedOptions()
+        {
+            var model = DecisionWindowPresenter.CreateViewModel(ThePrepareSpellsReplacement(out var gydion), gydion);
+            Assert.That(model.Eyebrow, Is.EqualTo("THE ARCHWIZARD"), "the Ultimate's printed name");
+            Assert.That(model.Question, Is.EqualTo("Add all spell cards to the spellbook, or cast Wish instead."),
+                "Prepare Spells' and The Archwizard's own words");
+
+            var cast = DecisionWindowPresenter.CreateViewModel(SpellChoice(MockupARound(), true), Caster);
+            Assert.That(cast.Eyebrow, Is.EqualTo(SpellbookPresentation.SpellChoiceEyebrow), "a cast among spells is unchanged");
+            Assert.That(cast.Question, Is.EqualTo(SpellbookPresentation.CastQuestion));
+        }
+
+        /// <summary>
+        /// Gydion's Tier III staged session, his Prepare Spells started: The Archwizard's add-or-Wish
+        /// choice standing (GY-Q7: a full book still "would add cards").
+        /// </summary>
+        private static IMatchReadModel ThePrepareSpellsReplacement(out HeroId gydion)
+        {
+            var session = GydionDealingTests.StagedSession(tierThree: true, out var wasp, out gydion);
             var projection = session.Projection;
-            var prepare = projection.Cards.Single(card => card.OwnerId.Equals(gydion) &&
+            var hero = gydion;
+            var prepare = projection.Cards.Single(card => card.OwnerId.Equals(hero) &&
                 card.DefinitionReference.DefinitionId.Equals(GydionCardContent.PrepareSpells));
             var hers = projection.Cards
                 .Where(card => card.OwnerId.Equals(wasp) && card.State.Location == CardLocation.Hand)
@@ -193,14 +230,7 @@ namespace GuardsDigital.Tests.EditMode
                 prepare.Id, GydionCardContent.PrimarySkill)).Accepted, Is.True);
             Assert.That(session.Projection.PendingEffectChoice?.NodeId,
                 Is.EqualTo(GydionCardContent.PrepareSpellsReplacementChoice), "The Archwizard asks (GY-Q7)");
-
-            var model = DecisionWindowPresenter.CreateViewModel(session.Projection, gydion);
-            var refill = model.Controls.Single(control => control.Spell == null && control.IsAnswerable);
-            Assert.That(refill.Label, Is.EqualTo("ADD ALL SPELL CARDS TO THE SPELLBOOK"), "the refill in its declared words");
-            var wish = model.Controls.Single(control => control.Spell != null);
-            Assert.That(wish.Spell.DefinitionReference.DefinitionId, Is.EqualTo(GydionCardContent.Wish), "Wish drawn as its face");
-            Assert.That(wish.Spell.Caption, Is.EqualTo("CAST WISH INSTEAD"));
-            Assert.That(wish.Label, Is.EqualTo("CAST WISH INSTEAD"), "the face's caption is the replacement's declared words");
+            return session.Projection;
         }
 
         [Test]

@@ -882,7 +882,21 @@ namespace GuardsDigital.Presentation.Match
             DecisionWindowControlViewModel corner = null;
             BuildEffectControls(
                 projection, choice, subject, sourceDefinitionId, previews, boardAnswered, controls,
-                out var spellArms);
+                out var spellArms, out var mixesWordedOptions);
+
+            // Milestone 9.30j. A choice offering worded options beside a spell face is not a cast among
+            // spells: it is the replacement a standing Ultimate offers - "Add all spell cards to the
+            // spellbook" or "Cast Wish instead" - so it is headed by that Ultimate's printed name and
+            // asks its options' own declared words, never "SPELL CHOICE" over a cast question. Read off
+            // the choice's content (its options, and the branch of its card it stands in), never a name.
+            var replacementEyebrow = mixesWordedOptions
+                ? GatingUltimateName(projection, choice, sourceDefinitionId) ??
+                    EffectChoicePromptLabels.SectionLabel(subject)
+                : null;
+            var replacementQuestion = mixesWordedOptions
+                ? DeclaredOptionsQuestion(projection, choice, sourceDefinitionId) ??
+                    EffectChoicePromptLabels.StatusLine(choice, subject, projection)
+                : null;
 
             if (choice.DeclineInvocation != null)
             {
@@ -935,10 +949,13 @@ namespace GuardsDigital.Presentation.Match
                     HeroName(projection, choice.ChooserId), viewerHeroId),
                 // Milestone 9.30h. A choice whose options are spells is a SPELL CHOICE (approved
                 // mockup A), and says what the card printed: cast one, or remove up to N.
-                spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
-                    ? SpellbookPresentation.SpellChoiceEyebrow
-                    : EffectChoicePromptLabels.SectionLabel(subject),
-                spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Cast
+                replacementEyebrow ??
+                    (spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
+                        ? SpellbookPresentation.SpellChoiceEyebrow
+                        : EffectChoicePromptLabels.SectionLabel(subject)),
+                replacementQuestion != null
+                    ? replacementQuestion
+                    : spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Cast
                     ? SpellbookPresentation.CastQuestion
                     : spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Remove
                     ? "Remove up to " + choice.MaximumSelections.ToString(
@@ -972,7 +989,8 @@ namespace GuardsDigital.Presentation.Match
             HashSet<EffectValue> previews,
             bool boardAnswered,
             List<DecisionWindowControlViewModel> controls,
-            out SyntheticSpellbookCapabilities.SpellArmKind spellArms)
+            out SyntheticSpellbookCapabilities.SpellArmKind spellArms,
+            out bool mixesWordedOptions)
         {
             spellArms = SyntheticSpellbookCapabilities.SpellArmKind.None;
             var spellOptions = new Dictionary<DecisionWindowControlViewModel, EffectNodeId>();
@@ -992,7 +1010,7 @@ namespace GuardsDigital.Presentation.Match
                 .ToArray();
             var optionsNamingSpells = options.Count(candidate =>
                 SpellbookPresentation.OptionFace(projection, sourceDefinitionId, candidate, false, out _) != null);
-            var mixesWordedOptions = optionsNamingSpells > 0 && optionsNamingSpells < options.Length;
+            mixesWordedOptions = optionsNamingSpells > 0 && optionsNamingSpells < options.Length;
 
             // A board-answered choice has no CANDIDATE controls anywhere - the pieces, the spaces and
             // (from milestone 8.46d) the six direction arrows are the controls, where they stand. It
@@ -1272,6 +1290,89 @@ namespace GuardsDigital.Presentation.Match
         /// capitals - and today's label wherever milestone 8.46a's catalog answers nothing, so this
         /// window is complete against a catalog that is still being filled.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.30j. The printed name of the unlocked Ultimate whose standing rule offers this
+        /// choice: the <c>Choose</c> stands in the true branch of an "is your Ultimate unlocked"
+        /// <c>Conditional</c> on its own card (<see cref="SyntheticRosterCapabilities.UltimateUnlockedV1"/>,
+        /// the shape Prepare Spells and Master of Puppets compose a p.16 replacement in), and the name is
+        /// the chooser's unlocked Ultimate, which is faceup for every seat. Null when the choice stands
+        /// under no such branch.
+        /// </summary>
+        private static string GatingUltimateName(
+            IMatchReadModel projection, PendingEffectChoice choice, CardDefinitionId sourceDefinitionId)
+        {
+            var source = projection.Definitions.FirstOrDefault(value => value.Id.Equals(sourceDefinitionId));
+            if (source == null)
+            {
+                return null;
+            }
+
+            foreach (var effect in source.ActionDefinitions
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(effect => effect != null && effect.Nodes.Any(node => node.Id.Equals(choice.NodeId))))
+            {
+                var parents = new Dictionary<EffectNodeId, EffectNodeDefinition>();
+                foreach (var node in effect.Nodes)
+                {
+                    foreach (var child in node.ChildNodeIds)
+                    {
+                        parents[child] = node;
+                    }
+                }
+
+                for (var current = choice.NodeId; parents.TryGetValue(current, out var parent); current = parent.Id)
+                {
+                    if (parent.Kind != EffectNodeKind.Conditional ||
+                        !parent.Capability.Equals(SyntheticRosterCapabilities.UltimateUnlockedV1) ||
+                        parent.ChildNodeIds.Count == 0 ||
+                        !parent.ChildNodeIds[0].Equals(current))
+                    {
+                        continue;
+                    }
+
+                    var ultimate = GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery
+                        .Derive(projection.Definitions, projection.Cards).Ultimates
+                        .FirstOrDefault(value => value.OwnerId.Equals(choice.ChooserId));
+                    var printed = ultimate == null
+                        ? null
+                        : projection.Definitions.FirstOrDefault(value =>
+                            value.Reference.Equals(ultimate.SourceDefinitionReference));
+                    return printed?.DisplayName.ToUpperInvariant();
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Milestone 9.30j. The choice asked in its options' own declared words, in the order the card
+        /// prints them - "Add all spell cards to the spellbook, or cast Wish instead." - or null when any
+        /// option declares none.
+        /// </summary>
+        private static string DeclaredOptionsQuestion(
+            IMatchReadModel projection, PendingEffectChoice choice, CardDefinitionId sourceDefinitionId)
+        {
+            var words = new List<string>();
+            foreach (var option in SpellbookPresentation.PrintedOptionOrder(projection, sourceDefinitionId, choice.NodeId))
+            {
+                if (!DecisionLabelCatalog.TryGetLabel(sourceDefinitionId, option, out var declared) ||
+                    string.IsNullOrEmpty(declared.Chosen))
+                {
+                    return null;
+                }
+
+                words.Add(declared.Chosen);
+            }
+
+            if (words.Count < 2)
+            {
+                return null;
+            }
+
+            return words[0] + string.Concat(words.Skip(1).Select(word =>
+                ", or " + char.ToLowerInvariant(word[0]) + word.Substring(1))) + ".";
+        }
+
         private static string CandidateLabel(
             IMatchReadModel projection,
             PendingEffectChoice choice,
