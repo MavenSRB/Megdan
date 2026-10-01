@@ -123,7 +123,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     !definition.TryGetNode(outcome.NodeId, out var node) ||
                     node.Kind != EffectNodeKind.Capability ||
                     (!node.Capability.Equals(SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1) &&
-                     !node.Capability.Equals(SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1)))
+                     !node.Capability.Equals(SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1) &&
+                     // Milestone 9.30c. A cast: the spell it removed faceup is the card whose printed
+                     // primary the caster now performs (Prepare Spells, GY-Q3).
+                     !node.Capability.Equals(SyntheticSpellbookCapabilities.CastSpellV1)))
                 {
                     continue;
                 }

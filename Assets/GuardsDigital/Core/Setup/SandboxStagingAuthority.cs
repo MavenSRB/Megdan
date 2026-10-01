@@ -234,8 +234,11 @@ namespace GuardsDigital.Core.Setup
         {
             foreach (var staged in description.Heroes.Where(hero => hero.Hand != null))
             {
+                // Milestone 9.30c. The cards this hero was DEALT: a spell in their spellbook is owned
+                // and never dealt, so naming one is the not-dealt refusal below, not an unknown card.
                 var owned = configuration.CardInstances
-                    .Where(card => card.OwnerId.Equals(staged.HeroId))
+                    .Where(card => card.OwnerId.Equals(staged.HeroId) &&
+                        !SpellbookQuery.IsInASpellbook(card.State.Location))
                     .ToArray();
                 foreach (var wanted in staged.Hand)
                 {

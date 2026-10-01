@@ -120,7 +120,26 @@ namespace GuardsDigital.Core.Cards
         OwnedResolvedSkills = 5,
 
         /// <summary>Dragon Knight WI-Q2: owned public face-up Skills, including the current card.</summary>
-        OwnedFaceUpSkills = 6
+        OwnedFaceUpSkills = 6,
+
+        /// <summary>
+        /// Milestone 9.30c. A spell lying in a spellbook - Prepare Spells: "As the spell is cast, remove
+        /// it from the spellbook faceup. The action on the spell card is performed by the hero casting
+        /// the spell." The cast (<c>cast-spell@1</c>) asks this pool whether the spell its text named
+        /// may be cast, BEFORE it moves the spell, so the borrow's ownership filter applies to it as to
+        /// every other pool: today the caster casts only their own spells.
+        ///
+        /// <para><b>The book's owner and the caster are two inputs</b>, and this pool is the one place
+        /// they are compared: the spell is found by its owner and its definition, and the caster is
+        /// the borrower handed to <see cref="BorrowedPrimaryActionQuery.EligibleCards"/>. NebKher's
+        /// gold card, which casts from Gydion's book (GY-05), is a change to that ownership filter for
+        /// this pool and nothing else.</para>
+        ///
+        /// <para><b>No chooser is ever offered a card from this pool.</b> <c>borrow-primary-action@1</c>
+        /// answers it with an empty pool: a spell is named by card text, so a book's facedown card
+        /// identities never reach a decision.</para>
+        /// </summary>
+        OwnedSpellbookSpells = 7
     }
 
     /// <summary>
@@ -246,6 +265,10 @@ namespace GuardsDigital.Core.Cards
 
         public static BorrowedPrimaryActionDeclaration FromFaceUpSkills() =>
             new BorrowedPrimaryActionDeclaration(BorrowedActionPool.OwnedFaceUpSkills, CardColor.None);
+
+        /// <summary>Milestone 9.30c. A spell in the caster's own spellbook - the pool a cast asks.</summary>
+        public static BorrowedPrimaryActionDeclaration FromSpellbook() =>
+            new BorrowedPrimaryActionDeclaration(BorrowedActionPool.OwnedSpellbookSpells, CardColor.None);
 
         /// <summary>The colour this borrow narrows its pool to, or <see cref="CardColor.None"/>.</summary>
         public CardColor RequiredColor { get; }
@@ -611,6 +634,10 @@ namespace GuardsDigital.Core.Cards
                 case BorrowedActionPool.OwnedFaceUpSkills:
                     return (card.State.Location == CardLocation.TurnArea || card.State.Location == CardLocation.DiscardPile) &&
                         IsFaceUpSkill(card, definitionsByReference);
+
+                // Milestone 9.30c. In the book, facedown: a removed spell is cast only after a refill.
+                case BorrowedActionPool.OwnedSpellbookSpells:
+                    return card.State.Location == CardLocation.Spellbook;
 
                 default:
                     throw new ArgumentOutOfRangeException(

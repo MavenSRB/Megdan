@@ -205,8 +205,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return everyGuessable;
             }
 
+            // Milestone 9.30c. A spell lies in a spellbook or faceup beside it and is never in a hand,
+            // so it is no card "that could be in that player's hand": a facedown spell counted here
+            // would make its colour guessable on no evidence.
             var owned = context.CardState.Instances
-                .Where(card => card != null && card.OwnerId.Equals(target))
+                .Where(card => card != null && card.OwnerId.Equals(target) &&
+                    !Cards.SpellbookQuery.IsInASpellbook(card.State.Location))
                 .ToArray();
             if (owned.Length == 0)
             {
@@ -496,6 +500,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 case BorrowedActionPool.OwnedFaceUpSkills:
                     declaration = BorrowedPrimaryActionDeclaration.FromFaceUpSkills();
                     break;
+                // Milestone 9.30c. A spell is cast by name (`cast-spell@1`), never chosen as a card,
+                // so this selection offers no spell and no facedown book identity reaches a chooser.
+                case BorrowedActionPool.OwnedSpellbookSpells:
+                    return Array.Empty<CardInstance>();
                 default:
                     return Array.Empty<CardInstance>();
             }

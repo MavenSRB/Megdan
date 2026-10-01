@@ -101,6 +101,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RegisteredHandlerTypes(), Is.SupersetOf(razzle));
         }
 
+        /// <summary>
+        /// Milestone 9.30c. The spellbook's three handler types - a spell's naming step, the cast and the
+        /// refill - stay unregistered until Gydion's dealing (9.30i), so the registered walk above does
+        /// not reach them yet; they are asked both rules here, as 9.21d-9.21g asked Razzle's.
+        /// </summary>
+        [Test]
+        public void TheSpellbooksThreeHandlerTypes_KeepBothRules_WhileUnregistered()
+        {
+            var spellbook = GuardsDigital.Core.Cards.Synthetic.SyntheticSpellbook.CastingHandlers()
+                .Select(handler => handler.GetType())
+                .Where(type => type.DeclaringType == typeof(SyntheticSpellbookCapabilities))
+                .Distinct()
+                .ToArray();
+            Assert.That(spellbook, Has.Length.EqualTo(3));
+            Assert.That(RegisteredHandlerTypes().Intersect(spellbook), Is.Empty,
+                "registered only with the hero whose dealt faces cast (9.30i)");
+            Assert.That(FindUnsharedDerivations(spellbook), Is.Empty);
+            Assert.That(FindPerformingProbes(spellbook), Is.Empty);
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {
@@ -112,7 +132,11 @@ namespace GuardsDigital.Tests.EditMode
             // (`IUnitSpawnAuthority.CommitValidatedHeroBodySpawn`) mutates the board.
             // Milestone 9.21e moves it by one: p.19's Remove of named bodies of a many-bodied hero
             // (`IUnitSpawnAuthority.CommitValidatedHeroBodyRemoval`) mutates the board.
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(22),
+            // Milestone 9.30c moves it by two: a cast removes a spell from its book
+            // (`CardLifecycleAuthority.TryRemoveFromSpellbookFaceup`) and a refill returns it
+            // (`CardLifecycleAuthority.TryReturnToSpellbook`); asking whether a spell could be cast or
+            // the book refilled must never move a spell.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(24),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -594,7 +618,13 @@ namespace GuardsDigital.Tests.EditMode
             ILConformanceScanner.Method(typeof(SwapOperation), nameof(SwapOperation.Swap)),
             ILConformanceScanner.Method(
                 typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceToken)),
-            ILConformanceScanner.Method(typeof(RemoveOperation), nameof(RemoveOperation.Remove))
+            ILConformanceScanner.Method(typeof(RemoveOperation), nameof(RemoveOperation.Remove)),
+            ILConformanceScanner.Method(
+                typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
+                nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryRemoveFromSpellbookFaceup)),
+            ILConformanceScanner.Method(
+                typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
+                nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryReturnToSpellbook))
         };
 
         private static MethodInfo ResultFactory(string name) =>

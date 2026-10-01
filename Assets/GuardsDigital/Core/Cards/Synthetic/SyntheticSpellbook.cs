@@ -12,7 +12,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
     /// not a verified card or a rule-source interpretation; they print no action yet, because casting
     /// is a later milestone's.
     /// </summary>
-    public static class SyntheticSpellbook
+    public static partial class SyntheticSpellbook
     {
         public const string ContentRevision = "9.30b-rev-1";
 
