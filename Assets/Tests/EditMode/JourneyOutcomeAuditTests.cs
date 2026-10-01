@@ -22,8 +22,10 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class JourneyOutcomeAuditTests
     {
+        // Milestone 9.30j. PickSpellFace( is Gydion's journeys' answer to a spell choice - a click on the
+        // spell's face in the decision window - so it is held to the same floor as every other answer.
         private static readonly Regex Answer = new Regex(
-            @"\b(Pick|PickWhere|PickSpace|Space|May|ClickEffectControl|ClickEffectAnswer|SubmitEffectChoice\w*|Bullet|TakeBullets|AnswerTheFreeDirection|ConfirmIfStillStanding|PickMinions|AnswerTheHandChoice\w*)\s*\(");
+            @"\b(Pick|PickWhere|PickSpace|PickSpellFace|Space|May|ClickEffectControl|ClickEffectAnswer|SubmitEffectChoice\w*|Bullet|TakeBullets|AnswerTheFreeDirection|ConfirmIfStillStanding|PickMinions|AnswerTheHandChoice\w*)\s*\(");
 
         // Milestone 9.21k. BodySpaces( and Bodies( are Razzle's journeys' reading of where each of his
         // bodies stands - a board read, as SpaceOf( is for a hero on one space.

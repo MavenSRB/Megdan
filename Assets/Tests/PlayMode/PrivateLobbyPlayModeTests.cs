@@ -2281,6 +2281,54 @@ namespace GuardsDigital.Tests.PlayMode
                 "THE PICK IS TAKEN: the twenty-ninth hero is no longer on offer to anybody.");
         }
 
+        /// <summary>
+        /// Milestone 9.30j. The hero picker row with Gydion in it, captured for the user's review at
+        /// 2560x1440 in <c>tmp/9-30j-gydion/</c>: the unfiltered row, then his button hovered with his
+        /// pick card drawn. His starting hand and a cast in progress are
+        /// <c>GydionDealingPlayModeTests</c>' captures.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator GydionsPickerRow_IsCapturedAt2560x1440()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            try
+            {
+                UiPlayer.SetPlayerViewport(2560, 1440, "9.30j picker row");
+                yield return LoadTheLobby();
+                var driver = Driver();
+                var wire = SeatEveryone(out var seats);
+                wire.Session.Composition = Root();
+                ReadyEverySeat(wire, seats);
+                var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+                driver.Presenter.AttachClient(wire.Client(ordinal));
+                yield return null;
+                yield return null;
+
+                var his = HeroOptions(driver).Single(button =>
+                    ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-gydion");
+                UiPlayer.EnsureVisible(his);
+                yield return null;
+                Assert.That(UiPlayer.IsShown(his), Is.True, "His button is in the picker row.");
+                yield return UiPlayer.CaptureScreen("tmp/9-30j-gydion/picker-row-2560x1440.png");
+
+                if (his.parent != null)
+                {
+                    UiPlayer.PointAt(his.parent);
+                }
+
+                UiPlayer.PointAt(his);
+                yield return null;
+                Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                    "Hovering his button draws his pick card.");
+                yield return UiPlayer.CaptureScreen("tmp/9-30j-gydion/picker-hover-2560x1440.png");
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(restoreWidth, restoreHeight, "9.30j restore the viewport");
+            }
+        }
+
         [UnityTest]
         public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
         {

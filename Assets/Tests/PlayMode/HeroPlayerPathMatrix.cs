@@ -248,6 +248,39 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         DifferentBodyRepeatPerformer,
 
+        /// <summary>
+        /// Milestone 9.30j. A spell from a hero's spellbook, CAST rather than committed (Gydion's
+        /// twenty-two, 9.30c): a front of his names it - by its face in the decision window, or as the
+        /// one spell the card prints - it leaves the book faceup, and its printed primary is then
+        /// performed by the caster as his own action, through the borrow path.
+        ///
+        /// <para>It stands in a spell's row where <see cref="CommitAndReveal"/> and
+        /// <see cref="PrimarySkillControl"/> stand in a front's: a spell is never put in a turn slot,
+        /// never revealed at p.7, and its Skill is started by the cast rather than from a control of its
+        /// own, so a row claiming either would name a journey for an input no player is shown. Its
+        /// Attack target and its walk are the ordinary shapes and stay derived as they are for any card.
+        /// Read off <see cref="CardProgressionProfile.IsSpell"/>; no earlier hero's content declares a
+        /// spell, so every earlier row is byte-identical.</para>
+        /// </summary>
+        SpellCastFromTheBook,
+
+        /// <summary>
+        /// Milestone 9.30j. A choice whose every option names a spell (9.30h, approved mockup A):
+        /// each option is drawn as that spell's FACE in the decision window - a removed one greyed
+        /// "REMOVED", a counting one captioned with the value the cast will use - and the player
+        /// clicks the face. Gydion's "Choose and cast one spell", Wish's "Cast any spell" and Find
+        /// Familiar's "remove up to three other spell cards" (with its CONFIRM, the ordinary
+        /// <see cref="ConfirmOrDecline"/> its "up to" declares).
+        ///
+        /// <para>It replaces <see cref="ModalBulletChoice"/> on such a choice rather than joining it,
+        /// for the reason <see cref="ActionTextPlacementChoice"/> does: the player is shown one
+        /// control kind, faces, not worded bullets. Read off the options themselves
+        /// (<c>SyntheticSpellbookCapabilities.TryReadSpellArm</c>, the reading the window draws by), so
+        /// a choice mixing a spell with a worded option - Prepare Spells' "Add all spell cards" or "Cast
+        /// Wish instead" - stays p.10's modal. No earlier hero's options name a spell.</para>
+        /// </summary>
+        SpellFaceChoice,
+
 
         // -------------------------------------------------------------------------------------
         // Component shapes. These belong to the hero rather than to any one face, and the gate
@@ -1489,7 +1522,58 @@ namespace GuardsDigital.Tests.PlayMode
                 ["razzle-spawn-body"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["razzle-remove-bodies"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["razzle-other-body"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
-                ["razzle-retreat-line-end"] = Array.Empty<PlayerInteractionShape>()
+                ["razzle-retreat-line-end"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 9.30j. Gydion the Archwizard. Each spell's naming step is read off the
+                // node (NamesASpellOfThisSet) and every spell choice off its options
+                // (SpellFaceChoice); these are his capabilities by id.
+                //
+                // THE CAST AND FIND FAMILIAR'S REMOVAL TURN A CARD FACE UP FOR THE WHOLE TABLE. "As the
+                // spell is cast, remove it from the spellbook faceup": the spell lands in the removed
+                // pile every seat's projection names, which is what milestone 8.40k's reading is - a
+                // card turned face up by card text, mid-resolution, that a journey must read on a seat
+                // that did not choose it (the defender's window naming the spell, the other seat's
+                // drawer). Find Familiar's removal is the same reading without the cast.
+                ["cast-spell"] = new[] { PlayerInteractionShape.PublicCardRevealReading },
+                ["remove-spell-faceup"] = new[] { PlayerInteractionShape.PublicCardRevealReading },
+
+                // The refill asks nobody anything: every removed spell returns facedown and each one's
+                // Active effects end (designer, 2026-08-22). The count is read by its journey.
+                ["refill-spellbook"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Midas' Touch's "for every two other spell cards removed": a number published for the
+                // gain beside it, the grammar `presence-count@1` carries.
+                ["count-other-removed-spells"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Dimension Door's "Place yourself into a space at maximum radius": a space clicked on
+                // the board, the ring Misa's `synthetic-place-at-maximum-range` offers on the Radius
+                // channel. Which spaces is the count's business, never the input's.
+                ["synthetic-place-at-maximum-radius"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // The Familiar, Widget's Pyro exactly: where the one token stands is a reading, and
+                // placing it from the supply is a space clicked inside his printed radius.
+                ["gydion-familiar-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["gydion-place-familiar-in-radius"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Wish's count and claim ask nobody anything - the same classification
+                // `claim-solo-victory` carries: the plaque's "n/3" and the victory screen are what the
+                // Wish journeys read.
+                ["advance-team-victory-tally"] = Array.Empty<PlayerInteractionShape>(),
+                ["claim-team-victory"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Energy Drain's "Your team regains 1 spent Life counter": a consequence, read on the
+                // scoreboard (GY-Q11).
+                ["regain-spent-life-counter"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Create Undead, the printed-RANGE twin of Dodger's two Respawns. Its destination is a
+                // space clicked on the board. Its SECOND question (RULING 48's minion type) opens only
+                // at a point Tide of Darkness grants, and that grant is Dodger's own Ultimate, read
+                // "while you are performing an action" for her alone (SpawnPointOverlay): the only
+                // content naming this Range twin is Gydion's spell, cast by Gydion, so no player who
+                // meets this declaration is ever asked the type. A later hero carrying that overlay and
+                // naming this id would owe the type question here, as Dodger's own two ids do.
+                ["synthetic-respawn-friendly-minion-in-range"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1538,9 +1622,15 @@ namespace GuardsDigital.Tests.PlayMode
             // Ultimate has none: p.16 turns it faceup in the hero's area and its rule fires from
             // there, so requiring a commitment journey of it would be requiring a journey for
             // something the rulebook does not ask anybody to do.
+            //
+            // Milestone 9.30j. A spell has an action and is still never committed: a front of its
+            // owner's casts it from the book, so its row owes the cast instead.
+            var isSpell = definition.Progression.IsSpell;
             if (definition.ActionDefinitions.Count > 0)
             {
-                shapes.Add(PlayerInteractionShape.CommitAndReveal);
+                shapes.Add(isSpell
+                    ? PlayerInteractionShape.SpellCastFromTheBook
+                    : PlayerInteractionShape.CommitAndReveal);
             }
 
             if (definition.Progression.IsUltimate)
@@ -1632,13 +1722,14 @@ namespace GuardsDigital.Tests.PlayMode
 
             foreach (var action in definition.ActionDefinitions)
             {
-                AddActionShapes(action, shapes);
+                AddActionShapes(action, shapes, isSpell);
             }
 
             return shapes.ToArray();
         }
 
-        private void AddActionShapes(ActionDefinition action, ISet<PlayerInteractionShape> shapes)
+        private void AddActionShapes(
+            ActionDefinition action, ISet<PlayerInteractionShape> shapes, bool isSpell = false)
         {
             var isPrimary = action.Origin == ActionDefinitionOrigin.PrintedPrimary;
             var isSecondary = action.Origin == ActionDefinitionOrigin.PrintedSecondary;
@@ -1650,7 +1741,9 @@ namespace GuardsDigital.Tests.PlayMode
                         ? PlayerInteractionShape.RangedAttackTarget
                         : PlayerInteractionShape.AdjacentAttackTarget);
                     break;
-                case ActionKind.Skill when isPrimary:
+                // Milestone 9.30j. A spell's Skill is started by its cast, never from a control of
+                // its own; SpellCastFromTheBook stands for it.
+                case ActionKind.Skill when isPrimary && !isSpell:
                     shapes.Add(PlayerInteractionShape.PrimarySkillControl);
                     break;
                 case ActionKind.Movement when isPrimary:
@@ -1810,6 +1903,22 @@ namespace GuardsDigital.Tests.PlayMode
                         StringComparison.Ordinal)));
         }
 
+        /// <summary>
+        /// Milestone 9.30j. Whether every option of this <c>Choose</c> is a spell arm - a cast or a
+        /// faceup removal naming one spell - which is exactly what the decision window draws as spell
+        /// faces (<c>SpellbookPresentation.OptionFace</c> reads the same arms).
+        /// </summary>
+        private bool ChoosesSpellsByTheirFaces(EffectNodeDefinition node, EffectDefinition definition) =>
+            node.ChildNodeIds.Count > 0 &&
+            node.ChildNodeIds.All(childId => SyntheticSpellbookCapabilities.TryReadSpellArm(
+                new[] { definition }, childId, AllDefinitions, out _, out _));
+
+        /// <summary>Milestone 9.30j. Whether the node is the naming step of one of this set's spells.</summary>
+        private bool NamesASpellOfThisSet(EffectNodeDefinition node) =>
+            node.Capability.IsDefined &&
+            AllDefinitions.Any(candidate => candidate.Progression.IsSpell &&
+                SyntheticSpellbookCapabilities.InBookV1(candidate.Id).Equals(node.Capability));
+
         private void AddNodeShapes(
             EffectNodeDefinition node,
             EffectDefinition definition,
@@ -1866,12 +1975,28 @@ namespace GuardsDigital.Tests.PlayMode
             // put a second control on the row beside `ActionTextPlacementChoice` when the player is
             // shown one, which is the correction milestone 8.20b made for a push distance. A Choose
             // whose branches are anything else is unchanged, so every Brogan row stays byte-identical.
+            //
+            // Milestone 9.30j narrows it again by what the branches ARE: a choice whose every option
+            // names a spell is drawn as spell faces, which is SpellFaceChoice and not a second control
+            // beside it. A Choose mixing a spell with a worded option keeps the modal.
             if (node.Kind == EffectNodeKind.Choose && !ChoosesAnActionTextPlacement(node, definition))
             {
-                shapes.Add(PlayerInteractionShape.ModalBulletChoice);
+                shapes.Add(ChoosesSpellsByTheirFaces(node, definition)
+                    ? PlayerInteractionShape.SpellFaceChoice
+                    : PlayerInteractionShape.ModalBulletChoice);
             }
 
             if (node.Kind != EffectNodeKind.Capability)
+            {
+                return;
+            }
+
+            // Milestone 9.30j. A spell's naming step (`<spell>-in-book@1`, one per spell, the rule
+            // stated once as SyntheticSpellbookCapabilities.InBookV1) publishes the book owner's
+            // instance of the spell it names and asks nobody anything: the choosing is the enclosing
+            // Choose's, and a card naming one spell names it outright. Read off the set's own spell
+            // definitions rather than off the id's spelling.
+            if (NamesASpellOfThisSet(node))
             {
                 return;
             }
