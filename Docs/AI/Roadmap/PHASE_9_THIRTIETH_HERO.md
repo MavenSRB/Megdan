@@ -52,9 +52,11 @@ Outcome: a card chosen from a teammate's discard pile as a colour value, then Ta
 Completed 2026-10-01. Takahide's five Blue and five Green faces are composed (`TakahideBlueGreenFaces`, unregistered until 9.32h) on one new capability, `choose-discarded-card@1` (a card in a named hero's discard pile, chosen by Takahide, its colour published; a facedown card is no choice), and one new optional filter, `attackCardsOnly` on `synthetic-discard-chosen-card` (`CardCharacteristicCriteria.PrintedPrimaryKind`). Each face has a staged outcome test; TK-Q4 greys a face with no teammate in reach and keeps Hold. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32e".
 Historical evidence: [9.32e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932e-blue-and-green-faces-evidence).
 
-### [ ] 9.32f Ready for War and the six-card hand
+### [x] 9.32f Ready for War and the six-card hand
 
 Outcome: an Ultimate whose text is a one-time card movement performed at its unlock: the silver card to the deck and the two deck golds into the hand (TK-Q5); every five-card assumption found and widened (lesson 31); bots commit and level from six cards. Closing check: progression tests failing on the base, including an unlock during simultaneous leveling (8.35u) and a gold swap that then finds no deck gold; a snapshot round trip of the six-card state. T2. Needs TK-Q5; after 9.32a.
+Completed 2026-10-02. Ready for War is composed (`TakahideUltimate`, unregistered until 9.32h) on a new Ultimate shape, `UltimateRuleDefinition.UnlockCardMovementAbility` with a typed `UltimateUnlockCardMovement`, which p.15's level-up performs once when it unlocks the card: his silver card from hand to deck and up to two deck golds into the hand (TK-Q5). The new shared field moved all twenty-nine identity pins, isolated before re-pinning. Lesson 31's census found no five-card limit in Core, Application, Network or the bots; the HUD hand layout's fixed five is 9.32g's. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32f".
+Historical evidence: [9.32f completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932f-ready-for-war-evidence).
 
 ### [ ] 9.32g Present Takahide
 

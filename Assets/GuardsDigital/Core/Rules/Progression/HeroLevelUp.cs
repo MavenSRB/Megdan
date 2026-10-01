@@ -653,6 +653,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     $"{unlock.RejectionReason}.");
             }
 
+            PerformUnlockCardMovement(heroId, unlock.Ultimate.Rule.UnlockCardMovement);
             outcomes.Add(HeroLevelUpOutcome.UltimateUnlocked(heroId, level, ultimateCard.Id));
             resolution = SystemTransitionStepResolution.ItemCompleted(
                 new HeroLevelUpItem(heroId, level, HeroLevelUpItemKind.Ultimate).ToItemId());
@@ -664,6 +665,52 @@ namespace GuardsDigital.Core.Rules.Progression
         /// 8.35u's simultaneity. It derives options and nothing else, so building the whole set costs
         /// only reads.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.32f. The instruction an Ultimate like Ready for War prints, performed once as part
+        /// of its unlock (TK-Q5): the owner's hand card of the returned colour goes to the deck (p.15's
+        /// Return to Deck), and up to the printed count of deck cards of the taken colour come into the
+        /// hand. p.8 retrieves every card before leveling, so the named cards are where the sentence
+        /// says. Takahide always holds exactly one gold outside his deck, so "two gold cards" are the
+        /// two in it; were there more, the order is the cards' stable ids.
+        /// </summary>
+        private void PerformUnlockCardMovement(HeroId heroId, UltimateUnlockCardMovement movement)
+        {
+            if (movement == null)
+            {
+                return;
+            }
+
+            CardColor ColorOf(CardInstance card) =>
+                definitions.FirstOrDefault(definition => definition != null &&
+                    definition.Reference.Equals(card.DefinitionReference))?.Progression.Color ?? CardColor.None;
+
+            var owned = instances
+                .Where(card => card != null && card.OwnerId.Equals(heroId))
+                .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                .ToArray();
+            foreach (var returned in owned.Where(card =>
+                card.State.Location == CardLocation.Hand && ColorOf(card) == movement.ReturnedToDeckColor))
+            {
+                if (!CardLifecycleAuthority.TryReturnToDeck(returned))
+                {
+                    throw new InvalidOperationException(
+                        $"Hero '{heroId}' could not return '{returned.Id}' to the deck at its Ultimate's unlock.");
+                }
+            }
+
+            foreach (var taken in owned
+                .Where(card => card.State.Location == CardLocation.Deck &&
+                    ColorOf(card) == movement.TakenFromDeckColor)
+                .Take(movement.TakenFromDeckCount))
+            {
+                if (!CardLifecycleAuthority.TryTakeFromDeckIntoHand(taken))
+                {
+                    throw new InvalidOperationException(
+                        $"Hero '{heroId}' could not take '{taken.Id}' into the hand at its Ultimate's unlock.");
+                }
+            }
+        }
+
         private SystemTransitionOpenItem OpenUpgradeItem(HeroId heroId, HeroLevel level)
         {
             var options = BuildUpgradeOptions(heroId);

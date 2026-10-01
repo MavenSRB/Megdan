@@ -283,9 +283,11 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null,
             AfterPushTrigger afterPush = default,
             GrantedTargetExclusion grantedTargetExclusion = GrantedTargetExclusion.None,
-            AfterTokensPlacedTrigger afterTokensPlaced = default)
+            AfterTokensPlacedTrigger afterTokensPlaced = default,
+            UltimateUnlockCardMovement unlockCardMovement = null)
         {
             AfterTokensPlaced = afterTokensPlaced;
+            UnlockCardMovement = unlockCardMovement;
             GrantedTargetExclusion = grantedTargetExclusion;
             BeforeAction = beforeAction;
             AfterPush = afterPush;
@@ -350,6 +352,18 @@ namespace GuardsDigital.Core.Cards
             // is the whole of the one that declares it. An Ultimate that also modified a value or ran
             // an effect would be two abilities on a card that prints one sentence, and the reader would
             // have to decide which of them "the ability" meant.
+            // Milestone 9.32f. An instruction performed once at the unlock is the whole of the card that
+            // prints it (Ready for War), so it declares nothing else: one Ultimate, one sentence.
+            if (unlockCardMovement != null &&
+                (Modifications.Count > 0 || triggeredEffect.HasValue || beforeAction.IsDeclared ||
+                    afterPush.IsDeclared || afterTokensPlaced.IsDeclared || minionBattleRule != null ||
+                    textComposition.IsAwaited))
+            {
+                throw new ArgumentException(
+                    "An Ultimate that declares an unlock card movement declares nothing else.",
+                    nameof(unlockCardMovement));
+            }
+
             if (minionBattleRule != null &&
                 (Modifications.Count > 0 || triggeredEffect.HasValue || beforeAction.IsDeclared ||
                     afterPush.IsDeclared || afterTokensPlaced.IsDeclared ||
@@ -623,6 +637,18 @@ namespace GuardsDigital.Core.Cards
                 null, null, UltimateTriggerCondition.None, default, minionBattleRule);
         }
 
+        /// <summary>
+        /// Milestone 9.32f. An Ultimate whose text is a card movement performed once, at its unlock
+        /// (TK-Q5), rather than a permanent ability: nothing applies while it is unlocked, and the
+        /// level-up that unlocks it performs <paramref name="movement"/>.
+        /// </summary>
+        public static UltimateRuleDefinition UnlockCardMovementAbility(
+            string ruleId, string ruleKind, UltimateUnlockCardMovement movement) =>
+            new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, Array.Empty<PrintedValueDefinition>(),
+                unlockCardMovement: movement ?? throw new ArgumentNullException(
+                    nameof(movement), "The movement is this Ultimate's whole printed content."));
+
         public static UltimateRuleDefinition BeforeActionAbility(
             string ruleId,
             string ruleKind,
@@ -768,6 +794,13 @@ namespace GuardsDigital.Core.Cards
         /// Ultimate that declares none - which is every one in this build before Brogan's.
         /// </summary>
         public GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration MinionBattleRule { get; }
+
+        /// <summary>
+        /// Milestone 9.32f. The card movement p.15's level-up performs once when it unlocks this
+        /// Ultimate, or <c>null</c> on every Ultimate that prints a permanent ability instead - every
+        /// one before Takahide's Ready for War. See <see cref="UltimateUnlockCardMovement"/>.
+        /// </summary>
+        public UltimateUnlockCardMovement UnlockCardMovement { get; }
 
         /// <summary>
         /// Stable effect-frame identity for a permanent ability. An Ultimate is not an action, but the

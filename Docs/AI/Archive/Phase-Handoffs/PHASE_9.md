@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32f Ready for War evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32f | Ready for War composed as an Ultimate whose text is a card movement the level-up performs once at its unlock: Bushido to the deck and both deck golds into the hand, leaving a six-card hand that commits and restores; all twenty-nine identity pins moved for the shared field, isolated first. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932f-ready-for-war-and-the-six-card-hand). | `milestone/9.32f` |
+
 ## Milestone 9.35 Up-to line move evidence
 
 | Milestone | Outcome and definition | Commit |

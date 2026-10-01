@@ -131,6 +131,13 @@ Expected compatibility moves (9.32's survey): CardStateFacts already carries loc
 - Calculated Risk, Tactical Gambit and the Greens: every friendly hero in reach is offered (the discard is theirs to decline, and the check reads the pile whatever they decided). The discard is a `May` on the teammate's seat; `owned-card-present@1` reads their pile after it, so a teammate who declines with a card already there satisfies the check, a facedown card counts (lesson 29), and an empty pile does nothing (RULING 53). The moves are card-text `UpTo` moves (`synthetic-direct-move@3`), the teammate's with their own chooser (RO-Q2) and Takahide's own, `movesThroughObstacles` for "ignoring obstacles" (never ending on one, p.18). A teammate walled in is still offered a move of 0 (W5), the shape every "up to" move in the build has.
 - Pledge of Allegiance and Loyal Retainer: two `gain-resource@1` grants (Takahide and the teammate) and Takahide's optional `retrieve-card@1` of his own discarded card.
 
+**Built by 9.32f** (`TakahideUltimate`, `UltimateUnlockCardMovement`; registered with the dealing at 9.32h):
+
+- Ready for War is `UltimateRuleDefinition.UnlockCardMovementAbility`: its whole content is a typed movement (silver from hand to deck; up to two golds from deck to hand), exclusive with every permanent-ability shape. `HeroLevelUpStepRules` performs it inside the Ultimate item that p.16's unlock resolves, so it happens once, whether or not he is on the board, beside any other hero's open Upgrade step (8.35u), and never again (TK-Q5). The reminder text composes to nothing.
+- Exactly one gold is outside his deck whenever the unlock can happen, so the two taken are the two there; the stable-id order would only decide a case his cards cannot reach. After the unlock Bushido stays in the deck and a gold's swap finds no deck gold and does nothing (9.32d's `IfAble`).
+- `UltimateRuleDefinition` gained a public property, so all twenty-nine identity pins moved with their revisions unchanged; with the property excluded from the walk every pin measured byte-identical first (`VerifiedContentIdentityTests`' 9.32f note).
+- Lesson 31's census: no five-card limit in Core, Application (the bots score offered commands), Network (hand rows are lists) or setup beyond the five-card starting hand. Presentation's `OrdinaryHandCardCount` (the HUD hand stack) is 9.32g's; the level-up window's "show all 5 cards" never meets six, because the unlock ends leveling.
+
 ## Settled questions
 
 On 2026-10-01 the user settled all five one by one, each shown with its card faces, and chose (A), the recommendation, every time. Each names the block that builds it.
