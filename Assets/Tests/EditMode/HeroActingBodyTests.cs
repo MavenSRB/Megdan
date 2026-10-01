@@ -318,7 +318,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NetworkCommandCodec.TryDecode(NetworkCommandCodec.Encode(command), out var decoded), Is.True);
             Assert.That(decoded, Is.EqualTo(command));
             Assert.That(decoded.HeroBody, Is.EqualTo(2));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(31));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(32));
         }
 
         [Test]

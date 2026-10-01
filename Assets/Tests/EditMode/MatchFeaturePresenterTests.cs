@@ -1192,6 +1192,31 @@ namespace GuardsDigital.Tests.EditMode
                         1,
                         subjectHeroId: hero),
                     "DISCARDED", false),
+                // Milestone 9.30h minted the THIRTY-SIXTH to THIRTY-EIGHTH kinds - a spellbook's cast,
+                // faceup removal and refill - and sweeps this walk in the same change. A row whose
+                // spell the seat cannot name says "A SPELL"; a refill names a count and no spell.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.SpellCast,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "CAST A SPELL", false),
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.SpellRemovedFaceup,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "REMOVED A SPELL FROM THE SPELLBOOK", false),
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.SpellbookRefilled,
+                        1,
+                        1,
+                        subjectHeroId: hero,
+                        amount: 5),
+                    "RETURNED 5 SPELLS TO THE SPELLBOOK", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

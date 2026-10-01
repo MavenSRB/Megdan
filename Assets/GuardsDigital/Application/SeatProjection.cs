@@ -289,12 +289,27 @@ namespace GuardsDigital.Application
     /// </remarks>
     public sealed class SeatHandSummary
     {
-        internal SeatHandSummary(HeroId heroId, int handCount, int deckCount, int spellbookCount)
+        internal SeatHandSummary(
+            HeroId heroId,
+            int handCount,
+            int deckCount,
+            int spellbookCount,
+            IEnumerable<SpellbookBackCount> spellbookBacks = null)
         {
             HeroId = heroId;
             HandCount = handCount;
             DeckCount = deckCount;
             SpellbookCount = spellbookCount;
+            SpellbookBacks = Array.AsReadOnly((spellbookBacks ?? Enumerable.Empty<SpellbookBackCount>())
+                .Where(back => back.Count > 0)
+                .OrderBy(back => back.Back)
+                .ToArray());
+            if (SpellbookBacks.Sum(back => back.Count) != spellbookCount &&
+                SpellbookBacks.Count > 0)
+            {
+                throw new ArgumentException(
+                    "The book's backs count the same spells the book's size does.", nameof(spellbookBacks));
+            }
         }
 
         public HeroId HeroId { get; }
@@ -310,28 +325,116 @@ namespace GuardsDigital.Application
         public int SpellbookCount { get; }
 
         /// <summary>
+        /// Milestone 9.30h. The same facedown book counted by the BACK each spell shows - what every
+        /// seat at the table sees of it (GY-Q4: "every seat sees tier backs, counts and the faceup
+        /// pile"; lesson 25). One row per back the book holds, in back order, summing to
+        /// <see cref="SpellbookCount"/>; empty for a hero who owns no book or whose book is empty.
+        /// A back names no spell: see <see cref="SpellbookBackCount.BackOf"/> for why the three basic
+        /// spells and the Tier I spells are one back.
+        /// </summary>
+        public IReadOnlyList<SpellbookBackCount> SpellbookBacks { get; }
+
+        /// <summary>
         /// Milestone 9.30b. Every hero's summary, in participant order, derived once for the
         /// Director's projection and handed to every seat unchanged.
         /// </summary>
         internal static IReadOnlyList<SeatHandSummary> Derive(
-            MatchParticipants participants, IReadOnlyList<CardInstance> cards)
+            MatchParticipants participants,
+            IReadOnlyList<CardInstance> cards,
+            IReadOnlyList<CardDefinition> definitions = null)
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             if (cards == null) throw new ArgumentNullException(nameof(cards));
 
+            var byReference = (definitions ?? Array.Empty<CardDefinition>())
+                .GroupBy(definition => definition.Reference)
+                .ToDictionary(group => group.Key, group => group.First());
             return Array.AsReadOnly(participants.Heroes
-                .Select(hero => new SeatHandSummary(
-                    hero.Id,
-                    // Milestone 8.40f. The count a printed hand-size narrowing reads is THIS count,
-                    // asked of one query rather than written twice, so a player can check a greyed
-                    // candidate against the number their own screen already shows them.
-                    HeroHandQuery.Count(cards, hero.Id),
-                    cards.Count(card => card.OwnerId.Equals(hero.Id) &&
-                        card.State.Location == CardLocation.Deck),
-                    cards.Count(card => card.OwnerId.Equals(hero.Id) &&
-                        card.State.Location == CardLocation.Spellbook)))
+                .Select(hero =>
+                {
+                    var book = cards
+                        .Where(card => card.OwnerId.Equals(hero.Id) &&
+                            card.State.Location == CardLocation.Spellbook)
+                        .ToArray();
+                    return new SeatHandSummary(
+                        hero.Id,
+                        // Milestone 8.40f. The count a printed hand-size narrowing reads is THIS count,
+                        // asked of one query rather than written twice, so a player can check a greyed
+                        // candidate against the number their own screen already shows them.
+                        HeroHandQuery.Count(cards, hero.Id),
+                        cards.Count(card => card.OwnerId.Equals(hero.Id) &&
+                            card.State.Location == CardLocation.Deck),
+                        book.Length,
+                        // Milestone 9.30h. Counted only where every book spell's definition is known,
+                        // which is every authoritative projection; a caller without definitions gets
+                        // the size alone, as before.
+                        book.All(card => byReference.ContainsKey(card.DefinitionReference))
+                            ? book
+                                .GroupBy(card => SpellbookBackCount.BackOf(
+                                    byReference[card.DefinitionReference].Progression))
+                                .Select(group => new SpellbookBackCount(group.Key, group.Count()))
+                            : null);
+                })
                 .ToArray());
         }
+    }
+
+    /// <summary>
+    /// Milestone 9.30h. How many facedown spells of one hero's book show one back.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>A back is what the table sees of a facedown spell.</b> The spell backs print the
+    /// spell's Tier, so a seat that cannot read a book's faces still sees how many Tier II spells it
+    /// holds - which is why approved mockup C draws the other seats' book as four stacks of backs
+    /// with counts, and why this count is projected to every seat rather than derived by a client
+    /// from a printed set it does not hold.</para>
+    /// <para><b>Four backs, not five.</b> Verified 9.30h on the Tabletopia corpus: the three basic
+    /// (Gold) spells' backs are byte-identical to the three Tier I spells' backs
+    /// (<c>spells-tt__7721627__back.png</c> and five more), so a basic spell and a Tier I spell are
+    /// one back at the table. Counting them apart would publish what no player can see; they are
+    /// counted together under <see cref="CardTier.I"/>. Tier II, Tier III and Wish's Tier IV lamp are
+    /// each their own back.</para>
+    /// </remarks>
+    public readonly struct SpellbookBackCount : IEquatable<SpellbookBackCount>
+    {
+        public SpellbookBackCount(CardTier back, int count)
+        {
+            if (back == CardTier.None || !Enum.IsDefined(typeof(CardTier), back))
+            {
+                throw new ArgumentOutOfRangeException(nameof(back), back, "A spell back is Tier I to IV.");
+            }
+
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "A count is never negative.");
+            }
+
+            Back = back;
+            Count = count;
+        }
+
+        /// <summary>The back: <see cref="CardTier.I"/> (basic and Tier I spells) to <see cref="CardTier.IV"/>.</summary>
+        public CardTier Back { get; }
+
+        public int Count { get; }
+
+        /// <summary>
+        /// The back a spell definition shows: its Tier, and the Tier I back for a basic spell, which
+        /// prints none (see the type's remarks).
+        /// </summary>
+        public static CardTier BackOf(CardProgressionProfile progression)
+        {
+            if (progression == null) throw new ArgumentNullException(nameof(progression));
+            return progression.Tier == CardTier.None ? CardTier.I : progression.Tier;
+        }
+
+        public bool Equals(SpellbookBackCount other) => Back == other.Back && Count == other.Count;
+
+        public override bool Equals(object obj) => obj is SpellbookBackCount other && Equals(other);
+
+        public override int GetHashCode() => ((int)Back * 397) ^ Count;
+
+        public override string ToString() => Back + "x" + Count;
     }
 
     /// <summary>

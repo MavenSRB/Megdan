@@ -559,6 +559,33 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
+                // Milestone 9.30h. A spellbook's three public facts. A cast and a removal name the
+                // spell through the seat's own projection, which holds it while it lies faceup in the
+                // open removed pile; once a refill turns it facedown again, a seat that is not the
+                // book's owner reads "A SPELL" - the row never names a spell back in the book.
+                case MatchLogEntryKind.SpellCast:
+                {
+                    var spell = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} CAST {spell ?? "A SPELL"}"));
+                    return;
+                }
+
+                case MatchLogEntryKind.SpellRemovedFaceup:
+                {
+                    var spell = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} REMOVED {spell ?? "A SPELL"} " +
+                        "FROM THE SPELLBOOK"));
+                    return;
+                }
+
+                case MatchLogEntryKind.SpellbookRefilled:
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} RETURNED {entry.Amount} " +
+                        (entry.Amount == 1 ? "SPELL" : "SPELLS") + " TO THE SPELLBOOK"));
+                    return;
+
                 // Milestone 8.51. Rulebook p.12's Hold by the seat's own command. The card is a
                 // resolved turn card every seat sees, so it resolves by name wherever the
                 // projection can name it, and the line says outright that no action was taken -

@@ -731,6 +731,96 @@ namespace GuardsDigital.Core.Effects
         public override string ToString() => OwnerHeroId + ":" + CardInstanceId;
     }
 
+    /// <summary>Milestone 9.30h. What card text did to a hero's spellbook - see <see cref="SpellbookChange"/>.</summary>
+    public enum SpellbookChangeKind
+    {
+        None = 0,
+
+        /// <summary>A spell was cast: removed from the book faceup as it is cast (Prepare Spells).</summary>
+        Cast = 1,
+
+        /// <summary>A spell was removed from the book faceup WITHOUT being cast (Find Familiar).</summary>
+        RemovedFaceup = 2,
+
+        /// <summary>Removed spells were added back to the book, facedown (Prepare Spells' refill).</summary>
+        Refilled = 3
+    }
+
+    /// <summary>
+    /// Milestone 9.30h. A change card text made to a hero's spellbook, reported by the spellbook
+    /// handlers on the terms <see cref="DiscardedCard"/> set at 9.19, so the seat-public log can say
+    /// it happened: a cast, a faceup removal, a refill's count.
+    ///
+    /// <para><b>Only a spell that is FACEUP when the change is made is named.</b> A cast and a
+    /// removal leave the spell faceup in the open removed pile, so naming it publishes nothing a seat
+    /// cannot already read. A refill turns spells FACEDOWN, so it names none - only how many returned
+    /// (lesson 25: a facedown spell reaches its owner's seat alone).</para>
+    /// </summary>
+    public readonly struct SpellbookChange : IEquatable<SpellbookChange>
+    {
+        private SpellbookChange(
+            SpellbookChangeKind kind, HeroId ownerHeroId, CardInstanceId spellCardInstanceId, int count)
+        {
+            if (!ownerHeroId.IsDefined)
+            {
+                throw new ArgumentException("A spellbook change names the hero whose book it is.");
+            }
+
+            Kind = kind;
+            OwnerHeroId = ownerHeroId;
+            SpellCardInstanceId = spellCardInstanceId;
+            Count = count;
+        }
+
+        /// <summary>The spell was cast and now lies faceup in the removed pile.</summary>
+        public static SpellbookChange Cast(HeroId ownerHeroId, CardInstanceId spell) =>
+            !spell.IsDefined
+                ? throw new ArgumentException("A cast names the spell it cast.", nameof(spell))
+                : new SpellbookChange(SpellbookChangeKind.Cast, ownerHeroId, spell, 1);
+
+        /// <summary>The spell was removed faceup without being cast.</summary>
+        public static SpellbookChange RemovedFaceup(HeroId ownerHeroId, CardInstanceId spell) =>
+            !spell.IsDefined
+                ? throw new ArgumentException("A removal names the spell it removed.", nameof(spell))
+                : new SpellbookChange(SpellbookChangeKind.RemovedFaceup, ownerHeroId, spell, 1);
+
+        /// <summary>How many spells returned facedown; none is named.</summary>
+        public static SpellbookChange Refilled(HeroId ownerHeroId, int count) =>
+            count < 1
+                ? throw new ArgumentOutOfRangeException(nameof(count), count, "A refill reports what it returned.")
+                : new SpellbookChange(SpellbookChangeKind.Refilled, ownerHeroId, default, count);
+
+        public SpellbookChangeKind Kind { get; }
+        public HeroId OwnerHeroId { get; }
+
+        /// <summary>The faceup spell a cast or a removal names; undefined on a refill.</summary>
+        public CardInstanceId SpellCardInstanceId { get; }
+
+        /// <summary>How many spells moved: one for a cast or a removal, the returned count for a refill.</summary>
+        public int Count { get; }
+
+        public bool IsDefined => Kind != SpellbookChangeKind.None && OwnerHeroId.IsDefined;
+
+        public bool Equals(SpellbookChange other) =>
+            Kind == other.Kind && OwnerHeroId.Equals(other.OwnerHeroId) &&
+            SpellCardInstanceId.Equals(other.SpellCardInstanceId) && Count == other.Count;
+
+        public override bool Equals(object obj) => obj is SpellbookChange other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = (int)Kind;
+                hash = (hash * 397) ^ OwnerHeroId.GetHashCode();
+                hash = (hash * 397) ^ SpellCardInstanceId.GetHashCode();
+                return (hash * 397) ^ Count;
+            }
+        }
+
+        public override string ToString() => Kind + ":" + OwnerHeroId + ":" + SpellCardInstanceId + "x" + Count;
+    }
+
     /// <summary>
     /// Milestone 9.15. A minion that card text removed from the board (rulebook p.19's Remove, no
     /// coins), reported by the removing handler on the terms <see cref="DiscardedCard"/> set, so the
@@ -771,8 +861,24 @@ namespace GuardsDigital.Core.Effects
             HeroId markerGivenTo = default,
             IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<DiscardedCard> discardedCards = null,
-            IEnumerable<RemovedMinion> removedMinions = null)
+            IEnumerable<RemovedMinion> removedMinions = null,
+            IEnumerable<SpellbookChange> spellbookChanges = null)
         {
+            var spellbook = (spellbookChanges ?? Enumerable.Empty<SpellbookChange>()).ToArray();
+            if (spellbook.Any(change => !change.IsDefined))
+            {
+                throw new ArgumentException(
+                    "A reported spellbook change names its kind and its book.", nameof(spellbookChanges));
+            }
+
+            if (spellbook.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a change it made to a spellbook.",
+                    nameof(spellbookChanges));
+            }
+
+            SpellbookChanges = new ReadOnlyCollection<SpellbookChange>(spellbook);
             var placed = (placedTokens ?? Enumerable.Empty<PlacedToken>()).ToArray();
             if (placed.Any(token => token == null))
             {
@@ -906,6 +1012,12 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<RemovedMinion> RemovedMinions { get; }
 
         /// <summary>
+        /// Milestone 9.30h. The changes this handler made to a spellbook - a cast, a faceup removal, a
+        /// refill - and empty for every handler that changed none. See <see cref="SpellbookChange"/>.
+        /// </summary>
+        public IReadOnlyList<SpellbookChange> SpellbookChanges { get; }
+
+        /// <summary>
         /// Milestone 8.40h. The hero this handler GAVE a marker to, or the undefined id for every
         /// handler that gave none - which is every handler in this build but the giving one.
         ///
@@ -946,11 +1058,12 @@ namespace GuardsDigital.Core.Effects
             HeroId markerGivenTo = default,
             IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<DiscardedCard> discardedCards = null,
-            IEnumerable<RemovedMinion> removedMinions = null) =>
+            IEnumerable<RemovedMinion> removedMinions = null,
+            IEnumerable<SpellbookChange> spellbookChanges = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
                 appliedPushes, revealedCards, markerGivenTo, placedTokens, discardedCards,
-                removedMinions);
+                removedMinions, spellbookChanges);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

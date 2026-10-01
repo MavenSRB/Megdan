@@ -140,6 +140,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// terms as <see cref="CardTextRevealedCard"/>: the card's owner rides the target field and
         /// the card itself the discarded-card field, and the seat-public log derives its row from it.
         /// </summary>
-        CardTextDiscardedCard = 54
+        CardTextDiscardedCard = 54,
+
+        /// <summary>
+        /// Milestone 9.30h. Card text cast a spell: the spell was removed from its owner's book faceup
+        /// as it was cast (Prepare Spells). Written beside the node's applied fact at every altitude,
+        /// on <see cref="CardTextDiscardedCard"/>'s terms: the book's owner rides the target field and
+        /// the cast spell the spell field.
+        /// </summary>
+        CardTextCastSpell = 55,
+
+        /// <summary>
+        /// Milestone 9.30h. Card text removed a spell from its owner's book faceup WITHOUT casting it
+        /// (Find Familiar's "remove up to three other spell cards"), on the terms above.
+        /// </summary>
+        CardTextRemovedSpell = 56,
+
+        /// <summary>
+        /// Milestone 9.30h. Card text added removed spells back to their owner's book, facedown
+        /// (Prepare Spells). The owner rides the target field and the count the spell-count field; no
+        /// spell is named, because every one of them is facedown now.
+        /// </summary>
+        CardTextRefilledSpellbook = 57
     }
 }

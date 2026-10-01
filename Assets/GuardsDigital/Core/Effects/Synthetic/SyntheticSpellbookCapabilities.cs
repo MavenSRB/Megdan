@@ -99,6 +99,98 @@ namespace GuardsDigital.Core.Effects.Synthetic
             Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
+        /// Milestone 9.30h. THE naming step of <paramref name="spell"/>: the spell's own id and
+        /// <c>-in-book</c>, version 1. One rule, stated once, so a reader of a cast or removal arm -
+        /// the decision window drawing the spell's face - can tell which spell an arm names from the
+        /// public effect graph without loading a handler. Gydion's spells (9.30e,
+        /// <c>GydionCardContent.InBookV1</c>) and the synthetic spells name theirs by it.
+        /// </summary>
+        public static EffectCapabilityReference InBookV1(CardDefinitionId spell)
+        {
+            if (!spell.IsDefined) throw new ArgumentException("A naming step names its spell.", nameof(spell));
+            return new EffectCapabilityReference(new EffectCapabilityId(spell.Value + "-in-book"), 1);
+        }
+
+        /// <summary>
+        /// Milestone 9.30h. What a cast or removal arm does with the spell it names - see
+        /// <see cref="TryReadSpellArm"/>.
+        /// </summary>
+        public enum SpellArmKind
+        {
+            None = 0,
+
+            /// <summary>A <see cref="CastArm"/>: the spell is cast.</summary>
+            Cast = 1,
+
+            /// <summary>A <see cref="RemoveArm"/>: the spell is removed faceup without being cast.</summary>
+            Remove = 2
+        }
+
+        /// <summary>
+        /// Milestone 9.30h. The spell a <c>Choose</c> option names, read off the public effect graph
+        /// that declares it: <paramref name="arm"/> is a <see cref="CastArm"/> or <see cref="RemoveArm"/>
+        /// - a <c>Sequence</c> whose first step is a spell's naming step (<see cref="InBookV1"/>) and
+        /// whose second casts or removes - and <paramref name="spell"/> is the spell definition among
+        /// <paramref name="definitions"/> that step names.
+        ///
+        /// <para>It reads content, never state: whether the spell is in the book is the choice's own
+        /// answer (an unavailable option), and no instance - facedown or not - is consulted, so the same
+        /// reading is safe on every seat that is shown the choice, Hanu's delegated seat included.</para>
+        /// </summary>
+        public static bool TryReadSpellArm(
+            IEnumerable<EffectDefinition> effects,
+            EffectNodeId arm,
+            IEnumerable<CardDefinition> definitions,
+            out CardDefinition spell,
+            out SpellArmKind kind)
+        {
+            spell = null;
+            kind = SpellArmKind.None;
+            if (effects == null || definitions == null || !arm.IsDefined)
+            {
+                return false;
+            }
+
+            foreach (var effect in effects.Where(value => value != null))
+            {
+                var nodes = effect.Nodes.ToDictionary(node => node.Id);
+                if (!nodes.TryGetValue(arm, out var sequence) ||
+                    sequence.Kind != EffectNodeKind.Sequence ||
+                    sequence.ChildNodeIds.Count != 2 ||
+                    !nodes.TryGetValue(sequence.ChildNodeIds[0], out var naming) ||
+                    !nodes.TryGetValue(sequence.ChildNodeIds[1], out var act))
+                {
+                    continue;
+                }
+
+                var armKind = act.Capability.Equals(CastSpellV1)
+                    ? SpellArmKind.Cast
+                    : act.Capability.Equals(RemoveSpellFaceupV1)
+                        ? SpellArmKind.Remove
+                        : SpellArmKind.None;
+                if (armKind == SpellArmKind.None || !naming.Capability.IsDefined)
+                {
+                    continue;
+                }
+
+                var named = definitions.FirstOrDefault(definition =>
+                    definition != null &&
+                    definition.Progression.IsSpell &&
+                    InBookV1(definition.Id).Equals(naming.Capability));
+                if (named == null)
+                {
+                    continue;
+                }
+
+                spell = named;
+                kind = armKind;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The naming step for one spell: <paramref name="spell"/>'s definition is the declaration's
         /// fixed parameter, and the hero whose book it reads is the node's <see cref="OwnerParameter"/>.
         /// </summary>
@@ -215,7 +307,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var others = SpellbookQuery.OtherRemoved(
                     context.CardState.Instances, context.SourceCardInstanceId);
-                return new[] { new EffectOutcomeFact(CountOutput, EffectValue.Integer(others / every)) };
+                // Milestone 9.30h. The one rounding the spell choice's caption reads too.
+                return new[]
+                {
+                    new EffectOutcomeFact(CountOutput, EffectValue.Integer(SpellCountReading.PerEvery(others, every)))
+                };
             }
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
@@ -277,7 +373,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var spell = Removable(context);
                 return spell == null || !CardLifecycleAuthority.TryRemoveFromSpellbookFaceup(spell)
                     ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.Applied(Array.Empty<EffectOutcomeFact>());
+                    : EffectExecutionResult.Applied(
+                        Array.Empty<EffectOutcomeFact>(),
+                        // Milestone 9.30h. Reported so the seat-public log can name the removal.
+                        spellbookChanges: new[] { SpellbookChange.RemovedFaceup(spell.OwnerId, spell.Id) });
             }
 
             public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
@@ -409,11 +508,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact(
-                        SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValue.Card(spell.Id))
-                });
+                return EffectExecutionResult.Applied(
+                    new[]
+                    {
+                        new EffectOutcomeFact(
+                            SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValue.Card(spell.Id))
+                    },
+                    // Milestone 9.30h. Reported so the seat-public log can say "casts Fireball".
+                    spellbookChanges: new[] { SpellbookChange.Cast(spell.OwnerId, spell.Id) });
             }
 
             public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
@@ -482,10 +584,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
                 }
 
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact(ReturnedOutput, EffectValue.Integer(returned))
-                });
+                return EffectExecutionResult.Applied(
+                    new[] { new EffectOutcomeFact(ReturnedOutput, EffectValue.Integer(returned)) },
+                    // Milestone 9.30h. How many returned, never which: they are facedown again. An
+                    // empty refill (GY-Q7) returned nothing and reports nothing.
+                    spellbookChanges: returned == 0
+                        ? null
+                        : new[] { SpellbookChange.Refilled(context.ActorId, returned) });
             }
 
             public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>

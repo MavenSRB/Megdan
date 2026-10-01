@@ -403,7 +403,14 @@ namespace GuardsDigital.Application
         // hero's book), and a card row's location may now name the spellbook or the faceup removed
         // pile. A v30 reader would take the count for the next row's hero id, so v30 peers are refused
         // from the header. The admission tuple's snapshot schema advances to 51 with it.
-        public const int Version = 31;
+        // v32 (milestone 9.30h): the spellbook as the table sees it. Each hand-summary row ends with
+        // the facedown book counted by the back each spell shows (a counted list of Tier and count,
+        // the tier backs every seat sees, GY-Q4), and the seat-public match log gains three kinds -
+        // a spell cast, a spell removed faceup by card text, and a refill's count - which a v31
+        // peer's Enum.IsDefined check would refuse. A v31 reader would take the back count for the
+        // next row's hero id, so v31 peers are refused from the header. Snapshot schema unmoved at
+        // v51: the backs are derived from the persisted cards and the log from the rule-event log.
+        public const int Version = 32;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

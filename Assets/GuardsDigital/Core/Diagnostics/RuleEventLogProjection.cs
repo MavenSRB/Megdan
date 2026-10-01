@@ -377,6 +377,11 @@ namespace GuardsDigital.Core.Diagnostics
                 // discarded card is nameable to every seat exactly when a log row names it.
                 ruleEvent.DiscardedCardInstanceId.IsDefined
                     ? $"discardedCard={ruleEvent.DiscardedCardInstanceId.Value}"
+                    : null,
+                // Milestone 9.30h. Present only on a cast or a faceup removal, and only ever naming a
+                // spell that lies FACEUP in the open removed pile as the fact is written.
+                ruleEvent.SpellCardInstanceId.IsDefined
+                    ? $"spell={ruleEvent.SpellCardInstanceId.Value}"
                     : null);
 
             var detailParts = new List<string> { $"step={ruleEvent.StepId.Value}" };
@@ -405,6 +410,12 @@ namespace GuardsDigital.Core.Diagnostics
             if (ruleEvent.AttackTotal > 0)
             {
                 detailParts.Add($"attack={ruleEvent.AttackTotal}");
+            }
+
+            // Milestone 9.30h. A refill's count - how many spells returned, never which.
+            if (ruleEvent.SpellCount > 0)
+            {
+                detailParts.Add($"spells={ruleEvent.SpellCount}");
             }
 
             if (ruleEvent.DefenseTotal > 0)

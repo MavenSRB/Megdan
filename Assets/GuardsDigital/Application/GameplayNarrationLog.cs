@@ -169,6 +169,15 @@ namespace GuardsDigital.Application
                 // Milestone 9.19. Card text sent a card out of a hand to the discard pile.
                 case MatchLogEntryKind.CardDiscardedByCardText:
                     return hero + " discarded " + Card(entry) + " from their hand";
+                // Milestone 9.30h. A spellbook's three public facts. A cast and a removal name the
+                // spell, which lies faceup as the row is written; a refill names how many, never which.
+                case MatchLogEntryKind.SpellCast:
+                    return hero + " cast " + Card(entry);
+                case MatchLogEntryKind.SpellRemovedFaceup:
+                    return hero + " removed " + Card(entry) + " from their spellbook faceup";
+                case MatchLogEntryKind.SpellbookRefilled:
+                    return hero + " returned " + Int(entry.Amount) +
+                        (entry.Amount == 1 ? " spell" : " spells") + " to their spellbook";
                 case MatchLogEntryKind.Move:
                     return hero + " moved" + Journey(entry);
                 case MatchLogEntryKind.FastTravel:

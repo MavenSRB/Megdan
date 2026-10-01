@@ -41,9 +41,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             AppliedRuleModification blocking = null,
             IEnumerable<RevealedCard> revealedCards = null,
             IEnumerable<DiscardedCard> discardedCards = null,
-            IEnumerable<RemovedMinion> removedMinions = null)
+            IEnumerable<RemovedMinion> removedMinions = null,
+            IEnumerable<SpellbookChange> spellbookChanges = null)
         {
             NodeId = nodeId;
+            SpellbookChanges = new ReadOnlyCollection<SpellbookChange>(
+                (spellbookChanges ?? Enumerable.Empty<SpellbookChange>()).ToArray());
             ResultKind = resultKind;
             Outputs = new ReadOnlyCollection<EffectOutcomeFact>(
                 (outputs ?? Enumerable.Empty<EffectOutcomeFact>()).ToArray());
@@ -86,6 +89,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>Milestone 9.15. The minions this node removed from the board by card text.</summary>
         public IReadOnlyList<RemovedMinion> RemovedMinions { get; }
+
+        /// <summary>Milestone 9.30h. The changes this node made to a spellbook: a cast, a removal, a refill.</summary>
+        public IReadOnlyList<SpellbookChange> SpellbookChanges { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
@@ -2123,7 +2129,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             outcomes.Add(new EffectNodeOutcome(nodeId, kind, result?.Outcomes));
             events.Add(new EffectResolutionEvent(
                 nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
-                blocking, result?.RevealedCards, result?.DiscardedCards, result?.RemovedMinions));
+                blocking, result?.RevealedCards, result?.DiscardedCards, result?.RemovedMinions,
+                result?.SpellbookChanges));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

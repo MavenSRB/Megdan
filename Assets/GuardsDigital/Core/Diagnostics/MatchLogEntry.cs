@@ -188,7 +188,28 @@ namespace GuardsDigital.Core.Diagnostics
         /// happened looked like one that had not. The subject is the card's OWNER, never the acting
         /// hero, and the card is the discarded one, on <see cref="CardRevealedByCardText"/>'s terms.
         /// </summary>
-        CardDiscardedByCardText = 35
+        CardDiscardedByCardText = 35,
+
+        /// <summary>
+        /// Milestone 9.30h. A hero cast a spell, which now lies faceup in its book's removed pile:
+        /// "Gydion casts Fireball". The subject is the CASTER and the card the cast spell, which is
+        /// public as the row is written (an open zone, 9.30b).
+        /// </summary>
+        SpellCast = 36,
+
+        /// <summary>
+        /// Milestone 9.30h. Card text removed a spell from a book faceup WITHOUT casting it - Find
+        /// Familiar's "remove up to three other spell cards". The subject is the book's OWNER and the
+        /// card the removed spell, faceup and public as the row is written.
+        /// </summary>
+        SpellRemovedFaceup = 37,
+
+        /// <summary>
+        /// Milestone 9.30h. Removed spells returned to a book facedown - Prepare Spells' refill. The
+        /// subject is the book's owner and <see cref="MatchLogEntry.Amount"/> how many returned; the row
+        /// names no card, because every spell it counts is facedown again.
+        /// </summary>
+        SpellbookRefilled = 38
     }
 
     /// <summary>

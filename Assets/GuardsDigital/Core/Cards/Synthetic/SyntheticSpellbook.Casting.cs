@@ -54,9 +54,11 @@ namespace GuardsDigital.Core.Cards.Synthetic
         public static readonly EffectNodeId CastMovementArm = new EffectNodeId("cast-movement-spell");
         public static readonly EffectNodeId CastWardArm = new EffectNodeId("cast-ward-spell");
 
-        public static EffectCapabilityReference AttackSpellInBookV1 => Reference("synthetic-attack-spell-in-book");
-        public static EffectCapabilityReference MovementSpellInBookV1 => Reference("synthetic-movement-spell-in-book");
-        public static EffectCapabilityReference WardSpellInBookV1 => Reference("synthetic-ward-spell-in-book");
+        // Milestone 9.30h. Named by the one naming-step rule, so the decision window reads which spell
+        // each Cantrip bullet names off the public graph (SyntheticSpellbookCapabilities.TryReadSpellArm).
+        public static EffectCapabilityReference AttackSpellInBookV1 => SyntheticSpellbookCapabilities.InBookV1(AttackSpellId);
+        public static EffectCapabilityReference MovementSpellInBookV1 => SyntheticSpellbookCapabilities.InBookV1(MovementSpellId);
+        public static EffectCapabilityReference WardSpellInBookV1 => SyntheticSpellbookCapabilities.InBookV1(WardSpellId);
         public static EffectCapabilityReference GrantWardV1 => Reference("synthetic-grant-ward");
 
         /// <summary>

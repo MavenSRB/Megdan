@@ -1290,7 +1290,7 @@ namespace GuardsDigital.Application
         /// (<see cref="SeatProjectionFactory"/>) and a network seat reads it off the wire.
         /// </summary>
         public IReadOnlyList<SeatHandSummary> HandSummaries =>
-            handSummaries ?? (handSummaries = SeatHandSummary.Derive(Participants, Cards));
+            handSummaries ?? (handSummaries = SeatHandSummary.Derive(Participants, Cards, Definitions));
 
         private IReadOnlyList<SeatHandSummary> handSummaries;
 

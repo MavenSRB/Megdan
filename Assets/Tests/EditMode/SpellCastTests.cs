@@ -310,7 +310,7 @@ namespace GuardsDigital.Tests.EditMode
                 "the restored pause replays to the same authoritative bytes");
             Assert.That(restored.Spell(Attack).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook));
             Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(51));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(31));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(32));
         }
 
         // -------------------------------------------------------------------------------------------
@@ -662,6 +662,9 @@ namespace GuardsDigital.Tests.EditMode
             internal AdjacentMoveAuthority Board { get; }
             internal TurnResolutionAuthority Turn => Round.CurrentTurnAuthority;
             internal PendingEffectChoice Choice => Turn.PendingEffectChoice;
+
+            /// <summary>Milestone 9.30h: every event this round has accepted, for the match log they derive.</summary>
+            internal IReadOnlyList<RoundResolutionEvent> Events => events;
 
             internal Cast Restore(string snapshot) => new Cast(this, snapshot);
 

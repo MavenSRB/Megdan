@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -461,12 +462,19 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkHandSummaryRow
     {
-        public NetworkHandSummaryRow(string heroId, int handCount, int deckCount, int spellbookCount)
+        public NetworkHandSummaryRow(
+            string heroId,
+            int handCount,
+            int deckCount,
+            int spellbookCount,
+            IEnumerable<SpellbookBackCount> spellbookBacks = null)
         {
             HeroId = heroId;
             HandCount = handCount;
             DeckCount = deckCount;
             SpellbookCount = spellbookCount;
+            SpellbookBacks = Array.AsReadOnly(
+                (spellbookBacks ?? Enumerable.Empty<SpellbookBackCount>()).ToArray());
         }
 
         public string HeroId { get; }
@@ -475,6 +483,12 @@ namespace GuardsDigital.Application
 
         /// <summary>Milestone 9.30b, protocol /31: the facedown spellbook's size, naming no spell.</summary>
         public int SpellbookCount { get; }
+
+        /// <summary>
+        /// Milestone 9.30h, protocol /32: the same book counted by the back each spell shows, one row
+        /// per back, summing to <see cref="SpellbookCount"/> - the tier backs every seat sees.
+        /// </summary>
+        public IReadOnlyList<SpellbookBackCount> SpellbookBacks { get; }
     }
 
     public sealed class NetworkCardRow
@@ -754,6 +768,13 @@ namespace GuardsDigital.Application
                     writer.Write(summary.DeckCount);
                     // Milestone 9.30b, protocol /31: the facedown spellbook's size, naming no spell.
                     writer.Write(summary.SpellbookCount);
+                    // Milestone 9.30h, protocol /32: the same book by the back each spell shows.
+                    writer.Write(summary.SpellbookBacks.Count);
+                    foreach (var back in summary.SpellbookBacks)
+                    {
+                        writer.Write((int)back.Back);
+                        writer.Write(back.Count);
+                    }
                 }
 
                 WriteCards(writer, projection.OwnCards);
@@ -1123,12 +1144,33 @@ namespace GuardsDigital.Application
                         var deckCount = reader.ReadInt32();
                         var spellbookCount = reader.ReadInt32();
                         if (string.IsNullOrWhiteSpace(id) || handCount < 0 || deckCount < 0 ||
-                            spellbookCount < 0)
+                            spellbookCount < 0 || !TryReadCount(reader, out var backCount))
                         {
                             return false;
                         }
 
-                        summaries.Add(new NetworkHandSummaryRow(id, handCount, deckCount, spellbookCount));
+                        // Milestone 9.30h, protocol /32. Each back at most once, Tier I to IV, in
+                        // order, and together exactly the book's size - or the frame is refused.
+                        var backs = new List<SpellbookBackCount>(backCount);
+                        for (var backIndex = 0; backIndex < backCount; backIndex++)
+                        {
+                            var back = reader.ReadInt32();
+                            var count = reader.ReadInt32();
+                            if (back < (int)CardTier.I || back > (int)CardTier.IV || count < 1 ||
+                                (backs.Count > 0 && (int)backs[backs.Count - 1].Back >= back))
+                            {
+                                return false;
+                            }
+
+                            backs.Add(new SpellbookBackCount((CardTier)back, count));
+                        }
+
+                        if (backs.Count > 0 && backs.Sum(back => back.Count) != spellbookCount)
+                        {
+                            return false;
+                        }
+
+                        summaries.Add(new NetworkHandSummaryRow(id, handCount, deckCount, spellbookCount, backs));
                     }
 
                     if (!TryReadCards(reader, out var ownCards) || !TryReadCards(reader, out var publicCards))

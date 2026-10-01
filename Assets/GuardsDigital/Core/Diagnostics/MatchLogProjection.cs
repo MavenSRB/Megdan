@@ -90,6 +90,14 @@ namespace GuardsDigital.Core.Diagnostics
         // Milestone 9.19.
         private static readonly string CardTextDiscardedCard =
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextDiscardedCard);
+
+        // Milestone 9.30h. A spellbook's three public facts.
+        private static readonly string CardTextCastSpell =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextCastSpell);
+        private static readonly string CardTextRemovedSpell =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRemovedSpell);
+        private static readonly string CardTextRefilledSpellbook =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRefilledSpellbook);
         private static readonly string MinionDefeatRecorded =
             ActionPrefix + nameof(CardActionResolutionEventKind.MinionDefeatRecorded);
         private static readonly string MinionRemovalCompleted =
@@ -525,6 +533,31 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectCardInstanceId: Optional(
                             references, "discardedCard", value => new CardInstanceId(value)));
 
+                // Milestone 9.30h. A cast is the CASTER's row - `hero`, the acting hero, which a
+                // delegated chooser (Hanu's The Ultimate Trick) never is - naming the spell it cast,
+                // faceup in the open removed pile as this row is written.
+                case MatchLogEntryKind.SpellCast:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Hero(references, entry),
+                        subjectCardInstanceId: Optional(
+                            references, "spell", value => new CardInstanceId(value)));
+
+                // Milestone 9.30h. A removal and a refill are the book OWNER's rows, on the reveal's
+                // and the discard's terms: `target` is whose book it is. A refill names no card.
+                case MatchLogEntryKind.SpellRemovedFaceup:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        subjectCardInstanceId: Optional(
+                            references, "spell", value => new CardInstanceId(value)));
+
+                case MatchLogEntryKind.SpellbookRefilled:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        amount: Number(detail, "spells"));
+
                 // Milestone 8.35z61. THE SUBJECT IS THE TARGET, NOT THE ACTOR. On every
                 // card-action event `hero` is the acting hero and `target` is the hero the action was
                 // about, and this row is about the hero who was defeated and thereby passed over -
@@ -617,6 +650,9 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == CardRevealed) return MatchLogEntryKind.CardRevealed;
             if (type == CardTextRevealedCard) return MatchLogEntryKind.CardRevealedByCardText;
             if (type == CardTextDiscardedCard) return MatchLogEntryKind.CardDiscardedByCardText;
+            if (type == CardTextCastSpell) return MatchLogEntryKind.SpellCast;
+            if (type == CardTextRemovedSpell) return MatchLogEntryKind.SpellRemovedFaceup;
+            if (type == CardTextRefilledSpellbook) return MatchLogEntryKind.SpellbookRefilled;
             return MatchLogEntryKind.None;
         }
 

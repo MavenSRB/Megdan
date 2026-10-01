@@ -92,7 +92,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId revealedCardInstanceId = default,
             int moveThroughTrapCardsOwed = 0,
             IEnumerable<CoinResourceOperation> coinAwards = null,
-            CardInstanceId discardedCardInstanceId = default)
+            CardInstanceId discardedCardInstanceId = default,
+            CardInstanceId spellCardInstanceId = default,
+            int spellCount = 0)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -156,6 +158,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             BlockingCardInstanceId = blockingCardInstanceId;
             RevealedCardInstanceId = revealedCardInstanceId;
             DiscardedCardInstanceId = discardedCardInstanceId;
+            SpellCardInstanceId = spellCardInstanceId;
+            SpellCount = spellCount;
             MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
             CoinAwards = Array.AsReadOnly((coinAwards ?? Enumerable.Empty<CoinResourceOperation>()).ToArray());
         }
@@ -176,6 +180,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Milestone 9.19. The card card text discarded, on a <see cref="CardActionResolutionEventKind.CardTextDiscardedCard"/> fact.</summary>
         public CardInstanceId DiscardedCardInstanceId { get; }
+
+        /// <summary>
+        /// Milestone 9.30h. The faceup spell a <see cref="CardActionResolutionEventKind.CardTextCastSpell"/>
+        /// or <see cref="CardActionResolutionEventKind.CardTextRemovedSpell"/> fact names; <c>default</c>
+        /// on every other fact, a refill included.
+        /// </summary>
+        public CardInstanceId SpellCardInstanceId { get; }
+
+        /// <summary>
+        /// Milestone 9.30h. How many spells a <see cref="CardActionResolutionEventKind.CardTextRefilledSpellbook"/>
+        /// fact returned to the book; zero on every other fact.
+        /// </summary>
+        public int SpellCount { get; }
 
         /// <summary>
         /// Milestone 8.61e. How many cards the token this event revealed costs the hero who walked over
@@ -778,6 +795,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
                 RevealedCardInstanceId.Equals(other.RevealedCardInstanceId) &&
                 DiscardedCardInstanceId.Equals(other.DiscardedCardInstanceId) &&
+                SpellCardInstanceId.Equals(other.SpellCardInstanceId) &&
+                SpellCount == other.SpellCount &&
                 (CoinAwards ?? Array.Empty<CoinResourceOperation>()).SequenceEqual(
                     other.CoinAwards ?? Array.Empty<CoinResourceOperation>());
         }
@@ -820,7 +839,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ BlockingHeroId.GetHashCode();
                 hashCode = (hashCode * 397) ^ BlockingCardInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ RevealedCardInstanceId.GetHashCode();
-                return (hashCode * 397) ^ DiscardedCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ DiscardedCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ SpellCardInstanceId.GetHashCode();
+                return (hashCode * 397) ^ SpellCount;
             }
         }
 
@@ -1075,7 +1096,51 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RevealedAndDiscardedCardFacts(
                     resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node)
                 .Concat(RemovedMinionFacts(
+                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node))
+                // Milestone 9.30h. Last, so every fact a node already published keeps its place.
+                .Concat(SpellbookFacts(
                     resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node));
+
+        /// <summary>
+        /// Milestone 9.30h. One fact per change the node made to a spellbook - a cast, a faceup
+        /// removal, a refill - on <see cref="DiscardedCardFacts"/>'s terms: the book's owner rides the
+        /// target field, a cast or removed spell the spell field and a refill's count the spell-count
+        /// field, and the step id names the node and the change. Empty for every node that changed no
+        /// spellbook. A refill names no spell: every one it returned is facedown.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> SpellbookFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            (node ?? throw new ArgumentNullException(nameof(node))).SpellbookChanges
+                .Select((change, index) => new CardActionResolutionEvent(
+                    change.Kind == SpellbookChangeKind.Cast
+                        ? CardActionResolutionEventKind.CardTextCastSpell
+                        : change.Kind == SpellbookChangeKind.RemovedFaceup
+                            ? CardActionResolutionEventKind.CardTextRemovedSpell
+                            : CardActionResolutionEventKind.CardTextRefilledSpellbook,
+                    resolutionId,
+                    sourceCardInstanceId,
+                    actionDefinitionId,
+                    default,
+                    actorId,
+                    change.OwnerHeroId,
+                    new ActionResolutionStepId(
+                        node.NodeId.Value + ":spellbook:" + change.Kind + ":" +
+                        (change.SpellCardInstanceId.IsDefined
+                            ? change.SpellCardInstanceId.Value
+                            : index.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+                    0,
+                    0,
+                    default,
+                    0,
+                    AttackResolutionOutcome.None,
+                    default,
+                    default,
+                    spellCardInstanceId: change.SpellCardInstanceId,
+                    spellCount: change.Kind == SpellbookChangeKind.Refilled ? change.Count : 0));
 
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,

@@ -617,7 +617,8 @@ namespace GuardsDigital.Application
         public IReadOnlyList<SeatHandSummary> HandSummaries => wire == null
             ? trusted.HandSummaries
             : Array.AsReadOnly(wire.HandSummaries.Select(row => new SeatHandSummary(
-                new HeroId(row.HeroId), row.HandCount, row.DeckCount, row.SpellbookCount)).ToArray());
+                new HeroId(row.HeroId), row.HandCount, row.DeckCount, row.SpellbookCount,
+                row.SpellbookBacks)).ToArray());
 
         private NetworkProjectionDetailRecord PublicDetail => wire?.Detail;
         private NetworkProjectionDetailRecord Detail => actionable ? PublicDetail : null;
