@@ -102,19 +102,20 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 9.30c. The spellbook's three handler types - a spell's naming step, the cast and the
-        /// refill - stay unregistered until Gydion's dealing (9.30i), so the registered walk above does
-        /// not reach them yet; they are asked both rules here, as 9.21d-9.21g asked Razzle's.
+        /// Milestone 9.30c. The spellbook's handler types - a spell's naming step, the cast and the
+        /// refill, and since 9.30e the count of other spells removed and Find Familiar's removal - stay
+        /// unregistered until Gydion's dealing (9.30i), so the registered walk above does not reach them
+        /// yet; they are asked both rules here, as 9.21d-9.21g asked Razzle's.
         /// </summary>
         [Test]
-        public void TheSpellbooksThreeHandlerTypes_KeepBothRules_WhileUnregistered()
+        public void TheSpellbooksHandlerTypes_KeepBothRules_WhileUnregistered()
         {
             var spellbook = GuardsDigital.Core.Cards.Synthetic.SyntheticSpellbook.CastingHandlers()
                 .Select(handler => handler.GetType())
                 .Where(type => type.DeclaringType == typeof(SyntheticSpellbookCapabilities))
                 .Distinct()
                 .ToArray();
-            Assert.That(spellbook, Has.Length.EqualTo(3));
+            Assert.That(spellbook, Has.Length.EqualTo(5));
             Assert.That(RegisteredHandlerTypes().Intersect(spellbook), Is.Empty,
                 "registered only with the hero whose dealt faces cast (9.30i)");
             Assert.That(FindUnsharedDerivations(spellbook), Is.Empty);

@@ -120,10 +120,12 @@ namespace GuardsDigital.Tests.EditMode
                 }),
                 "Both of Rowenna's beside-a-named-hero Places are registered, together, now that " +
                 "Throw the Gauntlet and her three Green Movements are cards a configured match deals.");
-            Assert.That(deferred, Is.Empty,
-                "and the file's deferred list is empty again, which is the statement milestone 8.38b " +
-                "asked it to go on being able to make: nothing in this file is being held back for a " +
-                "hero this build does not deal.");
+            // Milestone 9.30e refills the list, narrowed again rather than dropped: the one declaration
+            // held back is Dimension Door's Place at maximum radius, for Gydion, until his dealing
+            // (9.30i) moves it across.
+            Assert.That(deferred, Is.EqualTo(new[] { SyntheticPlacementCapabilities.PlaceAtMaximumRadiusV1 }),
+                "and the file's deferred list holds exactly what is held back for a hero this build does " +
+                "not deal yet - Gydion's Dimension Door (9.30e, registered at 9.30i).");
             Assert.That(registered.Intersect(deferred), Is.Empty,
                 "and nothing is in both lists, which is what the gate means either way round.");
         }

@@ -1062,7 +1062,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolution,
                     FindLegalAttackTargets(
                         resolution.ActorId, offer.Value, materializedDefinitions, participants,
-                        modifications),
+                        modifications, cardInstances: materializedInstances),
                     materializedDefinitions);
                 if (!legal.Contains(boundTarget) ||
                     resolution.ExcludedTargets.Any(excluded => excluded.IsSameUnit(boundTarget)))
@@ -3385,7 +3385,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            // Milestone 9.30e. The cards a card-counting Range reads (Sunburst's other spells removed).
+            IEnumerable<CardInstance> cardInstances)
         {
             // Milestone 8.70. The derivation moved to `AttackSequenceBulletSubjectQuery` when a second
             // caller appeared - a modal Attack's bullet asking "in range" at the modal choice, one
@@ -3398,7 +3400,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 adjacentMoveAuthority,
                 heroItems,
                 rosterState,
-                modifications);
+                modifications,
+                cardInstances);
         }
 
         private RoundTurnSlot FindCurrentTurnSlot(ActionOffer offer)
@@ -3461,7 +3464,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             // Milestone 9.9. A validation fork with the attacker standing where a before-action step
             // could leave him, or null for the live board.
-            IBoardDisplacementAuthority onBoard = null)
+            IBoardDisplacementAuthority onBoard = null,
+            // Milestone 9.30e. The cards, so a Range its own text counts from them (Sunburst) is read
+            // at the offer exactly as the Attack's start reads it.
+            IEnumerable<CardInstance> instances = null)
         {
             var board = onBoard ?? adjacentMoveAuthority;
             var materializedDefinitions = definitions?.ToArray() ??
@@ -3485,7 +3491,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             return FindLegalAttackTargets(
                 offer.ActorId, offer, materializedDefinitions, participants, modifications,
-                board: board).Count > 0;
+                cardInstances: instances, board: board).Count > 0;
         }
 
         /// <summary>
@@ -3652,7 +3658,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackRange = RangedAttackOverlayQuery.Classify(
                 offer.AttackRange, offer.ActorId, modifications);
             var rangeTotal = attackRange == AttackRangeKind.Ranged
-                ? RangeValue(offer, definitions, participants, modifications).Total
+                ? RangeValue(offer, definitions, participants, modifications, cardInstances).Total
                 : 1;
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what

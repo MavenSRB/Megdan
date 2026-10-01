@@ -189,6 +189,7 @@ namespace GuardsDigital.Core.Cards
             if (RosterValueContributions.Any(value =>
                     (value.Channel != PrintedValueChannel.Attack &&
                      value.Channel != PrintedValueChannel.Range &&
+                     value.Channel != PrintedValueChannel.Radius &&
                      value.Channel != PrintedValueChannel.Defense) ||
                     value.Query == RosterValueQueryKind.None ||
                     value.AmountPerMatch <= 0))
@@ -215,11 +216,22 @@ namespace GuardsDigital.Core.Cards
             }
 
             if (RosterValueContributions.Any(value =>
-                    value.Channel != PrintedValueChannel.Defense) &&
+                    value.Channel == PrintedValueChannel.Attack ||
+                    value.Channel == PrintedValueChannel.Range) &&
                 Kind != ActionKind.Attack)
             {
                 throw new ArgumentException(
                     "Dynamic Attack/Range declarations belong to an Attack action.",
+                    nameof(rosterValueContributions));
+            }
+
+            // Milestone 9.30e. A dynamic Radius raises p.9's Radius icon, so the action prints one -
+            // Dimension Door's Skill prints Radius 0+.
+            if (RosterValueContributions.Any(value => value.Channel == PrintedValueChannel.Radius) &&
+                !BaseValues.Any(value => value.Channel == PrintedValueChannel.Radius))
+            {
+                throw new ArgumentException(
+                    "A dynamic Radius contribution raises the Radius icon its action prints.",
                     nameof(rosterValueContributions));
             }
 
@@ -466,6 +478,14 @@ namespace GuardsDigital.Core.Cards
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30e. Whether this action declares card text raising its printed
+        /// <paramref name="channel"/> - what a printed "0+" is (p.14: "The '+' sign signifies that the
+        /// value can be increased by the card text").
+        /// </summary>
+        private bool IsRaisedByItsText(PrintedValueChannel channel) =>
+            RosterValueContributions.Any(value => value.Channel == channel);
+
         private static bool IsAttackerMoment(CardTextTiming timing) =>
             timing == CardTextTiming.BeforeTheAttack || timing == CardTextTiming.AfterTheAttack;
 
@@ -542,8 +562,11 @@ namespace GuardsDigital.Core.Cards
                         nameof(baseValues));
                 }
 
+                // Milestone 9.30e. A printed "0+" is a 0 the card's own text raises (Sunburst's Range),
+                // so a Ranged Attack may print 0 exactly when it declares the contribution that raises it.
                 if (AttackRange == AttackRangeKind.Ranged &&
-                    BaseValues.Single(value => value.Channel == PrintedValueChannel.Range).Amount < 1)
+                    BaseValues.Single(value => value.Channel == PrintedValueChannel.Range).Amount < 1 &&
+                    !IsRaisedByItsText(PrintedValueChannel.Range))
                 {
                     throw new ArgumentException(
                         "Ranged Attack action definitions require a positive printed Range value.",
@@ -733,7 +756,9 @@ namespace GuardsDigital.Core.Cards
                             "Rulebook p.9 prints a Radius icon for a primary action.", nameof(Origin));
                     }
 
-                    if (BaseValues.Single().Amount < 1)
+                    // Milestone 9.30e. Dimension Door's Radius "0+" is a 0 its own text raises.
+                    if (BaseValues.Single().Amount < 1 &&
+                        !IsRaisedByItsText(BaseValues.Single().Channel))
                     {
                         throw new ArgumentException(
                             "A printed Radius icon states a positive value; p.9's smallest is 1, which " +

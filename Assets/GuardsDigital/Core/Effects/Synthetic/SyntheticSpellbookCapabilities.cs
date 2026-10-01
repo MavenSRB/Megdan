@@ -61,9 +61,38 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>How many spells a refill returned to the book.</summary>
         public const string ReturnedOutput = "returned";
 
-        /// <summary>The cast and the refill; each spell's naming step is declared by its content.</summary>
+        /// <summary>
+        /// Milestone 9.30e. "for every N other spell cards removed from the spellbook" - the count of
+        /// other spells the acting spell's book has removed, divided by N and rounded down: Midas'
+        /// Touch's "Gain 1 coin for every two" binds N = 2. See <see cref="CountOtherRemovedSpellsV1"/>.
+        /// </summary>
+        public static EffectCapabilityReference CountOtherRemovedSpellsV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("count-other-removed-spells"), 1);
+
+        /// <summary>
+        /// Milestone 9.30e. Find Familiar's "You may remove up to three other spell cards from the spell
+        /// book faceup": the named spell moves book -> removed faceup by 9.30b's transition, and nothing
+        /// is cast - no action is performed off it.
+        /// </summary>
+        public static EffectCapabilityReference RemoveSpellFaceupV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("remove-spell-faceup"), 1);
+
+        /// <summary>The count's divisor: "for every <c>N</c>"; 1 is "for each".</summary>
+        public const string EveryParameter = "every";
+
+        /// <summary>The rounded-down count the counting step publishes.</summary>
+        public const string CountOutput = "count";
+
+        /// <summary>
+        /// The cast, the refill, the count and the removal; each spell's naming step is declared by its
+        /// content.
+        /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new CastSpellHandler(), new RefillSpellbookHandler() };
+            new IEffectCapabilityHandler[]
+            {
+                new CastSpellHandler(), new RefillSpellbookHandler(),
+                new CountOtherRemovedSpellsHandler(), new RemoveSpellFaceupHandler()
+            };
 
         /// <summary>Nothing until a dealt face casts (9.30i).</summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
@@ -113,6 +142,151 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValueKind.CardInstance)
                     })
             });
+        }
+
+        /// <summary>
+        /// Milestone 9.30e. One "remove this spell faceup" option: a mandatory <c>Sequence</c>
+        /// <paramref name="armId"/> of the spell's naming step (<paramref name="spellInBook"/>, reading
+        /// the actor's own book) and <see cref="RemoveSpellFaceupV1"/>. Find Familiar's "remove up to
+        /// three other spell cards" is a <c>Choose</c> over one of these per other spell, so the decision
+        /// names spells, never book cards (GY-05), and an option whose spell is already removed is greyed
+        /// by its naming step exactly as a cast bullet is.
+        /// </summary>
+        public static IReadOnlyList<EffectNodeDefinition> RemoveArm(
+            EffectNodeId armId, EffectCapabilityReference spellInBook)
+        {
+            if (!armId.IsDefined) throw new ArgumentException("A removal arm names its node.", nameof(armId));
+            var name = new EffectNodeId(armId.Value + "-in-book");
+            var remove = new EffectNodeId(armId.Value + "-remove");
+            return Array.AsReadOnly(new[]
+            {
+                new EffectNodeDefinition(armId, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { name, remove }),
+                new EffectNodeDefinition(name, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    spellInBook,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(OwnerParameter, EffectRoleKind.Actor, EffectValueKind.Hero)
+                    },
+                    outputs: new[] { new EffectOutputBinding(SpellOutput, EffectValueKind.CardInstance) }),
+                new EffectNodeDefinition(remove, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    RemoveSpellFaceupV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            SpellParameter, name, SpellOutput, EffectValueKind.CardInstance)
+                    })
+            });
+        }
+
+        /// <summary>
+        /// Milestone 9.30e. "for every N other spell cards removed from the spellbook": the count is
+        /// <see cref="SpellbookQuery.OtherRemoved"/>'s - the acting card is the cast spell (9.30c stamps
+        /// a cast's frame with the spell) - read when this step is asked, divided by
+        /// <see cref="EveryParameter"/> and rounded down.
+        ///
+        /// <para><b>It decides nothing and applies nothing</b>: it publishes a number the next step
+        /// binds, so the feasibility walk carries it forward (8.35l) and the gain it feeds is judged on
+        /// the very amount the resolution would gain (lesson 27). A count of 0 is a count, not a
+        /// failure: whether gaining 0 does anything is the consuming step's question.</para>
+        /// </summary>
+        private sealed class CountOtherRemovedSpellsHandler
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => CountOtherRemovedSpellsV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(EveryParameter, EffectValueKind.Integer) },
+                new[] { new EffectOutputBinding(CountOutput, EffectValueKind.Integer) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>The one derivation every member asks, or null where it cannot be asked.</summary>
+            private static IReadOnlyList<EffectOutcomeFact> Counted(EffectCapabilityContext context)
+            {
+                var every = context.Input(EveryParameter).IntegerValue;
+                if (!context.CardState.IsAvailable || every < 1)
+                {
+                    return null;
+                }
+
+                var others = SpellbookQuery.OtherRemoved(
+                    context.CardState.Instances, context.SourceCardInstanceId);
+                return new[] { new EffectOutcomeFact(CountOutput, EffectValue.Integer(others / every)) };
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var counted = Counted(context);
+                return counted == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(counted);
+            }
+
+            public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Counted(context) == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                Counted(context) ?? Array.Empty<EffectOutcomeFact>();
+        }
+
+        /// <summary>
+        /// Milestone 9.30e. Find Familiar's removal: the named spell, while it lies in the ACTOR's book,
+        /// moves book -> removed faceup through 9.30b's
+        /// <see cref="CardLifecycleAuthority.TryRemoveFromSpellbookFaceup"/>. It is not a cast: no
+        /// borrowed card is published, so no action is performed off the spell.
+        /// </summary>
+        private sealed class RemoveSpellFaceupHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => RemoveSpellFaceupV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(SpellParameter, EffectValueKind.CardInstance) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>The named spell, if it lies in the actor's own book; null otherwise.</summary>
+            private static CardInstance Removable(EffectCapabilityContext context)
+            {
+                var named = context.Input(SpellParameter);
+                if (!context.CardState.IsAvailable || named.Kind != EffectValueKind.CardInstance ||
+                    !context.ActorId.IsDefined)
+                {
+                    return null;
+                }
+
+                return context.CardState.Instances.FirstOrDefault(card =>
+                    card != null &&
+                    card.Id.Equals(named.CardInstanceId) &&
+                    card.OwnerId.Equals(context.ActorId) &&
+                    card.State.Location == CardLocation.Spellbook);
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var spell = Removable(context);
+                return spell == null || !CardLifecycleAuthority.TryRemoveFromSpellbookFaceup(spell)
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(Array.Empty<EffectOutcomeFact>());
+            }
+
+            public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Removable(context) == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
         }
 
         private sealed class SpellInBook : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler

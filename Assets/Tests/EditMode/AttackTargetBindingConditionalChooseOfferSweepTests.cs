@@ -242,6 +242,11 @@ namespace GuardsDigital.Tests.EditMode
             // and the moves, swaps and Spectacle are Skills and Movement text, so he adds no at-risk
             // gate.
             foreach (var card in RazzleCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("razzle", d);
+            // Milestone 9.30e. The twenty-ninth hero's line is owed the moment a `GydionCardContent`
+            // exists, dealt or not: his twenty-two spells so far. Sunburst's "at maximum range" is the
+            // Attack's own reach and the three composed Skills bind no Attack target, so he adds no
+            // at-risk gate.
+            foreach (var card in GydionCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("gydion", d);
         }
 
         /// <summary>

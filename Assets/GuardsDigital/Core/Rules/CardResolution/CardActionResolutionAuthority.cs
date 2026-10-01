@@ -1391,7 +1391,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 return attackDefenseBackend.CanFindLegalTarget(
                     offer, materializedDefinitions, participants, modifications,
-                    probe?.Board);
+                    probe?.Board, instances);
             }
 
             var cardText = action.CardTextAt(CardTextTiming.BeforeTheAttack);

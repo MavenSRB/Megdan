@@ -129,6 +129,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(PlaceAtMaximumRange, 1);
 
         /// <summary>
+        /// Milestone 9.30e. The printed-Radius twin of <see cref="PlaceAtMaximumRange"/> - Gydion's
+        /// Dimension Door, "Place yourself into a space <b>at maximum radius</b>", on a spell printing a
+        /// Radius <c>0+</c> icon its own text raises: the ring at EXACTLY the Radius Total (RULING 1's
+        /// equality), p.16's Radius item composed on (R1), and the card's "+1 Radius for each other
+        /// spell card removed" read through <see cref="RadiusValueQuery"/>'s card-state overload.
+        ///
+        /// <para>A separate declaration by the rule <see cref="PlaceInRange"/> states, and the same
+        /// <see cref="PlaceHandler"/> underneath, so it adds no handler type. Like the Range ring it can
+        /// legally be empty, and a Radius of 0 - nothing removed, no item - reaches no space at all, so
+        /// a mandatory node carrying it is impossible (a cast of the spell still removes it, GY-Q12).</para>
+        ///
+        /// <para>Deferred until the dealing (9.30i) - see <see cref="DeferredHandlers"/>.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceAtMaximumRadius { get; } =
+            new EffectCapabilityId("synthetic-place-at-maximum-radius");
+
+        public static EffectCapabilityReference PlaceAtMaximumRadiusV1 =>
+            new EffectCapabilityReference(PlaceAtMaximumRadius, 1);
+
+        /// <summary>
         /// Milestone 8.35z29. The printed-Radius arm whose destinations must themselves stand
         /// beside two or more enemy units - Misa's Swoop In, "Place yourself into a space in radius
         /// adjacent to two or more enemy units", on a face printing a Radius 3 icon.
@@ -484,9 +504,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
         ///
         /// <para>The list is empty again, and this file goes on being able to say so: the NEXT worker
         /// that mints a Place no dealt card starts holds it here until its own dealing.</para>
+        ///
+        /// <para>MILESTONE 9.30e IS THAT WORKER: Gydion's Dimension Door names
+        /// <see cref="PlaceAtMaximumRadiusV1"/> and no configured match deals him until 9.30i, which
+        /// moves it to <see cref="RegisteredHandlers"/>. A further declaration over
+        /// <see cref="PlaceHandler"/>, so it owes the gate's handler-type half nothing.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[]
+            {
+                new PlaceHandler(
+                    PlaceAtMaximumRadiusV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesAtExactlyRadius)
+            };
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being
@@ -1152,6 +1182,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return 0;
                 }
 
+                // Milestone 9.30e. The Radius arm reads the acting card's own text too, which is
+                // Dimension Door's printed 0+ raised by the other spells removed; a card declaring no
+                // such text answers exactly the total it always did.
                 return boundChannel == PrintedValueChannel.Radius
                     ? GuardsDigital.Core.Rules.CardResolution.RadiusValueQuery.Calculate(
                         context.SourceCardInstanceId,
@@ -1160,7 +1193,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.CardState.Definitions,
                         context.ActorId,
                         context.HeroItems,
-                        context.Modifications).Total
+                        context.Modifications,
+                        context.CardState.Instances).Total
                     : GuardsDigital.Core.Rules.CardResolution.RangeValueQuery.Calculate(
                         context.SourceCardInstanceId,
                         context.SourceDefinitionReference,

@@ -80,6 +80,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 9.30e. The same total with the acting card's own text raising it - Dimension
+        /// Door's printed <c>0+</c>, "+1 [Radius] Radius for each other spell card removed from the
+        /// spellbook". p.9's icon, p.16's items (R1) and the declared modifications are the overload
+        /// above; the card's text is
+        /// <see cref="RosterDynamicValueQuery.CardStateContributions"/>, asked of the cards as they
+        /// stand, so a Place's offer and its resolution read one Radius.
+        /// </summary>
+        public static ValueResult Calculate(
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            HeroId actorId,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
+            IEnumerable<CardInstance> instances)
+        {
+            var materialized = (definitions ?? Enumerable.Empty<CardDefinition>()).ToArray();
+            var composed = Calculate(
+                sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId, materialized,
+                actorId, heroItems, modifications);
+            var action = materialized
+                .FirstOrDefault(definition => definition != null &&
+                    definition.Reference.Equals(sourceDefinitionReference))?
+                .ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(actionDefinitionId));
+            var text = RosterDynamicValueQuery.CardStateContributions(
+                action, sourceCardInstanceId, PrintedValueChannel.Radius, instances);
+            return text.Count == 0
+                ? composed
+                : new ValueResult(PrintedValueChannel.Radius, composed.Contributions.Concat(text));
+        }
+
+        /// <summary>
         /// The same total for a caller that holds no rules set at all - <c>MinionDefeatBountyQuery</c>
         /// measures a standing promise's disk from a lifecycle and a ledger, and states p.16's
         /// per-item amount by name rather than by fabricating an empty set that would silently mean

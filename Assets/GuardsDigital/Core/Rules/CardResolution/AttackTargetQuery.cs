@@ -89,6 +89,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackRange = policy.Reach == AttackTargetReach.AdjacentOnly
                 ? AttackRangeKind.NonRanged
                 : AttackRangeKind.Ranged;
+
+            // Milestone 9.30e. A Range Total of 0 - Sunburst's printed "0+" that nothing has raised
+            // yet - reaches no unit: p.9's smallest printed Range, 1, is what reaches the adjacent ring.
+            // An Attack offered on its own is greyed by the empty set (7.8a1); a cast Sunburst is still
+            // cast and reaches nobody (GY-Q12).
+            if (attackRange == AttackRangeKind.Ranged && rangeTotal < 1)
+            {
+                return Array.Empty<AttackTarget>();
+            }
             // Milestone 9.21a. The attacker's space is the acting body's (RZ-Q4; body 1 until 9.21b
             // makes it a pick), read through the port rather than as the single row of a hero that may
             // stand on several spaces. A hero standing nowhere reads as the undefined occupancy the

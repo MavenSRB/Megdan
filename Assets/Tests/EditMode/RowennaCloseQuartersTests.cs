@@ -1017,9 +1017,13 @@ namespace GuardsDigital.Tests.EditMode
                 "Exactly her two, moved together, which is the half a dealing could get wrong by " +
                 "registering one and forgetting the other.");
 
+            // Milestone 9.30e refilled the file's deferred list for another hero (Gydion's Dimension
+            // Door), so the claim is narrowed to what her dealing means: neither of hers is held back.
             Assert.That(
-                SyntheticPlacementCapabilities.DeferredHandlers(), Is.Empty,
-                "and the deferred list is empty again.");
+                SyntheticPlacementCapabilities.DeferredHandlers().Select(handler => handler.Reference),
+                Has.No.Member(SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1)
+                    .And.No.Member(SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1),
+                "and neither of hers is in the deferred list any more.");
         }
 
         /// <summary>

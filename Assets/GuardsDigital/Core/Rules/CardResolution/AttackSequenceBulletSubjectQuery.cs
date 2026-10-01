@@ -156,7 +156,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackRange = RangedAttackOverlayQuery.Classify(
                 offer.AttackRange, offer.ActorId, modifications);
             var rangeTotal = attackRange == AttackRangeKind.Ranged
-                ? RangeTotal(offer, definitions, participants, board, heroItems, rosterState, modifications)
+                ? RangeTotal(
+                    offer, definitions, participants, board, heroItems, rosterState, modifications,
+                    cardInstances)
                 : 1;
 
             // Milestone 8.35z27. A modal Attack's bullets each print their own targeting sentence, so
@@ -245,7 +247,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IBoardDisplacementAuthority board,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             EffectRosterState rosterState,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            // Milestone 9.30e. The cards as they stand, which Sunburst's "+1 Range for each other spell
+            // card removed" counts; absent, no card-counting contribution is read - every caller
+            // written before that milestone composes exactly the Range it did.
+            IEnumerable<CardInstance> cardInstances = null)
         {
             var composed = RangeValueQuery.Calculate(offer, definitions, heroItems, modifications);
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
@@ -255,7 +261,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default,
                 PrintedValueChannel.Range,
                 definitions,
-                Array.Empty<CardInstance>(),
+                cardInstances?.ToArray() ?? Array.Empty<CardInstance>(),
                 participants,
                 board,
                 modifications,
@@ -276,9 +282,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IBoardDisplacementAuthority board,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             EffectRosterState rosterState,
-            RuleModificationSet modifications) =>
+            RuleModificationSet modifications,
+            IEnumerable<CardInstance> cardInstances) =>
             RangeValue(
-                offer, definitions, participants, board, heroItems, rosterState, modifications).Total;
+                offer, definitions, participants, board, heroItems, rosterState, modifications,
+                cardInstances).Total;
 
         private static ActionDefinition FindAction(
             IReadOnlyList<CardDefinition> definitions,

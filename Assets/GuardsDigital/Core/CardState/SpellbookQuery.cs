@@ -49,6 +49,33 @@ namespace GuardsDigital.Core.Cards
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// Milestone 9.30e. "Each other spell card removed from the spellbook" - Sunburst, Dimension
+        /// Door and Midas' Touch: how many spells the book of <paramref name="castingSpell"/>'s owner
+        /// has removed, the casting spell itself excluded (lesson 27). The one derivation the value
+        /// pipeline and the counting capability both ask, read when the value is asked: at an offer the
+        /// casting spell still lies in the book, at the resolution it has just been removed, and the
+        /// exclusion makes both moments count the same spells.
+        ///
+        /// <para>The book is the casting SPELL's owner's, not the caster's: the spellbook the text
+        /// names is the one the spell came from (a non-owner caster, NebKher, GY-05). A card that is not
+        /// in the given instances counts nothing.</para>
+        /// </summary>
+        public static int OtherRemoved(IEnumerable<CardInstance> instances, CardInstanceId castingSpell)
+        {
+            if (instances == null) throw new ArgumentNullException(nameof(instances));
+            if (!castingSpell.IsDefined)
+            {
+                return 0;
+            }
+
+            var cards = instances as IReadOnlyCollection<CardInstance> ?? instances.ToArray();
+            var casting = cards.FirstOrDefault(card => card != null && card.Id.Equals(castingSpell));
+            return casting == null
+                ? 0
+                : Removed(cards, casting.OwnerId).Count(card => !card.Id.Equals(castingSpell));
+        }
+
         /// <summary>Every spell <paramref name="ownerId"/> has removed from the book, in identity order.</summary>
         public static IReadOnlyList<CardInstance> Removed(
             IEnumerable<CardInstance> instances, HeroId ownerId)

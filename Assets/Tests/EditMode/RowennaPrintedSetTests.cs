@@ -641,10 +641,15 @@ namespace GuardsDigital.Tests.EditMode
                 "and her bodies still NAME both of them, read from the other side - so this case " +
                 "cannot pass because a face stopped asking for one.");
 
+            // Milestone 9.30e refilled the placement file's deferred list for another hero (Gydion's
+            // Dimension Door), so the claim is narrowed to what her dealing means: none of hers.
             Assert.That(
-                SyntheticPlacementCapabilities.DeferredHandlers(), Is.Empty,
-                "and the build's own deferred list is empty, which is what her dealing means: " +
-                "nothing in this build is being withheld for a hero it does not deal.");
+                SyntheticPlacementCapabilities.DeferredHandlers()
+                    .Select(handler => handler.Reference.ToString())
+                    .Intersect(RegisteredAtTheDealing),
+                Is.Empty,
+                "and the build's own deferred list withholds nothing of hers, which is what her " +
+                "dealing means.");
 
             Assert.That(
                 named.Count(capability => registered.IsRegistered(capability)),

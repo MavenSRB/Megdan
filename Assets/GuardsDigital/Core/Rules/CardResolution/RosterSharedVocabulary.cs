@@ -233,7 +233,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="DefenseValueQuery"/> - so the Defense preview and the resolution count the same
         /// bodies. A hero declaring one body always answers zero.</para>
         /// </summary>
-        DefenderOtherBodiesInPrintedRadius = 12
+        DefenderOtherBodiesInPrintedRadius = 12,
+
+        /// <summary>
+        /// Milestone 9.30e. How many OTHER spells the casting spell's book has removed - Gydion's
+        /// Sunburst, "+1 [Attack] Attack and +1 [Range] Range for each other spell card removed from
+        /// the spellbook", and Dimension Door, "+1 [Radius] Radius for each ...". A count, so the
+        /// printed amount is per spell, and the casting spell itself is excluded (lesson 27).
+        ///
+        /// <para><b>The one query here that reads only the cards</b> - no target, no board, no turn -
+        /// so it is the one that may raise a Range (asked before a target exists, like
+        /// <see cref="EnemyUnitsAdjacentToActor"/>) and the only one that raises a Radius: both icons
+        /// print <c>0+</c>, a printed 0 this text raises. The count is
+        /// <see cref="GuardsDigital.Core.Cards.SpellbookQuery.OtherRemoved"/>'s, asked with the acting
+        /// card (the cast spell, 9.30c) at the moment the value is read, so an offer and the resolution
+        /// count the same spells.</para>
+        /// </summary>
+        OtherSpellsRemovedFromSpellbook = 13
     }
 
     /// <summary>
@@ -252,11 +268,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             if (channel != PrintedValueChannel.Attack &&
                 channel != PrintedValueChannel.Range &&
-                channel != PrintedValueChannel.Defense)
+                channel != PrintedValueChannel.Defense &&
+                channel != PrintedValueChannel.Radius)
             {
                 throw new ArgumentException(
-                    "Roster card-text contributions modify Attack, Range or Defense.",
+                    "Roster card-text contributions modify Attack, Range, Radius or Defense.",
                     nameof(channel));
+            }
+
+            // Milestone 9.30e. Dimension Door prints "+1 [Radius] Radius for each other spell card
+            // removed", the first verified sentence to raise a Radius, and the count it reads is the
+            // only query that needs nothing a Radius reader lacks (no target, no board).
+            if (channel == PrintedValueChannel.Radius &&
+                query != RosterValueQueryKind.OtherSpellsRemovedFromSpellbook)
+            {
+                throw new ArgumentException(
+                    "The one verified Radius contribution is the count of other spells removed.",
+                    nameof(query));
             }
 
             // Milestone 8.35z28. p.14 illustrates the printed `+` on a Defense value using Dodger's
@@ -289,12 +317,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A roster card-text contribution adds a positive amount per match.");
             }
 
+            // Milestone 9.30e admits the second target-free count: Sunburst's other spells removed.
             if (channel == PrintedValueChannel.Range &&
-                query != RosterValueQueryKind.EnemyUnitsAdjacentToActor)
+                query != RosterValueQueryKind.EnemyUnitsAdjacentToActor &&
+                query != RosterValueQueryKind.OtherSpellsRemovedFromSpellbook)
             {
                 throw new ArgumentException(
-                    "Dynamic Range is derived before an Attack target exists, so it uses the " +
-                    "enemy-unit count adjacent to the actor.", nameof(query));
+                    "Dynamic Range is derived before an Attack target exists, so it uses a count " +
+                    "that needs no target: enemy units adjacent to the actor, or other spells removed.",
+                    nameof(query));
             }
 
             if (query == RosterValueQueryKind.AttackTargetInStraightLineFromActorAndOwnedObstacle
@@ -615,6 +646,62 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 9.30e. The contributions <paramref name="action"/> declares on
+        /// <paramref name="channel"/> whose query reads only the cards - Dimension Door's "+1 Radius for
+        /// each other spell card removed from the spellbook". A Radius reader holds no Attack frame (no
+        /// offer, target or turn), so it asks here; the count is the same
+        /// <see cref="CardStateMatchCount"/> the Attack and Range arm above asks.
+        /// </summary>
+        public static IReadOnlyList<ValueContribution> CardStateContributions(
+            ActionDefinition action,
+            CardInstanceId sourceCardInstanceId,
+            PrintedValueChannel channel,
+            IEnumerable<CardInstance> instances)
+        {
+            if (action == null || instances == null || !sourceCardInstanceId.IsDefined)
+            {
+                return Array.Empty<ValueContribution>();
+            }
+
+            var result = new List<ValueContribution>();
+            foreach (var declaration in action.RosterValueContributions
+                .Where(value => value.Channel == channel && ReadsOnlyTheCards(value.Query)))
+            {
+                var matches = CardStateMatchCount(declaration.Query, sourceCardInstanceId, instances);
+                if (matches == 0) continue;
+                result.Add(new ValueContribution(
+                    ValueContributionKind.CardTextModifier,
+                    sourceCardInstanceId,
+                    action.Id,
+                    channel,
+                    checked(matches * declaration.AmountPerMatch)));
+            }
+
+            return Array.AsReadOnly(result.ToArray());
+        }
+
+        /// <summary>Milestone 9.30e. The queries answered from the cards alone.</summary>
+        private static bool ReadsOnlyTheCards(RosterValueQueryKind query) =>
+            query == RosterValueQueryKind.OtherSpellsRemovedFromSpellbook;
+
+        /// <summary>
+        /// Milestone 9.30e. The card-only count: the other spells the acting card's book has removed,
+        /// the acting (cast) spell excluded.
+        /// </summary>
+        private static int CardStateMatchCount(
+            RosterValueQueryKind query,
+            CardInstanceId sourceCardInstanceId,
+            IEnumerable<CardInstance> instances)
+        {
+            if (query != RosterValueQueryKind.OtherSpellsRemovedFromSpellbook)
+            {
+                throw new ArgumentOutOfRangeException(nameof(query), query, "Not a card-only roster value query.");
+            }
+
+            return instances == null ? 0 : SpellbookQuery.OtherRemoved(instances, sourceCardInstanceId);
+        }
+
+        /// <summary>
         /// Milestone 8.35z28. The Defense channel's contributions, which are asked with different
         /// collaborators than the Attack and Range ones above and therefore have their own entry point.
         ///
@@ -802,6 +889,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MarkerAttachmentRegister markers)
         {
             var query = declaration.Query;
+
+            // Milestone 9.30e. The one count that reads only the cards, asked before the board is: it
+            // is the same number wherever the actor stands, and the Radius readers that hold no board
+            // ask it through CardStateContributions with the same derivation.
+            if (query == RosterValueQueryKind.OtherSpellsRemovedFromSpellbook)
+                return CardStateMatchCount(query, sourceCardInstanceId, instances);
+
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var actorAt))
                 return 0;
 
