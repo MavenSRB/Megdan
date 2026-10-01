@@ -421,6 +421,57 @@ namespace GuardsDigital.Tests.EditMode
                 "and no other rail does");
         }
 
+        /// <summary>
+        /// Milestone 9.30h1, the 2560x540 capture: Gydion's SPELLBOOK chip, wrapped onto its own line
+        /// beside "NO ITEMS", stood one text line lower than its items strip had measured and spilled 8
+        /// units out of the strip's bottom. The line above it held only "NO ITEMS" - the one word in the
+        /// strip free to wrap, measured on one line and laid out on two. Every word in the strip stays
+        /// on one line, and "NO ITEMS" stands on the strip's own line height (the coin's), so a line
+        /// is never taller laid out than measured. On 8021a4b0 "NO ITEMS" and the Wish count wrapped.
+        /// </summary>
+        [Test]
+        public void TheItemsStrip_KeepsEveryWordOnOneLine_AndNoItemsStandsOnTheStripsOwnLineHeight()
+        {
+            // "NO ITEMS" beside a SPELLBOOK chip - the strip that spilled - and a Wish count beside a
+            // purple card.
+            var book = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(SpellbookZoneTests.CreateSession(true), book).Refresh();
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    TeamSide.Red),
+                out _, out _, out _);
+            var red = session.Projection.Setup.Heroes.First(hero => hero.TeamSide == TeamSide.Red);
+            var tallied = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(
+                new TallyClient(new TallyReadModel(session.Projection,
+                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(red.TeamId, 1, 3),
+                    spellbookOwners: new[] { red.HeroId })),
+                tallied).Refresh();
+
+            var noItems = Descendants(book.Root).OfType<Label>().Single(label =>
+                label.text == "NO ITEMS" &&
+                label.parent.Children().Any(sibling => sibling.name == "gd-spellbook-chip"));
+            Assert.That(Descendants(tallied.Root).Any(element => element.name == "gd-ultimate-tally"), Is.True,
+                "Arrange: a Wish count stands beside a purple card.");
+
+            foreach (var strip in Descendants(book.Root).Concat(Descendants(tallied.Root))
+                .Where(element => element.name == "gd-bonus-strip"))
+            {
+                foreach (var text in Descendants(strip).OfType<TextElement>())
+                {
+                    Assert.That(text.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap),
+                        "'" + text.text + "' in the items strip stays on one line");
+                }
+            }
+
+            var coin = Descendants(noItems.parent.parent).Single(element => element.name == "gd-hero-coin-disc");
+            Assert.That(noItems.style.height.value.value, Is.EqualTo(coin.style.height.value.value),
+                "\"NO ITEMS\" stands on the strip's own line - the coin's height - so the line it starts " +
+                "is the line the strip measured");
+            Assert.That(noItems.style.marginTop.value.value + noItems.style.marginBottom.value.value, Is.Zero,
+                "and no taller than it, so a plaque without items keeps its height");
+        }
+
         private sealed class TallyReadModel : MatchFeaturePresenterTests.DelegatingReadModel
         {
             private readonly IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> tallies;

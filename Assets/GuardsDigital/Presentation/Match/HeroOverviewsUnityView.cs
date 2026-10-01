@@ -699,7 +699,20 @@ namespace GuardsDigital.Presentation.Match
 
             if (hero.ItemBonuses.Count == 0)
             {
-                itemChips.Add(HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText));
+                // Milestone 9.30h1, measured at 2560x540: beside "NO ITEMS" the SPELLBOOK chip wraps
+                // onto a line of its own there, and it stood one text line lower than the strip had
+                // measured, spilling 8 units out of the strip's bottom. The line above it held only
+                // "NO ITEMS", then the one word in the strip free to wrap: the strip measured it on
+                // one line and laid it out on two. It is one reading on one line, standing on the
+                // strip's own line height, so the line it starts is exactly the line measured.
+                var noItems = HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText);
+                noItems.name = "gd-no-items";
+                noItems.style.whiteSpace = WhiteSpace.NoWrap;
+                noItems.style.height = StripCardHeight;
+                noItems.style.marginTop = 0f;
+                noItems.style.marginBottom = 0f;
+                noItems.style.unityTextAlign = TextAnchor.MiddleCenter;
+                itemChips.Add(noItems);
             }
 
             // Milestone 8.15: the unlocked Ultimate, faceup beside the dashboard on the table and
@@ -734,6 +747,8 @@ namespace GuardsDigital.Presentation.Match
                 {
                     tally = HudElements.Text(hero.UltimateTallyLabel, 10f, MatchHudTheme.PrimaryText);
                     tally.name = "gd-ultimate-tally";
+                    // One reading on one line, as every word in the strip is (9.30h1).
+                    tally.style.whiteSpace = WhiteSpace.NoWrap;
                     tally.tooltip = hero.UltimateTallyAssistiveLabel;
                     tally.style.unityTextAlign = TextAnchor.MiddleCenter;
                 }
