@@ -1165,8 +1165,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(box.xMax, Is.LessThanOrEqualTo(blue.xMin + 0.5f), "clear of the Blue rail at " + where);
             Assert.That(box.yMin, Is.GreaterThanOrEqualTo(root.Hud.StatusBarRect.yMax - 0.5f),
                 "below the status strip at " + where);
-            Assert.That(box.yMax, Is.LessThanOrEqualTo(Mathf.Min(red.yMax, blue.yMax) + 0.5f),
-                "above the hand's band at " + where + ": " + box);
+            // The reserved rail columns end at the hand's band (8.25f2); the plaques inside them end
+            // wherever their heroes do, which in a 2v2 is well above it, so the band is read off the
+            // columns the renderer reserves, as the drawer's own layout does.
+            var band = Mathf.Min(root.Hud.RedHeroRailRect.yMax, root.Hud.BlueHeroRailRect.yMax);
+            Assert.That(box.yMax, Is.LessThanOrEqualTo(band + 0.5f),
+                "above the hand's band at " + where + ": " + box + " against the band at " + band);
             Assert.That(box.yMax, Is.LessThanOrEqualTo(root.Hud.RootElement.worldBound.yMax + 0.5f),
                 "inside the screen at " + where + ": " + box);
         }
