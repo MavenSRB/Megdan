@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.33 Terrain target cue evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.33 | Every drawn tile carries the corner marks, so a terrain space Grappling Bolt offers is lit like the choice's other empty candidates instead of drawn as nothing; the Active-effect aura stays on playable spaces. Presentation only; no rule, snapshot or wire change. [Definition](../../Roadmap/PHASE_9.md#x-933-an-offered-terrain-space-is-lit-like-every-other-target). | `milestone/9.33` |
+
 ## Milestone 9.32c Enemy obstacle evidence
 
 | Milestone | Outcome and definition | Commit |

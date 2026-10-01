@@ -449,6 +449,22 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             var terrain = new HexCoordinate(-3, -2);
+
+            // Milestone 9.33, from live play ("cutter silver does not work on terrain anymore"): the
+            // choice is answered on the board alone, so an offered terrain space must be LIT like every
+            // other candidate - before 9.33 only playable tiles carried the corner marks, and the
+            // terrain target was an answer nobody could see. Terrain the offer leaves out stays dark.
+            Assert.That(Tile(terrain).IsPlayable, Is.False, "(-3,-2) is terrain on this map.");
+            Assert.That(Tile(terrain).CornerHighlight, Is.Not.Null,
+                "An offered terrain space carries the corner marks every candidate wears.");
+            // Lit in the marks the board gives every EMPTY candidate of a choice whose consumer is a
+            // Move (the preview's Movement consequence): a click there sends her along that file.
+            Assert.That(Tile(terrain).CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement),
+                "The offered terrain is lit. Offer was: " + shape);
+            Assert.That(Tile(new HexCoordinate(-3, 3)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.None),
+                "Terrain the offer leaves out is not lit. Offer was: " + shape);
+
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(terrain).transform.position), Is.True,
                 "The obstacle is named by clicking the space it stands on. " +

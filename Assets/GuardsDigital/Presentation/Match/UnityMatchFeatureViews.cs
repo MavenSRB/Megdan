@@ -96,7 +96,8 @@ namespace GuardsDigital.Presentation.Match
             cornerHighlightTemplate = sharedCornerHighlightTemplate;
             if (cornerHighlightTemplate != null)
             {
-                foreach (var tile in this.tiles.Where(value => value.IsPlayable))
+                // Milestone 9.33: terrain tiles too, so a terrain candidate can be lit.
+                foreach (var tile in this.tiles)
                 {
                     tile.ConfigureCornerHighlight(cornerHighlightTemplate);
                 }
@@ -591,7 +592,12 @@ namespace GuardsDigital.Presentation.Match
             // when minion is selectable, and full outline when a teammate or you have selected it".
             var pickedCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
                 model.MinionBattlePicks.SelectMany(pick => CoordinatesOf(model, pick.Target)));
-            foreach (var tile in tiles.Where(value => value.IsPlayable))
+            // Milestone 9.33. EVERY drawn tile, terrain included. Cutter's Grappling Bolt offers terrain
+            // as a target (p.18: terrain is an obstacle) and its choice is answered on the board alone,
+            // so a terrain candidate this pass skipped was an answer the player could not see. Nothing
+            // else lights terrain: no move, attack or respawn ever names it, and a hover draws only on
+            // a lit candidate.
+            foreach (var tile in tiles)
             {
                 // Clear any state left by a pre-8.30h renderer. Configured play no longer activates
                 // whole-hex fills or rims for a board choice or projected result.
@@ -600,8 +606,8 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35z63: a live Active effect's disk, on its OWN layer under
                 // every mark and every piece. It is not the retired choice fill and never touches
                 // `IsHighlighted` - see `HexTileView.SetActiveEffectAura` for why that separation is
-                // load-bearing rather than tidy.
-                var inAura = activeEffectAura.Contains(tile.Coordinate);
+                // load-bearing rather than tidy. Playable spaces only, as before 9.33.
+                var inAura = tile.IsPlayable && activeEffectAura.Contains(tile.Coordinate);
                 tile.SetActiveEffectAura(
                     inAura,
                     inAura ? EnsureActiveEffectAuraMesh(tile.OuterRadius) : null,

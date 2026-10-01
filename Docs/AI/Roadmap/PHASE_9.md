@@ -379,3 +379,21 @@ Result: `Builds/Playtest-9.31-gydion` and its ZIP (92,727,312 bytes, 185 entries
 Completed 2026-10-01.
 
 Historical evidence: [9.31 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-931-package-evidence).
+
+## Live-play correctives, authorized 2026-10-01 (night)
+
+Reported by the user after the 2026-10-01 evening playtest on `Builds/Playtest-9.31-gydion` (host log `Builds/Playtest-9.31-gydion/Logs/launches/b1dc22d9c8da4682b07a90af36dac92e/match-20261001-181555.log`). Executed one at a time with separate validation and commits, beside the Takahide sequence, whose numbers stay 9.32x.
+
+### [x] 9.33 An offered terrain space is lit like every other target
+
+Authorized 2026-10-01 by the user: "cutter silver does not work on terrain anymore." Measured cause: Grappling Bolt's choice is answered on the board alone (every candidate is a previewed space, so the decision window docks with no controls), and since 8.30h the board configured and drew its corner marks on playable tiles only. A terrain target was therefore offered, clickable (8.39j) and resolved correctly, but drawn as nothing. In the playtest, Cutter's last Grappling Bolt took 71 s to answer. Not the cause, each measured: the selection and its Move on the official map from the playtest's positions (every terrain file offered, Cutter reeled beside it), the seat and wire projection (terrain coordinates travel like any space), and the local click (`CutterUiJourneyPlayModeTests` clicks terrain at (-3,-2), green at 20:28). Outcome: every drawn tile carries the corner marks, so an offered terrain space is lit in the marks the board gives every empty candidate of that choice; the Active-effect aura stays on playable spaces; nothing else can name terrain, and a hover draws only on a lit candidate. No rule, command, snapshot or wire change. Closing check: the Cutter grapple journey asserts the offered terrain lit and an unoffered terrain dark, failing on the base and passing after; the complete Play Mode suite and the board-cue Edit Mode fixtures green. T2 with complete Play Mode, because every board render draws through the changed pass.
+
+Result: `UnityMatchFeatureViews` configures the shared corner-highlight template on every drawn tile and runs the cue pass over every tile, so an offered terrain space wears the six corner marks; the Active-effect aura is still drawn on playable spaces only. Grappling Bolt's preview tags its candidates with a Movement consequence (the chosen space feeds a Move), so an offered terrain space is lit in the movement-destination marks the board gives every empty candidate of such a choice, and its pieces keep their target cues. `CutterUiJourneyPlayModeTests.GrapplingBoltReelsHerToTheFirstObstacleOnAFile_AndStopsBesideIt` now asserts the offered terrain at (-3,-2) lit and the unoffered terrain at (-3,3) dark before it clicks; on the base it failed with "An offered terrain space carries the corner marks every candidate wears. Expected: not null But was: null". No rule, command, snapshot or wire change.
+
+Completed 2026-10-01.
+
+Historical evidence: [9.33 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-933-terrain-target-cue-evidence).
+
+### [ ] 9.34 A spell attack's spotlight shows the spell card
+
+Authorized 2026-10-01 by the user: "Gydion when he attacks animation shows syntetic card for spell attack, it needs to be actual spell card." Measured cause: a spell attack's Attack row names the spell card it was cast from (9.30c), and the attack spotlight drew every attacking card through the hero-card face builder, which has no spell artwork and draws a generated hero card. Outcome: when the attacking card is a spell, the spotlight carries the spell's own face (`SpellCardViewModel`) and draws it through `SpellCardFaceView`, the builder the spell choice and the SPELLBOOK drawer share, centred in the card box the layout already keeps clear of both pieces; a hero card attack is unchanged. No rule, command, snapshot or wire change. Closing check: `AttackSpotlightTests` proves a spell attack carries the spell face and no hero card (failing on the base, passing after) and a hero card attack carries no spell face; the spotlight and board-cue fixtures green. T2.
