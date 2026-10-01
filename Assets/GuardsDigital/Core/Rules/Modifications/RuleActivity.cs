@@ -77,7 +77,35 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// operations rather than actions. Naming it here is what lets one restriction family answer
         /// the question, so the repeat is never <em>offered</em> rather than refused after the fact.</para>
         /// </summary>
-        Repeat = 13
+        Repeat = 13,
+
+        /// <summary>
+        /// Milestone 9.30f. An <see cref="Attack"/> performed from a card that is p.9's BASIC
+        /// classification - "All actions on a basic card are basic actions" - Gydion's Shield, "<b>This
+        /// round:</b> You are immune to basic attacks."
+        ///
+        /// <para><b>A class of <see cref="Attack"/>, not an activity beside it.</b> An Attack
+        /// targeting question that knows the attacking card asks this member (or
+        /// <see cref="NonBasicAttack"/>) through <see cref="RuleActivityQuery.ForAttack"/>, and a
+        /// declaration naming <see cref="Attack"/> or <see cref="All"/> still covers it
+        /// (<see cref="RuleModification.Covers"/>), so every Attack immunity declared before this
+        /// milestone reaches exactly what it reached. A declaration naming this member covers only a
+        /// question that knows the attack is basic: a caller asking <see cref="Attack"/> without the
+        /// card has not said which class it is asking about.</para>
+        ///
+        /// <para>The classification is the attacking card DEFINITION's own (Snorri's Block categories
+        /// read it the same way), so a cast spell's Attack is classified by the spell - Magic Missile
+        /// and Shocking Grasp are basic - and not by the card that cast it (GY-Q3).</para>
+        /// </summary>
+        BasicAttack = 14,
+
+        /// <summary>
+        /// Milestone 9.30f. An <see cref="Attack"/> performed from a card that is NOT p.9's basic -
+        /// a Tier I-III card or an Ultimate (Snorri's Oath of Perseverance reads non-basic the same
+        /// way) - Gydion's Invulnerability, "<b>This Round:</b> You are immune to non-basic attacks."
+        /// The complement of <see cref="BasicAttack"/>; see it for the coverage rule.
+        /// </summary>
+        NonBasicAttack = 15
     }
 
     public static class RuleActivityQuery
@@ -108,6 +136,27 @@ namespace GuardsDigital.Core.Rules.Modifications
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(actionKind), actionKind, "No rules activity is declared for this action kind.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.30f. The activity an Attack targeting question asks when it knows the attacking
+        /// card's p.9 classification: <see cref="RuleActivity.BasicAttack"/> for a basic card,
+        /// <see cref="RuleActivity.NonBasicAttack"/> for a Tier or an Ultimate, and the unclassified
+        /// <see cref="RuleActivity.Attack"/> for a card that states none - which only an Attack
+        /// declaration (or an unqualified one) covers.
+        /// </summary>
+        public static RuleActivity ForAttack(CardClassification classification)
+        {
+            switch (classification)
+            {
+                case CardClassification.Basic:
+                    return RuleActivity.BasicAttack;
+                case CardClassification.NonBasic:
+                case CardClassification.Ultimate:
+                    return RuleActivity.NonBasicAttack;
+                default:
+                    return RuleActivity.Attack;
             }
         }
     }

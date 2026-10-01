@@ -139,8 +139,8 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(new[]
                 {
-                    "hanu-fight-and-flight", "ignatia-scorching-blaze", "ignatia-searing-heat",
-                    "silverarrow-wild-hunt-effect", "swift-bounce"
+                    "gydion-suggestion", "hanu-fight-and-flight", "ignatia-scorching-blaze",
+                    "ignatia-searing-heat", "silverarrow-wild-hunt-effect", "swift-bounce"
                 }),
                 "Only the faces printing an exact distance whose floor is above one declare a " +
                 "floor. A further name here is a face whose printed text somebody read as exact: " +
@@ -153,7 +153,10 @@ namespace GuardsDigital.Tests.EditMode
                 "friendly/enemy hero in radius 2 spaces in a straight line\" and Scorching Blaze " +
                 "the same at \"2 or 3\", so one binds a floor equal to its ceiling and the other a " +
                 "floor below it - which is the same declaration this sweep has always counted, made " +
-                "about somebody else's feet through the new `subjectSpace` anchor.");
+                "about somebody else's feet through the new `subjectSpace` anchor. Gydion's " +
+                "Suggestion joined them at milestone 9.30f: \"If able, an enemy hero in radius moves " +
+                "3 spaces in a straight line\" is exactly three or not at all (GY-Q6, Whisper Ruling " +
+                "16a), on the enemy's feet, with that hero's seat choosing the line.");
         }
 
         // -------------------------------------------------------------------------------------------

@@ -261,7 +261,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaMovedBecauseThisEndingHasNoOtherSource()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(52),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(53),
                 "v42 carries the solo winner. The three team causes are re-derived on restore from " +
                 "the Lane-Push transition and p.13's counters; this one has no such source, because " +
                 "holding thirteen coins is not the same fact as having resolved the branch while " +
@@ -296,13 +296,19 @@ namespace GuardsDigital.Tests.EditMode
         {
             return TeamLifeState.Restore(
                 Participants(),
-                new TeamLifeRestoreState(new[]
-                {
-                    new KeyValuePair<TeamId, int>(
-                        RedTeam, eliminatedTeam.Equals(RedTeam) ? 0 : 5),
-                    new KeyValuePair<TeamId, int>(
-                        BlueTeam, eliminatedTeam.Equals(BlueTeam) ? 0 : 5)
-                }));
+                new TeamLifeRestoreState(
+                    new[]
+                    {
+                        new KeyValuePair<TeamId, int>(
+                            RedTeam, eliminatedTeam.Equals(RedTeam) ? 0 : 5),
+                        new KeyValuePair<TeamId, int>(
+                            BlueTeam, eliminatedTeam.Equals(BlueTeam) ? 0 : 5)
+                    },
+                    new[]
+                    {
+                        new KeyValuePair<TeamId, int>(RedTeam, 5),
+                        new KeyValuePair<TeamId, int>(BlueTeam, 5)
+                    }));
         }
 
         /// <summary>A 2v2, so the winner has a team-mate the printed sentence does not mention.</summary>
@@ -346,6 +352,7 @@ namespace GuardsDigital.Tests.EditMode
             TeamLifeState.Restore(
                 SingleTeamParticipants(),
                 new TeamLifeRestoreState(
+                    new[] { new KeyValuePair<TeamId, int>(RedTeam, 5) },
                     new[] { new KeyValuePair<TeamId, int>(RedTeam, 5) }));
     }
 }

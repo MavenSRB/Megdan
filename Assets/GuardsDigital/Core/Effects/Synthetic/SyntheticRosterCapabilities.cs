@@ -1415,6 +1415,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string LineSubjectSpaceParameter = "subjectSpace";
 
         /// <summary>
+        /// Milestone 9.30f. WHO picks where this line ends, when it is not the acting hero - Gydion's
+        /// Suggestion, "If able, an enemy hero in radius moves 3 spaces in a straight line", where by
+        /// GY-Q6 (user, 2026-10-01; Whisper Ruling 16) Gydion picks the hero and THAT hero's seat picks
+        /// the direction.
+        ///
+        /// <para>The same bound chooser <c>synthetic-direct-move@3</c> carries since milestone 8.57b
+        /// (<see cref="SyntheticDisplacementCapabilities.ChooserParameterName"/>), spelled the same: the
+        /// named hero travels to the pause as <see cref="EffectChoiceRequest.ChooserHeroId"/>, which the
+        /// decision-owner projection already routes to that hero's seat. A bound hero this match does
+        /// not field offers nothing rather than falling back to the actor - quietly handing the decision
+        /// back would turn a fault into a different card.</para>
+        ///
+        /// <para>Optional and unbound everywhere else, so every consumer written before this milestone
+        /// keeps the actor as its chooser - and a parameter added to a registered capability moves no
+        /// pinned byte.</para>
+        /// </summary>
+        public const string LineChooserParameter = "chooser";
+
+        /// <summary>
         /// Milestone 8.112d. A space fixing the HEADING of the line, read from where the mover stands
         /// through that space and on: Mrak's Boulder Rush, Boulder Blitz and Boulderdozer, "you may
         /// move up to 2 [3 / 4] spaces <b>in the direction of the push</b>".
@@ -1577,7 +1596,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // LineMaximumEmptyCrossedParameter.
                         new EffectCapabilityParameter(
                             LineMaximumEmptyCrossedParameter, EffectValueKind.Integer,
-                            isRequired: false)
+                            isRequired: false),
+
+                        // Milestone 9.30f. Suggestion's "that hero picks the direction" (GY-Q6) - see
+                        // LineChooserParameter.
+                        new EffectCapabilityParameter(
+                            LineChooserParameter, EffectValueKind.Hero, isRequired: false)
                     },
                     new[]
                     {
@@ -1590,10 +1614,43 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var destinations = Destinations(context);
-                return destinations.Count == 0
-                    ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                if (destinations.Count == 0 || !TryResolveLineChooser(context, out var chooser))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 9.30f. A line whose end another hero picks (Suggestion, GY-Q6) is asked of
+                // that hero exactly as `synthetic-direct-move@3` asks a bound mover-chooser; an unbound
+                // chooser is the actor, as before.
+                return EffectExecutionResult.NeedsChoice(chooser.IsDefined
+                    ? new EffectChoiceRequest(
+                        EffectChooserRole.None, destinations.Select(EffectValue.Space), 1, 1, chooser)
+                    : new EffectChoiceRequest(
                         EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
+            }
+
+            /// <summary>
+            /// Milestone 9.30f. The hero <see cref="LineChooserParameter"/> names, or the undefined hero
+            /// where it names none (the actor decides). False where it names a hero this match does not
+            /// field - a refusal rather than a fall back to the actor.
+            /// </summary>
+            private static bool TryResolveLineChooser(EffectCapabilityContext context, out HeroId chooser)
+            {
+                chooser = default;
+                var declared = context.Input(LineChooserParameter);
+                if (declared.Kind != EffectValueKind.Hero)
+                {
+                    return true;
+                }
+
+                if (!declared.HeroId.IsDefined || context.Participants == null ||
+                    !context.Participants.Heroes.Any(hero => hero.Id.Equals(declared.HeroId)))
+                {
+                    return false;
+                }
+
+                chooser = declared.HeroId;
+                return true;
             }
 
             public EffectExecutionResult Resume(
@@ -1613,7 +1670,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Destinations(context).Count == 0
+                Destinations(context).Count == 0 || !TryResolveLineChooser(context, out _)
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
 

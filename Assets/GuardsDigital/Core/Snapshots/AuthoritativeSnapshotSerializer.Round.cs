@@ -473,33 +473,52 @@ namespace GuardsDigital.Core.Snapshots
         /// Zero is a legal recorded value and the one p.13's last sentence produces, so the reader
         /// refuses a negative rather than a zero; <c>TeamLifeState.Restore</c> owns the coverage rule
         /// that every participating team appears exactly once.
+        ///
+        /// <para><b>v53 (milestone 9.30f): each row also carries the counters that team BEGAN with.</b>
+        /// Gydion's Energy Drain regains a SPENT counter (GY-Q11) - the difference between the two - so a
+        /// payload carrying only the remaining number would restore a team that had spent a counter as
+        /// one that never had, and the regain would silently stop working after a restore. A start below
+        /// one, or a remaining count above the start, is a state no match produces and is refused.</para>
         /// </summary>
         private static void WriteTeamLives(
             BinaryWriter writer,
             GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState state)
         {
+            var starting = state.StartingCounters.ToDictionary(entry => entry.Key, entry => entry.Value);
             writer.Write(state.Counters.Count);
             foreach (var entry in state.Counters)
             {
                 writer.Write(entry.Key.Value);
                 writer.Write(entry.Value);
+                writer.Write(starting[entry.Key]);
             }
         }
 
         private static GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState ReadTeamLives(
-            BinaryReader reader) =>
-            new GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState(
-                ReadMany(reader, "team Life counters", () =>
+            BinaryReader reader)
+        {
+            var rows = ReadMany(reader, "team Life counters", () =>
+            {
+                var teamId = new TeamId(reader.ReadString());
+                var count = reader.ReadInt32();
+                if (count < 0)
                 {
-                    var teamId = new TeamId(reader.ReadString());
-                    var counters = reader.ReadInt32();
-                    if (counters < 0)
-                    {
-                        throw Malformed($"Team Life counter total {counters} is outside the legal range.");
-                    }
+                    throw Malformed($"Team Life counter total {count} is outside the legal range.");
+                }
 
-                    return new KeyValuePair<TeamId, int>(teamId, counters);
-                }));
+                var began = reader.ReadInt32();
+                if (began < 1 || count > began)
+                {
+                    throw Malformed(
+                        $"Team Life counters {count} of a starting {began} are outside the legal range.");
+                }
+
+                return (Counters: new KeyValuePair<TeamId, int>(teamId, count),
+                    Starting: new KeyValuePair<TeamId, int>(teamId, began));
+            });
+            return new GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState(
+                rows.Select(row => row.Counters), rows.Select(row => row.Starting));
+        }
 
         /// <summary>
         /// Milestone 7.6. Which heroes bought a level in the round the payload was taken in, which is

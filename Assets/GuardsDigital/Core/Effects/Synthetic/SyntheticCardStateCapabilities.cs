@@ -89,6 +89,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string RestrictToCardParameter = "restrictToCard";
 
+        /// <summary>
+        /// Milestone 9.30f. The p.9 classification this discard is restricted to - Gydion's Cloud
+        /// Kill, "discards a <b>basic</b> card, if able", and Energy Drain, "discards a <b>non-basic</b>
+        /// card, if able" - or <see cref="CardClassification.None"/> for the unrestricted reading every
+        /// declaration before it has. Optional and defaulting to <c>None</c>, exactly as
+        /// <see cref="ColorParameter"/> was added to both live revisions at 8.37 without minting a
+        /// third, so no earlier composition's candidate set moves; a parameter added to a registered
+        /// capability moves no pinned byte (the identity walker never digests a schema).
+        ///
+        /// <para>It narrows the SAME criteria the colour does, through
+        /// <see cref="CardCharacteristicQuery"/>'s classification predicate, so the offer, the probe
+        /// and the commit read one question. A hand card is <see cref="CardClassification.Basic"/> or
+        /// <see cref="CardClassification.NonBasic"/>; an Ultimate is never in hand.</para>
+        /// </summary>
+        public const string ClassificationParameter = "classification";
+
         /// <summary>The card this capability discarded, so a later node can bind it.</summary>
         public const string DiscardedOutput = "discarded";
 
@@ -151,7 +167,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectCapabilityParameter(
                             RestrictToCardParameter,
                             EffectValueKind.CardInstance,
-                            isRequired: false)
+                            isRequired: false),
+                        new EffectCapabilityParameter(
+                            ClassificationParameter,
+                            EffectValueKind.Integer,
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<CardClassification>())
                     },
                     reportsInability
                         ? new[]
@@ -236,7 +257,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var offer = ColorRestrictedDiscard.Offer(
-                    Criteria(chooser, Color(context)),
+                    Criteria(chooser, Color(context), Classification(context)),
                     EffectChooserRole.None,
                     context.CardState.Definitions,
                     context.CardState.Instances,
@@ -302,7 +323,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // a card discarded, played, or otherwise moved between the offer and the answer is
                 // refused rather than discarded a second time. Nothing is mutated on that path.
                 var result = ColorRestrictedDiscard.Resolve(
-                    Criteria(chooser, Color(context)),
+                    Criteria(chooser, Color(context), Classification(context)),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
                     context.CardState.Instances,
@@ -367,7 +388,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var candidates = CardCharacteristicQuery
                     .FindCandidates(
-                        Criteria(chooser, Color(context)),
+                        Criteria(chooser, Color(context), Classification(context)),
                         context.CardState.Definitions,
                         context.CardState.Instances)
                     .AsEnumerable();
@@ -433,12 +454,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// every printed hand definition - which is RULING 21's "Purple is inert" exactly, read here
             /// rather than re-decided.</para>
             /// </summary>
-            private static CardCharacteristicCriteria Criteria(HeroId chooser, CardColor color) =>
+            private static CardCharacteristicCriteria Criteria(
+                HeroId chooser, CardColor color, CardClassification classification) =>
                 new CardCharacteristicCriteria(
                     ownerId: chooser,
                     colors: color == CardColor.None ? null : new[] { color },
+                    // Milestone 9.30f. "a basic / non-basic card" - see ClassificationParameter. None is
+                    // the unrestricted reading, never "a card stating no classification".
+                    classification: classification == CardClassification.None
+                        ? (CardClassification?)null
+                        : classification,
                     locations: new[] { CardLocation.Hand },
                     hasBeenPlayed: false);
+
+            /// <summary>
+            /// Milestone 9.30f. The classification this discard is restricted to, or
+            /// <see cref="CardClassification.None"/> for the unrestricted reading - the schema's own
+            /// declared default, so an unbound input changes nothing.
+            /// </summary>
+            private static CardClassification Classification(EffectCapabilityContext context) =>
+                (CardClassification)context.Input(ClassificationParameter).IntegerValue;
         }
     }
 }

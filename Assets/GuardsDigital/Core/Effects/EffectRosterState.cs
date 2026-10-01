@@ -38,6 +38,7 @@ namespace GuardsDigital.Core.Effects
         private readonly IResolvedTurnSlotSwap resolvedTurnSlotSwap;
         private readonly IItemCardSwap itemCardSwap;
         private readonly GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory;
+        private readonly TeamLifeState teamLives;
 
         private EffectRosterState()
         {
@@ -50,7 +51,8 @@ namespace GuardsDigital.Core.Effects
             GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory,
             IResolvedTurnSlotSwap resolvedTurnSlotSwap,
             IItemCardSwap itemCardSwap,
-            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory)
+            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory,
+            TeamLifeState teamLives)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
@@ -59,6 +61,7 @@ namespace GuardsDigital.Core.Effects
             this.resolvedTurnSlotSwap = resolvedTurnSlotSwap;
             this.itemCardSwap = itemCardSwap;
             this.teamVictory = teamVictory;
+            this.teamLives = teamLives;
         }
 
         /// <summary>
@@ -82,12 +85,13 @@ namespace GuardsDigital.Core.Effects
             GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory = null,
             IResolvedTurnSlotSwap resolvedTurnSlotSwap = null,
             IItemCardSwap itemCardSwap = null,
-            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory = null) =>
+            GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory = null,
+            TeamLifeState teamLives = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
-                soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory);
+                soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -102,6 +106,16 @@ namespace GuardsDigital.Core.Effects
 
         public IItemCardSwap ItemCardSwap =>
             IsAvailable ? itemCardSwap : null;
+
+        /// <summary>
+        /// Milestone 9.30f. The match's team Life counters, which Gydion's Energy Drain raises ("Your
+        /// team regains 1 spent Life counter"), or <c>null</c> where this state was composed without
+        /// them - the same legitimate absence <see cref="SoloVictory"/> has, answered by the capability
+        /// regaining nothing rather than by throwing. The live state, not a copy: the round hands over
+        /// the one <c>TeamLives</c> p.13's spends already write.
+        /// </summary>
+        public TeamLifeState TeamLives =>
+            IsAvailable ? teamLives : null;
 
         /// <summary>
         /// Milestone 8.39g1. The round's solo-victory claim, or <c>null</c> where this state was

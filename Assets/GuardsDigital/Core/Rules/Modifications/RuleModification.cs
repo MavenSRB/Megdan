@@ -1461,6 +1461,13 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Whether this declaration reaches <paramref name="activity"/>. An <see cref="RuleActivity.All"/>
         /// declaration reaches every activity; a specific one reaches only itself, which is p.18's "is
         /// affected by other effects and actions".
+        ///
+        /// <para>Milestone 9.30f. One family is nested: <see cref="RuleActivity.Attack"/> is every
+        /// Attack, so a declaration naming it also reaches a question about one CLASS of Attack -
+        /// <see cref="RuleActivity.BasicAttack"/> or <see cref="RuleActivity.NonBasicAttack"/>, asked by
+        /// a targeting question that knows the attacking card. The reverse does not hold: a declaration
+        /// naming one class (Gydion's Shield, "immune to basic attacks") reaches only that class, and
+        /// not a question asked about an Attack whose class it does not state.</para>
         /// </summary>
         public bool Covers(RuleActivity activity)
         {
@@ -1469,9 +1476,11 @@ namespace GuardsDigital.Core.Rules.Modifications
                 throw new ArgumentException("Coverage requires a named activity.", nameof(activity));
             }
 
+            var attackClass = activity == RuleActivity.BasicAttack || activity == RuleActivity.NonBasicAttack;
             for (var index = 0; index < Activities.Count; index++)
             {
-                if (Activities[index] == RuleActivity.All || Activities[index] == activity)
+                if (Activities[index] == RuleActivity.All || Activities[index] == activity ||
+                    (attackClass && Activities[index] == RuleActivity.Attack))
                 {
                     return true;
                 }

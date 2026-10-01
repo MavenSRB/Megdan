@@ -172,7 +172,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 rangeTotal,
                 participants,
                 board,
-                modifications);
+                modifications,
+                // Milestone 9.30f. The same attacking-card classification the unmoded Attack reads.
+                AttackTargetQuery.AttackClassificationOf(offer, definitions));
 
             return NarrowedToTheBulletsSubject(
                 admitted, bullet, cardInstances, attackerId, participants, board, markers, spaces,

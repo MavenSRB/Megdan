@@ -907,10 +907,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(matches.Length, Is.EqualTo(1),
                 "The Life-counter section must be found exactly once for this rewrite to mean anything.");
 
+            // Milestone 9.30f (schema v52): each row is the team id, its remaining counters and the
+            // counters it began with, so the row before Red's is two integers long.
             var target = matches[0] + LengthPrefixed(teamId.Value).Length;
             if (!teamId.Equals(BlueTeam))
             {
-                target += sizeof(int) + LengthPrefixed(BlueTeam.Value).Length;
+                target += 2 * sizeof(int) + LengthPrefixed(BlueTeam.Value).Length;
             }
 
             using (var stream = new MemoryStream(bytes, true))
@@ -928,7 +930,9 @@ namespace GuardsDigital.Tests.EditMode
         private static byte[] TeamLifeSectionSignature(int counters) =>
             LengthPrefixed(BlueTeam.Value)
                 .Concat(BitConverter.GetBytes(counters))
+                .Concat(BitConverter.GetBytes(counters))
                 .Concat(LengthPrefixed(RedTeam.Value))
+                .Concat(BitConverter.GetBytes(counters))
                 .Concat(BitConverter.GetBytes(counters))
                 .ToArray();
 

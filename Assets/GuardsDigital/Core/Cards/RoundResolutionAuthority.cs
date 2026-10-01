@@ -240,8 +240,11 @@ namespace GuardsDigital.Core.Cards
             // three authorities it already carries, which is how a printed card reaches an ending it
             // otherwise could not name. It is `this` rather than a delegate because the claim is this
             // authority's own state and the interface is already the narrowing.
+            // Milestone 9.30f. And the match's one team Life state, which card text may now raise
+            // (Gydion's Energy Drain) beside p.13's spends - the same instance, never a copy.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
-                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this));
+                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
+                TeamLives));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -1172,7 +1175,9 @@ namespace GuardsDigital.Core.Cards
                 cardActions.EnsureCoinLedger(participants),
                 // Milestone 8.39g1. A restored round is as claimable as a composed one - the claim is
                 // refused on its own terms when the payload already carries a winner.
-                authority, authority, authority, authority));
+                authority, authority, authority, authority,
+                // Milestone 9.30f. The restored Life state, restored a few lines above.
+                authority.TeamLives));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:

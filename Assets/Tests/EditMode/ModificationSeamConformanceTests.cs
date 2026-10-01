@@ -764,6 +764,15 @@ namespace GuardsDigital.Tests.EditMode
                     "The verified sources protect a unit from card-text direct Move through " +
                     "immunity, which is consumed; none restricts a unit from performing that " +
                     "operation, so a restriction naming it would forbid nothing that happens.",
+                ["Restriction/BasicAttack"] =
+                    "Milestone 9.30f added the class for Gydion's Shield, which is an immunity, and " +
+                    "the immunity is consumed. No verified source bars a hero from performing basic " +
+                    "attacks; p.18's restrictions name action kinds, which ActionRestrictionQuery asks " +
+                    "as Attack, so a restriction naming one class would forbid nothing that happens.",
+                ["Restriction/NonBasicAttack"] =
+                    "Milestone 9.30f added the class for Gydion's Invulnerability, an immunity, which " +
+                    "is consumed. No verified source bars a hero from performing non-basic attacks, for " +
+                    "Restriction/BasicAttack's reason.",
                 ["Immunity/Movement"] =
                     "p.18's immunity is a targeting rule - \"you cannot target that unit\" - and a " +
                     "Movement action targets no unit. ActionDefinition also refuses a Movement " +
@@ -987,6 +996,19 @@ namespace GuardsDigital.Tests.EditMode
                 "AttackTargetQuery.FindLegalEnemyTargets",
                 Declaring(RuleModification.ForImmunity(RuleActivity.Attack), blue, fixture),
                 fixture.ReadLegalAttackTargets));
+
+            // Milestone 9.30f. Gydion's Shield and Invulnerability: an Attack's class is asked by the
+            // same targeting query once it knows the attacking card's p.9 classification.
+            cases.Add(new ConsumptionCase(
+                "Immunity/BasicAttack",
+                "AttackTargetQuery.FindLegalEnemyTargets (a basic card's Attack)",
+                Declaring(RuleModification.ForImmunity(RuleActivity.BasicAttack), blue, fixture),
+                set => fixture.ReadLegalAttackTargets(CardClassification.Basic, set)));
+            cases.Add(new ConsumptionCase(
+                "Immunity/NonBasicAttack",
+                "AttackTargetQuery.FindLegalEnemyTargets (a non-basic card's Attack)",
+                Declaring(RuleModification.ForImmunity(RuleActivity.NonBasicAttack), blue, fixture),
+                set => fixture.ReadLegalAttackTargets(CardClassification.NonBasic, set)));
             cases.Add(new ConsumptionCase(
                 "Immunity/ObjectPush",
                 "SyntheticDisplacementCapabilities push target derivation",
@@ -1288,6 +1310,14 @@ namespace GuardsDigital.Tests.EditMode
             public string ReadLegalAttackTargets(RuleModificationSet modifications) =>
                 AttackTargetQuery.FindLegalEnemyTargets(
                         Red, AttackRangeKind.NonRanged, 1, Participants, Board, modifications)
+                    .Count.ToString(CultureInfo.InvariantCulture);
+
+            /// <summary>Milestone 9.30f. The same question, asked of an Attack from a card of that class.</summary>
+            public string ReadLegalAttackTargets(
+                CardClassification attackClassification, RuleModificationSet modifications) =>
+                AttackTargetQuery.FindLegalEnemyTargets(
+                        Red, PrintedAttackTargetPolicy.ForClassification(AttackRangeKind.NonRanged), 1,
+                        Participants, Board, modifications, attackClassification)
                     .Count.ToString(CultureInfo.InvariantCulture);
 
             /// <summary>

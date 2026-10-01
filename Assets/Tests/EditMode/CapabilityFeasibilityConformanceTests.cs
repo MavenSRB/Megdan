@@ -122,6 +122,27 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(FindPerformingProbes(spellbook), Is.Empty);
         }
 
+        /// <summary>
+        /// Milestone 9.30f. Energy Drain's regain of a spent Life counter is a new handler type, held
+        /// back with Gydion's dealing (9.30i) like the spellbook's; it is asked both rules here. Shield's
+        /// and Invulnerability's immunities run on the registered <c>ActiveEffectCreationHandler</c>.
+        /// </summary>
+        [Test]
+        public void TheLifeRegainHandlerType_KeepsBothRules_WhileUnregistered()
+        {
+            var regain = SyntheticTeamLifeCapabilities.DeferredHandlers()
+                .Select(handler => handler.GetType())
+                .Distinct()
+                .ToArray();
+            Assert.That(regain, Has.Length.EqualTo(1));
+            Assert.That(RegisteredHandlerTypes().Intersect(regain), Is.Empty,
+                "registered only with the hero whose dealt faces cast Energy Drain (9.30i)");
+            Assert.That(FindUnsharedDerivations(regain), Is.Empty);
+            Assert.That(FindPerformingProbes(regain), Is.Empty);
+            Assert.That(RegisteredHandlerTypes(), Is.SupersetOf(GuardsDigital.Core.Cards.Verified.GydionCardContent
+                .ImmunityDiscardLifeMoveHandlers().Select(handler => handler.GetType()).Distinct()));
+        }
+
         [Test]
         public void TheNamedMembers_Resolve()
         {
@@ -137,7 +158,9 @@ namespace GuardsDigital.Tests.EditMode
             // (`CardLifecycleAuthority.TryRemoveFromSpellbookFaceup`) and a refill returns it
             // (`CardLifecycleAuthority.TryReturnToSpellbook`); asking whether a spell could be cast or
             // the book refilled must never move a spell.
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(24),
+            // Milestone 9.30f moves it by one: Energy Drain regains a spent Life counter
+            // (`TeamLifeState.TryRegainSpent`); asking whether it would must never regain one.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(25),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -625,7 +648,11 @@ namespace GuardsDigital.Tests.EditMode
                 nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryRemoveFromSpellbookFaceup)),
             ILConformanceScanner.Method(
                 typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
-                nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryReturnToSpellbook))
+                nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryReturnToSpellbook)),
+            // Milestone 9.30f. The first rule that raises a team's Life counters (Energy Drain).
+            ILConformanceScanner.Method(
+                typeof(GuardsDigital.Core.Rules.Consequences.TeamLifeState),
+                nameof(GuardsDigital.Core.Rules.Consequences.TeamLifeState.TryRegainSpent))
         };
 
         private static MethodInfo ResultFactory(string name) =>

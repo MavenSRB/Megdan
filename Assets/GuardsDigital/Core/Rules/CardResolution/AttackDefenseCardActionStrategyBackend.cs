@@ -3681,7 +3681,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 rangeTotal,
                 participants,
                 board ?? adjacentMoveAuthority,
-                modifications);
+                modifications,
+                // Milestone 9.30f. The attacking card's own classification, which an immunity scoped
+                // to basic or non-basic attacks reads (a cast spell's is the spell's, GY-Q3).
+                AttackTargetQuery.AttackClassificationOf(offer, definitions));
         }
 
         private static ActionOffer? FindPendingAttackOffer(

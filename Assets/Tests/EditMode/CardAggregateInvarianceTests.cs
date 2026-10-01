@@ -913,17 +913,20 @@ namespace GuardsDigital.Tests.EditMode
         // victory was claimed for and every team's count toward it (Gydion's Wish) - an empty string and
         // a zero count in every scenario, the same five bytes the sibling corpus measures on all
         // seventeen captures. No scenario casts a Wish; the three groups still hold.
+        // 9.30f re-pins all nine for schema v53: each team Life row now ends with the counters that
+        // team began with (one int32 per team, the same +8 bytes the sibling corpus measures). No
+        // scenario regains a Life; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "73a0cdde1a0df5a132743b856119973023db3b5275ed8c5abbff343cb7c4deac", "a08094eca8bd1312037a130fa60a4583b5da970a4d8c091ea4ac527b0ee77abd"),
-            new ScenarioDigest("rejected", "73a0cdde1a0df5a132743b856119973023db3b5275ed8c5abbff343cb7c4deac", "a08094eca8bd1312037a130fa60a4583b5da970a4d8c091ea4ac527b0ee77abd"),
-            new ScenarioDigest("stale", "73a0cdde1a0df5a132743b856119973023db3b5275ed8c5abbff343cb7c4deac", "a08094eca8bd1312037a130fa60a4583b5da970a4d8c091ea4ac527b0ee77abd"),
-            new ScenarioDigest("restored", "73a0cdde1a0df5a132743b856119973023db3b5275ed8c5abbff343cb7c4deac", "a08094eca8bd1312037a130fa60a4583b5da970a4d8c091ea4ac527b0ee77abd"),
-            new ScenarioDigest("replayed", "73a0cdde1a0df5a132743b856119973023db3b5275ed8c5abbff343cb7c4deac", "a08094eca8bd1312037a130fa60a4583b5da970a4d8c091ea4ac527b0ee77abd"),
-            new ScenarioDigest("undo-truncated", "a6bca3cced2a865beaebce96b0becdbc10f53b33982df6cb8fd3e0f20e511814", "3241454ff780e94c0f168990043505f2b2f511da5497ac5eb4f030dfa6408428"),
-            new ScenarioDigest("defense-discarded", "28df55974c2945ca8ff1fb35089ce2f33aa56823a4a05940c8b7f79e60dbd781", "6260a5c8fd1a362a8777f975d7a69b64076ea23e1d8309432a8a1b7b2284564d"),
-            new ScenarioDigest("defense-discarded-restored", "28df55974c2945ca8ff1fb35089ce2f33aa56823a4a05940c8b7f79e60dbd781", "6260a5c8fd1a362a8777f975d7a69b64076ea23e1d8309432a8a1b7b2284564d"),
-            new ScenarioDigest("defense-discarded-replayed", "28df55974c2945ca8ff1fb35089ce2f33aa56823a4a05940c8b7f79e60dbd781", "6260a5c8fd1a362a8777f975d7a69b64076ea23e1d8309432a8a1b7b2284564d"),
+            new ScenarioDigest("accepted", "0c2d9a0f2ce18411548f89026ec8527d9bda320d7e9020ebf72665d50e3e290d", "7eb81b9b6e8705268f5613257f30034cb6cf3181c7f8cd025185306927ec5192"),
+            new ScenarioDigest("rejected", "0c2d9a0f2ce18411548f89026ec8527d9bda320d7e9020ebf72665d50e3e290d", "7eb81b9b6e8705268f5613257f30034cb6cf3181c7f8cd025185306927ec5192"),
+            new ScenarioDigest("stale", "0c2d9a0f2ce18411548f89026ec8527d9bda320d7e9020ebf72665d50e3e290d", "7eb81b9b6e8705268f5613257f30034cb6cf3181c7f8cd025185306927ec5192"),
+            new ScenarioDigest("restored", "0c2d9a0f2ce18411548f89026ec8527d9bda320d7e9020ebf72665d50e3e290d", "7eb81b9b6e8705268f5613257f30034cb6cf3181c7f8cd025185306927ec5192"),
+            new ScenarioDigest("replayed", "0c2d9a0f2ce18411548f89026ec8527d9bda320d7e9020ebf72665d50e3e290d", "7eb81b9b6e8705268f5613257f30034cb6cf3181c7f8cd025185306927ec5192"),
+            new ScenarioDigest("undo-truncated", "735f327e77df6dc789bb7ddb797321097d9b3daca27ab912b039d1eef0c7fce2", "5444e386049ee2dbe63402428469ec7ff09d506cd18a58e8a903cf45e097be9c"),
+            new ScenarioDigest("defense-discarded", "093b77069b1c2d5b7a0a6b56f7838cdaf3c0b018567b4d79fda935626859261e", "2034856183f38b7351f736056f31be512d3eca22eb33f3029bdfd0a88e9b82b4"),
+            new ScenarioDigest("defense-discarded-restored", "093b77069b1c2d5b7a0a6b56f7838cdaf3c0b018567b4d79fda935626859261e", "2034856183f38b7351f736056f31be512d3eca22eb33f3029bdfd0a88e9b82b4"),
+            new ScenarioDigest("defense-discarded-replayed", "093b77069b1c2d5b7a0a6b56f7838cdaf3c0b018567b4d79fda935626859261e", "2034856183f38b7351f736056f31be512d3eca22eb33f3029bdfd0a88e9b82b4"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

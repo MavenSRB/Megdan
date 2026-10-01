@@ -424,7 +424,16 @@ namespace GuardsDigital.Core.Snapshots
         // ending MatchVictoryCause.WishesCast reads. v51 is rejected: a v51 reader would take the claim
         // for the first turn slot's count, and a v51 payload cannot say how many Wishes a team has
         // cast. Every fixture grows by five authoritative bytes (an empty string and a zero count).
-        public const int CurrentSchemaVersion = 52;
+        // v53 (milestone 9.30f): each team Life row ends with the counters that team BEGAN the match
+        // with. Gydion's Energy Drain regains a SPENT counter (GY-Q11, never above the starting Lives),
+        // which is the difference between the two, and v52 recorded only the remaining count - so a
+        // restored match could not tell a team that had spent a counter from a full one. v52 is
+        // rejected rather than migrated: reading its rows as "began with what it holds" is right for
+        // every v52 payload a match with no spent counter wrote and wrong for every one that had spent
+        // one, which is precisely the first payload the regain would misread. Every fixture grows by
+        // one int32 per team. The wire is unmoved: a seat reads the remaining count, which the wire
+        // already carries, and the admission tuple's snapshot schema advances to 53 with it.
+        public const int CurrentSchemaVersion = 53;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

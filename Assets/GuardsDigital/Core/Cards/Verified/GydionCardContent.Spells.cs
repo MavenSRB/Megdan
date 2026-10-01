@@ -183,13 +183,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 Spell(CreateUndead, "Create Undead", CardColor.Red, CardTier.II, CreateUndeadText,
                     CreateUndeadPrimary()),
                 Spell(EnergyDrain, "Energy Drain", CardColor.Red, CardTier.III, EnergyDrainText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, ImmunityDiscardLifeMoveBlock,
-                        Value(PrintedValueChannel.Range, 3))),
+                    EnergyDrainPrimary()),
 
                 // Blue (eye).
                 Spell(Suggestion, "Suggestion", CardColor.Blue, CardTier.I, SuggestionText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, ImmunityDiscardLifeMoveBlock,
-                        Value(PrintedValueChannel.Radius, 3))),
+                    SuggestionPrimary()),
                 Spell(DominatePerson, "Dominate Person", CardColor.Blue, CardTier.II, DominatePersonText,
                     DominatePersonPrimary()),
                 Spell(PowerWordKill, "Power Word Kill", CardColor.Blue, CardTier.III, PowerWordKillText,
@@ -205,11 +203,11 @@ namespace GuardsDigital.Core.Cards.Verified
 
                 // Green (hand).
                 Spell(Shield, "Shield", CardColor.Green, CardTier.I, ShieldText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, ImmunityDiscardLifeMoveBlock)),
+                    ShieldPrimary()),
                 Spell(Banishment, "Banishment", CardColor.Green, CardTier.II, BanishmentText,
                     BanishmentPrimary()),
                 Spell(Invulnerability, "Invulnerability", CardColor.Green, CardTier.III, InvulnerabilityText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, ImmunityDiscardLifeMoveBlock)),
+                    InvulnerabilityPrimary()),
 
                 // Green (diamond).
                 Spell(FindFamiliar, "Find Familiar", CardColor.Green, CardTier.II, FindFamiliarText,
@@ -217,8 +215,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 Spell(DimensionDoor, "Dimension Door", CardColor.Green, CardTier.II, DimensionDoorText,
                     DimensionDoorPrimary()),
                 Spell(CloudKill, "Cloud Kill", CardColor.Green, CardTier.III, CloudKillText,
-                    Owed(ActionKind.Skill, AttackRangeKind.None, ImmunityDiscardLifeMoveBlock,
-                        Value(PrintedValueChannel.Radius, 3))),
+                    CloudKillPrimary()),
 
                 // Purple (lamp), Tier IV.
                 Spell(Wish, "Wish", CardColor.Purple, CardTier.IV, WishText,

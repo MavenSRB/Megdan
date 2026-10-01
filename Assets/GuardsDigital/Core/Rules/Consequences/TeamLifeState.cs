@@ -104,19 +104,117 @@ namespace GuardsDigital.Core.Rules.Consequences
         }
     }
 
+    public enum TeamLifeRegainRejectionReason
+    {
+        None = 0,
+        TeamNotInMatch = 1,
+        AmountNotPositive = 2,
+
+        /// <summary>
+        /// The team holds every counter it began with. GY-Q11 (user, 2026-10-01): Energy Drain's "Your
+        /// team regains 1 <b>spent</b> Life counter" regains only a counter the team has spent, so a
+        /// team at its starting Lives regains nothing - never above its starting Lives.
+        /// </summary>
+        NoSpentCounter = 3,
+
+        /// <summary>
+        /// The team has no counters left. p.13 has already ended the game, so nothing regains one.
+        /// </summary>
+        TeamAlreadyEliminated = 4
+    }
+
+    /// <summary>
+    /// Milestone 9.30f. One regained Life counter - the inverse of <see cref="TeamLifeSpend"/>, and
+    /// the first rule in this build that raises a team's counters (Gydion's Energy Drain).
+    /// </summary>
+    public readonly struct TeamLifeRegain
+    {
+        public TeamLifeRegain(TeamId teamId, int requested, int regained, int countersBefore, int countersAfter)
+        {
+            if (!teamId.IsDefined)
+            {
+                throw new ArgumentException("A Life regain names the team that regained.", nameof(teamId));
+            }
+
+            if (requested <= 0 || regained <= 0 || regained > requested ||
+                countersBefore <= 0 || countersAfter != countersBefore + regained)
+            {
+                throw new ArgumentException("A Life regain takes back at least one spent counter, never more than asked.");
+            }
+
+            TeamId = teamId;
+            Requested = requested;
+            Regained = regained;
+            CountersBefore = countersBefore;
+            CountersAfter = countersAfter;
+        }
+
+        public TeamId TeamId { get; }
+
+        public int Requested { get; }
+
+        public int Regained { get; }
+
+        public int CountersBefore { get; }
+
+        public int CountersAfter { get; }
+    }
+
+    public sealed class TeamLifeRegainResult
+    {
+        private TeamLifeRegainResult(bool accepted, TeamLifeRegainRejectionReason reason, TeamLifeRegain regain)
+        {
+            Accepted = accepted;
+            RejectionReason = reason;
+            Regain = regain;
+        }
+
+        public bool Accepted { get; }
+
+        public TeamLifeRegainRejectionReason RejectionReason { get; }
+
+        public TeamLifeRegain Regain { get; }
+
+        public static TeamLifeRegainResult Accept(TeamLifeRegain regain) =>
+            new TeamLifeRegainResult(true, TeamLifeRegainRejectionReason.None, regain);
+
+        public static TeamLifeRegainResult Reject(TeamLifeRegainRejectionReason reason)
+        {
+            if (reason == TeamLifeRegainRejectionReason.None)
+            {
+                throw new ArgumentException("A rejected Life regain requires a reason.", nameof(reason));
+            }
+
+            return new TeamLifeRegainResult(false, reason, default);
+        }
+    }
+
     /// <summary>
     /// The counters a restore hands back, in the shape <c>HeroCoinLedgerRestoreState</c> established for
     /// the coin balances beside them.
+    ///
+    /// <para><b>Milestone 9.30f: and the counters each team BEGAN with.</b> A regain takes back only a
+    /// SPENT counter (GY-Q11), which is the difference between the two, so a restore that carried only
+    /// the remaining counters would come back unable to tell a full team from one that had spent
+    /// three. Required rather than defaulted, so every restore site must say what the match began
+    /// with (snapshot v52).</para>
     /// </summary>
     public sealed class TeamLifeRestoreState
     {
-        public TeamLifeRestoreState(IEnumerable<KeyValuePair<TeamId, int>> counters)
+        public TeamLifeRestoreState(
+            IEnumerable<KeyValuePair<TeamId, int>> counters,
+            IEnumerable<KeyValuePair<TeamId, int>> startingCounters)
         {
             Counters = Array.AsReadOnly((counters ?? throw new ArgumentNullException(nameof(counters)))
                 .ToArray());
+            StartingCounters = Array.AsReadOnly(
+                (startingCounters ?? throw new ArgumentNullException(nameof(startingCounters))).ToArray());
         }
 
         public IReadOnlyList<KeyValuePair<TeamId, int>> Counters { get; }
+
+        /// <summary>Milestone 9.30f. The counters each team began the match with.</summary>
+        public IReadOnlyList<KeyValuePair<TeamId, int>> StartingCounters { get; }
     }
 
     /// <summary>
@@ -143,9 +241,15 @@ namespace GuardsDigital.Core.Rules.Consequences
     {
         private readonly Dictionary<TeamId, int> counters;
 
+        /// <summary>
+        /// Milestone 9.30f. The counters each team began the match with - the composed setup's, or the
+        /// restored payload's record of it - so a regain can tell a SPENT counter from one never held.
+        /// </summary>
+        private readonly Dictionary<TeamId, int> starting;
+
         /// <summary>Every team in the match at the same starting count.</summary>
         public TeamLifeState(MatchParticipants participants, int startingCountersPerTeam)
-            : this(participants, RepeatForEveryTeam(participants, startingCountersPerTeam), false)
+            : this(participants, RepeatForEveryTeam(participants, startingCountersPerTeam), null, false)
         {
         }
 
@@ -156,21 +260,20 @@ namespace GuardsDigital.Core.Rules.Consequences
         public TeamLifeState(
             MatchParticipants participants,
             IEnumerable<KeyValuePair<TeamId, int>> startingCounters)
-            : this(participants, startingCounters, false)
+            : this(participants, startingCounters, null, false)
         {
         }
 
         private TeamLifeState(
             MatchParticipants participants,
             IEnumerable<KeyValuePair<TeamId, int>> supplied,
+            IEnumerable<KeyValuePair<TeamId, int>> suppliedStarting,
             bool restoring)
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             var declared = (supplied ?? throw new ArgumentNullException(nameof(supplied))).ToArray();
             var teamIds = participants.Teams.Select(team => team.Id).ToArray();
-            if (declared.Length != teamIds.Length ||
-                declared.Select(entry => entry.Key).Distinct().Count() != declared.Length ||
-                declared.Any(entry => !teamIds.Any(id => id.Equals(entry.Key))))
+            if (!CoversEveryTeamOnce(declared, teamIds))
             {
                 throw new ArgumentException(
                     "Life counters must cover every participating team exactly once.", nameof(supplied));
@@ -190,7 +293,33 @@ namespace GuardsDigital.Core.Rules.Consequences
             }
 
             counters = declared.ToDictionary(entry => entry.Key, entry => entry.Value);
+
+            // A composed match begins with what it holds; a restore says what it began with, and that
+            // record is refused where no legal match could have produced it - a team beginning with
+            // nothing, or holding more than it began with (nothing raises a team above its start).
+            var start = suppliedStarting?.ToArray() ?? declared;
+            if (!CoversEveryTeamOnce(start, teamIds))
+            {
+                throw new ArgumentException(
+                    "Starting Life counters must cover every participating team exactly once.",
+                    nameof(suppliedStarting));
+            }
+
+            starting = start.ToDictionary(entry => entry.Key, entry => entry.Value);
+            if (starting.Values.Any(value => value < 1) ||
+                counters.Any(entry => entry.Value > starting[entry.Key]))
+            {
+                throw new ArgumentException(
+                    "A team begins with at least one Life counter and never holds more than it began with.",
+                    nameof(suppliedStarting));
+            }
         }
+
+        private static bool CoversEveryTeamOnce(
+            IReadOnlyList<KeyValuePair<TeamId, int>> entries, IReadOnlyList<TeamId> teamIds) =>
+            entries.Count == teamIds.Count &&
+            entries.Select(entry => entry.Key).Distinct().Count() == entries.Count &&
+            entries.All(entry => teamIds.Any(id => id.Equals(entry.Key)));
 
         /// <summary>Every team's remaining counters, ordered by team id so the order is a fact.</summary>
         public IReadOnlyList<KeyValuePair<TeamId, int>> Counters => Array.AsReadOnly(
@@ -229,12 +358,72 @@ namespace GuardsDigital.Core.Rules.Consequences
             return remaining;
         }
 
-        public TeamLifeRestoreState CaptureRestoreState() => new TeamLifeRestoreState(Counters);
+        /// <summary>Milestone 9.30f. Every team's starting counters, ordered by team id.</summary>
+        public IReadOnlyList<KeyValuePair<TeamId, int>> StartingCounters => Array.AsReadOnly(
+            starting.OrderBy(entry => entry.Key.Value, StringComparer.Ordinal).ToArray());
+
+        /// <summary>Milestone 9.30f. The counters this team began the match with.</summary>
+        public int GetStartingCounters(TeamId teamId)
+        {
+            if (!teamId.IsDefined || !starting.TryGetValue(teamId, out var begun))
+            {
+                throw new KeyNotFoundException($"Unknown team ID '{teamId}'.");
+            }
+
+            return begun;
+        }
+
+        /// <summary>
+        /// Milestone 9.30f. How many of its counters this team has spent - what a regain may take back.
+        /// </summary>
+        public int GetSpentCounters(TeamId teamId) => GetStartingCounters(teamId) - GetCounters(teamId);
+
+        public TeamLifeRestoreState CaptureRestoreState() =>
+            new TeamLifeRestoreState(Counters, StartingCounters);
 
         public static TeamLifeState Restore(MatchParticipants participants, TeamLifeRestoreState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
-            return new TeamLifeState(participants, state.Counters, true);
+            return new TeamLifeState(participants, state.Counters, state.StartingCounters, true);
+        }
+
+        /// <summary>
+        /// Milestone 9.30f. The team takes back up to <paramref name="amount"/> of the counters it has
+        /// SPENT - Gydion's Energy Drain, "Your team regains 1 spent [Life] Life counter".
+        ///
+        /// <para>GY-Q11 (user, 2026-10-01): only a spent counter is regained, so a team at its starting
+        /// Lives regains nothing and a regain never raises a team above where it began. A team at zero
+        /// has already lost (p.13), so nothing is regained there either. The regain is clamped to what
+        /// was spent, as <see cref="TrySpend"/> is clamped to what is left.</para>
+        /// </summary>
+        public TeamLifeRegainResult TryRegainSpent(TeamId teamId, int amount)
+        {
+            if (!teamId.IsDefined || !counters.ContainsKey(teamId))
+            {
+                return TeamLifeRegainResult.Reject(TeamLifeRegainRejectionReason.TeamNotInMatch);
+            }
+
+            if (amount <= 0)
+            {
+                return TeamLifeRegainResult.Reject(TeamLifeRegainRejectionReason.AmountNotPositive);
+            }
+
+            var before = counters[teamId];
+            if (before == 0)
+            {
+                return TeamLifeRegainResult.Reject(TeamLifeRegainRejectionReason.TeamAlreadyEliminated);
+            }
+
+            var spent = starting[teamId] - before;
+            if (spent <= 0)
+            {
+                return TeamLifeRegainResult.Reject(TeamLifeRegainRejectionReason.NoSpentCounter);
+            }
+
+            var regained = Math.Min(amount, spent);
+            counters[teamId] = before + regained;
+            return TeamLifeRegainResult.Accept(
+                new TeamLifeRegain(teamId, amount, regained, before, before + regained));
         }
 
         public TeamLifeSpendResult TrySpend(TeamId teamId, int amount)

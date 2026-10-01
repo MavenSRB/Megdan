@@ -32,6 +32,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
     public static class AttackTargetQuery
     {
         /// <summary>
+        /// Milestone 9.30f. The p.9 classification of the card an Attack offer is performed from - its
+        /// definition's own, which for a cast spell is the SPELL's (the borrow path's offer names the
+        /// spell, GY-Q3). The one derivation both Attack target sites read, so the offer, the target
+        /// choice and the bullet subjects classify an Attack the same way. A definition this content set
+        /// does not supply reads as <see cref="CardClassification.None"/>.
+        /// </summary>
+        public static CardClassification AttackClassificationOf(
+            ActionOffer offer, IEnumerable<CardDefinition> definitions) =>
+            (definitions ?? Enumerable.Empty<CardDefinition>())
+                .FirstOrDefault(definition => definition.Reference.Equals(offer.SourceDefinitionReference))?
+                .Progression.Classification ?? CardClassification.None;
+
+        /// <summary>
         /// The enemy units this attacker may target.
         ///
         /// Unit-type question (6.8g ledger): none for the assembly itself. p.13 "You may attack
@@ -75,6 +88,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// complement, here rather than in card text: both Boomerangs print it as the sentence that
         /// says what the Attack targets, so the offer, the target choice and the resolution all read
         /// it from this one query and cannot disagree about which units the card admits.</para>
+        ///
+        /// <para>Milestone 9.30f. <paramref name="attackClassification"/> is the attacking card
+        /// definition's p.9 classification, so an immunity scoped to basic or non-basic attacks (Gydion's
+        /// Shield and Invulnerability) is asked about the right class through
+        /// <see cref="RuleActivityQuery.ForAttack"/>. A cast spell's Attack passes the SPELL's (GY-Q3).
+        /// <see cref="CardClassification.None"/> asks the unclassified <see cref="RuleActivity.Attack"/>,
+        /// which only an unscoped Attack immunity covers - exactly what every caller asked before.</para>
         /// </summary>
         public static IReadOnlyList<AttackTarget> FindLegalEnemyTargets(
             HeroId attackerId,
@@ -82,7 +102,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int rangeTotal,
             MatchParticipants participants,
             IBoardDisplacementAuthority board,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            CardClassification attackClassification = CardClassification.None)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
@@ -274,7 +295,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var heroes = minionsOnly
                 ? Enumerable.Empty<AttackTarget>()
                 : FindLegalEnemyHeroBodies(
-                        attackerId, attackRange, rangeTotal, participants, board, modifications)
+                        attackerId, attackRange, rangeTotal, participants, board, modifications,
+                        attackClassification)
                     .Where(body => IsAdmitted(body.Coordinate))
                     .Select(body => AttackTarget.HeroBodyOf(body.HeroId, body.Body));
 
@@ -306,7 +328,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
                     IsAdmitted(minion.Coordinate) &&
                     !TargetQuery.IsPrevented(
-                        RuleObject.ForMinion(minion.MinionId), RuleActivity.Attack, attacker,
+                        RuleObject.ForMinion(minion.MinionId), RuleActivityQuery.ForAttack(attackClassification),
+                        attacker,
                         board, participants, modifications))
                 .Select(minion => AttackTarget.Minion(minion.MinionId));
 
@@ -325,11 +348,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int rangeTotal,
             MatchParticipants participants,
             IBoardDisplacementAuthority board,
-            RuleModificationSet modifications) =>
+            RuleModificationSet modifications,
+            CardClassification attackClassification = CardClassification.None) =>
             // Milestone 9.21a. A hero is a legal target when any of its bodies is (RZ-Q2: presence
             // and reach per body); each hero is named once.
             Array.AsReadOnly(FindLegalEnemyHeroBodies(
-                    attackerId, attackRange, rangeTotal, participants, board, modifications)
+                    attackerId, attackRange, rangeTotal, participants, board, modifications,
+                    attackClassification)
                 .Select(body => body.HeroId)
                 .Distinct()
                 .ToArray());
@@ -339,13 +364,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// order: an Attack targets one body, and p.14's reach and the Defense are measured from it.
         /// A hero with one body contributes exactly the row it always did.
         /// </summary>
+        /// <param name="attackClassification">
+        /// Milestone 9.30f. The attacking card's p.9 classification, which decides whether an immunity
+        /// scoped to basic or non-basic attacks reaches this Attack - see
+        /// <see cref="FindLegalEnemyTargets(HeroId, PrintedAttackTargetPolicy, int, MatchParticipants, IBoardDisplacementAuthority, RuleModificationSet, CardClassification)"/>.
+        /// </param>
         public static IReadOnlyList<HeroOccupancy> FindLegalEnemyHeroBodies(
             HeroId attackerId,
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
             IBoardDisplacementAuthority board,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            CardClassification attackClassification = CardClassification.None)
         {
             if (!attackerId.IsDefined)
             {
@@ -392,7 +423,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     HexDistanceQuery.Calculate(attackerCoordinate, occupancy.Coordinate) <= maximumDistance &&
                     !participants.GetTeamForHero(occupancy.HeroId).Id.Equals(attackerTeamId) &&
                     !TargetQuery.IsPrevented(
-                        RuleObject.ForHero(occupancy.HeroId), RuleActivity.Attack, attacker,
+                        RuleObject.ForHero(occupancy.HeroId), RuleActivityQuery.ForAttack(attackClassification),
+                        attacker,
                         board, participants, modifications))
                 .OrderBy(occupancy => occupancy.HeroId.Value, StringComparer.Ordinal)
                 .ThenBy(occupancy => occupancy.Body)

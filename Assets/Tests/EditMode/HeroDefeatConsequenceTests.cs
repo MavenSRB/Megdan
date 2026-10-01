@@ -609,27 +609,29 @@ namespace GuardsDigital.Tests.EditMode
         {
             var participants = OfficialParticipants();
             var counters = new TeamLifeState(participants, 4).CaptureRestoreState().Counters;
+            // Milestone 9.30f. A restore also says what each team began with (snapshot v52).
+            var starting = counters;
 
             Assert.That(
-                () => TeamLifeState.Restore(participants, new TeamLifeRestoreState(counters.Take(1))),
+                () => TeamLifeState.Restore(participants, new TeamLifeRestoreState(counters.Take(1), starting)),
                 Throws.InstanceOf<ArgumentException>(),
                 "A restore that covered one team would leave the other's counters to a default.");
             Assert.That(
                 () => TeamLifeState.Restore(
                     participants,
-                    new TeamLifeRestoreState(counters.Concat(new[] { counters[0] }))),
+                    new TeamLifeRestoreState(counters.Concat(new[] { counters[0] }), starting)),
                 Throws.InstanceOf<ArgumentException>());
             Assert.That(
                 () => TeamLifeState.Restore(
                     participants,
                     new TeamLifeRestoreState(counters
-                        .Select(entry => new KeyValuePair<TeamId, int>(entry.Key, -1)))),
+                        .Select(entry => new KeyValuePair<TeamId, int>(entry.Key, -1)), starting)),
                 Throws.InstanceOf<ArgumentException>());
             Assert.That(
                 TeamLifeState.Restore(
                         participants,
                         new TeamLifeRestoreState(counters
-                            .Select(entry => new KeyValuePair<TeamId, int>(entry.Key, 0))))
+                            .Select(entry => new KeyValuePair<TeamId, int>(entry.Key, 0)), starting))
                     .HasEliminatedTeam,
                 Is.True,
                 "Zero is a legal recorded value and the one p.13's last sentence produces.");
