@@ -60,23 +60,9 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            // Milestone 9.30d. Gydion's spells composed on existing contracts are held to every family
-            // before his dealing (9.30i): a spell lies in his book, so no dealt hand carries it yet. The
-            // `seen` set keeps a spell a later dealt hand does carry from being counted twice.
-            foreach (var spell in GuardsDigital.Core.Cards.Verified.GydionCardContent.ReuseSpellIds
-                .Select(GuardsDigital.Core.Cards.Verified.GydionCardContent.Definition))
-            {
-                if (!seen.Add(spell.Id.Value))
-                {
-                    continue;
-                }
-
-                var raised = new List<ActiveEffectDefinition>();
-                var bodies = Bodies(spell, catalogs, raised).ToArray();
-                faces.Add(new PrintedFace(
-                    GuardsDigital.Core.Cards.Verified.GydionCardContent.ContentSetId, spell, bodies, raised));
-            }
-
+            // Milestone 9.30d held Gydion's reuse spells to every family before his dealing through a
+            // list of its own. Since 9.30i his hand's definitions carry all twenty-two spells beside his
+            // fronts (they lie in his book), so the walk above reaches every one of them.
             return faces;
         }
 

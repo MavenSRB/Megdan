@@ -2031,8 +2031,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Select(button =>
                     ((PrivateLobbyHeroOption)button.userData).Complexity),
                 Is.All.EqualTo(HeroComplexity.Wizard));
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(3),
-                "and she, Snorri (8.93f) and Razzle (9.21j), the other four-star heroes, are the three behind it.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(4),
+                "and she, Snorri (8.93f), Razzle (9.21j) and Gydion (9.30i), the other four-star heroes, " +
+                "are the four behind it.");
 
             UiPlayer.Click(Role(HeroRole.Sniper));
             yield return null;
@@ -2145,8 +2146,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             UiPlayer.Click(Role(HeroRole.Tokens));
             yield return null;
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
-                "FOUR STARS and TOKENS narrows the twenty-two-hero roster to her alone.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(2),
+                "FOUR STARS and TOKENS narrows the roster to her and Gydion (9.30i), whose selection " +
+                "front prints all five of her roles and Farming besides.");
             Assert.That(IgnatiaIsVisible(), Is.True);
 
             UiPlayer.Click(Role(HeroRole.Healer));
@@ -2197,6 +2199,86 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.False,
                 "THE PICK IS TAKEN: the twenty-second hero is no longer on offer to anybody, which " +
                 "is what a completed pick looks like from every seat.");
+        }
+
+        /// <summary>
+        /// Milestone 9.30i. The twenty-ninth hero on the real selection screen: Gydion's roster row
+        /// carries four stars and six roles - Sniper, Tactician, Farming, Damager, Pusher and Tokens -
+        /// and the rendered star and role buttons have to keep his button through all six (role filters
+        /// combine with AND). Farming is the one role of his that Ignatia, the other four-star hero with
+        /// the five she shares with him, does not print, so it narrows the list to him alone. Hovering
+        /// his button draws his own pick card - the prepared selection front - and pressing it and PICK
+        /// HERO takes him. The capture is written for the user's review.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator GydionIsFoundByHisFourStarsAndSixRoles_AndPicked()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            wire.Session.Composition = Root();
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            var client = wire.Client(ordinal);
+            driver.Presenter.AttachClient(client);
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+            bool GydionIsVisible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-gydion");
+
+            Assert.That(GydionIsVisible(), Is.True, "He is the twenty-ninth pick and the unfiltered list offers him.");
+            UiPlayer.Click(Star(HeroComplexity.Wizard));
+            yield return null;
+            Assert.That(GydionIsVisible(), Is.True, "FOUR STARS: his selection front prints four filled stars.");
+            foreach (var role in new[]
+            {
+                HeroRole.Sniper, HeroRole.Tactician, HeroRole.Damager, HeroRole.Pusher, HeroRole.Tokens,
+                HeroRole.Farming
+            })
+            {
+                UiPlayer.Click(Role(role));
+                yield return null;
+                Assert.That(GydionIsVisible(), Is.True, role.ToString());
+            }
+
+            Assert.That(HeroOptions(driver).Select(button => ((PrivateLobbyHeroOption)button.userData).HeroIdValue).ToArray(),
+                Is.EqualTo(new[] { "hero-gydion" }),
+                "Four stars and all six of his roles leave him alone: Farming is the one Ignatia lacks.");
+
+            var his = HeroOptions(driver).Single();
+            if (his.parent != null)
+            {
+                UiPlayer.PointAt(his.parent);
+            }
+
+            UiPlayer.PointAt(his);
+            yield return null;
+            Assert.That(
+                UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                "Hovering his button draws HIS pick card - randomizers-tt32, prepared as an ignored " +
+                "private resource by this dealing's artwork half.");
+            yield return UiPlayer.CaptureScreen("tmp/9-30i-gydion-picker-1920x1080.png");
+
+            UiPlayer.Click(his);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-gydion"));
+            UiPlayer.Click(Control(driver, "PICK HERO"));
+            wire.Pump();
+            driver.Presenter.Refresh();
+            yield return null;
+            Assert.That(
+                PrivateLobbyModel.ForClient(client).Selection.Heroes
+                    .Single(option => option.HeroIdValue == "hero-gydion").IsAvailable,
+                Is.False,
+                "THE PICK IS TAKEN: the twenty-ninth hero is no longer on offer to anybody.");
         }
 
         [UnityTest]

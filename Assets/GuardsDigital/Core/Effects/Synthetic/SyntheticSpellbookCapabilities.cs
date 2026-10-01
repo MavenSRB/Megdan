@@ -37,9 +37,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// borrow's ownership filter decides who may cast from whose book. NebKher (GY-05) changes that
     /// filter for <see cref="BorrowedActionPool.OwnedSpellbookSpells"/> and nothing here.</para>
     ///
-    /// <para><b>Deferred, not registered</b>, as every contract is until the hero whose dealt faces
-    /// start it: the registered set is serialized into every snapshot, and no dealt card casts yet.
-    /// Gydion's dealing (9.30i) registers it.</para>
+    /// <para><b>Registered with Gydion's dealing (9.30i)</b>, the milestone whose dealt fronts first
+    /// cast; until then every contract here was deferred, because the registered set is serialized
+    /// into every snapshot and no dealt card cast.</para>
     /// </summary>
     public static class SyntheticSpellbookCapabilities
     {
@@ -87,15 +87,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// The cast, the refill, the count and the removal; each spell's naming step is declared by its
         /// content.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new CastSpellHandler(), new RefillSpellbookHandler(),
                 new CountOtherRemovedSpellsHandler(), new RemoveSpellFaceupHandler()
             };
 
-        /// <summary>Nothing until a dealt face casts (9.30i).</summary>
-        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
+        /// <summary>Nothing since Gydion's dealing (9.30i) registered all four.</summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>

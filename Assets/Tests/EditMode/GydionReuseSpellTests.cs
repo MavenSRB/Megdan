@@ -935,23 +935,8 @@ namespace GuardsDigital.Tests.EditMode
 
             internal static MinionId Minion(string name) => new MinionId("gydion-reuse-minion-" + name);
 
-            internal static MatchContentCatalogs CreateCatalogs()
-            {
-                var defaults = MatchContentCatalogs.ForThisBuild();
-                var components = defaults.Components;
-                return new MatchContentCatalogs(
-                    new EffectCapabilityCatalog(defaults.Capabilities.Registered
-                        .Select(defaults.Capabilities.Load)
-                        .Concat(GydionComponentContent.DeferredHandlers())
-                        .Concat(GydionCardContent.ReuseSpellDeferredHandlers())
-                        .Concat(SyntheticSpellbookCapabilities.DeferredHandlers())
-                        .Concat(SyntheticPlacementCapabilities.DeferredHandlers())),
-                    new ComponentDefinitionCatalog(
-                        components.RegisteredTokens.Select(components.LoadToken)
-                            .Concat(GydionComponentContent.Tokens()),
-                        components.RegisteredMarkers.Select(components.LoadMarker)),
-                    defaults.TriggeredEffects);
-            }
+            /// <summary>The build's own catalogs, which register his spells' contracts since 9.30i.</summary>
+            internal static MatchContentCatalogs CreateCatalogs() => MatchContentCatalogs.ForThisBuild();
 
             internal IReadOnlyList<CardDefinition> Definitions { get; }
             internal IReadOnlyList<CardInstance> Cards { get; }

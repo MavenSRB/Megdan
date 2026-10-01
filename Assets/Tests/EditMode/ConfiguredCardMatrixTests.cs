@@ -723,6 +723,11 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 9.21j. Razzle's dealt faces; Twin Strike's repeat arrives through the
                 // triggered walk below.
                 .Concat(RazzleCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 9.30i. Gydion's dealt fronts AND his twenty-two spells: a front names only
+                // the spells' naming steps and the cast, and what each spell performs is on the spell,
+                // which setup puts in his book - a card this build deals as surely as one in a hand.
+                .Concat(GydionCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(GydionCardContent.SpellDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -760,15 +765,19 @@ namespace GuardsDigital.Tests.EditMode
                     "ActorHasSeveralBodiesPredicate",
                     "ActorInTurretRadiusHandler",
                     "ActorOtherBodiesInRadius",
+                    "AdvanceHandler",
                     "AnySupportRuneHandler",
+                    "CastSpellHandler",
                     "ChooseFriendlyUnitAndTreeHandler",
                     "ChooseOtherActorBody",
                     "ChooseOwnedItemHandler",
                     "ChooseResolvedCardHandler",
                     "ChooseRuneHandler",
                     "ChooseTrampledMinionsHandler",
+                    "ClaimHandler",
                     "ConditionHandler",
                     "ContinuedLineEnd",
+                    "CountOtherRemovedSpellsHandler",
                     "DefeatMinionHandler",
                     "ExcludeAdjacentEnemyMinionsHandler",
                     "HeroAdjacentToMinionHandler",
@@ -779,17 +788,27 @@ namespace GuardsDigital.Tests.EditMode
                     "PlaceFarthestAdjacentHandler",
                     "PlaceInSpaceHandler",
                     "ReclaimHandler",
+                    "RefillSpellbookHandler",
+                    "RegainSpentLifeHandler",
                     "RemoveActorBodiesFromTheBoard",
                     "RemoveObstacleHandler",
+                    "RemoveSpellFaceupHandler",
                     "ReplaceMinionWithTokenHandler",
                     "RetrieveAllDiscardedHandler",
                     "RuneTargetHandler",
                     "SelectRuneHandler",
                     "SpawnActorBodyInRadiusHandler",
+                    "SpellInBook",
+                    "SpellInBookPresent",
                     "SwapItemWithCardHandler",
                     "SwapResolvedWithHandHandler",
                     "TrampledEnemyHeroesHandler"
                 }),
+                "Gydion's nine spellbook, team-victory and regained-Life handlers - a spell's naming step, " +
+                "Wish's presence predicate, the cast, the refill, the count of other spells removed and " +
+                "Find Familiar's removal, the team count and claim, and Energy Drain's regain (9.30i; the " +
+                "9.30c-9.30g fixtures prove each on synthetic spells and staged rounds, a shape no showcase " +
+                "card can own without a spellbook), " +
                 "Razzle's six many-bodies handlers - the spawn, the removal and its several-bodies gate, " +
                 "another-one-of-you, the retreat's line end and other-you-in-radius (9.21j; the " +
                 "9.21d-9.21g fixtures prove each on a staged board of his bodies, a shape no showcase " +

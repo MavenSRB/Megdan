@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var ignatia = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == IgnatiaCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29),
                 "She is the twenty-second hero this build can put on a board.");
             Assert.That(
                 ignatia.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.IgnatiaHeroIdValue));
@@ -99,8 +99,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RegisteredHeroRoster.ForThisBuild
                     .Count(hero => hero.Complexity == HeroComplexity.Wizard),
-                Is.EqualTo(3),
-                "and she, Snorri (8.93f) and Razzle (9.21j) are the three four-star heroes the filter finds.");
+                Is.EqualTo(4),
+                "and she, Snorri (8.93f), Razzle (9.21j) and Gydion (9.30i) are the four four-star heroes the " +
+                "filter finds.");
         }
 
         [TestCase(1, IgnatiaUpgradeBranch.FirstSibling)]
@@ -583,13 +584,14 @@ namespace GuardsDigital.Tests.EditMode
                 var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
                     hero.HeroIdValue, "probe");
                 Assert.That(hand, Is.Not.Null, hero.HeroIdValue);
-                Assert.That(hand.Definitions, Has.Count.EqualTo(18), hero.HeroIdValue);
+                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell), Is.EqualTo(18),
+                    hero.HeroIdValue + ": eighteen printed fronts; a spell (9.30i, Gydion) lies in the book, not the deck");
                 dealt.Add(hero.ContentId.Value);
             }
 
             Assert.That(dealt, Has.Member(IgnatiaCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(28));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(28),
+            Assert.That(dealt, Has.Count.EqualTo(29));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(29),
                 "and no two rows name one printed set.");
         }
 

@@ -178,6 +178,19 @@ namespace GuardsDigital.Tests.EditMode
             ["SyntheticPlacementCapabilities+PlaceHandler"] = Reading.SpaceNamesBody,
             ["SyntheticPlacementCapabilities+RespawnFriendlyMinionHandler"] = Reading.PresenceEveryBody,
             ["SyntheticResolvedDiscardCapabilities+DiscardResolvedCardHandler"] = Reading.HeroLevelResult,
+            // Milestone 9.30i. Gydion's spellbook reads cards, never the board: a spell named in a
+            // book, its cast and removal, the refill and the count of removed spells. A cast spell's
+            // primary is then performed by the caster through the borrow path, whose own nodes are
+            // classified above. Wish's team count and claim, and Energy Drain's regained Life, are
+            // results applied to the caster's team as a whole.
+            ["SyntheticSpellbookCapabilities+CastSpellHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticSpellbookCapabilities+CountOtherRemovedSpellsHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticSpellbookCapabilities+RefillSpellbookHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticSpellbookCapabilities+RemoveSpellFaceupHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticSpellbookCapabilities+SpellInBook"] = Reading.NoHeroOrUnit,
+            ["SyntheticTeamLifeCapabilities+RegainSpentLifeHandler"] = Reading.HeroLevelResult,
+            ["SyntheticTeamVictoryCapabilities+AdvanceHandler"] = Reading.HeroLevelResult,
+            ["SyntheticTeamVictoryCapabilities+ClaimHandler"] = Reading.HeroLevelResult,
             ["SyntheticRosterCapabilities+ActorMovedThisActionHandler"] = Reading.ActingBody,
             ["SyntheticRosterCapabilities+AdjacentTerrainPresenceHandler"] = Reading.ActingBody,
             ["SyntheticRosterCapabilities+BehindTargetLineHandler"] = Reading.HeroOnce,
@@ -239,18 +252,14 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             Assert.That(composed.Length, Is.GreaterThan(200), "The dealt roster composes its capabilities.");
 
-            // Milestone 9.30d. The corpus holds Gydion's composed spells before his dealing (9.30i), so a
-            // capability they name may still be deferred rather than registered; it is classified all
-            // the same, which is what this sweep asks of a hero's faces.
-            var lookup = new EffectCapabilityCatalog(catalogs.Capabilities.Registered
-                .Select(catalogs.Capabilities.Load)
-                .Concat(GydionCardContent.ReuseSpellDeferredHandlers())
-                .Concat(SyntheticPlacementCapabilities.DeferredHandlers()));
+            // Milestone 9.30i. Gydion's spells, which 9.30d put in the corpus before his dealing, are
+            // dealt with him, so every capability the corpus names is registered again.
+            var lookup = catalogs.Capabilities;
             var handlers = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
             foreach (var capability in composed)
             {
                 Assert.That(lookup.TryLoad(capability, out var handler), Is.True,
-                    capability + " is registered, or deferred for a hero composed before his dealing.");
+                    capability + " is registered.");
                 var key = HandlerKey(handler);
                 if (!handlers.TryGetValue(key, out var ids))
                 {

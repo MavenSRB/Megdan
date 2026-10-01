@@ -1733,25 +1733,37 @@ namespace GuardsDigital.Tests.EditMode
         // authoritative bytes, one int32 per team (setup 16,219 -> 16,227; verified-hand setup 15,318
         // -> 15,326; attached-marker 17,389 -> 17,397; parked-pre-action 17,409 -> 17,417; spellbook
         // 16,624 -> 16,632), and nothing else moved. Renamed -v53. The wire stands.
+        // 9.30i MIGRATE, not reject: dealing Gydion registers thirty-eight capabilities (the spellbook's
+        // cast, refill, count and removal; the team-victory count and claim; the regained Life; Dimension
+        // Door's Place and Create Undead's Respawn; the twenty-two spells' naming steps; the Familiar's
+        // three; Expeditious Retreat's walk; Shield's and Invulnerability's immunities; Wish's presence
+        // predicate) and the Familiar token, and all seventeen captures grow by exactly 1,208
+        // authoritative bytes (setup 16,227 -> 17,435; verified-hand setup 15,326 -> 16,534;
+        // attached-marker 17,397 -> 18,605; parked-pre-action 17,417 -> 18,625; spellbook 16,632 ->
+        // 17,840): 998 UTF-8 capability-name bytes plus thirty-eight one-byte lengths and thirty-eight
+        // four-byte revisions (1,188), and the token id's 15 bytes plus its length and revision (20).
+        // The older registration lists are strict subsets whose entries still resolve at the same
+        // revisions; no fixture deals Gydion, and no persisted field changes. Schema v53 and wire /33
+        // stand; the names keep -v53.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v53", "13210d3eb496e62dc72c0eaf9bd28a7f821b603e22ea0d7bf28b95bc7d1f6c12"),
-            new CompatibilityFixture("active-turn-v53", "fa52e5d3b0204b11e29e2f725b83df87b57877ee6e035139866907518b0a0077"),
-            new CompatibilityFixture("pending-choice-v53", "1270e0a6bfaee24e01faad66e28ef18e453bc5695ff739b2ddf70e13407f2001"),
-            new CompatibilityFixture("end-of-round-v53", "9d20de87e0db02066fbc59be1c5ce2ea28696d05a0a15ee7fdbb4bbf22605870"),
-            new CompatibilityFixture("pending-minion-battle-v53", "50eab421eac6f7840c22b5b4a64e373b53d4c067f72da4a73c4e4907d04273af"),
-            new CompatibilityFixture("placed-token-v53", "b5aa39e3f9e029ac37ad196120829231d12191cc6e7044dababfdfa7232068f8"),
-            new CompatibilityFixture("attached-marker-v53", "fca60b9880c49d608533b004a455e56efe48efbd66e4c9f19af70e21b02c39fc"),
-            new CompatibilityFixture("pending-correction-v53", "d4492cdfa4579f1ac357a8e89e84f867f727efab80aaf70ffca71d2a57db602c"),
-            new CompatibilityFixture("paused-level-up-v53", "cf26fa1f0050dbbc00e068d63ba36b33365b266f2a11b9b75621ea4b3019bdc3"),
-            new CompatibilityFixture("ended-match-v53", "66ed012969aa88afb7ffb70c5ee76ca8c85be686b0401ee2a7c6bd1bd8f86f40"),
-            new CompatibilityFixture("verified-hand-setup-v53", "2aa517510075a798162bac6b08d46535c1c0ca40fc613916c46e8c74aa9da2a2"),
-            new CompatibilityFixture("paused-orbit-repeat-v53", "f20d1acc85c2c5df716ac16d70fc16e5560dbfb888ea650429fc2dc8a2b451f8"),
-            new CompatibilityFixture("paused-card-text-v53", "58405311d6012d71c9d8bf849393ad4674619af15e48460350a79fd929cdffeb"),
-            new CompatibilityFixture("paused-block-rider-v53", "062bbd1f9efea8c59fcbcea932cf65703ca5423dce48dac9d9ddb9e04f1a09be"),
-            new CompatibilityFixture("paused-repeated-attack-v53", "1b1c863a5d9ff3a28a8f9ad86afb4544aa7bf72d82bc21d4a00737d6bf9a03fd"),
-            new CompatibilityFixture("parked-pre-action-v53", "05045d1c30c4ebb5498ae7526cb71bdfe292e1f0c1a8764c382aa03b967d0767"),
-            new CompatibilityFixture("spellbook-v53", "26ad68b6efba4f48c30a7217dc4166241bf049604ec391d8741c7d9d7beebb3e")
+            new CompatibilityFixture("setup-v53", "2208114c2d6e13fba83c58c2eed54d916e38891b9274bbc87a4eb674cb817880"),
+            new CompatibilityFixture("active-turn-v53", "3e9ba5d8a516cde6b4f5018f1500acb31e1b1c68d94e6928e32d62604d98a74b"),
+            new CompatibilityFixture("pending-choice-v53", "31c9e38690767c36263325422986f5b331d1b6a123c858d3162cf97804207b12"),
+            new CompatibilityFixture("end-of-round-v53", "c040c9c1627e36a66e37bcea8bbcc930d85fa808e9629dd35d3ba8bcc35efde6"),
+            new CompatibilityFixture("pending-minion-battle-v53", "01b7eead17c6810398e27aa28bf8f212eda5a87d6416606fe72225f56849cc9f"),
+            new CompatibilityFixture("placed-token-v53", "68a48d8a986b75d94ba166e70d501319f6fa2f532316ce649717059d9ec3c0a0"),
+            new CompatibilityFixture("attached-marker-v53", "9a08992658f1d8d003954431ddb121dd4c5c0d349910e04ff88e82b09310b0e3"),
+            new CompatibilityFixture("pending-correction-v53", "f3fecbec735a10ed80403f5c5bfa9a3f9a449df7228412122aed6ef23d0cb617"),
+            new CompatibilityFixture("paused-level-up-v53", "7e95e4ee9ad9d094d3237248de181a62b6381503c571450c507b761ac5b60105"),
+            new CompatibilityFixture("ended-match-v53", "f06ee5efaa1f23da208275f66917429b530defd627a01fa29eb3236f1822d533"),
+            new CompatibilityFixture("verified-hand-setup-v53", "15658df727f0a03e7ea8796154a12d4b7517d43c2af07167f31c1bc63a6cf551"),
+            new CompatibilityFixture("paused-orbit-repeat-v53", "977e23f7b2be9f2c1c581090364f32218ae3e282f7e76ab093a265c089ec772b"),
+            new CompatibilityFixture("paused-card-text-v53", "3ad665e00c762092dffe413d616accf1a11029d020c3b131a9b5a00c9ca56259"),
+            new CompatibilityFixture("paused-block-rider-v53", "a0671216b0de97b0bf9d60ab47d1d9e9995016ff55175f70a240a0f0cc98d562"),
+            new CompatibilityFixture("paused-repeated-attack-v53", "79d4c637d3521dabdcf0f6aba7421b2f317e857afb144456dc9bccb5db09bc5e"),
+            new CompatibilityFixture("parked-pre-action-v53", "36bba61aa050bfbfe46a0ea34fc7ee1638139fdeb9ff6fccf9b33de4fc8d17e4"),
+            new CompatibilityFixture("spellbook-v53", "f39fda06c93ee5ef341feafa88487876d70cb407c509c30c3d2133170b93ef20")
         };
 
         [Test]

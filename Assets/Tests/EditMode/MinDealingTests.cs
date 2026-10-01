@@ -31,7 +31,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var min = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == MinCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29),
                 "She was the nineteenth hero this build could put on a board; milestone 8.69g " +
                 "deals Brynn as the twentieth, 8.71h Hanu as the twenty-first and 8.75b Ignatia " +
                 "as the twenty-second.");
@@ -399,13 +399,14 @@ namespace GuardsDigital.Tests.EditMode
                 var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
                     hero.HeroIdValue, "probe");
                 Assert.That(hand, Is.Not.Null, hero.HeroIdValue);
-                Assert.That(hand.Definitions, Has.Count.EqualTo(18), hero.HeroIdValue);
+                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell), Is.EqualTo(18),
+                    hero.HeroIdValue + ": eighteen printed fronts; a spell (9.30i, Gydion) lies in the book, not the deck");
                 dealt.Add(hero.ContentId.Value);
             }
 
             Assert.That(dealt, Has.Member(MinCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(28));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(28),
+            Assert.That(dealt, Has.Count.EqualTo(29));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(29),
                 "and no two rows name one printed set.");
         }
     }

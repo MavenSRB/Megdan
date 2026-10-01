@@ -434,6 +434,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.21j. Razzle the Ringmaster, the TWENTY-EIGHTH hero.</summary>
         public const string RazzleHeroIdValue = "hero-razzle";
 
+        /// <summary>Milestone 9.30i. Gydion the Archwizard, the TWENTY-NINTH hero.</summary>
+        public const string GydionHeroIdValue = "hero-gydion";
+
         /// <summary>
         /// Milestone 9.21j. How many bodies of Razzle can stand on the board at once: RZ-Q1 (a), settled
         /// by the user on 2026-09-30 - four in all, the hero plus the three "Spawn up to 3 more of you"
@@ -622,7 +625,15 @@ namespace GuardsDigital.Core.Setup
                 // (RZ-02). His four-body supply is declared by content in `DeclaredHeroBodies` above.
                 (RazzleHeroIdValue, "razzle", "Razzle the Ringmaster",
                     HeroComplexity.Wizard,
-                    HeroRole.Tactician | HeroRole.Melee)
+                    HeroRole.Tactician | HeroRole.Melee),
+                // Milestone 9.30i. His selection front prints FOUR stars and the roles Sniper,
+                // Tactician, Farming, Damager, Pusher and Tokens (inventory 9.30, GY-01); the dashboard
+                // names him "Gydion the Archwizard" (GY-02). His spellbook is his content's own
+                // (GydionCardContent.CreateHand), so nothing else is declared here.
+                (GydionHeroIdValue, "gydion", "Gydion the Archwizard",
+                    HeroComplexity.Wizard,
+                    HeroRole.Sniper | HeroRole.Tactician | HeroRole.Farming |
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
             };
 
         /// <summary>
@@ -995,6 +1006,10 @@ namespace GuardsDigital.Core.Setup
                     : hero),
                 snorri.Minions);
         }
+
+        /// <summary>Milestone 9.30i. Wasp on Red against Gydion on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusGydionOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("gydion"), "Gydion");
 
         /// <summary>Milestone 9.21j. Wasp on Red against Razzle on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusRazzleOneVsOne() =>

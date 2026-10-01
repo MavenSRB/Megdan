@@ -349,7 +349,13 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.21j. Razzle, dealt under his first dealt revision (razzle-9-21d-prep ->
             // razzle-9-21j-rev-1); measured on the run that dealt him, with his staged configuration
             // in EveryDealtDefinition in the same change.
-            new IdentityPin("razzle", "razzle-9-21j-rev-1", "abf2c5673f8e90c4d054185474ddab79eb1b4d8612832848a5ad0bb7659338b1")
+            new IdentityPin("razzle", "razzle-9-21j-rev-1", "abf2c5673f8e90c4d054185474ddab79eb1b4d8612832848a5ad0bb7659338b1"),
+            // Milestone 9.30i. Gydion, dealt under his first dealt revision (gydion-9-30-prep ->
+            // gydion-9-30i-rev-1); measured on the run that dealt him, with his staged configuration in
+            // EveryDealtDefinition in the same change. The first pin over FORTY definitions: his
+            // eighteen dealt fronts and the twenty-two spells setup puts in his book (GY-Q1), which a
+            // configured match loads beside them and his fronts cast.
+            new IdentityPin("gydion", "gydion-9-30i-rev-1", "d3590cc884bebc5266471bc1ca814fce2affdfc20adedc482d1c8a68d1019700", 40)
         };
 
         [Test]
@@ -540,6 +546,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 9.21j. Razzle's staged configuration, added in the same change as his pin.
                 .Concat(MatchConfiguration.CreateStagedRazzleForInternalTest(TeamSide.Red)
                     .CardDefinitions)
+                // Milestone 9.30i. Gydion's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedGydionForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())
                 .ToArray();
@@ -554,8 +563,9 @@ namespace GuardsDigital.Tests.EditMode
                             pin.Owner + "-", StringComparison.Ordinal))
                         .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)
                         .ToArray();
-                    Assert.That(definitions, Has.Length.EqualTo(18),
-                        $"{pin.Owner} must contribute all seventeen playable cards and the Ultimate.");
+                    Assert.That(definitions, Has.Length.EqualTo(pin.Definitions),
+                        $"{pin.Owner} must contribute all seventeen playable cards and the Ultimate" +
+                        (pin.Definitions > 18 ? " and every card setup puts in a spellbook." : "."));
                     var revisions = definitions.Select(definition => definition.ContentRevision)
                         .Distinct(StringComparer.Ordinal)
                         .ToArray();
@@ -796,12 +806,19 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class IdentityPin
         {
-            public IdentityPin(string owner, string contentRevision, string digest)
+            public IdentityPin(string owner, string contentRevision, string digest, int definitions = 18)
             {
                 Owner = owner;
                 ContentRevision = contentRevision;
                 Digest = digest;
+                Definitions = definitions;
             }
+
+            /// <summary>
+            /// How many definitions the owner's configured set loads: eighteen dealt faces, plus - since
+            /// milestone 9.30i - the spells a spellbook holds.
+            /// </summary>
+            public int Definitions { get; }
 
             public string Owner { get; }
             public string ContentRevision { get; }

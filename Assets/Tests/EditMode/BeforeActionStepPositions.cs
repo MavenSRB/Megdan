@@ -192,6 +192,11 @@ namespace GuardsDigital.Tests.EditMode
                         definition.Reference.Equals(card.DefinitionReference)))
                     .GroupBy(definition => definition.Reference)
                     .Select(group => group.First())
+                    // Milestone 9.30i. A spell (Gydion's) is never played from a hand: it lies in his
+                    // book and is CAST by a front, which is the face offered, and a front is offered
+                    // whenever its spell is in the book (GY-Q12) - so no step of the spell's can grey
+                    // the offer this sweep reads. The spells' own steps are 9.30d-9.30f's fixtures'.
+                    .Where(definition => !definition.Progression.IsSpell)
                     .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)
                     .ToArray();
 
@@ -304,6 +309,8 @@ namespace GuardsDigital.Tests.EditMode
                     definition.Reference.Equals(card.DefinitionReference)))
                 .GroupBy(definition => definition.Reference)
                 .Select(group => group.First())
+                // Milestone 9.30i. A spell is cast by a front, never played: see Derive.
+                .Where(definition => !definition.Progression.IsSpell)
                 .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .ToArray();
         }

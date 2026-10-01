@@ -608,24 +608,15 @@ namespace GuardsDigital.Tests.EditMode
 
             internal static MatchContentCatalogs CreateCatalogs()
             {
+                // Since Gydion's dealing (9.30i) the build registers his spells' contracts; the fixture
+                // adds only the synthetic spells' naming steps and the Ward's Active effect (9.30c),
+                // Shield's shape.
                 var defaults = MatchContentCatalogs.ForThisBuild();
-                var components = defaults.Components;
-                var spellbook = SyntheticSpellbookCapabilities.DeferredHandlers().ToArray();
                 return new MatchContentCatalogs(
                     new EffectCapabilityCatalog(defaults.Capabilities.Registered
                         .Select(defaults.Capabilities.Load)
-                        .Concat(GydionComponentContent.DeferredHandlers())
-                        .Concat(spellbook)
-                        .Concat(SyntheticPlacementCapabilities.DeferredHandlers())
-                        .Concat(SyntheticTeamVictoryCapabilities.DeferredHandlers())
-                        .Concat(GydionCardContent.ArchwizardDeferredHandlers())
-                        // The synthetic Ward's naming step and Active effect (9.30c), Shield's shape.
-                        .Concat(SyntheticSpellbook.CastingHandlers().Where(handler =>
-                            !spellbook.Any(own => own.Reference.Equals(handler.Reference))))),
-                    new ComponentDefinitionCatalog(
-                        components.RegisteredTokens.Select(components.LoadToken)
-                            .Concat(GydionComponentContent.Tokens()),
-                        components.RegisteredMarkers.Select(components.LoadMarker)),
+                        .Concat(SyntheticSpellbook.CastingHandlers())),
+                    defaults.Components,
                     defaults.TriggeredEffects);
             }
 

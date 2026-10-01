@@ -72,7 +72,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// The twenty-two naming steps, each bound to its spell's definition. Registered with the
-        /// dealing (9.30i); a fixture's catalog carries them until then.
+        /// dealing (9.30i) through <see cref="GydionComponentContent.Handlers"/>.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> SpellInBookHandlers() =>
             SpellDefinitions.Select(spell =>
@@ -150,12 +150,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         // ----------------------------------------------------------------------------------------
         // The table. One row per face: identity, printed name, colour, Tier (none = basic), the
-        // printed primary and its words. A row whose text a later block composes carries
-        // `Owed(kind, range, block, values)`; that block replaces the primary with its own builder.
+        // printed primary its block composed (9.30d, 9.30e, 9.30f, 9.30g) and its words.
         // ----------------------------------------------------------------------------------------
-
-        private const string ReuseBlock = "9.30d";
-        private const string ImmunityDiscardLifeMoveBlock = "9.30f";
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazySpells =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]

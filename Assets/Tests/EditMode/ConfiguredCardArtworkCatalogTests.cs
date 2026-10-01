@@ -173,15 +173,17 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.114f: 450 -> 468, Wuk's eighteen dealt faces (Makeshift Weapon boxed).
             // Milestone 9.8f: 468 -> 486, Mortimer's eighteen dealt faces (Shallow Graves boxed).
             // Milestone 9.21j: 486 -> 504, Razzle's eighteen dealt faces (Stunted Doubles boxed).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(504));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(504));
+            // Milestone 9.30i: 504 -> 522, Gydion's eighteen dealt fronts (Cheap Trick boxed; his spells
+            // are the catalog's separate "spells" rows, which this action-card reader ignores).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(522));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(522));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(504),
+                Is.EqualTo(522),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -191,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("brynn", 18), ("cutter", 18),
                     ("dodger", 18),
-                    ("garrus", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
+                    ("garrus", 18), ("gydion", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
                     ("mortimer", 18), ("mrak", 18),
                     ("razzle", 18), ("rowenna", 18),
                     ("sabina", 18),

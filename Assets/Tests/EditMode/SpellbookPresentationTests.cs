@@ -360,7 +360,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(() => SpellArtworkCatalog.ParseAndValidate(
                     json.Replace("{ \"back\": 4,", "{ \"back\": 3,"), ConfiguredSpellArtwork.ConfiguredReferences),
                 Throws.InvalidOperationException.With.Message.Contains("appears twice"));
-            Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(504),
+            Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(522),
                 "the action-card rows are untouched by the spell arrays beside them");
         }
 

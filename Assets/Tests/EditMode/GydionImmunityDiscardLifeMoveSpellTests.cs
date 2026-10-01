@@ -561,25 +561,18 @@ namespace GuardsDigital.Tests.EditMode
 
             internal static MatchContentCatalogs CreateCatalogs()
             {
+                // Since Gydion's dealing (9.30i) the build registers his spells' contracts; the fixture
+                // adds only the synthetic Attack spell's naming step (9.30c) its enemy casts.
                 var defaults = MatchContentCatalogs.ForThisBuild();
-                var components = defaults.Components;
                 return new MatchContentCatalogs(
                     new EffectCapabilityCatalog(defaults.Capabilities.Registered
                         .Select(defaults.Capabilities.Load)
-                        .Concat(GydionComponentContent.DeferredHandlers())
-                        .Concat(SyntheticSpellbookCapabilities.DeferredHandlers())
-                        .Concat(SyntheticPlacementCapabilities.DeferredHandlers())
-                        .Concat(GydionCardContent.ImmunityDiscardLifeMoveHandlers())
-                        .Concat(SyntheticTeamLifeCapabilities.DeferredHandlers())
                         .Concat(new[]
                         {
                             SyntheticSpellbookCapabilities.SpellInBookHandler(
                                 SyntheticSpellbook.AttackSpellInBookV1, SyntheticSpellbook.AttackSpellId)
                         })),
-                    new ComponentDefinitionCatalog(
-                        components.RegisteredTokens.Select(components.LoadToken)
-                            .Concat(GydionComponentContent.Tokens()),
-                        components.RegisteredMarkers.Select(components.LoadMarker)),
+                    defaults.Components,
                     defaults.TriggeredEffects);
             }
 

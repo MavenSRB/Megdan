@@ -120,7 +120,10 @@ namespace GuardsDigital.Tests.EditMode
                 ["ignatia | ignatia-equilibrium"] = "\"you may apply either\" is the Equilibrium handler's per-action choice of text.",
                 ["whisper | whisper-grim-reaper"] = "\"you may choose one, or both\" raises the basic modal's ceiling; one stays legal.",
                 ["misa | misa-power-overwhelming"] = "\"you may choose two different options instead\" raises the modal ceiling; one stays legal.",
-                ["mortimer | mortimer-master-of-puppets"] = "\"you may choose up to five times instead\" is carried by the seven \"up to three times\" faces: passes 4-5 behind the unlock gate, each its own UpTo Optional (MortimerRepeatedChoice)."
+                ["mortimer | mortimer-master-of-puppets"] = "\"you may choose up to five times instead\" is carried by the seven \"up to three times\" faces: passes 4-5 behind the unlock gate, each its own UpTo Optional (MortimerRepeatedChoice).",
+                // Milestone 9.30i. Mortimer's precedent: the Ultimate is a p.16 standing declaration and
+                // the face that "would" do the replaced thing carries the choice.
+                ["gydion | gydion-the-archwizard"] = "\"you may cast the Wish spell in the spellbook instead\" is carried by Prepare Spells, the one face that adds cards to the book: behind the unlock gate it is a Choose between the refill and casting Wish (GydionWishTests, 9.30g)."
             };
 
         // -------------------------------------------------------------------------------------------
@@ -398,7 +401,13 @@ namespace GuardsDigital.Tests.EditMode
                 ["razzle | razzle-ransack"] = "\"every other you in radius\" is razzle-other-bodies-in-radius@1's count of bodies other than the acting one (RazzleCountingFacesTests).",
                 ["razzle | razzle-tightrope"] = "\"another one of you\" is razzle-other-body@1, which offers only bodies other than the acting one (RazzleMoveFacesTests).",
                 ["razzle | razzle-high-wire"] = "\"another one of you\" is razzle-other-body@1, Tightrope's selection.",
-                ["razzle | razzle-wire-dancers"] = "\"another one of you\" is razzle-other-body@1, Tightrope's selection."
+                ["razzle | razzle-wire-dancers"] = "\"another one of you\" is razzle-other-body@1, Tightrope's selection.",
+                // Milestone 9.30i. Gydion's "other spell cards" leave the casting spell out of its own
+                // count or list (lesson 27): the exclusion is the count's and the option list's contract.
+                ["gydion | gydion-sunburst"] = "\"each other spell card removed\" is SpellbookQuery.OtherRemoved, which excludes the casting spell (GydionCountingSpellTests).",
+                ["gydion | gydion-dimension-door"] = "\"each other spell card removed\" is SpellbookQuery.OtherRemoved, Sunburst's count (GydionCountingSpellTests).",
+                ["gydion | gydion-midas-touch"] = "\"every two other spell cards removed\" is count-other-removed-spells@1 over SpellbookQuery.OtherRemoved (GydionCountingSpellTests).",
+                ["gydion | gydion-find-familiar"] = "\"up to three other spell cards\" offers one removal option per spell but Find Familiar itself (FindFamiliarRemovableSpells, GydionCountingSpellTests)."
             };
 
         /// <summary>

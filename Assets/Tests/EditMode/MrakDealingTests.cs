@@ -27,7 +27,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedMrak_DealsTheEighteenPlayableFacesInEitherFormat(int perTeam)
         {
             var mrak = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "mrak");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(28));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29));
             Assert.That(mrak.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.MrakHeroIdValue));
             Assert.That(mrak.DisplayName, Is.EqualTo("Mrak the Rockshaper"));
             Assert.That(mrak.Complexity, Is.EqualTo(HeroComplexity.VeryComplex), "three stars");

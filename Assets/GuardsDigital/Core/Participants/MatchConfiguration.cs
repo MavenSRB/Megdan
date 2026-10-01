@@ -634,6 +634,11 @@ namespace GuardsDigital.Core.Participants
                 // boxed by his set's own ReturnedToBoxAtSetup.
                 case Setup.QuickGameSetupConfiguration.RazzleHeroIdValue:
                     return Cards.Verified.RazzleCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 9.30i. The TWENTY-NINTH hero; Cheap Trick, his p.20 Handicap, is boxed by
+                // his set's own ReturnedToBoxAtSetup, and his twenty-two spells start in his
+                // spellbook (GY-Q1).
+                case Setup.QuickGameSetupConfiguration.GydionHeroIdValue:
+                    return Cards.Verified.GydionCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2251,6 +2256,39 @@ namespace GuardsDigital.Core.Participants
                     Cards.Verified.WaspCardContent.HighVoltage) ||
                 card.DefinitionReference.DefinitionId.Equals(
                     Cards.Verified.RazzleCardContent.TwinStrike)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
+        /// <summary>
+        /// Milestone 9.30i. Wasp on Red against Gydion with his p.6 starting hand and all twenty-two
+        /// spells in his book (GY-Q1).
+        /// </summary>
+        public static MatchConfiguration CreateStagedGydionForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.GydionCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 9.30i. Wasp against Gydion, both on Tier III, The Archwizard faceup and Wish in his
+        /// book - so his Prepare Spells offers "Cast Wish instead" of the refill (9.30g).
+        /// </summary>
+        public static MatchConfiguration CreateStagedGydionTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.GydionProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.GydionCardContent.TheArchwizard)))
                 if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
                     throw new InvalidOperationException(
                         "The staged Tier III match could not unlock a dealt Ultimate.");

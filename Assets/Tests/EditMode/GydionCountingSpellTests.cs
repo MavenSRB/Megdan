@@ -152,7 +152,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(GydionCardContent.InBookV1(GydionCardContent.Sunburst).ToString(),
                 Does.Contain("gydion-sunburst-in-book"), "each spell's naming step is keyed on its id");
-            Assert.That(GydionComponentContent.DeferredHandlers().Select(handler => handler.Reference),
+            Assert.That(GydionComponentContent.Handlers().Select(handler => handler.Reference),
                 Is.SupersetOf(spells.Select(spell => GydionCardContent.InBookV1(spell.Id))));
         }
 
@@ -674,22 +674,11 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(Turn.SelectedActor.ActorId, Is.EqualTo(Caster));
             }
 
-            internal static MatchContentCatalogs CreateCatalogs()
-            {
-                var defaults = MatchContentCatalogs.ForThisBuild();
-                var components = defaults.Components;
-                return new MatchContentCatalogs(
-                    new EffectCapabilityCatalog(defaults.Capabilities.Registered
-                        .Select(defaults.Capabilities.Load)
-                        .Concat(GydionComponentContent.DeferredHandlers())
-                        .Concat(SyntheticSpellbookCapabilities.DeferredHandlers())
-                        .Concat(SyntheticPlacementCapabilities.DeferredHandlers())),
-                    new ComponentDefinitionCatalog(
-                        components.RegisteredTokens.Select(components.LoadToken)
-                            .Concat(GydionComponentContent.Tokens()),
-                        components.RegisteredMarkers.Select(components.LoadMarker)),
-                    defaults.TriggeredEffects);
-            }
+            /// <summary>
+            /// The build's own catalogs: since Gydion's dealing (9.30i) they register his naming steps,
+            /// the Familiar and its token, the spellbook's contracts and Dimension Door's Place.
+            /// </summary>
+            internal static MatchContentCatalogs CreateCatalogs() => MatchContentCatalogs.ForThisBuild();
 
             internal static IReadOnlyList<HexCoordinate> Disk(int radius) =>
                 (from q in Enumerable.Range(-radius, 2 * radius + 1)

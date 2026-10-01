@@ -36,8 +36,8 @@ namespace GuardsDigital.Core.Cards.Verified
     ///
     /// <para><b>Only what 9.30g needs</b>: Prepare Spells and The Archwizard are the two action
     /// fronts this block composes; the other seventeen, the set's aggregate and the registration are
-    /// 9.30i's, which folds <see cref="ArchwizardCardDefinitions"/> into <see cref="AllDefinitions"/>.
-    /// Nothing here is registered (<see cref="ArchwizardDeferredHandlers"/>).</para>
+    /// 9.30i's, which folds <see cref="ArchwizardCardDefinitions"/> into <see cref="AllDefinitions"/>
+    /// and registers <see cref="ArchwizardHandlers"/>.</para>
     /// </summary>
     public static partial class GydionCardContent
     {
@@ -109,11 +109,11 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinition TheArchwizardDefinition => LazyArchwizardCards.Value[1];
 
         /// <summary>
-        /// The handlers this block declares and a fixture's catalog must carry until 9.30i registers
-        /// them: Wish's presence predicate. The count and the claim are
-        /// <see cref="SyntheticTeamVictoryCapabilities.DeferredHandlers"/>.
+        /// The handler this block declares, registered with the dealing (9.30i): Wish's presence
+        /// predicate. The count and the claim are
+        /// <see cref="SyntheticTeamVictoryCapabilities.RegisteredHandlers"/>.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> ArchwizardDeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> ArchwizardHandlers() =>
             new[] { SyntheticSpellbookCapabilities.SpellInBookPresentHandler(WishInBookPresentV1, Wish) };
 
         /// <summary>

@@ -1082,7 +1082,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedRazzle = 140,
 
         /// <summary>Wasp versus Razzle with Tier III hands and Twin Strike faceup (9.21j).</summary>
-        VerifiedTierThreeEngagedStagedRazzle = 141
+        VerifiedTierThreeEngagedStagedRazzle = 141,
+
+        /// <summary>Wasp versus Gydion with his p.6 starting hand and a full spellbook (9.30i).</summary>
+        VerifiedEngagedStagedGydion = 142,
+
+        /// <summary>Wasp versus Gydion with Tier III hands, The Archwizard faceup and Wish in the book (9.30i).</summary>
+        VerifiedTierThreeEngagedStagedGydion = 143
     }
 
     [ExecuteAlways]
@@ -1818,6 +1824,10 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedRazzleForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedStagedRazzle =>
                     MatchConfiguration.CreateStagedRazzleTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedGydion =>
+                    MatchConfiguration.CreateStagedGydionForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedGydion =>
+                    MatchConfiguration.CreateStagedGydionTierThreeForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1912,7 +1922,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedMortimer ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedMortimer ||
                 content == SceneCardContent.VerifiedEngagedStagedRazzle ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle ||
+                content == SceneCardContent.VerifiedEngagedStagedGydion ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2557,6 +2569,14 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusRazzleOneVsOne();
+                    }
+
+                    // Milestone 9.30i. Gydion's staged boards, in the same change as his members: the
+                    // setup's content identity names him, so his seat reads "Gydion" and his art.
+                    if (content == SceneCardContent.VerifiedEngagedStagedGydion ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusGydionOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

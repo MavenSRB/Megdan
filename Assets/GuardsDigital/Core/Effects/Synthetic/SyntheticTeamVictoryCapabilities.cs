@@ -24,8 +24,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// <para><b>"You" is the hero casting the spell</b> - the frame's actor - because Prepare Spells
     /// prints "The action on the spell card is performed by the hero casting the spell".</para>
     ///
-    /// <para><b>Deferred, not registered</b>, as every contract is until a dealt face starts it: the
-    /// registered set is serialized into every snapshot. Gydion's dealing (9.30i) registers them.</para>
+    /// <para><b>Registered with Gydion's dealing (9.30i)</b>, whose dealt Prepare Spells reaches Wish
+    /// once The Archwizard is unlocked; until then both were deferred, because the registered set is
+    /// serialized into every snapshot.</para>
     /// </summary>
     public static class SyntheticTeamVictoryCapabilities
     {
@@ -44,12 +45,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>Whether this resolution claimed the match.</summary>
         public const string ClaimedOutput = "claimed";
 
-        /// <summary>The count and the claim, held until 9.30i registers them with the dealing.</summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        /// <summary>The count and the claim, registered with Gydion's dealing (9.30i).</summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[] { new AdvanceHandler(), new ClaimHandler() };
 
-        /// <summary>Nothing until a dealt face counts (9.30i).</summary>
-        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
+        /// <summary>Nothing since Gydion's dealing (9.30i) registered both.</summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             Array.Empty<IEffectCapabilityHandler>();
 
         private static bool CanAsk(EffectCapabilityContext context) =>

@@ -1094,9 +1094,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "MatchLogEntry.BlockingHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.Outcome", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.TargetHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
-                { "DirectorCommand.ActionDefinitionId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "DirectorCommand.SystemTransitionDefinitionId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
-                { "DirectorCommand.TokenInstanceIds", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "MinionBattleChoiceCommand.HeroId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 // Never non-default on a SEAT by construction.
                 { "BoardObjectReference.HeroBody", "9.21c: a projection names board objects at hero grain - a candidate's own space says which body of a many-bodied hero it is - so a preview's occupant is normalized before it is projected" },
@@ -1113,8 +1111,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingMinionBattleChoice.SelectedMinionIds", NinePointTwoNine },
                 { "PendingMinionBattleChoice.SelectedUnits", NinePointTwoNine },
                 // Not reached by the walks: a drop here would go unseen until a walk or fixture reaches it.
-                { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
-                { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
                 { "DefenseChoicePreviewProjection.BlockResult", NotReached("a Defense preview whose choice blocks") },
                 { "DefenseChoicePreviewProjection.SuppressesMinionContributions", NotReached("a Defense card suppressing minion support") },
                 { "EffectChoiceCandidatePreview.ResultingCoordinate", NotReached("an effect-choice preview with a resulting space") },

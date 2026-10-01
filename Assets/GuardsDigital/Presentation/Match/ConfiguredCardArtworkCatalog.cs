@@ -174,7 +174,10 @@ namespace GuardsDigital.Presentation.Match
                 { "mortimer", "Mortimer" },
                 // Milestone 9.21j. His card folder is `Razzle`; the dashboard prints "Razzle the
                 // Ringmaster" (inventory 9.21, RZ-02).
-                { "razzle", "Razzle" }
+                { "razzle", "Razzle" },
+                // Milestone 9.30i. His card folder is `Gydion`; the dashboard prints "Gydion the
+                // Archwizard" (inventory 9.30, GY-02). His spells are the catalog's "spells" rows.
+                { "gydion", "Gydion" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -516,6 +519,9 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(WukCardContent.DealtDefinitions)
                 .Concat(MortimerCardContent.DealtDefinitions)
                 .Concat(RazzleCardContent.DealtDefinitions)
+                // Milestone 9.30i. Gydion's eighteen dealt fronts; Cheap Trick is p.20's Handicap and his
+                // spells are SpellArtworkCatalog's own bijection with GydionCardContent.SpellDefinitions.
+                .Concat(GydionCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

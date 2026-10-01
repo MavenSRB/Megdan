@@ -132,7 +132,12 @@ namespace GuardsDigital.Tests.EditMode
                 // count threshold (9.21g) reached this rule when Razzle's dealing registered it. "At
                 // least n other bodies" is Ransack's n-th retrieval gate - an ordinary count, not a
                 // closed vocabulary.
-                "atLeast"
+                "atLeast",
+                // Milestone 9.30i, the same class a fourth time: `count-other-removed-spells@1`'s
+                // divisor (9.30e) reached this rule when Gydion's dealing registered it. Midas' Touch's
+                // "for every two other spell cards removed" binds 2 - an ordinary count, not a closed
+                // vocabulary.
+                "every"
             };
             var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
             var integerParameters = catalog.Registered

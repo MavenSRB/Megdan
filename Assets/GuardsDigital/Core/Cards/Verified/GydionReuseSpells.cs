@@ -30,8 +30,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// (<see cref="PrintedIconObjectKind.MinionsAndTokens"/>); and Expeditious Retreat's "Move only in a
     /// straight line" (<see cref="RuleModificationKind.MovementActionOnlyInAStraightLine"/>).</para>
     ///
-    /// <para>Nothing here is registered (9.30i): <see cref="ReuseSpellDeferredHandlers"/> holds the one
-    /// capability these spells name that no other list defers, and
+    /// <para>Registered with the dealing (9.30i): <see cref="ReuseSpellHandlers"/> holds the one
+    /// capability these spells name that is theirs alone, and
     /// <see cref="ReuseSpellDecisionLabels"/> the one confirm-or-decline they raise.</para>
     /// </summary>
     public static partial class GydionCardContent
@@ -742,12 +742,12 @@ namespace GuardsDigital.Core.Cards.Verified
         // ----------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The capability these twelve name that no other list holds back: Expeditious Retreat's
-        /// straight-line walk (an Active effect over the registered <see cref="ActiveEffectCreationHandler"/>
-        /// type). Create Undead's Respawn waits in <see cref="SyntheticPlacementCapabilities.DeferredHandlers"/>;
-        /// every other one is registered. 9.30i registers it with the dealing.
+        /// The capability these twelve name that is theirs alone: Expeditious Retreat's straight-line
+        /// walk (an Active effect over the registered <see cref="ActiveEffectCreationHandler"/> type),
+        /// registered with the dealing (9.30i). Create Undead's Respawn registers from
+        /// <see cref="SyntheticPlacementCapabilities.RegisteredHandlers"/>.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> ReuseSpellDeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> ReuseSpellHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ActiveEffectCreationHandler(ExpeditiousRetreatStraightLineV1, ExpeditiousRetreatStraightLine)

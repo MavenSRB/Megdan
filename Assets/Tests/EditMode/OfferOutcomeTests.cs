@@ -94,11 +94,24 @@ namespace GuardsDigital.Tests.EditMode
                 ["cutter-grappling-bolt"] = "W9: an obstacle Cutter already stands beside moves her 0 spaces."
             };
 
+        /// <summary>
+        /// Milestone 9.30i. GY-Q7 (the user, 2026-10-01, against the recommendation): "Always playable" -
+        /// Prepare Spells is offered even with nothing removed from the book, and an empty refill changes
+        /// nothing, so it ends where Hold does BY RULING. A refill that returns a spell is never empty,
+        /// so the row covers exactly the ruling's case; any other reason for an empty play still fails.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, string> AlwaysPlayableByRuling =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["gydion-prepare-spells"] = "GY-Q7: 'Always playable' (user, 2026-10-01); an empty refill ends where Hold does."
+            };
+
         [TestCaseSource(nameof(Lineups))]
         public void EveryOfferedPrintedPrimary_DoesSomething(int lineup)
         {
             Assert.That(Surveyed(lineup).Empty.Where(entry => !CancelsOut.ContainsKey(entry.Split(' ')[0]) &&
-                    !ZeroSpaceMoveByRuling.ContainsKey(entry.Split(' ')[0])),
+                    !ZeroSpaceMoveByRuling.ContainsKey(entry.Split(' ')[0]) &&
+                    !AlwaysPlayableByRuling.ContainsKey(entry.Split(' ')[0])),
                 Is.Empty,
                 "These printed primaries were offered in a position where every answer left the match " +
                 "exactly as Holding the card would. Rules 6.5af, 7.8a1 and 8.35z15 grey an action that " +

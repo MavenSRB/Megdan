@@ -19,10 +19,10 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Pyro shape (a Place may take a token from the board, p.18). It does nothing else. The piece is
     /// element 5831117 <c>raven</c>, a white owl holding a book (GY-03).</para>
     ///
-    /// <para><b>Nothing here is registered.</b> Gydion sits behind milestone 7.9's gate: the dealing
-    /// (9.30i) adds <see cref="Tokens"/> to <c>SyntheticComponentDefinitions.CreateCatalog</c> - which
-    /// moves the registered token list every snapshot pins - and <see cref="DeferredHandlers"/> to the
-    /// capability catalog, as every hero's tokens and capabilities joined at their dealing.</para>
+    /// <para><b>Registered with the dealing (9.30i)</b>, milestone 7.9's gate: <see cref="Tokens"/> joins
+    /// <c>SyntheticComponentDefinitions.CreateCatalog</c> - which moves the registered token list every
+    /// snapshot pins - and <see cref="Handlers"/> the capability catalog, as every hero's tokens and
+    /// capabilities joined at their dealing.</para>
     /// </summary>
     public static class GydionComponentContent
     {
@@ -57,13 +57,13 @@ namespace GuardsDigital.Core.Cards.Verified
             };
 
         /// <summary>
-        /// Every capability Gydion's composed spells name that the build does not register: the
-        /// twenty-two naming steps and the Familiar's three. The engine's spellbook contracts
-        /// (<see cref="SyntheticSpellbookCapabilities.DeferredHandlers"/>) and Dimension Door's Place
-        /// (<see cref="SyntheticPlacementCapabilities.DeferredHandlers"/>) are deferred in their own
-        /// files. 9.30i registers all of them with the dealing.
+        /// The twenty-two naming steps and the Familiar's three, registered with the dealing (9.30i) by
+        /// <c>MatchContentCatalogs</c>. The engine's spellbook contracts
+        /// (<see cref="SyntheticSpellbookCapabilities.RegisteredHandlers"/>) and Dimension Door's Place
+        /// (<see cref="SyntheticPlacementCapabilities.RegisteredHandlers"/>) register from their own
+        /// files.
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             GydionCardContent.SpellInBookHandlers().Concat(FamiliarHandlers()).ToArray();
 
         private static EffectCapabilityReference Reference(string id) =>

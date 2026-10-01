@@ -140,7 +140,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// legally be empty, and a Radius of 0 - nothing removed, no item - reaches no space at all, so
         /// a mandatory node carrying it is impossible (a cast of the spell still removes it, GY-Q12).</para>
         ///
-        /// <para>Deferred until the dealing (9.30i) - see <see cref="DeferredHandlers"/>.</para>
+        /// <para>Registered with the dealing (9.30i) - see <see cref="RegisteredHandlers"/>.</para>
         /// </summary>
         public static EffectCapabilityId PlaceAtMaximumRadius { get; } =
             new EffectCapabilityId("synthetic-place-at-maximum-radius");
@@ -487,7 +487,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(
                     PlaceInRadiusBesideANamedHeroV1, PrintedValueChannel.Radius,
                     PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTheNamedSpace)
+                    PlaceDestinationQualifier.AdjacentToTheNamedSpace),
+
+                // Milestones 9.30e and 9.30d built this pair and MILESTONE 9.30i moves it across, which
+                // is the milestone that deals Gydion the Archwizard: Dimension Door ("Place yourself into
+                // a space at maximum radius") and Create Undead ("Respawn a friendly minion ... in range")
+                // are spells his dealt fronts now cast. Both are further declarations over handler
+                // TYPES this build registered long since (PlaceHandler at 6.6, RespawnFriendlyMinionHandler
+                // at 8.35z34), so they owe the showcase half of milestone 7.9's gate nothing.
+                new PlaceHandler(
+                    PlaceAtMaximumRadiusV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionInRangeV1, PrintedValueChannel.Range)
             };
 
         /// <summary>
@@ -531,16 +543,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <see cref="RespawnFriendlyMinionInRangeV1"/>, on the same terms: a further declaration over
         /// <c>RespawnFriendlyMinionHandler</c>, a type registered since 8.35z34, held here until 9.30i
         /// deals him.</para>
+        ///
+        /// <para>Both left this list together at MILESTONE 9.30i, which deals him - see
+        /// <see cref="RegisteredHandlers"/>. The list is empty again.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                new PlaceHandler(
-                    PlaceAtMaximumRadiusV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
-                new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionInRangeV1, PrintedValueChannel.Range)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being

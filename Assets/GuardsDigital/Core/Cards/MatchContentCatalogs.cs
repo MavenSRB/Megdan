@@ -522,6 +522,18 @@ namespace GuardsDigital.Core.Cards
                 // "more than one of you" gate (9.21e), "another one of you" and the retreat's line end
                 // (9.21f), and "other you in radius" (9.21g) - six handler types, each new to the build.
                 .Concat(RazzleEffectContent.Handlers())
+                // Milestone 9.30i, the milestone that deals Gydion the Archwizard as the
+                // TWENTY-NINTH hero: the twenty-two spells' naming steps and the Familiar's three
+                // (9.30e), Expeditious Retreat's straight-line walk (9.30d), Shield's and
+                // Invulnerability's immunities (9.30f) and Wish's presence predicate (9.30g). The naming
+                // step and the presence predicate are the two handler types new to the build, each bound
+                // to one spell's definition and proved on synthetic spells and staged rounds by
+                // 9.30c-9.30g (no showcase card can own a spellbook), the precedent Razzle's hero-only
+                // types set; the rest are declarations over types already registered.
+                .Concat(GydionComponentContent.Handlers())
+                .Concat(GydionCardContent.ReuseSpellHandlers())
+                .Concat(GydionCardContent.ImmunityDiscardLifeMoveHandlers())
+                .Concat(GydionCardContent.ArchwizardHandlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

@@ -20,9 +20,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// many. With nothing spent it has nothing to do, which is reported as a declined step rather than
     /// a failure, so the card's <c>IfAble</c> skips it silently.</para>
     ///
-    /// <para><b>Nothing here is registered</b> until Gydion's dealing (9.30i): registering moves the
-    /// capability list every snapshot pins, for a capability no dealt card names. A fixture's catalog
-    /// carries <see cref="DeferredHandlers"/>.</para>
+    /// <para><b>Registered with Gydion's dealing (9.30i)</b>, whose dealt Greater Necromancy casts
+    /// Energy Drain; until then it was deferred, because registering moves the capability list every
+    /// snapshot pins.</para>
     /// </summary>
     public static class SyntheticTeamLifeCapabilities
     {
@@ -38,9 +38,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The counters actually regained, published only when the regain happened.</summary>
         public const string RegainedOutput = "regained";
 
-        /// <summary>The handlers this file declares; 9.30i registers them with the dealing.</summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        /// <summary>The handlers this file declares, registered with Gydion's dealing (9.30i).</summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[] { new RegainSpentLifeHandler() };
+
+        /// <summary>Nothing since Gydion's dealing (9.30i) registered the regain.</summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         private sealed class RegainSpentLifeHandler : IEffectCapabilityHandler
         {

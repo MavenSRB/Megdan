@@ -17,7 +17,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// same spells (lesson 27).
     ///
     /// <para>Each is performed by the hero casting it through 9.30c's borrow path, with the spell's
-    /// own values and the caster's items. Nothing here is registered (9.30i).</para>
+    /// own values and the caster's items. Registered with the dealing (9.30i).</para>
     /// </summary>
     public static partial class GydionCardContent
     {

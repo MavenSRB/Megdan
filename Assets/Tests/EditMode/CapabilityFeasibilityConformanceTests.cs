@@ -102,43 +102,35 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 9.30c. The spellbook's handler types - a spell's naming step, the cast and the
-        /// refill, and since 9.30e the count of other spells removed and Find Familiar's removal - stay
-        /// unregistered until Gydion's dealing (9.30i), so the registered walk above does not reach them
-        /// yet; they are asked both rules here, as 9.21d-9.21g asked Razzle's.
+        /// Milestone 9.30i. 9.30c-9.30g asked the spellbook's handler types (a spell's naming step, the
+        /// cast, the refill, the count of other spells removed, Find Familiar's removal and Wish's
+        /// presence predicate), the team-victory count and claim and Energy Drain's regained Life both
+        /// rules one by one while they were unregistered (`...WhileUnregistered`); Gydion's dealing
+        /// registers them, so the registered walk above reaches them - which this case proves rather
+        /// than assumes.
         /// </summary>
         [Test]
-        public void TheSpellbooksHandlerTypes_KeepBothRules_WhileUnregistered()
+        public void GydionsHandlerTypes_AreRegistered_SoTheWalkAboveAsksThemBothRules()
         {
-            var spellbook = GuardsDigital.Core.Cards.Synthetic.SyntheticSpellbook.CastingHandlers()
+            var spellbook = GuardsDigital.Core.Cards.Verified.GydionComponentContent.Handlers()
+                .Concat(GuardsDigital.Core.Cards.Verified.GydionCardContent.ArchwizardHandlers())
+                .Concat(SyntheticSpellbookCapabilities.RegisteredHandlers())
                 .Select(handler => handler.GetType())
                 .Where(type => type.DeclaringType == typeof(SyntheticSpellbookCapabilities))
                 .Distinct()
                 .ToArray();
-            Assert.That(spellbook, Has.Length.EqualTo(5));
-            Assert.That(RegisteredHandlerTypes().Intersect(spellbook), Is.Empty,
-                "registered only with the hero whose dealt faces cast (9.30i)");
-            Assert.That(FindUnsharedDerivations(spellbook), Is.Empty);
-            Assert.That(FindPerformingProbes(spellbook), Is.Empty);
-        }
-
-        /// <summary>
-        /// Milestone 9.30f. Energy Drain's regain of a spent Life counter is a new handler type, held
-        /// back with Gydion's dealing (9.30i) like the spellbook's; it is asked both rules here. Shield's
-        /// and Invulnerability's immunities run on the registered <c>ActiveEffectCreationHandler</c>.
-        /// </summary>
-        [Test]
-        public void TheLifeRegainHandlerType_KeepsBothRules_WhileUnregistered()
-        {
-            var regain = SyntheticTeamLifeCapabilities.DeferredHandlers()
+            Assert.That(spellbook, Has.Length.EqualTo(6),
+                "the naming step, the presence predicate, the cast, the refill, the count and the removal");
+            var victoryAndLife = SyntheticTeamVictoryCapabilities.RegisteredHandlers()
+                .Concat(SyntheticTeamLifeCapabilities.RegisteredHandlers())
                 .Select(handler => handler.GetType())
                 .Distinct()
                 .ToArray();
-            Assert.That(regain, Has.Length.EqualTo(1));
-            Assert.That(RegisteredHandlerTypes().Intersect(regain), Is.Empty,
-                "registered only with the hero whose dealt faces cast Energy Drain (9.30i)");
-            Assert.That(FindUnsharedDerivations(regain), Is.Empty);
-            Assert.That(FindPerformingProbes(regain), Is.Empty);
+            Assert.That(victoryAndLife, Has.Length.EqualTo(3), "the count, the claim and the regain");
+            Assert.That(RegisteredHandlerTypes(), Is.SupersetOf(spellbook.Concat(victoryAndLife)));
+            Assert.That(SyntheticSpellbookCapabilities.DeferredHandlers(), Is.Empty);
+            Assert.That(SyntheticTeamVictoryCapabilities.DeferredHandlers(), Is.Empty);
+            Assert.That(SyntheticTeamLifeCapabilities.DeferredHandlers(), Is.Empty);
             Assert.That(RegisteredHandlerTypes(), Is.SupersetOf(GuardsDigital.Core.Cards.Verified.GydionCardContent
                 .ImmunityDiscardLifeMoveHandlers().Select(handler => handler.GetType()).Distinct()));
         }
@@ -467,7 +459,14 @@ namespace GuardsDigital.Tests.EditMode
             // retreat's line end (9.21f), and "other you in radius" (9.21g), each proved by the
             // focused 9.21d-9.21g fixtures. Everything else his eighteen faces name runs on types
             // this build already had.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(134),
+            // Gydion's dealing adds nine at 9.30i: a spell's naming step, the cast and the refill
+            // (9.30c), the count of other spells removed and Find Familiar's removal (9.30e), Wish's
+            // presence predicate, the team-victory count and claim (9.30g) and the regained Life
+            // counter (9.30f), each proved by the focused 9.30c-9.30g fixtures. His Familiar reuses
+            // the owned-token and hero-token handlers, Dimension Door and Create Undead PlaceHandler and
+            // RespawnFriendlyMinionHandler, and Expeditious Retreat, Shield and Invulnerability
+            // ActiveEffectCreationHandler.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(143),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

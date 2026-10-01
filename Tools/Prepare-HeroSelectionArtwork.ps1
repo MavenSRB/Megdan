@@ -98,6 +98,10 @@ $sources = [ordered]@{
     # (d526f6a3...5c25, RZ-01): the front his four stars and the Tactician and Melee icons were read
     # off (inventory 9.21).
     razzle = 'randomizers-tt30__7723698__front.png'
+    # Milestone 9.30i. SHA-256-identical to active-hero-cards/_selection-cards/Gydion__front.png
+    # (d07b3b61...5420, GY-01): the front his four stars and the Sniper, Tactician, Farming, Damager,
+    # Pusher and Tokens icons were read off (inventory 9.30).
+    gydion = 'randomizers-tt32__7723694__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

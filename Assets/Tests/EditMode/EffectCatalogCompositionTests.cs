@@ -235,6 +235,13 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(WukComponentContent.RegisteredHandlers())
                 .Concat(MortimerComponentContent.Handlers())
                 .Concat(RazzleEffectContent.Handlers())
+                // Milestone 9.30i. Gydion's naming steps and Familiar, Expeditious Retreat's walk,
+                // Shield's and Invulnerability's immunities and Wish's presence predicate, mirrored by
+                // hand from the milestone that deals him.
+                .Concat(GydionComponentContent.Handlers())
+                .Concat(GydionCardContent.ReuseSpellHandlers())
+                .Concat(GydionCardContent.ImmunityDiscardLifeMoveHandlers())
+                .Concat(GydionCardContent.ArchwizardHandlers())
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

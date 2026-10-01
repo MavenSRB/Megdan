@@ -24,9 +24,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// whose end another hero's seat picks
     /// (<see cref="SyntheticRosterCapabilities.LineChooserParameter"/>).</para>
     ///
-    /// <para><b>Nothing here is registered</b> (9.30i): <see cref="ImmunityDiscardLifeMoveHandlers"/>
-    /// and <see cref="SyntheticTeamLifeCapabilities.DeferredHandlers"/> are carried by a fixture's
-    /// catalog until the dealing.</para>
+    /// <para><b>Registered with the dealing (9.30i)</b>: <see cref="ImmunityDiscardLifeMoveHandlers"/>
+    /// and <see cref="SyntheticTeamLifeCapabilities.RegisteredHandlers"/>.</para>
     /// </summary>
     public static partial class GydionCardContent
     {
@@ -74,9 +73,9 @@ namespace GuardsDigital.Core.Cards.Verified
             new Lazy<ActiveEffectDefinition>(() => SpellImmunity(Invulnerability, RuleActivity.NonBasicAttack));
 
         /// <summary>
-        /// The capabilities this file's spells name that the build does not register: the two
-        /// immunities' Active-effect creations. With <see cref="SyntheticTeamLifeCapabilities.DeferredHandlers"/>
-        /// (Energy Drain's regain) they are 9.30i's to register.
+        /// The capabilities this file's spells name that are theirs alone: the two immunities'
+        /// Active-effect creations, registered with the dealing (9.30i) beside
+        /// <see cref="SyntheticTeamLifeCapabilities.RegisteredHandlers"/> (Energy Drain's regain).
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> ImmunityDiscardLifeMoveHandlers() =>
             new IEffectCapabilityHandler[]

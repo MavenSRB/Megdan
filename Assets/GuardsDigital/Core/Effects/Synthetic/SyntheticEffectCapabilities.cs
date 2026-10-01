@@ -156,6 +156,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Lightning is the card that changes that, and the handler TYPE took a showcase
                 // consumer in the same change.
                 .Concat(SyntheticBorrowedCardTextCapabilities.RegisteredHandlers())
+                // Milestone 9.30i, the milestone that deals Gydion the Archwizard. Three files whose
+                // contracts 9.30c-9.30g built and deliberately left out of the catalog on the same half
+                // of the rule every line above states: the spellbook's cast, refill, count and removal
+                // (his every front casts), the team-victory count and claim (Wish, reached through
+                // Prepare Spells once The Archwizard is unlocked) and the regained Life counter (Energy
+                // Drain). Each handler TYPE was proved on synthetic spells and staged rounds by those
+                // blocks, the precedent Razzle's and Mortimer's hero-only types set.
+                .Concat(SyntheticSpellbookCapabilities.RegisteredHandlers())
+                .Concat(SyntheticTeamVictoryCapabilities.RegisteredHandlers())
+                .Concat(SyntheticTeamLifeCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

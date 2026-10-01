@@ -92,16 +92,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
 
         /// <summary>
         /// The handlers this content declares and a fixture's catalog must carry: each spell's naming
-        /// step, the Ward's Active effect, and the cast and the refill themselves.
+        /// step and the Ward's Active effect. The cast and the refill themselves are the build's own
+        /// since Gydion's dealing (9.30i) registered them.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> CastingHandlers() =>
-            new[]
+            new IEffectCapabilityHandler[]
             {
                 SyntheticSpellbookCapabilities.SpellInBookHandler(AttackSpellInBookV1, AttackSpellId),
                 SyntheticSpellbookCapabilities.SpellInBookHandler(MovementSpellInBookV1, MovementSpellId),
                 SyntheticSpellbookCapabilities.SpellInBookHandler(WardSpellInBookV1, WardSpellId),
                 new ActiveEffectCreationHandler(GrantWardV1, WardDefinition)
-            }.Concat(SyntheticSpellbookCapabilities.DeferredHandlers());
+            };
 
         /// <summary>One instance of each acting spell, owned by <paramref name="ownerId"/>, in the book.</summary>
         public static IReadOnlyList<CardInstance> CreateCastingSpellbookInstances(HeroId ownerId, string instanceIdPrefix)

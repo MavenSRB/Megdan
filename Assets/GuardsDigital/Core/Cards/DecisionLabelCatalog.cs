@@ -158,6 +158,15 @@ namespace GuardsDigital.Core.Cards
                 // "APPLY THE SUN TEXT" / "APPLY THE MOON TEXT") - so `OptionalStepQuery` names no row
                 // for it and none is declared.
                 .Concat(IgnatiaEffectContent.DecisionLabels())
-                .Concat(IgnatiaEffectContent.UltimateDecisionLabels());
+                .Concat(IgnatiaEffectContent.UltimateDecisionLabels())
+                // Milestone 9.30i, the milestone that deals Gydion the Archwizard as the TWENTY-NINTH
+                // hero, joined here as the twenty-third table (Mrak, Wuk, Mortimer and Razzle declare
+                // theirs beside their content). Every label is DERIVED from his content: each
+                // "Choose and cast one" bullet and each of Wish's arms reads "Cast" and the spell's
+                // printed name, Find Familiar's options "Remove" and the name, Prepare Spells' two
+                // arms its own sentence and "Cast Wish instead", and Vampiric Touch's retrieval the
+                // roster's words. GydionDealingTests asserts the set equals what
+                // DecisionLabelRequirementQuery derives over his dealt fronts and spells.
+                .Concat(GydionCardContent.DecisionLabels());
     }
 }
