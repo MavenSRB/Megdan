@@ -773,7 +773,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionEveryBodyAndEveryTriggeredEffect()
         {
-            Assert.That(MinCardContent.ContentRevision, Is.EqualTo("min-9-1-rev-1"));
+            Assert.That(MinCardContent.ContentRevision, Is.EqualTo("min-9-23-rev-1"));
             Assert.That(MinCardContent.ContentSetId, Is.EqualTo("min"));
 
             Assert.That(

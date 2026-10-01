@@ -271,8 +271,15 @@ namespace GuardsDigital.Core.Cards.Verified
                             SourceTeamRelation.OpposingSource),
                         EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.ObjectPush)
                     },
+                    // Milestone 9.23. All three: the selection publishes the unit it named whether or
+                    // not the push reads it, and a recorded outcome the node does not declare is a
+                    // snapshot this build refuses to read back - so a match paused at the push could
+                    // not be restored (found at 9.21f on Magic Trick; proven here by
+                    // MinStanceRestoreTests before this declaration).
                     outputs: new[]
                     {
+                        Output(SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                        Output(SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion),
                         Output(SyntheticRosterCapabilities.ChosenSpaceOutput,
                             EffectValueKind.Coordinate)
                     }),

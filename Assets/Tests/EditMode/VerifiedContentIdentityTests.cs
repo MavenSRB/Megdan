@@ -279,7 +279,10 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for
             // and did not recur: her staged configuration went into EveryDealtDefinition below in
             // this same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("min", "min-9-1-rev-1", "4c1afdda2ab251074e4e47a6a41436c4791cd5406bda5d8e02c8a08dd10c1f6c"),
+            // Milestone 9.23. Her three pushing stances' subject node declares the chosenHero and
+            // chosenMinion outputs choose-target@2 always publishes, so a match paused at the push
+            // restores; min-9-1-rev-1 -> min-9-23-rev-1, measured on the run that made the change.
+            new IdentityPin("min", "min-9-23-rev-1", "4cdc31db14f36c12f37464de9f753d47ab5e62c83fba1296ededac78e348bc5a"),
             // Milestone 8.69g. THE TWENTIETH PIN, on exactly the terms every pin from the seventh on
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.69f composed Brynn's nineteen faces without dealing him.
