@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
@@ -84,17 +85,35 @@ namespace GuardsDigital.Tests.EditMode
         {
             var sunburst = GydionCardContent.Definition(GydionCardContent.Sunburst);
             Assert.That(SpellCountReading.Counts(sunburst), Is.True);
-            Assert.That(SpellCountReading.CountedValues(sunburst, 5).Select(value => value.Key + " " + value.Value),
+            var none = new KeyValuePair<PrintedValueChannel, int>[0];
+            Assert.That(Values(SpellCountReading.CastValues(sunburst, 5, none, ItemBonusQuery.BonusPerItem)),
                 Is.EqualTo(new[] { "Attack 5", "Range 5" }), "mockup A: 5 out, Attack 5, Range 5");
+            var items = new[]
+            {
+                new KeyValuePair<PrintedValueChannel, int>(PrintedValueChannel.Attack, 1),
+                new KeyValuePair<PrintedValueChannel, int>(PrintedValueChannel.Defense, 2),
+                new KeyValuePair<PrintedValueChannel, int>(PrintedValueChannel.Range, 1),
+                new KeyValuePair<PrintedValueChannel, int>(PrintedValueChannel.Radius, 1)
+            };
+            Assert.That(Values(SpellCountReading.CastValues(sunburst, 5, items, ItemBonusQuery.BonusPerItem)),
+                Is.EqualTo(new[] { "Attack 6", "Range 6" }),
+                "the value the cast will use: the printed 0+ icons take his Attack and Range items (p.16)");
+            Assert.That(Values(SpellCountReading.CastValues(sunburst, 0, items, ItemBonusQuery.BonusPerItem)),
+                Is.EqualTo(new[] { "Attack 1", "Range 1" }), "a printed 0 is an icon, so an item raises it");
+            Assert.That(Values(SpellCountReading.CastValues(sunburst, 5, items, 2)),
+                Is.EqualTo(new[] { "Attack 7", "Range 7" }), "a doubled item bonus is the caller's to state");
             Assert.That(SpellCountReading.CountedCoins(sunburst, 5), Is.Null);
 
             var door = GydionCardContent.Definition(GydionCardContent.DimensionDoor);
-            Assert.That(SpellCountReading.CountedValues(door, 3).Select(value => value.Key + " " + value.Value),
+            Assert.That(Values(SpellCountReading.CastValues(door, 3, none, ItemBonusQuery.BonusPerItem)),
                 Is.EqualTo(new[] { "Radius 3" }));
+            Assert.That(Values(SpellCountReading.CastValues(door, 3, items, ItemBonusQuery.BonusPerItem)),
+                Is.EqualTo(new[] { "Radius 4" }), "R1: a Radius icon reads the Radius item");
 
             var midas = GydionCardContent.Definition(GydionCardContent.MidasTouch);
             Assert.That(SpellCountReading.Counts(midas), Is.True);
-            Assert.That(SpellCountReading.CountedValues(midas, 5), Is.Empty);
+            Assert.That(SpellCountReading.CastValues(midas, 5, items, ItemBonusQuery.BonusPerItem), Is.Empty,
+                "no item raises coins");
             Assert.That(SpellCountReading.CountedCoins(midas, 5), Is.EqualTo(2), "one coin for every two, rounded down");
 
             var fireball = GydionCardContent.Definition(GydionCardContent.Fireball);
@@ -109,6 +128,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(SpellCountReading.OtherRemoved(
                 round.Cards, GydionCountingSpellTests.GydionRound.Caster, GydionCardContent.Fireball), Is.EqualTo(3));
         }
+
+        private static string[] Values(IEnumerable<KeyValuePair<PrintedValueChannel, int>> values) =>
+            values.Select(value => value.Key + " " + value.Value).ToArray();
 
         [Test]
         public void ACastOrRemovalArm_NamesItsSpell_ByTheOneNamingStepRule()

@@ -310,30 +310,34 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// "SUNBURST - 5 OUT: ATTACK 5, RANGE 5" (mockup A): a counting spell's caption, read from
-        /// <see cref="SpellCountReading"/> over the public removed pile. A spell that counts nothing is
+        /// "SUNBURST - 5 OUT: ATTACK 5, RANGE 5" (mockup A): a counting spell's caption, the values the
+        /// cast will use (<see cref="SpellCastReading"/>: printed icon, the caster's items, the count over
+        /// the public removed pile). A spell that counts nothing is
         /// captioned with its name alone.
         /// </summary>
         private static string CountedCaption(
             IMatchReadModel projection, CardDefinition spell, HeroId owner, string name)
         {
-            if (!SpellCountReading.Counts(spell))
+            // The values are the rules' reading of the cast now - printed icon, his items, the count -
+            // and are only formatted here; no number is added on this side.
+            var cast = SpellCastReading.Read(
+                projection, spell, owner, ActiveEffectVisibility.ItemBonusPerItem(projection, owner, null));
+            if (cast == null)
             {
                 return name;
             }
 
-            var others = SpellCountReading.OtherRemoved(projection.Cards, owner, spell.Id);
-            var parts = SpellCountReading.CountedValues(spell, others)
+            var parts = cast.Values
                 .Select(value => MatchHudTheme.ChannelName(value.Key).ToUpperInvariant() + " " +
                     value.Value.ToString(CultureInfo.InvariantCulture))
                 .ToList();
-            var coins = SpellCountReading.CountedCoins(spell, others);
-            if (coins.HasValue)
+            if (cast.Coins.HasValue)
             {
-                parts.Add(coins.Value.ToString(CultureInfo.InvariantCulture) + (coins.Value == 1 ? " COIN" : " COINS"));
+                parts.Add(cast.Coins.Value.ToString(CultureInfo.InvariantCulture) +
+                    (cast.Coins.Value == 1 ? " COIN" : " COINS"));
             }
 
-            return name + " - " + others.ToString(CultureInfo.InvariantCulture) + " OUT" +
+            return name + " - " + cast.OtherRemoved.ToString(CultureInfo.InvariantCulture) + " OUT" +
                 (parts.Count == 0 ? string.Empty : ": " + string.Join(", ", parts));
         }
 

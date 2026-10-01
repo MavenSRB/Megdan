@@ -58,14 +58,14 @@ namespace GuardsDigital.Tests.EditMode
             var spells = model.Controls.Where(control => control.Spell != null).ToArray();
             Assert.That(spells.Select(control => control.Label), Is.EqualTo(new[]
             {
-                "BURNING HANDS",
+                "FIND FAMILIAR",
                 "FIREBALL - REMOVED",
                 "SUNBURST - 5 OUT: ATTACK 5, RANGE 5"
             }), "in the card's printed order, as mockup A draws them. " + Describe(model));
             Assert.That(model.Controls, Has.Count.EqualTo(3), "and no worded bullet beside the faces");
             Assert.That(spells.Select(control => control.Spell.DefinitionReference.DefinitionId), Is.EqualTo(new[]
             {
-                GydionCardContent.BurningHands, GydionCardContent.Fireball, GydionCardContent.Sunburst
+                GydionCardContent.FindFamiliar, GydionCardContent.Fireball, GydionCardContent.Sunburst
             }), "each option is the face of the spell its bullet names");
 
             Assert.That(spells[0].IsAnswerable && spells[2].IsAnswerable, Is.True,
@@ -73,6 +73,41 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(spells[1].IsAnswerable, Is.False, "a spell not in the book answers nothing");
             Assert.That(spells[1].Spell.IsGreyed, Is.True, "and is its face greyed");
             Assert.That(spells[0].Spell.IsGreyed || spells[2].Spell.IsGreyed, Is.False);
+        }
+
+        /// <summary>
+        /// The coordinator's 9.30h correction: a counting spell's caption is the EFFECTIVE value the cast
+        /// will use, Gydion's items included - read on the rules side, never added by presentation. On
+        /// b1546d48 this read "ATTACK 5, RANGE 5" and "RADIUS 5", the printed value and the count alone.
+        /// </summary>
+        [Test]
+        public void TheSpellChoice_CaptionsACountingSpellWithTheValueTheCastWillUse_HisItemsIncluded()
+        {
+            var round = new GydionCountingSpellTests.GydionRound(
+                GydionCountingSpellTests.GydionRound.ChooseAndCastCard(
+                    GydionCardContent.Sunburst, GydionCardContent.DimensionDoor, GydionCardContent.MidasTouch),
+                removed: new[]
+                {
+                    GydionCardContent.MagicMissile, GydionCardContent.Shield, GydionCardContent.Fireball,
+                    GydionCardContent.Suggestion, GydionCardContent.FindFamiliar
+                },
+                items: new[] { PrintedValueChannel.Attack, PrintedValueChannel.Range, PrintedValueChannel.Radius });
+            round.StartCasting();
+
+            foreach (var ownerSeat in new[] { true, false })
+            {
+                var model = DecisionWindowPresenter.CreateViewModel(SpellChoice(round, ownerSeat), Caster);
+                Assert.That(model.Controls.Where(control => control.Spell != null).Select(control => control.Label),
+                    Is.EqualTo(new[]
+                    {
+                        "SUNBURST - 5 OUT: ATTACK 6, RANGE 6",
+                        "DIMENSION DOOR - 5 OUT: RADIUS 6",
+                        "MIDAS' TOUCH - 5 OUT: 2 COINS"
+                    }),
+                    (ownerSeat ? "his seat" : "a seat that cannot read the book") +
+                    ": the printed 0+ icon, his matching item and the count; coins take no item. " +
+                    Describe(model));
+            }
         }
 
         [Test]
@@ -85,7 +120,7 @@ namespace GuardsDigital.Tests.EditMode
             var model = DecisionWindowPresenter.CreateViewModel(projection, Caster);
 
             Assert.That(model.Controls.Where(control => control.Spell != null).Select(control => control.Label),
-                Is.EqualTo(new[] { "BURNING HANDS", "FIREBALL - REMOVED", "SUNBURST - 5 OUT: ATTACK 5, RANGE 5" }),
+                Is.EqualTo(new[] { "FIND FAMILIAR", "FIREBALL - REMOVED", "SUNBURST - 5 OUT: ATTACK 5, RANGE 5" }),
                 "the faces are definitions and the count is the public removed pile");
             var book = round.Cards.Where(card => card.State.Location == CardLocation.Spellbook)
                 .Select(card => card.Id.Value).ToArray();
@@ -373,18 +408,22 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Mockup A's pause: Greater Evocation's three spells - Burning Hands, Fireball, Sunburst - with
-        /// Magic Missile, Shield, Fireball, Suggestion and Find Familiar removed, so Sunburst counts five.
+        /// Mockup A's pause, shape for shape: a castable spell captioned with its name, a removed one
+        /// greyed REMOVED and a counting one captioned with its values - Find Familiar, Fireball,
+        /// Sunburst, with Magic Missile, Shield, Fireball, Suggestion and Dimension Door removed, so
+        /// Sunburst counts five. Find Familiar stands in for the mockup's Burning Hands because Burning
+        /// Hands' text is owed to 9.30d and its cast is refused until then (BorrowRefusal), which would
+        /// grey it; this case is about the window, not about which spells are composed yet.
         /// </summary>
         private static GydionCountingSpellTests.GydionRound MockupARound()
         {
             var round = new GydionCountingSpellTests.GydionRound(
                 GydionCountingSpellTests.GydionRound.ChooseAndCastCard(
-                    GydionCardContent.BurningHands, GydionCardContent.Fireball, GydionCardContent.Sunburst),
+                    GydionCardContent.FindFamiliar, GydionCardContent.Fireball, GydionCardContent.Sunburst),
                 removed: new[]
                 {
                     GydionCardContent.MagicMissile, GydionCardContent.Shield, GydionCardContent.Fireball,
-                    GydionCardContent.Suggestion, GydionCardContent.FindFamiliar
+                    GydionCardContent.Suggestion, GydionCardContent.DimensionDoor
                 });
             round.StartCasting();
             Assert.That(round.Choice, Is.Not.Null, "the cast choice stands");
@@ -424,6 +463,16 @@ namespace GuardsDigital.Tests.EditMode
             public override CardInstanceId ResolvingSourceCardInstanceId => GydionCountingSpellTests.GydionRound.Played;
             public override PendingResolution PendingSkillResolution => null;
             public override GuardsDigital.Core.Cards.SelectedInitiativeActor SelectedActor => round.Turn.SelectedActor;
+
+            /// <summary>The round's own items, projected as the session projects them: a count per icon.</summary>
+            public override IReadOnlyList<HeroProgressionProjection> HeroProgression => new[]
+            {
+                new HeroProgressionProjection(Caster, 1, 0, false,
+                    round.Round.HeroItems.GetItems(Caster)
+                        .GroupBy(item => item.Icon)
+                        .OrderBy(group => group.Key)
+                        .Select(group => new KeyValuePair<PrintedValueChannel, int>(group.Key, group.Count())))
+            };
             public override bool IsInputEnabled => true;
             public override GuardsDigital.Core.Cards.RoundResolutionPhase Phase =>
                 GuardsDigital.Core.Cards.RoundResolutionPhase.ResolvingTurn;

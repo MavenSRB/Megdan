@@ -1020,8 +1020,10 @@ namespace GuardsDigital.Presentation.Match
                 if (invocation == null)
                 {
                     // A spell multi-pick that has reached its maximum keeps every face where it stands,
-                    // inert, rather than reflowing the window under the pointer.
-                    if (spell != null)
+                    // inert, rather than reflowing the window under the pointer. An option the authority
+                    // REFUSED is not one of those: it stays in `Candidates` with no select (6.5ac) and is
+                    // drawn - or, for a removal, left out - once, by the refused loop below.
+                    if (spell != null && !choice.UnavailableCandidates.Contains(candidate))
                     {
                         var inert = new DecisionWindowControlViewModel(
                             spell.Caption,
