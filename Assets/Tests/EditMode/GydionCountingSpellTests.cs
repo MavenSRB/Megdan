@@ -330,7 +330,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(item.SpellsPrimaryCanAct(GydionCardContent.DimensionDoor), Is.True,
                 "the Radius item raises the printed 0 (R1)");
             item.StartCasting();
-            Assert.That(item.OfferedSpaces(), Has.Count.EqualTo(6), "the ring at Radius 0 + 1");
+            Assert.That(item.OfferedSpaces().ToArray(), Has.Length.EqualTo(6), "the ring at Radius 0 + 1");
             Assert.That(item.OfferedSpaces().Select(Distance), Is.All.EqualTo(1));
         }
 
@@ -347,7 +347,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(offered, Is.Not.Empty);
             Assert.That(offered.Select(Distance), Is.All.EqualTo(others),
                 "\"a space at maximum radius\": exactly Radius 0 + " + others);
-            Assert.That(offered, Has.Count.EqualTo(6 * others), "the whole ring, every space of it empty");
+            Assert.That(offered.ToArray(), Has.Length.EqualTo(6 * others), "the whole ring, every space of it empty");
 
             var to = offered.OrderBy(space => space.Q).ThenBy(space => space.R).First();
             round.PickSpace(to);
@@ -413,7 +413,7 @@ namespace GuardsDigital.Tests.EditMode
             var offered = round.OfferedSpaces();
             Assert.That(offered, Is.Not.Empty);
             Assert.That(offered.Select(Distance), Is.All.InRange(1, 3), "in radius: Radius 3");
-            Assert.That(offered, Has.Count.EqualTo(36), "every empty space within 3 (the enemy is far)");
+            Assert.That(offered.ToArray(), Has.Length.EqualTo(36), "every empty space within 3 (the enemy is far)");
 
             var to = new HexCoordinate(2, 0);
             round.PickSpace(to);
