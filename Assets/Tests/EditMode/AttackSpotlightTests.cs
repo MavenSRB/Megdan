@@ -484,6 +484,40 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(SceneFor(melee).IsRangedAttack, Is.False);
         }
 
+        /// <summary>
+        /// Milestone 9.34, from live play: "Gydion when he attacks animation shows syntetic card for
+        /// spell attack, it needs to be actual spell card". A spell attack's Attack row names the
+        /// spell card it was cast from, and the spotlight carries that spell's own face - the one the
+        /// spell choice and the SPELLBOOK drawer draw - instead of a hero card for it.
+        /// </summary>
+        [Test]
+        public void ASpellAttack_CarriesTheSpellsOwnFace_AndNoHeroCard()
+        {
+            var magicMissile = GydionCardContent.SpellDefinitions
+                .Single(definition => definition.Id.Equals(GydionCardContent.MagicMissile));
+
+            var scene = SceneFor(magicMissile);
+
+            Assert.That(scene.AttackSpell, Is.Not.Null,
+                "Magic Missile is a spell, so the spotlight shows it as one.");
+            Assert.That(scene.AttackSpell.DefinitionReference, Is.EqualTo(magicMissile.Reference));
+            Assert.That(scene.AttackCard, Is.Null,
+                "One attack shows one face: no generated hero card beside the spell.");
+            Assert.That(scene.HasAttackCard, Is.True);
+        }
+
+        [Test]
+        public void AHeroCardAttack_CarriesNoSpellFace()
+        {
+            var shootout = SabinaCardContent.AllDefinitions
+                .Single(definition => definition.Id.Equals(SabinaCardContent.Shootout));
+
+            var scene = SceneFor(shootout);
+
+            Assert.That(scene.AttackSpell, Is.Null);
+            Assert.That(scene.AttackCard, Is.Not.Null);
+        }
+
         private static AttackSpotlightScene SceneFor(CardDefinition definition)
         {
             var view = new CapturingSpotlightView();

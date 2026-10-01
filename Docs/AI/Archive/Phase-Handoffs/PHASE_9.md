@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.34 Spell attack spotlight evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.34 | A spell attack's spotlight shows the spell's own face, drawn by the one spell-face builder the spell choice and SPELLBOOK drawer use, instead of a generated hero card; a hero card attack is unchanged. Presentation only; no rule, snapshot or wire change. [Definition](../../Roadmap/PHASE_9.md#x-934-a-spell-attacks-spotlight-shows-the-spell-card). | `milestone/9.34` |
+
 ## Milestone 9.33 Terrain target cue evidence
 
 | Milestone | Outcome and definition | Commit |

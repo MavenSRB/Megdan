@@ -394,6 +394,12 @@ Completed 2026-10-01.
 
 Historical evidence: [9.33 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-933-terrain-target-cue-evidence).
 
-### [ ] 9.34 A spell attack's spotlight shows the spell card
+### [x] 9.34 A spell attack's spotlight shows the spell card
 
 Authorized 2026-10-01 by the user: "Gydion when he attacks animation shows syntetic card for spell attack, it needs to be actual spell card." Measured cause: a spell attack's Attack row names the spell card it was cast from (9.30c), and the attack spotlight drew every attacking card through the hero-card face builder, which has no spell artwork and draws a generated hero card. Outcome: when the attacking card is a spell, the spotlight carries the spell's own face (`SpellCardViewModel`) and draws it through `SpellCardFaceView`, the builder the spell choice and the SPELLBOOK drawer share, centred in the card box the layout already keeps clear of both pieces; a hero card attack is unchanged. No rule, command, snapshot or wire change. Closing check: `AttackSpotlightTests` proves a spell attack carries the spell face and no hero card (failing on the base, passing after) and a hero card attack carries no spell face; the spotlight and board-cue fixtures green. T2.
+
+Result: `AttackSpotlightPresenter` reads the attacking card's definition and, for a spell (`Progression.IsSpell`), gives the scene `AttackSpell` (a `SpellCardViewModel`) in place of `AttackCard`, so one attack shows one face; `AttackSpotlightUnityView` draws it with `SpellCardFaceView.Build`, centred in the card box the layout placed clear of both pieces, and a hero card's host is reset to fill as before. `AttackSpotlightTests.ASpellAttack_CarriesTheSpellsOwnFace_AndNoHeroCard` (Magic Missile) and `AHeroCardAttack_CarriesNoSpellFace` (Shootout) pin the scene; `GydionSpellUiJourneyPlayModeTests.ShockingGraspHitsAnAdjacentHeroAndMovesHerOneSpace` finds a `gd-spell-face` inside the live spotlight's attacker card once the attack completes. On the base the presenter test failed with "Magic Missile is a spell, so the spotlight shows it as one. Expected: not null" and the journey with "The spotlight shows the spell the attack was cast from ... Expected: gydion-shocking-grasp But was: null". No rule, command, snapshot or wire change.
+
+Completed 2026-10-01.
+
+Historical evidence: [9.34 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-934-spell-attack-spotlight-evidence).

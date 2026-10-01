@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.33**.
+- Current completed milestone: **9.34**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **9.32d**.
 
@@ -28,7 +28,7 @@ On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero:
 
 The same day, while the Gydion build was cut, the user asked for a new hero without naming one; the agent chose **Takahide the Warlord** as the THIRTIETH hero and recorded the sequence **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32** (the inventory) **9.32a** (gold cards swap with the deck; a facedown card withheld; schema v54, wire /34) **9.32b** (a teammate's unresolved card swapped) and **9.32c** (obstacles for the enemy units only) are complete; TK-Q1-TK-Q5 were settled by the user as recommended. 9.26 stays queued.
 
-After that playtest the user reported two defects, correctives **[9.33 -> 9.34](Roadmap/PHASE_9.md)**: 9.33 (offered terrain lit) is complete; 9.34 next.
+After that playtest the user reported two defects; correctives **[9.33 -> 9.34](Roadmap/PHASE_9.md)** (terrain lit, spell spotlight) are complete.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 

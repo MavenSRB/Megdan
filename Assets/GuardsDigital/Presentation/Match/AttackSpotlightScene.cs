@@ -52,7 +52,8 @@ namespace GuardsDigital.Presentation.Match
             string defenderName = null,
             TrayCardViewModel attackCard = null,
             TrayCardViewModel defenseCard = null,
-            bool isRangedAttack = false)
+            bool isRangedAttack = false,
+            SpellCardViewModel attackSpell = null)
         {
             if (sequence < 1)
             {
@@ -79,7 +80,8 @@ namespace GuardsDigital.Presentation.Match
             Outcome = outcome;
             AttackerName = attackerName ?? string.Empty;
             DefenderName = defenderName ?? string.Empty;
-            AttackCard = attackCard;
+            AttackCard = attackSpell == null ? attackCard : null;
+            AttackSpell = attackSpell;
             DefenseCard = defenseCard;
             IsRangedAttack = isRangedAttack;
         }
@@ -106,6 +108,13 @@ namespace GuardsDigital.Presentation.Match
         /// A spotlight with no face still frames and still smacks; it simply shows one card, or none.
         /// </summary>
         public TrayCardViewModel AttackCard { get; }
+
+        /// <summary>
+        /// Milestone 9.34. The spell the attack was cast from, drawn as its printed spell face rather
+        /// than as a hero card, or <c>null</c> when the attacking card is not a spell. When it is set,
+        /// <see cref="AttackCard"/> is <c>null</c>: one attack shows one face.
+        /// </summary>
+        public SpellCardViewModel AttackSpell { get; }
 
         /// <summary>
         /// The card the defender spent, or <c>null</c> - which is the ordinary answer for an
@@ -136,7 +145,7 @@ namespace GuardsDigital.Presentation.Match
 
         public bool WasDefended => Outcome == MatchLogOutcome.AttackSuccessfullyDefended;
 
-        public bool HasAttackCard => AttackCard != null;
+        public bool HasAttackCard => AttackCard != null || AttackSpell != null;
 
         public bool HasDefenseCard => DefenseCard != null;
 

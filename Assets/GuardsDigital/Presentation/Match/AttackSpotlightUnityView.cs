@@ -625,7 +625,15 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            BuildFace(attackerCardHost, scene.AttackCard);
+            if (scene.AttackSpell != null)
+            {
+                BuildSpellFace(attackerCardHost, scene.AttackSpell);
+            }
+            else
+            {
+                BuildFace(attackerCardHost, scene.AttackCard);
+            }
+
             BuildFace(defenderCardHost, scene.DefenseCard);
             if (caption != null)
             {
@@ -651,6 +659,9 @@ namespace GuardsDigital.Presentation.Match
             }
 
             host.style.display = DisplayStyle.Flex;
+            // Milestone 9.34: a host that last drew a spell face centred it; a hero card fills it.
+            host.style.justifyContent = StyleKeyword.Null;
+            host.style.alignItems = StyleKeyword.Null;
             var face = new VisualElement
             {
                 pickingMode = PickingMode.Ignore,
@@ -660,6 +671,26 @@ namespace GuardsDigital.Presentation.Match
             // tray cannot drift into two different cards.
             ConfiguredCardFaceView.Build(face, card);
             host.Add(face);
+        }
+
+        /// <summary>
+        /// Milestone 9.34. A spell attack's face: the spell's own printed face from
+        /// <see cref="SpellCardFaceView"/>, the builder every spell surface shares. It is a landscape
+        /// card of the action card's width, centred in the same box the card layout placed clear of
+        /// both pieces, so a shorter face cannot reach a piece the full box was kept off.
+        /// </summary>
+        private static void BuildSpellFace(VisualElement host, SpellCardViewModel spell)
+        {
+            if (host == null)
+            {
+                return;
+            }
+
+            host.Clear();
+            host.style.display = DisplayStyle.Flex;
+            host.style.justifyContent = Justify.Center;
+            host.style.alignItems = Align.Center;
+            host.Add(SpellCardFaceView.Build(spell));
         }
 
         private void LayoutCards(
@@ -704,7 +735,7 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            Place(attackerCardHost, attackerRect, model.Scene?.AttackCard != null);
+            Place(attackerCardHost, attackerRect, model.Scene?.HasAttackCard == true);
             Place(defenderCardHost, defenderRect, model.Scene?.DefenseCard != null);
         }
 

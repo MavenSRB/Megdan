@@ -84,6 +84,33 @@ namespace GuardsDigital.Tests.PlayMode
                 "One space on.");
             Assert.That(SpaceOf(runtime, wasp), Is.EqualTo(end), "Wasp is moved one space. " + Remaining(runtime));
             Assert.That(HeroView(wasp).Coordinate, Is.EqualTo(end));
+
+            // Milestone 9.34, from live play: "Gydion when he attacks animation shows syntetic card for
+            // spell attack, it needs to be actual spell card". The attack completes once its after-
+            // the-attack move is answered, and the spotlight on it carries Shocking Grasp's own spell
+            // face, drawn where the attacker's card stands.
+            // The surface builds the faces once the stage is granted and the spotlight is up, which
+            // can trail the scene's arrival; wall-clock, as the other spotlight journeys wait.
+            var deadline = UnityEngine.Time.realtimeSinceStartup + 5f;
+            while (!runtime.SpotlightView.Model.IsActive && UnityEngine.Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            yield return null;
+            var spotlit = runtime.SpotlightView.Model.Scene;
+            Assert.That(runtime.SpotlightView.Model.IsActive, Is.True,
+                "The completed spell attack's spotlight is up. Phase: " + runtime.SpotlightView.Model.Phase);
+            Assert.That(spotlit, Is.Not.Null, "The completed spell attack opens the spotlight.");
+            Assert.That(spotlit.AttackSpell?.DefinitionReference.DefinitionId,
+                Is.EqualTo(GydionCardContent.ShockingGrasp),
+                "The spotlight shows the spell the attack was cast from. Scene: " + spotlit);
+            Assert.That(spotlit.AttackCard, Is.Null, "and no generated hero card for it.");
+            Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Where(element => element.name == "gd-spotlight-attacker-card")
+                    .SelectMany(UiPlayer.Descendants)
+                    .Any(element => element.name == "gd-spell-face"), Is.True,
+                "The attacker's card in the spotlight is drawn as the spell face.");
             Healthy(runtime);
         }
 
