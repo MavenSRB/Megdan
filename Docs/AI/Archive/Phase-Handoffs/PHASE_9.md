@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.31 Package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.31 | Windows package `Builds/Playtest-9.31-gydion` (29 heroes, protocol /33, schema 53, stamp `1.0-9.31-gydion+20261001160724-a0b8662d`) cut from `ccfeac4a` after the T3 gate. [Definition](../../Roadmap/PHASE_9.md#x-931-package-the-2026-10-01-build-with-gydion). | `milestone/9.31` |
+
 ## Milestone 9.30j Gate evidence
 
 | Milestone | Outcome and definition | Commit |
