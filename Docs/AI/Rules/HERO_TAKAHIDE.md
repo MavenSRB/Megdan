@@ -101,28 +101,33 @@ New contracts, each owned by one block:
 
 Expected compatibility moves: CardStateFacts already carries location, played, resolution and orientation, so a facedown resolved or discarded card and a swapped-in deck card are expected to be schema-neutral, with only the restore validators widened. Whether the facedown card's projection row or the obstacle cue moves the wire protocol is measured in its block, not assumed.
 
-## Open questions
+## Settled questions
 
-Each blocks only the block named. Recommendations are the agent's; the user decides.
+On 2026-10-01 the user settled all five one by one, each shown with its card faces, and chose (A), the recommendation, every time. Each names the block that builds it.
 
 - **TK-Q1 - when Float like a Butterfly's swap happens (blocks 9.32a).** Printed: Basic Movement 5, "Swap this card with a different gold card in your deck."
   - (A) After the Movement, including a move of 0 (W5), and only when the Movement is performed: not when Fast Travel replaces it (p.11, the RZ-Q9 reading) and never when the card is discarded to defend.
   - (B) Before the Movement.
   - *Recommended:* (A). The swap ends the card's action, as Sting's and Strike's "After the attack" swaps do, and the Movement value stays the one printed on the card that started it.
+  - **User, 2026-10-01: (A).**
 - **TK-Q2 - which card Takahide has "played" after a swap (blocks 9.32a).** p.10 swaps every state, so after Sting like a Bee swaps with Float like a Butterfly, the played card in the turn slot is Float, a Movement card, and Sting is an unplayed card in the deck.
   - (A) The swapped-in card is the played and resolved card for every later reader: Brogan's Shield Bash ("who has played an attack card this turn") sees no attack card; a reader of his resolved card reads the swapped-in face.
   - (B) Both cards count as played this turn.
   - *Recommended:* (A), p.10's "all their card states are swapped".
+  - **User, 2026-10-01: (A).**
 - **TK-Q3 - what Spinning Blade's and Blade Helix's obstacles do (blocks 9.32c).** Printed: "This turn: Empty spaces adjacent to you [in radius] count as obstacles for the enemy units."
   - (A) An enemy unit cannot move through or end its movement on those spaces (unless it ignores obstacles, and then it still cannot end there), and cannot be placed, pushed or respawned into them (a p.19 swap exchanges two occupied spaces and never reaches an empty one). The spaces are read when asked, around Takahide's current space (p.17: an Active effect's radius moves with its hero), and "empty" is read then too. Friendly units, tokens, and the Range, Radius and straight lines of an enemy's action are unchanged. The effect ends at the end of the turn.
   - (B) As (A), but the set of spaces is fixed when the card resolves.
   - (C) As (A), and the spaces also block every line or path an enemy hero's action traces.
   - *Recommended:* (A). p.18's obstacle is a rule about a piece entering a space, and "for the enemy units" names whose pieces.
+  - **User, 2026-10-01: (A).**
 - **TK-Q4 - a friendly-hero face with no teammate to choose (blocks 9.32e).** Printed: "A friendly hero in range may discard a card. ..." and "Choose a card in the discard of a friendly hero in radius. ..."
   - (A) The choice of the friendly hero (or of the discarded card) is mandatory, so with none available the face is greyed (Rule 14); Hold and the secondary actions stay available. Offered heroes are those the step can act on (6.8l).
   - (B) Offered as a do-nothing play.
   - *Recommended:* (A), as RZ-Q7 was settled; RULING 53 covers only a printed "If". The Red faces are unaffected: their swap is after-attack text, and the Attack is what is offered.
+  - **User, 2026-10-01: (A).**
 - **TK-Q5 - Ready for War (blocks 9.32f).** Printed: "Return your silver card to your deck and take two gold cards from your deck into your hand. (You now have a total hand size of 6 cards.)"
   - (A) Performed once, at the level-up that unlocks it, whether or not Takahide is on the board; nothing returns the cards afterwards, so from then on he plays from six cards (three golds and three colours), Bushido stays in the deck, and the golds' "swap with a different gold card in your deck" finds none and does nothing.
   - (B) An ongoing effect re-applied each round while he is on the board (p.16's "as long as your hero is on the board").
   - *Recommended:* (A). The text is an instruction, not a condition, and p.8's retrieval leaves it nothing to re-apply.
+  - **User, 2026-10-01: (A).**
