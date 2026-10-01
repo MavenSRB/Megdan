@@ -882,7 +882,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.HeroOverviewsView.Model.Heroes.Single(hero =>
                 hero.HeroId.Equals(actor)).UltimateCard.DisplayName,
                 Is.EqualTo("Unlimited Firepower"));
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "The face-up Tier III Ultimate belongs on the hero rail.");
             Healthy(runtime);

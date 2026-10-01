@@ -211,7 +211,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The rail's Ultimate marker (milestone 8.15)
+        // The rail's Ultimate marker (milestone 8.15; in the items strip since milestone 9.30a)
         // -------------------------------------------------------------------------------------------
 
         [Test]
@@ -231,7 +231,6 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(hero.UltimateCard.DisplayName, Is.EqualTo("High Voltage"));
                 Assert.That(hero.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"),
                     "The lifecycle band claims no turn, hand, pile or deck the card is not in.");
-                Assert.That(hero.UltimateLabel, Is.EqualTo("ULTIMATE"));
                 Assert.That(hero.UltimateCard.AssistiveLabel, Does.Contain("UNLOCKED"),
                     "The fact is available without a pointer.");
             }
@@ -241,6 +240,58 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             Assert.That(icons, Has.Length.EqualTo(2),
                 "One marker per rail, drawn through the shared mini-card builder.");
+        }
+
+        /// <summary>
+        /// Milestone 9.30a, by the user's 2026-10-01 decision (approved mockup D): every hero's unlocked
+        /// Ultimate is a small card sitting in the plaque's items strip, and the separate captioned
+        /// ULTIMATE row is gone. It sits among the item chips - so it wraps with them and cannot push
+        /// the coin off the strip's line - on the coin's side of them, which the mirrored rail mirrors,
+        /// no taller than the coin, and still reading `UNLOCKED` without a pointer.
+        /// </summary>
+        [Test]
+        public void TheRail_DrawsTheUnlockedUltimateInsideTheItemsStripWithNoRowOfItsOwn()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    TeamSide.Red),
+                out _, out _, out _);
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+            Assert.That(view.Model.Heroes.Select(hero => hero.TeamSide),
+                Is.EquivalentTo(new[] { TeamSide.Red, TeamSide.Blue }),
+                "Arrange: one plain rail and one mirrored rail, each with an unlocked Ultimate.");
+
+            foreach (var hero in view.Model.Heroes)
+            {
+                // Read off the side's own column, because that is what decides the mirroring.
+                var column = Descendants(view.Root).Single(element => element.name ==
+                    (hero.TeamSide == TeamSide.Red ? "gd-hero-rail-red" : "gd-hero-rail-blue"));
+                var rail = Descendants(column).Single(element => element.name == "gd-hero-rail");
+                Assert.That(Descendants(rail).Any(element => element.name == "gd-ultimate"), Is.False,
+                    $"The {hero.TeamSide} plaque draws no ULTIMATE row of its own.");
+                Assert.That(Descendants(rail).OfType<Label>().Any(label => label.text == "ULTIMATE"),
+                    Is.False, "and no caption for one.");
+
+                var card = Descendants(rail).Single(element => element.name == "gd-ultimate-card");
+                var chips = card.parent;
+                Assert.That(chips.name, Is.EqualTo("gd-item-chips"),
+                    "The card sits among the item chips, so it wraps with them.");
+                Assert.That(chips.parent.name, Is.EqualTo("gd-bonus-strip"),
+                    "inside the items strip.");
+                var mirrored = hero.TeamSide != TeamSide.Red;
+                Assert.That(chips.IndexOf(card), Is.EqualTo(mirrored ? 0 : chips.childCount - 1),
+                    $"The {hero.TeamSide} card follows the item chips on the coin's side of them.");
+
+                var coinDisc = Descendants(chips.parent)
+                    .Single(element => element.name == "gd-hero-coin-disc");
+                Assert.That(card.style.height.value.value,
+                    Is.LessThanOrEqualTo(coinDisc.style.height.value.value),
+                    "The card is no taller than the coin that already sets the strip's line.");
+                Assert.That(card.tooltip, Is.EqualTo(hero.UltimateCard.AssistiveLabel));
+                Assert.That(card.tooltip, Does.Contain("UNLOCKED"),
+                    "The drawn card still reads UNLOCKED without a pointer.");
+            }
         }
 
         [Test]
@@ -2152,9 +2203,9 @@ namespace GuardsDigital.Tests.EditMode
                     .ToArray();
                 Assert.That(rows, Has.Length.EqualTo(4),
                     "This staged position draws the header, the item strip, the four slots and the " +
-                    "discard pile. It was five rows before the caption row went, and the two " +
-                    "conditional rows - the Ultimate and a held marker - are absent here because " +
-                    "nothing is unlocked and nobody is holding anything.");
+                    "discard pile. It was five rows before the caption row went, and the one " +
+                    "conditional row - a held marker - is absent here because nobody is holding " +
+                    "anything (an unlocked Ultimate is a card in the item strip since 9.30a).");
 
                 var strip = rail.Children().Single(child => child.name == "gd-bonus-strip");
                 Assert.That(strip.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),

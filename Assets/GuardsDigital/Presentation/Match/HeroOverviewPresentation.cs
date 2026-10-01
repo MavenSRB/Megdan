@@ -868,7 +868,6 @@ namespace GuardsDigital.Presentation.Match
             CoinAmountLabel = coins.ToString(System.Globalization.CultureInfo.InvariantCulture);
             CoinAssistiveLabel = coins == 1 ? "1 coin" : CoinAmountLabel + " coins";
             DiscardLabel = "DISCARD";
-            UltimateLabel = "ULTIMATE";
 
             // Milestone 8.25c. The image slot the milestone 7.8a decision wired is now filled: this is
             // where the hero's own official token face lives, addressed exactly as the piece on the
@@ -1016,9 +1015,6 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public TrayCardViewModel UltimateCard { get; }
 
-        /// <summary>`ULTIMATE`, the marker row's caption.</summary>
-        public string UltimateLabel { get; }
-
         /// <summary>
         /// Milestone 8.23a: rulebook p.18's markers this hero is currently holding, and what each one
         /// does to them.
@@ -1038,7 +1034,7 @@ namespace GuardsDigital.Presentation.Match
         ///
         /// <para>Usually empty, and drawn only when it is not. p.8 returns every marker at the end of
         /// every round, so most of a match has no row here at all - which is the same conditional the
-        /// <see cref="UltimateCard"/> row above is drawn under.</para>
+        /// <see cref="UltimateCard"/> above is drawn under, in the item strip.</para>
         /// </summary>
         public IReadOnlyList<HeroMarkerViewModel> HeldMarkers { get; }
 

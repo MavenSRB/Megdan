@@ -548,6 +548,17 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 9.30a: every element drawn inside a hero plaque's items strip
+        /// (<c>gd-bonus-strip</c>), which is where an unlocked Ultimate's <c>gd-ultimate-card</c> now
+        /// sits for every hero. A journey that reads the card through this rather than through the
+        /// whole HUD proves it is drawn where the user's 2026-10-01 decision put it.
+        /// </summary>
+        public static IEnumerable<VisualElement> ItemStripDescendants(ConfiguredMatchHudRenderer hud) =>
+            Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-bonus-strip")
+                .SelectMany(Descendants);
+
+        /// <summary>
         /// Clicks one live control exactly as a pointer does: the element must be shown, enabled, and
         /// laid out; the panel must pick this element (or a child of it) at a painted point inside its
         /// bounds, so a completely covered control fails here rather than passing by direct dispatch.

@@ -101,7 +101,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var runtime = root.Runtime;
             var razzle = RazzleUiJourneyPlayModeTests.Razzle(runtime);
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "Twin Strike stands face up on his rail.");
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();

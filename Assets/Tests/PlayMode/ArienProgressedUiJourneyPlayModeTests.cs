@@ -599,7 +599,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Arien's own rail must say he has unlocked an Ultimate.");
             Assert.That(rail.UltimateCard.DisplayName, Is.EqualTo("Living Tsunami"));
             Assert.That(rail.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"));
-            var markers = UiPlayer.Descendants(hud.RootElement)
+            var markers = UiPlayer.ItemStripDescendants(hud)
                 .Where(element => element.name == "gd-ultimate-card")
                 .ToArray();
             Assert.That(markers, Has.Length.EqualTo(2),

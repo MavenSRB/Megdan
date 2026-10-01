@@ -446,7 +446,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "p.16 turns the unlocked Ultimate faceup where a player can see it.");
             Assert.That(rail.UltimateCard.DisplayName, Is.EqualTo("Fabled Lance"));
             Assert.That(
-                UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+                UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                     element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)),
                 Is.True,
                 "and it is drawn on her rail rather than only held in a model. Shown: " +

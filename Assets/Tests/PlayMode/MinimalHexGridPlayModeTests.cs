@@ -521,7 +521,7 @@ namespace GuardsDigital.Tests.PlayMode
             var readableRows = new[]
             {
                 "gd-hero-icon", "gd-bonus-strip", "gd-item-chips", "gd-hero-coins",
-                "gd-current-card-slot", "gd-turn-slots", "gd-discard", "gd-hero-marker", "gd-ultimate"
+                "gd-current-card-slot", "gd-turn-slots", "gd-discard", "gd-hero-marker", "gd-ultimate-card"
             };
             foreach (var rail in Descendants(hud.RootElement)
                 .Where(element => element.name == "gd-hero-rail"))

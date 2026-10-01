@@ -256,7 +256,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(rail.UltimateCard.DisplayName, Is.EqualTo("One Man Army"));
             Assert.That(rail.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"));
 
-            var markers = UiPlayer.Descendants(hud.RootElement)
+            var markers = UiPlayer.ItemStripDescendants(hud)
                 .Where(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element))
                 .ToArray();
             Assert.That(markers, Has.Length.EqualTo(2),

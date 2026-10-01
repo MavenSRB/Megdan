@@ -617,6 +617,38 @@ namespace GuardsDigital.Presentation.Match
                 itemChips.Add(HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText));
             }
 
+            // Milestone 8.15: the unlocked Ultimate, faceup beside the dashboard on the table and
+            // therefore on the plaque here - the one card a hero owns that is neither in the round the
+            // tray draws nor in the pile below. It is built by the same mini-card builder every other
+            // rail card is, revealing the same full face on a pointer rest, and it is only drawn while
+            // a card actually stands in rulebook p.16's area.
+            //
+            // Milestone 9.30a, by the user's 2026-10-01 decision (approved mockup D): it is a small
+            // card sitting in the items strip, for every hero, rather than a captioned row of its own.
+            // It joins the chips rather than the strip, so it wraps with them and can never push the
+            // coin off the line, and it is drawn no taller than the coin that already sets the strip's
+            // line. It keeps the coin's side of the item chips, so the mirrored rail mirrors it.
+            if (hero.UltimateCard != null)
+            {
+                var ultimate = BuildMiniCard(
+                    "gd-ultimate-card",
+                    hero.UltimateCard,
+                    hero.UltimateCard.AssistiveLabel,
+                    hero.UltimateCard);
+                ultimate.style.width = StripCardWidth;
+                ultimate.style.height = StripCardHeight;
+                if (mirrored)
+                {
+                    ultimate.style.marginRight = StripCardGap;
+                    itemChips.Insert(0, ultimate);
+                }
+                else
+                {
+                    ultimate.style.marginLeft = StripCardGap;
+                    itemChips.Add(ultimate);
+                }
+            }
+
             var coins = BuildCoinDisc(hero);
             if (mirrored)
             {
@@ -641,7 +673,7 @@ namespace GuardsDigital.Presentation.Match
             // Putting them anywhere else in the rail would have made a player learn two readings of
             // one thing.
             //
-            // Drawn only while something is held, on the terms the Ultimate row below is: p.8 returns
+            // Drawn only while something is held, on the terms the strip's Ultimate card is: p.8 returns
             // every marker at the end of every round and p.13 returns a defeated holder's, so an
             // always-present row would be an empty caption for almost all of a match - and the rail
             // this milestone is compacting has no height to spend on one.
@@ -672,7 +704,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 // Mirrored with the rest of the rail: the marker's name keeps the screen edge and its
-                // numbers read inward, the way the Ultimate caption and the identity block do.
+                // numbers read inward, the way the identity block does.
                 if (mirrored)
                 {
                     held.Add(changes);
@@ -685,40 +717,6 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 rail.Add(held);
-            }
-
-            // Milestone 8.15: the unlocked Ultimate, faceup beside the dashboard on the table and
-            // therefore on the rail here - the one card a hero owns that is neither in the round the
-            // tray draws nor in the pile below. It is the same mini icon every other rail card is,
-            // revealing the same full face on a pointer rest, and it is only drawn while a card
-            // actually stands in rulebook p.16's area, so most of a match has no row here at all.
-            if (hero.UltimateCard != null)
-            {
-                var ultimate = HudElements.Row(4f);
-                ultimate.name = "gd-ultimate";
-                ultimate.style.marginTop = 6f;
-                ultimate.style.flexWrap = Wrap.NoWrap;
-                ultimate.style.alignItems = Align.Center;
-                ultimate.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
-                var ultimateCaption = HudElements.Text(
-                    hero.UltimateLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
-                var ultimateIcon = BuildMiniCard(
-                    "gd-ultimate-card",
-                    hero.UltimateCard,
-                    hero.UltimateCard.AssistiveLabel,
-                    hero.UltimateCard);
-                if (mirrored)
-                {
-                    ultimate.Add(ultimateIcon);
-                    ultimate.Add(ultimateCaption);
-                }
-                else
-                {
-                    ultimate.Add(ultimateCaption);
-                    ultimate.Add(ultimateIcon);
-                }
-
-                rail.Add(ultimate);
             }
 
             // The four resolved-turn slots, which milestone 8.23a draws with no caption over them.
@@ -822,7 +820,7 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Border(discard, new Color(frame.r, frame.g, frame.b, 0.72f), 1f, 7f);
 
             // Milestone 8.23a put the caption on the pile's own line, by the user's 2026-08-26
-            // decision, and it is the idiom the Ultimate row above already uses: a short fixed word
+            // decision, and it is the idiom the Ultimate row (removed at 9.30a) used: a short fixed word
             // beside the cards it names, rather than stacked above them. The caption is a literal at a
             // fixed size and the pile is 34 tall, so the row is exactly as tall as the pile was and
             // the caption's whole line is what the rail gets back.
@@ -1161,6 +1159,17 @@ namespace GuardsDigital.Presentation.Match
         private const float MiniCardHeight = 34f;
 
         private const float MiniCardGap = 4f;
+
+        /// <summary>
+        /// Milestone 9.30a: the unlocked Ultimate's footprint inside the items strip - the mini card's
+        /// proportions at the coin's height, so the card never makes the strip's line taller than the
+        /// coin already does - and its distance from the item chip beside it, which is the chips row's.
+        /// </summary>
+        private const float StripCardHeight = CoinDiscSize;
+
+        private const float StripCardWidth = 17f;
+
+        private const float StripCardGap = 6f;
 
         /// <summary>
         /// One card as a compact card-shaped icon: the shape and the printed colour, and nothing

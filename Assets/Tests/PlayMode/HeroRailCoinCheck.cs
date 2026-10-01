@@ -53,7 +53,9 @@ namespace GuardsDigital.Tests.PlayMode
 
         private static readonly string[] SometimesDrawnNeighbours =
         {
-            "gd-ultimate",
+            // Milestone 9.30a: the unlocked Ultimate is a card among the item chips now, on the
+            // coin's own line, so the claim is the card itself does not sit on the coin.
+            "gd-ultimate-card",
 
             // Milestone 8.23a. p.8 returns every marker at the end of every round, so a rail draws
             // this row only while its hero is actually holding one.

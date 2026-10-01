@@ -640,7 +640,7 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var snorri = Snorri(runtime);
             var wasp = HeroOf(runtime, "wasp");
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "Rune Mastery stands face up on Snorri's rail.");
             yield return Inscribe(root, 4);

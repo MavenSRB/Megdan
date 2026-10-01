@@ -438,7 +438,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return Pick(root,discardChoice);
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("may-perform-primary"));
                 Assert.That(runtime.HeroOverviewsView.Model.Heroes.Single(hero => hero.HeroId.Equals(actor)).UltimateCard.DisplayName, Is.EqualTo("Battle Fury"));
-                Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True);
+                Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True);
                 yield return UiPlayer.CaptureGameView("8-41f", "battle-fury-pause");
                 Assert.That(runtime.ActiveEffectSourceCardInstanceIds, Is.Empty, "The aura follows Battle Fury, never precedes it.");
                 var pause = runtime.CaptureSnapshot();

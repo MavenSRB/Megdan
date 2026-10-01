@@ -662,7 +662,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Milestone 8.15: the unlocked Ultimate is player-visible state - one marker per rail,
             // revealing the full printed face like every other rail icon.
-            var ultimateMarkers = UiPlayer.Descendants(hud.RootElement)
+            var ultimateMarkers = UiPlayer.ItemStripDescendants(hud)
                 .Where(element => element.name == "gd-ultimate-card")
                 .ToArray();
             Assert.That(ultimateMarkers, Has.Length.EqualTo(2),
@@ -672,6 +672,21 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(redRail.UltimateCard, Is.Not.Null);
             Assert.That(redRail.UltimateCard.DisplayName, Is.EqualTo("High Voltage"));
             Assert.That(redRail.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"));
+
+            // Milestone 9.30a: the card now sits in the items strip, and a pointer rest on it there
+            // still reveals the same full printed face the rest of the rail reveals.
+            var redMarker = UiPlayer.Descendants(HeroRailCoinCheck.Rail(hud, TeamSide.Red))
+                .Single(element => element.name == "gd-ultimate-card");
+            UiPlayer.PointAt(redMarker);
+            yield return null;
+            Assert.That(runtime.HeroOverviewsView.HighlightedDiscardCard?.DisplayName,
+                Is.EqualTo("High Voltage"),
+                "A pointer rest on the strip's Ultimate reveals that card.");
+            Assert.That(UiPlayer.IsShown(runtime.HeroOverviewsView.HoverPreviewRoot), Is.True,
+                "and its whole face is drawn.");
+            Assert.That(runtime.HeroOverviewsView.HoverPreviewRoot.childCount, Is.EqualTo(1));
+            UiPlayer.PointAway(redMarker);
+            yield return null;
 
             Commit(runtime, TeamSide.Red, WaspCardContent.StaticBarrier);
             Commit(runtime, TeamSide.Blue, WaspCardContent.MassTelekinesis);

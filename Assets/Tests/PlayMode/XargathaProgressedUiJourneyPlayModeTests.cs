@@ -375,7 +375,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Xargatha's rail must draw her unlocked Ultimate.");
             Assert.That(rail.UltimateCard.DisplayName, Is.EqualTo("Metamorphosis"));
             Assert.That(rail.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"));
-            var drawn = UiPlayer.Descendants(hud.RootElement)
+            var drawn = UiPlayer.ItemStripDescendants(hud)
                 .Where(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element))
                 .ToArray();
             Assert.That(drawn, Has.Length.EqualTo(2),

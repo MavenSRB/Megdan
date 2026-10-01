@@ -550,7 +550,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var runtime = root.Runtime;
             var wuk = Wuk(runtime);
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "March of Nature stands face up on Wuk's rail.");
             yield return BeginWuk(root, WukCardContent.TreeSlam, ActionKind.Movement);

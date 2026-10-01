@@ -1006,17 +1006,17 @@ namespace GuardsDigital.Tests.PlayMode
             // must be able to SEE before it is a thing that can happen to them.
             yield return PointTrayAt(root, bainId);
             yield return null;
-            var ultimate = UiPlayer.Descendants(hud.RootElement)
+            var ultimate = UiPlayer.ItemStripDescendants(hud)
                 .Where(element => element.name == "gd-ultimate-card" && UiPlayer.IsShown(element))
                 .ToArray();
             Assert.That(ultimate, Is.Not.Empty,
                 "His unlocked Ultimate is drawn in his own area. Shown: " + UiPlayer.Describe(hud));
             Assert.That(
-                UiPlayer.NamedElementWithText(
+                ultimate,
+                Does.Contain(UiPlayer.NamedElementWithText(
                     hud, "gd-ultimate-card",
-                    NameOf(runtime, BainCardContent.AComplicatedProfession)),
-                Is.Not.Null,
-                "and it is HIS Ultimate by name rather than a placeholder.");
+                    NameOf(runtime, BainCardContent.AComplicatedProfession))),
+                "and it is HIS Ultimate by name rather than a placeholder, in the items strip.");
 
             yield return HisTurnOn(root, bainId, BainCardContent.DeadOrAlive);
             yield return PointTrayAt(root, bainId);

@@ -512,7 +512,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var runtime = root.Runtime;
             var mortimer = Mortimer(runtime);
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "Master of Puppets stands face up on Mortimer's rail.");
             yield return BeginMortimer(root, MortimerBlueFaces.MacabreMayhem, ActionKind.Skill);

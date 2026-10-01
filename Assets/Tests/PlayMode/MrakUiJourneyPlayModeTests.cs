@@ -614,7 +614,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var runtime = root.Runtime;
             var wasp = HeroOf(runtime, "wasp");
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "Rock and a Hard Place stands face up on Mrak's rail.");
             yield return BeginMrak(root, MrakBlueFaces.StompingStep, ActionKind.Skill);

@@ -774,7 +774,7 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var razzle = Razzle(runtime);
             var wasp = HeroOf(runtime, "wasp");
-            Assert.That(UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+            Assert.That(UiPlayer.ItemStripDescendants(root.Hud).Any(element =>
                 element.name == "gd-ultimate-card" && UiPlayer.IsShown(element)), Is.True,
                 "Twin Strike stands face up on Razzle's rail.");
             yield return BeginRazzle(root, RazzleCardContent.StuntDoubles, ActionKind.Attack);

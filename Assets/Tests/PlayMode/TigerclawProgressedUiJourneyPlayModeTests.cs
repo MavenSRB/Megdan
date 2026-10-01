@@ -547,7 +547,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(ultimate, Is.Not.Null,
                 "p.16 puts the unlocked Ultimate faceup in the hero's own area, so his rail has to " +
                 "be drawing it before it is a thing he can use.");
-            Assert.That(UiPlayer.Descendants(hud.RootElement)
+            Assert.That(UiPlayer.ItemStripDescendants(hud)
                     .Any(element => element.name == "gd-ultimate-card"), Is.True,
                 "and it is drawn on the rail rather than dealt into the tray. Shown: " +
                 UiPlayer.Describe(hud));
