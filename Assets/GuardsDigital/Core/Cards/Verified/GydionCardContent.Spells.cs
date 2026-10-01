@@ -156,7 +156,6 @@ namespace GuardsDigital.Core.Cards.Verified
 
         private const string ReuseBlock = "9.30d";
         private const string ImmunityDiscardLifeMoveBlock = "9.30f";
-        private const string WishBlock = "9.30g";
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazySpells =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]

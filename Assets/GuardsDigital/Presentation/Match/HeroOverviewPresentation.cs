@@ -1184,6 +1184,9 @@ namespace GuardsDigital.Presentation.Match
         {
             var progression = projection.HeroProgression
                 .FirstOrDefault(entry => entry.HeroId.Equals(heroId));
+
+            // Milestone 9.30h: null for a hero who owns no spellbook (no book count, no faceup spell).
+            var spellbook = SpellbookPresentation.ForHero(projection, heroId, displayName);
             return new HeroOverviewViewModel(
                 heroId,
                 teamSide,
@@ -1213,10 +1216,15 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.TurnSlotMarker(
                     projection, heroId, projection.TurnIndex),
                 // Milestone 9.30h. Read off this seat's own projection, so privacy is the projection's.
-                SpellbookPresentation.ForHero(projection, heroId, displayName),
-                // Milestone 9.30g. The team's public Wish count, beside the purple card.
-                GuardsDigital.Core.Rules.Victory.TeamVictoryTallyQuery.ForHero(
-                    projection.Participants, projection.TeamVictoryTallies, heroId));
+                spellbook,
+                // Milestone 9.30g. The team's public Wish count, beside the purple card of the hero
+                // who casts the Wishes - the one who owns a spellbook, by the predicate the SPELLBOOK
+                // chip is drawn under - and never beside a teammate's own Ultimate, where it would
+                // read as that card's.
+                spellbook != null
+                    ? GuardsDigital.Core.Rules.Victory.TeamVictoryTallyQuery.ForHero(
+                        projection.Participants, projection.TeamVictoryTallies, heroId)
+                    : null);
         }
     }
 

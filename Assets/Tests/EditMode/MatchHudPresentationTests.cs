@@ -322,8 +322,9 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// Milestone 9.30g, approved mockup D: "after Tier IV his Wish count reads 1/3 beside the purple
-        /// card". The team's public count (GY-Q10) is drawn beside the strip's Ultimate on every rail of
-        /// that team, on the card's outer side so a mirrored rail mirrors it, and on no other rail.
+        /// card". The team's public count (GY-Q10) is drawn beside the strip's Ultimate of the hero who
+        /// casts the Wishes - the one owning a spellbook - on the card's outer side so a mirrored rail
+        /// mirrors it, and on no other rail.
         /// </summary>
         [Test]
         public void TheRail_DrawsTheTeamsWishCountBesideThePurpleCard()
@@ -332,7 +333,7 @@ namespace GuardsDigital.Tests.EditMode
                 MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                     TeamSide.Red),
                 out _, out _, out _);
-            var redTeam = session.Projection.Setup.Heroes.First(hero => hero.TeamSide == TeamSide.Red).TeamId;
+            var red = session.Projection.Setup.Heroes.First(hero => hero.TeamSide == TeamSide.Red);
 
             var plain = new HeroOverviewsUnityView();
             new HeroOverviewsPresenter(session, plain).Refresh();
@@ -342,7 +343,8 @@ namespace GuardsDigital.Tests.EditMode
             var view = new HeroOverviewsUnityView();
             new HeroOverviewsPresenter(
                 new TallyClient(new TallyReadModel(session.Projection,
-                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(redTeam, 1, 3))),
+                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(red.TeamId, 1, 3),
+                    spellbookOwners: new[] { red.HeroId })),
                 view).Refresh();
             foreach (var hero in view.Model.Heroes)
             {
@@ -366,15 +368,89 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30g (coordinator's correction): a teammate of the Wish caster who has unlocked
+        /// an Ultimate of their own and owns no spellbook draws no count beside it - "1/3" there would
+        /// read as that card's. Keyed on the public spellbook (9.30b), never on a hero's name.
+        /// </summary>
+        [Test]
+        public void TheRail_DrawsNoWishCountBesideATeammatesUltimate()
+        {
+            var session = ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession();
+            var source = session.Projection;
+            var reds = source.Setup.Heroes.Where(hero => hero.TeamSide == TeamSide.Red).Take(2).ToArray();
+            Assert.That(reds, Has.Length.EqualTo(2), "Arrange: two heroes on one team.");
+            var caster = reds[0].HeroId;
+            var teammate = reds[1].HeroId;
+
+            // Both Ultimates unlocked by the lifecycle's own transition, on copies of the projected cards.
+            var unlocked = new List<CardInstanceId>();
+            var cards = source.Cards.Select(card =>
+            {
+                var copy = new CardInstance(card.Id, card.DefinitionReference, card.OwnerId, card.State,
+                    card.InitiativeOverride);
+                var isUltimate = source.Definitions.Any(definition =>
+                    definition.Reference.Equals(card.DefinitionReference) && definition.Progression.IsUltimate);
+                if (isUltimate && (card.OwnerId.Equals(caster) || card.OwnerId.Equals(teammate)) &&
+                    CardLifecycleAuthority.TryUnlockUltimateFromDeck(copy))
+                {
+                    unlocked.Add(copy.Id);
+                }
+
+                return copy;
+            }).ToArray();
+            Assert.That(unlocked, Has.Count.EqualTo(2), "Arrange: the caster and the teammate each hold an Ultimate.");
+
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(
+                new TallyClient(new TallyReadModel(source,
+                    new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(reds[0].TeamId, 1, 3),
+                    spellbookOwners: new[] { caster }, cards: cards)),
+                view).Refresh();
+
+            VisualElement Rail(HeroId hero) => Descendants(view.Root).Single(element =>
+                element.name == "gd-hero-rail" && element.userData is HeroId id && id.Equals(hero));
+            Assert.That(Descendants(Rail(teammate)).Any(element => element.name == "gd-ultimate-card"), Is.True,
+                "Arrange: the teammate's purple card is drawn.");
+            Assert.That(Descendants(Rail(teammate)).Any(element => element.name == "gd-ultimate-tally"), Is.False,
+                "a teammate with no spellbook draws no Wish count beside their own Ultimate");
+            Assert.That(Descendants(Rail(caster)).OfType<Label>()
+                    .Single(label => label.name == "gd-ultimate-tally").text, Is.EqualTo("1/3"),
+                "the spellbook's owner draws it");
+            Assert.That(Descendants(view.Root).Count(element => element.name == "gd-ultimate-tally"), Is.EqualTo(1),
+                "and no other rail does");
+        }
+
         private sealed class TallyReadModel : MatchFeaturePresenterTests.DelegatingReadModel
         {
             private readonly IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> tallies;
+            private readonly IReadOnlyList<SeatHandSummary> summaries;
+            private readonly IReadOnlyList<CardInstance> cards;
 
-            public TallyReadModel(IMatchReadModel inner, GuardsDigital.Core.Rules.Victory.TeamVictoryTally tally)
-                : base(inner) => tallies = new[] { tally };
+            public TallyReadModel(
+                IMatchReadModel inner,
+                GuardsDigital.Core.Rules.Victory.TeamVictoryTally tally,
+                IEnumerable<HeroId> spellbookOwners = null,
+                IReadOnlyList<CardInstance> cards = null)
+                : base(inner)
+            {
+                tallies = new[] { tally };
+                var owners = (spellbookOwners ?? Enumerable.Empty<HeroId>()).ToArray();
+                summaries = inner.Setup.Heroes.Select(hero =>
+                {
+                    var row = inner.HandSummaries.FirstOrDefault(value => value.HeroId.Equals(hero.HeroId));
+                    return new SeatHandSummary(hero.HeroId, row?.HandCount ?? 0, row?.DeckCount ?? 0,
+                        owners.Contains(hero.HeroId) ? 22 : row?.SpellbookCount ?? 0);
+                }).ToArray();
+                this.cards = cards;
+            }
 
             public override IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies =>
                 tallies;
+
+            public override IReadOnlyList<SeatHandSummary> HandSummaries => summaries;
+
+            public override IReadOnlyList<CardInstance> Cards => cards ?? base.Cards;
         }
 
         private sealed class TallyClient : IMatchClient

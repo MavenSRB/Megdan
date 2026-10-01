@@ -15,10 +15,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// own text raises.
     ///
     /// <para><b>Four spells are composed here</b> (<c>GydionCountingSpells.cs</c>): Sunburst,
-    /// Dimension Door, Midas' Touch and Find Familiar. The other eighteen carry their transcribed
+    /// Dimension Door, Midas' Touch and Find Familiar; Wish with The Archwizard
+    /// (<c>GydionCardContent.Archwizard.cs</c>, 9.30g). The other seventeen carry their transcribed
     /// text and <see cref="PrintedTextComposition.AwaitedAt"/> the block that owes it - 9.30d the
     /// twelve that reuse existing contracts, 9.30f the five immunity, discard, Life and forced-move
-    /// spells, 9.30g Wish - so a cast of one is refused rather than performed short
+    /// spells - so a cast of one is refused rather than performed short
     /// (<see cref="BorrowedPrimaryActionDeclaration.Refuses"/>, 8.4's honesty rule).</para>
     ///
     /// <para><b>His nineteen action fronts are not here yet</b>, and nothing is registered or dealt:
