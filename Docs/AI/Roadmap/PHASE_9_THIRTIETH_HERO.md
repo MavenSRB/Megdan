@@ -58,9 +58,10 @@ Outcome: an Ultimate whose text is a one-time card movement performed at its unl
 Completed 2026-10-02. Ready for War is composed (`TakahideUltimate`, unregistered until 9.32h) on a new Ultimate shape, `UltimateRuleDefinition.UnlockCardMovementAbility` with a typed `UltimateUnlockCardMovement`, which p.15's level-up performs once when it unlocks the card: his silver card from hand to deck and up to two deck golds into the hand (TK-Q5). The new shared field moved all twenty-nine identity pins, isolated before re-pinning. Lesson 31's census found no five-card limit in Core, Application, Network or the bots; the HUD hand layout's fixed five is 9.32g's. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32f".
 Historical evidence: [9.32f completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932f-ready-for-war-evidence).
 
-### [ ] 9.32g Present Takahide
+### [~] 9.32g Present Takahide
 
 Outcome: the six-card hand, a facedown gold in a turn slot and in the discard pile (his own seat sees the face, others a back), the deck-gold choice drawn with card faces, a teammate's unresolved-card swap asked on that teammate's seat, the spaces that are obstacles for the enemy, and the log rows each swap writes without naming a hidden card. Mockups composited over real captures go to the user before building; a built screen that matches its approved mockup lands with captures for review, one that must differ waits for the user. Closing check: view regressions failing on the base; seat-scoped privacy; captures at the three validated viewports. T2 with a visual inspection. After 9.32d-9.32f.
+Mockups A-F approved by the user on 2026-10-02, B amended twice (no FACEDOWN caption on a mini; every seat sees the hatched gold, only the mouse-over differs); recorded in [his shard](../Rules/HERO_TAKAHIDE.md) under "Settled presentation (9.32g)".
 
 ### [ ] 9.32h Deal Takahide with his artwork
 
