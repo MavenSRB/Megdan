@@ -2,6 +2,30 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30h Spellbook presentation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30h | The spellbook presented per mockups A-D: spell faces and captions in the decision window, Find Familiar's pick, the drawer and chip, tier backs, log rows; wire /32. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930h-present-the-spellbook). | `milestone/9.30h` |
+
+## Milestone 9.30g Archwizard and Wish evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30g | Wish, the per-team tally and a team victory from three Wishes; The Archwizard's Wish in place of a refill; snapshot v52, wire /33; card-claim endings restore. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930g-the-archwizard-and-wish). | `milestone/9.30g` |
+
+## Milestone 9.30f Immunity, discard, Life and move evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30f | Shield, Invulnerability, Cloud Kill, Energy Drain and Suggestion composed; classification-scoped immunity and discard, a regained Life, a seat-steered move; snapshot v53. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930f-compose-the-immunity-discard-life-and-forced-move-spells). | `milestone/9.30f` |
+
+## Milestone 9.30d Reuse spells evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30d | Gydion's twelve reuse spells composed on the cast path, five with small new vocabulary; GY-Q8 built. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930d-compose-the-spells-that-reuse-existing-contracts). | `milestone/9.30d` |
+
 ## Milestone 9.30e Counting spells and Familiar evidence
 
 | Milestone | Outcome and definition | Commit |

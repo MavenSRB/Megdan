@@ -39,9 +39,11 @@ Outcome: a capability names spells by definition and casts one: it moves the spe
 Completed 2026-10-01. `cast-spell@1` names a spell through a per-spell naming step (`SpellInBookHandler`, the definition bound at registration), checks it through `BorrowedPrimaryActionQuery.EligibleCards` with the new pool `OwnedSpellbookSpells` (owner and caster are separate inputs; only the owner filter would change for a non-owner caster), moves it book -> removed as its own transition and performs its primary through the borrow path, which `BorrowedActionQuery.Requested` now recognises; `refill-spellbook@1` returns every removed spell and cancels each one's Active effects. By the user's rulings a cast is playable whenever its spell is in the book (GY-Q12) and an empty refill is always playable (GY-Q7, against the recommendation: the recommended grey was built, reverted and kept in history). A cast Attack is defended through p.14 and restores at its Defense pause; Hanu's delegated seat is offered the in-book names and never a facedown id; `GuessableColors` and sandbox staging no longer count spellbook cards. No schema or wire move. Proven on synthetic spells; registration is 9.30i's.
 Historical evidence: [9.30c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930c-cast-and-refill-evidence).
 
-### [ ] 9.30d Compose the spells that reuse existing contracts
+### [x] 9.30d Compose the spells that reuse existing contracts
 
 Outcome: Magic Missile, Shocking Grasp, Expeditious Retreat, Burning Hands, Fireball, Vampiric Touch, Create Undead, Dominate Person, Power Word Kill, Disintegrate, Polymorph and Banishment are composed on the cast path from existing capabilities, read against [PRINTED_WORDING](../Rules/PRINTED_WORDING.md) (W3 for Burning Hands, W5/W9 for Shocking Grasp, Exclusion for Fireball). Closing check: one staged Edit Mode outcome test per spell, each failing before composition; `PrintedWordingConformanceTests` on the new faces. T2. Needs GY-Q8.
+Completed 2026-10-01. The twelve spells compose on the cast path; five needed small vocabulary the survey had not predicted (Fireball's not-adjacent-to-your-friendly-unit target, Create Undead on the Range channel, Disintegrate's minion class, Polymorph's minions-and-tokens subjects, Expeditious Retreat's straight-line-only Movement), each recorded in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30d". No schema or wire move.
+Historical evidence: [9.30d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930d-reuse-spells-evidence).
 
 ### [x] 9.30e Compose the counting spells and the Familiar
 
@@ -49,17 +51,23 @@ Outcome: a count of other removed spells feeds Sunburst's Attack and Range, Dime
 Completed 2026-10-01. Scope widened, within the authorized sequence, to declare all twenty-two spell definitions (so 9.30d, f, g and h key on stable ids) while composing only Sunburst, Dimension Door, Midas' Touch and Find Familiar; the removed-spell count, the Familiar token and its private face are as [his shard](../Rules/HERO_GYDION.md) records under "Built by 9.30e". By GY-Q12 each of the four is castable with nothing to do. A shared change: the Attack Range path reads the cards, so a full Play Mode run checked every hero's attacks. No schema, wire, registration or content-digest move.
 Historical evidence: [9.30e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930e-counting-spells-and-familiar-evidence).
 
-### [ ] 9.30f Compose the immunity, discard, Life and forced-move spells
+### [x] 9.30f Compose the immunity, discard, Life and forced-move spells
 
 Outcome: a round-long immunity scoped by attack classification (Shield: basic; Invulnerability: non-basic), a forced discard filtered by classification (Cloud Kill: basic; Energy Drain: non-basic), a team Life counter regained (Energy Drain, GY-Q11), and Suggestion's exact-3 straight-line move of an enemy hero steered by that hero's seat (GY-Q6). Closing check: tests failing on the base, including a refill ending Shield. T2. Needs GY-Q11.
+Completed 2026-10-01. Shield and Invulnerability are classification-scoped Attack immunities sourced on the spell; Cloud Kill and Energy Drain discard by classification; Energy Drain regains only a spent Life (GY-Q11); Suggestion's exact-three line is chosen by the moved hero's seat (GY-Q6). Snapshot v52 -> v53 (each team's starting Life counters). Detail in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30f".
+Historical evidence: [9.30f completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930f-immunity-discard-life-and-move-evidence).
 
-### [ ] 9.30g The Archwizard and Wish
+### [x] 9.30g The Archwizard and Wish
 
 Outcome: the Ultimate offers Wish in place of a refill when Wish is in the book; Wish casts any spell in the book (GY-Q9); a persisted, public per-team Wish count; the third Wish's resolution wins the game for his team through a new `MatchVictoryCause` and the victory screen names it (GY-Q10). GY-Q2 (Wish removed when cast) is re-checked with the user first. Snapshot and wire move. Closing check: replacement, count, restore and victory tests failing on the base; the victory screen label. T2. Needs GY-Q2, GY-Q9, GY-Q10.
+Completed 2026-10-01. Wish casts any in-book spell and counts toward a per-team tally; the third Wish's resolution wins for his team (`MatchVictoryCause.WishesCast`); The Archwizard offers Wish in place of a refill, a full book included (GY-Q7). Snapshot v51 -> v52, wire /32 -> /33. It also fixed a pre-existing defect: a match ended by a card claim could not be restored. Detail in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30g".
+Historical evidence: [9.30g completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930g-archwizard-and-wish-evidence).
 
-### [ ] 9.30h Present the spellbook
+### [x] 9.30h Present the spellbook
 
 Outcome: approved mockups A-D. The spell choice draws spell faces in the decision window, a removed spell greyed with its face (today greyed candidates are worded controls) and a scaling spell captioned with its current values; the SPELLBOOK drawer (owner: faces; others: tier backs with counts; everyone: the faceup pile); the plaque's "SPELLBOOK n | m" chip in the items strip and "n/3" beside the purple Ultimate; the landscape spell footprint; the Familiar's token art; prepared private spell art with a generated fallback. Closing check: view regressions failing on the base; seat-scoped privacy in the drawer; captures for the user's review. T2 with a visual inspection.
+Completed 2026-10-01. Approved mockups A-D built: spell faces in the decision window (removed greyed, counting spells captioned with the value the cast will use, items included), Find Familiar's up-to-three pick, the SPELLBOOK drawer and chip, tier backs on every seat, log rows for casts, removals and refills (wire /31 -> /32), the landscape spell footprint and the private spell art. Unity found each spell drawn twice and removed spells in Find Familiar's pick; both fixed before landing. Detail in [his shard](../Rules/HERO_GYDION.md) under "Built by 9.30h".
+Historical evidence: [9.30h completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930h-spellbook-presentation-evidence).
 
 ### [ ] 9.30i Deal Gydion with his artwork
 
