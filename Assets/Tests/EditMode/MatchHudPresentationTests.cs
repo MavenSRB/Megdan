@@ -294,6 +294,32 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30a: the strip's Ultimate is the purple card of the user's approved mockup D.
+        /// The Ultimate's rules profile states no colour, so the colour-keyed face would draw it in the
+        /// empty slot's grey - which is what the plaque showed until this milestone.
+        /// </summary>
+        [Test]
+        public void TheRail_DrawsTheStripsUltimateInTheUltimatePurpleNotTheEmptySlotGrey()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    TeamSide.Red),
+                out _, out _, out _);
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            var cards = Descendants(view.Root)
+                .Where(element => element.name == "gd-ultimate-card").ToArray();
+            Assert.That(cards, Has.Length.EqualTo(2), "Arrange: both rails carry an unlocked Ultimate.");
+            Assert.That(MatchHudTheme.UltimateFace, Is.Not.EqualTo(MatchHudTheme.EmptySlot));
+            foreach (var card in cards)
+            {
+                Assert.That(card.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.UltimateFace),
+                    "The unlocked Ultimate is a purple card, not an empty slot.");
+            }
+        }
+
         [Test]
         public void TheRail_DrawsNoUltimateRowWhileTheCardWaitsInTheDeck()
         {

@@ -637,6 +637,9 @@ namespace GuardsDigital.Presentation.Match
                     hero.UltimateCard);
                 ultimate.style.width = StripCardWidth;
                 ultimate.style.height = StripCardHeight;
+                // The user's "just purple card sitting there": the profile states no colour for an
+                // Ultimate, so the plaque draws the printed Ultimate purple rather than an empty slot.
+                ultimate.style.backgroundColor = MatchHudTheme.UltimateFace;
                 if (mirrored)
                 {
                     ultimate.style.marginRight = StripCardGap;

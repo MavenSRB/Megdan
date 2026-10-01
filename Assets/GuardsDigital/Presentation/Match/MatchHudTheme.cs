@@ -116,6 +116,14 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color EmptySlot = new Color(0.188f, 0.212f, 0.227f, 1f);
 
         /// <summary>
+        /// Milestone 9.30a: the purple an unlocked Ultimate's card is drawn in on the plaque, sampled
+        /// from the printed Ultimate banner. An Ultimate's rules profile states no colour
+        /// (<c>CardProgressionProfile.UltimateCard</c>), so <see cref="Face"/> has nothing to read and
+        /// would draw it as an empty slot; the card is named by the slot it stands in, never by colour.
+        /// </summary>
+        public static readonly Color UltimateFace = new Color(0.447f, 0.282f, 0.565f, 1f);
+
+        /// <summary>
         /// Milestone 8.35z58, correcting 8.35z8 (the EIGHTEENTH amendment: "make these
         /// buttons nicer... they look pasted over"). 8.35z8's own chip (RGB ~37/43/47) sat only a
         /// shade brighter than the panels it stood on (RGB ~14-24) - runtime-traced and measured
