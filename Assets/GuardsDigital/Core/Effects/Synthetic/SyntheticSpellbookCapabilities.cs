@@ -325,10 +325,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 EffectExecutionResult.ImpossibleMandatory();
 
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Removed(context) == null
+            /// <summary>
+            /// GY-Q7 (recommended, pending the user): with nothing removed the refill adds nothing, so it
+            /// is a step that performs nothing and a card whose whole text it is, is greyed.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var removed = Removed(context);
+                return removed == null
                     ? EffectExecutionResultKind.ImpossibleMandatory
-                    : EffectExecutionResultKind.Applied;
+                    : removed.Count == 0
+                        ? EffectExecutionResultKind.DeclinedOptional
+                        : EffectExecutionResultKind.Applied;
+            }
         }
     }
 }
