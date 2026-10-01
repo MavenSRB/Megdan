@@ -982,6 +982,18 @@ namespace GuardsDigital.Presentation.Match
                 ordinals[choice.Candidates[index]] = index + 1;
             }
 
+            // Milestone 9.30j. A choice that offers worded options beside a spell - The Archwizard's
+            // "Add all spell cards to the spellbook" or "Cast Wish instead" - is not a cast among spells,
+            // so the spell's face is captioned with that arm's own declared words rather than the bare
+            // name a "Choose and cast one" face carries (approved mockup A). Found by Gydion's gate.
+            var options = choice.Candidates.Concat(choice.UnavailableCandidates)
+                .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Option)
+                .Distinct()
+                .ToArray();
+            var optionsNamingSpells = options.Count(candidate =>
+                SpellbookPresentation.OptionFace(projection, sourceDefinitionId, candidate, false, out _) != null);
+            var mixesWordedOptions = optionsNamingSpells > 0 && optionsNamingSpells < options.Length;
+
             // A board-answered choice has no CANDIDATE controls anywhere - the pieces, the spaces and
             // (from milestone 8.46d) the six direction arrows are the controls, where they stand. It
             // keeps the answers that have no board surface, which is why this gate covers the two
@@ -1015,6 +1027,12 @@ namespace GuardsDigital.Presentation.Match
                 if (spell != null)
                 {
                     spellArms = armKind;
+                    if (mixesWordedOptions && invocation != null &&
+                        DecisionLabelCatalog.TryGetLabel(sourceDefinitionId, candidate.OptionNodeId, out var declaredWords))
+                    {
+                        spell = SpellbookPresentation.Recaptioned(
+                            projection, spell, declaredWords.Chosen.ToUpperInvariant());
+                    }
                 }
 
                 if (invocation == null)

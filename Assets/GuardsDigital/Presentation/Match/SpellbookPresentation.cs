@@ -286,6 +286,42 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Milestone 9.30j. Whether every option <paramref name="choice"/> offers names a spell - a cast
+        /// or faceup-removal arm read off the public effect graphs of the match's definitions, the reading
+        /// <see cref="OptionFace"/> draws faces by - so the window draws the whole choice as spell faces.
+        /// Find Familiar's "remove up to three other spell cards" is the one such choice that picks
+        /// several, and it is reviewed as a whole before CONFIRM (<c>EffectChoiceCompletion</c>).
+        /// </summary>
+        public static bool IsSpellPick(IMatchReadModel projection, PendingEffectChoice choice)
+        {
+            if (projection == null || choice == null || choice.Candidates.Count == 0 ||
+                choice.Candidates.Any(candidate => candidate.Kind != EffectChoiceCandidateKind.Option))
+            {
+                return false;
+            }
+
+            var effects = projection.Definitions
+                .SelectMany(definition => definition.ActionDefinitions)
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(effect => effect != null)
+                .ToArray();
+            return choice.Candidates.All(candidate => SyntheticSpellbookCapabilities.TryReadSpellArm(
+                effects, candidate.OptionNodeId, projection.Definitions, out _, out _));
+        }
+
+        /// <summary>
+        /// Milestone 9.30j. <paramref name="spell"/>'s face under other words - a spell option in a choice
+        /// that also offers a worded option, captioned with the arm's own declared words.
+        /// </summary>
+        public static SpellCardViewModel Recaptioned(
+            IMatchReadModel projection, SpellCardViewModel spell, string caption)
+        {
+            var definition = projection?.Definitions.FirstOrDefault(value =>
+                value.Reference.Equals(spell.DefinitionReference));
+            return definition == null ? spell : new SpellCardViewModel(definition, spell.IsGreyed, caption);
+        }
+
+        /// <summary>
         /// The option nodes of the <c>Choose</c> <paramref name="chooseNode"/>, in the order the card
         /// prints them, read off the same public effect graphs <see cref="OptionFace"/> reads; empty
         /// when no graph declares it.

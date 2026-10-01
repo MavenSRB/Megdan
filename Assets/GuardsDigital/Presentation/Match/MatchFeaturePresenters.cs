@@ -719,7 +719,13 @@ namespace GuardsDigital.Presentation.Match
                 // placement fills the choice, but the player still sees all four and presses DONE
                 // (8.93a's acceptance), and may deselect a slot to rearrange before committing.
                 choice.ValueVocabulary ==
-                    GuardsDigital.Core.Rules.EffectResolution.EffectChoiceValueVocabulary.RuneTurnSlot)
+                    GuardsDigital.Core.Rules.EffectResolution.EffectChoiceValueVocabulary.RuneTurnSlot ||
+                // Milestone 9.30j, on the same terms. Find Familiar's spell multi-pick is reviewed as a
+                // whole: its third face fills the choice, but the player still sees the three chosen,
+                // may un-choose one, and presses CONFIRM (the user, 2026-10-01: "he picks up to three
+                // (0 allowed) and confirms"; the approved mockup's "3 of 3 chosen" and CONFIRM). Read
+                // last, because it walks the match's effect graphs and only a filled choice reaches it.
+                SpellbookPresentation.IsSpellPick(projection, choice))
             {
                 return null;
             }

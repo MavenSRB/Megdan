@@ -132,6 +132,77 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30j, found by Gydion's gate in Play Mode: the window's own submit path completes
+        /// a choose-several on its last pick (6.5c's <c>EffectChoiceCompletion</c>), so Find Familiar's
+        /// third face confirmed the removal behind the player and the "3 of 3 chosen ... CONFIRM" state
+        /// this window draws (approved mockup, the user: "he picks up to three (0 allowed) and
+        /// confirms") was never reached. A spell multi-pick is reviewed as a whole, as 8.93f's rune
+        /// slots are: the third pick leaves the choice standing for CONFIRM, or for un-choosing one.
+        /// </summary>
+        [Test]
+        public void FindFamiliarsThirdPick_LeavesTheThreeChosenFacesStandingUntilConfirm()
+        {
+            var round = new GydionCountingSpellTests.GydionRound(
+                GydionCountingSpellTests.GydionRound.CastingCard(GydionCardContent.FindFamiliar),
+                removed: new[] { GydionCardContent.Wish });
+            round.StartCasting();
+            round.PickSpace(new HexCoordinate(1, 0));
+            EffectChoiceCommand last = null;
+            foreach (var spell in new[] { GydionCardContent.Sunburst, GydionCardContent.Shield, GydionCardContent.Fireball })
+            {
+                var arm = GydionCardContent.FindFamiliarRemovalArm(spell);
+                last = round.Choice.SelectInvocations.Single(invocation => invocation.Candidate.OptionNodeId.Equals(arm));
+                round.SelectArm(arm);
+            }
+
+            var filled = SpellChoice(round, ownerSeat: true);
+            Assert.That(filled.PendingEffectChoice.SelectedCandidates.Count, Is.EqualTo(3), "three faces chosen");
+            Assert.That(EffectChoiceCompletion.FindImmediateConfirm(filled, last), Is.Null,
+                "the third pick does not confirm the removal on the player's behalf");
+            var model = DecisionWindowPresenter.CreateViewModel(filled, Caster);
+            Assert.That(model.Count, Is.EqualTo("3 of 3 chosen"));
+            Assert.That(model.Controls.Count(control => control.IsChosen && control.Role == DecisionWindowControlRole.Deselect),
+                Is.EqualTo(3), "each chosen face can still be un-chosen");
+            Assert.That(model.Controls.Single(control => control.Role == DecisionWindowControlRole.Confirm).IsAnswerable,
+                Is.True, "and CONFIRM is the player's own press");
+        }
+
+        /// <summary>
+        /// Milestone 9.30j, found by Gydion's gate in Play Mode: The Archwizard's "Add all spell cards"
+        /// or "Cast Wish instead" mixes a worded option with a spell. The worded option keeps its
+        /// declared words; Wish is drawn as its face, and - because this choice is not a cast among
+        /// spells - captioned with its own declared words, "CAST WISH INSTEAD", rather than the bare
+        /// spell name a "Choose and cast one" face carries (approved mockup A).
+        /// </summary>
+        [Test]
+        public void ThePrepareSpellsReplacement_DrawsTheRefillWorded_AndWishsFaceCaptionedCastWishInstead()
+        {
+            var session = GydionDealingTests.StagedSession(tierThree: true, out var wasp, out var gydion);
+            var projection = session.Projection;
+            var prepare = projection.Cards.Single(card => card.OwnerId.Equals(gydion) &&
+                card.DefinitionReference.DefinitionId.Equals(GydionCardContent.PrepareSpells));
+            var hers = projection.Cards
+                .Where(card => card.OwnerId.Equals(wasp) && card.State.Location == CardLocation.Hand)
+                .OrderBy(card => projection.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)).Initiative.Value)
+                .First();
+            Assert.That(session.Execute(GuardsDigital.Core.Replay.DirectorCommand.CommitCard(wasp, hers.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(GuardsDigital.Core.Replay.DirectorCommand.CommitCard(gydion, prepare.Id)).Accepted, Is.True);
+            Assert.That(session.Execute(GuardsDigital.Core.Replay.DirectorCommand.StartAction(
+                prepare.Id, GydionCardContent.PrimarySkill)).Accepted, Is.True);
+            Assert.That(session.Projection.PendingEffectChoice?.NodeId,
+                Is.EqualTo(GydionCardContent.PrepareSpellsReplacementChoice), "The Archwizard asks (GY-Q7)");
+
+            var model = DecisionWindowPresenter.CreateViewModel(session.Projection, gydion);
+            var refill = model.Controls.Single(control => control.Spell == null && control.IsAnswerable);
+            Assert.That(refill.Label, Is.EqualTo("ADD ALL SPELL CARDS TO THE SPELLBOOK"), "the refill in its declared words");
+            var wish = model.Controls.Single(control => control.Spell != null);
+            Assert.That(wish.Spell.DefinitionReference.DefinitionId, Is.EqualTo(GydionCardContent.Wish), "Wish drawn as its face");
+            Assert.That(wish.Spell.Caption, Is.EqualTo("CAST WISH INSTEAD"));
+            Assert.That(wish.Label, Is.EqualTo("CAST WISH INSTEAD"), "the face's caption is the replacement's declared words");
+        }
+
         [Test]
         public void FindFamiliarsRemoval_DrawsOnlyTheSpellsStillInTheBook_PicksUpToThree_ThenConfirm()
         {

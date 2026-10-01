@@ -765,10 +765,21 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Begin(root, GydionCardContent.PrepareSpells);
 
             // GY-Q7: a full book still "would add cards", so he may cast Wish instead.
+            // The window draws the refill in its declared words and Wish as its face, captioned with the
+            // replacement's own words. (The round strip's "MODE #n <node>" is the Director's diagnostic
+            // vocabulary, 8.58; the window is what the player reads.)
             var window = runtime.DecisionWindowView.Model;
-            Assert.That(window?.Controls.Any(control => control.Spell == null && control.Label.StartsWith("Add all spell cards")),
-                Is.True, Remaining(runtime));
-            Assert.That(SpellOption(runtime, GydionCardContent.Wish)?.IsAnswerable, Is.True, "Cast Wish instead, on Wish's face.");
+            Assert.That(window?.Controls.Where(control => control.Spell == null && control.IsAnswerable)
+                    .Select(control => control.Label),
+                Is.EqualTo(new[] { "ADD ALL SPELL CARDS TO THE SPELLBOOK" }), Remaining(runtime));
+            var wishInstead = SpellOption(runtime, GydionCardContent.Wish);
+            Assert.That(wishInstead?.IsAnswerable, Is.True, "Cast Wish instead, on Wish's face.");
+            Assert.That(wishInstead.Label, Is.EqualTo("CAST WISH INSTEAD"));
+            var drawnCaption = UiPlayer.Descendants(runtime.DecisionWindowView.ElementFor(wishInstead)).OfType<Label>()
+                .Single(label => label.name == "gd-spell-option-caption");
+            Assert.That(drawnCaption.text, Is.EqualTo("CAST WISH INSTEAD"), "drawn under Wish's face");
+            Assert.That(UiPlayer.HasButton(root.Hud, "ADD ALL SPELL CARDS TO THE SPELLBOOK"), Is.True,
+                "the refill is a worded control on screen");
             yield return PickSpellFace(root, GydionCardContent.Wish);
             Assert.That(Spell(runtime, GydionCardContent.Wish).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook),
                 "Wish is removed as it is cast (GY-Q2).");
