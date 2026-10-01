@@ -263,7 +263,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.HighlightedSpell, Is.SameAs(spell));
             var revealed = Named(view.HoverPreviewRoot, "gd-spell-face").Single();
             Assert.That(revealed.style.width.value.value, Is.EqualTo(SpellCardFootprint.Width),
-                "the full landscape face, not the drawer's smaller one");
+                "the full landscape face");
             Assert.That(revealed.userData, Is.EqualTo(spell.DefinitionReference));
             Assert.That(Named(drawer, "gd-spell-face").First().style.width.value.value,
                 Is.EqualTo(SpellCardFootprint.Width * SpellCardFootprint.DrawerScale).Within(0.01f));
@@ -362,6 +362,103 @@ namespace GuardsDigital.Tests.EditMode
                 Throws.InvalidOperationException.With.Message.Contains("appears twice"));
             Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(522),
                 "the action-card rows are untouched by the spell arrays beside them");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 9.30h1: the printed ratio, and a size that reads, on every surface
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The user on the 9.30h captures: "scaling is a bit off for those spells". Every spell face -
+        /// the spell choice, Find Familiar's pick, the drawer's faces, its tier backs and its pointer-rest
+        /// reveal - is drawn at the printed 372:260 whatever size its scan was imported at. The 256x256
+        /// scan is what Unity's default import made of a 372x260 PNG (a non-power-of-two size scaled to
+        /// the nearest power of two); on 0b7de861 every face fitted it into its box and was drawn
+        /// square, 1.000 against the printed 1.431.
+        /// </summary>
+        [Test]
+        public void EverySpellFace_IsDrawnAtThePrinted372By260_InTheChoiceThePickAndTheDrawer_WhateverSizeItsScanWasImportedAt()
+        {
+            var square = new Texture2D(256, 256);
+            try
+            {
+                using (ConfiguredSpellArtwork.UseTextureLoader(_ => square))
+                {
+                    foreach (var surface in SpellSurfaces())
+                    {
+                        Assert.That(surface.Faces, Is.Not.Empty, surface.Name + " draws spell faces");
+                        foreach (var face in surface.Faces)
+                        {
+                            AssertDrawnAtThePrintedRatio(face, surface.Name);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(square);
+            }
+        }
+
+        /// <summary>
+        /// The user: "they might be too small". The spell choice and every face in the drawer are the
+        /// action card's own width (about 300 by 210); Find Familiar's pick is two thirds of that (about
+        /// 200 by 140) in rows of at most seven; nothing is narrower than 170. On 0b7de861 the drawer
+        /// drew 186-wide faces and the pick 180-wide ones in rows as long as the window.
+        /// </summary>
+        [Test]
+        public void EverySpellFace_IsLargeEnoughToRead_TheChoiceAndTheDrawerAtTheActionCardsWidth_ThePickAtTwoThirdsInRowsOfSeven()
+        {
+            using (ConfiguredSpellArtwork.UseTextureLoader(_ => null))
+            {
+                foreach (var surface in SpellSurfaces())
+                {
+                    foreach (var face in surface.Faces)
+                    {
+                        var width = face.style.width.value.value;
+                        Assert.That(width, Is.EqualTo(surface.Width).Within(0.5f),
+                            surface.Name + " draws its faces " + surface.Width.ToString("F0") + " wide");
+                        Assert.That(width, Is.GreaterThanOrEqualTo(170f), surface.Name + ": never below 170 wide");
+                    }
+                }
+
+                var pick = Window(FindFamiliarRound());
+                var controls = Named(pick.Root, "gd-decision-window-controls").Single();
+                Assert.That(controls.style.maxWidth.keyword, Is.EqualTo(StyleKeyword.Undefined),
+                    "the pick's row is bounded, so its faces wrap however wide the window is");
+                // One option's whole slot as the window declares it: the face with its outline, then the gap.
+                var option = Named(pick.Root, "gd-spell-option").First();
+                var slot = option.style.width.value.value + option.style.marginRight.value.value;
+                Assert.That(Mathf.FloorToInt(controls.style.maxWidth.value.value / slot), Is.EqualTo(7),
+                    "rows of five to seven (the user), never the strip of eight");
+
+                var choice = Window(DecisionWindowPresenter.CreateViewModel(SpellChoice(MockupARound(), true), Caster));
+                Assert.That(Named(choice.Root, "gd-decision-window-controls").Single().style.maxWidth.keyword,
+                    Is.EqualTo(StyleKeyword.Null), "a full-size choice keeps the window's own width");
+            }
+        }
+
+        /// <summary>
+        /// The other half of the squeeze: the importer kept a prepared spell at its own size only from
+        /// 9.30h1. In a checkout holding the private corpus, every prepared front and back loads at
+        /// 372x260; on 0b7de861 they loaded at 256x256.
+        /// </summary>
+        [Test]
+        public void WhenPrivateCorpusIsPresent_EveryPreparedSpellScanLoadsAtItsPrinted372By260()
+        {
+            var corpus = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath,
+                "..", "Docs", "Guards of Atlantis II - Tabletopia Cards"));
+            // A clean checkout deliberately has no private art; the generated face is proved above.
+            if (!System.IO.Directory.Exists(corpus)) return;
+            var catalog = ConfiguredSpellArtwork.Catalog;
+            foreach (var path in catalog.Fronts.Select(entry => entry.ResourcePath)
+                .Concat(catalog.Backs.Select(entry => entry.ResourcePath)))
+            {
+                var texture = Resources.Load<Texture2D>(path);
+                Assert.That(texture, Is.Not.Null, path + " is prepared (Tools/Prepare-SpellArtwork.ps1)");
+                Assert.That(texture.width + "x" + texture.height, Is.EqualTo("372x260"),
+                    path + " is imported at its own size, not scaled to a power of two");
+            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -495,6 +592,139 @@ namespace GuardsDigital.Tests.EditMode
                 new SeatMatchClient(host.ClientForSeat(host.Seats.FindByHero(seatHero).Id)), view).Refresh();
             Assert.That(view.OpenSpellbook(Owner), Is.True, "the book's owner has a drawer on every seat");
             return view.SpellbookDrawer;
+        }
+
+        /// <summary>Find Familiar cast with Wish already removed: the twenty other spells still in the book.</summary>
+        private static IMatchReadModel FindFamiliarRound()
+        {
+            var round = new GydionCountingSpellTests.GydionRound(
+                GydionCountingSpellTests.GydionRound.CastingCard(GydionCardContent.FindFamiliar),
+                removed: new[] { GydionCardContent.Wish });
+            round.StartCasting();
+            round.PickSpace(new HexCoordinate(1, 0));
+            return SpellChoice(round, ownerSeat: true);
+        }
+
+        private static DecisionWindowUnityView Window(IMatchReadModel projection) =>
+            Window(DecisionWindowPresenter.CreateViewModel(projection, Caster));
+
+        private static DecisionWindowUnityView Window(DecisionWindowViewModel model)
+        {
+            Assert.That(model, Is.Not.Null, "the caster owns the standing choice");
+            var view = new DecisionWindowUnityView();
+            view.Render(model);
+            return view;
+        }
+
+        /// <summary>
+        /// The drawer with Gydion's own spells on the Red plaque - seventeen in the book, five removed, as
+        /// mockups B and C draw it - on his seat (faces) or another (tier backs), so every face and back
+        /// is a catalogued one that draws its prepared scan.
+        /// </summary>
+        private static HeroOverviewsUnityView GydionDrawer(bool ownerSeat)
+        {
+            var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
+            Drawer(host, ownerSeat ? Owner : Other, out var view);
+            var removedIds = new[]
+            {
+                GydionCardContent.MagicMissile, GydionCardContent.Shield, GydionCardContent.Fireball,
+                GydionCardContent.Suggestion, GydionCardContent.FindFamiliar
+            };
+            var book = GydionCardContent.SpellDefinitions.Where(spell => !removedIds.Contains(spell.Id)).ToArray();
+            var spellbook = new SpellbookViewModel(
+                Owner,
+                "Gydion",
+                book.Length,
+                ownerSeat ? book.Select(spell => new SpellCardViewModel(spell)).ToArray() : new SpellCardViewModel[0],
+                ownerSeat
+                    ? new SpellBackStackViewModel[0]
+                    : book.GroupBy(spell => SpellbookBackCount.BackOf(spell.Progression))
+                        .OrderBy(group => group.Key)
+                        .Select(group => new SpellBackStackViewModel(group.Key, group.Count()))
+                        .ToArray(),
+                GydionCardContent.SpellDefinitions.Where(spell => removedIds.Contains(spell.Id))
+                    .Select(spell => new SpellCardViewModel(spell)).ToArray());
+            var source = view.Model.Heroes.Single(hero => hero.HeroId.Equals(Owner));
+            var replacement = new HeroOverviewViewModel(
+                source.HeroId, source.TeamSide, source.ContentId, source.HeroDisplayName, source.Level,
+                source.Coins, source.ItemBonuses, source.TurnSlots, source.DiscardCards, source.IsViewed,
+                source.CurrentCard, source.UltimateCard, source.HeldMarkers, source.IsAwaited, source.Worth,
+                source.CurrentTurnMarker, spellbook);
+            view.Render(new HeroOverviewsViewModel(
+                view.Model.Version,
+                view.Model.Heroes.Select(hero => hero.HeroId.Equals(Owner) ? replacement : hero)));
+            Assert.That(view.OpenSpellbook(Owner), Is.True);
+            return view;
+        }
+
+        private sealed class SpellSurface
+        {
+            public SpellSurface(string name, float width, IEnumerable<VisualElement> faces)
+            {
+                Name = name;
+                Width = width;
+                Faces = faces.ToArray();
+            }
+
+            public string Name { get; }
+
+            /// <summary>The width every face on this surface is drawn at.</summary>
+            public float Width { get; }
+
+            public IReadOnlyList<VisualElement> Faces { get; }
+        }
+
+        /// <summary>
+        /// Every surface that draws a spell, built under whatever art loader the caller has in place:
+        /// the spell choice and the drawer at the action card's own width, the pick at two thirds.
+        /// </summary>
+        private static IReadOnlyList<SpellSurface> SpellSurfaces()
+        {
+            var full = CardFootprint.StandardWidth;
+            var choice = Window(SpellChoice(MockupARound(), ownerSeat: true));
+            var pick = Window(FindFamiliarRound());
+            var own = GydionDrawer(ownerSeat: true);
+            var other = GydionDrawer(ownerSeat: false);
+            var surfaces = new List<SpellSurface>
+            {
+                new SpellSurface("the spell choice (mockup A)", full, Named(choice.Root, "gd-spell-face")),
+                new SpellSurface("Find Familiar's pick", full * 2f / 3f, Named(pick.Root, "gd-spell-face")),
+                new SpellSurface("the drawer on his own seat (mockup B)", full,
+                    Named(own.SpellbookDrawer, "gd-spell-face")),
+                new SpellSurface("the drawer's tier backs on another seat (mockup C)", full,
+                    Named(other.SpellbookDrawer, "gd-spell-back")),
+                new SpellSurface("the drawer's removed pile on another seat (mockup C)", full,
+                    Named(other.SpellbookDrawer, "gd-spell-face"))
+            };
+            own.ForwardSpellHighlight(own.Model.Heroes.Single(hero => hero.HeroId.Equals(Owner)).Spellbook.RemovedFaces[0]);
+            surfaces.Add(new SpellSurface("the drawer's pointer-rest reveal", full,
+                Named(own.HoverPreviewRoot, "gd-spell-face")));
+            Assert.That(surfaces[0].Faces.Count, Is.EqualTo(3), "mockup A's three spells");
+            Assert.That(surfaces[1].Faces.Count, Is.EqualTo(20), "the twenty other spells still in the book");
+            Assert.That(surfaces[2].Faces.Count, Is.EqualTo(22), "seventeen in the book and five removed");
+            return surfaces;
+        }
+
+        /// <summary>
+        /// The ratio a face is DRAWN at: its pinned box when the scan is stretched or cropped into it,
+        /// the scan's own when it is fitted (letterboxed) inside it.
+        /// </summary>
+        private static void AssertDrawnAtThePrintedRatio(VisualElement face, string where)
+        {
+            const float printed = 372f / 260f;
+            var boxWidth = face.style.width.value.value;
+            var boxHeight = face.style.height.value.value;
+            Assert.That(boxWidth / boxHeight, Is.EqualTo(printed).Within(printed * 0.01f), where + ": the face's box");
+            var art = Descendants(face).OfType<Image>().Single();
+            Assert.That(art.style.width.value, Is.EqualTo(Length.Percent(100f)), where + ": the scan fills its box");
+            Assert.That(art.style.height.value, Is.EqualTo(Length.Percent(100f)), where + ": the scan fills its box");
+            var drawn = art.scaleMode == ScaleMode.ScaleToFit
+                ? (float)art.image.width / art.image.height
+                : boxWidth / boxHeight;
+            Assert.That(drawn, Is.EqualTo(printed).Within(printed * 0.01f),
+                where + ": a spell face is drawn at " + drawn.ToString("F3") + " (" + art.scaleMode + " of a " +
+                art.image.width + "x" + art.image.height + " scan), not the printed 372:260 = " +
+                printed.ToString("F3"));
         }
 
         private static string TextOf(VisualElement element) => ((TextElement)element).text;

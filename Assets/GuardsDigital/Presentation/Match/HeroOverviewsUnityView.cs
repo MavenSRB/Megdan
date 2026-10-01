@@ -84,7 +84,11 @@ namespace GuardsDigital.Presentation.Match
             spellbookPanel = HudElements.Panel(MatchHudTheme.PanelBackground);
             spellbookPanel.name = "gd-spellbook-drawer";
             spellbookPanel.style.flexDirection = FlexDirection.Column;
+            // Milestone 9.30h1: the whole room between the rails, so full-size faces wrap into as
+            // many to a row as fit, and never taller than that room - the body scrolls instead.
+            spellbookPanel.style.width = Length.Percent(100f);
             spellbookPanel.style.maxWidth = Length.Percent(100f);
+            spellbookPanel.style.maxHeight = Length.Percent(100f);
             HudElements.Padding(spellbookPanel, SpellbookDrawerPadding);
             HudElements.Border(spellbookPanel, MatchHudTheme.PanelBorder, 2f, 12f);
             spellbookHost.Add(spellbookPanel);
@@ -416,6 +420,10 @@ namespace GuardsDigital.Presentation.Match
             spellbookHost.style.left = left;
             spellbookHost.style.top = Mathf.Min(red.y, blue.y);
             spellbookHost.style.width = Mathf.Max(0f, blue.xMin - SpellbookDrawerGap - left);
+            // Milestone 9.30h1: as tall as the rails' own columns - down to the hand's band, which the
+            // drawer never covers - so a book of full-size faces scrolls rather than running under it.
+            spellbookHost.style.height = Mathf.Max(
+                0f, Mathf.Min(red.yMax, blue.yMax) - Mathf.Min(red.y, blue.y));
         }
 
         private static void Place(VisualElement element, Rect rect)
@@ -1005,8 +1013,8 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The space between two spell faces in the drawer.</summary>
         private const float SpellbookFaceGap = 10f;
 
-        /// <summary>A stack of backs is drawn larger than a drawer face, as mockup C draws it.</summary>
-        private const float SpellbookBackScale = 0.8f;
+        /// <summary>A stack of backs is drawn at the drawer's own face size (9.30h1).</summary>
+        private const float SpellbookBackScale = SpellCardFootprint.DrawerScale;
 
         /// <summary>
         /// Milestone 9.30h, approved mockup D. The strip's "SPELLBOOK n | m" chip: gold words on the
@@ -1077,6 +1085,7 @@ namespace GuardsDigital.Presentation.Match
             var header = new VisualElement { name = "gd-spellbook-header" };
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.FlexStart;
+            header.style.flexShrink = 0f;
             var titles = HudElements.Column(2f);
             titles.style.flexGrow = 1f;
             titles.style.alignItems = Align.Center;
@@ -1097,7 +1106,16 @@ namespace GuardsDigital.Presentation.Match
             header.Add(close);
             spellbookPanel.Add(header);
 
-            spellbookPanel.Add(SpellbookSectionLabel("gd-spellbook-in-book-label", book.InBookLabel));
+            // Milestone 9.30h1. The sections scroll under a fixed header when the book is taller than
+            // the room the drawer has.
+            var body = new ScrollView(ScrollViewMode.Vertical) { name = "gd-spellbook-body" };
+            body.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            body.style.flexShrink = 1f;
+            body.style.flexGrow = 0f;
+            body.style.minHeight = 0f;
+            spellbookPanel.Add(body);
+
+            body.Add(SpellbookSectionLabel("gd-spellbook-in-book-label", book.InBookLabel));
             var inBook = SpellbookRow("gd-spellbook-in-book");
             foreach (var spell in book.InBookFaces)
             {
@@ -1109,15 +1127,15 @@ namespace GuardsDigital.Presentation.Match
                 inBook.Add(SpellbookBackStack(stack));
             }
 
-            spellbookPanel.Add(inBook);
-            spellbookPanel.Add(SpellbookSectionLabel("gd-spellbook-removed-label", book.RemovedLabel));
+            body.Add(inBook);
+            body.Add(SpellbookSectionLabel("gd-spellbook-removed-label", book.RemovedLabel));
             var removed = SpellbookRow("gd-spellbook-removed");
             foreach (var spell in book.RemovedFaces)
             {
                 removed.Add(SpellbookFace(spell));
             }
 
-            spellbookPanel.Add(removed);
+            body.Add(removed);
         }
 
         private static Label SpellbookSectionLabel(string name, string text)

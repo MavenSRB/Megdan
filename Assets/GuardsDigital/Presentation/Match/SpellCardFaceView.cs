@@ -16,8 +16,11 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class SpellCardFaceView
     {
-        /// <summary>The wash laid over a greyed face: the printed colours read as removed, not as lit.</summary>
-        public static readonly Color GreyedWash = new Color(0.42f, 0.44f, 0.46f, 0.62f);
+        /// <summary>
+        /// The wash laid over a greyed face: the printed colours read as removed, not as lit, and the
+        /// printed words stay legible under it (9.30h1 lightened it from 0.62).
+        /// </summary>
+        public static readonly Color GreyedWash = new Color(0.42f, 0.44f, 0.46f, 0.45f);
 
         /// <summary>
         /// A complete spell face at <paramref name="scale"/> of <see cref="SpellCardFootprint"/>, named
@@ -115,15 +118,24 @@ namespace GuardsDigital.Presentation.Match
             return content;
         }
 
+        /// <summary>
+        /// The prepared scan, filling the face's box. Milestone 9.30h1: the box is pinned at exactly the
+        /// printed 372:260 (<see cref="SpellCardFootprint"/>), so the scan is STRETCHED to it rather
+        /// than fitted by the texture's own size - a fit reads whatever size the texture was imported at,
+        /// and a 372x260 scan imported at a power-of-two size was drawn square inside its box, squeezed
+        /// by a third. The importer now keeps the scan at its own size too
+        /// (<c>ConfiguredCardArtImporter</c>); either alone keeps the face at the printed ratio.
+        /// </summary>
         private static Image Artwork(string name, Texture2D texture, bool greyed)
         {
             var image = new Image
             {
                 name = name,
                 image = texture,
-                scaleMode = ScaleMode.ScaleToFit,
-                // A greyed face is darkened as well as washed, so it never reads as the lit choice.
-                tintColor = greyed ? new Color(0.72f, 0.72f, 0.72f, 1f) : Color.white,
+                scaleMode = ScaleMode.StretchToFill,
+                // A greyed face is dimmed as well as washed, so it never reads as the lit choice, and
+                // stays light enough that its words can still be read (9.30h1).
+                tintColor = greyed ? new Color(0.86f, 0.86f, 0.86f, 1f) : Color.white,
                 pickingMode = PickingMode.Ignore,
                 focusable = false
             };

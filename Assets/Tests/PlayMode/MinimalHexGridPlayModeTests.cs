@@ -879,30 +879,44 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 9.30h, the user's approved mockups A-D (2026-10-01). Gydion's spellbook drawn on the
-        /// live HUD at the three validated viewports, measured and captured for the user's review in
-        /// <c>tmp/9-30h-spellbook/</c>: the plaque's "SPELLBOOK 17 | 5" chip in the items strip (D), the
-        /// drawer on his own seat (B: seventeen faces in the book, five removed) and on every other seat
-        /// (C: backs I x3, II x7, III x6, IV x1, the same five removed), the spell choice (A: Burning
-        /// Hands, Fireball greyed REMOVED, Sunburst "5 OUT: ATTACK 5, RANGE 5") and Find Familiar's
-        /// removal (twenty faces at the crowded scale, three chosen, CONFIRM).
+        /// Milestones 9.30h and 9.30h1, the user's approved mockups A-D (2026-10-01). Gydion's spellbook
+        /// drawn on the live HUD at the three validated viewports, measured and captured for the user's
+        /// review in <c>tmp/9-30h1-spellbook/</c>: the plaque's "SPELLBOOK 17 | 5" chip in the items
+        /// strip (D), the drawer on his own seat (B: seventeen faces in the book, five removed) and on
+        /// every other seat (C: backs I x3, II x7, III x6, IV x1, the same five removed), the spell
+        /// choice (A: Burning Hands, Fireball greyed REMOVED, Sunburst "5 OUT: ATTACK 5, RANGE 5") and
+        /// Find Familiar's removal (twenty faces, three chosen, CONFIRM).
         ///
-        /// <para>Staged by hand on the composed two-Wasp scene - nothing of Gydion's is dealt until
-        /// 9.30i - so the plaque is the Red Wasp's with Gydion's book on it, and the choice's played card
-        /// is a stand-in from the hand. That the models are the projection's own is proved in
-        /// <c>SpellbookPresentationTests</c>; this case is about where they land.</para>
+        /// <para>9.30h1 (the user: "scaling is a bit off for those spells, and they might be too
+        /// small"): every face and back is measured at the printed 372:260 (to the viewport's pixel
+        /// snapping); the choice and every drawer face at the action card's own width; the pick at two
+        /// thirds of it in rows of five to seven; the drawer clear of the hand's band, its body
+        /// scrolling, captured scrolled to the removed pile as well.</para>
+        ///
+        /// <para>Composed with Gydion himself (dealt at 9.30i) on the Red side of a 2v2, so the plaque
+        /// is his own, its book staged to the mockups' 17 | 5 by hand, and the choice's played card is a
+        /// card from his own hand. That the models are the projection's own is proved in
+        /// <c>SpellbookPresentationTests</c>; this case is about where they land and how large.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator Scene_SpellbookChipDrawerAndSpellChoiceAtTheThreeValidatedViewports()
         {
             var restoreWidth = (uint)Screen.width;
             var restoreHeight = (uint)Screen.height;
-            MatchSceneCompositionRoot.NextComposedCardContent =
-                SceneCardContent.VerifiedTierThreeEngagedMirror;
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            RegisteredHero Hero(string id) => roster.Single(hero => hero.ContentId.Value == id);
+            var gydion = new HeroId(Hero("gydion").HeroIdValue);
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.TwoVersusTwoQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { Hero("gydion"), Hero("wasp") }, new[] { Hero("brogan"), Hero("arien") });
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
             yield return LoadComposedScene();
             var root = Root();
             var runtime = root.Runtime;
-            var redHero = runtime.HeroOverviewsView.Model.Heroes.First(hero => hero.TeamSide == TeamSide.Red);
+            var dealt = runtime.HeroOverviewsView.Model.Heroes.Single(hero => hero.HeroId.Equals(gydion));
+            Assert.That(dealt.TeamSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(dealt.Spellbook, Is.Not.Null, "Gydion is dealt, and his plaque carries his book");
             try
             {
                 foreach (var size in new[]
@@ -911,11 +925,11 @@ namespace GuardsDigital.Tests.PlayMode
                 })
                 {
                     var where = size.x + "x" + size.y;
-                    UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "9.30h spellbook");
+                    UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "9.30h1 spellbook");
 
                     // D and B: the chip in the strip, and the drawer on Gydion's own seat.
-                    RenderSpellbookPlaque(runtime, redHero.HeroId, ownerSeat: true);
-                    Assert.That(runtime.HeroOverviewsView.OpenSpellbook(redHero.HeroId), Is.True);
+                    RenderSpellbookPlaque(runtime, gydion, ownerSeat: true);
+                    Assert.That(runtime.HeroOverviewsView.OpenSpellbook(gydion), Is.True);
                     root.Hud.Layout();
                     yield return null;
                     yield return null;
@@ -932,16 +946,25 @@ namespace GuardsDigital.Tests.PlayMode
                     AssertDrawerBetweenTheRails(root, drawer, where);
                     var faces = Descendants(drawer).Where(element => element.name == "gd-spell-face").ToArray();
                     Assert.That(faces, Has.Length.EqualTo(22), "seventeen in the book and five removed, as faces");
-                    foreach (var face in faces)
-                    {
-                        AssertInside(face.worldBound, drawer.worldBound, "a drawer face at " + where);
-                    }
+                    AssertSpellFaces(faces, SpellCardFootprint.Width, drawer, "a drawer face at " + where);
+                    AssertInside(faces[0].worldBound, drawer.worldBound, "the book's first face at " + where);
+                    yield return UiPlayer.CaptureScreen("tmp/9-30h1-spellbook/spellbook-gydion-seat-" + where + ".png");
 
-                    yield return UiPlayer.CaptureScreen("tmp/9-30h-spellbook/spellbook-gydion-seat-" + where + ".png");
+                    // The body scrolls where the book is taller than the room: its end is the removed pile.
+                    var body = (ScrollView)Descendants(drawer).Single(element => element.name == "gd-spellbook-body");
+                    AssertInside(body.worldBound, drawer.worldBound, "the drawer's body at " + where);
+                    body.verticalScroller.value = body.verticalScroller.highValue;
+                    yield return null;
+                    yield return null;
+                    var lastRemoved = Descendants(drawer).Last(element => element.name == "gd-spell-face");
+                    AssertInside(lastRemoved.worldBound, body.worldBound,
+                        "the last removed face, scrolled to, at " + where);
+                    yield return UiPlayer.CaptureScreen(
+                        "tmp/9-30h1-spellbook/spellbook-gydion-seat-scrolled-" + where + ".png");
 
                     // C: the same book as every other seat sees it.
-                    RenderSpellbookPlaque(runtime, redHero.HeroId, ownerSeat: false);
-                    Assert.That(runtime.HeroOverviewsView.OpenSpellbook(redHero.HeroId), Is.True);
+                    RenderSpellbookPlaque(runtime, gydion, ownerSeat: false);
+                    Assert.That(runtime.HeroOverviewsView.OpenSpellbook(gydion), Is.True);
                     root.Hud.Layout();
                     yield return null;
                     yield return null;
@@ -949,19 +972,18 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(stacks.Select(stack => ((TextElement)Descendants(stack)
                             .Single(element => element.name == "gd-spellbook-back-count")).text),
                         Is.EqualTo(new[] { "x3", "x7", "x6", "x1" }), "mockup C's four stacks");
-                    Assert.That(Descendants(drawer).Count(element => element.name == "gd-spell-face"), Is.EqualTo(5),
-                        "only the removed pile is faceup on another seat");
+                    var removedFaces = Descendants(drawer).Where(element => element.name == "gd-spell-face").ToArray();
+                    Assert.That(removedFaces, Has.Length.EqualTo(5), "only the removed pile is faceup on another seat");
                     AssertDrawerBetweenTheRails(root, drawer, where);
-                    foreach (var stack in stacks)
-                    {
-                        AssertInside(stack.worldBound, drawer.worldBound, "a stack of backs at " + where);
-                    }
-
-                    yield return UiPlayer.CaptureScreen("tmp/9-30h-spellbook/spellbook-other-seats-" + where + ".png");
+                    AssertSpellFaces(
+                        Descendants(drawer).Where(element => element.name == "gd-spell-back").ToArray(),
+                        SpellCardFootprint.Width, drawer, "a tier back at " + where);
+                    AssertSpellFaces(removedFaces, SpellCardFootprint.Width, drawer, "a removed face at " + where);
+                    yield return UiPlayer.CaptureScreen("tmp/9-30h1-spellbook/spellbook-other-seats-" + where + ".png");
                     runtime.HeroOverviewsView.CloseSpellbook();
 
-                    // A: the spell choice.
-                    StandSpellChoice(runtime, findFamiliar: false);
+                    // A: the spell choice, at the action card's own width.
+                    StandSpellChoice(runtime, gydion, findFamiliar: false);
                     root.Hud.Layout();
                     yield return null;
                     yield return null;
@@ -974,10 +996,13 @@ namespace GuardsDigital.Tests.PlayMode
                         AssertInside(option.worldBound, window.worldBound, "a spell option at " + where);
                     }
 
-                    yield return UiPlayer.CaptureScreen("tmp/9-30h-spellbook/spell-choice-" + where + ".png");
+                    AssertSpellFaces(
+                        Descendants(window).Where(element => element.name == "gd-spell-face").ToArray(),
+                        SpellCardFootprint.Width, window, "a spell choice face at " + where);
+                    yield return UiPlayer.CaptureScreen("tmp/9-30h1-spellbook/spell-choice-" + where + ".png");
 
-                    // Find Familiar: twenty faces, three chosen, CONFIRM.
-                    StandSpellChoice(runtime, findFamiliar: true);
+                    // Find Familiar: twenty faces at two thirds, in rows of five to seven, three chosen, CONFIRM.
+                    StandSpellChoice(runtime, gydion, findFamiliar: true);
                     root.Hud.Layout();
                     yield return null;
                     yield return null;
@@ -990,7 +1015,16 @@ namespace GuardsDigital.Tests.PlayMode
                         AssertInside(option.worldBound, window.worldBound, "a Find Familiar option at " + where);
                     }
 
-                    yield return UiPlayer.CaptureScreen("tmp/9-30h-spellbook/find-familiar-" + where + ".png");
+                    AssertSpellFaces(
+                        Descendants(window).Where(element => element.name == "gd-spell-face").ToArray(),
+                        SpellCardFootprint.Width * 2f / 3f, window, "a Find Familiar face at " + where);
+                    var rows = options.GroupBy(option => Mathf.RoundToInt(option.worldBound.yMin))
+                        .Select(row => row.Count())
+                        .ToArray();
+                    Assert.That(rows.Max(), Is.LessThanOrEqualTo(7), "never more than seven to a row at " + where);
+                    Assert.That(rows.Take(rows.Length - 1).All(count => count >= 5), Is.True,
+                        "rows of five to seven at " + where + ": " + string.Join(", ", rows));
+                    yield return UiPlayer.CaptureScreen("tmp/9-30h1-spellbook/find-familiar-" + where + ".png");
                     runtime.DecisionWindowView.Render(null);
                 }
             }
@@ -1011,8 +1045,8 @@ namespace GuardsDigital.Tests.PlayMode
         };
 
         /// <summary>
-        /// Gydion's book on the Red plaque: seventeen in the book, five removed - as his own seat reads it
-        /// (faces) or as every other seat does (backs with counts).
+        /// Gydion's book on his own plaque: seventeen in the book, five removed - as his own seat reads
+        /// it (faces) or as every other seat does (backs with counts).
         /// </summary>
         private static void RenderSpellbookPlaque(ConfiguredMatchSceneRuntime runtime, HeroId heroId, bool ownerSeat)
         {
@@ -1061,12 +1095,15 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Mockup A's choice (or Find Familiar's removal) drawn in the window, the played card a stand-in
-        /// from the hand until Gydion's fronts are dealt (9.30i).
+        /// Mockup A's choice (or Find Familiar's removal) drawn in the window, the played card one of
+        /// Gydion's own casting cards from his hand.
         /// </summary>
-        private static void StandSpellChoice(ConfiguredMatchSceneRuntime runtime, bool findFamiliar)
+        private static void StandSpellChoice(ConfiguredMatchSceneRuntime runtime, HeroId gydion, bool findFamiliar)
         {
-            var played = runtime.HandsView.Model.ViewedHand.TrayCards.First();
+            var casting = GydionCardContent.CastingCardDefinitions.Select(definition => definition.Id).ToArray();
+            var hand = runtime.HandsView.Model.Hands.Single(value => value.HeroId.Equals(gydion)).TrayCards;
+            var played = hand.FirstOrDefault(card => casting.Contains(card.DefinitionReference.DefinitionId)) ??
+                hand.First();
             SpellCardViewModel Face(CardDefinitionId id, bool greyed = false, string caption = null) =>
                 new SpellCardViewModel(GydionCardContent.Definition(id), greyed, caption);
             var controls = new List<DecisionWindowControlViewModel>();
@@ -1114,7 +1151,10 @@ namespace GuardsDigital.Tests.PlayMode
                 controls: controls));
         }
 
-        /// <summary>The drawer's panel lies between the two rails, below the status strip, inside the screen.</summary>
+        /// <summary>
+        /// The drawer's panel lies between the two rails, below the status strip, and above the hand's
+        /// band the rails end at (9.30h1: a book of full-size faces scrolls rather than covering it).
+        /// </summary>
         private static void AssertDrawerBetweenTheRails(MatchSceneCompositionRoot root, VisualElement drawer, string where)
         {
             Assert.That(UiPlayer.IsShown(drawer), Is.True, "the drawer is drawn at " + where);
@@ -1125,8 +1165,44 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(box.xMax, Is.LessThanOrEqualTo(blue.xMin + 0.5f), "clear of the Blue rail at " + where);
             Assert.That(box.yMin, Is.GreaterThanOrEqualTo(root.Hud.StatusBarRect.yMax - 0.5f),
                 "below the status strip at " + where);
+            Assert.That(box.yMax, Is.LessThanOrEqualTo(Mathf.Min(red.yMax, blue.yMax) + 0.5f),
+                "above the hand's band at " + where + ": " + box);
             Assert.That(box.yMax, Is.LessThanOrEqualTo(root.Hud.RootElement.worldBound.yMax + 0.5f),
                 "inside the screen at " + where + ": " + box);
+        }
+
+        /// <summary>
+        /// Milestone 9.30h1. Every spell face or back as laid out: the stated width (never below 170),
+        /// its height the printed 372:260 of that width - both within the device-pixel snapping the
+        /// viewport allows, which <c>SpellbookPresentationTests</c> measures exactly - a fitted scan
+        /// at the printed ratio itself, and inside its surface from side to side.
+        /// </summary>
+        private static void AssertSpellFaces(
+            IReadOnlyList<VisualElement> faces, float width, VisualElement surface, string what)
+        {
+            const float printed = 372f / 260f;
+            var snapping = UiPlayer.PixelSnapping(2);
+            Assert.That(faces, Is.Not.Empty, what);
+            foreach (var face in faces)
+            {
+                var box = face.worldBound;
+                Assert.That(box.width, Is.EqualTo(width).Within(snapping),
+                    what + " is " + width.ToString("F0") + " wide: " + box);
+                Assert.That(box.width, Is.GreaterThanOrEqualTo(170f), what + " is never below 170 wide");
+                Assert.That(box.height, Is.EqualTo(box.width / printed).Within(snapping),
+                    what + " is drawn at " + (box.width / box.height).ToString("F3") +
+                    ", not the printed 372:260 = " + printed.ToString("F3") + ": " + box);
+                var art = Descendants(face).OfType<Image>().SingleOrDefault(image => image.image != null);
+                if (art != null && art.scaleMode == ScaleMode.ScaleToFit)
+                {
+                    Assert.That((float)art.image.width / art.image.height, Is.EqualTo(printed).Within(printed * 0.01f),
+                        what + " fits a " + art.image.width + "x" + art.image.height + " scan into its box");
+                }
+
+                Assert.That(
+                    box.xMin >= surface.worldBound.xMin - 0.5f && box.xMax <= surface.worldBound.xMax + 0.5f,
+                    Is.True, what + " stands inside its surface: " + box + " in " + surface.worldBound);
+            }
         }
 
         private static void AssertInside(Rect inner, Rect outer, string what) =>

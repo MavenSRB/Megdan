@@ -143,8 +143,9 @@ namespace GuardsDigital.Presentation.Match
     /// draws the spell choice's faces at this size beside the played card.</para>
     ///
     /// <para>A surface that draws many spells at once (the SPELLBOOK drawer, approved mockups B and
-    /// C) draws them at a stated <see cref="DrawerScale"/> of this footprint, and a pointer rest
-    /// reveals the full face, as every rail card does.</para>
+    /// C) draws them at a stated <see cref="DrawerScale"/> of this footprint - the full footprint
+    /// since 9.30h1, wrapping into rows - and a pointer rest reveals the full face, as every rail
+    /// card does.</para>
     /// </summary>
     public static class SpellCardFootprint
     {
@@ -161,17 +162,22 @@ namespace GuardsDigital.Presentation.Match
         public const float Height = Width * ArtworkSourceHeight / ArtworkSourceWidth;
 
         /// <summary>
-        /// The SPELLBOOK drawer's faces: eight to a row between the rails, as mockup B lays the book
-        /// out, with the full face one pointer rest away.
+        /// The SPELLBOOK drawer's faces, tier backs and removed pile: the spell choice's own full size
+        /// (the user, 9.30h1: "they might be too small"), wrapping into rows, the drawer scrolling where
+        /// the book is taller than the room between the status strip and the hand.
         /// </summary>
-        public const float DrawerScale = 0.62f;
+        public const float DrawerScale = 1f;
 
         /// <summary>
         /// The decision window's faces when a choice lists more spells than two rows of full faces
-        /// hold - Find Familiar's twenty, Wish's book - so every option stays on screen without a
-        /// scroller.
+        /// hold - Find Familiar's twenty, Wish's book: two thirds of the full face, about 200 by 140,
+        /// in rows of at most <see cref="CrowdedChoicePerRow"/> (9.30h1, the user's direction; it was
+        /// 0.6, as many to a row as the window held).
         /// </summary>
-        public const float CrowdedChoiceScale = 0.6f;
+        public const float CrowdedChoiceScale = 2f / 3f;
+
+        /// <summary>The most crowded faces one row of the decision window holds.</summary>
+        public const int CrowdedChoicePerRow = 7;
 
         /// <summary>Pins the landscape footprint at <paramref name="scale"/>, both ends, as <see cref="CardFootprint.Apply"/> does.</summary>
         public static void Apply(VisualElement face, float scale = 1f)

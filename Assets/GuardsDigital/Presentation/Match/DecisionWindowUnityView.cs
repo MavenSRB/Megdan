@@ -692,6 +692,9 @@ namespace GuardsDigital.Presentation.Match
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
 
+            // Milestone 9.30h1: only a crowded spell choice bounds its row (below); every other
+            // question this window draws next keeps the whole width.
+            expandedControls.style.maxWidth = StyleKeyword.Null;
             // Milestone 8.46g. p.15's question is not a row of independent answers: it is the seat's
             // own hand above three PAIRS, and each pair is one card the hero may upgrade. It is laid
             // out as the one shape it is rather than fed through the generic control loop.
@@ -736,6 +739,14 @@ namespace GuardsDigital.Presentation.Match
                 var spellScale = spellCount > SpellFacesAtFullSize
                     ? SpellCardFootprint.CrowdedChoiceScale
                     : 1f;
+                // Milestone 9.30h1: crowded faces stand in rows of at most seven (the user: rows of
+                // five to seven, never a strip), however wide the window between the rails is. Half a
+                // slot of slack keeps the seventh on its row whatever the layout rounds.
+                if (spellCount > SpellFacesAtFullSize)
+                {
+                    expandedControls.style.maxWidth = (SpellCardFootprint.CrowdedChoicePerRow + 0.5f) *
+                        SpellOptionSlotWidth(SpellCardFootprint.CrowdedChoiceScale);
+                }
                 // The mockup's `.stack` of `.btn.tall{flex:1}`: a card's printed answers are STACKED
                 // beside the card and together fill its height. The user settled the optional step onto
                 // the same shape after seeing both - "Arrange the buttons like on Swift's gold in this
@@ -1303,6 +1314,13 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public const int SpellFacesAtFullSize = 10;
 
+        /// <summary>The selection outline a spell option reserves around its face, both sides together.</summary>
+        private const float SpellOptionOutline = 6f;
+
+        /// <summary>One spell option's whole horizontal footprint at <paramref name="scale"/>: face, outline, gap.</summary>
+        public static float SpellOptionSlotWidth(float scale) =>
+            (SpellCardFootprint.Width * scale) + SpellOptionOutline + CardGap;
+
         /// <summary>
         /// Milestone 9.30h. One spell-faced answer (approved mockup A): the spell's whole face, its
         /// caption beneath it - the spell's name, <c>FIREBALL - REMOVED</c>, or a counting spell's
@@ -1328,7 +1346,7 @@ namespace GuardsDigital.Presentation.Match
             element.style.flexDirection = FlexDirection.Column;
             element.style.alignItems = Align.Center;
             element.style.flexShrink = 0f;
-            element.style.width = width + 6f;
+            element.style.width = width + SpellOptionOutline;
             element.style.backgroundColor = Color.clear;
             HudElements.Padding(element, 0f);
             HudElements.Border(element, Color.clear, 0f, 0f);
