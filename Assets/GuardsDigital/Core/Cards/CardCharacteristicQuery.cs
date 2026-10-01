@@ -24,7 +24,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardTier> tiers = null,
             IEnumerable<CardLocation> locations = null,
             bool? hasBeenPlayed = null,
-            CardResolutionStatus? resolutionStatus = null)
+            CardResolutionStatus? resolutionStatus = null,
+            ActionKind? printedPrimaryKind = null)
         {
             OwnerId = ownerId;
             Colors = Array.AsReadOnly((colors ?? Enumerable.Empty<CardColor>()).Distinct().ToArray());
@@ -33,6 +34,7 @@ namespace GuardsDigital.Core.Cards
             Locations = Array.AsReadOnly((locations ?? Enumerable.Empty<CardLocation>()).Distinct().ToArray());
             HasBeenPlayed = hasBeenPlayed;
             ResolutionStatus = resolutionStatus;
+            PrintedPrimaryKind = printedPrimaryKind;
 
             if (OwnerId.HasValue && !OwnerId.Value.IsDefined)
             {
@@ -51,6 +53,12 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new ArgumentException("A criteria location must be defined.", nameof(locations));
             }
+
+            if (PrintedPrimaryKind == ActionKind.None)
+            {
+                throw new ArgumentException(
+                    "A printed primary kind must be defined.", nameof(printedPrimaryKind));
+            }
         }
 
         public HeroId? OwnerId { get; }
@@ -62,6 +70,14 @@ namespace GuardsDigital.Core.Cards
         public CardResolutionStatus? ResolutionStatus { get; }
 
         /// <summary>
+        /// Milestone 9.32e. p.9's "an Attack card": a card one of whose PRINTED PRIMARY actions is this
+        /// kind - Takahide's Calculated Risk, "A friendly hero in radius may discard an attack card". The
+        /// Ranged subtype is still an Attack; a Defense/Skill card is asked of each primary it prints.
+        /// Null asks nothing, so every criteria written before it keeps its candidates.
+        /// </summary>
+        public ActionKind? PrintedPrimaryKind { get; }
+
+        /// <summary>
         /// Whether this criteria asks anything about the card's printed characteristics rather than
         /// only about its state. It is what decides whether face orientation matters: a card whose
         /// rules-facing information is unavailable can still be selected by location or ownership -
@@ -69,7 +85,7 @@ namespace GuardsDigital.Core.Cards
         /// Tier, or classification.
         /// </summary>
         public bool AsksAboutPrintedCharacteristics =>
-            Colors.Count > 0 || Classification.HasValue || Tiers.Count > 0;
+            Colors.Count > 0 || Classification.HasValue || Tiers.Count > 0 || PrintedPrimaryKind.HasValue;
     }
 
     /// <summary>
@@ -274,6 +290,14 @@ namespace GuardsDigital.Core.Cards
 
             if (criteria.Classification.HasValue &&
                 progression.Classification != criteria.Classification.Value)
+            {
+                return false;
+            }
+
+            if (criteria.PrintedPrimaryKind.HasValue &&
+                !definition.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                    action.Kind == criteria.PrintedPrimaryKind.Value))
             {
                 return false;
             }

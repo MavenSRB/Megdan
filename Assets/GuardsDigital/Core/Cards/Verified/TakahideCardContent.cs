@@ -24,40 +24,42 @@ namespace GuardsDigital.Core.Cards.Verified
 
         public const string ContentSetId = "takahide";
 
-        public static ActionDefinitionId PrimaryAttack { get; } = new ActionDefinitionId("primary-attack");
-        public static ActionDefinitionId PrimarySkill { get; } = new ActionDefinitionId("primary-skill");
-        public static ActionDefinitionId PrimaryMovement { get; } = new ActionDefinitionId("primary-movement");
-        public static ActionDefinitionId SecondaryMovement { get; } = new ActionDefinitionId("secondary-movement");
-        public static ActionDefinitionId SecondaryDefense { get; } = new ActionDefinitionId("secondary-defense");
+        public static ActionDefinitionId PrimaryAttack => new ActionDefinitionId("primary-attack");
+        public static ActionDefinitionId PrimarySkill => new ActionDefinitionId("primary-skill");
+        public static ActionDefinitionId PrimaryMovement => new ActionDefinitionId("primary-movement");
+        public static ActionDefinitionId SecondaryMovement => new ActionDefinitionId("secondary-movement");
+        public static ActionDefinitionId SecondaryDefense => new ActionDefinitionId("secondary-defense");
 
         // -------------------------------------------------------------------------------------------
         // Every face's identity, so the upgrade lines can name faces composed in later blocks.
         // -------------------------------------------------------------------------------------------
 
-        public static CardDefinitionId StingLikeABee { get; } = Id("sting-like-a-bee");
-        public static CardDefinitionId FloatLikeAButterfly { get; } = Id("float-like-a-butterfly");
-        public static CardDefinitionId StrikeLikeATiger { get; } = Id("strike-like-a-tiger");
-        public static CardDefinitionId Bushido { get; } = Id("bushido");
+        // Expression-bodied, so a partial file's static initialiser can read them whatever order the
+        // compiler runs the partial files' initialisers in (9.32e).
+        public static CardDefinitionId StingLikeABee => Id("sting-like-a-bee");
+        public static CardDefinitionId FloatLikeAButterfly => Id("float-like-a-butterfly");
+        public static CardDefinitionId StrikeLikeATiger => Id("strike-like-a-tiger");
+        public static CardDefinitionId Bushido => Id("bushido");
 
-        public static CardDefinitionId SetAnExample { get; } = Id("set-an-example");
-        public static CardDefinitionId LeadFromTheFront { get; } = Id("lead-from-the-front");
-        public static CardDefinitionId SpinningBlade { get; } = Id("spinning-blade");
-        public static CardDefinitionId HoldMySake { get; } = Id("hold-my-sake");
-        public static CardDefinitionId BladeHelix { get; } = Id("blade-helix");
+        public static CardDefinitionId SetAnExample => Id("set-an-example");
+        public static CardDefinitionId LeadFromTheFront => Id("lead-from-the-front");
+        public static CardDefinitionId SpinningBlade => Id("spinning-blade");
+        public static CardDefinitionId HoldMySake => Id("hold-my-sake");
+        public static CardDefinitionId BladeHelix => Id("blade-helix");
 
-        public static CardDefinitionId ProvenWarrior { get; } = Id("proven-warrior");
-        public static CardDefinitionId ChosenChampion { get; } = Id("chosen-champion");
-        public static CardDefinitionId CalculatedRisk { get; } = Id("calculated-risk");
-        public static CardDefinitionId TheRightHand { get; } = Id("the-right-hand");
-        public static CardDefinitionId TacticalGambit { get; } = Id("tactical-gambit");
+        public static CardDefinitionId ProvenWarrior => Id("proven-warrior");
+        public static CardDefinitionId ChosenChampion => Id("chosen-champion");
+        public static CardDefinitionId CalculatedRisk => Id("calculated-risk");
+        public static CardDefinitionId TheRightHand => Id("the-right-hand");
+        public static CardDefinitionId TacticalGambit => Id("tactical-gambit");
 
-        public static CardDefinitionId ComeToAid { get; } = Id("come-to-aid");
-        public static CardDefinitionId BringTheRelief { get; } = Id("bring-the-relief");
-        public static CardDefinitionId PledgeOfAllegiance { get; } = Id("pledge-of-allegiance");
-        public static CardDefinitionId CommitReserves { get; } = Id("commit-reserves");
-        public static CardDefinitionId LoyalRetainer { get; } = Id("loyal-retainer");
+        public static CardDefinitionId ComeToAid => Id("come-to-aid");
+        public static CardDefinitionId BringTheRelief => Id("bring-the-relief");
+        public static CardDefinitionId PledgeOfAllegiance => Id("pledge-of-allegiance");
+        public static CardDefinitionId CommitReserves => Id("commit-reserves");
+        public static CardDefinitionId LoyalRetainer => Id("loyal-retainer");
 
-        public static CardDefinitionId ReadyForWar { get; } = Id("ready-for-war");
+        public static CardDefinitionId ReadyForWar => Id("ready-for-war");
 
         /// <summary>Milestone 9.32d's faces: the three golds, Bushido and the five Reds.</summary>
         public static IReadOnlyList<CardDefinition> BasicAndRedDefinitions => LazyBasicAndRed.Value;

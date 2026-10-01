@@ -14,6 +14,7 @@ He is new to the engine in three ways: **three gold cards**, two of which start 
 29. **A facedown card has no face to read** (p.10). Every reader of a resolved or discarded card's colour, type, Initiative or actions is listed by grep and swept against a facedown resolved and a facedown discarded card: Swift's Reload!, Brogan's "played an attack card this turn", Tali's colour discards, Takahide's own discard-pile choice, the bots, the log and the HUD. No other seat's projection names a facedown card.
 30. **An obstacle can belong to one side.** Before 9.32c changes `ObstacleQuery`, every caller that names no moving or placed piece is listed by grep; each is changed to name it or proven unable to meet Takahide's spaces.
 31. **A hand can hold six.** Every five-card assumption in the HUD hand, the bots, the commitment window and the validators is found by grep before 9.32f, and a six-card hand is staged and captured.
+32. **Partial files share one static initialiser order.** A partial class's static property initialisers run file by file in compile order, so a face list in one partial file that reads ids initialised in another reads them unset when its file sorts first (9.32e met it: "Next-Tier candidates must be defined"). Hero ids and action ids are expression-bodied, so no partial file depends on another's initialiser.
 
 ### [x] 9.32 Inventory Takahide and map the implementation sequence
 
@@ -45,9 +46,11 @@ Outcome: Sting like a Bee (maximum range, RULING 1), Strike like a Tiger and Flo
 Completed 2026-10-01. Takahide's three gold cards, Bushido and five Red faces are composed (`TakahideCardContent`, `TakahideRedFaces`, unregistered until 9.32h), each with a staged outcome test and every printed value read against the fronts. `PrintedWordingConformanceTests` reads only dealt heroes, so it holds these faces from 9.32h; the checklist's reading pass was done here. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32d".
 Historical evidence: [9.32d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932d-gold-silver-and-red-faces-evidence).
 
-### [ ] 9.32e Compose the Blue and Green faces
+### [x] 9.32e Compose the Blue and Green faces
 
 Outcome: a card chosen from a teammate's discard pile as a colour value, then Tali's colour-restricted discard (W3 for The Right Hand); a teammate's optional discard of a card or of an attack card (p.9), the discard-pile state check, the teammate's or Takahide's card-text move (with and without ignoring obstacles), coins to both heroes and Takahide's retrieval. Closing check: one staged Edit Mode outcome test per face failing before composition, including a teammate who declines but already has a discarded card and a facedown discarded card that cannot be chosen; offers checked against outcomes (lesson 18) with no teammate in reach (TK-Q4). T2. Needs TK-Q4.
+Completed 2026-10-01. Takahide's five Blue and five Green faces are composed (`TakahideBlueGreenFaces`, unregistered until 9.32h) on one new capability, `choose-discarded-card@1` (a card in a named hero's discard pile, chosen by Takahide, its colour published; a facedown card is no choice), and one new optional filter, `attackCardsOnly` on `synthetic-discard-chosen-card` (`CardCharacteristicCriteria.PrintedPrimaryKind`). Each face has a staged outcome test; TK-Q4 greys a face with no teammate in reach and keeps Hold. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32e".
+Historical evidence: [9.32e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932e-blue-and-green-faces-evidence).
 
 ### [ ] 9.32f Ready for War and the six-card hand
 

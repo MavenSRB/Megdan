@@ -105,6 +105,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string ClassificationParameter = "classification";
 
+        /// <summary>
+        /// Milestone 9.32e. Whether this discard admits only p.9's attack cards - Takahide's Calculated
+        /// Risk and Tactical Gambit, "A friendly hero in radius may discard <b>an attack card</b>" - read as
+        /// <c>retrieve-card@1</c>'s parameter of the same name reads it: a card printing an Attack primary.
+        /// Optional and false where nothing binds it, so every discard composed before it keeps its
+        /// candidate set; it narrows the same criteria the colour and classification do.
+        /// </summary>
+        public const string AttackCardsOnlyParameter = SyntheticRosterCapabilities.AttackCardsOnlyParameter;
+
         /// <summary>The card this capability discarded, so a later node can bind it.</summary>
         public const string DiscardedOutput = "discarded";
 
@@ -172,7 +181,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             ClassificationParameter,
                             EffectValueKind.Integer,
                             isRequired: false,
-                            integerDomain: EffectIntegerDomain.All<CardClassification>())
+                            integerDomain: EffectIntegerDomain.All<CardClassification>()),
+                        new EffectCapabilityParameter(
+                            AttackCardsOnlyParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     reportsInability
                         ? new[]
@@ -257,7 +268,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var offer = ColorRestrictedDiscard.Offer(
-                    Criteria(chooser, Color(context), Classification(context)),
+                    Criteria(chooser, Color(context), Classification(context), AttackCardsOnly(context)),
                     EffectChooserRole.None,
                     context.CardState.Definitions,
                     context.CardState.Instances,
@@ -323,7 +334,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // a card discarded, played, or otherwise moved between the offer and the answer is
                 // refused rather than discarded a second time. Nothing is mutated on that path.
                 var result = ColorRestrictedDiscard.Resolve(
-                    Criteria(chooser, Color(context), Classification(context)),
+                    Criteria(chooser, Color(context), Classification(context), AttackCardsOnly(context)),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
                     context.CardState.Instances,
@@ -388,7 +399,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var candidates = CardCharacteristicQuery
                     .FindCandidates(
-                        Criteria(chooser, Color(context), Classification(context)),
+                        Criteria(chooser, Color(context), Classification(context), AttackCardsOnly(context)),
                         context.CardState.Definitions,
                         context.CardState.Instances)
                     .AsEnumerable();
@@ -455,7 +466,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// rather than re-decided.</para>
             /// </summary>
             private static CardCharacteristicCriteria Criteria(
-                HeroId chooser, CardColor color, CardClassification classification) =>
+                HeroId chooser, CardColor color, CardClassification classification, bool attackCardsOnly) =>
                 new CardCharacteristicCriteria(
                     ownerId: chooser,
                     colors: color == CardColor.None ? null : new[] { color },
@@ -465,7 +476,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         ? (CardClassification?)null
                         : classification,
                     locations: new[] { CardLocation.Hand },
-                    hasBeenPlayed: false);
+                    hasBeenPlayed: false,
+                    // Milestone 9.32e. "an attack card" - see AttackCardsOnlyParameter.
+                    printedPrimaryKind: attackCardsOnly ? ActionKind.Attack : (ActionKind?)null);
 
             /// <summary>
             /// Milestone 9.30f. The classification this discard is restricted to, or
@@ -474,6 +487,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private static CardClassification Classification(EffectCapabilityContext context) =>
                 (CardClassification)context.Input(ClassificationParameter).IntegerValue;
+
+            /// <summary>Milestone 9.32e. Unbound reads as false: the unrestricted reading.</summary>
+            private static bool AttackCardsOnly(EffectCapabilityContext context) =>
+                context.Input(AttackCardsOnlyParameter).BooleanValue;
         }
     }
 }

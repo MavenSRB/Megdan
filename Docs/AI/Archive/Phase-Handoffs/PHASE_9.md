@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32e Blue and Green faces evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32e | Takahide's five Blue and five Green faces composed: a card chosen in a teammate's discard pile as a colour for the enemy's same-colour discard (W3 for The Right Hand), a teammate's optional discard of a card or an attack card, the discard-pile check gating a move, coins and a retrieval; greyed with no teammate in reach (TK-Q4). [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932e-compose-the-blue-and-green-faces). | `milestone/9.32e` |
+
 ## Milestone 9.32d Gold, silver and Red faces evidence
 
 | Milestone | Outcome and definition | Commit |
