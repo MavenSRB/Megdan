@@ -27,7 +27,7 @@ namespace GuardsDigital.Core.Cards
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
-            IResolvedTurnSlotSwap, IItemCardSwap
+            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap
     {
         public const int TurnsPerRound = 4;
 
@@ -242,9 +242,11 @@ namespace GuardsDigital.Core.Cards
             // authority's own state and the interface is already the narrowing.
             // Milestone 9.30f. And the match's one team Life state, which card text may now raise
             // (Gydion's Energy Drain) beside p.13's spends - the same instance, never a copy.
+            // Milestone 9.32a. And the p.10 swap with the deck, which is this authority's for the reason
+            // the resolved-slot swap is: it edits the turn slot and the selected card together.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
-                TeamLives));
+                TeamLives, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -355,6 +357,80 @@ namespace GuardsDigital.Core.Cards
             if (!CardLifecycleAuthority.TrySwapResolvedWithHand(oldCard, newCard))
                 return false;
             turnSlots[matching[0].index] = newSlot;
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 9.32a. Rulebook p.10's Swap a Card with the owner's deck, as one operation (lesson
+        /// 28): the two cards exchange every state (<see cref="CardLifecycleAuthority.TrySwapWithDeckCard"/>);
+        /// when the outgoing card had been played, the turn slot of this round that names it names the
+        /// incoming card instead, because "played" is one of the states that moved; and when the
+        /// outgoing card is the one resolving its own action, the Initiative's selected card follows,
+        /// so the action completes on the incoming card (TK-Q2). Everything is checked before anything
+        /// moves.
+        ///
+        /// <para>A card resolving on another hero's turn is refused: swapping a waiting unresolved
+        /// card is a different sentence (Takahide's Set an Example, milestone 9.32b).</para>
+        /// </summary>
+        public bool TrySwapWithDeckCard(
+            HeroId owner, CardInstanceId card, CardInstanceId deckCard, bool restingResultFacedown)
+        {
+            if (!owner.IsDefined || !card.IsDefined || !deckCard.IsDefined || card.Equals(deckCard) ||
+                Phase != RoundResolutionPhase.ResolvingTurn || CurrentTurnAuthority == null)
+                return false;
+
+            var outgoing = instances.SingleOrDefault(candidate => candidate.Id.Equals(card));
+            var incoming = instances.SingleOrDefault(candidate => candidate.Id.Equals(deckCard));
+            if (outgoing == null || incoming == null ||
+                !outgoing.OwnerId.Equals(owner) || !incoming.OwnerId.Equals(owner) ||
+                !CardLifecycleAuthority.IsDeckSwapSubject(outgoing) ||
+                !incoming.State.IsInitialInDeck)
+                return false;
+
+            var selected = CurrentTurnAuthority.SelectedActor;
+            var resolving = CardLifecycleAuthority.IsResolvingCardInTurnArea(outgoing);
+            if (resolving && !(selected.IsDefined && selected.ActorId.Equals(owner) &&
+                    selected.CardInstanceId.Equals(card)))
+                return false;
+
+            // Bushido's "the new card is facedown" turns only a resolved or discarded card's
+            // replacement facedown, and the slot that names it then records that its card is hidden
+            // (p.4), so every seat but the owner's is shown the slot without the card.
+            var incomingFacedown = restingResultFacedown &&
+                (CardLifecycleAuthority.IsResolvedCardInTurnArea(outgoing) ||
+                    CardLifecycleAuthority.IsDiscardedRestingCard(outgoing));
+            var replacedSlots = new List<KeyValuePair<int, RoundTurnSlot>>();
+            if (outgoing.State.HasBeenPlayed)
+            {
+                for (var index = 0; index < turnSlots.Count; index++)
+                {
+                    var slot = turnSlots[index];
+                    if (slot.RoundIndex != RoundIndex ||
+                        !slot.Assignments.Any(assignment => assignment.HeroId.Equals(owner) &&
+                            assignment.CardInstanceId.HasValue &&
+                            assignment.CardInstanceId.Value.Equals(card)))
+                        continue;
+                    replacedSlots.Add(new KeyValuePair<int, RoundTurnSlot>(index, new RoundTurnSlot(
+                        slot.RoundIndex, slot.TurnIndex,
+                        slot.Assignments.Select(assignment =>
+                            assignment.HeroId.Equals(owner) && assignment.CardInstanceId.HasValue &&
+                                assignment.CardInstanceId.Value.Equals(card)
+                                ? new TurnCardAssignment(owner, deckCard, false, incomingFacedown)
+                                : assignment),
+                        instances, participants)));
+                }
+
+                if (replacedSlots.Count != 1)
+                    return false;
+            }
+
+            if (!CardLifecycleAuthority.TrySwapWithDeckCard(outgoing, incoming, restingResultFacedown))
+                return false;
+            foreach (var replaced in replacedSlots)
+                turnSlots[replaced.Key] = replaced.Value;
+            if (resolving && !CurrentTurnAuthority.TryReplaceSelectedCard(card, deckCard))
+                throw new InvalidOperationException(
+                    "A swap of the resolving card could not move the Initiative's selected card.");
             return true;
         }
 
@@ -1177,7 +1253,9 @@ namespace GuardsDigital.Core.Cards
                 // refused on its own terms when the payload already carries a winner.
                 authority, authority, authority, authority,
                 // Milestone 9.30f. The restored Life state, restored a few lines above.
-                authority.TeamLives));
+                authority.TeamLives,
+                // Milestone 9.32a. The p.10 swap with the deck, as the composed round binds it.
+                authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:

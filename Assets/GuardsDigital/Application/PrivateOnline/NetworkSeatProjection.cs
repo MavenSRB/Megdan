@@ -449,19 +449,30 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkTurnAssignmentRow
     {
-        public NetworkTurnAssignmentRow(string heroId, string cardInstanceId, bool passedWithEmptyHand)
+        public NetworkTurnAssignmentRow(
+            string heroId, string cardInstanceId, bool passedWithEmptyHand, bool isFacedown = false)
         {
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
             PassedWithEmptyHand = passedWithEmptyHand;
+            IsFacedown = isFacedown;
         }
 
         public string HeroId { get; }
 
-        /// <summary>Null for a pass; slots exist only after the reveal, so nothing here is hidden.</summary>
+        /// <summary>
+        /// Null for a pass, or (milestone 9.32a) for a card placed facedown that this seat may not
+        /// name. Slots exist only after the reveal, so every other card here is public.
+        /// </summary>
         public string CardInstanceId { get; }
 
         public bool PassedWithEmptyHand { get; }
+
+        /// <summary>
+        /// Milestone 9.32a, wire <c>/34</c>. The slot's card was placed facedown (p.10); with no card
+        /// id it is withheld from this seat (<see cref="GuardsDigital.Core.Cards.TurnCardAssignment.IsWithheld"/>).
+        /// </summary>
+        public bool IsFacedown { get; }
     }
 
     public sealed class NetworkCommitmentRow
@@ -780,6 +791,7 @@ namespace GuardsDigital.Application
                         WriteOptional(writer, assignment.CardInstanceId.HasValue,
                             assignment.CardInstanceId.HasValue ? assignment.CardInstanceId.Value.Value : null);
                         writer.Write(assignment.PassedWithEmptyHand);
+                        writer.Write(assignment.IsFacedown);
                     }
                 }
 
@@ -1160,8 +1172,9 @@ namespace GuardsDigital.Application
                                 return false;
                             }
 
+                            var slotPassed = reader.ReadBoolean();
                             assignments.Add(new NetworkTurnAssignmentRow(
-                                slotHero, slotCard, reader.ReadBoolean()));
+                                slotHero, slotCard, slotPassed, reader.ReadBoolean()));
                         }
 
                         slots.Add(new NetworkTurnSlotRow(

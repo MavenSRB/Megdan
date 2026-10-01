@@ -1172,7 +1172,8 @@ namespace GuardsDigital.Application
                 new HeroId(value.HeroId),
                 value.CardInstanceId == null ? (CardInstanceId?)null :
                     new CardInstanceId(value.CardInstanceId),
-                value.PassedWithEmptyHand)).ToArray();
+                value.PassedWithEmptyHand,
+                value.IsFacedown)).ToArray();
             var visible = Cards;
             var validationCards = assignments
                 .Where(value => value.CardInstanceId.HasValue)

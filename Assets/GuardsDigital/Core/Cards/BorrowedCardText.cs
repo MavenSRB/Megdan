@@ -252,7 +252,10 @@ namespace GuardsDigital.Core.Cards
                     card != null &&
                     card.OwnerId.Equals(borrowerId) &&
                     !card.Id.Equals(askingCardInstanceId) &&
-                    IsResolvedOrDiscarded(card))
+                    IsResolvedOrDiscarded(card) &&
+                    // Milestone 9.32a. A facedown resolved or discarded card has no text to borrow
+                    // (p.10: it "loses its type, color and actions"; lesson 29).
+                    !CardLifecycleAuthority.IsFacedownRestingCard(card))
                 .Where(card =>
                     definitionsByReference.TryGetValue(
                         card.DefinitionReference, out var definition) &&

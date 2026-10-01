@@ -17,6 +17,21 @@ namespace GuardsDigital.Core.Cards
             HeroId heroId,
             CardInstanceId? cardInstanceId,
             bool passedWithEmptyHand)
+            : this(heroId, cardInstanceId, passedWithEmptyHand, false)
+        {
+        }
+
+        /// <param name="isFacedown">
+        /// Milestone 9.32a. The card in this slot was placed facedown by p.10's Swap a Card (Bushido:
+        /// "if you swap a resolved or discarded gold card this way, the new card is facedown"). With a
+        /// card it is the authority's record; with no card and no Pass it is a seat's view of a slot
+        /// whose card is withheld from it (<see cref="IsWithheld"/>, p.4: facedown cards are hidden).
+        /// </param>
+        public TurnCardAssignment(
+            HeroId heroId,
+            CardInstanceId? cardInstanceId,
+            bool passedWithEmptyHand,
+            bool isFacedown)
         {
             if (!heroId.IsDefined)
             {
@@ -31,23 +46,39 @@ namespace GuardsDigital.Core.Cards
             }
 
             var hasCard = cardInstanceId.HasValue && cardInstanceId.Value.IsDefined;
-            if (hasCard == passedWithEmptyHand)
+            var withheld = isFacedown && !hasCard;
+            if ((hasCard ? 1 : 0) + (passedWithEmptyHand ? 1 : 0) + (withheld ? 1 : 0) != 1)
             {
                 throw new ArgumentException(
-                    "A turn-card assignment requires exactly one committed card or explicit empty-hand Pass.",
+                    "A turn-card assignment requires exactly one committed card, explicit empty-hand Pass, " +
+                    "or withheld facedown card.",
                     nameof(cardInstanceId));
             }
 
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
             PassedWithEmptyHand = passedWithEmptyHand;
+            IsFacedown = isFacedown;
         }
+
+        /// <summary>
+        /// Milestone 9.32a. A seat's view of a slot holding a facedown card it may not read: the
+        /// identity is absent, the fact that a card is there is not.
+        /// </summary>
+        public static TurnCardAssignment Withheld(HeroId heroId) =>
+            new TurnCardAssignment(heroId, null, false, true);
 
         public HeroId HeroId { get; }
 
         public CardInstanceId? CardInstanceId { get; }
 
         public bool PassedWithEmptyHand { get; }
+
+        /// <summary>Milestone 9.32a. The slot's card was placed facedown (p.10); see the constructor.</summary>
+        public bool IsFacedown { get; }
+
+        /// <summary>Milestone 9.32a. A facedown card is here and this view may not name it.</summary>
+        public bool IsWithheld => IsFacedown && !CardInstanceId.HasValue;
 
         public PlayerId GetControllingPlayerId(MatchParticipants participants)
         {

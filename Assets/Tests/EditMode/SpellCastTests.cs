@@ -309,8 +309,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restored.Snapshot(), Is.EqualTo(live.Snapshot()),
                 "the restored pause replays to the same authoritative bytes");
             Assert.That(restored.Spell(Attack).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook));
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(53));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(33));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(54));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(34));
         }
 
         // -------------------------------------------------------------------------------------------

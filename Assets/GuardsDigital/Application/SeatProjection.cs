@@ -16,6 +16,73 @@ using GuardsDigital.Core.Units.Minions;
 namespace GuardsDigital.Application
 {
     /// <summary>
+    /// Milestone 9.32a. A turn slot holding a card placed facedown (Takahide's Bushido, p.10), as a
+    /// seat may see it. A facedown card is hidden information (p.4), and a card instance id names its
+    /// definition, so every seat but the owner's is shown the slot with the card withheld - a card is
+    /// there, which every player can see, and which card is not. The current round's slots and the
+    /// completed-round history are masked alike, because the history outlives the card's own facedown
+    /// state (it returns to the hand at round end).
+    ///
+    /// <para>A projection filter and never an authorization one, as <see cref="FacedownTokenMask"/> is:
+    /// the authority, the Director's read model, the snapshot and the replay keep the identity.</para>
+    /// </summary>
+    internal static class FacedownSlotMask
+    {
+        internal static IReadOnlyList<RoundTurnSlot> Mask(
+            IReadOnlyList<RoundTurnSlot> slots, MatchSeat seat,
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants)
+        {
+            if (slots == null || slots.Count == 0 || !slots.Any(slot => Hides(slot, seat)))
+            {
+                return slots;
+            }
+
+            return Array.AsReadOnly(slots
+                .Select(slot => Hides(slot, seat) ? MaskSlot(slot, seat, cards, participants) : slot)
+                .ToArray());
+        }
+
+        internal static IReadOnlyList<CompletedRoundRecord> MaskRounds(
+            IReadOnlyList<CompletedRoundRecord> rounds, MatchSeat seat,
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants)
+        {
+            if (rounds == null || rounds.Count == 0 ||
+                !rounds.Any(round => round.TurnSlots.Any(slot => Hides(slot, seat))))
+            {
+                return rounds;
+            }
+
+            return Array.AsReadOnly(rounds
+                .Select(round => round.TurnSlots.Any(slot => Hides(slot, seat))
+                    ? new CompletedRoundRecord(
+                        round.RoundIndex,
+                        Mask(round.TurnSlots, seat, cards, participants),
+                        round.EndOfRoundOutcomes)
+                    : round)
+                .ToArray());
+        }
+
+        private static bool Hides(RoundTurnSlot slot, MatchSeat seat) =>
+            slot.Assignments.Any(assignment => Hides(assignment, seat));
+
+        private static bool Hides(TurnCardAssignment assignment, MatchSeat seat) =>
+            assignment.IsFacedown && assignment.CardInstanceId.HasValue &&
+            !(seat != null && seat.Owns(assignment.HeroId));
+
+        private static RoundTurnSlot MaskSlot(
+            RoundTurnSlot slot, MatchSeat seat,
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants) =>
+            new RoundTurnSlot(
+                slot.RoundIndex,
+                slot.TurnIndex,
+                slot.Assignments.Select(assignment => Hides(assignment, seat)
+                    ? TurnCardAssignment.Withheld(assignment.HeroId)
+                    : assignment),
+                cards,
+                participants);
+    }
+
+    /// <summary>
     /// Milestone 8.61d. Rulebook p.4's facedown component, applied to one seat's view of the board.
     ///
     /// <para><b>What the source says.</b> Min the Dragonmonk's three Blue faces place their mines
@@ -840,11 +907,15 @@ namespace GuardsDigital.Application
             TurnIndex = source.TurnIndex;
             Phase = source.Phase;
             TieBreakerState = source.TieBreakerState;
-            TurnSlots = source.TurnSlots;
+            // Milestone 9.32a. A slot whose card was placed facedown names it only to its owner.
+            TurnSlots = FacedownSlotMask.Mask(source.TurnSlots, seat, source.Cards, source.Participants);
             // Milestone 8.35w. Taken from the source rather than re-derived, so a seat's
             // retained round window IS the host's own - which is what keeps one wire frame bounded
-            // and keeps the host's view and every client's byte-for-byte identical.
-            CompletedRounds = source.CompletedRounds;
+            // and keeps the host's view and every client's byte-for-byte identical. Milestone 9.32a:
+            // identical except where a slot's card was placed facedown, which only its owner's seat
+            // may name; the window's rounds and slots are the same and only that identity is absent.
+            CompletedRounds = FacedownSlotMask.MaskRounds(
+                source.CompletedRounds, seat, source.Cards, source.Participants);
             CurrentEndOfRoundStage = source.CurrentEndOfRoundStage;
             Commitments = source.Commitments;
             SelectedActor = source.SelectedActor;

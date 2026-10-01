@@ -603,6 +603,14 @@ namespace GuardsDigital.Core.Cards
             EffectCapabilityCatalog capabilities,
             bool resolvedCardsCountAsActive)
         {
+            // Milestone 9.32a. p.10: a facedown resolved or discarded card "loses its type, color and
+            // actions", so no borrow can perform one (lesson 29). Bushido can leave one in a turn slot,
+            // where Reload!'s rightmost resolved card or a previous-slot borrow would otherwise find it.
+            if (CardLifecycleAuthority.IsFacedownRestingCard(card))
+            {
+                return false;
+            }
+
             switch (declaration.Pool)
             {
                 case BorrowedActionPool.OwnedDiscardedCards:

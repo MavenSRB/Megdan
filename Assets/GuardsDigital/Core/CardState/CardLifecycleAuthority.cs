@@ -181,6 +181,72 @@ namespace GuardsDigital.Core.Cards
                 IsDiscardedRestingCard(card) ||
                 IsResolvedCardInTurnArea(card));
 
+        /// <summary>
+        /// Milestone 9.32a. Whether a card is in a shape p.10's Swap a Card may exchange with a card
+        /// in its owner's deck: a fresh card in hand, the card resolving its own action (Takahide's
+        /// Sting like a Bee, "After the attack: Swap this card with a different gold card in your
+        /// deck"), or a faceup resolved or discarded card (Bushido, "Swap your gold card ...").
+        ///
+        /// <para>A facedown resolved or discarded card is refused, and that is p.10 rather than
+        /// caution: it "loses its type, color and actions", so no sentence naming a card by its colour
+        /// can name it.</para>
+        /// </summary>
+        public static bool IsDeckSwapSubject(CardInstance card) =>
+            card != null &&
+            (card.State.Equals(CardStateFacts.InitialInHand()) ||
+             IsResolvingCardInTurnArea(card) ||
+             ((IsResolvedCardInTurnArea(card) || IsDiscardedRestingCard(card)) &&
+                card.State.FaceOrientation == CardFaceOrientation.FaceUp));
+
+        /// <summary>
+        /// Milestone 9.32a. p.10's Facedown state: "If a resolved or discarded card is facedown, it
+        /// loses its type, color and actions, until it changes state to in hand or becomes faceup."
+        /// Every reader of a resting card's printed face asks this first (lesson 29).
+        /// </summary>
+        public static bool IsFacedownRestingCard(CardInstance card) =>
+            card != null && card.State.FaceOrientation == CardFaceOrientation.FaceDown &&
+            (IsResolvedCardInTurnArea(card) || IsDiscardedRestingCard(card));
+
+        /// <summary>
+        /// Milestone 9.32a. Rulebook p.10's Swap a Card, with the owner's deck: "When two cards are
+        /// swapped, all their card states are swapped." The deck card takes every state the card
+        /// had - location, played, resolution and face - and the card takes the deck's own state,
+        /// <see cref="CardStateFacts.InitialInDeck"/>, which is the state p.15 returns a card to the
+        /// deck in.
+        ///
+        /// <para><paramref name="restingResultFacedown"/> is Bushido's second clause, "if you swap a
+        /// resolved or discarded gold card this way, the new card is facedown": it turns the incoming
+        /// card facedown only where the outgoing one was resolved or discarded. A hand or resolving
+        /// swap is faceup whatever it says.</para>
+        ///
+        /// <para>It decides the lifecycle shape and nothing else, as every transition here does.
+        /// Which deck card, whether the card text may swap this card, the turn slot that names the
+        /// card and the Initiative's selected card are the round's questions
+        /// (<c>RoundResolutionAuthority.TrySwapWithDeckCard</c>), and the Active effects the outgoing
+        /// card was the source of are its caller's to cancel.</para>
+        /// </summary>
+        public static bool TrySwapWithDeckCard(
+            CardInstance card, CardInstance deckCard, bool restingResultFacedown)
+        {
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            if (deckCard == null) throw new ArgumentNullException(nameof(deckCard));
+            if (!card.OwnerId.Equals(deckCard.OwnerId) ||
+                card.Id.Equals(deckCard.Id) ||
+                !IsDeckSwapSubject(card) ||
+                !deckCard.State.IsInitialInDeck)
+                return false;
+
+            var prior = card.State;
+            var resting = IsResolvedCardInTurnArea(card) || IsDiscardedRestingCard(card);
+            card.ApplyState(CardStateFacts.InitialInDeck());
+            deckCard.ApplyState(new CardStateFacts(
+                prior.Location,
+                prior.HasBeenPlayed,
+                prior.ResolutionStatus,
+                resting && restingResultFacedown ? CardFaceOrientation.FaceDown : prior.FaceOrientation));
+            return true;
+        }
+
         /// <summary>The two legal discarded shapes; an unresolved played discard is not supported.</summary>
         public static bool IsDiscardedRestingCard(CardInstance card) =>
             card != null && card.State.Location == CardLocation.DiscardPile &&

@@ -392,6 +392,34 @@ namespace GuardsDigital.Core.Cards
             return InitiativeResolutionResult.Accept(events);
         }
 
+        /// <summary>
+        /// Milestone 9.32a. p.10's Swap a Card, taken from under its own action: Takahide's Sting like a
+        /// Bee prints "After the attack: Swap this card with a different gold card in your deck", so
+        /// the card the order selected is now in the deck and the gold card that took its states is
+        /// the one the action resolves (TK-Q2). The actor, side, Initiative total and Tie Breaker flip
+        /// are the selection's and do not move; only the card identity does.
+        ///
+        /// <para>Asked only by the round's deck swap, which has already exchanged the two cards'
+        /// states; it refuses any card but the selected one.</para>
+        /// </summary>
+        internal bool TryReplaceSelectedCard(CardInstanceId selectedCard, CardInstanceId replacement)
+        {
+            if (!SelectedActor.IsDefined || !replacement.IsDefined ||
+                !SelectedActor.CardInstanceId.Equals(selectedCard) ||
+                selectedCard.Equals(replacement))
+            {
+                return false;
+            }
+
+            SelectedActor = new SelectedInitiativeActor(
+                replacement,
+                SelectedActor.ActorId,
+                SelectedActor.TeamSide,
+                SelectedActor.InitiativeTotal,
+                SelectedActor.FlipTieBreakerAfterResolution);
+            return true;
+        }
+
         private InitiativeResolutionResult Select(
             InitiativeCandidate candidate,
             int initiativeTotal,

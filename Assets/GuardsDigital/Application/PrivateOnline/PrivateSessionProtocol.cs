@@ -416,7 +416,14 @@ namespace GuardsDigital.Application
         // in the existing two-team shape. A v32 reader would take the tally count for the hero rows'
         // count, so v32 peers are refused from the header. The admission tuple's snapshot schema
         // advances to 52 with it.
-        public const int Version = 33;
+        // v34 (milestone 9.32a): a card placed facedown in a turn slot (Takahide's Bushido, p.10).
+        // Every turn-slot assignment row - the current round's and the completed-round history's -
+        // ends with whether its card was placed facedown, and a facedown card another seat may not
+        // name arrives with no card id: withheld, p.4's hidden information, because a card instance
+        // id names its definition. A v33 reader would take the flag for the next row's hero id, so
+        // v33 peers are refused from the header. The admission tuple's snapshot schema advances to 54
+        // with it (the slot record persists the fact).
+        public const int Version = 34;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

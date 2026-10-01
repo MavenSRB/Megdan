@@ -572,6 +572,7 @@ namespace GuardsDigital.Application
                                 ? assignment.CardInstanceId.Value.Value
                                 : null);
                         writer.Write(assignment.PassedWithEmptyHand);
+                        writer.Write(assignment.IsFacedown);
                     }
                 }
 
@@ -622,8 +623,9 @@ namespace GuardsDigital.Application
                             return false;
                         }
 
+                        var passed = reader.ReadBoolean();
                         assignments.Add(new NetworkTurnAssignmentRow(
-                            heroId, cardId, reader.ReadBoolean()));
+                            heroId, cardId, passed, reader.ReadBoolean()));
                     }
 
                     slots.Add(new NetworkTurnSlotRow(

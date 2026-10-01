@@ -99,7 +99,15 @@ New contracts, each owned by one block:
 | A teammate's optional discard followed by a discard-pile state check gating a move, coins to two heroes and a retrieval | the five Greens, Calculated Risk, Tactical Gambit | 9.32e (TK-Q4) |
 | An Ultimate whose text is a one-time card movement performed at its unlock; a six-card hand | Ready for War | 9.32f (TK-Q5) |
 
-Expected compatibility moves: CardStateFacts already carries location, played, resolution and orientation, so a facedown resolved or discarded card and a swapped-in deck card are expected to be schema-neutral, with only the restore validators widened. Whether the facedown card's projection row or the obstacle cue moves the wire protocol is measured in its block, not assumed.
+Expected compatibility moves (9.32's survey): CardStateFacts already carries location, played, resolution and orientation, so the card states were expected to be schema-neutral, and the wire was to be measured per block. 9.32a measured otherwise for the turn slot; see below.
+
+**Built by 9.32a** (engine only, proven on `SyntheticGoldSwapHand`; registered with the dealing at 9.32h):
+
+- `CardLifecycleAuthority.TrySwapWithDeckCard` is p.10's swap with the deck: the deck card takes every state of the outgoing card (a hand card, the card resolving its own action, or a faceup resolved or discarded card, `IsDeckSwapSubject`), the outgoing card takes `InitialInDeck`, and Bushido's flag turns the incoming card facedown only where the outgoing one was resolved or discarded. `IsFacedownRestingCard` names p.10's facedown resolved or discarded card for every reader.
+- `RoundResolutionAuthority.TrySwapWithDeckCard` (`IDeckCardSwap` on `EffectRosterState`) does it as one operation (lesson 28): the cards, the turn slot of this round that names a played outgoing card, and, for the resolving card, the Initiative's selected card (`TryReplaceSelectedCard`), so the action completes and resolves the swapped-in card (TK-Q2). The Movement completion after text (Float, TK-Q1) follows the selected card when its held card went to the deck.
+- `swap-this-card-with-deck-card@1` and `swap-owned-color-card-with-deck-card@1` (`SyntheticDeckSwapCapabilities`): the actor chooses among his deck cards of the named colour; the choice is projected to his seat alone; the outgoing card's Active effects end (p.17).
+- Lesson 29's readers: `PlayedAttackCardThisTurnQuery`, the borrowed primary (`BorrowedPrimaryAction.InPool`) and borrowed card text refuse a facedown resting card; readers that only count cards in a location (a discard pile's presence) count it, as p.10 still makes it a card there.
+- **The slot records the facedown fact** (`TurnCardAssignment.IsFacedown`). A card instance id names its definition, the turn slots reach every seat and the wire, and the completed-round history keeps them after the card has returned to the hand, where its own state no longer says it was facedown. `FacedownSlotMask` therefore shows every seat but the owner's a withheld assignment (`TurnCardAssignment.Withheld`: a card is there, not which). Snapshot schema v53 -> v54 (each slot assignment ends with the flag); wire `/33` -> `/34` (each slot row, current and completed, ends with it).
 
 ## Settled questions
 

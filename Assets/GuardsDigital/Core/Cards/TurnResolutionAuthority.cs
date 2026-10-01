@@ -743,6 +743,14 @@ namespace GuardsDigital.Core.Cards
         public SelectedInitiativeActor SelectedActor => initiative.SelectedActor;
 
         /// <summary>
+        /// Milestone 9.32a. The selected card was swapped with a deck card during its own action
+        /// (p.10); the action now completes and resolves the card that took its states. Asked only by
+        /// <see cref="RoundResolutionAuthority.TrySwapWithDeckCard"/>.
+        /// </summary>
+        internal bool TryReplaceSelectedCard(CardInstanceId selectedCard, CardInstanceId replacement) =>
+            initiative.TryReplaceSelectedCard(selectedCard, replacement);
+
+        /// <summary>
         /// Milestone 8.35g. The finished turn waiting for its own player's release, withheld while
         /// anything else still stands.
         /// </summary>
@@ -3027,6 +3035,18 @@ namespace GuardsDigital.Core.Cards
                     paused.HeldOffer.InvocationContext);
                 var card = instances.Single(candidate =>
                     candidate.Id.Equals(paused.HeldOffer.SourceCardInstanceId));
+                // Milestone 9.32a. Text after the Movement may swap its own card with a deck card
+                // (Float like a Butterfly, TK-Q1), and p.10 then makes the swapped-in card the played
+                // one (TK-Q2). The held offer still names the card the action started on; the
+                // Initiative's selected card names the one it ends on. Only a card that is now in the
+                // deck can have left this way.
+                if (card.State.IsInitialInDeck && initiative.SelectedActor.IsDefined &&
+                    !initiative.SelectedActor.CardInstanceId.Equals(card.Id))
+                {
+                    card = instances.Single(candidate =>
+                        candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+                }
+
                 return CompleteMovementAndAdvance(card, events);
             }
 

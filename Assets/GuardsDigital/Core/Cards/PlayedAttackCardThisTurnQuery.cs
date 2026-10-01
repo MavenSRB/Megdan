@@ -77,6 +77,13 @@ namespace GuardsDigital.Core.Cards
                     "A turn-slot assignment does not resolve to its hero-owned card instance.");
             }
 
+            // Milestone 9.32a. p.10: a facedown resolved or discarded card "loses its type, color and
+            // actions" - Bushido can leave one in a turn slot - so it is no Attack card (lesson 29).
+            if (CardLifecycleAuthority.IsFacedownRestingCard(card))
+            {
+                return false;
+            }
+
             var definition = (definitions ?? throw new ArgumentNullException(nameof(definitions)))
                 .SingleOrDefault(candidate => candidate != null &&
                     candidate.Reference.Equals(card.DefinitionReference));

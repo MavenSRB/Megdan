@@ -433,7 +433,15 @@ namespace GuardsDigital.Core.Snapshots
         // one, which is precisely the first payload the regain would misread. Every fixture grows by
         // one int32 per team. The wire is unmoved: a seat reads the remaining count, which the wire
         // already carries, and the admission tuple's snapshot schema advances to 53 with it.
-        public const int CurrentSchemaVersion = 53;
+        // v54 (milestone 9.32a): every turn-slot assignment ends with whether its card was placed
+        // facedown. Takahide's Bushido swaps a resolved or discarded gold card for a deck card that
+        // "is facedown" (p.10), and a facedown card is hidden information (p.4) - but a card instance id
+        // names its definition, and the slot is read by every seat and kept in the completed-round
+        // history after the card has gone back to the hand, where its own state no longer says it was
+        // ever facedown. The slot is the one place the fact can live. v53 is rejected: a v53 reader
+        // would take the flag for the next assignment's hero id. Every slot-bearing fixture grows by
+        // one byte per assignment.
+        public const int CurrentSchemaVersion = 54;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
@@ -823,6 +831,7 @@ namespace GuardsDigital.Core.Snapshots
                     writer.Write(assignment.HeroId.Value); writer.Write(assignment.CardInstanceId.HasValue);
                     if (assignment.CardInstanceId.HasValue) writer.Write(assignment.CardInstanceId.Value.Value);
                     writer.Write(assignment.PassedWithEmptyHand);
+                    writer.Write(assignment.IsFacedown);
                 }
             }
         }
@@ -836,7 +845,8 @@ namespace GuardsDigital.Core.Snapshots
                 {
                     var hero = new HeroId(reader.ReadString());
                     var card = reader.ReadBoolean() ? (CardInstanceId?)new CardInstanceId(reader.ReadString()) : null;
-                    return new TurnCardAssignment(hero, card, reader.ReadBoolean());
+                    var passed = reader.ReadBoolean();
+                    return new TurnCardAssignment(hero, card, passed, reader.ReadBoolean());
                 });
                 return new RoundTurnSlot(round, turn, assignments, cards, participants);
             });

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32a Gold card swap evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32a | Takahide's gold cards start where their text says and swap with a chosen deck card in one round operation (both cards, the turn slot, the selected card); Bushido's facedown result loses its face for every reader and is withheld from every other seat; snapshot v54, wire /34. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932a-gold-cards-the-deck-start-and-the-swap-with-the-deck). | `milestone/9.32a` |
+
 ## Milestone 9.32 Takahide inventory evidence
 
 | Milestone | Outcome and definition | Commit |

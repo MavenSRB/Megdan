@@ -1133,6 +1133,10 @@ namespace GuardsDigital.Tests.EditMode
                 { "SystemTransitionStepDescription.RemainingCoins", NotReached("a level-up with coins left over") },
                 { "TeamAgreementParticipantProjection.PreferredCardInstanceId", NotReached("a team agreement with a statement made") },
                 { "TurnCardAssignment.PassedWithEmptyHand", NotReached("a pass with an empty hand") },
+                // Milestone 9.32a: only Takahide's Bushido places a facedown slot card, and no dealt hero
+                // can until 9.32h; TakahideGoldSwapTests proves the mask, and 9.32h removes these two.
+                { "TurnCardAssignment.IsFacedown", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
+                { "TurnCardAssignment.IsWithheld", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
