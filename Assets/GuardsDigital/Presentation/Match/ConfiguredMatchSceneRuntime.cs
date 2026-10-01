@@ -854,7 +854,17 @@ namespace GuardsDigital.Presentation.Match
 
             var minionChoice = MinionChoiceView.Model?.Agreement?.Choices.FirstOrDefault(value =>
                 value.Command.Equals(statement));
-            return minionChoice != null && MinionChoicePresenter.SubmitAgreement(minionChoice);
+            if (minionChoice != null)
+            {
+                return MinionChoicePresenter.SubmitAgreement(minionChoice);
+            }
+
+            // Milestone 9.29. A Minion Battle pick has no button: a player makes it by clicking the
+            // minion, and the prompt's candidate for that minion carries the statement. So a projected
+            // pick is answered through exactly that candidate - the click a player would make.
+            var pick = MinionChoiceView.Model?.Candidates.FirstOrDefault(value =>
+                statement.Equals(value.AgreementCommand));
+            return pick != null && MinionChoicePresenter.Submit(pick);
         }
 
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents => session.Projection.DiagnosticEvents;

@@ -48,7 +48,7 @@ namespace GuardsDigital.Presentation.Match
             int ordinal,
             bool isSelected,
             DirectorCommand command)
-            : this(RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, null)
+            : this(RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, null, null)
         {
         }
 
@@ -58,7 +58,7 @@ namespace GuardsDigital.Presentation.Match
             int ordinal,
             bool isSelected,
             DirectorCommand command)
-            : this(RuleObject.ForHero(heroId), label, ordinal, isSelected, command, null)
+            : this(RuleObject.ForHero(heroId), label, ordinal, isSelected, command, null, null)
         {
         }
 
@@ -75,7 +75,24 @@ namespace GuardsDigital.Presentation.Match
             DirectorCommand command,
             HexCoordinate? destination)
             : this(
-                RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, destination)
+                RuleObject.ForMinion(minionId), label, ordinal, isSelected, command, destination, null)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 9.29's form: one of this seat's own Minion Battle picks, answered through the
+        /// host agreement rather than a rules command. <paramref name="isSelected"/> is whether the
+        /// unit is already among this seat's picks, in which case the statement takes it back.
+        /// </summary>
+        public MinionChoiceCandidateViewModel(
+            RuleObject unit,
+            string label,
+            int ordinal,
+            bool isSelected,
+            TeamAgreementCommand agreementCommand)
+            : this(
+                unit, label, ordinal, isSelected, null, null,
+                agreementCommand ?? throw new ArgumentNullException(nameof(agreementCommand)))
         {
         }
 
@@ -85,7 +102,8 @@ namespace GuardsDigital.Presentation.Match
             int ordinal,
             bool isSelected,
             DirectorCommand command,
-            HexCoordinate? destination)
+            HexCoordinate? destination,
+            TeamAgreementCommand agreementCommand)
         {
             if (!unit.IsDefined || ordinal < 1)
             {
@@ -99,7 +117,10 @@ namespace GuardsDigital.Presentation.Match
                 : label;
             Ordinal = ordinal;
             IsSelected = isSelected;
-            Command = command ?? throw new ArgumentNullException(nameof(command));
+            Command = command ?? (agreementCommand != null
+                ? null
+                : throw new ArgumentNullException(nameof(command)));
+            AgreementCommand = agreementCommand;
             Destination = destination;
         }
 
@@ -114,7 +135,12 @@ namespace GuardsDigital.Presentation.Match
         /// carries is then the projected deselect invocation rather than the select one.
         /// </summary>
         public bool IsSelected { get; }
+
+        /// <summary>The rules command this control submits; <c>null</c> on a seat's own pick.</summary>
         public DirectorCommand Command { get; }
+
+        /// <summary>Milestone 9.29. The pick or unpick statement a seat's control submits instead.</summary>
+        public TeamAgreementCommand AgreementCommand { get; }
 
         /// <summary>The correction destination this control selects, or <c>null</c> for a minion control.</summary>
         public HexCoordinate? Destination { get; }
@@ -149,52 +175,6 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException(
                     "A Minion Battle prompt requires the authoritative resolution and choice identities.");
             }
-        }
-
-        /// <summary>
-        /// Milestone 8.35e. The Minion Battle's public stage: milestone 8.30n's team agreement
-        /// standing over a selection whose authoritative pending detail this reader does not hold.
-        /// </summary>
-        /// <remarks>
-        /// <para>Two readers reach it, and both are ordinary. A seat on the side that is not
-        /// choosing never holds the detail at all - <c>SeatPendingSurface</c> gives a decision's own
-        /// content to the seat that answers it - and a seat on the choosing side stops holding it
-        /// for as long as its own accepted press is in flight, because
-        /// <c>NetworkMatchReadModel</c> strips every pending answer while the view is not
-        /// actionable. The public agreement is public in both, so what remains renderable is exactly
-        /// what the table can see: the counts, the agreement's own statements, and the selected
-        /// units the board already cues from <c>TeamAgreement.SelectedUnits</c>.</para>
-        /// <para>It carries no end-of-round identities because there is no pending choice here to
-        /// read them from, which is why it cannot go through the removal-prompt constructor: that
-        /// one's guard exists to refuse exactly the fabricated identities this stage would have to
-        /// invent. Nothing on this form submits a rules command - the choosing side answers through
-        /// <see cref="MinionChoicePresenter.SubmitAgreement"/>, and the other side answers nothing.</para>
-        /// </remarks>
-        public static MinionChoiceViewModel ForPublicAgreement(
-            long version,
-            TeamId choosingTeamId,
-            TeamSide choosingSide,
-            int requiredRemovalCount,
-            int selectedCount,
-            TeamAgreementHudViewModel agreement)
-        {
-            if (agreement == null)
-            {
-                throw new ArgumentNullException(nameof(agreement));
-            }
-
-            if (agreement.Kind != TeamAgreementKind.MinionBattle)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(agreement),
-                    agreement.Kind,
-                    "The public form of this prompt draws the Minion Battle's own team agreement.");
-            }
-
-            return new MinionChoiceViewModel(
-                version, MinionChoicePromptKind.MinionBattleRemoval, default, default,
-                default, default, default, choosingTeamId, choosingSide, requiredRemovalCount,
-                selectedCount, Array.Empty<MinionChoiceCandidateViewModel>(), null, agreement);
         }
 
         /// <summary>
@@ -350,15 +330,6 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel ConfirmInvocation { get; }
         public TeamAgreementHudViewModel Agreement { get; }
 
-        /// <summary>
-        /// Milestone 8.35e. Whether this is the battle's public stage rather than an owned removal
-        /// prompt: no authoritative pending detail stands behind it, so it names no end-of-round
-        /// identities, offers no candidates and carries no confirm. Everything it does draw - the
-        /// counts and <see cref="Agreement"/> - is public to all six seats.
-        /// </summary>
-        public bool IsPublicAgreementStage =>
-            Kind == MinionChoicePromptKind.MinionBattleRemoval && !ResolutionId.IsDefined;
-
         public string PromptLabel { get; }
         public string StatusLabel { get; }
 
@@ -430,7 +401,7 @@ namespace GuardsDigital.Presentation.Match
 
             var current = GetOrCreateViewModel(session.Projection);
             var candidate = current?.Candidates.SingleOrDefault(value => value.Unit.Equals(unit));
-            return candidate != null && Execute(candidate.Command);
+            return candidate != null && Answer(candidate);
         }
 
         /// <summary>
@@ -442,13 +413,30 @@ namespace GuardsDigital.Presentation.Match
         {
             var current = GetOrCreateViewModel(session.Projection);
             if (candidate == null || current == null ||
-                !current.Candidates.Any(value => value.Command.Equals(candidate.Command)))
+                !current.Candidates.Any(value =>
+                    Equals(value.Command, candidate.Command) &&
+                    Equals(value.AgreementCommand, candidate.AgreementCommand)))
             {
                 Refresh();
                 return false;
             }
 
-            return Execute(candidate.Command);
+            return Answer(candidate);
+        }
+
+        private bool Answer(MinionChoiceCandidateViewModel candidate)
+        {
+            if (candidate.AgreementCommand == null)
+            {
+                return Execute(candidate.Command);
+            }
+
+            var result = session.SubmitAgreement(candidate.AgreementCommand);
+            if (result.Accepted)
+                SessionProjectionChanged?.Invoke(result.Projection);
+            else
+                Refresh();
+            return result.Accepted;
         }
 
         public bool Confirm()
@@ -489,26 +477,15 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var choice = projection.PendingMinionBattleChoice;
+            if (projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle)
+            {
+                // Milestone 9.29. A seat never answers the battle with a rules command any more; it
+                // picks for itself through the agreement, and the host removes what every pick names.
+                return CreatePickingViewModel(projection, choice);
+            }
+
             if (choice == null)
             {
-                var publicAgreement = TeamAgreementHudPresentation.Create(projection);
-                if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle)
-                {
-                    // Milestone 8.35e. This went through the removal-prompt constructor with default
-                    // identities, and that constructor's own guard refuses exactly those, so the
-                    // branch threw on every render in the one state it exists to draw - on both
-                    // sides, from the first selection onward, and each throw took the rest of
-                    // MatchFeatureCoordinator.RefreshAll with it. The public stage has its own form
-                    // now; the guarded one is reached only from an owned pending choice below.
-                    var agreement = projection.TeamAgreement;
-                    var team = projection.Participants.Teams.Single(value =>
-                        value.Side == agreement.ChoosingSide);
-                    return MinionChoiceViewModel.ForPublicAgreement(
-                        projection.Version, team.Id, agreement.ChoosingSide,
-                        agreement.RequiredSelectionCount, agreement.SelectedUnits.Count,
-                        publicAgreement);
-                }
-
                 // At most one minion-choice family is ever pending: the battle is end-of-round state
                 // and the correction pauses mid-turn, so this is a route rather than a priority.
                 return CreateCorrectionViewModel(projection);
@@ -581,6 +558,67 @@ namespace GuardsDigital.Presentation.Match
                                 command.EndOfRoundChoiceId.Equals(
                                     choice.ConfirmInvocation.ChoiceId)))
                     : null,
+                TeamAgreementHudPresentation.Create(projection));
+        }
+
+        /// <summary>
+        /// Milestone 9.29. One seat's own picks: a control for every unit this seat may pick or take
+        /// back, each carrying the agreement statement that does it.
+        /// </summary>
+        /// <remarks>
+        /// A seat on the other side is served no pending choice and no picks, and draws nothing here -
+        /// the status line says the other side is choosing. So does a choosing seat whose own
+        /// statement is in flight, for the one round trip its pending detail is withheld (8.35e's
+        /// window): the board keeps what it last drew until the answer returns.
+        /// </remarks>
+        private static MinionChoiceViewModel CreatePickingViewModel(
+            IMatchReadModel projection, PendingMinionBattleChoice choice)
+        {
+            var agreement = projection.TeamAgreement;
+            if (choice == null)
+            {
+                return null;
+            }
+
+            var picks = agreement.ViewerPicks;
+            var candidates = new List<MinionChoiceCandidateViewModel>();
+            for (var index = 0; index < choice.Candidates.Count; index++)
+            {
+                var candidate = choice.Candidates[index];
+                var picked = picks.Contains(candidate.Unit);
+                var statement = agreement.AuthorizedCommands.FirstOrDefault(command =>
+                    command.Unit.Equals(candidate.Unit) &&
+                    command.Kind == (picked
+                        ? TeamAgreementCommandKind.UnpickMinionBattleRemoval
+                        : TeamAgreementCommandKind.PickMinionBattleRemoval));
+                if (statement == null)
+                {
+                    // Nothing this seat may say about this unit right now - a Heavy while a non-Heavy
+                    // is unpicked is the live case. Presentation offers no control rather than
+                    // restating the order that withheld it.
+                    continue;
+                }
+
+                var ordinal = index + 1;
+                var label = candidate.HeroId.IsDefined
+                    ? $"{(picked ? "KEEP" : "REMOVE")} " +
+                        $"{MinionChoiceLabels.TeamLabel(choice.ChoosingSide)} HERO {candidate.HeroId.Value.ToUpperInvariant()}"
+                    : $"{(picked ? "KEEP" : "REMOVE")} " +
+                        $"{MinionChoiceLabels.CandidateLabel(choice.ChoosingSide, candidate.MinionType, ordinal)}";
+                candidates.Add(new MinionChoiceCandidateViewModel(
+                    candidate.Unit, label, ordinal, picked, statement));
+            }
+
+            return new MinionChoiceViewModel(
+                projection.Version,
+                choice.ResolutionId,
+                choice.ChoiceId,
+                choice.LosingTeamId,
+                choice.ChoosingSide,
+                choice.RequiredRemovalCount,
+                picks.Count,
+                candidates,
+                null,
                 TeamAgreementHudPresentation.Create(projection));
         }
 

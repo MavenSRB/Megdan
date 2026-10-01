@@ -391,7 +391,14 @@ namespace GuardsDigital.Application
         // as the reveal row does - but NetworkMatchLog.TryRead validates every kind with
         // Enum.IsDefined, so a v28 peer meeting the new number would refuse the whole frame and go
         // dark; the header refuses it first. Snapshot schema unmoved at v50.
-        public const int Version = 29;
+        // v30 (milestone 9.29): each choosing seat picks its own Minion Battle removals. A team
+        // agreement row's participants each carry their own picks (a counted unit list) and a
+        // picks-complete flag in place of the retired agreed flag, the row drops the shared selected
+        // units and confirmable flag, and an agreement statement carries an optional unit after its
+        // preferred card. A v29 reader would misread every participant after the first, so v29 peers
+        // are refused from the header. Snapshot schema unmoved at v50: picks are host-local agreement
+        // state and never persisted.
+        public const int Version = 30;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

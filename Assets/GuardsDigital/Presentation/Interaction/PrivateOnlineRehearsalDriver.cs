@@ -306,13 +306,14 @@ namespace GuardsDigital.Presentation.Interaction
         private bool tiedActorFlips;
         private long tiedActorVersion;
 
-        private string minionInitialProposal = string.Empty;
-        private string minionChangedProposal = string.Empty;
-        private IReadOnlyList<RuleObject> initialMinionSelection = Array.Empty<RuleObject>();
-        private DateTime? minionPartialSeenUtc;
-        private bool minionPartialReported;
-        private bool minionChangeSent;
-        private bool minionReplacementSent;
+        // Milestone 9.29. The first contested Minion Battle is scripted: the first choosing seat picks,
+        // the second picks something different and holds it long enough for the table to see two
+        // complete, different sets stand without a removal, then matches, and the rest follow.
+        private IReadOnlyList<RuleObject> minionLeaderPicks = Array.Empty<RuleObject>();
+        private DateTime? minionDivergenceSeenUtc;
+        private bool minionDivergenceReported;
+        private bool minionOwnPicksKeptReported;
+        private bool minionAgreementSeen;
         private bool minionInvalidationObserved;
         private bool minionFinalObserved;
 
@@ -752,8 +753,7 @@ namespace GuardsDigital.Presentation.Interaction
                         options.Mode == PrivateOnlineRehearsalMode.Match &&
                         string.Equals(options.Seat.Value, ReconnectSeat, StringComparison.Ordinal) &&
                         !reconnectCompleted;
-                    if (!initiativeFinalObserved || !tieBehaviorObserved ||
-                        !minionInvalidationObserved || !minionFinalObserved ||
+                    if (!initiativeFinalObserved || !tieBehaviorObserved || !minionFinalObserved ||
                         owesInProcessReconnect)
                     {
                         Fail("match-ended-before-required-rehearsal-observations");
@@ -894,26 +894,20 @@ namespace GuardsDigital.Presentation.Interaction
         {
             var runtime = compositionRoot.Runtime;
             var pendingMinionChoice = runtime.ReadModel.PendingMinionBattleChoice;
-            if (pendingMinionChoice != null && !pendingMinionChoice.CanConfirm &&
-                IsTeamController(pendingMinionChoice.ChoosingSide))
-            {
-                DriveMinionSelection(machine);
-                return;
-            }
-
             var agreement = runtime.ReadModel.TeamAgreement;
             if (agreement != null)
             {
                 if (agreement.Kind == TeamAgreementKind.Initiative)
                     DriveInitiativeAgreement(machine, agreement);
                 else if (agreement.Kind == TeamAgreementKind.MinionBattle)
-                    DriveMinionAgreement(machine, agreement);
+                    DriveMinionPicks(machine, agreement);
                 return;
             }
 
+            // Milestone 9.29. A seat answers the battle only through its own picks, so a pending
+            // choice with no agreement standing (the other side, or a statement in flight) waits.
             if (pendingMinionChoice != null)
             {
-                DriveMinionSelection(machine);
                 return;
             }
 
@@ -1104,135 +1098,145 @@ namespace GuardsDigital.Presentation.Interaction
             SubmitInitiativePreference(agreement, agreement.Candidates[0].CardInstanceId);
         }
 
-        private void DriveMinionAgreement(
-            PrivateSessionClient machine, TeamAgreementProjection agreement)
+        /// <summary>
+        /// Milestone 9.29. Each choosing seat picks for itself; the host removes the minions once every
+        /// seat holds the same complete set.
+        /// </summary>
+        /// <remarks>
+        /// <para>The first choosing seat always leads: it picks the first offered units until its set is
+        /// complete, and every other seat copies it. In this seat's first contested battle the second
+        /// choosing seat first builds a DIFFERENT complete set and holds it for
+        /// <see cref="PublicObservationSeconds"/>: the table then sees two complete, different sets
+        /// standing with no removal (<c>minion-divergent</c>), and the leader sees its own picks kept
+        /// while a teammate's changed (<c>minion-own-picks-kept</c>) - the two facts the 2026-09-30
+        /// playtest's shared selection could not give a player.</para>
+        /// </remarks>
+        private void DriveMinionPicks(PrivateSessionClient machine, TeamAgreementProjection agreement)
         {
-            if (minionFinalObserved)
+            minionAgreementSeen = true;
+            var runtime = compositionRoot.Runtime;
+            var ownIndex = IndexOfParticipant(agreement, runtime.Seat.HeroId);
+            if (ownIndex < 0 || machine.IsWaitingForHost ||
+                runtime.ReadModel.PendingMinionBattleChoice == null)
+                return;
+
+            var scripted = !minionFinalObserved && agreement.Participants.Count > 1;
+            var own = agreement.Participants[ownIndex];
+            var leader = agreement.Participants[0];
+            if (ownIndex == 0)
             {
-                SubmitMinionAgreementsInOrder(machine, agreement);
+                if (!own.PicksComplete)
+                {
+                    SubmitAgreementOfKind(agreement, TeamAgreementCommandKind.PickMinionBattleRemoval);
+                    return;
+                }
+
+                if (minionLeaderPicks.Count == 0)
+                    minionLeaderPicks = own.Picks.ToArray();
+                var second = agreement.Participants[1 % agreement.Participants.Count];
+                if (scripted && !minionOwnPicksKeptReported && second.PicksComplete &&
+                    !SameUnits(second.Picks, own.Picks) && SameUnits(own.Picks, minionLeaderPicks))
+                {
+                    minionOwnPicksKeptReported = true;
+                    ClientMarker("minion-own-picks-kept", machine.LatestProjection.Version);
+                }
+
                 return;
             }
 
-            // Only a confirmable selection has a proposal worth tracking. The proposal identity
-            // carries the authoritative version, so it moves with every ordinary selection the
-            // choosing team makes; a seat that started tracking before the selection was complete
-            // would report the first ordinary selection as an invalidation and prove nothing. Every
-            // seat therefore starts at the same first confirmable version.
-            if (minionInitialProposal.Length == 0)
-            {
-                if (!agreement.SelectionIsConfirmable)
-                    return;
-                minionInitialProposal = agreement.ProposalId.Value;
-                initialMinionSelection = agreement.SelectedUnits.ToArray();
-            }
+            if (!leader.PicksComplete)
+                return;
 
-            if (!string.Equals(agreement.ProposalId.Value, minionInitialProposal,
-                    StringComparison.Ordinal))
+            IReadOnlyList<RuleObject> target = leader.Picks;
+            if (scripted && ownIndex == 1)
             {
-                if (minionChangedProposal.Length == 0)
+                if (!minionInvalidationObserved)
                 {
-                    if (agreement.Participants.Any(value => value.HasStatement))
+                    if (own.PicksComplete && !SameUnits(own.Picks, leader.Picks))
                     {
-                        Fail("changed-minion-proposal-retained-old-agreement");
+                        minionInvalidationObserved = true;
+                        minionDivergenceSeenUtc = DateTime.UtcNow;
+                        if (!minionDivergenceReported)
+                        {
+                            minionDivergenceReported = true;
+                            ClientMarker("minion-divergent", machine.LatestProjection.Version);
+                        }
+
                         return;
                     }
-                    minionChangedProposal = agreement.ProposalId.Value;
-                    minionInvalidationObserved = true;
-                    ClientMarker("minion-proposal-invalidated", machine.LatestProjection.Version);
+
+                    target = DivergentSet(agreement, leader.Picks);
+                    if (target == null)
+                    {
+                        Fail("minion-battle-offered-no-different-pick");
+                        return;
+                    }
                 }
-                SubmitMinionAgreementsInOrder(machine, agreement);
-                return;
-            }
-
-            var agreedCount = agreement.Participants.Count(value => value.Agreed);
-            if (agreedCount == 0)
-            {
-                var ownIndex = IndexOfParticipant(agreement, compositionRoot.Runtime.Seat.HeroId);
-                if (ownIndex == 0 && !machine.IsWaitingForHost)
-                    SubmitAgreementOfKind(
-                        agreement, TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-                return;
-            }
-
-            if (agreedCount == 1)
-            {
-                if (!minionPartialSeenUtc.HasValue)
-                    minionPartialSeenUtc = DateTime.UtcNow;
-                if (!minionPartialReported)
+                else if (minionDivergenceSeenUtc.HasValue &&
+                    (DateTime.UtcNow - minionDivergenceSeenUtc.Value).TotalSeconds < PublicObservationSeconds)
                 {
-                    minionPartialReported = true;
-                    ClientMarker("minion-partial", machine.LatestProjection.Version);
-                }
-            }
-
-            if (minionChangeSent || !minionPartialSeenUtc.HasValue ||
-                (DateTime.UtcNow - minionPartialSeenUtc.Value).TotalSeconds <
-                    PublicObservationSeconds || !IsTeamController(agreement.ChoosingSide) ||
-                machine.IsWaitingForHost)
-                return;
-            var deselect = compositionRoot.Runtime.ReadModel.DecisionContract?.Commands
-                .FirstOrDefault(value => value.Kind == DirectorCommandKind.DeselectMinionBattleRemoval);
-            if (deselect == null)
-            {
-                Fail("minion-partial-proposal-had-no-deselect");
-                return;
-            }
-            if (compositionRoot.Runtime.SubmitProjectedCommand(deselect))
-            {
-                minionChangeSent = true;
-                nextActionUtc = DateTime.UtcNow.AddSeconds(ActionIntervalSeconds);
-            }
-        }
-
-        private void DriveMinionSelection(PrivateSessionClient machine)
-        {
-            var choice = compositionRoot.Runtime.ReadModel.PendingMinionBattleChoice;
-            if (choice == null || !IsTeamController(choice.ChoosingSide) || machine.IsWaitingForHost)
-                return;
-            // No seat ever submits the final confirmation: milestone 8.30n reserves it for the
-            // host's unanimous agreement, and this seat's own authorized set says so.
-            var commands = AuthorizedProjectedCommands(machine, compositionRoot.Runtime)
-                .Where(value => value.Kind == DirectorCommandKind.SelectMinionBattleRemoval)
-                .ToArray();
-            if (commands.Length == 0)
-                return;
-            DirectorCommand selected;
-            if (minionChangeSent && !minionReplacementSent)
-            {
-                selected = commands.FirstOrDefault(command => !initialMinionSelection.Any(unit =>
-                    (unit.Kind == RuleObjectKind.Hero && unit.HeroId.Equals(command.HeroId)) ||
-                    (unit.Kind == RuleObjectKind.Minion && unit.MinionId.Equals(command.MinionId))));
-                if (selected == null)
-                {
-                    Fail("minion-change-had-no-different-removal-candidate");
                     return;
                 }
             }
-            else
-            {
-                selected = commands[SelectIndex(options.Seed, choice.SelectedUnits.Count,
-                    commands.Length)];
-            }
-            if (compositionRoot.Runtime.SubmitProjectedCommand(selected))
-            {
-                if (minionChangeSent)
-                    minionReplacementSent = true;
-                nextActionUtc = DateTime.UtcNow.AddSeconds(ActionIntervalSeconds);
-            }
+
+            if (!StepTowards(agreement, own.Picks, target) && scripted && ownIndex == 1 &&
+                !minionInvalidationObserved)
+                Fail("minion-battle-different-pick-not-reachable");
         }
 
-        private void SubmitMinionAgreementsInOrder(
-            PrivateSessionClient machine, TeamAgreementProjection agreement)
+        /// <summary>A complete set holding at least one unit the leader did not pick, where one is offered.</summary>
+        private static IReadOnlyList<RuleObject> DivergentSet(
+            TeamAgreementProjection agreement, IReadOnlyList<RuleObject> leaderPicks)
         {
-            var ownIndex = IndexOfParticipant(agreement, compositionRoot.Runtime.Seat.HeroId);
-            if (ownIndex < 0 || machine.IsWaitingForHost)
-                return;
-            var own = agreement.Participants[ownIndex];
-            if (own.Agreed || !agreement.Participants.Take(ownIndex).All(value => value.Agreed))
-                return;
-            SubmitAgreementOfKind(
-                agreement, TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+            var other = agreement.AuthorizedCommands
+                .Where(value => value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                    !leaderPicks.Contains(value.Unit))
+                .Select(value => value.Unit)
+                .FirstOrDefault();
+            if (!other.IsDefined)
+                return null;
+            return leaderPicks.Skip(1).Concat(new[] { other }).ToArray();
         }
+
+        /// <summary>One pick or unpick that moves this seat's picks towards <paramref name="target"/>.</summary>
+        private bool StepTowards(
+            TeamAgreementProjection agreement,
+            IReadOnlyList<RuleObject> own,
+            IReadOnlyList<RuleObject> target)
+        {
+            if (SameUnits(own, target))
+                return true;
+            TeamAgreementCommand statement = null;
+            foreach (var unit in own.Where(value => !target.Contains(value)))
+            {
+                statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
+                    value.Kind == TeamAgreementCommandKind.UnpickMinionBattleRemoval &&
+                    value.Unit.Equals(unit));
+                if (statement != null)
+                    break;
+            }
+
+            if (statement == null)
+            {
+                foreach (var unit in target.Where(value => !own.Contains(value)))
+                {
+                    statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
+                        value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                        value.Unit.Equals(unit));
+                    if (statement != null)
+                        break;
+                }
+            }
+
+            if (statement == null)
+                return false;
+            if (compositionRoot.Runtime.SubmitProjectedAgreement(statement))
+                nextActionUtc = DateTime.UtcNow.AddSeconds(ActionIntervalSeconds);
+            return true;
+        }
+
+        private static bool SameUnits(IReadOnlyList<RuleObject> left, IReadOnlyList<RuleObject> right) =>
+            left.Count == right.Count && left.All(right.Contains);
 
         private bool SubmitAgreementOfKind(
             TeamAgreementProjection agreement, TeamAgreementCommandKind kind)
@@ -1284,7 +1288,7 @@ namespace GuardsDigital.Presentation.Interaction
                 ClientMarker("tie-breaker-pass", runtime.ReadModel.Version);
             }
 
-            if (!minionFinalObserved && minionChangedProposal.Length > 0 && agreement == null &&
+            if (!minionFinalObserved && minionAgreementSeen && agreement == null &&
                 runtime.ReadModel.PendingMinionBattleChoice == null)
             {
                 minionFinalObserved = true;

@@ -1037,8 +1037,20 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
                 }
                 remote.Pump();
-                Assert.That(Runtime().ReadModel.Outcome.HasEnded, Is.True,
-                    "The actual playing-host topology must reach an authoritative local outcome.");
+                var standing = Runtime().ReadModel;
+                var standingAgreement = standing.TeamAgreement;
+                Assert.That(standing.Outcome.HasEnded, Is.True,
+                    "The actual playing-host topology must reach an authoritative local outcome. " +
+                    "Stopped at round " + standing.RoundIndex + ", phase " + standing.Phase + ", version " +
+                    standing.Version + ", decision " + (standing.DecisionOwner.IsDefined
+                        ? standing.DecisionOwner.FamilyId.Value
+                        : "none") +
+                    (standingAgreement == null
+                        ? ""
+                        : ", agreement " + standingAgreement.Kind + " picks [" + string.Join("; ",
+                            standingAgreement.Participants.Select(participant => participant.HeroId.Value +
+                                ":" + string.Join(",", participant.Picks.Select(unit => unit.ToString())))) +
+                            "] offered " + standingAgreement.AuthorizedCommands.Count) + ".");
                 Assert.That(remote.Machine.LatestProjection.Version, Is.EqualTo(Runtime().Host.Version),
                     "The remote owner projection must finish on the authoritative host version.");
             }
@@ -1119,7 +1131,9 @@ namespace GuardsDigital.Tests.PlayMode
                         var agreement = Runtime().ReadModel.TeamAgreement;
                         if (agreement != null && agreement.AuthorizedCommands.Count > 0)
                         {
-                            Runtime().SubmitProjectedAgreement(agreement.AuthorizedCommands[0]);
+                            var statement = StatementToMake(agreement);
+                            if (statement != null)
+                                Runtime().SubmitProjectedAgreement(statement);
                             yield return null;
                             continue;
                         }
@@ -2768,7 +2782,9 @@ namespace GuardsDigital.Tests.PlayMode
             var agreement = runtime.ReadModel.TeamAgreement;
             if (agreement != null && agreement.AuthorizedCommands.Count > 0)
             {
-                runtime.SubmitProjectedAgreement(agreement.AuthorizedCommands[0]);
+                var statement = StatementToMake(agreement);
+                if (statement != null)
+                    runtime.SubmitProjectedAgreement(statement);
                 return;
             }
 
@@ -2790,7 +2806,9 @@ namespace GuardsDigital.Tests.PlayMode
             var agreement = projection.TeamAgreement;
             if (agreement != null && agreement.AuthorizedCommands.Count > 0)
             {
-                client.SubmitAgreement(agreement.AuthorizedCommands[0]);
+                var statement = StatementToMake(agreement);
+                if (statement != null)
+                    client.SubmitAgreement(statement);
                 return;
             }
 
@@ -2800,6 +2818,21 @@ namespace GuardsDigital.Tests.PlayMode
             var selected = GuardsDigital.Application.Bots.BotPolicy.SelectPrivateSessionTactics(
                 commands, projection, hero, random) ?? commands[0];
             client.Submit(selected);
+        }
+
+        /// <summary>
+        /// Milestone 9.29. The first offered preference of a tied Initiative; at a Minion Battle, the first
+        /// offered pick until this seat's own set is complete, and nothing after - pressing the first
+        /// offered statement every frame would take back the pick it had just made, for ever.
+        /// </summary>
+        private static TeamAgreementCommand StatementToMake(TeamAgreementProjection agreement)
+        {
+            if (agreement.Kind != TeamAgreementKind.MinionBattle)
+                return agreement.AuthorizedCommands[0];
+            return agreement.ViewerPicks.Count < agreement.RequiredSelectionCount
+                ? agreement.AuthorizedCommands.FirstOrDefault(value =>
+                    value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval)
+                : null;
         }
 
         private static bool IsUnder(VisualElement candidate, VisualElement ancestor)

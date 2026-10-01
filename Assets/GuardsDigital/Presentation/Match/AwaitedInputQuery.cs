@@ -255,12 +255,12 @@ namespace GuardsDigital.Presentation.Match
         /// decision families and <see cref="PendingDecisionContract"/> stays non-null for every
         /// teammate on the choosing side for as long as the proposal stands - including one who has
         /// already answered and could still revise, per <c>MatchFeaturePresenters.
-        /// TeamAgreementHudPresentation</c>'s own AGREE/WITHDRAW toggle. That would shine every
+        /// TeamAgreementHudPresentation</c>'s own revisable statements. That would shine every
         /// teammate's tray until the last holdout answers, which is not "still owed a response" - the
         /// same distinction the commitment arm already draws between a hero who has committed and one
         /// who has not. Which field answers "has this participant already given their part" depends on
         /// the kind, exactly as <c>TeamAgreementHudPresentation.Create</c> already reads it: a stated
-        /// Initiative preference, or an explicit Minion Battle agreement.
+        /// Initiative preference, or a complete set of Minion Battle picks.
         /// </summary>
         private static bool OwesAnAgreementAnswer(IMatchReadModel projection, HeroId heroId)
         {
@@ -277,9 +277,11 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
+                // Milestone 9.29: a Minion Battle participant has given its part once its own picks are
+                // complete. The other side is served no picks, so it reads every chooser as still owed.
                 return agreement.Kind == TeamAgreementKind.Initiative
                     ? !participant.HasStatement
-                    : !participant.Agreed;
+                    : !participant.PicksComplete;
             }
 
             return false;

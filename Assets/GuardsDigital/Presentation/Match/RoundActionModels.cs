@@ -718,20 +718,16 @@ namespace GuardsDigital.Presentation.Match
                     isInputEnabled);
             }
 
+            // Milestone 9.29. Picks are made on the board, one click per minion, so this surface has
+            // no controls of its own - only who has picked.
             return new TeamAgreementHudViewModel(
                 agreement.Kind,
-                "TEAM AGREEMENT",
+                "WHICH MINIONS GO?",
                 agreement.Participants.Select(participant =>
                     new TeamAgreementParticipantViewModel(
                         Name(participant.HeroId),
-                        participant.Agreed ? "agreed" : "is deciding")),
-                agreement.AuthorizedCommands.Select(command =>
-                    new TeamAgreementChoiceViewModel(
-                        command.Kind == TeamAgreementCommandKind.WithdrawMinionBattleAgreement
-                            ? "WITHDRAW MY AGREEMENT"
-                            : "AGREE WITH THIS SELECTION",
-                        default,
-                        command)),
+                        participant.PicksComplete ? "has picked" : "is picking")),
+                null,
                 isInputEnabled);
         }
     }

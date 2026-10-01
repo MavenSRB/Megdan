@@ -180,16 +180,14 @@ namespace GuardsDigital.Tests.EditMode
                     agreement.Kind == TeamAgreementKind.Initiative && !own.HasStatement &&
                     value.Kind == TeamAgreementCommandKind.PreferInitiativeCandidate &&
                     value.PreferredCardInstanceId.Equals(agreement.Candidates[0].CardInstanceId) ||
-                    agreement.Kind == TeamAgreementKind.MinionBattle && !own.Agreed &&
-                    value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                    agreement.Kind == TeamAgreementKind.MinionBattle && !own.PicksComplete &&
+                    value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval);
                 if (statement != null) { Assert.That(machine.TrySubmitAgreement(statement, out _), Is.True); return; }
             }
             var commands = machine.LatestProjection.AuthorizedCommands;
             if (commands.Count == 0) return;
             var selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            if (projection.PendingMinionBattleChoice != null)
-                selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.SelectMinionBattleRemoval);
             selected = selected ?? BotPolicy.SelectGreedy(commands, projection, hero, random) ?? commands[0];
             Assert.That(machine.TrySubmitCommand(selected, out _), Is.True);
         }

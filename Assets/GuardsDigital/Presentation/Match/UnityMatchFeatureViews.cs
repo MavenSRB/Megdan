@@ -42,6 +42,9 @@ namespace GuardsDigital.Presentation.Match
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
         private Func<HeroId, bool> heroViewIntentHandler;
 
+        // Milestone 9.29. Each teammate's token face, resolved the first time a pick needs it.
+        private readonly Dictionary<HeroId, Texture2D> pickerFaces = new Dictionary<HeroId, Texture2D>();
+
         // Milestone 8.35z6 (the SIXTEENTH amendment's Defeat shrink-and-fade, delivered
         // pooling-safely). Keyed by the piece's OWN view instance rather than its identity value: a
         // hero or minion view is bound to exactly one identity for the life of a match (unlike a
@@ -582,6 +585,12 @@ namespace GuardsDigital.Presentation.Match
                 allyCoordinates.UnionWith(CoordinatesOf(model, cue.Target));
             }
             var targetOutlineSides = TargetOutlineSides(model);
+
+            // Milestone 9.29. A Minion Battle candidate that the viewer or a teammate picked keeps the
+            // full hex outline the pointer otherwise lends a target - the user: "not full hex outline
+            // when minion is selectable, and full outline when a teammate or you have selected it".
+            var pickedCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.MinionBattlePicks.SelectMany(pick => CoordinatesOf(model, pick.Target)));
             foreach (var tile in tiles.Where(value => value.IsPlayable))
             {
                 // Clear any state left by a pre-8.30h renderer. Configured play no longer activates
@@ -631,7 +640,8 @@ namespace GuardsDigital.Presentation.Match
                     // it. Only the outline reads this: the six corner marks keep the hover language
                     // every shipped journey pins them with.
                     if (outlineSide != BoardTargetOutlineSide.None &&
-                        hoveredHeroCoordinates.Contains(tile.Coordinate))
+                        (hoveredHeroCoordinates.Contains(tile.Coordinate) ||
+                         pickedCoordinates.Contains(tile.Coordinate)))
                     {
                         pointedAt = true;
                     }
@@ -962,6 +972,8 @@ namespace GuardsDigital.Presentation.Match
                     // board.
                     ApplyPieceTargetCue(
                         minion, model, BoardObjectReference.ForMinion(state.MinionId));
+                    minion.SetPickBadges(
+                        TeammatePickersOf(model, BoardObjectReference.ForMinion(state.MinionId)));
 
                     projectedMinions.Remove(state.MinionId);
                 }
@@ -970,6 +982,7 @@ namespace GuardsDigital.Presentation.Match
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
+                    minion.SetPickBadges(null);
                     // Milestone 8.35z6: see the hero loop's identical comment above.
                     if (minion.gameObject.activeSelf)
                     {
@@ -1254,6 +1267,50 @@ namespace GuardsDigital.Presentation.Match
         private static PieceTargetCueViewModel? Drawable(
             bool canWearACue, PieceTargetCueViewModel? cue) =>
             canWearACue && BoardTargetCuePresentation.DrawsTheRingOnThePiece ? cue : null;
+
+        /// <summary>
+        /// Milestone 9.29. The badges a picked Minion Battle candidate wears: one per TEAMMATE who
+        /// picked it, drawn with that teammate's own board token face. Faces are resolved once per
+        /// hero and kept, because a token's artwork never changes during a match.
+        /// </summary>
+        private IReadOnlyList<GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker>
+            TeammatePickersOf(BoardInteractionViewModel model, BoardObjectReference reference)
+        {
+            List<GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker> pickers = null;
+            foreach (var pick in model.MinionBattlePicks)
+            {
+                if (!pick.Target.Equals(reference)) continue;
+                foreach (var heroId in pick.TeammatePickers)
+                {
+                    var view = HeroViewFor(heroId);
+                    if (!pickerFaces.TryGetValue(heroId, out var face))
+                    {
+                        face = null;
+                        if (view != null && view.HeroContentId.HasValue)
+                        {
+                            GuardsDigital.Presentation.Units.Heroes.HeroTokenArtwork.ResolveToken(
+                                view.HeroContentId.Value, view.TeamSide, out face);
+                        }
+
+                        pickerFaces[heroId] = face;
+                    }
+
+                    if (pickers == null)
+                    {
+                        pickers = new List<GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker>();
+                    }
+
+                    pickers.Add(new GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker(
+                        face,
+                        GuardsDigital.Presentation.Units.Heroes.HeroTokenArtwork.TeamRim(
+                            view?.TeamSide ?? TeamSide.Red)));
+                }
+            }
+
+            return pickers ??
+                (IReadOnlyList<GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker>)Array.Empty<
+                    GuardsDigital.Presentation.Board.MinionBattlePickBadges.Picker>();
+        }
 
         private static PieceTargetCueViewModel? CueFor(
             BoardInteractionViewModel model, BoardObjectReference reference, int body = 0)

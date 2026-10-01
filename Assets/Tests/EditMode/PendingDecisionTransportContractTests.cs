@@ -86,6 +86,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static IEnumerable<string> WalkTheOfficialMatch()
         {
+            TeamAgreementTestDriver.Reset();
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             // Milestone 8.35u re-derived it again. p.15 now pauses once for every hero that bought
             // a level rather than once per hero in turn, so the number of standing answers at an
@@ -128,7 +129,7 @@ namespace GuardsDigital.Tests.EditMode
                     }
                 }
 
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(projection);
                 if (legal.Count == 0)
                 {
                     break;

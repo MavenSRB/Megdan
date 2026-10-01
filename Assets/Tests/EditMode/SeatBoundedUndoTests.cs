@@ -726,7 +726,7 @@ namespace GuardsDigital.Tests.EditMode
                     return true;
                 }
 
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(host.Projection);
                 var seatProjection = host.ProjectionForSeat(acting.Id);
                 var command = legal.FirstOrDefault(candidate =>
                     seatProjection.AuthorizedCommands.Contains(candidate));

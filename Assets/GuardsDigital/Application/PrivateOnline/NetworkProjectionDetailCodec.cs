@@ -379,17 +379,19 @@ namespace GuardsDigital.Application
                 writer.Write(participant.HasStatement);
                 WriteOptional(writer, participant.PreferredCardInstanceId.IsDefined,
                     participant.PreferredCardInstanceId.Value);
-                writer.Write(participant.Agreed);
-            }
 
-            writer.Write(agreement.SelectedUnits.Count);
-            foreach (var unit in agreement.SelectedUnits)
-            {
-                WriteUnit(writer, unit);
+                // Milestone 9.29. Each participant's own picks - already empty in the projection a
+                // seat on the other side is served, so the wire carries only what that seat may read.
+                writer.Write(participant.Picks.Count);
+                foreach (var unit in participant.Picks)
+                {
+                    WriteUnit(writer, unit);
+                }
+
+                writer.Write(participant.PicksComplete);
             }
 
             writer.Write(agreement.RequiredSelectionCount);
-            writer.Write(agreement.SelectionIsConfirmable);
             writer.Write(agreement.AuthorizedCommands.Count);
             foreach (var statement in agreement.AuthorizedCommands)
             {
@@ -440,22 +442,17 @@ namespace GuardsDigital.Application
             {
                 var heroId = reader.ReadString();
                 var hasStatement = reader.ReadBoolean();
-                if (string.IsNullOrWhiteSpace(heroId) || !TryReadOptional(reader, out var preferred))
+                if (string.IsNullOrWhiteSpace(heroId) || !TryReadOptional(reader, out var preferred) ||
+                    !TryReadUnits(reader, out var picks))
                 {
                     return false;
                 }
 
                 participants.Add(new NetworkAgreementParticipantRow(
-                    heroId, hasStatement, preferred, reader.ReadBoolean()));
-            }
-
-            if (!TryReadUnits(reader, out var selectedUnits))
-            {
-                return false;
+                    heroId, hasStatement, preferred, picks, reader.ReadBoolean()));
             }
 
             var requiredCount = reader.ReadInt32();
-            var confirmable = reader.ReadBoolean();
             if (requiredCount < 0 || !TryReadCount(reader, out var statementCount))
             {
                 return false;
@@ -476,9 +473,7 @@ namespace GuardsDigital.Application
                 kind, proposalId, side,
                 Array.AsReadOnly(candidates.ToArray()),
                 Array.AsReadOnly(participants.ToArray()),
-                selectedUnits,
                 requiredCount,
-                confirmable,
                 Array.AsReadOnly(statements.ToArray()));
             return true;
         }
@@ -493,6 +488,11 @@ namespace GuardsDigital.Application
             writer.Write((int)statement.Kind);
             WriteOptional(writer, statement.PreferredCardInstanceId.IsDefined,
                 statement.PreferredCardInstanceId.Value);
+            writer.Write(statement.Unit.IsDefined);
+            if (statement.Unit.IsDefined)
+            {
+                WriteUnit(writer, statement.Unit);
+            }
         }
 
         internal static bool TryReadAgreementStatement(
@@ -506,32 +506,36 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            NetworkUnitRow unit = null;
+            if (reader.ReadBoolean() && !TryReadUnit(reader, out unit))
+            {
+                return false;
+            }
+
             var proposal = new TeamAgreementProposalId(proposalId);
             switch (kind)
             {
                 case (int)TeamAgreementCommandKind.PreferInitiativeCandidate:
-                    if (string.IsNullOrWhiteSpace(preferred))
+                    if (string.IsNullOrWhiteSpace(preferred) || unit != null)
                     {
                         return false;
                     }
 
                     statement = TeamAgreementCommand.Prefer(proposal, new CardInstanceId(preferred));
                     return true;
-                case (int)TeamAgreementCommandKind.AgreeToMinionBattleSelection:
-                    if (preferred != null)
+                case (int)TeamAgreementCommandKind.PickMinionBattleRemoval:
+                case (int)TeamAgreementCommandKind.UnpickMinionBattleRemoval:
+                    if (preferred != null || unit == null)
                     {
                         return false;
                     }
 
-                    statement = TeamAgreementCommand.Agree(proposal);
-                    return true;
-                case (int)TeamAgreementCommandKind.WithdrawMinionBattleAgreement:
-                    if (preferred != null)
-                    {
-                        return false;
-                    }
-
-                    statement = TeamAgreementCommand.Withdraw(proposal);
+                    var picked = unit.Kind == (int)RuleObjectKind.Hero
+                        ? RuleObject.ForHero(new GuardsDigital.Core.Units.Heroes.HeroId(unit.HeroId))
+                        : RuleObject.ForMinion(new MinionId(unit.MinionId));
+                    statement = kind == (int)TeamAgreementCommandKind.PickMinionBattleRemoval
+                        ? TeamAgreementCommand.Pick(proposal, picked)
+                        : TeamAgreementCommand.Unpick(proposal, picked);
                     return true;
                 default:
                     return false;

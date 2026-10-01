@@ -327,9 +327,7 @@ namespace GuardsDigital.Application
             int choosingSide,
             IReadOnlyList<NetworkAgreementCandidateRow> candidates,
             IReadOnlyList<NetworkAgreementParticipantRow> participants,
-            IReadOnlyList<NetworkUnitRow> selectedUnits,
             int requiredSelectionCount,
-            bool selectionIsConfirmable,
             IReadOnlyList<TeamAgreementCommand> authorizedStatements)
         {
             Kind = kind;
@@ -337,9 +335,7 @@ namespace GuardsDigital.Application
             ChoosingSide = choosingSide;
             Candidates = candidates;
             Participants = participants;
-            SelectedUnits = selectedUnits;
             RequiredSelectionCount = requiredSelectionCount;
-            SelectionIsConfirmable = selectionIsConfirmable;
             AuthorizedStatements = authorizedStatements;
         }
 
@@ -348,9 +344,7 @@ namespace GuardsDigital.Application
         public int ChoosingSide { get; }
         public IReadOnlyList<NetworkAgreementCandidateRow> Candidates { get; }
         public IReadOnlyList<NetworkAgreementParticipantRow> Participants { get; }
-        public IReadOnlyList<NetworkUnitRow> SelectedUnits { get; }
         public int RequiredSelectionCount { get; }
-        public bool SelectionIsConfirmable { get; }
 
         /// <summary>
         /// The statements this seat may submit, typed, so the client sends back the host's own
@@ -374,12 +368,17 @@ namespace GuardsDigital.Application
     public sealed class NetworkAgreementParticipantRow
     {
         public NetworkAgreementParticipantRow(
-            string heroId, bool hasStatement, string preferredCardInstanceId, bool agreed)
+            string heroId,
+            bool hasStatement,
+            string preferredCardInstanceId,
+            IReadOnlyList<NetworkUnitRow> picks,
+            bool picksComplete)
         {
             HeroId = heroId;
             HasStatement = hasStatement;
             PreferredCardInstanceId = preferredCardInstanceId;
-            Agreed = agreed;
+            Picks = picks ?? System.Array.Empty<NetworkUnitRow>();
+            PicksComplete = picksComplete;
         }
 
         public string HeroId { get; }
@@ -388,7 +387,10 @@ namespace GuardsDigital.Application
         /// <summary>Null until the participant has stated an Initiative preference.</summary>
         public string PreferredCardInstanceId { get; }
 
-        public bool Agreed { get; }
+        /// <summary>Milestone 9.29. This hero's own Minion Battle picks, oldest first; empty for the other side.</summary>
+        public IReadOnlyList<NetworkUnitRow> Picks { get; }
+
+        public bool PicksComplete { get; }
     }
 
     public sealed class NetworkCompletedRoundRow

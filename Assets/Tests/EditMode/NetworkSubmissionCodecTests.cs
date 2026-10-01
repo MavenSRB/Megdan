@@ -231,7 +231,9 @@ namespace GuardsDigital.Tests.EditMode
                 DirectorCommandKind.ChooseAttackTarget,
                 DirectorCommandKind.AnswerEffectChoice,
                 DirectorCommandKind.SelectMinionBattleRemoval,
-                DirectorCommandKind.ConfirmMinionBattleRemovals,
+                // Milestone 9.29: ConfirmMinionBattleRemovals left this floor. No seat's surface offers it
+                // any more - the host submits it once every seat's own picks match - so a sweep over
+                // offered commands cannot see it; the specimen case above still round-trips it.
                 DirectorCommandKind.AnswerSystemTransitionStep
             }), "This seeded walk has always offered these kinds; a sweep that no longer sees " +
                 "them is a broken sweep rather than a pass.");

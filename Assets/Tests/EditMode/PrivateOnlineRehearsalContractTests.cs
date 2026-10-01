@@ -262,19 +262,24 @@ namespace GuardsDigital.Tests.EditMode
             var answering = 0;
             foreach (var seat in host.Seats.Seats)
             {
-                var authorized = host.ProjectionForSeat(seat.Id).AuthorizedCommands;
+                var seatProjection = host.ProjectionForSeat(seat.Id);
+                var authorized = seatProjection.AuthorizedCommands;
+                // Milestone 9.29. A Minion Battle is answered through each seat's own picks, so an
+                // answer is a rules command OR an agreement statement this seat may make.
+                var answers = authorized.Count +
+                    (seatProjection.TeamAgreement?.AuthorizedCommands.Count ?? 0);
                 Assert.That(authorized.Any(command =>
                         command.Kind == DirectorCommandKind.AdvanceEndOfRound), Is.False,
                     seat.Id.Value + " was offered the round advance while a decision stands.");
                 if (seat.PlaysFor(owner.TeamSide))
                 {
-                    Assert.That(authorized.Count, Is.GreaterThan(0),
+                    Assert.That(answers, Is.GreaterThan(0),
                         seat.Id.Value + " plays for the owning side and holds no answer.");
                     answering++;
                 }
                 else
                 {
-                    Assert.That(authorized, Is.Empty,
+                    Assert.That(answers, Is.Zero,
                         seat.Id.Value + " does not play for the owning side and holds an answer.");
                 }
             }
@@ -491,7 +496,7 @@ namespace GuardsDigital.Tests.EditMode
 
             while (consumed <= limit + 1)
             {
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(host.Projection);
                 Assert.That(legal.Count, Is.GreaterThan(0),
                     value.Id + ": the walk ended before the window could be filled.");
                 var command = legal[random.Next(legal.Count)];

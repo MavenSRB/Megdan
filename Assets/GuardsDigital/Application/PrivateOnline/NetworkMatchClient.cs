@@ -613,7 +613,7 @@ namespace GuardsDigital.Application
         private NetworkProjectionDetailRecord Detail => actionable ? PublicDetail : null;
 
         public TeamAgreementProjection TeamAgreement =>
-            ToAgreement(PublicDetail?.TeamAgreement, actionable);
+            ToAgreement(PublicDetail?.TeamAgreement, actionable, wire?.HeroId);
         public PendingDecisionContract DecisionContract
         {
             get
@@ -1226,7 +1226,8 @@ namespace GuardsDigital.Application
 
         private static TeamAgreementProjection ToAgreement(
             NetworkTeamAgreementRow row,
-            bool includeCommands)
+            bool includeCommands,
+            string viewerHeroId)
         {
             if (row == null) return null;
             return new TeamAgreementProjection(
@@ -1238,13 +1239,14 @@ namespace GuardsDigital.Application
                 row.Participants.Select(value => new TeamAgreementParticipantProjection(
                     new HeroId(value.HeroId), value.HasStatement,
                     value.PreferredCardInstanceId == null ? default :
-                        new CardInstanceId(value.PreferredCardInstanceId), value.Agreed)),
-                row.SelectedUnits.Select(ToUnit),
+                        new CardInstanceId(value.PreferredCardInstanceId),
+                    value.Picks.Select(ToUnit),
+                    value.PicksComplete)),
                 row.RequiredSelectionCount,
-                row.SelectionIsConfirmable,
                 includeCommands
                     ? row.AuthorizedStatements
-                    : Array.Empty<TeamAgreementCommand>());
+                    : Array.Empty<TeamAgreementCommand>(),
+                string.IsNullOrWhiteSpace(viewerHeroId) ? default : new HeroId(viewerHeroId));
         }
 
         private static Core.Rules.Modifications.RuleObject ToUnit(NetworkUnitRow row) =>

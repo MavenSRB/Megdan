@@ -172,29 +172,35 @@ namespace GuardsDigital.Application.Bots
                     statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
                         value.Kind == TeamAgreementCommandKind.PreferInitiativeCandidate &&
                         value.PreferredCardInstanceId.Equals(agreement.Candidates[0].CardInstanceId));
-                else if (agreement.Kind == TeamAgreementKind.MinionBattle && !own.Agreed)
-                    statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
-                        value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                else if (agreement.Kind == TeamAgreementKind.MinionBattle)
+                    // Milestone 9.29. Every fleet bot is a bot; any other choosing seat is a human
+                    // whose picks the bots copy.
+                    statement = MinionBattlePickPolicy.NextStatement(agreement, hero, IsFleetHero);
                 if (statement != null) return machine.TrySubmitAgreement(statement, out _);
             }
             var version = machine.LatestProjection.Version;
             if (version != bot.RefusedVersion) { bot.Refused.Clear(); bot.RefusedVersion = version; }
             var commands = machine.LatestProjection.AuthorizedCommands.Where(command => !bot.Refused.Contains(command)).ToArray();
             if (commands.Length == 0) return false;
-            // Minion selection must precede team agreement. Effect confirmations are scored by the
-            // tactical policy: blindly confirming was one source of repeated ineffective Skills.
-            DirectorCommand selected = null;
-            if (projection.PendingMinionBattleChoice != null)
-                selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.SelectMinionBattleRemoval);
-            // The tactical policy scores only this owner's published choices. Deliberately omit
-            // lookahead: a lobby bot must not borrow the host's hidden hands or commitments.
-            selected = selected ?? BotPolicy.SelectPrivateSessionTactics(commands, projection, hero, random)
+            // Effect confirmations are scored by the tactical policy: blindly confirming was one
+            // source of repeated ineffective Skills. The tactical policy scores only this owner's
+            // published choices. Deliberately omit lookahead: a lobby bot must not borrow the host's
+            // hidden hands or commitments.
+            var selected = BotPolicy.SelectPrivateSessionTactics(commands, projection, hero, random)
                 ?? commands[random.Next(commands.Length)];
             if (!machine.TrySubmitCommand(selected, out var submission)) return false;
             bot.PendingCommand = selected;
             bot.PendingSubmission = submission;
             return true;
         }
+
+        /// <summary>
+        /// Milestone 9.29. Whether a hero is played by one of this fleet's bots, read from each
+        /// bot's own latest grant because the admission hero is not the drafted one.
+        /// </summary>
+        private bool IsFleetHero(HeroId hero) =>
+            bots.Any(value => !value.Closed && value.Machine?.LatestProjection != null &&
+                hero.Equals(new HeroId(value.Machine.LatestProjection.HeroId)));
 
         private void ObserveResult(Bot bot)
         {

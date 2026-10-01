@@ -6,6 +6,8 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -905,298 +907,203 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The second check's Minion Battle half: agreement follows the exact standing proposal,
-        /// withdrawing is a statement like any other, and a selection change invalidates every
-        /// recorded agreement. A stale statement cannot apply to a changed removal set, while
-        /// revised unanimity confirms exactly once and removes the revised units in rules order.
+        /// The second check's Minion Battle half, as milestone 9.29 left it: each choosing seat's
+        /// picks travel the wire as its own statements, every teammate sees them and the other side
+        /// sees none, one seat's pick never moves another's, two complete different sets remove
+        /// nothing, and the pick that makes every set match removes the minions exactly once, in
+        /// rules order, through the existing Selects and Confirm.
         /// </summary>
         [Test]
-        public void MinionBattleAgreement_TracksTheStandingProposal_AndAChangeInvalidatesIt()
+        public void MinionBattlePicks_StayEachSeatsOwnOverTheWire_AndMatchingPicksRemoveInRulesOrder()
         {
             var harness = PrivateOnlineWireHarness.Compose();
             harness.SeatAll();
-            // Milestone 8.35g re-derived the seed offline over seeds 1-16: seed 3 reaches no
-            // confirmable Minion Battle inside 2,400 steps once the release moves the trajectory.
-            // Seed 6 reaches one at step 401 - the earliest of the nine that reach one at all.
-            //
-            // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
-            // rerouted this trajectory and seed 6 no longer reaches a confirmable Minion Battle
-            // inside 1,200 steps. A fresh offline scan put every walked family on SEED 22
-            // (entering minion-battle at step 319), confirmed here to also reach CanConfirm well
-            // Milestone 8.46b re-derived it again. A choice admitting exactly one selection is now
-            // answered in ONE accepted command instead of two, so every seeded trajectory past the
-            // first such answer is a different match and seed 22 stopped reaching attack-target and
-            // minion-battle at all inside 1,800 steps. A fresh offline scan of seeds 1-30 put every
-            // walked family on SEED 29, the last of them (minion-battle) at step 558.
-            // inside this budget.
+            // Seed 29 enters its first Minion Battle at step 558 (the 8.46b re-derivation, recorded
+            // where this walk's other users keep it). The authority's own selection now stays empty
+            // until every pick matches, so the stop condition is the battle standing at all.
             harness.DriveThroughWire(1200, projection =>
-                projection.PendingMinionBattleChoice != null &&
-                projection.PendingMinionBattleChoice.CanConfirm, seed: 29);
+                projection.PendingMinionBattleChoice != null, seed: 29);
             var choice = harness.MatchHost.Projection.PendingMinionBattleChoice;
-            Assert.That(choice, Is.Not.Null,
-                "The deterministic walk must reach a confirmable Minion Battle selection.");
+            Assert.That(choice, Is.Not.Null, "The deterministic walk must reach a Minion Battle.");
             harness.AssertConverged();
 
             var choosers = harness.MatchHost.Seats.Seats
                 .Where(seat => seat.PlaysFor(choice.ChoosingSide))
                 .ToArray();
-            Assert.That(choosers, Has.Length.GreaterThanOrEqualTo(2));
-            var firstClient = harness.Client(harness.OrdinalOf(choosers[0].Id.Value));
-            var proposalBefore = firstClient.LatestProjection.Detail.TeamAgreement.ProposalId;
-            var initialSelected = choice.SelectedUnits.ToArray();
-            Assert.That(initialSelected, Has.Length.EqualTo(choice.RequiredRemovalCount));
-            var statementVersion = harness.MatchHost.Version;
-            var statementSequence = harness.MatchHost.Sequence;
-            var statementAcceptedCount = harness.MatchHost.Projection.AcceptedCommands.Count;
-
-            // One teammate agrees; every seat sees it, nothing is submitted.
-            var agree = firstClient.LatestProjection.Detail.TeamAgreement.AuthorizedStatements
-                .Single(value => value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-            Assert.That(firstClient.TrySubmitAgreement(agree, out _), Is.True);
-            harness.Pump();
-            Assert.That(firstClient.LastAgreementResult.Accepted, Is.True,
-                firstClient.LastAgreementResult.Detail);
-            Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Not.Null,
-                "One agreement is not unanimity.");
-            harness.AssertConverged();
-            Assert.That(harness.MatchHost.Version, Is.EqualTo(statementVersion));
-            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(statementSequence));
-            Assert.That(harness.MatchHost.Projection.AcceptedCommands.Count,
-                Is.EqualTo(statementAcceptedCount));
-            for (var ordinal = 1; ordinal <= 6; ordinal++)
-            {
-                var participants = harness.Client(ordinal).LatestProjection.Detail.TeamAgreement
-                    .Participants;
-                Assert.That(participants.Single(row => row.HeroId == choosers[0].HeroId.Value)
-                    .Agreed, Is.True, "The partial agreement is public to every seat.");
-                Assert.That(participants.Where(row => row.HeroId != choosers[0].HeroId.Value)
-                    .All(row => !row.Agreed), Is.True,
-                    "One teammate's statement is not mistaken for team unanimity.");
-            }
-
-            // The agreed teammate may withdraw - and does, through the same public surface.
-            var withdraw = firstClient.LatestProjection.Detail.TeamAgreement.AuthorizedStatements
-                .Single(value => value.Kind == TeamAgreementCommandKind.WithdrawMinionBattleAgreement);
-            Assert.That(firstClient.TrySubmitAgreement(withdraw, out _), Is.True);
-            harness.Pump();
-            Assert.That(firstClient.LastAgreementResult.Accepted, Is.True);
-            harness.AssertConverged();
-            Assert.That(harness.MatchHost.Version, Is.EqualTo(statementVersion));
-            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(statementSequence));
-            for (var ordinal = 1; ordinal <= 6; ordinal++)
-            {
-                Assert.That(harness.Client(ordinal).LatestProjection.Detail.TeamAgreement
-                    .Participants.All(row => !row.HasStatement && !row.Agreed), Is.True,
-                    "Withdrawal clears the public standing statement without changing rules state.");
-            }
-
-            // Agree again, then change the selection: the proposal identity moves, the recorded
-            // agreement clears, and a statement naming the old proposal is refused as stale.
-            var reAgree = firstClient.LatestProjection.Detail.TeamAgreement.AuthorizedStatements
-                .Single(value => value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-            Assert.That(firstClient.TrySubmitAgreement(reAgree, out _), Is.True);
-            harness.Pump();
-            Assert.That(firstClient.LastAgreementResult.Accepted, Is.True);
-            Assert.That(harness.MatchHost.Version, Is.EqualTo(statementVersion));
-            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(statementSequence));
-
-            var teamClient = harness.Client(harness.OrdinalOf(choosers[1].Id.Value));
-            var exchanges = choice.LegalDeselectUnits.Select(removed =>
-                {
-                    var reduced = choice.WithSelected(
-                        choice.SelectedUnits.Where(unit => !unit.Equals(removed)));
-                    var replacement = reduced.LegalSelectUnits.FirstOrDefault(unit =>
-                        !initialSelected.Contains(unit));
-                    return new
-                    {
-                        Removed = removed,
-                        Replacement = replacement,
-                        Revised = replacement.IsDefined
-                            ? reduced.SelectedUnits.Concat(new[] { replacement }).ToArray()
-                            : Array.Empty<RuleObject>()
-                    };
-                })
-                .Where(value => value.Replacement.IsDefined)
-                .OrderBy(value => value.Revised.All(unit => unit.Kind == RuleObjectKind.Minion)
-                    ? 0
-                    : 1)
-                .ToArray();
-            Assert.That(exchanges, Is.Not.Empty,
-                "The deterministic choice must expose a legal one-for-one change, not only undo/redo.");
-            var exchange = exchanges[0];
-            var deselect = teamClient.LatestProjection.AuthorizedCommands.FirstOrDefault(command =>
-                command.Kind == DirectorCommandKind.DeselectMinionBattleRemoval &&
-                CommandNamesUnit(command, exchange.Removed));
-            Assert.That(deselect, Is.Not.Null,
-                "A confirmable selection offers the chosen team member the exact deselect.");
-            Assert.That(teamClient.TrySubmitCommand(deselect, out _), Is.True);
-            harness.Pump();
-            Assert.That(teamClient.LastSubmissionResult.Accepted, Is.True,
-                teamClient.LastSubmissionResult.Detail);
-            harness.AssertConverged();
-
-            var afterDeselect = harness.MatchHost.Projection.PendingMinionBattleChoice;
-            Assert.That(afterDeselect, Is.Not.Null);
-            Assert.That(afterDeselect.SelectedUnits,
-                Is.EquivalentTo(initialSelected.Where(unit => !unit.Equals(exchange.Removed))));
-            Assert.That(afterDeselect.CanConfirm, Is.False);
-            var proposalAfterDeselect = teamClient.LatestProjection.Detail.TeamAgreement?.ProposalId;
-            Assert.That(proposalAfterDeselect, Is.Not.Null);
-            Assert.That(proposalAfterDeselect, Is.Not.EqualTo(proposalBefore),
-                "A changed removal set is a different proposal.");
-            for (var ordinal = 1; ordinal <= 6; ordinal++)
-            {
-                var agreement = harness.Client(ordinal).LatestProjection.Detail.TeamAgreement;
-                Assert.That(agreement.Participants.All(row => !row.HasStatement && !row.Agreed),
-                    Is.True, "No recorded statement survives a changed selection.");
-            }
-
-            // The stale statement, replayed against the old proposal, cannot manufacture
-            // agreement on the new one.
-            var versionAfterDeselect = harness.MatchHost.Version;
-            var sequenceAfterDeselect = harness.MatchHost.Sequence;
-            Assert.That(firstClient.TrySubmitAgreement(reAgree, out _), Is.True);
-            harness.Pump();
-            Assert.That(firstClient.LastAgreementResult.Accepted, Is.False);
-            Assert.That(firstClient.LastAgreementResult.RejectionReason,
-                Is.EqualTo(TeamAgreementSubmissionRejectionReason.StaleProposal));
-            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionAfterDeselect));
-            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceAfterDeselect));
-            harness.AssertConverged();
-
-            // Replace the deselected unit with a genuinely different legal candidate. This makes
-            // the selection confirmable again without reverting to the proposal first agreed to.
-            var selectReplacement = teamClient.LatestProjection.AuthorizedCommands
-                .FirstOrDefault(command =>
-                    command.Kind == DirectorCommandKind.SelectMinionBattleRemoval &&
-                    CommandNamesUnit(command, exchange.Replacement));
-            Assert.That(selectReplacement, Is.Not.Null,
-                "The changed proposal offers the pre-checked replacement through the wire.");
-            Assert.That(teamClient.TrySubmitCommand(selectReplacement, out _), Is.True);
-            harness.Pump();
-            Assert.That(teamClient.LastSubmissionResult.Accepted, Is.True,
-                teamClient.LastSubmissionResult.Detail);
-            harness.AssertConverged();
-
-            var revisedChoice = harness.MatchHost.Projection.PendingMinionBattleChoice;
-            Assert.That(revisedChoice, Is.Not.Null);
-            Assert.That(revisedChoice.CanConfirm, Is.True);
-            Assert.That(revisedChoice.SelectedUnits, Is.EquivalentTo(exchange.Revised));
-            Assert.That(revisedChoice.SelectedUnits, Is.Not.EquivalentTo(initialSelected),
-                "The revised confirmable proposal must differ in unit identity, not just version.");
-            Assert.That(revisedChoice.SelectedUnits.All(unit =>
-                    unit.Kind == RuleObjectKind.Minion),
-                Is.True,
-                "This deterministic fixture must expose concrete miniature removal and ordering.");
-            var revisedProposal = teamClient.LatestProjection.Detail.TeamAgreement.ProposalId;
-            Assert.That(revisedProposal, Is.Not.EqualTo(proposalBefore));
-            Assert.That(revisedProposal, Is.Not.EqualTo(proposalAfterDeselect));
-            for (var ordinal = 1; ordinal <= 6; ordinal++)
-            {
-                var agreement = harness.Client(ordinal).LatestProjection.Detail.TeamAgreement;
-                Assert.That(agreement.SelectionIsConfirmable, Is.True);
-                Assert.That(agreement.Participants.All(row => !row.HasStatement && !row.Agreed),
-                    Is.True, "The revised proposal starts with no inherited statements.");
-            }
-
-            var expectedRemovalOrder = revisedChoice.SelectedUnits
-                .OrderBy(unit => revisedChoice.Candidates.Single(candidate =>
-                    candidate.Unit.Equals(unit)).IsHeavy ? 1 : 0)
-                .ThenBy(unit => unit.Kind)
-                .ThenBy(UnitIdentity, StringComparer.Ordinal)
-                .Select(unit => unit.MinionId)
-                .ToArray();
-            var minionsBeforeConfirmation = harness.MatchHost.Projection.Minions.Count;
-            var roundEventsBeforeConfirmation = harness.MatchHost.Projection.RoundEvents.Count;
-            var versionBeforeConfirmation = harness.MatchHost.Version;
-            var sequenceBeforeConfirmation = harness.MatchHost.Sequence;
-            var commandsBeforeConfirmation = harness.MatchHost.Projection.AcceptedCommands.Count;
-            var expectedConfirm = harness.MatchHost.Projection.DecisionContract.Commands.Single(command =>
-                command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals);
+            Assert.That(choosers, Has.Length.GreaterThanOrEqualTo(3));
+            var required = choice.RequiredRemovalCount;
+            var versionBefore = harness.MatchHost.Version;
+            var sequenceBefore = harness.MatchHost.Sequence;
+            var commandsBefore = harness.MatchHost.Projection.AcceptedCommands.Count;
+            var minionsBefore = harness.MatchHost.Projection.Minions.Count;
+            var roundEventsBefore = harness.MatchHost.Projection.RoundEvents.Count;
             harness.Session.DrainEvents();
+            var statements = 0;
 
-            // Revised unanimity is public one statement at a time. Every partial prefix leaves the
-            // rules state standing; the last statement performs exactly one final confirmation.
-            for (var index = 0; index < choosers.Length; index++)
+            // The first choosing seat picks; nothing reaches the authority.
+            var leader = ClientOf(harness, choosers[0]);
+            while (OwnPicks(leader, choosers[0]).Length < required)
             {
-                var client = harness.Client(harness.OrdinalOf(choosers[index].Id.Value));
-                var revisedAgreement = client.LatestProjection.Detail.TeamAgreement;
-                var revisedAgree = revisedAgreement.AuthorizedStatements.Single(value =>
-                    value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-                Assert.That(client.TrySubmitAgreement(revisedAgree, out _), Is.True);
-                harness.Pump();
-                Assert.That(client.LastAgreementResult.Accepted, Is.True,
-                    client.LastAgreementResult.Detail);
-                harness.AssertConverged();
+                PickOverTheWire(harness, leader, leader.LatestProjection.Detail.TeamAgreement
+                    .AuthorizedStatements.First(value =>
+                        value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval));
+                statements++;
+            }
 
-                if (index + 1 < choosers.Length)
+            var leaderPicks = OwnPicks(leader, choosers[0]);
+            harness.AssertConverged();
+            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBefore), "A pick is a statement.");
+            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceBefore));
+            Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice.SelectedUnits, Is.Empty);
+            for (var ordinal = 1; ordinal <= 6; ordinal++)
+            {
+                var seat = harness.MatchHost.Seats.Seats.Single(value =>
+                    harness.OrdinalOf(value.Id.Value) == ordinal);
+                var rows = harness.Client(ordinal).LatestProjection.Detail.TeamAgreement.Participants;
+                if (seat.PlaysFor(choice.ChoosingSide))
                 {
-                    Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBeforeConfirmation));
-                    Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceBeforeConfirmation));
-                    Assert.That(harness.MatchHost.Projection.AcceptedCommands.Count,
-                        Is.EqualTo(commandsBeforeConfirmation));
-                    Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Not.Null);
-                    for (var ordinal = 1; ordinal <= 6; ordinal++)
-                    {
-                        var publicRows = harness.Client(ordinal).LatestProjection.Detail.TeamAgreement
-                            .Participants;
-                        Assert.That(publicRows.Single(row =>
-                            row.HeroId == choosers[index].HeroId.Value).Agreed, Is.True,
-                            "Every partial revised statement is public to every seat.");
-                    }
+                    Assert.That(rows.Single(row => row.HeroId == choosers[0].HeroId.Value).Picks
+                            .Select(ToUnit), Is.EqualTo(leaderPicks),
+                        "Every teammate's wire record carries what the first seat picked.");
+                    Assert.That(rows.Where(row => row.HeroId != choosers[0].HeroId.Value)
+                        .All(row => row.Picks.Count == 0), Is.True,
+                        "One seat's picks never move a teammate's.");
+                }
+                else
+                {
+                    Assert.That(rows.All(row => row.Picks.Count == 0 && !row.PicksComplete), Is.True,
+                        "The other side's wire record carries no picks at all.");
+                    Assert.That(harness.Client(ordinal).LatestProjection.Detail.TeamAgreement
+                        .AuthorizedStatements, Is.Empty);
                 }
             }
 
-            // Milestone 8.35d. The unanimous statement still performs exactly one final rules
-            // choice, and what follows it in the stream is the seat-serving host running the rest
-            // of rulebook p.8 by itself - confirming the Minion Battle completes that stage.
-            // Asserted as the exact appended shape rather than as a count, so a second
-            // confirmation would still fail here.
-            var appended = harness.MatchHost.Projection.AcceptedCommands
-                .Skip(commandsBeforeConfirmation)
+            // The second picks a different complete set: two complete sets that differ remove nothing,
+            // and the first seat's own picks stay exactly what it chose.
+            var second = ClientOf(harness, choosers[1]);
+            var other = second.LatestProjection.Detail.TeamAgreement.AuthorizedStatements.First(value =>
+                value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                !leaderPicks.Contains(value.Unit)).Unit;
+            statements += PickSetOverTheWire(
+                harness, second, choosers[1], leaderPicks.Skip(1).Concat(new[] { other }).ToArray());
+            harness.AssertConverged();
+            Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Not.Null,
+                "Two complete, different sets remove nothing.");
+            Assert.That(OwnPicks(leader, choosers[0]), Is.EqualTo(leaderPicks),
+                "A teammate's different picks leave this seat's own exactly as it made them.");
+            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBefore));
+
+            // Everyone matches the first seat; the last matching pick removes the minions.
+            var expectedRemovalOrder = leaderPicks
+                .OrderBy(unit => choice.Candidates.Single(candidate =>
+                    candidate.Unit.Equals(unit)).IsHeavy ? 1 : 0)
+                .ThenBy(unit => unit.Kind)
+                .ThenBy(UnitIdentity, StringComparer.Ordinal)
+                .Where(unit => unit.Kind == RuleObjectKind.Minion)
+                .Select(unit => unit.MinionId)
                 .ToArray();
-            Assert.That(appended.First(), Is.EqualTo(expectedConfirm));
-            Assert.That(appended.Skip(1).All(command =>
-                    command.Kind == DirectorCommandKind.AdvanceEndOfRound), Is.True,
-                "Only the host's own end-of-round continuation follows the confirmation.");
+            for (var index = 1; index < choosers.Length; index++)
+            {
+                statements += PickSetOverTheWire(
+                    harness, ClientOf(harness, choosers[index]), choosers[index], leaderPicks);
+                harness.AssertConverged();
+                if (index + 1 < choosers.Length)
+                {
+                    Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Not.Null);
+                    Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBefore));
+                }
+            }
+
+            var appended = harness.MatchHost.Projection.AcceptedCommands.Skip(commandsBefore).ToArray();
+            Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Null);
+            Assert.That(appended.Take(required).All(command =>
+                command.Kind == DirectorCommandKind.SelectMinionBattleRemoval), Is.True,
+                "The host carries the agreed set in through the existing Selects.");
+            Assert.That(appended[required].Kind, Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
             Assert.That(appended.Count(command =>
                     command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals),
                 Is.EqualTo(1), "The final rules choice reaches the authority exactly once.");
-            Assert.That(harness.MatchHost.Version,
-                Is.EqualTo(versionBeforeConfirmation + appended.Length));
-            Assert.That(harness.MatchHost.Sequence,
-                Is.EqualTo(sequenceBeforeConfirmation + appended.Length));
-            Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Null);
+            Assert.That(appended.Skip(required + 1).All(command =>
+                    command.Kind == DirectorCommandKind.AdvanceEndOfRound), Is.True,
+                "Only the host's own end-of-round continuation follows the confirmation.");
+            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBefore + appended.Length));
+            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceBefore + appended.Length));
             Assert.That(harness.Session.DrainEvents().Count(record =>
                     record.Kind == PrivateSessionEventKind.AgreementAccepted),
-                Is.EqualTo(choosers.Length),
-                "Exactly the revised team's statements were accepted; the final was not duplicated.");
+                Is.EqualTo(statements), "Every pick was one accepted statement, and nothing else was.");
 
-            var confirmationEvents = harness.MatchHost.Projection.RoundEvents
-                .Skip(roundEventsBeforeConfirmation)
+            var removals = harness.MatchHost.Projection.RoundEvents
+                .Skip(roundEventsBefore)
+                .Where(value => value.Kind == RoundResolutionEventKind.MinionBattleMinionRemoved)
                 .ToArray();
-            var removals = confirmationEvents.Where(value =>
-                    value.Kind == RoundResolutionEventKind.MinionBattleMinionRemoved)
-                .ToArray();
-            Assert.That(removals.Select(value => value.MinionId),
-                Is.EqualTo(expectedRemovalOrder),
-                "The confirmed revised proposal is removed in non-Heavy/Heavy, identity order.");
+            Assert.That(removals.Select(value => value.MinionId), Is.EqualTo(expectedRemovalOrder),
+                "The agreed set is removed in non-Heavy/Heavy, identity order.");
             Assert.That(harness.MatchHost.Projection.Minions.Count,
-                Is.EqualTo(minionsBeforeConfirmation - expectedRemovalOrder.Length));
+                Is.EqualTo(minionsBefore - expectedRemovalOrder.Length));
             foreach (var removed in expectedRemovalOrder)
             {
-                Assert.That(harness.MatchHost.Projection.Minions.Any(minion =>
-                    minion.MinionId.Equals(removed)), Is.False,
-                    "The removal event must describe a miniature that actually left the board.");
                 for (var ordinal = 1; ordinal <= 6; ordinal++)
                 {
                     Assert.That(harness.Client(ordinal).LatestProjection.Minions.Any(minion =>
                         minion.MinionId == removed.Value), Is.False,
-                        "Every client receives the revised removal result.");
+                        "Every client receives the removal result.");
                 }
             }
 
             harness.AssertConverged();
+        }
+
+        private static PrivateSessionClient ClientOf(PrivateOnlineWireHarness harness, MatchSeat seat) =>
+            harness.Client(harness.OrdinalOf(seat.Id.Value));
+
+        private static RuleObject[] OwnPicks(PrivateSessionClient client, MatchSeat seat) =>
+            client.LatestProjection.Detail.TeamAgreement.Participants
+                .Single(row => row.HeroId == seat.HeroId.Value).Picks
+                .Select(ToUnit)
+                .ToArray();
+
+        private static RuleObject ToUnit(NetworkUnitRow row) =>
+            row.Kind == (int)RuleObjectKind.Hero
+                ? RuleObject.ForHero(new HeroId(row.HeroId))
+                : RuleObject.ForMinion(new MinionId(row.MinionId));
+
+        private static void PickOverTheWire(
+            PrivateOnlineWireHarness harness, PrivateSessionClient client, TeamAgreementCommand statement)
+        {
+            Assert.That(client.TrySubmitAgreement(statement, out _), Is.True);
+            harness.Pump();
+            Assert.That(client.LastAgreementResult.Accepted, Is.True, client.LastAgreementResult.Detail);
+        }
+
+        private static int PickSetOverTheWire(
+            PrivateOnlineWireHarness harness,
+            PrivateSessionClient client,
+            MatchSeat seat,
+            IReadOnlyList<RuleObject> units)
+        {
+            var sent = 0;
+            while (harness.MatchHost.Projection.PendingMinionBattleChoice != null)
+            {
+                var own = OwnPicks(client, seat);
+                if (own.Length == units.Count && own.All(units.Contains))
+                    break;
+                Assert.That(sent, Is.LessThan((units.Count * 2) + 4), "Picking did not converge.");
+                var offered = client.LatestProjection.Detail.TeamAgreement.AuthorizedStatements;
+                var statement = own.Where(unit => !units.Contains(unit))
+                        .Select(unit => offered.FirstOrDefault(value =>
+                            value.Kind == TeamAgreementCommandKind.UnpickMinionBattleRemoval &&
+                            value.Unit.Equals(unit)))
+                        .FirstOrDefault(value => value != null) ??
+                    units.Where(unit => !own.Contains(unit))
+                        .Select(unit => offered.First(value =>
+                            value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                            value.Unit.Equals(unit)))
+                        .First();
+                PickOverTheWire(harness, client, statement);
+                sent++;
+            }
+
+            return sent;
         }
 
         /// <summary>
@@ -1259,7 +1166,7 @@ namespace GuardsDigital.Tests.EditMode
             var submitted = 0;
             while (submitted < 1500)
             {
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(host.Projection);
                 if (legal.Count == 0)
                 {
                     break;
@@ -1297,11 +1204,6 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(PrivateSessionProtocol.SubmissionIdempotencyWindowEntries),
                 "The host's retained-identity window is the protocol constant, not a second number.");
         }
-
-        private static bool CommandNamesUnit(DirectorCommand command, RuleObject unit) =>
-            unit.Kind == RuleObjectKind.Hero
-                ? command.HeroId.Equals(unit.HeroId)
-                : command.MinionId.Equals(unit.MinionId);
 
         private static string UnitIdentity(RuleObject unit) =>
             unit.Kind == RuleObjectKind.Hero

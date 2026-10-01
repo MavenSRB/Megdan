@@ -587,14 +587,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35e, at the element level. The Minion Battle's public stage is drawn for a
-        /// seat that owns none of it: the prompt, the counts and the choosing side's public standing,
-        /// and not one control. The view needed no change for this - milestone 8.11a already moved
-        /// every candidate onto the board - so what this pins is that the stage reaches the element
-        /// tree at all, which is what the ArgumentException prevented.
+        /// Milestone 8.35e at the element level, as milestone 9.29 leaves it. The side that is not
+        /// choosing a Minion Battle removal is told so on the status line and draws no prompt at all:
+        /// which minions a team is weighing up is that team's conversation. What this still pins is
+        /// that the observing seat's presenter renders the state without the ArgumentException 8.35e
+        /// found.
         /// </summary>
         [Test]
-        public void TheMinionBattlesPublicStageIsDrawnForAnObservingSeatWithNoControls()
+        public void TheMinionBattleIsDrawnForAnObservingSeatAsNothingToAnswer()
         {
             var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
             var choosingSide = host.Projection.PendingMinionBattleChoice.ChoosingSide;
@@ -602,18 +602,13 @@ namespace GuardsDigital.Tests.EditMode
             var client = new SeatMatchClient(host.ClientForSeat(observer.Id));
             var view = new MinionChoiceUnityView();
 
-            new MinionChoicePresenter(client, view).Refresh();
+            Assert.DoesNotThrow(() => new MinionChoicePresenter(client, view).Refresh());
 
-            Assert.That(view.Model, Is.Not.Null,
-                "The battle is public; the side that is not choosing reads it and answers nothing.");
-            Assert.That(view.Model.IsPublicAgreementStage, Is.True);
-            Assert.That(view.Root.style.display.value, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(Labels(view.Root), Does.Contain(view.Model.PromptLabel));
-            Assert.That(Labels(view.Root), Does.Contain(view.Model.StatusLabel));
-            Assert.That(Labels(view.Root), Does.Contain(view.Model.SectionLabel));
-            Assert.That(Descendants(view.Root).OfType<Button>().Any(), Is.False,
-                "An observing seat is drawn the stage and no control of any kind - no confirm, no " +
-                "agreement statement, and no candidate.");
+            Assert.That(view.Model, Is.Null,
+                "The other side answers nothing and is shown nothing of the choosing team's picks.");
+            Assert.That(Descendants(view.Root).OfType<Label>().All(label => string.IsNullOrEmpty(label.text)),
+                Is.True, "Nothing is written for the other side.");
+            Assert.That(Descendants(view.Root).OfType<Button>().Any(), Is.False);
         }
 
         private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(

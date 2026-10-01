@@ -292,7 +292,11 @@ namespace GuardsDigital.Tests.EditMode
                 var standing = harness.MatchHost.Projection.DecisionContract;
                 Assert.That(standing, Is.Not.Null,
                     family + ": the answer moved nothing and left no decision to complete.");
-                harness.SubmitAgreementThroughWire(standing.Commands[0]);
+                // Milestone 9.29: a Minion Battle moves only once every choosing seat's picks match.
+                if (standing.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))
+                    harness.CompleteMinionBattleThroughWire();
+                else
+                    harness.SubmitAgreementThroughWire(standing.Commands[0]);
             }
 
             var movedVersion = harness.MatchHost.Version;
@@ -360,7 +364,7 @@ namespace GuardsDigital.Tests.EditMode
                 answers.AddRange(agreement.AuthorizedStatements
                     .Select(statement => "statement:" + statement.Kind + ":" +
                         statement.ProposalId.Value + ":" +
-                        statement.PreferredCardInstanceId.Value));
+                        statement.PreferredCardInstanceId.Value + ":" + statement.Unit));
             }
 
             return answers;

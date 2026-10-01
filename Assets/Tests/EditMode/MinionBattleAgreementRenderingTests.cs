@@ -33,18 +33,23 @@ namespace GuardsDigital.Tests.EditMode
     /// from that stage until the next round every seat holds five commitments naming a card its own
     /// projection may not carry. <c>Single</c> refused that absence and failed the whole refresh.</para>
     ///
+    /// <para>Milestone 9.29 replaced the shared selection and its public stage with each choosing
+    /// seat's own picks, so the first half now pins what replaced it: the other side draws nothing,
+    /// a choosing seat's press picks for that seat alone, and every reader of every version of the
+    /// battle still renders without an exception.</para>
+    ///
     /// <para>Unity-free on purpose - every view here is a capturing double - so the fixture states
     /// presenter behaviour rather than element layout.</para>
     /// </summary>
     public sealed class MinionBattleAgreementRenderingTests
     {
         /// <summary>
-        /// The non-choosing side, at every version of the battle from the first selection through
-        /// the unanimous agreement to the applied removal. It owns none of it, so every one of those
-        /// versions is a public-stage render, and before this milestone every one of them threw.
+        /// Milestone 9.29. The side that is not choosing, at every version of the battle from the
+        /// first pick to the applied removal. It is told the other side is choosing and nothing of
+        /// what: no prompt, no cue, no pick - and, as 8.35e required of every reader, no exception.
         /// </summary>
         [Test]
-        public void ANonChoosingSeatRendersEveryVersionOfTheBattleReadOnlyWithoutAnException()
+        public void ANonChoosingSeatDrawsNoPromptCueOrPickAtAnyVersionOfTheBattle()
         {
             var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
             var choosingSide = host.Projection.PendingMinionBattleChoice.ChoosingSide;
@@ -56,256 +61,164 @@ namespace GuardsDigital.Tests.EditMode
             {
                 surface.RefreshAll();
                 Assert.That(surface.Exceptions, Is.Empty, Describe(surface.Exceptions));
-                var model = surface.PromptModel;
-                Assert.That(model, Is.Not.Null,
-                    "The battle is public, so the seat that is not choosing still reads it.");
-                Assert.That(model.IsPublicAgreementStage, Is.True);
-                Assert.That(model.ResolutionId.IsDefined, Is.False,
-                    "A reader with no pending detail names no end-of-round identity.");
-                Assert.That(model.ChoiceId.IsDefined, Is.False);
-                Assert.That(model.Candidates, Is.Empty);
-                Assert.That(model.ConfirmInvocation, Is.Null);
-                Assert.That(model.Agreement, Is.Not.Null);
-                Assert.That(model.Agreement.Kind, Is.EqualTo(TeamAgreementKind.MinionBattle));
-                Assert.That(model.Agreement.Choices, Is.Empty,
-                    "The other side states nothing about this team's removal.");
-                Assert.That(model.ChoosingSide, Is.EqualTo(choosingSide));
-                Assert.That(model.StatusLabel, Is.EqualTo(
-                    "SELECTED " + model.SelectedCount + " OF " + model.RequiredRemovalCount));
+                Assert.That(surface.PromptModel, Is.Null,
+                    "The other side has nothing to answer and nothing of the picks to draw.");
+                Assert.That(surface.Board.Model.PieceTargetCues.Where(cue =>
+                        cue.ConsequenceIntent == BoardTargetConsequenceIntent.Removal), Is.Empty,
+                    "No minion of the choosing side is cued for the other side.");
+                Assert.That(surface.Board.Model.MinionBattlePicks, Is.Empty);
                 renders++;
             }
 
             Observe();
-            TeamAgreementTests.CompleteMinionSelection(host, "observer-select");
+            var choosers = TeamAgreementTests.ChoosingSeats(host);
+            var required = host.Projection.PendingMinionBattleChoice.RequiredRemovalCount;
+            var leaderPicks = TeamAgreementTests.PickFirstOffered(host, choosers[0], required, "observer-lead");
             Observe();
-            AgreeUnanimously(host, "observer-agree", Observe);
+            for (var index = 1; index < choosers.Length; index++)
+            {
+                TeamAgreementTests.PickSet(host, choosers[index], leaderPicks, "observer-" + index);
+                if (host.Projection.PendingMinionBattleChoice != null)
+                    Observe();
+            }
 
             Assert.That(host.Projection.PendingMinionBattleChoice, Is.Null,
-                "The unanimous agreement submitted the confirm and the removal was applied.");
-            Assert.That(renders, Is.GreaterThan(2),
-                "Only " + renders + " public-stage renders were observed, which is too few to " +
-                "cover selection, agreement and confirmation.");
-
-            // And afterwards the prompt is gone rather than stuck on the battle that ended.
+                "Matching picks removed the minions.");
+            Assert.That(renders, Is.GreaterThan(2));
             surface.RefreshAll();
             Assert.That(surface.Exceptions, Is.Empty, Describe(surface.Exceptions));
             Assert.That(surface.PromptModel, Is.Null);
         }
 
         /// <summary>
-        /// The choosing side's own public stage, which is the state its accepted press lands in: the
-        /// counts, the selected units the board cues, its own agreement statements, and no
-        /// fabricated identities. Then the statement it holds there is accepted by the host.
+        /// Milestone 9.29, over two real wire seats of the choosing side. A press picks for the seat
+        /// that pressed and for nobody else; the teammate's board draws that pick as SELECTED - the
+        /// full outline - with the picker's token on it, and still offers the teammate its own pick
+        /// of the same minion.
         /// </summary>
         [Test]
-        public void AChoosingSeatAtTheAgreementStageDrawsItsOwnStatementsAndIsAccepted()
+        public void AChoosingSeatsPressPicksForItAlone_AndItsTeammateSeesThePickWithItsToken()
         {
             var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
-            TeamAgreementTests.CompleteMinionSelection(host, "chooser-select");
             var choice = host.Projection.PendingMinionBattleChoice;
-            Assert.That(choice.CanConfirm, Is.True);
-            var selected = choice.SelectedUnits.ToArray();
-            Assert.That(selected, Is.Not.Empty);
-
             var harness = PrivateOnlineWireHarness.Compose(host);
             harness.SeatAll();
-            var chooser = host.Seats.Seats.First(seat => seat.PlaysFor(choice.ChoosingSide));
-            var surface = SeatSurface.ForWireSeat(harness, host, chooser);
+            var choosers = TeamAgreementTests.ChoosingSeats(host);
+            var leader = SeatSurface.ForWireSeat(harness, host, choosers[0]);
+            var teammate = SeatSurface.ForWireSeat(harness, host, choosers[1]);
+            leader.RefreshAll();
+            teammate.RefreshAll();
+            Assert.That(leader.Exceptions, Is.Empty, Describe(leader.Exceptions));
+            Assert.That(leader.PromptModel, Is.Not.Null);
+            Assert.That(leader.PromptModel.ConfirmInvocation, Is.Null, "Matching picks remove; no button.");
+            var candidate = leader.PromptModel.Candidates.First(value => !value.IsSelected);
+            Assert.That(candidate.AgreementCommand, Is.Not.Null,
+                "A seat's control is its own pick statement, never a rules command.");
+            Assert.That(candidate.Command, Is.Null);
+            var eligible = leader.Board.Model.PieceTargetCues.Where(cue =>
+                cue.ConsequenceIntent == BoardTargetConsequenceIntent.Removal).ToArray();
+            Assert.That(eligible.All(cue => cue.State == BoardTargetCueState.Eligible), Is.True,
+                "Before anyone picks, every pickable minion wears the corner marks and none the outline.");
 
-            // While it still owns the detail it holds both halves: the board candidates it may
-            // still revise, and the agreement it may state.
-            surface.RefreshAll();
-            Assert.That(surface.Exceptions, Is.Empty, Describe(surface.Exceptions));
-            Assert.That(surface.PromptModel.IsPublicAgreementStage, Is.False);
-            Assert.That(surface.PromptModel.ResolutionId.IsDefined, Is.True);
-            var statement = surface.PromptModel.Agreement.Choices.Single();
-
-            // The press. Its accepted result is the projection with the detail stripped and the
-            // public agreement standing, and refreshing from it is where the crash was entered.
-            var accepted = surface.Press(() => surface.Prompt.SubmitAgreement(statement));
-
-            Assert.That(surface.Exceptions, Is.Empty,
-                "The accepted press's own result refresh is one of the three entry paths the " +
-                "playtest logs recorded: " + Describe(surface.Exceptions));
-            Assert.That(accepted, Is.True);
-            var inFlight = surface.PromptModel;
-            Assert.That(surface.Client.Projection.IsInputEnabled, Is.False,
-                "The in-flight view is the one that carries the agreement and no pending detail.");
-            Assert.That(surface.Client.Projection.PendingMinionBattleChoice, Is.Null);
-            Assert.That(surface.Client.Projection.TeamAgreement, Is.Not.Null);
-            Assert.That(inFlight.IsPublicAgreementStage, Is.True);
-            Assert.That(inFlight.ResolutionId.IsDefined, Is.False);
-            Assert.That(inFlight.ChoiceId.IsDefined, Is.False);
-            Assert.That(inFlight.Candidates, Is.Empty);
-            Assert.That(inFlight.ConfirmInvocation, Is.Null);
-            Assert.That(inFlight.ChoosingTeamId,
-                Is.EqualTo(host.Projection.Participants.Teams
-                    .Single(team => team.Side == choice.ChoosingSide).Id));
-            Assert.That(inFlight.RequiredRemovalCount, Is.EqualTo(choice.RequiredRemovalCount));
-            Assert.That(inFlight.SelectedCount, Is.EqualTo(selected.Length));
-            Assert.That(inFlight.StatusLabel, Is.EqualTo(
-                "SELECTED " + selected.Length + " OF " + choice.RequiredRemovalCount));
-            Assert.That(inFlight.Agreement.Participants, Has.Count.EqualTo(3),
-                "The whole choosing side's public standing is what this stage reports.");
-
-            // The selected units are drawn where they stand, from the public agreement, so the
-            // stage shows what is about to be removed without naming a candidate control.
-            var cued = surface.Board.Model.PieceTargetCues
-                .Where(cue => cue.State == BoardTargetCueState.Selected)
-                .Select(cue => cue.Target)
-                .ToArray();
-            foreach (var unit in selected)
-            {
-                Assert.That(
-                    cued.Any(target => target.Equals(unit.Kind == RuleObjectKind.Hero
-                        ? BoardObjectReference.ForHero(unit.HeroId)
-                        : BoardObjectReference.ForMinion(unit.MinionId))),
-                    Is.True,
-                    "Every selected unit of the public agreement is cued where it stands.");
-            }
-
-            // And the statement really reached the authority.
+            Assert.That(leader.Press(() => leader.Prompt.Submit(candidate)), Is.True,
+                Describe(leader.Exceptions));
+            Assert.That(leader.Exceptions, Is.Empty,
+                "The in-flight refresh is one of 8.35e's entry paths: " + Describe(leader.Exceptions));
             harness.Pump();
-            var client = harness.Client(harness.OrdinalOf(chooser.Id.Value));
-            Assert.That(client.LastAgreementResult, Is.Not.Null);
-            Assert.That(client.LastAgreementResult.Accepted, Is.True,
-                client.LastAgreementResult.Detail);
-            Assert.That(host.ProjectionForSeat(chooser.Id).TeamAgreement.Participants
-                    .Single(participant => participant.HeroId.Equals(chooser.HeroId)).Agreed,
-                Is.True);
-            surface.RefreshAll();
-            Assert.That(surface.Exceptions, Is.Empty, Describe(surface.Exceptions));
+            leader.RefreshAll();
+            teammate.RefreshAll();
+            Assert.That(leader.Exceptions, Is.Empty, Describe(leader.Exceptions));
+            Assert.That(teammate.Exceptions, Is.Empty, Describe(teammate.Exceptions));
+
+            var picked = candidate.Unit.Kind == RuleObjectKind.Hero
+                ? BoardObjectReference.ForHero(candidate.Unit.HeroId)
+                : BoardObjectReference.ForMinion(candidate.Unit.MinionId);
+            var leaderPick = leader.Board.Model.MinionBattlePicks.Single(pick => pick.Target.Equals(picked));
+            Assert.That(leaderPick.PickedByViewer, Is.True);
+            Assert.That(leaderPick.TeammatePickers, Is.Empty, "A player's own pick carries no token.");
+            Assert.That(leader.PromptModel.Candidates.Single(value => value.Unit.Equals(candidate.Unit))
+                .IsSelected, Is.True, "Pressing it again takes the pick back.");
+
+            var teammatePick = teammate.Board.Model.MinionBattlePicks.Single(pick => pick.Target.Equals(picked));
+            Assert.That(teammatePick.PickedByViewer, Is.False);
+            Assert.That(teammatePick.TeammatePickers, Is.EqualTo(new[] { choosers[0].HeroId }),
+                "The teammate's board names who picked it.");
+            Assert.That(teammate.Board.Model.PieceTargetCues.Single(cue => cue.Target.Equals(picked)).State,
+                Is.EqualTo(BoardTargetCueState.Selected), "A teammate's pick wears the full outline.");
+            var teammatesOwn = teammate.PromptModel.Candidates.Single(value => value.Unit.Equals(candidate.Unit));
+            Assert.That(teammatesOwn.IsSelected, Is.False,
+                "The leader's pick is not the teammate's: its own pick of that minion is still offered.");
+            Assert.That(teammatesOwn.AgreementCommand.Kind,
+                Is.EqualTo(TeamAgreementCommandKind.PickMinionBattleRemoval));
+            Assert.That(teammate.PromptModel.SelectedCount, Is.Zero);
+            Assert.That(host.Projection.PendingMinionBattleChoice.SelectedUnits, Is.Empty);
+            Assert.That(choice.RequiredRemovalCount, Is.GreaterThan(0));
         }
 
         /// <summary>
-        /// The guard the crash came out of is not what was wrong, and it stands unchanged: the
-        /// removal-prompt form still refuses identities nothing authoritative supplied, and the new
-        /// public form draws the Minion Battle's own agreement or nothing.
+        /// The guard 8.35e's crash came out of was not what was wrong, and it stands unchanged: the
+        /// removal-prompt form still refuses identities nothing authoritative supplied.
         /// </summary>
         [Test]
-        public void TheRemovalPromptFormStillRefusesFabricatedIdentitiesAndThePublicFormIsAgreementOnly()
+        public void TheRemovalPromptFormStillRefusesFabricatedIdentities()
         {
             var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
             var choice = host.Projection.PendingMinionBattleChoice;
             var teamId = host.Projection.Participants.Teams
                 .Single(team => team.Side == choice.ChoosingSide).Id;
-            var agreement = new TeamAgreementHudViewModel(
-                TeamAgreementKind.MinionBattle, "TEAM AGREEMENT",
-                Array.Empty<TeamAgreementParticipantViewModel>(),
-                Array.Empty<TeamAgreementChoiceViewModel>());
 
             Assert.That(
                 () => new MinionChoiceViewModel(
                     host.Version, default, default, teamId, choice.ChoosingSide,
                     choice.RequiredRemovalCount, 0,
-                    Array.Empty<MinionChoiceCandidateViewModel>(), null, agreement),
+                    Array.Empty<MinionChoiceCandidateViewModel>(), null, null),
                 Throws.ArgumentException,
                 "The removal prompt is built from an owned pending choice or not at all.");
-
-            Assert.That(
-                () => MinionChoiceViewModel.ForPublicAgreement(
-                    host.Version, teamId, choice.ChoosingSide,
-                    choice.RequiredRemovalCount, 0, null),
-                Throws.ArgumentNullException,
-                "The public stage exists because there is an agreement to draw.");
-
-            var initiative = new TeamAgreementHudViewModel(
-                TeamAgreementKind.Initiative, "WHO ACTS FIRST?",
-                Array.Empty<TeamAgreementParticipantViewModel>(),
-                Array.Empty<TeamAgreementChoiceViewModel>());
-            Assert.That(
-                () => MinionChoiceViewModel.ForPublicAgreement(
-                    host.Version, teamId, choice.ChoosingSide,
-                    choice.RequiredRemovalCount, 0, initiative),
-                Throws.InstanceOf<ArgumentOutOfRangeException>(),
-                "The tied-Initiative agreement is not this prompt's stage.");
-
-            var publicStage = MinionChoiceViewModel.ForPublicAgreement(
-                host.Version, teamId, choice.ChoosingSide, choice.RequiredRemovalCount, 0,
-                agreement);
-
-            Assert.That(publicStage.IsPublicAgreementStage, Is.True);
-            Assert.That(publicStage.Kind, Is.EqualTo(MinionChoicePromptKind.MinionBattleRemoval));
-            Assert.That(publicStage.Candidates, Is.Empty);
-            Assert.That(publicStage.ConfirmInvocation, Is.Null);
-            Assert.That(publicStage.ActionResolutionId.IsDefined, Is.False);
-            Assert.That(publicStage.ActionChoiceId.IsDefined, Is.False);
-            Assert.That(publicStage.SectionLabel, Is.EqualTo("Minion Battle"));
         }
 
         /// <summary>
-        /// Milestone 8.35z2 (the empty-button gap a false-alarm invited-playtest finding recorded).
-        /// The choosing side's own AGREE/WITHDRAW press is in flight -
-        /// <c>TeamAgreement.AuthorizedCommands</c> is deliberately empty until the host's correlated
-        /// projection returns - and before this milestone <see cref="MinionChoiceUnityView"/> drew the
-        /// public status line over nothing at all, which read as a vanished control.
+        /// Milestone 9.29 retired 8.30n's AGREE / WITHDRAW controls: picks are made on the board, so
+        /// the old prompt view draws no agreement control for the battle at all.
         /// </summary>
         [Test]
-        public void MinionChoiceView_WhenAStatementIsInFlightDrawsWaitingForHostInsteadOfNoControls()
+        public void MinionChoiceView_DrawsNoAgreementControlForTheBattle()
         {
-            var agreement = new TeamAgreementHudViewModel(
-                TeamAgreementKind.MinionBattle,
-                "TEAM AGREEMENT",
-                new[]
-                {
-                    new TeamAgreementParticipantViewModel("HERO 1", "agreed"),
-                    new TeamAgreementParticipantViewModel("HERO 2", "is deciding")
-                },
-                Array.Empty<TeamAgreementChoiceViewModel>(),
-                isInputEnabled: false);
-            var publicStage = MinionChoiceViewModel.ForPublicAgreement(
-                1, new TeamId("choosing-team"), TeamSide.Red, 1, 1, agreement);
+            var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
+            var chooser = TeamAgreementTests.ChoosingSeats(host)[0];
+            var surface = SeatSurface.ForLocalSeat(host, chooser);
+            surface.RefreshAll();
+            Assert.That(surface.PromptModel.Agreement, Is.Not.Null);
+            Assert.That(surface.PromptModel.Agreement.Choices, Is.Empty);
             var view = new MinionChoiceUnityView();
 
-            view.Render(publicStage);
+            view.Render(surface.PromptModel);
 
             Assert.That(view.Root.Query<Button>().ToList().Any(button =>
                     button.text == "AGREE WITH THIS SELECTION" || button.text == "WITHDRAW MY AGREEMENT"),
-                Is.False, "No agreement control is offered while the seat has nothing authorized.");
-            Assert.That(view.Root.Query<Label>().ToList().Any(label =>
-                    label.text == ActionUnavailabilityLabels.WaitingForHost),
-                Is.True, "The seat's own in-flight statement reads a normal wait, not a silent gap.");
-        }
+                Is.False);
 
-        /// <summary>
-        /// The other half: the non-choosing side keeps an empty command set for the whole battle, not
-        /// for one round trip - <c>IsInputEnabled</c> stays true - so drawing "WAITING FOR HOST…" there
-        /// would be misleading. The pre-existing, still-correct silent reading must not change.
-        /// </summary>
-        [Test]
-        public void MinionChoiceView_TheNonChoosingSideDrawsNeitherControlsNorWaitingText()
-        {
-            var agreement = new TeamAgreementHudViewModel(
-                TeamAgreementKind.MinionBattle,
-                "TEAM AGREEMENT",
-                new[]
-                {
-                    new TeamAgreementParticipantViewModel("HERO 1", "agreed"),
-                    new TeamAgreementParticipantViewModel("HERO 2", "is deciding")
-                },
-                Array.Empty<TeamAgreementChoiceViewModel>());
-            var publicStage = MinionChoiceViewModel.ForPublicAgreement(
-                1, new TeamId("choosing-team"), TeamSide.Red, 1, 1, agreement);
-            var view = new MinionChoiceUnityView();
-
-            view.Render(publicStage);
-
-            Assert.That(view.Root.Query<Label>().ToList().Any(label =>
-                    label.text == ActionUnavailabilityLabels.WaitingForHost),
-                Is.False, "The other side is never waiting on a host round trip of its own.");
+            // And while the decision window draws the battle, this older prompt draws nothing at all:
+            // its "SELECTED 0 OF 1" header sat under the docked bar in the 9.29 capture.
+            var yielding = new MinionChoiceUnityView
+            {
+                YieldedDecisionFamily = () => DecisionWindowFamily.MinionBattleRemoval
+            };
+            yielding.Render(surface.PromptModel);
+            Assert.That(yielding.Root.style.display.value, Is.EqualTo(DisplayStyle.None));
         }
 
         /// <summary>
         /// The six-seat wire regression. Six real client machines each carry the whole presenter set
         /// a served seat composes, and every one of them is refreshed at every version it observes
-        /// while the battle runs - first selection, each in-flight press, each public statement, and
-        /// the applied removal. No seat may record an exception at any of them.
+        /// while the battle runs - each press, each in-flight statement and the applied removal. No
+        /// seat may record an exception at any of them.
         /// </summary>
         [Test]
         public void SixWireSeatsRefreshTheirWholePresenterSetAtEveryVersionOfAMinionBattle()
         {
             var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
             var choosingSide = host.Projection.PendingMinionBattleChoice.ChoosingSide;
+            var required = host.Projection.PendingMinionBattleChoice.RequiredRemovalCount;
             var harness = PrivateOnlineWireHarness.Compose(host);
             harness.SeatAll();
             var surfaces = host.Seats.Seats
@@ -314,7 +227,6 @@ namespace GuardsDigital.Tests.EditMode
             var versions = surfaces.ToDictionary(
                 surface => surface.Seat.Id.Value, _ => new HashSet<long>());
             var presses = 0;
-            var statements = 0;
 
             void RefreshEverySeat()
             {
@@ -326,55 +238,46 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             RefreshEverySeat();
-            while (host.Projection.PendingMinionBattleChoice != null &&
-                !host.Projection.PendingMinionBattleChoice.CanConfirm &&
-                presses < 12)
-            {
-                var acting = surfaces.First(surface =>
-                    surface.Seat.PlaysFor(choosingSide) &&
-                    surface.PromptModel != null &&
-                    surface.PromptModel.Candidates.Any(value => !value.IsSelected));
-                var candidate = acting.PromptModel.Candidates.First(value => !value.IsSelected);
-
-                Assert.That(acting.Press(() => acting.Prompt.Submit(candidate)), Is.True,
-                    "Seat " + acting.Seat.Id + " forwarded a control its own wire record " +
-                    "published: " + Describe(acting.Exceptions));
-                presses++;
-                RefreshEverySeat();
-                harness.Pump();
-                RefreshEverySeat();
-            }
-
-            Assert.That(presses, Is.GreaterThan(0),
-                "The battle must be selected through the wire for this regression to mean anything.");
-            Assert.That(host.Projection.PendingMinionBattleChoice, Is.Not.Null);
-            Assert.That(host.Projection.PendingMinionBattleChoice.CanConfirm, Is.True);
-
+            IReadOnlyList<RuleObject> agreed = null;
             foreach (var surface in surfaces.Where(value => value.Seat.PlaysFor(choosingSide)))
             {
-                var statement = surface.PromptModel.Agreement.Choices.Single();
-                Assert.That(surface.Press(() => surface.Prompt.SubmitAgreement(statement)), Is.True,
-                    "Seat " + surface.Seat.Id + " could not state its agreement: " +
-                    Describe(surface.Exceptions));
-                statements++;
-                RefreshEverySeat();
-                harness.Pump();
-                RefreshEverySeat();
+                while (host.Projection.PendingMinionBattleChoice != null && presses < 24)
+                {
+                    var own = surface.PromptModel.Candidates.Where(value => value.IsSelected)
+                        .Select(value => value.Unit).ToArray();
+                    if (agreed == null && own.Length == required)
+                    {
+                        agreed = own;
+                        break;
+                    }
+
+                    if (agreed != null && own.Length == agreed.Count && own.All(agreed.Contains))
+                        break;
+
+                    var candidate = agreed == null
+                        ? surface.PromptModel.Candidates.First(value => !value.IsSelected)
+                        : surface.PromptModel.Candidates.First(value =>
+                            value.IsSelected != agreed.Contains(value.Unit));
+                    Assert.That(surface.Press(() => surface.Prompt.Submit(candidate)), Is.True,
+                        "Seat " + surface.Seat.Id + " forwarded a control its own wire record " +
+                        "published: " + Describe(surface.Exceptions));
+                    presses++;
+                    RefreshEverySeat();
+                    harness.Pump();
+                    RefreshEverySeat();
+                }
             }
 
-            Assert.That(statements, Is.EqualTo(3),
-                "The whole choosing side states, which is what makes the agreement unanimous.");
+            Assert.That(presses, Is.GreaterThanOrEqualTo(required * 3),
+                "The whole choosing side picks, which is what makes the picks match.");
             Assert.That(host.Projection.PendingMinionBattleChoice, Is.Null,
-                "Unanimity submitted the confirm and the removal was applied.");
+                "Matching picks removed the minions.");
             harness.AssertConverged();
             foreach (var surface in surfaces)
             {
                 Assert.That(surface.Exceptions, Is.Empty,
                     "Seat " + surface.Seat.Id + " recorded " + surface.Exceptions.Count +
                     " presentation exceptions: " + Describe(surface.Exceptions));
-                Assert.That(versions[surface.Seat.Id.Value].Count, Is.GreaterThan(1),
-                    "Seat " + surface.Seat.Id + " observed only one version, so it was never " +
-                    "refreshed across the battle at all.");
                 Assert.That(versions[surface.Seat.Id.Value].Contains(host.Version), Is.True,
                     "Seat " + surface.Seat.Id + " never rendered the settled version.");
             }
@@ -493,25 +396,6 @@ namespace GuardsDigital.Tests.EditMode
             });
 
             Assert.That(resolved, Is.GreaterThan(0));
-        }
-
-        private static void AgreeUnanimously(IMatchHost host, string idPrefix, Action afterEach)
-        {
-            var side = host.Projection.PendingMinionBattleChoice.ChoosingSide;
-            var index = 0;
-            foreach (var seat in host.Seats.Seats.Where(value => value.PlaysFor(side)).ToArray())
-            {
-                var view = host.ProjectionForSeat(seat.Id);
-                var statement = view.TeamAgreement.AuthorizedCommands.Single(value =>
-                    value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-                var result = host.ClientForSeat(seat.Id).SubmitAgreement(new TeamAgreementSubmission(
-                    new SubmissionId(idPrefix + "-" + index++), view.Version, statement));
-                Assert.That(result.Accepted, Is.True, result.Detail);
-                if (host.Projection.PendingMinionBattleChoice != null)
-                {
-                    afterEach();
-                }
-            }
         }
 
         private static string Describe(IReadOnlyList<Exception> exceptions) =>

@@ -478,24 +478,7 @@ namespace GuardsDigital.Presentation.Interaction
         private void TryPlayOneAnswer(PrivateSessionClient machine)
         {
             var runtime = compositionRoot.Runtime;
-
-            // Live-fire evidence (offline reproduction in 9s via a throwaway harness probe): a
-            // pending minion-battle choice and a standing MinionBattle team agreement can be
-            // non-null AT THE SAME TIME - the agreement is the standing PROPOSAL participants are
-            // confirming, and it exists even while more removals are still legally selectable.
-            // Checking the agreement first (as this method originally did) makes every bot on the
-            // choosing side wait forever on a "your turn to answer" condition that can only become
-            // true once the choice stops changing - which nothing was left to make happen, since
-            // this was the one branch that could still add a selection. The proven rehearsal
-            // driver's own priority order settles it: an unconfirmable pending choice is served
-            // before the agreement, every time.
             var pendingMinionChoice = runtime.ReadModel.PendingMinionBattleChoice;
-            if (pendingMinionChoice != null && !pendingMinionChoice.CanConfirm)
-            {
-                PlayMinionSelection(machine);
-                return;
-            }
-
             var agreement = runtime.ReadModel.TeamAgreement;
             if (agreement != null)
             {
@@ -505,15 +488,16 @@ namespace GuardsDigital.Presentation.Interaction
                 }
                 else if (agreement.Kind == TeamAgreementKind.MinionBattle)
                 {
-                    PlayMinionAgreement(machine, agreement);
+                    PlayMinionPicks(machine, agreement);
                 }
 
                 return;
             }
 
+            // Milestone 9.29. A seat answers the battle only through its own picks, so a pending
+            // choice with no agreement standing - a statement of its own in flight - waits.
             if (pendingMinionChoice != null)
             {
-                PlayMinionSelection(machine);
                 return;
             }
 
@@ -661,7 +645,14 @@ namespace GuardsDigital.Presentation.Interaction
             Submit(statement != null && compositionRoot.Runtime.SubmitProjectedAgreement(statement));
         }
 
-        private void PlayMinionAgreement(PrivateSessionClient machine, TeamAgreementProjection agreement)
+        /// <summary>
+        /// Milestone 9.29. This practice seat cannot tell a human teammate from another practice seat,
+        /// so the first choosing seat leads: it picks the first offered units, and every other seat
+        /// copies its complete picks, one statement at a time. A human who leads is followed; a human
+        /// behind a practice seat matches it or changes nothing - no seat ever waits on a condition
+        /// nobody can make true.
+        /// </summary>
+        private void PlayMinionPicks(PrivateSessionClient machine, TeamAgreementProjection agreement)
         {
             var ownIndex = IndexOfParticipant(agreement, compositionRoot.Runtime.Seat.HeroId);
             if (ownIndex < 0 || machine.IsWaitingForHost)
@@ -670,41 +661,34 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var own = agreement.Participants[ownIndex];
-            if (own.Agreed || !agreement.Participants.Take(ownIndex).All(value => value.Agreed))
+            var leader = agreement.Participants[0];
+            TeamAgreementCommand statement = null;
+            if (ownIndex == 0)
             {
-                return;
+                if (!own.PicksComplete)
+                {
+                    statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
+                        value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval);
+                }
+            }
+            else if (leader.PicksComplete &&
+                !(own.Picks.Count == leader.Picks.Count && own.Picks.All(leader.Picks.Contains)))
+            {
+                statement = own.Picks
+                    .Where(unit => !leader.Picks.Contains(unit))
+                    .Select(unit => agreement.AuthorizedCommands.FirstOrDefault(value =>
+                        value.Kind == TeamAgreementCommandKind.UnpickMinionBattleRemoval &&
+                        value.Unit.Equals(unit)))
+                    .FirstOrDefault(value => value != null) ??
+                    leader.Picks
+                        .Where(unit => !own.Picks.Contains(unit))
+                        .Select(unit => agreement.AuthorizedCommands.FirstOrDefault(value =>
+                            value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                            value.Unit.Equals(unit)))
+                        .FirstOrDefault(value => value != null);
             }
 
-            var statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
-                value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
             Submit(statement != null && compositionRoot.Runtime.SubmitProjectedAgreement(statement));
-        }
-
-        /// <summary>
-        /// Whichever seat on the choosing side gets there first submits; a teammate racing the same
-        /// tick is simply refused as stale and tries again next think-tick, exactly as two humans
-        /// reaching for the same control would be - no coordination is attempted, matching the
-        /// "no strategy" rule at team scope as well as at the single-command one.
-        /// </summary>
-        private void PlayMinionSelection(PrivateSessionClient machine)
-        {
-            if (machine.IsWaitingForHost)
-            {
-                return;
-            }
-
-            // No seat ever submits the final confirmation - milestone 8.30n reserves it for the
-            // host's own unanimous-agreement flow, and this seat's authorized set already says so.
-            var commands = PrivateOnlineRehearsalDriver.AuthorizedProjectedCommands(
-                    machine, compositionRoot.Runtime)
-                .Where(value => value.Kind == DirectorCommandKind.SelectMinionBattleRemoval)
-                .ToArray();
-            if (commands.Length == 0)
-            {
-                return;
-            }
-
-            Submit(compositionRoot.Runtime.SubmitProjectedCommand(commands[botRandom.Next(commands.Length)]));
         }
 
         private void Submit(bool accepted)

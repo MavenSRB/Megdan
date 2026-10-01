@@ -473,7 +473,7 @@ namespace GuardsDigital.Tests.EditMode
                     break;
                 }
 
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(host.Projection);
                 if (legal.Count == 0)
                 {
                     break;

@@ -475,8 +475,11 @@ namespace GuardsDigital.Tests.EditMode
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 writer.Write("forged-proposal");
-                writer.Write((int)TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                writer.Write((int)TeamAgreementCommandKind.PickMinionBattleRemoval);
                 writer.Write(false);
+                writer.Write(true);
+                writer.Write((int)GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Minion);
+                writer.Write("red-melee-01");
                 writer.Flush();
                 stream.Position = 0;
                 using (var reader = new BinaryReader(stream, Encoding.UTF8))

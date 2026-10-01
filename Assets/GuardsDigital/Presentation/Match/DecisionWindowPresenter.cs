@@ -336,7 +336,8 @@ namespace GuardsDigital.Presentation.Match
         }
 
         // ---------------------------------------------------------------------------------------
-        // Minion Battle removals - docked, single-verb ratification.
+        // Minion Battle removals - docked. Milestone 9.29: each player picks for themselves and the
+        // minions go when every pick matches; the single verb stays only for the Director.
         // ---------------------------------------------------------------------------------------
 
         private static DecisionWindowViewModel CreateMinionBattle(
@@ -353,37 +354,69 @@ namespace GuardsDigital.Presentation.Match
 
             var side = agreement?.ChoosingSide ?? choice.ChoosingSide;
             var required = agreement?.RequiredSelectionCount ?? choice.RequiredRemovalCount;
-            var selected = agreement?.SelectedUnits.Count ?? choice.SelectedUnits.Count;
-            var controls = new List<DecisionWindowControlViewModel>();
-            DecisionWindowControlViewModel corner = null;
+            var title = Scoped($"REMOVE {required} {(required == 1 ? "MINION" : "MINIONS")}",
+                MinionChoiceLabels.TeamLabel(side), viewerHeroId);
+            var eyebrow = "MINION BATTLE · " + MinionChoiceLabels.TeamLabel(side);
+            var key = "minion-battle/" + (choice != null
+                ? choice.ResolutionId + "/" + choice.ChoiceId
+                : side.ToString());
 
             if (agreement != null)
             {
-                // On a TEAM the first press marks that hero ready and the last one resolves, which is
-                // exactly what the agreement's own AGREE command already does. The heading, the
-                // per-hero ledger and the agree/withdraw wording go; one verb stays.
-                var agree = agreement.AuthorizedCommands.FirstOrDefault(command =>
-                    command.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
-                if (agree != null && selected >= required)
+                // Milestone 9.29. Each player picks for themselves on the board and the minions go
+                // the moment every pick matches, so this bar has no verb at all: it counts the
+                // viewer's own picks and says whom the removal is waiting on. The 2026-09-30
+                // playtest's shared selection changed under three players at once; this bar only
+                // ever names a teammate, never moves the viewer's picks.
+                var own = agreement.ViewerPicks;
+                string question;
+                if (own.Count < required)
                 {
-                    controls.Add(new DecisionWindowControlViewModel(
-                        RemoveTheseMinionsLabel, agreementCommand: agree, isPrimary: true));
+                    // Milestone 8.58's short second line: the COUNT beside it already says how many.
+                    question = "Click the board.";
+                }
+                else
+                {
+                    var unfinished = agreement.Participants
+                        .Where(participant => !participant.HeroId.Equals(agreement.ViewerHeroId) &&
+                            !participant.PicksComplete)
+                        .Select(participant => ShortHeroName(projection, participant.HeroId))
+                        .ToArray();
+                    var different = agreement.Participants
+                        .Where(participant => !participant.HeroId.Equals(agreement.ViewerHeroId) &&
+                            participant.PicksComplete &&
+                            !(participant.Picks.Count == own.Count && participant.Picks.All(own.Contains)))
+                        .Select(participant => ShortHeroName(projection, participant.HeroId))
+                        .ToArray();
+                    question = different.Length > 0
+                        ? string.Join(", ", different) +
+                            (different.Length == 1 && required == 1
+                                ? " picked a different minion."
+                                : " picked differently.")
+                        : unfinished.Length > 0
+                            ? "Waiting for " + string.Join(", ", unfinished) + "."
+                            : "Removing.";
                 }
 
-                var withdraw = agreement.AuthorizedCommands.FirstOrDefault(command =>
-                    command.Kind == TeamAgreementCommandKind.WithdrawMinionBattleAgreement);
-                if (withdraw != null)
-                {
-                    // "Withdraw My Agreement survives as NOT YET, the one take-back the seat undo
-                    // cannot replace" - the user's own cross-cutting rule for this series.
-                    corner = new DecisionWindowControlViewModel(
-                        NotYetLabel, agreementCommand: withdraw,
-                        role: DecisionWindowControlRole.Corner);
-                }
+                // Not minimisable: with no verb the expanded panel would hold nothing at all, and every
+                // answer is a click on the board the bar must never cover.
+                return new DecisionWindowViewModel(
+                    projection.Version,
+                    DecisionWindowFamily.MinionBattleRemoval,
+                    DecisionWindowState.Docked,
+                    key,
+                    title,
+                    eyebrow,
+                    question,
+                    $"{own.Count} of {required} picked",
+                    isMinimisable: false);
             }
-            else if (choice.CanConfirm)
+
+            // The Director, and a side with no agreement to make: the same verb IS the confirm.
+            var selected = choice.SelectedUnits.Count;
+            var controls = new List<DecisionWindowControlViewModel>();
+            if (choice.CanConfirm)
             {
-                // A SOLO side has no agreement to make: the same verb IS the confirm.
                 controls.Add(new DecisionWindowControlViewModel(
                     RemoveTheseMinionsLabel,
                     PendingDecisionCommandBinding.Require(
@@ -397,46 +430,7 @@ namespace GuardsDigital.Presentation.Match
                     isPrimary: true));
             }
 
-            var ready = agreement == null
-                ? Array.Empty<string>()
-                : agreement.Participants
-                    .Where(participant => participant.Agreed && !participant.HeroId.Equals(viewerHeroId))
-                    .Select(participant => HeroName(projection, participant.HeroId) + " is ready")
-                    .ToArray();
-            var waitingOn = agreement == null
-                ? Array.Empty<string>()
-                : agreement.Participants
-                    .Where(participant => !participant.Agreed)
-                    .Select(participant => HeroName(projection, participant.HeroId))
-                    .ToArray();
-            var viewerAgreed = viewerHeroId.IsDefined && agreement != null &&
-                agreement.Participants.Any(participant =>
-                    participant.HeroId.Equals(viewerHeroId) && participant.Agreed);
-
-            // Short sentences, because the docked bar is bounded by the round dock's own width and
-            // yields its left edge to the Red rail - 444 units at the reference. A docked question is
-            // a line, not a paragraph.
-            string question;
-            if (viewerAgreed && waitingOn.Length > 0)
-            {
-                question = "Waiting for " + string.Join(", ", waitingOn) + ".";
-            }
-            else if (selected < required)
-            {
-                // Milestone 8.58, the mockup's own second line: `1 of 2 chosen - click the board`. The
-                // COUNT standing beside it already says how many are wanted and how many are in, so
-                // the question says only where the answer is given. `Click 2 minions on the board.`
-                // ran out of bar at 1280x720 and ended in an ellipsis, which said less than this.
-                question = "Click the board.";
-            }
-            else if (ready.Length > 0)
-            {
-                question = string.Join(", ", ready) + ".";
-            }
-            else
-            {
-                question = "Remove these minions?";
-            }
+            var soloQuestion = selected < required ? "Click the board." : "Remove these minions?";
 
             // Milestone 8.58, the mockup's own bar, and the user's note on the shipped one: the verb is
             // DRAWN AND DISABLED while the bar is still counting, rather than appearing out of nowhere
@@ -446,27 +440,19 @@ namespace GuardsDigital.Presentation.Match
             if (controls.Count == 0)
             {
                 controls.Add(new DecisionWindowControlViewModel(
-                    RemoveTheseMinionsLabel, isPrimary: true, unavailableReason: question));
+                    RemoveTheseMinionsLabel, isPrimary: true, unavailableReason: soloQuestion));
             }
 
             return new DecisionWindowViewModel(
                 projection.Version,
                 DecisionWindowFamily.MinionBattleRemoval,
                 DecisionWindowState.Docked,
-                "minion-battle/" + (choice != null
-                    ? choice.ResolutionId + "/" + choice.ChoiceId
-                    : side.ToString()),
-                Scoped($"REMOVE {required} {(required == 1 ? "MINION" : "MINIONS")}",
-                    MinionChoiceLabels.TeamLabel(side), viewerHeroId),
-                "MINION BATTLE · " + MinionChoiceLabels.TeamLabel(side),
-                question,
+                key,
+                title,
+                eyebrow,
+                soloQuestion,
                 $"{selected} of {required} chosen",
-                controls: controls,
-                cornerControl: corner);
-            // Milestone 8.58: NO `statements`. The user's capture of the expanded Minion Battle read
-            // "Sabina the Gunslinger is ready." twice - once as the question line and once as a small
-            // status line underneath - because the same `ready` list fed both. The question carries it;
-            // the per-hero ledger the user struck out at 8.46 does not come back as a second line.
+                controls: controls);
         }
 
         // ---------------------------------------------------------------------------------------
@@ -1159,9 +1145,6 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The single verb rulebook p.8's Minion Battle ratifies with.</summary>
         public const string RemoveTheseMinionsLabel = "REMOVE THESE MINIONS";
 
-        /// <summary>The one take-back the seat undo cannot replace.</summary>
-        public const string NotYetLabel = "NOT YET";
-
         /// <summary>
         /// Declining rulebook p.11's Defense, named for what it costs - the mockup's quiet corner
         /// control, "Take the hit · no defense".
@@ -1414,6 +1397,18 @@ namespace GuardsDigital.Presentation.Match
                     true,
                     false,
                     isAwaitedAnswer: true);
+        }
+
+        /// <summary>
+        /// Milestone 9.29. A hero's name without its epithet - "Sabina" for "Sabina the Gunslinger" -
+        /// for the docked bar, whose second line is short by construction (8.58) and may have to name
+        /// two teammates at once.
+        /// </summary>
+        private static string ShortHeroName(IMatchReadModel projection, HeroId heroId)
+        {
+            var name = HeroName(projection, heroId);
+            var epithet = name.IndexOf(" the ", StringComparison.Ordinal);
+            return epithet > 0 ? name.Substring(0, epithet) : name;
         }
 
         private static string HeroName(IMatchReadModel projection, HeroId heroId)

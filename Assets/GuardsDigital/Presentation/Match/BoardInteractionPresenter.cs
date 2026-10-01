@@ -166,7 +166,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.Obstacles,
                     // Milestone 9.21i. The engine's settled acting body of the selected actor, so the
                     // acting cue stands on the body that acts and follows it wherever the engine moves it.
-                    FocusedActingBody(projection));
+                    FocusedActingBody(projection),
+                    CreateMinionBattlePicks(projection));
             }
 
             view.Render(lastViewModel);
@@ -566,7 +567,35 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var battle = projection.PendingMinionBattleChoice;
-            if (battle != null)
+            var battleAgreement = projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle
+                ? projection.TeamAgreement
+                : null;
+            if (battleAgreement != null)
+            {
+                // Milestone 9.29. Every unit anyone on the viewer's side picked is SELECTED - the full
+                // outline - and a unit the viewer may still pick is ELIGIBLE - the corner marks. Picks
+                // come from the agreement, which stays readable while the viewer's own statement is in
+                // flight, so an outline never blinks out under a click. The other side is served no
+                // picks and no statements, and draws nothing.
+                var picked = MinionBattlePickedUnits(battleAgreement);
+                foreach (var unit in picked)
+                {
+                    Add(BoardReference(unit), BoardTargetCueState.Selected, BoardTargetConsequenceIntent.Removal);
+                }
+
+                foreach (var statement in battleAgreement.AuthorizedCommands)
+                {
+                    if (statement.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                        !picked.Contains(statement.Unit))
+                    {
+                        Add(
+                            BoardReference(statement.Unit),
+                            BoardTargetCueState.Eligible,
+                            BoardTargetConsequenceIntent.Removal);
+                    }
+                }
+            }
+            else if (battle != null)
             {
                 foreach (var candidate in battle.Candidates)
                 {
@@ -579,16 +608,6 @@ namespace GuardsDigital.Presentation.Match
                     Add(
                         BoardReference(candidate.Unit),
                         isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
-                        BoardTargetConsequenceIntent.Removal);
-                }
-            }
-            else if (projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle)
-            {
-                foreach (var selected in projection.TeamAgreement.SelectedUnits)
-                {
-                    Add(
-                        BoardReference(selected),
-                        BoardTargetCueState.Selected,
                         BoardTargetConsequenceIntent.Removal);
                 }
             }
@@ -745,6 +764,48 @@ namespace GuardsDigital.Presentation.Match
                 default:
                     return false;
             }
+        }
+
+        /// <summary>Milestone 9.29. Every unit someone on the viewer's side has picked, first pick first.</summary>
+        private static List<RuleObject> MinionBattlePickedUnits(TeamAgreementProjection agreement)
+        {
+            var picked = new List<RuleObject>();
+            foreach (var participant in agreement.Participants)
+            {
+                foreach (var unit in participant.Picks)
+                {
+                    if (!picked.Contains(unit))
+                    {
+                        picked.Add(unit);
+                    }
+                }
+            }
+
+            return picked;
+        }
+
+        /// <summary>
+        /// Milestone 9.29. Who picked each picked unit: the viewer, and the teammates whose tokens the
+        /// board draws on it.
+        /// </summary>
+        private static IEnumerable<MinionBattlePickViewModel> CreateMinionBattlePicks(
+            IMatchReadModel projection)
+        {
+            var agreement = projection.TeamAgreement;
+            if (agreement?.Kind != TeamAgreementKind.MinionBattle)
+            {
+                return Enumerable.Empty<MinionBattlePickViewModel>();
+            }
+
+            return MinionBattlePickedUnits(agreement)
+                .Select(unit => new MinionBattlePickViewModel(
+                    BoardReference(unit),
+                    agreement.ViewerPicks.Contains(unit),
+                    agreement.Participants
+                        .Where(participant => !participant.HeroId.Equals(agreement.ViewerHeroId) &&
+                            participant.Picks.Contains(unit))
+                        .Select(participant => participant.HeroId)))
+                .ToArray();
         }
 
         private static BoardObjectReference BoardReference(RuleObject unit)

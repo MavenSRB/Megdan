@@ -86,6 +86,38 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// Milestone 9.29. One Minion Battle candidate that the viewer or a teammate has picked, and who
+    /// picked it. The board draws the full hex outline on it (the user: "full outline when a teammate
+    /// or you have selected it") and a small token for each TEAMMATE who picked it; the viewer's own
+    /// pick carries no token, because the player knows what they clicked.
+    /// </summary>
+    public sealed class MinionBattlePickViewModel
+    {
+        public MinionBattlePickViewModel(
+            BoardObjectReference target, bool pickedByViewer, IEnumerable<HeroId> teammatePickers)
+        {
+            if (!target.IsDefined)
+            {
+                throw new ArgumentException("A pick names the piece it was made on.", nameof(target));
+            }
+
+            Target = target;
+            PickedByViewer = pickedByViewer;
+            TeammatePickers = Array.AsReadOnly((teammatePickers ?? Enumerable.Empty<HeroId>()).ToArray());
+            if (!pickedByViewer && TeammatePickers.Count == 0)
+            {
+                throw new ArgumentException("A pick was made by somebody.", nameof(teammatePickers));
+            }
+        }
+
+        public BoardObjectReference Target { get; }
+        public bool PickedByViewer { get; }
+
+        /// <summary>The teammates who picked this piece, in the agreement's participant order.</summary>
+        public IReadOnlyList<HeroId> TeammatePickers { get; }
+    }
+
+    /// <summary>
     /// One space-valued answer to a paused system transition. The destination and the standing
     /// application's exact command travel together, so a board click never reconstructs an option
     /// identity or answer payload from a coordinate.
@@ -187,9 +219,12 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? directionChooserSpace = null,
             IEnumerable<DirectionCandidateViewModel> directionCandidates = null,
             IEnumerable<ObstacleOccupancy> obstacles = null,
-            int focusedHeroBody = 0)
+            int focusedHeroBody = 0,
+            IEnumerable<MinionBattlePickViewModel> minionBattlePicks = null)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
+            MinionBattlePicks = Array.AsReadOnly((minionBattlePicks ??
+                Enumerable.Empty<MinionBattlePickViewModel>()).ToArray());
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
@@ -381,6 +416,9 @@ namespace GuardsDigital.Presentation.Match
         /// coordinate back into an occupant and never receives two independently drifting cues.
         /// </summary>
         public IReadOnlyList<PieceTargetCueViewModel> PieceTargetCues { get; }
+
+        /// <summary>Milestone 9.29. Every Minion Battle candidate the viewer or a teammate has picked.</summary>
+        public IReadOnlyList<MinionBattlePickViewModel> MinionBattlePicks { get; }
 
         /// <summary>
         /// The pending correction's route endpoint or Place space that the player is currently

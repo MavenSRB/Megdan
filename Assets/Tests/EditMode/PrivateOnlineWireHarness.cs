@@ -4,6 +4,9 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
 
@@ -775,6 +778,7 @@ namespace GuardsDigital.Tests.EditMode
             Action afterAcceptedStep = null,
             int seed = 2)
         {
+            TeamAgreementTestDriver.Reset();
             var random = new MatchLoopRandom(seed);
             var submitted = 0;
             while (submitted < commandBudget)
@@ -784,7 +788,7 @@ namespace GuardsDigital.Tests.EditMode
                     break;
                 }
 
-                var legal = DeterministicMatchLoop.EnumerateLegalCommands(MatchHost.Projection);
+                var legal = TeamAgreementTestDriver.EnumerateWalkCommands(MatchHost.Projection);
                 if (legal.Count == 0)
                 {
                     break;
@@ -829,6 +833,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public void SubmitAgreementThroughWire(DirectorCommand finalCommand)
         {
+            if (finalCommand.Kind != DirectorCommandKind.ChooseTiedActor)
+            {
+                PickThroughWire(finalCommand);
+                return;
+            }
+
             var participants = links.Values
                 .Where(link => link.Machine.LatestProjection?.Detail.TeamAgreement != null)
                 .SelectMany(link =>
@@ -846,10 +856,8 @@ namespace GuardsDigital.Tests.EditMode
                 var agreement = client.LatestProjection.Detail.TeamAgreement;
                 Assert.That(agreement, Is.Not.Null);
                 var statement = agreement.AuthorizedStatements.Single(value =>
-                    finalCommand.Kind == DirectorCommandKind.ChooseTiedActor
-                        ? value.Kind == TeamAgreementCommandKind.PreferInitiativeCandidate &&
-                          value.PreferredCardInstanceId.Value == finalCommand.CardInstanceId.Value
-                        : value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                    value.Kind == TeamAgreementCommandKind.PreferInitiativeCandidate &&
+                    value.PreferredCardInstanceId.Value == finalCommand.CardInstanceId.Value);
                 Assert.That(client.TrySubmitAgreement(statement, out _), Is.True);
                 Pump();
                 Assert.That(client.LastAgreementResult, Is.Not.Null);
@@ -857,6 +865,91 @@ namespace GuardsDigital.Tests.EditMode
                     client.LastAgreementResult.Detail);
             }
         }
+
+        /// <summary>
+        /// Milestone 9.29. A walk's Minion Battle command, carried through the wire as picks: a select
+        /// is noted, and at the confirmation every choosing seat's own client picks, from its own decoded
+        /// statements, the noted set - so the host removes the minions on the pick that makes every set
+        /// match.
+        /// </summary>
+        public void PickThroughWire(DirectorCommand command)
+        {
+            var choice = MatchHost.Projection.PendingMinionBattleChoice;
+            Assert.That(choice, Is.Not.Null, "A walk's Minion Battle command needs a standing battle.");
+            // As TeamAgreementTestDriver does it: every chooser but the last follows the walk's selection
+            // as it is made, and the last picks at the confirmation, so the walk keeps the trajectory the
+            // shared selection gave it.
+            var confirming = command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals;
+            var version = MatchHost.Projection.Version;
+            var target = confirming
+                ? TeamAgreementTestDriver.RecordedRemovals(choice, version)
+                : TeamAgreementTestDriver.RecordRemoval(choice, version, command);
+            var choosers = MatchHost.Seats.Seats.Where(value => value.PlaysFor(choice.ChoosingSide)).ToArray();
+            foreach (var seat in confirming ? choosers : choosers.Take(choosers.Length - 1))
+            {
+                var client = Client(OrdinalOf(seat.Id.Value));
+                for (var step = 0; MatchHost.Projection.PendingMinionBattleChoice != null; step++)
+                {
+                    Assert.That(step, Is.LessThan((target.Count * 2) + 4), "Picking did not converge.");
+                    var agreement = client.LatestProjection.Detail.TeamAgreement;
+                    Assert.That(agreement, Is.Not.Null, "A choosing seat is served the battle's agreement.");
+                    var own = agreement.Participants
+                        .Single(row => row.HeroId == seat.HeroId.Value).Picks
+                        .Select(ToUnit)
+                        .ToArray();
+                    if (own.Length == target.Count && own.All(target.Contains))
+                        break;
+
+                    var statement =
+                        own.Where(unit => !target.Contains(unit))
+                            .Select(unit => agreement.AuthorizedStatements.FirstOrDefault(offered =>
+                                offered.Kind == TeamAgreementCommandKind.UnpickMinionBattleRemoval &&
+                                offered.Unit.Equals(unit)))
+                            .FirstOrDefault(value => value != null) ??
+                        target.Where(unit => !own.Contains(unit))
+                            .Select(unit => agreement.AuthorizedStatements.FirstOrDefault(offered =>
+                                offered.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                                offered.Unit.Equals(unit)))
+                            .FirstOrDefault(value => value != null);
+                    Assert.That(statement, Is.Not.Null,
+                        "Seat " + seat.Id + "'s wire record offers no pick towards the walk's removals.");
+                    Assert.That(client.TrySubmitAgreement(statement, out _), Is.True);
+                    Pump();
+                    Assert.That(client.LastAgreementResult, Is.Not.Null);
+                    Assert.That(client.LastAgreementResult.Accepted, Is.True,
+                        client.LastAgreementResult.Detail);
+                }
+            }
+
+            if (!confirming)
+                return;
+
+            Assert.That(MatchHost.Projection.PendingMinionBattleChoice, Is.Null,
+                "Every choosing seat picked the walk's selection, so the minions must be removed.");
+            TeamAgreementTestDriver.ForgetRemovals(choice, version);
+        }
+
+        /// <summary>
+        /// Milestone 9.29. Carries the standing Minion Battle through to its removal over the wire:
+        /// the walk's first offered selects up to the count, then its confirmation, each answered
+        /// through every choosing seat's own picks as <see cref="PickThroughWire"/> answers them.
+        /// </summary>
+        public void CompleteMinionBattleThroughWire()
+        {
+            for (var step = 0; MatchHost.Projection.PendingMinionBattleChoice != null; step++)
+            {
+                Assert.That(step, Is.LessThan(16), "The Minion Battle did not complete.");
+                var offered = TeamAgreementTestDriver.EnumerateWalkCommands(MatchHost.Projection);
+                PickThroughWire(
+                    offered.FirstOrDefault(value => value.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals) ??
+                    offered.First(value => value.Kind == DirectorCommandKind.SelectMinionBattleRemoval));
+            }
+        }
+
+        private static RuleObject ToUnit(NetworkUnitRow row) =>
+            row.Kind == (int)RuleObjectKind.Hero
+                ? RuleObject.ForHero(new HeroId(row.HeroId))
+                : RuleObject.ForMinion(new MinionId(row.MinionId));
 
         /// <summary>
         /// Submits one accepted command from the lowest-ordinal seated client, other than

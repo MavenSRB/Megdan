@@ -1258,11 +1258,9 @@ namespace GuardsDigital.Tests.PlayMode
                     continue;
                 }
 
-                if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle &&
-                    publicAgreement.SelectionIsConfirmable)
+                if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle)
                 {
-                    SubmitAgreementForEveryParticipant(runtime.Host, default,
-                        "8-30n-skip-minions-" + step);
+                    PickTheSameSetForEveryParticipant(runtime.Host, "9-29-skip-minions-" + step);
                     continue;
                 }
 
@@ -1384,14 +1382,196 @@ namespace GuardsDigital.Tests.PlayMode
                     value.HeroId.Equals(participant.HeroId));
                 var projection = host.ProjectionForSeat(seat.Id);
                 var command = projection.TeamAgreement.AuthorizedCommands.Single(value =>
-                    publicAgreement.Kind == TeamAgreementKind.Initiative
-                        ? value.PreferredCardInstanceId.Equals(preferredCard)
-                        : value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                    value.PreferredCardInstanceId.Equals(preferredCard));
                 var result = host.ClientForSeat(seat.Id).SubmitAgreement(new TeamAgreementSubmission(
                     new SubmissionId(idPrefix + "-" + seat.Id.Value),
                     projection.Version,
                     command));
                 Assert.That(result.Accepted, Is.True, result.Detail);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.29, in the composed seat scene. A teammate's pick draws on this seat's board as
+        /// the full hex outline with that teammate's token on the minion, while this seat's own picks
+        /// stay its own: the bar still counts none, and a minion it may still pick keeps its corners.
+        /// Then this seat clicks a different minion, which outlines it with no token. Captured outside
+        /// batch mode for the user.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SeatScene_ATeammatesMinionBattlePickIsTheFullOutlineWithTheirToken()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "9.29 minion battle picks");
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            yield return LoadComposedScene();
+            yield return ComposeForSeat(DriveToAMinionBattle(Root().Runtime.Host, null)[0]);
+            var runtime = Root().Runtime;
+            var host = runtime.Host;
+            // The composed match is not the Director's to the step - setup draws its own coin - so it is
+            // driven to a battle this seat's OWN side chooses, any other side's battle answered on the way.
+            var choosers = DriveToAMinionBattle(host, runtime.Seat.TeamSide);
+            Assert.That(choosers, Does.Contain(runtime.Seat.Id));
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var teammate = host.Seats.Seats.First(seat =>
+                choosers.Contains(seat.Id) && !seat.Id.Equals(runtime.Seat.Id));
+            var teammateView = host.ProjectionForSeat(teammate.Id);
+            var teammatesPick = teammateView.TeamAgreement.AuthorizedCommands.First(value =>
+                value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval &&
+                value.Unit.Kind == GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Minion);
+            Assert.That(host.ClientForSeat(teammate.Id).SubmitAgreement(new TeamAgreementSubmission(
+                    new SubmissionId("9-29-teammate-pick"), teammateView.Version, teammatesPick)).Accepted,
+                Is.True);
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var picked = runtime.BoardView.MinionViews.Single(minion =>
+                minion.BoundMinionId.Equals(teammatesPick.Unit.MinionId));
+            var pickedTile = runtime.BoardView.TileViews.Single(tile =>
+                tile.Coordinate.Equals(picked.Occupancy.Coordinate));
+            Assert.That(pickedTile.CornerHighlight.IsFullEdgeOutline, Is.True,
+                "A teammate's pick wears the full hex outline on this seat's board.");
+            Assert.That(picked.PickBadges?.VisibleCount, Is.EqualTo(1),
+                "and the picking teammate's token.");
+            var window = runtime.DecisionWindowPresenter.Model;
+            Assert.That(window?.Family, Is.EqualTo(DecisionWindowFamily.MinionBattleRemoval));
+            Assert.That(window.Count, Does.StartWith("0 of "),
+                "The teammate's pick is not this seat's: the bar still counts none.");
+            Assert.That(window.Controls, Is.Empty, "Matching picks remove; no verb.");
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                // The round's phase banner and the last attack's spotlight are still playing out from
+                // the drive; the photograph presses the spotlight's CONTINUE and waits for both to clear.
+                yield return SettleForCapture(Root(), 8f);
+                yield return Capture("tmp/929-captures/minion-battle-teammate-pick-2560x1440.png");
+            }
+
+            var other = MinionChoicePresenter.CreateViewModel(runtime.ReadModel).Candidates.First(candidate =>
+                !candidate.IsSelected && candidate.Unit.Kind == GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Minion &&
+                !candidate.Unit.Equals(teammatesPick.Unit));
+            Assert.That(runtime.MinionChoicePresenter.SubmitUnit(other.Unit), Is.True,
+                "A click on a minion is this seat's own pick.");
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var own = runtime.BoardView.MinionViews.Single(minion =>
+                minion.BoundMinionId.Equals(other.Unit.MinionId));
+            var ownTile = runtime.BoardView.TileViews.Single(tile =>
+                tile.Coordinate.Equals(own.Occupancy.Coordinate));
+            Assert.That(ownTile.CornerHighlight.IsFullEdgeOutline, Is.True);
+            Assert.That(own.PickBadges == null || own.PickBadges.VisibleCount == 0, Is.True,
+                "This seat's own pick carries no token.");
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return SettleForCapture(Root(), 3f);
+                yield return Capture("tmp/929-captures/minion-battle-own-and-teammate-pick-2560x1440.png");
+            }
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "9.29 restore the viewport this session was running at");
+            yield return null;
+        }
+
+        /// <summary>
+        /// Milestone 9.29. Lets the presentation the drive left playing finish before a photograph:
+        /// the last attack's spotlight is dismissed with its own CONTINUE, as a player dismisses it,
+        /// and the phase banner is given time to fade.
+        /// </summary>
+        private static IEnumerator SettleForCapture(MatchSceneCompositionRoot root, float seconds)
+        {
+            var until = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < until)
+            {
+                if (UiPlayer.HasButton(root.Hud, "CONTINUE"))
+                {
+                    var button = UiPlayer.Button(root.Hud, "CONTINUE");
+                    if (button.enabledInHierarchy && button.worldBound.width > 0f)
+                        UiPlayer.Click(button);
+                }
+
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.29. Drives a host by the drive policy until a Minion Battle stands that
+        /// <paramref name="side"/> chooses (any side when null) and returns the choosing side's seats;
+        /// tied Initiatives on the way are agreed on the first candidate, and another side's battle is
+        /// answered by every one of its seats picking the same set.
+        /// </summary>
+        private static SeatId[] DriveToAMinionBattle(IMatchHost host, TeamSide? side)
+        {
+            // Seed 5 of this drive stands the official board's first contested Minion Battle at step
+            // 471 (round 6), measured offline over seeds 1-12; seed 2 needs 1,691 steps.
+            var random = new System.Random(5);
+            for (var step = 0; step < DriveBudget * 8; step++)
+            {
+                var choice = host.Projection.PendingMinionBattleChoice;
+                if (choice != null && (side == null || choice.ChoosingSide == side.Value))
+                {
+                    return host.Seats.Seats.Where(seat => seat.PlaysFor(choice.ChoosingSide))
+                        .Select(seat => seat.Id).ToArray();
+                }
+
+                if (choice != null)
+                {
+                    PickTheSameSetForEveryParticipant(host, "9-29-other-side-" + step);
+                    continue;
+                }
+
+                var publicAgreement = host.Seats.Seats
+                    .Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
+                    .FirstOrDefault(value => value != null);
+                if (publicAgreement?.Kind == TeamAgreementKind.Initiative)
+                {
+                    SubmitAgreementForEveryParticipant(
+                        host, publicAgreement.Candidates[0].CardInstanceId, "9-29-initiative-" + step);
+                    continue;
+                }
+
+                var command = NextSeatCommand(host, random);
+                Assert.That(command, Is.Not.Null, "The drive ended before a Minion Battle.");
+                var seat = host.Seats.Seats.First(value =>
+                    host.ProjectionForSeat(value.Id).AuthorizedCommands.Contains(command));
+                Assert.That(new SeatMatchClient(host.ClientForSeat(seat.Id)).Submit(command).Accepted, Is.True);
+            }
+
+            Assert.Fail("The deterministic drive did not reach a Minion Battle within its budget.");
+            return null;
+        }
+
+        /// <summary>
+        /// Milestone 9.29. Every choosing seat picks the first offered units until its set is complete;
+        /// each starts from nothing in the same candidate order, so every set is the same and the
+        /// last pick removes the minions.
+        /// </summary>
+        private static void PickTheSameSetForEveryParticipant(IMatchHost host, string idPrefix)
+        {
+            var side = host.Projection.PendingMinionBattleChoice.ChoosingSide;
+            var step = 0;
+            foreach (var seat in host.Seats.Seats.Where(value => value.PlaysFor(side)).ToArray())
+            {
+                while (host.Projection.PendingMinionBattleChoice != null)
+                {
+                    var projection = host.ProjectionForSeat(seat.Id);
+                    var own = projection.TeamAgreement.Participants
+                        .Single(participant => participant.HeroId.Equals(seat.HeroId));
+                    if (own.PicksComplete)
+                        break;
+                    Assert.That(step, Is.LessThan(32), "Picking did not converge.");
+                    var pick = projection.TeamAgreement.AuthorizedCommands.First(value =>
+                        value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval);
+                    var result = host.ClientForSeat(seat.Id).SubmitAgreement(new TeamAgreementSubmission(
+                        new SubmissionId(idPrefix + "-" + step++), projection.Version, pick));
+                    Assert.That(result.Accepted, Is.True, result.Detail);
+                }
             }
         }
 
@@ -1531,10 +1711,9 @@ namespace GuardsDigital.Tests.PlayMode
                 var minionAgreement = host.Seats.Seats
                     .Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
                     .FirstOrDefault(value => value?.Kind == TeamAgreementKind.MinionBattle);
-                if (minionAgreement?.SelectionIsConfirmable == true)
+                if (minionAgreement != null)
                 {
-                    SubmitAgreementForEveryParticipant(
-                        host, default, "8-30n-probe-minions-" + step);
+                    PickTheSameSetForEveryParticipant(host, "9-29-probe-minions-" + step);
                     continue;
                 }
 

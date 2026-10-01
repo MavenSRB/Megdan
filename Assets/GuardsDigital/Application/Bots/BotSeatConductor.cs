@@ -214,13 +214,14 @@ namespace GuardsDigital.Application.Bots
             }
             else if (agreement.Kind == TeamAgreementKind.MinionBattle)
             {
-                if (agreement.Participants[ownIndex].Agreed)
-                {
-                    return false;
-                }
-
-                statement = agreement.AuthorizedCommands.FirstOrDefault(value =>
-                    value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                // Milestone 9.29. A seat this conductor owns is a bot; every other choosing seat is
+                // a human, whose picks the bots copy.
+                var ownedHeroes = new HashSet<Core.Units.Heroes.HeroId>(seats
+                    .Select(owned => host.ClientForSeat(owned.Seat)?.Projection)
+                    .Where(owned => owned != null)
+                    .Select(owned => owned.Seat.HeroId));
+                statement = MinionBattlePickPolicy.NextStatement(
+                    agreement, projection.Seat.HeroId, ownedHeroes.Contains);
             }
             else
             {

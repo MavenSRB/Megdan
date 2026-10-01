@@ -511,26 +511,16 @@ namespace GuardsDigital.Tests.PlayMode
                 AssertCardFaceIsTheTraysOwn(root, "gd-effect-card", label);
             });
 
+            // Milestone 9.29: each player picks for themselves and matching picks remove the minions, so
+            // the bar counts the viewer's own picks, names whom it waits on, and carries no verb - and it
+            // never expands, because an expanded panel with no verb would hold nothing.
             yield return new Frame("minion-battle-docked", MinionBattle(docked: true, ready: false),
                 (root, label) =>
                 {
                     AssertTheTrayIsOrdinary(root, label);
-                    var verb = UiPlayer.Descendants(Window(root)).OfType<Button>()
-                        .Single(element => element.name == "gd-decision-control");
-                    Assert.That(verb.text,
-                        Is.EqualTo(DecisionWindowPresenter.RemoveTheseMinionsLabel));
-                    Assert.That(verb.enabledSelf, Is.False,
-                        "and it is disabled until the count is met at " + label + ", as the mockup " +
-                        "draws it.");
-                });
-
-            yield return new Frame("minion-battle-expanded", MinionBattle(docked: false, ready: true),
-                (root, label) =>
-                {
-                    var verb = UiPlayer.Descendants(Window(root)).OfType<Button>()
-                        .Single(element => element.name == "gd-decision-control");
-                    Assert.That(verb.enabledSelf, Is.True,
-                        "The one verb answers once the count is met at " + label + ".");
+                    Assert.That(UiPlayer.Descendants(Window(root)).OfType<Button>()
+                        .Any(element => element.name == "gd-decision-control"), Is.False,
+                        "No verb stands on the bar at " + label + ".");
                 });
 
             yield return new Frame("level-up-expanded", LevelUp(hand, DecisionWindowState.Expanded),
@@ -774,20 +764,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "8.58-capture-minion-battle-" + (docked ? "docked" : "expanded") + "-" + ready,
                 "REMOVE 2 MINIONS",
                 "MINION BATTLE · " + MinionChoiceLabels.TeamLabel(TeamSide.Blue),
-                ready ? "Sabina is ready." : "Click the board.",
-                ready ? "2 of 2 chosen" : "1 of 2 chosen",
-                controls: new[]
-                {
-                    ready
-                        ? new DecisionWindowControlViewModel(
-                            DecisionWindowPresenter.RemoveTheseMinionsLabel,
-                            DirectorCommand.ReleaseTurn(),
-                            isPrimary: true)
-                        : new DecisionWindowControlViewModel(
-                            DecisionWindowPresenter.RemoveTheseMinionsLabel,
-                            isPrimary: true,
-                            unavailableReason: "Click the board.")
-                });
+                ready ? "Waiting for Sabina." : "Click the board.",
+                ready ? "2 of 2 picked" : "1 of 2 picked",
+                isMinimisable: false);
 
         private static DecisionWindowViewModel LevelUp(
             IReadOnlyList<TrayCardViewModel> hand, DecisionWindowState state)

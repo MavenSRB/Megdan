@@ -611,12 +611,59 @@ namespace GuardsDigital.Tests.EditMode
                     control.Label == DecisionWindowPresenter.RemoveTheseMinionsLabel), Is.True,
                 "and the verb is the single ratification the user settled, on a solo side and a team " +
                 "alike. " + Describe(model));
-            if (model.CornerControl != null)
+            Assert.That(model.CornerControl, Is.Null,
+                "Milestone 9.29 retired NOT YET with the shared selection it took back.");
+        }
+
+        /// <summary>
+        /// Milestone 9.29. On a seat the docked bar counts the viewer's OWN picks and has no verb - the
+        /// minions go when every pick matches - and its line names a teammate who has not finished or
+        /// who picked differently, never moving the viewer's picks. The other side is shown no bar.
+        /// </summary>
+        [Test]
+        public void AMinionBattleOnASeat_CountsTheViewersOwnPicks_HasNoVerb_AndNamesWhoItWaitsOn()
+        {
+            var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
+            var choosers = TeamAgreementTests.ChoosingSeats(host);
+            var required = host.Projection.PendingMinionBattleChoice.RequiredRemovalCount;
+            var viewer = choosers[0];
+            string NameOf(MatchSeat seat)
             {
-                Assert.That(model.CornerControl.Label, Is.EqualTo(DecisionWindowPresenter.NotYetLabel),
-                    "Withdraw My Agreement survives as NOT YET - the one take-back the seat undo " +
-                    "cannot replace.");
+                var name = host.Projection.Setup.Heroes.Single(hero => hero.HeroId.Equals(seat.HeroId)).DisplayName;
+                var epithet = name.IndexOf(" the ", StringComparison.Ordinal);
+                return epithet > 0 ? name.Substring(0, epithet) : name;
             }
+            DecisionWindowViewModel WindowOf(MatchSeat seat) =>
+                DecisionWindowPresenter.CreateViewModel(host.ProjectionForSeat(seat.Id), seat.HeroId);
+
+            var opening = WindowOf(viewer);
+            Assert.That(opening.Family, Is.EqualTo(DecisionWindowFamily.MinionBattleRemoval));
+            Assert.That(opening.State, Is.EqualTo(DecisionWindowState.Docked));
+            Assert.That(opening.Count, Is.EqualTo("0 of " + required + " picked"));
+            Assert.That(opening.Question, Is.EqualTo("Click the board."));
+            Assert.That(opening.Controls, Is.Empty, "Matching picks remove the minions; no verb stands.");
+            Assert.That(opening.CornerControl, Is.Null);
+            Assert.That(opening.IsMinimisable, Is.False,
+                "With no verb an expanded panel would hold nothing; the bar stays beside the board.");
+
+            var picks = TeamAgreementTests.PickFirstOffered(host, viewer, required, "bar");
+            var waiting = WindowOf(viewer);
+            Assert.That(waiting.Count, Is.EqualTo(required + " of " + required + " picked"));
+            Assert.That(waiting.Question, Does.StartWith("Waiting for ")
+                .And.Contain(NameOf(choosers[1])).And.Contain(NameOf(choosers[2])));
+            Assert.That(WindowOf(choosers[1]).Count, Is.EqualTo("0 of " + required + " picked"),
+                "A teammate's bar counts that teammate's own picks, untouched by the viewer's.");
+
+            var other = host.ProjectionForSeat(choosers[1].Id).TeamAgreement.AuthorizedCommands.First(value =>
+                value.Kind == TeamAgreementCommandKind.PickMinionBattleRemoval && !picks.Contains(value.Unit)).Unit;
+            TeamAgreementTests.PickSet(
+                host, choosers[1], picks.Skip(1).Concat(new[] { other }).ToArray(), "bar-different");
+            var differing = WindowOf(viewer);
+            Assert.That(differing.Question, Does.StartWith(NameOf(choosers[1]) + " picked"),
+                "A teammate who picked differently is named.");
+
+            var opponent = host.Seats.Seats.First(seat => !seat.PlaysFor(viewer.TeamSide));
+            Assert.That(WindowOf(opponent), Is.Null, "The other side answers nothing and is shown no bar.");
         }
 
         // -------------------------------------------------------------------------------------

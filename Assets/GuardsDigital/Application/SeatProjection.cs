@@ -1268,12 +1268,11 @@ namespace GuardsDigital.Application
 
                 if (source.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))
                 {
-                    // Board selection remains shared team authority; final confirmation is emitted
-                    // only by unanimous host agreement.
-                    return owner.IsOwnedBy(seat)
-                        ? Array.AsReadOnly(source.DecisionContract.Commands.Where(command =>
-                            command.Kind != DirectorCommandKind.ConfirmMinionBattleRemovals).ToArray())
-                        : Array.Empty<DirectorCommand>();
+                    // Milestone 9.29. As the Initiative above: each choosing seat states its own
+                    // picks through the host agreement coordinator, which submits the Selects and
+                    // the Confirm once every pick matches. The shared board selection 8.30n handed
+                    // to three seats at once is what the 2026-09-30 playtest could not use.
+                    return Array.Empty<DirectorCommand>();
                 }
 
                 if (!owner.IsOwnedBy(seat))

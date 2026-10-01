@@ -2236,9 +2236,21 @@ namespace GuardsDigital.Presentation.Match
 
             if (agreement?.Kind == TeamAgreementKind.MinionBattle)
             {
-                statusDetail = $"{agreement.SelectedUnits.Count} OF " +
-                    $"{agreement.RequiredSelectionCount} MINIONS SELECTED";
-                return "MINION BATTLE PROPOSAL — " + FormatAgreementWait(projection, agreement);
+                var removed = agreement.RequiredSelectionCount == 1 ? "MINION" : "MINIONS";
+                if (!agreement.Participants.Any(participant =>
+                        participant.HeroId.Equals(agreement.ViewerHeroId)))
+                {
+                    // Milestone 9.29. The other side learns who is choosing and nothing of what.
+                    return "MINION BATTLE — " + MinionChoiceLabels.TeamLabel(agreement.ChoosingSide) +
+                        " IS CHOOSING WHICH " + removed + " TO REMOVE";
+                }
+
+                statusDetail = $"{agreement.ViewerPicks.Count} OF " +
+                    $"{agreement.RequiredSelectionCount} {removed} PICKED";
+                return "MINION BATTLE — " + (agreement.Participants.All(participant =>
+                        participant.PicksComplete)
+                    ? "PICKS DON'T MATCH YET"
+                    : FormatAgreementWait(projection, agreement));
             }
 
             // Milestone 8.30b, and these two branches are what the user-approved amendment found.
@@ -2543,7 +2555,7 @@ namespace GuardsDigital.Presentation.Match
             Array.AsReadOnly(agreement.Participants
                 .Where(participant => agreement.Kind == TeamAgreementKind.Initiative
                     ? !participant.HasStatement
-                    : !participant.Agreed)
+                    : !participant.PicksComplete)
                 .Select(participant =>
                     HeroDisplayName(projection.Setup.Heroes, participant.HeroId))
                 .ToArray());

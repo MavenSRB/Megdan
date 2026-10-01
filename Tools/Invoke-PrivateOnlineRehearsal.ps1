@@ -21,8 +21,8 @@
           match cohort      the six clients ready up, the host begins the match, and the cohort
                             plays a complete match through the owner-scoped HUD. It forces one
                             same-team tied-Initiative disagreement followed by a revised unanimous
-                            preference, one changed Minion Battle removal proposal after partial
-                            agreement followed by unanimous confirmation, and one mid-match
+                            preference, one Minion Battle where two choosing seats first pick
+                            different minions and then match (9.29), and one mid-match
                             disconnect and lobby-driven reconnect on red-player-02. Every seat
                             audits its own projection for privacy and authority, and host and all
                             six clients must report the identical outcome cause and winner.
@@ -1117,8 +1117,8 @@ elseif ($Topology -eq 'SixClient') {
                     $rehearsalFailed = $true
                 }
             }
-            foreach ($cohort in @('initiative-disagreement', 'initiative-revision', 'minion-partial',
-                    'minion-proposal-invalidated')) {
+            foreach ($cohort in @('initiative-disagreement', 'initiative-revision', 'minion-divergent',
+                    'minion-own-picks-kept')) {
                 if ($text -match ('REHEARSAL_CLIENT event=' + $cohort)) { $cohortMarkers[$cohort] = $true }
             }
             if ($player.Seat -eq $reconnectSeat) {
@@ -1175,8 +1175,8 @@ elseif ($Topology -eq 'SixClient') {
             }
         }
 
-        foreach ($cohort in @('initiative-disagreement', 'initiative-revision', 'minion-partial',
-                'minion-proposal-invalidated')) {
+        foreach ($cohort in @('initiative-disagreement', 'initiative-revision', 'minion-divergent',
+                'minion-own-picks-kept')) {
             if (-not $cohortMarkers.ContainsKey($cohort)) {
                 Write-Output "FAIL: no seat in the match cohort recorded '$cohort'."
                 $rehearsalFailed = $true

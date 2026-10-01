@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Core.Units.Minions;
@@ -25,6 +26,7 @@ namespace GuardsDigital.Presentation.Units.Minions
 
         private MinionOccupancy occupancy;
         private BoardTargetRing targetRing;
+        private MinionBattlePickBadges pickBadges;
 
         public MinionOccupancy Occupancy => occupancy;
         public MinionId BoundMinionId => occupancy != null
@@ -96,6 +98,38 @@ namespace GuardsDigital.Presentation.Units.Minions
             BoardTargetRing.CanFit(
                 GetComponent<SpriteRenderer>(), BoardTargetFootprintKind.Circular);
 
+        /// <summary>
+        /// Milestone 9.29. Draws the tokens of the teammates who picked this minion for a Minion
+        /// Battle removal, or clears them for an empty list. A minion whose sprite the art catalog has
+        /// not supplied measures its radius from its space instead.
+        /// </summary>
+        public void SetPickBadges(IReadOnlyList<MinionBattlePickBadges.Picker> pickers)
+        {
+            if (pickBadges == null && (pickers == null || pickers.Count == 0))
+            {
+                return;
+            }
+
+            if (pickBadges == null)
+            {
+                pickBadges = MinionBattlePickBadges.GetOrCreate(transform);
+            }
+
+            var renderer = GetComponent<SpriteRenderer>();
+            var radius = renderer != null && renderer.sprite != null
+                ? Mathf.Min(renderer.bounds.extents.x, renderer.bounds.extents.z)
+                : 0f;
+            if (radius <= 0.0001f)
+            {
+                radius = outerRadius * 0.8f;
+            }
+
+            pickBadges.Show(pickers, radius);
+        }
+
+        /// <summary>Milestone 9.29. The teammate tokens on this minion, for a fixture to read.</summary>
+        public MinionBattlePickBadges PickBadges => pickBadges;
+
         private BoardTargetRing EnsureTargetRing() =>
             targetRing != null ? targetRing : targetRing = BoardTargetRing.GetOrCreate(transform);
 
@@ -104,6 +138,11 @@ namespace GuardsDigital.Presentation.Units.Minions
             if (!ReferenceEquals(targetRing, null))
             {
                 targetRing.ReleaseOwnedResources();
+            }
+
+            if (!ReferenceEquals(pickBadges, null))
+            {
+                pickBadges.ReleaseOwnedResources();
             }
         }
 

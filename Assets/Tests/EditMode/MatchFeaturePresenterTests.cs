@@ -401,11 +401,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { new TeamAgreementCandidateProjection(known, blueHero) },
                 new[]
                 {
-                    new TeamAgreementParticipantProjection(blueHero, true, unknown, false)
+                    new TeamAgreementParticipantProjection(blueHero, true, unknown)
                 },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
                 0,
-                false,
                 new[] { TeamAgreementCommand.Prefer(proposal, unknown) });
 
             TeamAgreementHudViewModel model = null;
@@ -735,12 +733,10 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { new TeamAgreementCandidateProjection(card, stated.HeroId) },
                 new[]
                 {
-                    new TeamAgreementParticipantProjection(stated.HeroId, true, card, false),
-                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default, false)
+                    new TeamAgreementParticipantProjection(stated.HeroId, true, card),
+                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default)
                 },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
                 0,
-                false,
                 new[] { TeamAgreementCommand.Prefer(proposal, card) });
             var projection = new AgreementReadModel(
                 new CommitmentReadModel(session.Projection, Committed(session.Projection, stated.HeroId)),
@@ -753,12 +749,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AMinionBattleParticipantWhoHasNotAgreed_ShinesAtHeroScope_AndOneWhoHasDoesNot()
+        public void AMinionBattleParticipantWhoHasNotFinishedPicking_ShinesAtHeroScope_AndOneWhoHasDoesNot()
         {
             var session = CreateSession();
             var heroes = session.Projection.Setup.Heroes.ToArray();
-            var agreed = heroes[0];
+            var picked = heroes[0];
             var undecided = heroes[1];
+            var unit = GuardsDigital.Core.Rules.Modifications.RuleObject.ForMinion(
+                session.Projection.Minions.First().MinionId);
             var proposal = new TeamAgreementProposalId("hero-scope-minion-battle");
             var agreement = new TeamAgreementProjection(
                 TeamAgreementKind.MinionBattle,
@@ -767,20 +765,20 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<TeamAgreementCandidateProjection>(),
                 new[]
                 {
-                    new TeamAgreementParticipantProjection(agreed.HeroId, false, default, true),
-                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default, false)
+                    // Milestone 9.29: a participant has given its part once its own picks are complete.
+                    new TeamAgreementParticipantProjection(picked.HeroId, true, default, new[] { unit }, true),
+                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default)
                 },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
-                0,
-                true,
-                new[] { TeamAgreementCommand.Agree(proposal) });
+                1,
+                new[] { TeamAgreementCommand.Unpick(proposal, unit) },
+                picked.HeroId);
             var projection = new AgreementReadModel(
-                new CommitmentReadModel(session.Projection, Committed(session.Projection, agreed.HeroId)),
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, picked.HeroId)),
                 agreement);
 
             Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, undecided.HeroId), Is.True);
-            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, agreed.HeroId), Is.False,
-                "Agreed already - the AGREE/WITHDRAW toggle lets them revise, but that is not owed.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, picked.HeroId), Is.False,
+                "Picked already - they could still change a pick, but that is not owed.");
         }
 
         // -------------------------------------------------------------------------------------
@@ -5080,12 +5078,10 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { new TeamAgreementCandidateProjection(bluesCard, blue.HeroId) },
                 new[]
                 {
-                    new TeamAgreementParticipantProjection(red.HeroId, false, default, false),
-                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard, false)
+                    new TeamAgreementParticipantProjection(red.HeroId, false, default),
+                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard)
                 },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
                 0,
-                false,
                 Array.Empty<TeamAgreementCommand>());
             var projection = new AgreementReadModel(session.Projection, agreement);
 
@@ -5142,12 +5138,10 @@ namespace GuardsDigital.Tests.EditMode
                     // BOTH have stated. `AgreementStillOwed` reads `!HasStatement` for an
                     // Initiative agreement, so the owed set is empty - and before this milestone
                     // that empty set went straight into `NarrationLabels.WaitingOn`.
-                    new TeamAgreementParticipantProjection(red.HeroId, true, redsCard, false),
-                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard, false)
+                    new TeamAgreementParticipantProjection(red.HeroId, true, redsCard),
+                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard)
                 },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
                 0,
-                false,
                 Array.Empty<TeamAgreementCommand>());
             var projection = new AgreementReadModel(session.Projection, agreement);
 
@@ -5163,40 +5157,71 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// State: a Minion Battle proposal every participant has already agreed to. The second
-        /// branch that reached the same refusing vocabulary, and it also carries a status detail -
-        /// asserted here so the demoted line is not silently lost with the headline.
+        /// State: a Minion Battle every participant has finished picking, with picks that differ.
+        /// Milestone 9.29 made it a real standing state - complete sets that differ remove nothing -
+        /// and it carries a status detail, asserted here so the demoted line is not silently lost.
         /// </summary>
         [Test]
-        public void AMinionBattleProposalEveryParticipantHasAgreed_ReadsTheEveryAnswerInLine()
+        public void AMinionBattleEveryParticipantHasPickedDifferently_ReadsThatPicksDoNotMatch()
+        {
+            var session = CreateSession();
+            var red = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var blue = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+            var minions = session.Projection.Minions
+                .Select(minion => GuardsDigital.Core.Rules.Modifications.RuleObject.ForMinion(minion.MinionId))
+                .Take(3)
+                .ToArray();
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.MinionBattle,
+                new TeamAgreementProposalId("every-pick-in-probe"),
+                TeamSide.Blue,
+                Array.Empty<TeamAgreementCandidateProjection>(),
+                new[]
+                {
+                    new TeamAgreementParticipantProjection(
+                        red.HeroId, true, default, new[] { minions[0], minions[1] }, true),
+                    new TeamAgreementParticipantProjection(
+                        blue.HeroId, true, default, new[] { minions[1], minions[2] }, true)
+                },
+                2,
+                Array.Empty<TeamAgreementCommand>(),
+                red.HeroId);
+            var projection = new AgreementReadModel(session.Projection, agreement);
+
+            var model = Narrate(projection, red.HeroId);
+
+            Assert.That(model.Status, Is.EqualTo("MINION BATTLE — PICKS DON'T MATCH YET"),
+                "Every set is complete and the minions are still standing - the line says why, " +
+                "never a waiting-on line naming nobody, and never a throw.");
+            Assert.That(model.StatusDetail, Is.EqualTo("2 OF 2 MINIONS PICKED"),
+                "The demoted detail counts the viewer's own picks.");
+        }
+
+        /// <summary>
+        /// Milestone 9.29. The other side is told who is choosing and nothing of what.
+        /// </summary>
+        [Test]
+        public void AMinionBattleTheViewerIsNotChoosing_SaysWhoIsChoosingAndNothingElse()
         {
             var session = CreateSession();
             var red = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
             var blue = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
             var agreement = new TeamAgreementProjection(
                 TeamAgreementKind.MinionBattle,
-                new TeamAgreementProposalId("every-agreement-in-probe"),
+                new TeamAgreementProposalId("other-side-probe"),
                 TeamSide.Blue,
                 Array.Empty<TeamAgreementCandidateProjection>(),
-                new[]
-                {
-                    // A Minion Battle agreement reads `!Agreed`, so both agreeing empties the set.
-                    new TeamAgreementParticipantProjection(red.HeroId, false, default, true),
-                    new TeamAgreementParticipantProjection(blue.HeroId, false, default, true)
-                },
-                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
-                2,
-                false,
-                Array.Empty<TeamAgreementCommand>());
-            var projection = new AgreementReadModel(session.Projection, agreement);
+                new[] { new TeamAgreementParticipantProjection(blue.HeroId, false, default) },
+                1,
+                Array.Empty<TeamAgreementCommand>(),
+                red.HeroId);
 
-            var model = Narrate(projection, red.HeroId);
+            var model = Narrate(new AgreementReadModel(session.Projection, agreement), red.HeroId);
 
-            Assert.That(model.Status,
-                Is.EqualTo("MINION BATTLE PROPOSAL — " + NarrationLabels.EveryAnswerIn));
-            Assert.That(model.StatusDetail, Is.EqualTo("0 OF 2 MINIONS SELECTED"),
-                "The demoted detail is composed before the headline and must survive the empty " +
-                "owed-set branch with it.");
+            Assert.That(model.Status, Is.EqualTo(
+                "MINION BATTLE — " + MinionChoiceLabels.TeamLabel(TeamSide.Blue) +
+                " IS CHOOSING WHICH MINION TO REMOVE"));
+            Assert.That(model.StatusDetail, Is.Null.Or.Empty);
         }
 
         /// <summary>

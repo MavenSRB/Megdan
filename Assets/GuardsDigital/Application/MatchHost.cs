@@ -861,18 +861,55 @@ namespace GuardsDigital.Application
                             TeamAgreementSubmissionRejectionReason.UnauthorizedStatement,
                             applied.Detail, session.Projection.Version, 0);
 
-                    if (applied.FinalCommand == null)
+                    if (!applied.HasFinalAnswer)
                         return CachedAgreementOutcome(
                             submission, bound, true,
                             TeamAgreementSubmissionRejectionReason.None, string.Empty,
                             session.Projection.Version, 0);
 
-                    var final = Execute(MatchSubmission.ForCommand(applied.FinalCommand));
-                    if (!final.Accepted)
+                    var finalCommand = applied.FinalCommand;
+                    MatchHostResult final;
+                    if (applied.AgreedRemovals == null)
+                    {
+                        final = Execute(MatchSubmission.ForCommand(finalCommand));
+                    }
+                    else
+                    {
+                        // Milestone 9.29. Every choosing hero picked the same set, so the host
+                        // carries it into the authority as the Director would: one existing Select
+                        // per unit, each read off the contract standing at that moment, then the
+                        // existing Confirm. Bounded, because each accepted Select moves one unit
+                        // into the selection - after any stray one is taken back - and the Confirm
+                        // ends the choice.
+                        final = null;
+                        var stepLimit = (applied.AgreedRemovals.Count * 2) + 2;
+                        for (var step = 0; step < stepLimit; step++)
+                        {
+                            finalCommand = TeamAgreementCoordinator.NextMinionBattleCommand(
+                                session.Projection, applied.AgreedRemovals);
+                            if (finalCommand == null)
+                            {
+                                final = null;
+                                break;
+                            }
+
+                            final = Execute(MatchSubmission.ForCommand(finalCommand));
+                            if (!final.Accepted ||
+                                finalCommand.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals)
+                                break;
+                        }
+
+                        if (final != null && final.Accepted &&
+                            finalCommand?.Kind != DirectorCommandKind.ConfirmMinionBattleRemovals)
+                            final = null;
+                    }
+
+                    if (final == null || !final.Accepted)
                         return CachedAgreementOutcome(
                             submission, bound, false,
                             TeamAgreementSubmissionRejectionReason.FinalRulesChoiceRefused,
-                            final.Detail, session.Projection.Version, 0);
+                            final?.Detail ?? "The agreed removals are not offered by the standing choice.",
+                            session.Projection.Version, 0);
 
                     teamAgreement.Clear();
 
@@ -880,7 +917,7 @@ namespace GuardsDigital.Application
                     // match reaches or leaves an end-of-round stage - p.8's Minion Battle is
                     // confirmed exactly here - so the continuation runs from this door too.
                     ContinueEndOfRound();
-                    RefreshSeatUndoWatermark(bound.Id, applied.FinalCommand);
+                    RefreshSeatUndoWatermark(bound.Id, finalCommand);
                     return CachedAgreementOutcome(
                         submission, bound, true,
                         TeamAgreementSubmissionRejectionReason.None, string.Empty,

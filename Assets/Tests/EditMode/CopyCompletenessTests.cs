@@ -7,6 +7,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -166,7 +167,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NetworkMessageCodec_CarriesEveryFieldOfEveryMessage()
         {
-            AssertEveryFramedMessageRoundTrips(typeof(NetworkMessageCodec), expectedPairs: 8);
+            AssertEveryFramedMessageRoundTrips(typeof(NetworkMessageCodec), expectedPairs: 8,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    // Milestone 9.29: an agreement statement names a unit only as a Minion Battle pick,
+                    // and p.8 removes heroes and minions, never tokens.
+                    { "RuleObject.TokenInstanceId", "a Minion Battle pick never names a token" },
+                    { "TokenInstanceId.IsDefined", "a Minion Battle pick never names a token" },
+                    { "TokenInstanceId.Value", "a Minion Battle pick never names a token" },
+                });
         }
 
         /// <summary>
@@ -179,7 +188,8 @@ namespace GuardsDigital.Tests.EditMode
             AssertEveryFramedMessageRoundTrips(typeof(PrivateSessionFrameCodec), expectedPairs: 10);
         }
 
-        private static void AssertEveryFramedMessageRoundTrips(Type codec, int expectedPairs)
+        private static void AssertEveryFramedMessageRoundTrips(
+            Type codec, int expectedPairs, IReadOnlyDictionary<string, string> unexercised = null)
         {
             var encoders = codec.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(method => method.Name.EndsWith("Frame", StringComparison.Ordinal) &&
@@ -211,11 +221,18 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             probe.AssertNoDifferences(codec.Name);
-            probe.AssertExercised(codec.Name);
+            if (unexercised == null)
+                probe.AssertExercised(codec.Name);
+            else
+                probe.AssertExercised(codec.Name, unexercised);
         }
 
         private static CompletenessPopulator MessagePopulator(int seed) =>
             new CompletenessPopulator(seed)
+                // Milestone 9.29. An agreement statement is drawn as each of its shapes in turn across the
+                // three seeds - a preference, a hero pick and a minion take-back - so every arm the
+                // statement codec writes is round-tripped rather than whichever factory a draw lands on.
+                .With(populator => AgreementStatement(populator, seed / 1000 % 3))
                 // A log row is made the way the host makes one, from an entry, so its enum columns
                 // hold members the decoder admits.
                 .With(populator => NetworkMatchLogCodec.ToRow(populator.Create<MatchLogEntry>()))
@@ -227,6 +244,22 @@ namespace GuardsDigital.Tests.EditMode
                     PrivateSessionProtocol.MaxSeats,
                     populator.NextInt(),
                     populator.NextString("capability-")));
+
+        private static TeamAgreementCommand AgreementStatement(CompletenessPopulator populator, int shape)
+        {
+            var proposal = populator.Create<TeamAgreementProposalId>();
+            switch (shape)
+            {
+                case 0:
+                    return TeamAgreementCommand.Prefer(proposal, populator.Create<CardInstanceId>());
+                case 1:
+                    return TeamAgreementCommand.Pick(
+                        proposal, RuleObject.ForHero(populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>()));
+                default:
+                    return TeamAgreementCommand.Unpick(
+                        proposal, RuleObject.ForMinion(populator.Create<GuardsDigital.Core.Setup.MinionId>()));
+            }
+        }
 
         // ---------------------------------------------------------------------------------------
         // The match-log codec.
@@ -1061,6 +1094,15 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingSystemTransitionStep.IsConcurrent", "a seat's pause is narrowed to its own one item (8.35u), so it is never concurrent on a seat" },
                 { "MarkerAttachment.PropertySources", "derived from the trusted marker definition, which no dealt marker gives a property" },
                 { "PlacedToken.PropertySources", "derived from the trusted token definition; no token the walks place prints a property" },
+                // Milestone 9.29: a seat answers the Minion Battle through its own picks, and the authority's
+                // selection stays empty until every pick matches - then the host fills and confirms it inside
+                // one submission - so no seat projection ever carries a non-empty shared selection.
+                { "PendingMinionBattleChoice.CanConfirm", NinePointTwoNine },
+                { "PendingMinionBattleChoice.DeselectInvocations", NinePointTwoNine },
+                { "PendingMinionBattleChoice.LegalDeselectMinionIds", NinePointTwoNine },
+                { "PendingMinionBattleChoice.LegalDeselectUnits", NinePointTwoNine },
+                { "PendingMinionBattleChoice.SelectedMinionIds", NinePointTwoNine },
+                { "PendingMinionBattleChoice.SelectedUnits", NinePointTwoNine },
                 // Not reached by the walks: a drop here would go unseen until a walk or fixture reaches it.
                 { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
                 { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
@@ -1084,8 +1126,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "SystemTransitionOptionDescription.Destination", NotReached("a Lane Push respawn placement") },
                 { "SystemTransitionOptionDescription.DestinationSpaceId", NotReached("a Lane Push respawn placement") },
                 { "SystemTransitionStepDescription.RemainingCoins", NotReached("a level-up with coins left over") },
-                { "TeamAgreementParticipantProjection.Agreed", NotReached("a team agreement with a statement made") },
-                { "TeamAgreementParticipantProjection.HasStatement", NotReached("a team agreement with a statement made") },
                 { "TeamAgreementParticipantProjection.PreferredCardInstanceId", NotReached("a team agreement with a statement made") },
                 { "TurnCardAssignment.PassedWithEmptyHand", NotReached("a pass with an empty hand") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
@@ -1093,6 +1133,9 @@ namespace GuardsDigital.Tests.EditMode
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.SourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
             };
+
+        private const string NinePointTwoNine =
+            "9.29: on a seat-served host the shared selection stays empty until every seat's picks match";
 
         private static string Covered(string check) => "exercised with every field populated by " + check;
 

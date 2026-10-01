@@ -107,8 +107,13 @@ namespace GuardsDigital.Presentation.Match
             header.Clear();
             controls.Clear();
             var model = Model;
-            Root.style.display = model == null ? DisplayStyle.None : DisplayStyle.Flex;
-            if (model == null)
+            // Milestone 9.29: while the decision window draws the Minion Battle, this older prompt
+            // draws nothing at all - its header ("SELECTED 0 OF 1") sat under the docked bar beside the
+            // DIRECTOR toggle and said a second, older thing about the same question.
+            var hidden = model == null ||
+                (model.Kind == MinionChoicePromptKind.MinionBattleRemoval && YieldsMinionBattle);
+            Root.style.display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
+            if (hidden)
             {
                 return;
             }
