@@ -107,5 +107,6 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 9 - Twenty-seventh-hero dealing: Mortimer the Awakener](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md)
 - [Phase 9 - Twenty-eighth-hero dealing: Razzle](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md)
 - [Phase 9 - Twenty-ninth-hero dealing: Gydion the Archwizard](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md)
+- [Phase 9 - Thirtieth-hero dealing: Takahide the Warlord](Roadmap/PHASE_9_THIRTIETH_HERO.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)

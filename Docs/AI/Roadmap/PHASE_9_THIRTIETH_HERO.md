@@ -1,0 +1,56 @@
+# Phase 9 - The thirtieth hero: Takahide
+
+Status: [route](../SESSION_BRIEF.md). Rules: [HERO_TAKAHIDE.md](../Rules/HERO_TAKAHIDE.md) (created by 9.32).
+
+On 2026-10-01, while another session cut the Gydion build (9.31), the user said "another agent is making a build now, you are supposed to start work on a new hero". The user named no hero, as on 2026-09-25 and 2026-09-27, so the agent chose from the three undealt heroes: **Takahide the Warlord**, four stars, no tokens, whose faces compose mostly from contracts the build already has (discards, retrievals, coins, card-text moves, colour-matched discards, maximum range). Emmitt (play two cards a turn, reversed Initiative order, position history) and NebKher (a board split into two sides, tokens counting as friendly minions, actions performed from other heroes' turn slots) were set aside as heavier. This authorizes the bounded sequence **9.32 -> 9.32a .. 9.32i** through a fully selectable, artworked Takahide, every dealt printed face and the permanent player-path gate, as "cleared to go and implement the next hero" did for Mrak. Execute one milestone at a time with its own validation and local commit. A block whose TK question is unanswered stops at that question; other blocks do not wait on it. No Unity run starts while the 9.31 package holds the Editor. No other hero, package, remote publication or rule invention is authorized.
+
+He is new to the engine in three ways: **three gold cards**, two of which start in the deck and trade places with the card being played (p.10's Swap a Card, now with the deck, and its Facedown state); **a teammate's unresolved card swapped** for a card in their hand or discard, which changes when that teammate acts (p.7); and **spaces that are obstacles for one side only**. His Ultimate gives him a six-card hand. Twenty fronts are dealt; the twenty-first, Shameful Display, is a p.20 Handicap and stays boxed at setup.
+
+## Carried lessons
+
+[Gydion's list](PHASE_9_TWENTY_NINTH_HERO.md#carried-lessons) binds here unchanged: lessons 1-23 through Razzle and Gydion's 24-27. Four more bind:
+
+28. **A swap is one exchange of every state** (p.10). Each swap writes both cards' complete `CardStateFacts` and the turn slot's card identity in one operation. Tests assert both cards' full state and the slot assignment after every swap shape the faces reach: resolving with deck, hand with deck, resolved with deck, discarded with deck, unresolved with hand, unresolved with discard.
+29. **A facedown card has no face to read** (p.10). Every reader of a resolved or discarded card's colour, type, Initiative or actions is listed by grep and swept against a facedown resolved and a facedown discarded card: Swift's Reload!, Brogan's "played an attack card this turn", Tali's colour discards, Takahide's own discard-pile choice, the bots, the log and the HUD. No other seat's projection names a facedown card.
+30. **An obstacle can belong to one side.** Before 9.32c changes `ObstacleQuery`, every caller that names no moving or placed piece is listed by grep; each is changed to name it or proven unable to meet Takahide's spaces.
+31. **A hand can hold six.** Every five-card assumption in the HUD hand, the bots, the commitment window and the validators is found by grep before 9.32f, and a six-card hand is staged and captured.
+
+### [ ] 9.32 Inventory Takahide and map the implementation sequence
+
+Outcome: verify all twenty-one fronts, the profile, dashboard and standee evidence in the Tabletopia corpus; record printed values and exact text (reminder text included), the item icons by montage, the stat bars, the rulebook intersections (Hidden Information, setup and the starting hand, turn order, End of Round, card types, Making Choices, Picking Targets, card states, Swap a Card, Facedown, Active effects, Empty, Obstacle, Place, Push, the Ultimate, Handicap), the existing-capability matches and the new contracts, and every unresolved interpretation as TK-Qn with the block it blocks. No executable content is registered. Acceptance: twenty-one distinct fronts and one shared back accounted for; selection roles and complexity matching the profile; the capability map probes the actual engine seams (`CardLifecycleAuthority`, `RoundResolutionAuthority`'s turn-slot swap, `InitiativeResolutionAuthority`, `ObstacleQuery`, `ColorRestrictedDiscard`, `UltimateUnlockQuery`) and names the schema and wire moves it expects; blocks 9.32a-9.32i mapped; living documentation green. T0. Non-goals: gameplay code, assets in the build, a package.
+
+### [ ] 9.32a Gold cards: the deck start and the swap with the deck
+
+Outcome: Float like a Butterfly starts in the hand and Sting like a Bee and Strike like a Tiger in the deck. A card text may swap the card resolving its own action, or a resting gold card (in hand, resolved or discarded), with a chosen card in the owner's deck: every state is exchanged (p.10) and the turn slot's identity follows; the action that started on the old card completes and resolves the new one (TK-Q1, TK-Q2). Bushido's resolved or discarded result is p.10's facedown card: no type, colour or actions, hidden from every other seat, its Active effect cancelled, retrieved to a fresh hand at round end. Composed on synthetic test content only. Closing check: lifecycle, turn-slot and privacy tests failing on the base for each swap shape (lesson 28) and each facedown reader (lesson 29); snapshot, restore and wire round trips through 9.11's completeness checks; the harness green. T2. Needs TK-Q1 and TK-Q2.
+
+### [ ] 9.32b Swap a teammate's unresolved card
+
+Outcome: a card text lets a chosen friendly hero swap their unresolved card with a card in their hand, or in their hand or discard; that hero's seat decides whether and with which card; only heroes the step can act on are offered (6.8l); the turn slot's identity changes and the next actor is read from the swapped-in card's Initiative (p.7, Hanu's precedent); the old card takes the hand's or the discard's states (p.10). Composed on synthetic test content only. Closing check: tests failing on the base, including a swap that moves the teammate ahead of or behind another hero still to act, a swap with a resolved discarded card, a network seat answering for itself, and a restore at the paused choice. T2.
+
+### [ ] 9.32c Spaces that are obstacles for the enemy units
+
+Outcome: an Active effect may make spaces count as obstacles for the units of one side only, for the rest of the turn, read around its source hero's current space ("adjacent to you", "in radius"). Every obstacle reader names the piece that moves, ends, is placed, pushed or respawned (lesson 30); friendly pieces and tokens are unaffected (TK-Q3). Composed on synthetic test content only. Closing check: movement, ignoring-obstacles, push, placement and respawn tests failing on the base, for an enemy and a friendly unit; the overlay restored from a snapshot; bots' move generation reads it. T2. Needs TK-Q3.
+
+### [ ] 9.32d Compose the gold, silver and Red faces
+
+Outcome: Sting like a Bee (maximum range, RULING 1), Strike like a Tiger and Float like a Butterfly with their swaps, Bushido, Set an Example, Lead from the Front, Hold my Saké, Spinning Blade and Blade Helix composed on 9.32a-9.32c, read against [PRINTED_WORDING](../Rules/PRINTED_WORDING.md). Closing check: one staged Edit Mode outcome test per face, each failing before composition; `PrintedWordingConformanceTests` on the new faces. T2. After 9.32a, 9.32b and 9.32c.
+
+### [ ] 9.32e Compose the Blue and Green faces
+
+Outcome: a card chosen from a teammate's discard pile as a colour value, then Tali's colour-restricted discard (W3 for The Right Hand); a teammate's optional discard of a card or of an attack card (p.9), the discard-pile state check, the teammate's or Takahide's card-text move (with and without ignoring obstacles), coins to both heroes and Takahide's retrieval. Closing check: one staged Edit Mode outcome test per face failing before composition, including a teammate who declines but already has a discarded card and a facedown discarded card that cannot be chosen; offers checked against outcomes (lesson 18) with no teammate in reach (TK-Q4). T2. Needs TK-Q4.
+
+### [ ] 9.32f Ready for War and the six-card hand
+
+Outcome: an Ultimate whose text is a one-time card movement performed at its unlock: the silver card to the deck and the two deck golds into the hand (TK-Q5); every five-card assumption found and widened (lesson 31); bots commit and level from six cards. Closing check: progression tests failing on the base, including an unlock during simultaneous leveling (8.35u) and a gold swap that then finds no deck gold; a snapshot round trip of the six-card state. T2. Needs TK-Q5; after 9.32a.
+
+### [ ] 9.32g Present Takahide
+
+Outcome: the six-card hand, a facedown gold in a turn slot and in the discard pile (his own seat sees the face, others a back), the deck-gold choice drawn with card faces, a teammate's unresolved-card swap asked on that teammate's seat, the spaces that are obstacles for the enemy, and the log rows each swap writes without naming a hidden card. Mockups composited over real captures go to the user before building; a built screen that matches its approved mockup lands with captures for review, one that must differ waits for the user. Closing check: view regressions failing on the base; seat-scoped privacy; captures at the three validated viewports. T2 with a visual inspection. After 9.32d-9.32f.
+
+### [ ] 9.32h Deal Takahide with his artwork
+
+Outcome: Takahide registered in the roster and pickable with his profile, standee (TK-02) and card art; Shameful Display boxed; decision labels; the new-hero checklist ([PRINTED_WORDING](../Rules/PRINTED_WORDING.md#required-for-a-new-hero)) run, `OfferOutcomeTests` included; bots answer his decisions. Closing check: as Gydion's 9.30i. T3.
+
+### [ ] 9.32i Gate Takahide on the player path
+
+Outcome: the permanent player-path gate for Takahide, journeys reading outcomes (lesson 4), full harness, Edit Mode and Play Mode green with zero skips. T3.
