@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30c Cast and refill evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30c | A named spell in the book is cast - removed faceup, then its primary performed by the caster through the borrow path - and a refill returns every removed spell and ends its Active effects; GY-Q7 and GY-Q12 built as the user ruled. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930c-cast-a-spell-and-refill-the-book). | `milestone/9.30c` |
+
 ## Milestone 9.30b Spellbook zone evidence
 
 | Milestone | Outcome and definition | Commit |
