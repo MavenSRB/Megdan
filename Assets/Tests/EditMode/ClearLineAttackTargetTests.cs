@@ -369,6 +369,51 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 9.30i. Gydion's Fireball (9.30d) - "Target a unit in range, not adjacent to you or
+        /// to your friendly unit" - declares <see cref="AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker"/>,
+        /// and the corpus case above asks it on a board with no friendly unit, where the narrowing
+        /// refuses nothing and the oracle passes whatever the query does. Here a friendly minion of
+        /// the actor's stands one space past the hero down the clear west file, so the oracle - which
+        /// writes p.17's "friendly unit" (the attacker excluded) out again from the page - refuses
+        /// exactly that hero, and every declaration in the build is asked again on this board.
+        /// </summary>
+        [Test]
+        public void FireballsNarrowing_RefusesTheCandidateBesideAFriendlyUnit_ByTheOracle()
+        {
+            var board = ClearLineBoard.Create(withFriendlyUnit: true);
+            var fireball = GuardsDigital.Core.Cards.Verified.GydionCardContent
+                .Definition(GuardsDigital.Core.Cards.Verified.GydionCardContent.Fireball)
+                .ActionDefinitions.Single(action => action.AttackTargetPolicy.HasValue).AttackTargetPolicy.Value;
+            Assert.That(fireball.TargetableUnits,
+                Is.EqualTo(AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker));
+            Assert.That(fireball.Reach, Is.EqualTo(AttackTargetReach.PrintedRangeBeyondAdjacent));
+
+            var expected = ExpectedUnderTheOlderReadings(fireball, withFriendlyUnit: true);
+            Assert.That(expected, Has.No.Member("hero:" + ClearLineBoard.DownAClearFile.Value),
+                "The oracle is not vacuous: the hero beside the actor's friendly minion is refused.");
+            Assert.That(
+                ExpectedUnderTheOlderReadings(
+                    new PrintedAttackTargetPolicy(
+                        AttackTargetableUnits.HeroesAndMinions, fireball.Reach, fireball.Line),
+                    withFriendlyUnit: true),
+                Has.Member("hero:" + ClearLineBoard.DownAClearFile.Value),
+                "while the same reach without the noun's narrowing admits him.");
+            Assert.That(expected, Has.Member("hero:" + ClearLineBoard.BehindTheToken.Value),
+                "and a hero beside no friendly unit of the attacker stays legal.");
+            Assert.That(Targets(board, fireball), Is.EquivalentTo(expected),
+                "Fireball's targets on a board with a friendly unit are the ones the page gives.");
+
+            foreach (var entry in DeclaredAttackPolicies().Where(entry => entry.Policy.Line !=
+                AttackTargetLine.InStraightLineClearOfUnitsAndTerrain))
+            {
+                Assert.That(
+                    Targets(board, entry.Policy),
+                    Is.EquivalentTo(ExpectedUnderTheOlderReadings(entry.Policy, withFriendlyUnit: true)),
+                    entry.Owner + " keeps the set the pages give it with a friendly unit on the board.");
+            }
+        }
+
         // ---------------------------------------------------------------------------------------
         // Both consumers of the enum
         // ---------------------------------------------------------------------------------------
@@ -483,7 +528,7 @@ namespace GuardsDigital.Tests.EditMode
         /// query against something other than itself.
         /// </summary>
         private static IReadOnlyList<string> ExpectedUnderTheOlderReadings(
-            PrintedAttackTargetPolicy policy)
+            PrintedAttackTargetPolicy policy, bool withFriendlyUnit = false)
         {
             var pieces = ClearLineBoard.EnemyPieces();
             var origin = ClearLineBoard.Origin;
@@ -522,8 +567,15 @@ namespace GuardsDigital.Tests.EditMode
             bool IsolatedOrBesideTheActor(HexCoordinate at) =>
                 policy.TargetableUnits != AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou ||
                 HexDistanceQuery.Calculate(origin, at) == 1 ||
-                !ClearLineBoard.EveryPieceIncludingTheActor().Any(other =>
+                !ClearLineBoard.EveryPieceIncludingTheActor(withFriendlyUnit).Any(other =>
                     !other.Equals(at) && HexDistanceQuery.Calculate(other, at) == 1);
+
+            // Milestone 9.30i. p.17's "friendly unit" - a hero or minion on the attacker's team other
+            // than the attacker himself - and Fireball's "not adjacent to ... your friendly unit".
+            bool BesideNoFriendlyUnit(HexCoordinate at) =>
+                policy.TargetableUnits != AttackTargetableUnits.UnitsNotAdjacentToAFriendlyUnitOfTheAttacker ||
+                !ClearLineBoard.FriendlyUnitsOtherThanTheActor(withFriendlyUnit).Any(friend =>
+                    HexDistanceQuery.Calculate(friend, at) == 1);
 
             // p.13's unit narrowing, re-derived rather than asked of the query. Milestone 8.71c added
             // the mirror of `HeroesOnly` for Hanu's Outnumber and Pile On - "Target a MINION in range"
@@ -547,7 +599,8 @@ namespace GuardsDigital.Tests.EditMode
                     AdmittedByTheNoun(piece.IsHero) &&
                     WithinTheReach(piece.At) &&
                     OnAnAdmittedFile(piece.At) &&
-                    IsolatedOrBesideTheActor(piece.At))
+                    IsolatedOrBesideTheActor(piece.At) &&
+                    BesideNoFriendlyUnit(piece.At))
                 .Select(piece => piece.Key)
                 .OrderBy(key => key, StringComparer.Ordinal)
                 .ToArray();
@@ -714,6 +767,14 @@ namespace GuardsDigital.Tests.EditMode
                 new MinionId("clear-line-blocking-minion");
             internal static readonly MinionId NearMinion = new MinionId("clear-line-near-minion");
 
+            /// <summary>
+            /// Milestone 9.30i. A minion on the ACTOR's team, one space past the hero down the clear west
+            /// file - beside that hero and nobody else - placed only when a case asks for it.
+            /// </summary>
+            internal static readonly MinionId FriendlyMinion = new MinionId("clear-line-friendly-minion");
+
+            private static HexCoordinate FriendlyAt => At(HexDirection.West, 4);
+
             private static readonly TeamId RedTeam = new TeamId("clear-line-red");
             private static readonly TeamId BlueTeam = new TeamId("clear-line-blue");
 
@@ -758,15 +819,20 @@ namespace GuardsDigital.Tests.EditMode
                     .ToArray();
 
             /// <summary>Every piece the isolation union counts, the actor included.</summary>
-            internal static IReadOnlyList<HexCoordinate> EveryPieceIncludingTheActor() =>
-                EnemyPieces().Select(piece => piece.At).Concat(new[] { Origin }).ToArray();
+            internal static IReadOnlyList<HexCoordinate> EveryPieceIncludingTheActor(bool withFriendlyUnit = false) =>
+                EnemyPieces().Select(piece => piece.At).Concat(new[] { Origin })
+                    .Concat(FriendlyUnitsOtherThanTheActor(withFriendlyUnit)).ToArray();
+
+            /// <summary>Milestone 9.30i. The actor's friendly units other than himself.</summary>
+            internal static IReadOnlyList<HexCoordinate> FriendlyUnitsOtherThanTheActor(bool withFriendlyUnit) =>
+                withFriendlyUnit ? new[] { FriendlyAt } : Array.Empty<HexCoordinate>();
 
             /// <summary>
             /// The board. <paramref name="holeAt"/> names one space to leave off the map entirely -
             /// neither playable nor terrain - which is how a case reaches the void between two
             /// playable spaces.
             /// </summary>
-            internal static AdjacentMoveAuthority Create(HexCoordinate? holeAt = null)
+            internal static AdjacentMoveAuthority Create(HexCoordinate? holeAt = null, bool withFriendlyUnit = false)
             {
                 var board = new AdjacentMoveAuthority(
                     CreateMap(holeAt),
@@ -784,6 +850,14 @@ namespace GuardsDigital.Tests.EditMode
                             default,
                             new ConfiguredSpaceReference(Map, SpaceIdFor(entry.At)),
                             entry.At))
+                        .Concat(withFriendlyUnit
+                            ? new[]
+                            {
+                                new QuickGameMinionSetupState(
+                                    FriendlyMinion, RedTeam, TeamSide.Red, StandardMinionType.Melee, default,
+                                    new ConfiguredSpaceReference(Map, SpaceIdFor(FriendlyAt)), FriendlyAt)
+                            }
+                            : Array.Empty<QuickGameMinionSetupState>())
                         .ToArray());
 
                 board.CommitValidatedTokenPlacement(new PlacedToken(
