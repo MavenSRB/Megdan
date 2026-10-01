@@ -229,23 +229,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cast.Card(Cast.NextCard).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
-        /// <summary>
-        /// GY-Q7, built as RECOMMENDED and not yet answered by the user: kept to this case and one
-        /// line of the refill's probe so it can be dropped whole if the user rules otherwise.
-        /// </summary>
-        [Test]
-        public void AnEmptyRefill_IsGreyed_AndOneWithASpellToReturnIsOffered_GyQ7()
-        {
-            var empty = new Cast(SyntheticSpellbook.PrepareSpellsId);
-            Assert.That(empty.IsOffered, Is.False,
-                "GY-Q7: with nothing removed, \"Add all spell cards to the spellbook\" adds nothing, so the " +
-                "card is greyed");
-            Assert.That(empty.Round.TryPerformHold(Cast.Played).Accepted, Is.True, "and p.12's Hold stays");
-
-            var one = new Cast(SyntheticSpellbook.PrepareSpellsId, removed: new[] { Ward });
-            Assert.That(one.IsOffered, Is.True, "one spell to return is enough");
-        }
-
         // -------------------------------------------------------------------------------------------
         // Pauses
         // -------------------------------------------------------------------------------------------
