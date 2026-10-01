@@ -35,7 +35,11 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The setup arm: his seat is named Gydion and stands on the engaged board against Wasp.
             var seat = runtime.Setup.Heroes.Single(hero => hero.ContentId.Value == GydionCardContent.ContentSetId);
-            Assert.That(seat.DisplayName, Is.EqualTo(HisName));
+            // A staged one-vs-one seat is named short (QuickGameSetupConfiguration.CreateOneVsOne(..., "Gydion"));
+            // the full title is the roster's, which the picker shows.
+            Assert.That(seat.DisplayName, Is.EqualTo("Gydion"));
+            Assert.That(RegisteredHeroRoster.ForThisBuild
+                .Single(hero => hero.ContentId.Value == GydionCardContent.ContentSetId).DisplayName, Is.EqualTo(HisName));
             var gydion = seat.HeroId;
             var wasp = Wasp(runtime);
             Assert.That(SpaceOf(runtime, gydion), Is.EqualTo(GydionSpace));
