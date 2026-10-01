@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.29 Minion Battle picks evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.29 | Each choosing teammate picks their own Minion Battle removals and matching picks remove them: corner marks on a pickable minion, the full hex outline and the picking teammate's token on a picked one, a docked bar with no verb; the other side sees only who is choosing. Wire `/30`, snapshot v50 unmoved, p.8 unchanged. [Definition](../../Roadmap/PHASE_9.md#x-929-each-teammate-picks-their-own-minion-battle-removals-and-matching-picks-remove-them). | `milestone/9.29` |
+
 ## Milestone 9.28 End Turn cue evidence
 
 | Milestone | Outcome and definition | Commit |

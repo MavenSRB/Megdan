@@ -331,7 +331,7 @@ Historical evidence: [9.28 completion index](../Archive/Phase-Handoffs/PHASE_9.m
 
 ## Minion Battle picks, authorized 2026-10-01
 
-### [ ] 9.29 Each teammate picks their own Minion Battle removals, and matching picks remove them
+### [x] 9.29 Each teammate picks their own Minion Battle removals, and matching picks remove them
 
 Authorized 2026-10-01 by the user, from the 2026-09-30 playtest: "After minion battle removal, when team is supposed to agree what minon to remove. That UI implementation sucks. Player are struggling with it a lot." and "they now share the selection, and that is confusing for people. Stuff is changing on the screen and they dont know why." The user settled the design the same day. Each player picks their own minions. "Matching picks remove, but you need to see what other people picked as well ... not full hex outline when minion is selectable, and full outline when a teammate or you have selected it". A teammate's pick also carries that teammate's small portrait. The milestone runs now, ahead of 9.19's sequence.
 
@@ -361,3 +361,9 @@ Closing check: every regression below fails on the base and passes after.
 - Bots: bot seats converge on a human's picks.
 
 The six-seat rehearsal, the seat drivers and the Play Mode paths through a Minion Battle are re-pointed and green. Full dotnet harness, then complete Edit Mode and Play Mode suites: T3, because seat authorization, the wire and the whole-match drivers change. A capture of picked minions on the board goes to the user.
+
+Result: the host agreement coordinator holds one pick set per choosing-team seat, oldest first (`TeamAgreementCoordinator.minionPicks`, legality from `MinionBattlePickRules`, which asks the authority's Heavy-last order of that seat's own set); a pick on a full set replaces the oldest pick that leaves a legal set. Seats are authorized no Minion Battle rules command (`SeatProjectionFactory`); a seat states `PickMinionBattleRemoval` / `UnpickMinionBattleRemoval` with the unit it names, and the moment every choosing seat holds the same complete set the host submits the existing Selects in that order and the existing Confirm (`TeamAgreementCoordinator.NextMinionBattleCommand`, first taking back any stray selection), so the authority's choice, legality and removal order are untouched. A team agreement projection carries each participant's `Picks` and `PicksComplete` for the choosing side only, and `ViewerHeroId`; wire `guards-private-online/30`, snapshot v50 unmoved. The board cues a pickable minion with its corner marks and every picked one with the full hex outline plus a small token for each picking teammate (`MinionBattlePickViewModel`, `MinionBattlePickBadges`); the docked bar counts the viewer's own picks, has no verb, never expands, and names a teammate unfinished or different; the other side sees "IS CHOOSING WHICH MINION TO REMOVE" and nothing else. Bot seats copy a human teammate's complete picks (`MinionBattlePickPolicy`), and a team of bots converges on the first offered set. The runtime answers a projected pick through the minion's own prompt candidate, as a click would - before that the built-player seat drivers could not pick at all. The rehearsal driver's scripted battle proves `minion-divergent` and `minion-own-picks-kept` in a built six-client match; seeded test walks keep their trajectories through `TeamAgreementTestDriver.EnumerateWalkCommands`.
+
+Completed 2026-10-01.
+
+Historical evidence: [9.29 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-929-minion-battle-picks-evidence).
