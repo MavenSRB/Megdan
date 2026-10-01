@@ -247,24 +247,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             /// <summary>
             /// A spell that cannot be cast is a mandatory step that cannot be taken (greyed). A castable
-            /// spell whose primary could do nothing now - by the rules the turn applies to its own offers
-            /// (9.6) - is a cast that performs nothing: answered as declined, so its bullet stays
-            /// selectable beside one that can act (8.35z35) and a card it is the only hope of is greyed
-            /// (W7).
+            /// spell is always worth casting, whether or not its primary could then act: GY-Q12 (user,
+            /// 2026-10-01, "Yes, castable") - the faceup removal itself changes the game, because
+            /// Sunburst, Dimension Door and Midas' Touch count removed spells. So W7's grey for a borrowed
+            /// primary that can do nothing (9.6) does not reach a cast, and the probe does not ask
+            /// whether the spell's primary could act.
             /// </summary>
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
-            {
-                var spell = Castable(context);
-                if (spell == null)
-                {
-                    return EffectExecutionResultKind.ImpossibleMandatory;
-                }
-
-                return context.BorrowedPrimaryCanAct == null ||
-                    context.BorrowedPrimaryCanAct(spell.Id, context.ActorId)
-                    ? EffectExecutionResultKind.Applied
-                    : EffectExecutionResultKind.DeclinedOptional;
-            }
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Castable(context) == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
         }
 
         private sealed class RefillSpellbookHandler : IEffectCapabilityHandler

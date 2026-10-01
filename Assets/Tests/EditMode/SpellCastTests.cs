@@ -129,25 +129,48 @@ namespace GuardsDigital.Tests.EditMode
                 "\"played an Attack card\" reads the played card, a Skill (GY-Q3)");
         }
 
+        /// <summary>
+        /// GY-Q12, the user's answer (2026-10-01, "Yes, castable"): a cast is playable whenever its spell
+        /// is in the book, even if the spell's action then does nothing, because the faceup removal
+        /// changes the game - Sunburst, Dimension Door and Midas' Touch count removed spells. W7's grey
+        /// (a borrowed primary that can do nothing) therefore does not apply to a cast.
+        /// </summary>
         [Test]
-        public void ACastWhoseSpellCannotAct_IsSelectableBesideOneThatCan_ButGreysACardItIsTheOnlyHopeOf()
+        public void ACastWhoseSpellCannotAct_IsStillPlayable_AndRemovesTheSpellFaceupPerformingNothing_GyQ12()
         {
             var evocation = new Cast(SyntheticSpellbook.EvocationId, enemyBeside: false);
-            Assert.That(evocation.IsOffered, Is.False,
-                "\"Cast the Attack spell\" with nobody in reach: a borrowed primary that can do nothing does " +
-                "not make a card playable (W7)");
+            Assert.That(evocation.IsOffered, Is.True,
+                "GY-Q12 (user): \"Cast the Attack spell\" with nobody in reach is offered - casting removes the spell");
+            Assert.That(evocation.Board.TryGetHeroCoordinate(Cast.Enemy, out var enemyBefore), Is.True);
+            Assert.That(evocation.Board.TryGetHeroCoordinate(Cast.Caster, out var casterBefore), Is.True);
+
+            evocation.StartCasting();
+            Assert.That(evocation.Spell(Attack).State, Is.EqualTo(new CardStateFacts(
+                    CardLocation.RemovedFromSpellbook, false, CardResolutionStatus.None, CardFaceOrientation.FaceUp)),
+                "the spell is cast: removed from the book faceup");
+            Assert.That(evocation.Turn.PendingAttackTargetChoice, Is.Null, "and its Attack reaches nobody");
+            Assert.That(evocation.Turn.PendingDefenseChoice, Is.Null);
+            Assert.That(evocation.Turn.PendingEffectChoice, Is.Null);
+            Assert.That(evocation.Board.TryGetHeroCoordinate(Cast.Enemy, out var enemyAfter) &&
+                enemyAfter.Equals(enemyBefore), Is.True, "nobody is touched");
+            Assert.That(evocation.Board.TryGetHeroCoordinate(Cast.Caster, out var casterAfter) &&
+                casterAfter.Equals(casterBefore), Is.True);
+            Assert.That(evocation.Spell(Movement).State.Location, Is.EqualTo(CardLocation.Spellbook));
+            Assert.That(evocation.Spell(Ward).State.Location, Is.EqualTo(CardLocation.Spellbook));
+            Assert.That(evocation.Card(Cast.Played).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+
+            var onlyTheAttackLeft = new Cast(SyntheticSpellbook.CantripId, enemyBeside: false,
+                removed: new[] { Movement, Ward });
+            Assert.That(onlyTheAttackLeft.IsOffered, Is.True,
+                "a \"Choose and cast one\" whose only in-book spell cannot act is offered too");
 
             var cantrip = new Cast(SyntheticSpellbook.CantripId, enemyBeside: false);
-            Assert.That(cantrip.IsOffered, Is.True, "the Movement and the Ward can act");
             cantrip.StartCasting();
             Assert.That(cantrip.Choice.UnavailableCandidates, Is.Empty,
-                "a castable spell that would do nothing stays selectable (8.35z35)");
-
+                "every in-book spell's bullet is available, the one that cannot act included");
             cantrip.ChooseArm(SyntheticSpellbook.CastAttackArm);
-            Assert.That(cantrip.Spell(Attack).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook),
-                "the spell is cast");
-            Assert.That(cantrip.Turn.PendingAttackTargetChoice, Is.Null, "and its Attack reaches nobody");
-            Assert.That(cantrip.Turn.PendingEffectChoice, Is.Null);
+            Assert.That(cantrip.Spell(Attack).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook));
+            Assert.That(cantrip.Turn.PendingAttackTargetChoice, Is.Null);
             Assert.That(cantrip.Card(Cast.Played).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
         }
 
@@ -313,11 +336,10 @@ namespace GuardsDigital.Tests.EditMode
                     var position = "removed [" + string.Join(", ", removed.Select(id => id.Value)) + "], enemy " +
                         (beside ? "beside" : "far");
                     bool InBook(CardDefinitionId spell) => !removed.Contains(spell);
-                    bool CanAct(CardDefinitionId spell) => InBook(spell) && (!spell.Equals(Attack) || beside);
 
                     var cantrip = new Cast(SyntheticSpellbook.CantripId, beside, removed);
-                    Assert.That(cantrip.IsOffered, Is.EqualTo(new[] { Attack, Movement, Ward }.Any(CanAct)),
-                        position + ": the Cantrip is offered exactly when a spell it can cast can act");
+                    Assert.That(cantrip.IsOffered, Is.EqualTo(new[] { Attack, Movement, Ward }.Any(InBook)),
+                        position + ": the Cantrip is offered exactly when a spell it names is in the book (GY-Q12)");
                     if (cantrip.IsOffered)
                     {
                         cantrip.StartCasting();
@@ -347,8 +369,8 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     var evocation = new Cast(SyntheticSpellbook.EvocationId, beside, removed);
-                    Assert.That(evocation.IsOffered, Is.EqualTo(CanAct(Attack)),
-                        position + ": \"Cast the Attack spell\" is offered exactly when that spell can act");
+                    Assert.That(evocation.IsOffered, Is.EqualTo(InBook(Attack)),
+                        position + ": \"Cast the Attack spell\" is offered exactly when that spell is in the book (GY-Q12)");
                     if (evocation.IsOffered)
                     {
                         evocation.StartCasting();
