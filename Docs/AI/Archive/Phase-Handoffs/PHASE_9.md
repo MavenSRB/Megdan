@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30 Gydion inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30 | Gydion's nineteen fronts, twenty-two spells, profile, dashboard, standee and Familiar evidence inventoried; the designer's two answers recorded; the spellbook's new engine contracts named; GY-Q1-GY-Q6 settled, GY-Q7-GY-Q11 recorded with recommendations; blocks 9.30a-9.30j mapped. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930-inventory-gydion-and-map-the-implementation-sequence). | `milestone/9.30` |
+
 ## Milestone 9.29 Minion Battle picks evidence
 
 | Milestone | Outcome and definition | Commit |
