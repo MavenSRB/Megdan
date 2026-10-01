@@ -1172,7 +1172,7 @@ namespace GuardsDigital.Tests.PlayMode
             // wherever their heroes do, which in a 2v2 is well above it, so the band is read off the
             // columns the renderer reserves, as the drawer's own layout does.
             var band = Mathf.Min(root.Hud.RedHeroRailRect.yMax, root.Hud.BlueHeroRailRect.yMax);
-            Assert.That(box.yMax, Is.LessThanOrEqualTo(band + 0.5f),
+            Assert.That(box.yMax, Is.LessThanOrEqualTo(band + UiPlayer.PixelSnapping(2)),
                 "above the hand's band at " + where + ": " + box + " against the band at " + band);
             Assert.That(box.yMax, Is.LessThanOrEqualTo(root.Hud.RootElement.worldBound.yMax + 0.5f),
                 "inside the screen at " + where + ": " + box);
