@@ -43,9 +43,11 @@ Historical evidence: [9.30c completion index](../Archive/Phase-Handoffs/PHASE_9.
 
 Outcome: Magic Missile, Shocking Grasp, Expeditious Retreat, Burning Hands, Fireball, Vampiric Touch, Create Undead, Dominate Person, Power Word Kill, Disintegrate, Polymorph and Banishment are composed on the cast path from existing capabilities, read against [PRINTED_WORDING](../Rules/PRINTED_WORDING.md) (W3 for Burning Hands, W5/W9 for Shocking Grasp, Exclusion for Fireball). Closing check: one staged Edit Mode outcome test per spell, each failing before composition; `PrintedWordingConformanceTests` on the new faces. T2. Needs GY-Q8.
 
-### [ ] 9.30e Compose the counting spells and the Familiar
+### [x] 9.30e Compose the counting spells and the Familiar
 
 Outcome: a count of other removed spells feeds Sunburst's Attack and Range, Dimension Door's Radius (Place yourself at exactly the Radius) and Midas' Touch's coins (rounded down); the Familiar token (supply one, obstacle, removed at round end, moved by a new Place) and Find Familiar's optional removal of up to three other spells. Closing check: count, value and placement tests failing on the base, offers reading the same count as the resolution (lesson 27). T2.
+Completed 2026-10-01. Scope widened, within the authorized sequence, to declare all twenty-two spell definitions (so 9.30d, f, g and h key on stable ids) while composing only Sunburst, Dimension Door, Midas' Touch and Find Familiar; the removed-spell count, the Familiar token and its private face are as [his shard](../Rules/HERO_GYDION.md) records under "Built by 9.30e". By GY-Q12 each of the four is castable with nothing to do. A shared change: the Attack Range path reads the cards, so a full Play Mode run checked every hero's attacks. No schema, wire, registration or content-digest move.
+Historical evidence: [9.30e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930e-counting-spells-and-familiar-evidence).
 
 ### [ ] 9.30f Compose the immunity, discard, Life and forced-move spells
 

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.30e Counting spells and Familiar evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30e | Gydion's twenty-two spell definitions declared; Sunburst, Dimension Door, Midas' Touch and Find Familiar composed on a count of the other removed spells; the single Familiar token and its private face. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930e-compose-the-counting-spells-and-the-familiar). | `milestone/9.30e` |
+
 ## Milestone 9.30c Cast and refill evidence
 
 | Milestone | Outcome and definition | Commit |
