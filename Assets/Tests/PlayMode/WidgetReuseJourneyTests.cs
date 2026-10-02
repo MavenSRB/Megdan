@@ -41,11 +41,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(breath.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(runtime.PendingEffectChoice.Candidates.Any(value => value.Value.Kind == EffectValueKind.CardInstance), Is.True,
                 "Dragon Bond still qualifies because the exclusion does not ban tokens/spaces.");
+            // Milestone 9.38. The attacked hero is the only enemy in Range and in Pyro's line, so the
+            // resolved Breath can act on no different unit and the borrow does not offer it (before,
+            // it was offered, picked and canceled - the 2026-10-02 playtester's report).
+            Assert.That(runtime.PendingEffectChoice.Candidates.Select(value => value.Value).ToArray(),
+                Has.No.Member(EffectValue.Card(breath.Id)),
+                "The borrowed Breath could only target the original attack target, so it is not offered.");
             var enemyHand = runtime.Cards.Where(card => card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand).Select(card => card.Id).ToArray();
-            yield return Pick(root,runtime.PendingEffectChoice.Candidates.Single(value => value.Value.CardInstanceId.Equals(breath.Id)));
+            yield return May(root,false);
             Assert.That(runtime.PendingEffectChoice, Is.Null);
             Assert.That(runtime.Cards.Where(card => card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand).Select(card => card.Id),
-                Is.EqualTo(enemyHand),"The borrowed Breath cannot ask the original attack target to discard again.");
+                Is.EqualTo(enemyHand),"Nothing borrowed asked the original attack target to discard again.");
+            Assert.That(breath.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Healthy(runtime);
         }
 

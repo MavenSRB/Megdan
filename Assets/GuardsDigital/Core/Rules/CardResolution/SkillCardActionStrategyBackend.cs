@@ -533,7 +533,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             out AppliedRuleModification blocking,
-            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
+            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null)
         {
             blocking = null;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));

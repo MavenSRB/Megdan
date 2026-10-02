@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.37**.
-- Active authorized milestone: **9.38**.
-- Next proposed milestone: **9.38**.
+- Current completed milestone: **9.38**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **9.26**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -26,7 +26,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero: **9.30-9.30j** and the user-directed **9.30h1** are complete - dealt, artworked, pickable and gated ([roadmap](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md), [shard](Rules/HERO_GYDION.md); schema v53, wire /33), built by agents as Razzle was; GY-Q1-GY-Q12 settled by the user.
 
-Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is authorized. 9.26 stays queued.
+Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete; 9.26 stays queued.
 
 After that playtest the user reported three defects; correctives **[9.33 -> 9.35](Roadmap/PHASE_9.md)** (terrain lit, spell spotlight, "up to" line moves offer 0) are complete.
 

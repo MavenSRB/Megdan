@@ -444,7 +444,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             TeamSide tieBreakerRevealedSide = TeamSide.None,
             bool watchesTieBreakerFlips = false,
             bool watchesTokenPlacements = false,
-            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null)
+            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null)
         {
             BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
             WatchesTokenPlacements = watchesTokenPlacements;
@@ -512,8 +512,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public TeamSide TieBreakerRevealedSide { get; }
 
-        /// <summary>Milestone 9.6. See <see cref="EffectCapabilityContext.BorrowedPrimaryCanAct"/>.</summary>
-        public Func<CardInstanceId, HeroId, bool> BorrowedPrimaryCanAct { get; }
+        /// <summary>Milestone 9.6, widened at 9.38. See <see cref="EffectCapabilityContext.BorrowedPrimaryCanAct"/>.</summary>
+        public BorrowedPrimaryJudgement BorrowedPrimaryCanAct { get; }
 
         /// <summary>
         /// Milestone 8.75a. Whether an authority holding the match's coin is standing behind this

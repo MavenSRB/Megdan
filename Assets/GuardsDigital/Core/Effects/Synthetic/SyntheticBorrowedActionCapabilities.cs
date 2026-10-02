@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -674,15 +675,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// clause skippable, and the user's general conditional ruling is explicit that a false
             /// condition skips its clause and the card continues. So the mandatory step reports that it
             /// cannot happen, and the Conditional above it is what decides whether it was ever asked.
+            ///
+            /// <para>Milestone 9.38: the offer lists only the cards <see cref="ActingCandidates"/>
+            /// admits, so it and <see cref="Anticipate"/> are one reading. Before this the live offer
+            /// listed the whole pool and Fight as One offered a Fiery Breath whose only subject was the
+            /// hero it had just attacked; choosing it emptied the Breath's mandatory target and the card
+            /// stopped ("FIERY BREATH CANCELED", the 2026-10-02 playtester's report).</para>
             /// </summary>
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var candidates = Candidates(context);
-                return candidates.Count == 0
-                    ? EffectExecutionResult.ImpossibleMandatory()
+                var acting = ActingCandidates(context, out var poolIsEmpty);
+                if (poolIsEmpty)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return acting.Count == 0
+                    ? EffectExecutionResult.DeclinedOptional()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                         EffectChooserRole.Actor,
-                        candidates.Select(card => EffectValue.Card(card.Id)),
+                        acting.Select(card => EffectValue.Card(card.Id)),
                         1,
                         1));
             }
@@ -692,7 +704,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 var chosen = selected != null && selected.Count == 1 &&
                     selected[0].Kind == EffectValueKind.CardInstance
-                        ? Candidates(context).SingleOrDefault(card =>
+                        ? ActingCandidates(context, out _).SingleOrDefault(card =>
                             card.Id.Equals(selected[0].CardInstanceId))
                         : null;
                 if (chosen == null)
@@ -707,13 +719,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     new EffectOutcomeFact(BorrowedCardOutput, EffectValue.Card(chosen.Id))
                 };
-                if (context.Input(ExcludeAttackedUnitParameter).BooleanValue)
-                {
-                    if (context.EnclosingAttack.HeroTargetId.IsDefined)
-                        outcomes.Add(new EffectOutcomeFact(ExcludedHeroOutput, EffectValue.Hero(context.EnclosingAttack.HeroTargetId)));
-                    else if (context.EnclosingAttack.MinionTargetId.IsDefined)
-                        outcomes.Add(new EffectOutcomeFact(ExcludedMinionOutput, EffectValue.Minion(context.EnclosingAttack.MinionTargetId)));
-                }
+                var excluded = ExcludedUnit(context);
+                if (excluded.Kind == RuleObjectKind.Hero)
+                    outcomes.Add(new EffectOutcomeFact(ExcludedHeroOutput, EffectValue.Hero(excluded.HeroId)));
+                else if (excluded.Kind == RuleObjectKind.Minion)
+                    outcomes.Add(new EffectOutcomeFact(ExcludedMinionOutput, EffectValue.Minion(excluded.MinionId)));
                 return EffectExecutionResult.Applied(outcomes);
             }
 
@@ -725,16 +735,63 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
-                var candidates = Candidates(context);
-                if (candidates.Count == 0)
+                var acting = ActingCandidates(context, out var poolIsEmpty);
+                if (poolIsEmpty)
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                return context.BorrowedPrimaryCanAct == null ||
-                    candidates.Any(card => context.BorrowedPrimaryCanAct(card.Id, context.ActorId))
-                    ? EffectExecutionResultKind.NeedsChoice
-                    : EffectExecutionResultKind.DeclinedOptional;
+                return acting.Count == 0
+                    ? EffectExecutionResultKind.DeclinedOptional
+                    : EffectExecutionResultKind.NeedsChoice;
+            }
+
+            /// <summary>
+            /// Milestone 9.38. The cards this borrow offers: the declared pool, narrowed to those whose
+            /// printed primary could act now with the unit this clause bars excluded - where the turn
+            /// supplies that judgement (<see cref="EffectCapabilityContext.BorrowedPrimaryCanAct"/>),
+            /// and the whole pool where it does not. Rulebook p.10's "if able" and milestone 8.35z15's
+            /// rule - a card-text step with no legal subject is not offered - applied at the moment
+            /// the offer is built, which is the only moment a player can be shown it. One function
+            /// feeds the offer, the answer and the anticipation, so they cannot disagree.
+            /// <paramref name="poolIsEmpty"/> keeps the printed distinction between a pool with
+            /// nothing in it (impossible) and a pool whose cards can all do nothing (declined).
+            /// </summary>
+            private static IReadOnlyList<CardInstance> ActingCandidates(
+                EffectCapabilityContext context, out bool poolIsEmpty)
+            {
+                var pool = Candidates(context);
+                poolIsEmpty = pool.Count == 0;
+                if (poolIsEmpty || context.BorrowedPrimaryCanAct == null)
+                {
+                    return pool;
+                }
+
+                var excluded = ExcludedUnit(context);
+                return pool.Where(card => context.BorrowedPrimaryCanAct(card.Id, context.ActorId, excluded))
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// The unit this borrow's clause bars from the borrowed primary: the unit the enclosing
+            /// Attack took when <see cref="ExcludeAttackedUnitParameter"/> is set ("targeting a
+            /// different unit", WI-07), and none otherwise.
+            /// </summary>
+            private static RuleObject ExcludedUnit(EffectCapabilityContext context)
+            {
+                if (!context.Input(ExcludeAttackedUnitParameter).BooleanValue)
+                {
+                    return RuleObject.None;
+                }
+
+                if (context.EnclosingAttack.HeroTargetId.IsDefined)
+                {
+                    return RuleObject.ForHero(context.EnclosingAttack.HeroTargetId);
+                }
+
+                return context.EnclosingAttack.MinionTargetId.IsDefined
+                    ? RuleObject.ForMinion(context.EnclosingAttack.MinionTargetId)
+                    : RuleObject.None;
             }
         }
     }

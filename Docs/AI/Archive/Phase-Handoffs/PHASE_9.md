@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.38 Borrowed-skill offer evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.38 | Fight as One's after-attack borrow offers a resolved Skill only when its primary can act on a unit other than the one it attacked (the exclusion applied when the offer is built, through 9.6's borrowed-primary judgement bound into the Attack card-text seam) and asks nothing when none can; regression on Widget's real faces failing on the base; Dragon Knight's and the Skill-side borrows unchanged. [Definition](../../Roadmap/PHASE_9.md#x-938-fight-as-one-offers-only-a-resolved-skill-that-can-act-on-a-different-unit). | `milestone/9.38` |
+
 ## Milestone 9.37 Package evidence
 
 | Milestone | Outcome and definition | Commit |

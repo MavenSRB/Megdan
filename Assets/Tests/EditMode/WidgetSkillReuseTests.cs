@@ -156,13 +156,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(declined.Borrowed.State.Location, Is.EqualTo(CardLocation.TurnArea));
         }
 
+        /// <summary>
+        /// Absent: no resolved Skill, so the pool is empty and the may-step asks nothing. Inert: the
+        /// Breath is resolved but Pyro is off the board, so its primary can act on nothing - since
+        /// milestone 9.38 it is not offered at all (before, it was offered, picked and finished empty).
+        /// </summary>
         [TestCase(false)]
         [TestCase(true)]
         public void MissingAndInertResolvedSkillsFinishWithoutChangingTheBorrowedCard(bool absent)
         {
             var f = new AttackFixture(absentSkill: absent, pyro: false); f.Defend();
-            if (!absent) f.Pick(EffectValue.Card(f.Borrowed.Id));
-            Assert.That(f.Choice, Is.Null);
+            Assert.That(f.Choice, Is.Null, absent ? "An empty pool asks nothing." : "A Skill that can act on nothing is not offered (9.38).");
             Assert.That(f.Source.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(f.Borrowed.State.Location, Is.EqualTo(absent ? CardLocation.DiscardPile : CardLocation.TurnArea));
         }
@@ -172,12 +176,19 @@ namespace GuardsDigital.Tests.EditMode
         public void BorrowedSkillUsesItsOwnActivity_NotTheParentAttackImmunity(RuleActivity immunity, bool eligible)
         {
             var f = new AttackFixture(immunity: immunity); f.Defend();
-            f.Pick(EffectValue.Card(f.Borrowed.Id));
-            Assert.That(f.Choice != null, Is.EqualTo(eligible));
             if (eligible)
+            {
+                f.Pick(EffectValue.Card(f.Borrowed.Id));
+                Assert.That(f.Choice, Is.Not.Null);
                 Assert.That(f.Choice.Candidates.Single().Value, Is.EqualTo(EffectValue.Hero(AttackFixture.Other)));
+            }
             else
+            {
+                // Milestone 9.38: the only other hero is immune to Skills, so the Breath can act on
+                // nothing and the borrow does not offer it (before, it was offered and finished empty).
+                Assert.That(f.Choice, Is.Null, "A Skill immune everywhere but the excluded hero is not offered.");
                 Assert.That(f.Source.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            }
         }
 
         [Test]
@@ -259,6 +270,154 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(p.Choices, Is.Empty);
             Assert.That(p.Board.Minions, Has.Count.EqualTo(1));
             Assert.That(p.Board.PlacedTokens, Has.Count.EqualTo(1));
+        }
+
+        /// <summary>
+        /// Milestone 9.38, the 2026-10-02 playtester's report, on Widget's real faces. Fight as One
+        /// (Gold: "After the attack: You may perform the primary action on your resolved Skill card,
+        /// targeting a different unit.") attacks the only enemy hero both in Widget's Range 2 and in
+        /// a straight line from Pyro while Fiery Breath ("An enemy hero both in range and in a
+        /// straight line from Pyro discards a card, if able.") is resolved. The Breath's only subject
+        /// is the unit the restriction excludes (WI-07), so the borrow must not offer it - a card-text
+        /// step with no legal subject is not offered (8.35z15, W7) - and with nothing else to borrow
+        /// the "may" asks nothing. On the base the Breath was offered and then canceled.
+        /// </summary>
+        [Test]
+        public void FightAsOne_DoesNotOfferFieryBreath_WhenTheOnlyEnemyInRangeAndInPyrosLineIsTheAttackedHero()
+        {
+            var f = new RealFacesFixture(RealFacesFixture.SecondFarAway);
+            f.AttackAndDeclineDefense();
+            Assert.That(f.OfferedCards(), Has.No.Member(f.Breath.Id),
+                "Fiery Breath can act on no unit other than the one Fight as One attacked, so the borrow must not offer it.");
+            Assert.That(f.Choice, Is.Null, "With no borrowable Skill the may-step asks nothing.");
+            Assert.That(f.Fight.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(f.Breath.State.Location, Is.EqualTo(CardLocation.TurnArea));
+            Assert.That(f.Breath.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(f.HandOf(RealFacesFixture.Attacked).Count, Is.EqualTo(1), "No discard was asked of the attacked hero.");
+        }
+
+        /// <summary>
+        /// The other half of the same offer: with a second enemy hero in Range and in Pyro's line the
+        /// Breath is offered, and the borrowed copy still excludes the hero Fight as One attacked.
+        /// </summary>
+        [Test]
+        public void FightAsOne_OffersFieryBreath_WhenAnotherEnemyStandsInRangeAndInPyrosLine_AndExcludesOnlyTheAttackedHero()
+        {
+            var f = new RealFacesFixture(RealFacesFixture.SecondInPyrosLine);
+            f.AttackAndDeclineDefense();
+            Assert.That(f.OfferedCards(), Has.Member(f.Breath.Id));
+            f.PickBorrowedBreath();
+            Assert.That(f.OfferedHeroes(), Is.EquivalentTo(new[] { RealFacesFixture.Second }),
+                "The borrowed Breath targets a different unit (WI-07): the second enemy, never the attacked one.");
+        }
+
+        /// <summary>
+        /// Widget's real faces on a synthetic board: Widget at the origin, Pyro one space west, the
+        /// attacked enemy hero adjacent east and in Pyro's line, the second enemy hero wherever the
+        /// case puts him. Each enemy holds one hand card so "discards a card" has something to ask.
+        /// </summary>
+        private sealed class RealFacesFixture
+        {
+            internal static readonly HeroId Widget = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            internal static readonly HeroId Attacked = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
+            internal static readonly HeroId Second = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            private static readonly HexCoordinate WidgetAt = new HexCoordinate(0, 0);
+            private static readonly HexCoordinate AttackedAt = new HexCoordinate(1, 0);
+            private static readonly HexCoordinate PyroAt = new HexCoordinate(-1, 0);
+            /// <summary>Two from Pyro on a straight line and two from Widget: a legal Breath subject.</summary>
+            internal static readonly HexCoordinate SecondInPyrosLine = new HexCoordinate(-1, -1);
+            /// <summary>Out of Widget's Range and off every line from Pyro.</summary>
+            internal static readonly HexCoordinate SecondFarAway = new HexCoordinate(-4, 4);
+
+            private static readonly CardDefinition Hold = new CardDefinition(new CardDefinitionId("real-faces-hold"), "rev-1",
+                "TEST - hold", new InitiativeValue(1), CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.BasicCard(CardColor.Silver), Array.Empty<ActionDefinition>());
+            private readonly CardDefinition[] definitions = WidgetCardContent.AllDefinitions.Concat(new[] { Hold }).ToArray();
+            private readonly CardInstance[] cards;
+            internal readonly RoundResolutionAuthority Round;
+
+            internal RealFacesFixture(HexCoordinate secondAt)
+            {
+                var fight = WidgetCardContent.Definition(WidgetCardContent.FightAsOne);
+                var breath = WidgetCardContent.Definition(WidgetCardContent.FieryBreath);
+                cards = new[]
+                {
+                    CardInstance.CreateInHand(new CardInstanceId("fight"), fight.Reference, Widget),
+                    new CardInstance(new CardInstanceId("breath"), breath.Reference, Widget,
+                        new CardStateFacts(CardLocation.TurnArea, true, CardResolutionStatus.Resolved, CardFaceOrientation.FaceUp)),
+                    CardInstance.CreateInHand(new CardInstanceId("attacked-played"), Hold.Reference, Attacked),
+                    CardInstance.CreateInHand(new CardInstanceId("second-played"), Hold.Reference, Second),
+                    CardInstance.CreateInHand(new CardInstanceId("attacked-hand"), Hold.Reference, Attacked),
+                    CardInstance.CreateInHand(new CardInstanceId("second-hand"), Hold.Reference, Second)
+                };
+                var board = new AdjacentMoveAuthority(BoardMapDefinition.CreateSynthetic(new MapId("widget-real-faces"), 1,
+                        Enumerable.Range(-5, 11).SelectMany(q => Enumerable.Range(-5, 11).Select(r => new HexCoordinate(q, r)))),
+                    new[] { new HeroOccupancy(Widget, WidgetAt), new HeroOccupancy(Attacked, AttackedAt), new HeroOccupancy(Second, secondAt) },
+                    Array.Empty<ObstacleOccupancy>());
+                board.CommitValidatedTokenPlacement(new PlacedToken(new TokenInstanceId("pyro"),
+                    WidgetComponentContent.PyroDefinition, Widget, Widget, cards[1].Id, PyroAt));
+                Round = new RoundResolutionAuthority(definitions, cards, StagedBoardParticipants.CreateWithBlueAlly(),
+                    new TieBreakerState(TeamSide.Red), 1,
+                    RoundResolutionComposition.ForCardActionsOnly(new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board)));
+            }
+
+            internal CardInstance Fight => cards.Single(card => card.Id.Value == "fight");
+            internal CardInstance Breath => cards.Single(card => card.Id.Value == "breath");
+            internal PendingEffectChoice Choice => Round.CurrentTurnAuthority?.PendingEffectChoice;
+
+            internal void AttackAndDeclineDefense()
+            {
+                foreach (var (hero, id) in new[] { (Widget, Fight.Id), (Attacked, cards[2].Id), (Second, cards[3].Id) })
+                {
+                    var committed = Round.TryCommitCard(hero, id);
+                    Assert.That(committed.Accepted, Is.True, hero.Value + ": " + committed.RejectionReason + "/" + committed.TurnRejectionReason);
+                }
+
+                var attack = WidgetCardContent.Definition(WidgetCardContent.FightAsOne).ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
+                var offer = ActionOfferQuery.GetAvailableTurnActionOffers(definitions, cards, Widget, Fight.Id)
+                    .Single(value => value.ActionDefinitionId.Equals(attack.Id));
+                Assert.That(Round.TryStartAttack(new ActionResolutionId("real-fight"), offer).Accepted, Is.True);
+                var target = Round.CurrentTurnAuthority.PendingAttackTargetChoice;
+                Assert.That(Round.TryAnswerAttackTarget(new AttackTargetChoiceCommand(target.ResolutionId, target.ChoiceId, Attacked)).Accepted, Is.True);
+                var defense = Round.CurrentTurnAuthority.PendingDefenseChoice;
+                if (defense != null)
+                {
+                    Assert.That(Round.TryAnswerDefenseResponse(
+                        DefenseResponseChoiceCommand.Decline(defense.ResolutionId, defense.ChoiceId)).Accepted, Is.True);
+                }
+            }
+
+            internal void PickBorrowedBreath()
+            {
+                var select = Choice.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.CardInstance &&
+                    invocation.Candidate.Value.CardInstanceId.Equals(Breath.Id));
+                var id = Choice.ChoiceId;
+                Answer(select);
+                if (Choice != null && Choice.ChoiceId.Equals(id) && Choice.ConfirmInvocation != null)
+                {
+                    Answer(Choice.ConfirmInvocation);
+                }
+            }
+
+            internal IReadOnlyList<CardInstanceId> OfferedCards() => Choice == null
+                ? Array.Empty<CardInstanceId>()
+                : Choice.Candidates.Where(candidate => candidate.Value.Kind == EffectValueKind.CardInstance)
+                    .Select(candidate => candidate.Value.CardInstanceId).ToArray();
+
+            internal IReadOnlyList<HeroId> OfferedHeroes() => Choice == null
+                ? Array.Empty<HeroId>()
+                : Choice.Candidates.Where(candidate => candidate.Value.Kind == EffectValueKind.Hero)
+                    .Select(candidate => candidate.Value.HeroId).ToArray();
+
+            internal IReadOnlyList<CardInstance> HandOf(HeroId hero) =>
+                cards.Where(card => card.OwnerId.Equals(hero) && card.State.Location == CardLocation.Hand).ToArray();
+
+            private void Answer(EffectChoiceCommand command)
+            {
+                var result = Round.TryAnswerEffectChoice(command);
+                Assert.That(result.Accepted, Is.True, result.RejectionReason + "/" + result.TurnRejectionReason);
+            }
         }
 
         private sealed class AttackFixture

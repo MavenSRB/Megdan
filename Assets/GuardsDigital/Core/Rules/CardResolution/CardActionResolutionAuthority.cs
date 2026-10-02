@@ -166,6 +166,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindBorrowedTargetScopeKeys(IEnumerable<string> keys) => borrowedTargetScopeKeys = keys;
 
         /// <summary>
+        /// Milestone 9.38. The turn's judgement of a borrowed primary (9.6), bound here the way the
+        /// turn's borrowed-target keys are, so an Attack's own card text can ask it: Fight as One's
+        /// "After the attack" borrow is reached by no offer walk - the walk judges the Attack's target,
+        /// not its text - and the unit it must bar is the one the Attack took, known only in here. It
+        /// is supplied to the two Attack card-text contexts and to nothing else: a Skill's own borrow
+        /// and an Ultimate's are judged, where the turn needs them judged, by the walk that greys the
+        /// action, and their live offers keep the shape they had.
+        /// </summary>
+        private BorrowedPrimaryJudgement borrowedPrimaryJudgement;
+
+        internal void BindBorrowedPrimaryJudgement(BorrowedPrimaryJudgement judgement) =>
+            borrowedPrimaryJudgement = judgement;
+
+        /// <summary>
         /// Milestone 8.112f. The turn's own consumed-key set, writable, so an after-tokens-placed
         /// Ultimate's "Once per turn" is spent where the turn keeps every other once - and crosses a
         /// snapshot and a seat rewind with it. Bound by the turn authority beside the borrow scope.
@@ -1311,7 +1325,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             out AppliedRuleModification blocking,
-            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null) =>
+            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null) =>
             skillBackend.CanApplyAnything(
                 offer, definitions, instances, participants, timing, modifications, components,
                 roundIndex, turnIndex, out blocking, borrowedPrimaryCanAct);
@@ -2662,7 +2676,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     timing,
                     roundIndex,
                     turnIndex),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                // Milestone 9.38. A borrow printed in p.14's card text offers only a card whose primary
+                // can act with the unit this Attack took barred - see BindBorrowedPrimaryJudgement.
+                borrowedPrimaryCanAct: borrowedPrimaryJudgement);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -4033,7 +4050,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     timing,
                     roundIndex,
                     turnIndex),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                // Milestone 9.38, the resume half of the same supply.
+                borrowedPrimaryCanAct: borrowedPrimaryJudgement);
             // Milestone 8.116. Whether this answer is the defender's forced Movement action (Whisper
             // Ruling 16b), and where that hero stood before it - read before the answer moves them.
             var forcedMove = ForcedMovementBeingAnswered(pendingCardText, effectRoot, materializedDefinitions);

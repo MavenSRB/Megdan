@@ -650,6 +650,9 @@ namespace GuardsDigital.Core.Cards
             this.cardActions = cardActions;
             cardActions?.BindBorrowedTargetScopeKeys(consumedTurnScopedKeys);
             cardActions?.BindTurnScopedKeys(consumedTurnScopedKeys);
+            // Milestone 9.38. The judgement this turn makes of a borrowed primary (9.6), handed to the
+            // Attack card-text seam that asks it with the attacked unit barred.
+            cardActions?.BindBorrowedPrimaryJudgement(BorrowedPrimaryCanAct);
 
             // Milestone 8.75a. The dispatcher is handed the turn's live coin the way it is handed the
             // turn's borrowed-target keys, one line above: this authority owns the Initiative state
@@ -2494,8 +2497,14 @@ namespace GuardsDigital.Core.Cards
         /// offer the borrow would mint. An Attack whose own text binds its target starts regardless,
         /// as the borrowed start does, and every other kind is judged able. A borrow judged from
         /// inside another is judged able, so the question cannot recurse.
+        ///
+        /// <para>Milestone 9.38: <paramref name="excludedUnit"/> is the unit the borrow's own clause
+        /// bars - Fight as One's "targeting a different unit", the unit its Attack took (WI-07) - and
+        /// the judgement is made under the same exclusion the borrowed instance will resolve under
+        /// (<see cref="BorrowedSkillTargetScope"/>), so the offer and the resolution read one rule.
+        /// <see cref="RuleObject.None"/> bars nothing.</para>
         /// </summary>
-        private bool BorrowedPrimaryCanAct(CardInstanceId cardId, HeroId actorId)
+        private bool BorrowedPrimaryCanAct(CardInstanceId cardId, HeroId actorId, RuleObject excludedUnit)
         {
             var card = instances.SingleOrDefault(value => value.Id.Equals(cardId));
             var definition = card == null
@@ -2503,7 +2512,7 @@ namespace GuardsDigital.Core.Cards
                 : definitions.SingleOrDefault(value => value.Reference.Equals(card.DefinitionReference));
             var primary = definition?.ActionDefinitions.SingleOrDefault(
                 value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
-            if (primary == null || borrowedPrimaryProbeDepth > 0)
+            if (primary == null || borrowedPrimaryProbeDepth > 0 || cardActions == null)
             {
                 return true;
             }
@@ -2511,16 +2520,21 @@ namespace GuardsDigital.Core.Cards
             var offer = new ActionOffer(card.Id, definition.Reference, primary.Id, actorId,
                 ActionInvocationContext.TextGranted, true, primary.AttackRange,
                 primary.SourceCardStateTransition);
+            var modifications = ModificationsBarring(actorId, excludedUnit);
             borrowedPrimaryProbeDepth++;
             try
             {
                 switch (primary.Kind)
                 {
                     case ActionKind.Skill:
-                        return CanStartSkill(offer);
+                        return cardActions.CanSkillApplyAnything(
+                            offer, definitions, instances, participants, timing, modifications,
+                            roundIndex, turnIndex, out _, BorrowedPrimaryCanAct);
                     case ActionKind.Attack:
                         return primary.AttackTargetPolicy?.TargetIsBoundByCardText == true ||
-                            CanStartAttack(offer);
+                            cardActions.CanAttackFindTarget(
+                                offer, definitions, instances, participants, timing, modifications,
+                                roundIndex, turnIndex, out _);
                     default:
                         return true;
                 }
@@ -2529,6 +2543,24 @@ namespace GuardsDigital.Core.Cards
             {
                 borrowedPrimaryProbeDepth--;
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.38. The standing modifications with <paramref name="excludedUnit"/> barred from
+        /// <paramref name="actorId"/>'s targeting - the exclusion the borrowed instance will stand
+        /// under once it starts, read before it has - or the standing set alone where nothing is barred.
+        /// </summary>
+        private RuleModificationSet ModificationsBarring(HeroId actorId, RuleObject excludedUnit)
+        {
+            var standing = CurrentModifications();
+            if (excludedUnit.Kind != RuleObjectKind.Hero && excludedUnit.Kind != RuleObjectKind.Minion)
+            {
+                return standing;
+            }
+
+            return standing.WithTargetExclusions(standing.TargetExclusions
+                .Concat(new[] { new ActionTargetExclusion(actorId, excludedUnit) })
+                .ToArray());
         }
 
         /// <summary>

@@ -218,6 +218,16 @@ namespace GuardsDigital.Core.Effects
     }
 
     /// <summary>
+    /// Milestone 9.6, widened at 9.38: whether <paramref name="cardId"/>'s printed primary, performed
+    /// by <paramref name="actorId"/> as a borrowed instance, could do anything now - judged by the
+    /// rules the turn applies to its own offers (6.5af's Skill, 7.8a1's Attack) - once
+    /// <paramref name="excludedUnit"/> is barred from it. The exclusion is the unit a borrow's own
+    /// clause names ("targeting a different unit": the unit its Attack took, WI-07) and
+    /// <see cref="RuleObject.None"/> where the clause names none.
+    /// </summary>
+    public delegate bool BorrowedPrimaryJudgement(CardInstanceId cardId, HeroId actorId, RuleObject excludedUnit);
+
+    /// <summary>
     /// Everything a handler is allowed to see. Immutable, and carries no Unity object, delegate, or
     /// continuation: the frame owns where execution is, the handler only decides what happens here.
     /// </summary>
@@ -250,7 +260,7 @@ namespace GuardsDigital.Core.Effects
             HexCoordinate? prospectiveActorSpace = null,
             ActionInvocationContext invocationContext = ActionInvocationContext.None,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
-            Func<CardInstanceId, HeroId, bool> borrowedPrimaryCanAct = null,
+            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null,
             IReadOnlyList<IReadOnlyList<EffectValue>> answersGivenAcrossTheGroup = null)
         {
             BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
@@ -543,11 +553,13 @@ namespace GuardsDigital.Core.Effects
         /// <summary>
         /// Milestone 9.6: whether a card's printed primary, performed by a hero as a borrowed
         /// instance, could do anything now - the same answer the turn gives its own offers (6.5af,
-        /// 7.8a1). Only the turn's offer walk supplies it, so Reload! is greyed when the card it would
-        /// borrow can do nothing and nothing else on it can either (user ruling 2026-09-28).
+        /// 7.8a1). The turn's offer walk supplies it, so Reload! is greyed when the card it would
+        /// borrow can do nothing and nothing else on it can either (user ruling 2026-09-28); since
+        /// milestone 9.38 an Attack's own card text supplies it too, with the unit the Attack took
+        /// barred, so Fight as One offers only a resolved Skill that can act on a different unit.
         /// <c>null</c> everywhere else, where a borrow is judged as able.
         /// </summary>
-        public Func<CardInstanceId, HeroId, bool> BorrowedPrimaryCanAct { get; }
+        public BorrowedPrimaryJudgement BorrowedPrimaryCanAct { get; }
 
         /// <summary>
         /// This same context, asked as if the acting hero already stood on <paramref name="space"/>.
