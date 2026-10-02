@@ -16,7 +16,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 - Current completed milestone: **9.32f**.
 - Active authorized milestone: **9.32g**.
-- Next proposed milestone: **9.32h**.
+- Next proposed milestone: **9.32g**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
