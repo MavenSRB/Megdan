@@ -573,6 +573,8 @@ namespace GuardsDigital.Application
                                 : null);
                         writer.Write(assignment.PassedWithEmptyHand);
                         writer.Write(assignment.IsFacedown);
+                        // Milestone 9.32g, protocol /35: a withheld card's known colour.
+                        writer.Write((int)assignment.KnownColor);
                     }
                 }
 
@@ -624,8 +626,13 @@ namespace GuardsDigital.Application
                         }
 
                         var passed = reader.ReadBoolean();
-                        assignments.Add(new NetworkTurnAssignmentRow(
-                            heroId, cardId, passed, reader.ReadBoolean()));
+                        var facedown = reader.ReadBoolean();
+                        if (!NetworkSeatProjectionCodec.TryReadKnownColor(reader, cardId, facedown, out var known))
+                        {
+                            return false;
+                        }
+
+                        assignments.Add(new NetworkTurnAssignmentRow(heroId, cardId, passed, facedown, known));
                     }
 
                     slots.Add(new NetworkTurnSlotRow(

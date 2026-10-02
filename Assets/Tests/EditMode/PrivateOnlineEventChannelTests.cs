@@ -604,7 +604,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(34),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(35),
                 "9.32a carries A FACEDOWN TURN-SLOT CARD: every turn-slot assignment row, current and " +
                 "completed, ends with whether its card was placed facedown, and another seat's row " +
                 "arrives with no card id, so a /33 peer would take the flag for the next row's hero. " +
@@ -918,7 +918,22 @@ namespace GuardsDigital.Tests.EditMode
                 hasOrigin: true,
                 hasDestination: true,
                 outcome: MatchLogOutcome.AttackSuccessful,
-                amount: ordinal * 3);
+                amount: ordinal * 3,
+                // Milestone 9.32g, protocol /35: the three kinds that carry card moves carry one named
+                // and one unnamed, so both forms cross the wire.
+                cardMoves: kind == MatchLogEntryKind.CardSwappedByCardText ||
+                    kind == MatchLogEntryKind.CardKeptByCardText ||
+                    kind == MatchLogEntryKind.UltimateMovedCards
+                    ? new[]
+                    {
+                        new GuardsDigital.Core.Effects.CardMoveFact(new CardDefinitionId("card-definition-" + ordinal),
+                            GuardsDigital.Core.Effects.CardMoveZone.TurnArea, GuardsDigital.Core.Effects.CardMoveZone.Deck,
+                            knownColor: CardColor.Gold),
+                        new GuardsDigital.Core.Effects.CardMoveFact(default,
+                            GuardsDigital.Core.Effects.CardMoveZone.Deck, GuardsDigital.Core.Effects.CardMoveZone.DiscardPile,
+                            arrivesFacedown: true, knownColor: CardColor.Gold)
+                    }
+                    : null);
         }
     }
 }

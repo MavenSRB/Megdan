@@ -265,7 +265,9 @@ namespace GuardsDigital.Core.Diagnostics
                     return $"card={outcome.Item.SourceCardInstanceId.Value};" +
                         $"slot={outcome.Item.Slot};icon={outcome.Item.Icon}";
                 default:
-                    return $"card={outcome.UltimateCardInstanceId.Value}";
+                    // Milestone 9.32g. An unlock that moved cards (Ready for War) says which.
+                    return $"card={outcome.UltimateCardInstanceId.Value}" +
+                        (outcome.CardMoves.Count > 0 ? ";moves=" + CardMoveText.Encode(outcome.CardMoves) : string.Empty);
             }
         }
 
@@ -416,6 +418,13 @@ namespace GuardsDigital.Core.Diagnostics
             if (ruleEvent.SpellCount > 0)
             {
                 detailParts.Add($"spells={ruleEvent.SpellCount}");
+            }
+
+            // Milestone 9.32g. A swap's or a kept card's moves, every card named: this is the host's
+            // log, and the seat projection is what unnames them for the seats that may not read them.
+            if (ruleEvent.CardSwap != null)
+            {
+                detailParts.Add("moves=" + CardMoveText.Encode(ruleEvent.CardSwap.Moves));
             }
 
             if (ruleEvent.DefenseTotal > 0)

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32g Takahide presentation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32g | Takahide presented to the user's approved mockups A-F: the hatched gold every seat sees (only the mouse-over differs), the six-card hand, the FACEDOWN deck-gold choice, the teammate's one-window swap with KEEP MY CARD, the barred empty spaces, and log rows for each swap, kept swap and Ready for War that name a hidden card on its owner's seat alone; wire /35. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932g-present-takahide). | `milestone/9.32g` |
+
 ## Milestone 9.32f Ready for War evidence
 
 | Milestone | Outcome and definition | Commit |

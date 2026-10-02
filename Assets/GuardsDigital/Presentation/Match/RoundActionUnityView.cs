@@ -1450,7 +1450,7 @@ namespace GuardsDigital.Presentation.Match
                 slot.style.flexShrink = 0f;
                 slot.style.marginRight = index == cardChoices.Length - 1
                     ? 0f
-                    : -DirectorHandsUnityView.PeekCardOverlap;
+                    : -DirectorHandsUnityView.PeekOverlapFor(cardChoices.Length);
                 slot.style.top = -DirectorHandsUnityView.AvailableCardRaise;
                 HudElements.Padding(slot, DirectorHandsUnityView.ActiveOutlineGap);
                 HudElements.Border(slot, Color.clear,

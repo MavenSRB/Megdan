@@ -20,7 +20,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class TakahideCardContent
     {
         /// <summary>The revision every Takahide definition carries.</summary>
-        public const string ContentRevision = "takahide-9-32d-rev-1";
+        public const string ContentRevision = "takahide-9-32g-rev-1";
 
         public const string ContentSetId = "takahide";
 

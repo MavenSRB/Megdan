@@ -119,14 +119,18 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// "A friendly hero in radius may swap their unresolved card with a card in their hand[, or in
         /// their discard]." Takahide picks the hero (p.10 Making Choices) from those the swap can act on;
-        /// the hero's <c>May</c> and card are asked of their seat. With nobody to pick, the sentence does
+        /// the hero's "may" and card are asked of their seat. With nobody to pick, the sentence does
         /// nothing - it is after-attack text, and the Attack has already been performed (9.32b's shape).
+        ///
+        /// <para>Milestone 9.32g (approved mockup D): the "may" is the swap step's own policy rather
+        /// than an enclosing Optional, so the teammate answers ONE choice - a card, or KEEP MY CARD - on
+        /// their own seat (the swap's choice names them as its chooser). The outcomes are the same two:
+        /// a card swapped, or none.</para>
         /// </summary>
         private static EffectDefinition FriendSwap(CardDefinitionId card, bool fromDiscard)
         {
             var root = new EffectNodeId(card.Value + "-after-the-attack");
             var friend = new EffectNodeId(card.Value + "-friendly-hero-in-radius");
-            var may = new EffectNodeId(card.Value + "-may-swap");
             var swap = new EffectNodeId(card.Value + "-swap-unresolved-card");
             EffectInputBinding ChosenHero(string parameter) =>
                 EffectInputBinding.FromNodeOutput(
@@ -137,7 +141,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { friend, may }),
+                        childNodeIds: new[] { friend, swap }),
                     new EffectNodeDefinition(
                         friend, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticTargetingCapabilities.RadiusHeroTargetV1,
@@ -164,12 +168,7 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticTargetingCapabilities.ChosenHeroOutputName, EffectValueKind.Hero)
                         }),
                     new EffectNodeDefinition(
-                        may, EffectNodeKind.Optional, EffectFailurePolicy.May,
-                        childNodeIds: new[] { swap },
-                        inputs: new[] { ChosenHero(EffectNodeDefinition.ChooserParameterName) },
-                        chooser: EffectChooserRole.BoundHero),
-                    new EffectNodeDefinition(
-                        swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        swap, EffectNodeKind.Capability, EffectFailurePolicy.May,
                         SyntheticUnresolvedSwapCapabilities.SwapUnresolvedCardV1,
                         inputs: new[]
                         {

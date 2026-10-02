@@ -227,6 +227,76 @@ namespace GuardsDigital.Presentation.Board
             renderer.enabled = true;
         }
 
+        /// <summary>Milestone 9.32g. The child layer the enemy-obstacle cue is drawn on.</summary>
+        public const string EnemyObstacleCueLayerName = "Enemy Obstacle Cue";
+
+        /// <summary>
+        /// Milestone 9.32g. Just above the aura's tint and still below the perimeter (0.015), every
+        /// mark and every piece - the aura's own overlap rule.
+        /// </summary>
+        public const float EnemyObstacleCueSurfaceOffset = 0.012f;
+
+        /// <summary>Whether this space currently wears the enemy-obstacle cue (approved mockup E).</summary>
+        public bool HasEnemyObstacleCue
+        {
+            get
+            {
+                var layer = transform.Find(EnemyObstacleCueLayerName);
+                var renderer = layer == null ? null : layer.GetComponent<MeshRenderer>();
+                return renderer != null && renderer.enabled;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. An empty space an Active effect makes an obstacle for the enemy units:
+        /// red hatching with a barred sign over the aura's tint, on the same shared-mesh terms as
+        /// <see cref="SetActiveEffectAura"/> (the caller owns the mesh and material).
+        /// </summary>
+        public void SetEnemyObstacleCue(bool lit, Mesh sharedMesh, Material sharedMaterial)
+        {
+            var layer = transform.Find(EnemyObstacleCueLayerName);
+            if (!lit)
+            {
+                if (layer != null)
+                {
+                    var existing = layer.GetComponent<MeshRenderer>();
+                    if (existing != null) existing.enabled = false;
+                }
+
+                return;
+            }
+
+            if (sharedMesh == null) throw new System.ArgumentNullException(nameof(sharedMesh));
+            if (sharedMaterial == null) throw new System.ArgumentNullException(nameof(sharedMaterial));
+            if (layer == null)
+            {
+                layer = new GameObject(EnemyObstacleCueLayerName).transform;
+                layer.SetParent(transform, false);
+                layer.gameObject.layer = gameObject.layer;
+            }
+
+            layer.localPosition = new Vector3(0f, EnemyObstacleCueSurfaceOffset, 0f);
+            layer.localRotation = Quaternion.identity;
+            layer.localScale = Vector3.one;
+            var filter = layer.GetComponent<MeshFilter>();
+            if (filter == null)
+            {
+                filter = layer.gameObject.AddComponent<MeshFilter>();
+            }
+
+            filter.sharedMesh = sharedMesh;
+            var renderer = layer.GetComponent<MeshRenderer>();
+            if (renderer == null)
+            {
+                renderer = layer.gameObject.AddComponent<MeshRenderer>();
+            }
+
+            renderer.sharedMaterial = sharedMaterial;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.enabled = true;
+        }
+
         private Vector3 auraGlide;
 
         /// <summary>How far this space's aura is currently offset from the space itself.</summary>

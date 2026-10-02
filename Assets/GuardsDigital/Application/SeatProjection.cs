@@ -26,11 +26,77 @@ namespace GuardsDigital.Application
     /// <para>A projection filter and never an authorization one, as <see cref="FacedownTokenMask"/> is:
     /// the authority, the Director's read model, the snapshot and the replay keep the identity.</para>
     /// </summary>
+    /// <summary>
+    /// Milestone 9.32g. Whether the bounded public log still remembers a hand card's face (p.8: a
+    /// retrieved card stays known at the table): some row names it, and no row at or after the last
+    /// one that names it moved it into its owner's deck, where p.4 hides it again. A gold the table
+    /// saw go into the deck and come back out unseen - Bushido swapping the gold in hand for one of
+    /// the deck's two - is no longer named to another seat. Ready for War's two golds are withheld
+    /// the same way, although a seat that tracked every gold could tell which they were: where the
+    /// table's knowledge depends on counting, the projection errs on the side of withholding.
+    /// </summary>
+    internal static class RetrievedCardMemory
+    {
+        internal static bool Remembers(
+            CardInstance card, IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> publicLog)
+        {
+            var log = publicLog ?? Array.Empty<GuardsDigital.Core.Diagnostics.MatchLogEntry>();
+            var named = log.Where(entry => entry.SubjectCardInstanceId.Equals(card.Id))
+                .Select(entry => entry.Sequence)
+                .DefaultIfEmpty(0)
+                .Max();
+            if (named == 0)
+            {
+                return false;
+            }
+
+            var definition = card.DefinitionReference.DefinitionId;
+            var intoDeck = log.Where(entry => entry.SubjectHeroId.Equals(card.OwnerId) &&
+                    entry.CardMoves.Any(move => move.To == GuardsDigital.Core.Effects.CardMoveZone.Deck &&
+                        move.Definition.Equals(definition)))
+                .Select(entry => entry.Sequence)
+                .DefaultIfEmpty(0)
+                .Max();
+            return named > intoDeck;
+        }
+    }
+
+    internal static class CardMoveMask
+    {
+        /// <summary>
+        /// Milestone 9.32g. The log as <paramref name="seat"/> may read it: a row's card moves are
+        /// left whole on the seat that owns the row's hero, and on every other seat each move the table
+        /// did not see (<see cref="GuardsDigital.Core.Effects.CardMoveFact.IsSeenByTheTable()"/>) loses its
+        /// card. The same list is returned where nothing is hidden, so the composition stays an
+        /// identity for every match without a swap.
+        /// </summary>
+        internal static IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> Mask(
+            IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> log, MatchSeat seat)
+        {
+            if (log == null || !log.Any(entry => Hides(entry, seat)))
+            {
+                return log;
+            }
+
+            return Array.AsReadOnly(log
+                .Select(entry => Hides(entry, seat)
+                    ? entry.WithCardMoves(entry.CardMoves.Select(move =>
+                        move.IsSeenByTheTable() ? move : move.Unnamed()))
+                    : entry)
+                .ToArray());
+        }
+
+        private static bool Hides(GuardsDigital.Core.Diagnostics.MatchLogEntry entry, MatchSeat seat) =>
+            entry.CardMoves.Any(move => !move.IsSeenByTheTable() && move.Definition.IsDefined) &&
+            !(seat != null && seat.Owns(entry.SubjectHeroId));
+    }
+
     internal static class FacedownSlotMask
     {
         internal static IReadOnlyList<RoundTurnSlot> Mask(
             IReadOnlyList<RoundTurnSlot> slots, MatchSeat seat,
-            IReadOnlyList<CardInstance> cards, MatchParticipants participants)
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants,
+            IReadOnlyList<CardDefinition> definitions = null)
         {
             if (slots == null || slots.Count == 0 || !slots.Any(slot => Hides(slot, seat)))
             {
@@ -38,13 +104,14 @@ namespace GuardsDigital.Application
             }
 
             return Array.AsReadOnly(slots
-                .Select(slot => Hides(slot, seat) ? MaskSlot(slot, seat, cards, participants) : slot)
+                .Select(slot => Hides(slot, seat) ? MaskSlot(slot, seat, cards, participants, definitions) : slot)
                 .ToArray());
         }
 
         internal static IReadOnlyList<CompletedRoundRecord> MaskRounds(
             IReadOnlyList<CompletedRoundRecord> rounds, MatchSeat seat,
-            IReadOnlyList<CardInstance> cards, MatchParticipants participants)
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants,
+            IReadOnlyList<CardDefinition> definitions = null)
         {
             if (rounds == null || rounds.Count == 0 ||
                 !rounds.Any(round => round.TurnSlots.Any(slot => Hides(slot, seat))))
@@ -56,7 +123,7 @@ namespace GuardsDigital.Application
                 .Select(round => round.TurnSlots.Any(slot => Hides(slot, seat))
                     ? new CompletedRoundRecord(
                         round.RoundIndex,
-                        Mask(round.TurnSlots, seat, cards, participants),
+                        Mask(round.TurnSlots, seat, cards, participants, definitions),
                         round.EndOfRoundOutcomes)
                     : round)
                 .ToArray());
@@ -71,15 +138,35 @@ namespace GuardsDigital.Application
 
         private static RoundTurnSlot MaskSlot(
             RoundTurnSlot slot, MatchSeat seat,
-            IReadOnlyList<CardInstance> cards, MatchParticipants participants) =>
+            IReadOnlyList<CardInstance> cards, MatchParticipants participants,
+            IReadOnlyList<CardDefinition> definitions) =>
             new RoundTurnSlot(
                 slot.RoundIndex,
                 slot.TurnIndex,
                 slot.Assignments.Select(assignment => Hides(assignment, seat)
-                    ? TurnCardAssignment.Withheld(assignment.HeroId)
+                    ? TurnCardAssignment.Withheld(
+                        assignment.HeroId,
+                        KnownColorOf(cards?.FirstOrDefault(card => card.Id.Equals(assignment.CardInstanceId.Value)),
+                            definitions))
                     : assignment),
                 cards,
                 participants);
+
+        /// <summary>
+        /// Milestone 9.32g. The colour every seat knows a facedown resting card has, though not which
+        /// card it is: the one producer of such a card, <c>swap-owned-color-card-with-deck-card@1</c>
+        /// (Bushido), swaps for a card of the colour its own text names, so that colour is table
+        /// knowledge (the user's 2026-10-02 ruling: "it can't be anything else"). Read off the
+        /// definition the host holds; <see cref="CardColor.None"/> where it cannot be read. Asked of a
+        /// card the slot RECORDED as facedown, so a completed round keeps its colour after p.8 has
+        /// returned the card faceup to the hand. p.10 gives the card no colour for any rule, and no rule
+        /// reads this.
+        /// </summary>
+        internal static CardColor KnownColorOf(CardInstance card, IReadOnlyList<CardDefinition> definitions) =>
+            card == null || definitions == null
+                ? CardColor.None
+                : definitions.FirstOrDefault(definition => definition.Reference.Equals(card.DefinitionReference))
+                    ?.Progression.Color ?? CardColor.None;
     }
 
     /// <summary>
@@ -361,12 +448,16 @@ namespace GuardsDigital.Application
             int handCount,
             int deckCount,
             int spellbookCount,
-            IEnumerable<SpellbookBackCount> spellbookBacks = null)
+            IEnumerable<SpellbookBackCount> spellbookBacks = null,
+            IEnumerable<CardColor> facedownDiscardColors = null)
         {
             HeroId = heroId;
             HandCount = handCount;
             DeckCount = deckCount;
             SpellbookCount = spellbookCount;
+            FacedownDiscardColors = Array.AsReadOnly((facedownDiscardColors ?? Enumerable.Empty<CardColor>())
+                .OrderBy(color => color)
+                .ToArray());
             SpellbookBacks = Array.AsReadOnly((spellbookBacks ?? Enumerable.Empty<SpellbookBackCount>())
                 .Where(back => back.Count > 0)
                 .OrderBy(back => back.Back)
@@ -382,6 +473,14 @@ namespace GuardsDigital.Application
         public HeroId HeroId { get; }
         public int HandCount { get; }
         public int DeckCount { get; }
+
+        /// <summary>
+        /// Milestone 9.32g. One entry per facedown card in this hero's discard pile, naming only the
+        /// colour every seat knows it has (see <see cref="FacedownSlotMask.KnownColorOf"/>): another seat
+        /// draws the pile's hatched gold without holding the card, which its projection withholds
+        /// (a facedown card is never public, p.4).
+        /// </summary>
+        public IReadOnlyList<CardColor> FacedownDiscardColors { get; }
 
         /// <summary>
         /// Milestone 9.30b. How many spell cards lie facedown in this hero's spellbook - zero for a
@@ -440,7 +539,12 @@ namespace GuardsDigital.Application
                                 .GroupBy(card => SpellbookBackCount.BackOf(
                                     byReference[card.DefinitionReference].Progression))
                                 .Select(group => new SpellbookBackCount(group.Key, group.Count()))
-                            : null);
+                            : null,
+                        // Milestone 9.32g. The pile's facedown cards, by the colour every seat knows.
+                        cards.Where(card => card.OwnerId.Equals(hero.Id) &&
+                                card.State.Location == CardLocation.DiscardPile &&
+                                CardLifecycleAuthority.IsFacedownRestingCard(card))
+                            .Select(card => FacedownSlotMask.KnownColorOf(card, definitions)));
                 })
                 .ToArray());
         }
@@ -872,7 +976,10 @@ namespace GuardsDigital.Application
             // Every kind the selection admits is table-public, so there is nothing here to scope
             // away - and taking the source's own derived value is what makes that identity a fact of
             // the composition rather than a claim a filter would have to keep proving.
-            MatchLog = source.MatchLog;
+            // Milestone 9.32g: the same rows, except that a card move no other seat saw (a swap's
+            // hand, deck or facedown card, approved mockup F) is named on its owner's seat alone -
+            // the facedown slot's own rule, below, applied to the log.
+            MatchLog = CardMoveMask.Mask(source.MatchLog, seat);
 
             // Milestone 8.53. The SAME board the Director reads, taken whole rather than filtered,
             // for the reason the log above it is: every column counts an event the whole table
@@ -908,14 +1015,15 @@ namespace GuardsDigital.Application
             Phase = source.Phase;
             TieBreakerState = source.TieBreakerState;
             // Milestone 9.32a. A slot whose card was placed facedown names it only to its owner.
-            TurnSlots = FacedownSlotMask.Mask(source.TurnSlots, seat, source.Cards, source.Participants);
+            TurnSlots = FacedownSlotMask.Mask(
+                source.TurnSlots, seat, source.Cards, source.Participants, source.Definitions);
             // Milestone 8.35w. Taken from the source rather than re-derived, so a seat's
             // retained round window IS the host's own - which is what keeps one wire frame bounded
             // and keeps the host's view and every client's byte-for-byte identical. Milestone 9.32a:
             // identical except where a slot's card was placed facedown, which only its owner's seat
             // may name; the window's rounds and slots are the same and only that identity is absent.
             CompletedRounds = FacedownSlotMask.MaskRounds(
-                source.CompletedRounds, seat, source.Cards, source.Participants);
+                source.CompletedRounds, seat, source.Cards, source.Participants, source.Definitions);
             CurrentEndOfRoundStage = source.CurrentEndOfRoundStage;
             Commitments = source.Commitments;
             SelectedActor = source.SelectedActor;
@@ -1725,8 +1833,8 @@ namespace GuardsDigital.Application
                     // A retrieved card remains known at the physical table after p.8 returns it.
                     // Retrieval resets lifecycle state so the card can be played again; the bounded
                     // public log, not a rules-facing card flag, is the memory of its revealed ID.
-                    return (publicLog ?? Array.Empty<GuardsDigital.Core.Diagnostics.MatchLogEntry>())
-                        .Any(entry => entry.SubjectCardInstanceId.Equals(card.Id));
+                    // Milestone 9.32g: until a later row moves it into the deck (RetrievedCardMemory).
+                    return RetrievedCardMemory.Remembers(card, publicLog);
                 default:
                     return false;
             }

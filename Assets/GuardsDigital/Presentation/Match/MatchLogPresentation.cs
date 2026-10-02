@@ -5,6 +5,8 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -120,10 +122,17 @@ namespace GuardsDigital.Presentation.Match
         private bool lastExpanded;
         private MatchLogViewModel lastViewModel;
 
-        public MatchLogPresenter(IMatchClient client, IMatchLogView view)
+        private readonly EffectCapabilityCatalog capabilities;
+
+        /// <param name="capabilities">Milestone 9.32g. The composition's capability catalog, which
+        /// lets an attack row say the enemy-obstacle effect its card started; without it that line is
+        /// simply absent.</param>
+        public MatchLogPresenter(
+            IMatchClient client, IMatchLogView view, EffectCapabilityCatalog capabilities = null)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
+            this.capabilities = capabilities;
         }
 
         /// <summary>Whether the drop-down is open. Local state; it changes no match state.</summary>
@@ -136,7 +145,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 lastProjection = projection;
                 lastExpanded = isExpanded;
-                lastViewModel = MatchLogFormatter.CreateViewModel(projection, isExpanded);
+                lastViewModel = MatchLogFormatter.CreateViewModel(projection, isExpanded, capabilities);
             }
 
             view.Render(lastViewModel);
@@ -188,7 +197,8 @@ namespace GuardsDigital.Presentation.Match
     /// </remarks>
     public static class MatchLogFormatter
     {
-        public static MatchLogViewModel CreateViewModel(IMatchReadModel projection, bool isOpen)
+        public static MatchLogViewModel CreateViewModel(
+            IMatchReadModel projection, bool isOpen, EffectCapabilityCatalog capabilities = null)
         {
             if (projection == null)
             {
@@ -202,7 +212,7 @@ namespace GuardsDigital.Presentation.Match
                 // rule event, so it is the match's CURRENT status rather than a moment in the
                 // history. Under item 2's newest-first ordering the top is where "current" reads.
                 AppendUndoMarker(lines, projection);
-                lines.AddRange(NewestFirst(ComposeOldestFirst(projection)));
+                lines.AddRange(NewestFirst(ComposeOldestFirst(projection, capabilities)));
             }
 
             return new MatchLogViewModel(projection.Version, isOpen, Array.AsReadOnly(lines.ToArray()));
@@ -219,7 +229,8 @@ namespace GuardsDigital.Presentation.Match
         /// proved separately. They are two different decisions and a single fixture over the
         /// composed result would have to know both to assert either.
         /// </remarks>
-        public static IReadOnlyList<MatchLogLineViewModel> ComposeOldestFirst(IMatchReadModel projection)
+        public static IReadOnlyList<MatchLogLineViewModel> ComposeOldestFirst(
+            IMatchReadModel projection, EffectCapabilityCatalog capabilities = null)
         {
             if (projection == null)
             {
@@ -234,7 +245,7 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
-                AppendLine(lines, projection, entry);
+                AppendLine(lines, projection, entry, capabilities);
             }
 
             return Array.AsReadOnly(lines.ToArray());
@@ -316,7 +327,10 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static void AppendLine(
-            List<MatchLogLineViewModel> lines, IMatchReadModel projection, MatchLogEntry entry)
+            List<MatchLogLineViewModel> lines,
+            IMatchReadModel projection,
+            MatchLogEntry entry,
+            EffectCapabilityCatalog capabilities = null)
         {
             switch (entry.Kind)
             {
@@ -364,6 +378,17 @@ namespace GuardsDigital.Presentation.Match
                         target == null
                             ? $"{attacker} ATTACKED{outcome}"
                             : $"{attacker} ATTACKED {target}{outcome}"));
+
+                    // Milestone 9.32g (approved mockup F). An attack whose card starts an effect that
+                    // bars the enemy's units from empty spaces says so on the next line, worded from
+                    // the card - "adjacent" where the text writes it, "in radius" where it prints it.
+                    var obstacles = EnemyObstacleWords(projection, entry.SubjectCardInstanceId, capabilities);
+                    if (obstacles != null)
+                    {
+                        lines.Add(Line(entry,
+                            $"{attacker}: EMPTY SPACES {obstacles} ARE OBSTACLES FOR THE ENEMY THIS TURN"));
+                    }
+
                     return;
                 }
 
@@ -559,6 +584,31 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
+                // Milestone 9.32g (approved mockup F). A swap, a kept swap and an Ultimate's unlock
+                // that moved cards. Each move names its card through the definition the row carries,
+                // which the seat projection has already cleared wherever this seat may not read it - so
+                // a card is named exactly where its owner, or the whole table, saw it, and an unnamed
+                // one is told by its zone and the colour its text fixes. No pronouns.
+                case MatchLogEntryKind.CardSwappedByCardText:
+                    lines.Add(Line(entry, CardMoveWords.Swapped(
+                        projection.Definitions, HeroName(projection, entry.SubjectHeroId), entry.CardMoves,
+                        SourceSuffix(projection, entry))));
+                    return;
+
+                case MatchLogEntryKind.CardKeptByCardText:
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} KEPT " +
+                        $"{CardMoveWords.NameOrNull(projection.Definitions, entry.CardMoves.FirstOrDefault()) ?? "A CARD"}" +
+                        SourceSuffix(projection, entry)));
+                    return;
+
+                case MatchLogEntryKind.UltimateMovedCards:
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} UNLOCKED " +
+                        $"{CardNameOrNull(projection, entry.SubjectCardInstanceId) ?? "AN ULTIMATE"}: " +
+                        CardMoveWords.Grouped(projection.Definitions, entry.CardMoves)));
+                    return;
+
                 // Milestone 9.30h. A spellbook's three public facts. A cast and a removal name the
                 // spell through the seat's own projection, which holds it while it lies faceup in the
                 // open removed pile; once a refill turns it facedown again, a seat that is not the
@@ -645,6 +695,53 @@ namespace GuardsDigital.Presentation.Match
                 case MatchLogOutcome.AttackSuccessfullyDefended: return " — DEFENDED";
                 default: return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. "(SET AN EXAMPLE)" where the swap's text came off another hero's card - a
+        /// teammate's swap - and nothing where the swapping hero's own card made it: Takahide's own
+        /// swaps already read as his.
+        /// </summary>
+        private static string SourceSuffix(IMatchReadModel projection, MatchLogEntry entry)
+        {
+            var source = (projection.Cards ?? Array.Empty<CardInstance>())
+                .FirstOrDefault(card => card.Id.Equals(entry.SubjectCardInstanceId));
+            var name = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+            return source == null || name == null || source.OwnerId.Equals(entry.SubjectHeroId)
+                ? string.Empty
+                : " (" + name + ")";
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. "ADJACENT" or "IN RADIUS" where the attack's card declares an Active effect
+        /// whose overlay makes empty spaces obstacles for the enemy's units, read from the card's own
+        /// typed effects through the catalog; null for every other card, or with no catalog.
+        /// </summary>
+        private static string EnemyObstacleWords(
+            IMatchReadModel projection, CardInstanceId cardId, EffectCapabilityCatalog capabilities)
+        {
+            if (capabilities == null || !cardId.IsDefined)
+            {
+                return null;
+            }
+
+            var card = (projection.Cards ?? Array.Empty<CardInstance>()).FirstOrDefault(value => value.Id.Equals(cardId));
+            var definition = card == null
+                ? null
+                : (projection.Definitions ?? Array.Empty<CardDefinition>())
+                    .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
+            var declared = (definition?.ActionDefinitions ?? Array.Empty<ActionDefinition>())
+                .SelectMany(action => ActiveEffectVisibility.DeclaredActiveEffects(action, capabilities))
+                .FirstOrDefault(effect => effect.ObstacleOverlays.Any(overlay => overlay != null &&
+                    overlay.Arms.Contains(ObstacleOverlayArm.EmptySpacesInsideForUnits)));
+            if (declared == null)
+            {
+                return null;
+            }
+
+            return declared.Radius.Source == DeclaredRadiusSource.WrittenInText && declared.Radius.Value == 1
+                ? "ADJACENT"
+                : "IN RADIUS";
         }
 
         private static MatchLogLineViewModel Line(MatchLogEntry entry, string text) =>

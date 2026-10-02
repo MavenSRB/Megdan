@@ -168,7 +168,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(stage.Choice.Candidates.Select(candidate => candidate.Value.HeroId), Is.EqualTo(new[] { Stage.Ally }),
                 "the teammate three spaces away is in radius 3");
             stage.ChooseHero(Stage.Ally);
-            stage.Confirm();
+            Assert.That(stage.Choice.ChooserId, Is.EqualTo(Stage.Ally),
+                "9.32g (mockup D): the teammate answers one choice on their own seat");
+            Assert.That(stage.Choice.DeclineInvocation, Is.Not.Null, "\"may\": KEEP MY CARD is on the same choice");
             stage.ChooseCard(stage.AllyHandCard);
             Assert.That(stage.Card(stage.AllyHandCard).State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
             stage.ReleaseIfAsked();
@@ -178,6 +180,18 @@ namespace GuardsDigital.Tests.EditMode
             far.AttackTheEnemyAndDefend();
             Assert.That(far.Choice, Is.Null, "four spaces away is outside radius 3: the Attack resolves alone");
             Assert.That(far.Card(TakahideCardContent.SetAnExample).State, Is.EqualTo(Resolved));
+        }
+
+        [Test]
+        public void SetAnExample_ATeammateWhoKeepsTheirCard_SwapsNothing()
+        {
+            var stage = new Stage(TakahideCardContent.SetAnExample, allyAt: new HexCoordinate(-3, 0));
+            stage.AttackTheEnemyAndDefend();
+            stage.ChooseHero(Stage.Ally);
+            stage.Decline();
+            Assert.That(stage.Card(stage.AllyHandCard).State.Location, Is.EqualTo(CardLocation.Hand),
+                "KEEP MY CARD: the hand card stays where it was");
+            Assert.That(stage.Card(TakahideCardContent.SetAnExample).State, Is.EqualTo(Resolved));
         }
 
         [Test]
@@ -194,7 +208,6 @@ namespace GuardsDigital.Tests.EditMode
             var stage = new Stage(TakahideCardContent.HoldMySake, allyAt: new HexCoordinate(-3, 0), allyHandEmpty: true);
             stage.AttackTheEnemyAndDefend();
             stage.ChooseHero(Stage.Ally);
-            stage.Confirm();
             Assert.That(stage.Choice.Candidates.Select(candidate => candidate.Value.CardInstanceId),
                 Is.EqualTo(new[] { stage.AllyDiscardedCard }), "\"or in their discard\"");
             stage.ChooseCard(stage.AllyDiscardedCard);
@@ -380,6 +393,8 @@ namespace GuardsDigital.Tests.EditMode
 
             internal void Confirm() => Accept(Round.TryAnswerEffectChoice(Choice.ConfirmInvocation));
 
+            internal void Decline() => Accept(Round.TryAnswerEffectChoice(Choice.DeclineInvocation));
+
             internal void ReleaseIfAsked()
             {
                 if (Turn != null && Turn.PendingTurnRelease != null)
@@ -395,9 +410,17 @@ namespace GuardsDigital.Tests.EditMode
                         .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Origin ==
                         ActionDefinitionOrigin.PrintedPrimary);
 
-            private void Accept(RoundResolutionResult result) =>
+            private readonly List<RoundResolutionEvent> events = new List<RoundResolutionEvent>();
+
+            /// <summary>Milestone 9.32g. Every round event this stage's accepted commands produced.</summary>
+            internal IReadOnlyList<RoundResolutionEvent> Events => events;
+
+            private void Accept(RoundResolutionResult result)
+            {
                 Assert.That(result.Accepted, Is.True,
                     result.RejectionReason + "/" + result.TurnRejectionReason + "/" + result.CardActionRejectionReason);
+                events.AddRange(result.Events);
+            }
 
             private static CardDefinition Plain(int initiative) => new CardDefinition(
                 new CardDefinitionId("takahide-faces-plain-" + initiative), "rev-1", "TEST - Initiative " + initiative,

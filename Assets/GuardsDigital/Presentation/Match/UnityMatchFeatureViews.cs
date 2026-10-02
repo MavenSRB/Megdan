@@ -63,6 +63,8 @@ namespace GuardsDigital.Presentation.Match
         // nothing at all, and shared by every tinted space.
         private Material activeEffectAuraMaterial;
         private Mesh activeEffectAuraMesh;
+        private Material enemyObstacleCueMaterial;
+        private Texture2D enemyObstacleCueTexture;
 
         // The tiles currently tinted, so the per-frame glide walks the disk rather than all 210 tiles.
         private readonly List<HexTileView> litAuraTiles = new List<HexTileView>();
@@ -185,6 +187,11 @@ namespace GuardsDigital.Presentation.Match
             var ownedMesh = activeEffectAuraMesh;
             activeEffectAuraMaterial = null;
             activeEffectAuraMesh = null;
+            // Milestone 9.32g: the enemy-obstacle cue's material and texture, owned the same way.
+            DestroyOwned(enemyObstacleCueMaterial);
+            DestroyOwned(enemyObstacleCueTexture);
+            enemyObstacleCueMaterial = null;
+            enemyObstacleCueTexture = null;
             foreach (var tile in tiles)
             {
                 if (tile != null)
@@ -254,6 +261,44 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public const string ActiveEffectAuraMaterialName = "Active Effect Aura";
+
+        public const string EnemyObstacleCueMaterialName = "Enemy Obstacle Cue";
+
+        private static void DestroyOwned(UnityEngine.Object resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(resource);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(resource);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 9.32g (approved mockup E): red hatching and a barred sign, generated rather than
+        /// imaged so the build takes no artwork for it; the hex mesh's UVs map the square onto the
+        /// space, and the hex outline is drawn into the texture where the mesh's edge falls.
+        /// </summary>
+        private Material EnsureEnemyObstacleCueMaterial()
+        {
+            if (enemyObstacleCueMaterial != null)
+            {
+                return enemyObstacleCueMaterial;
+            }
+
+            enemyObstacleCueTexture = EnemyObstacleCueTexture.Create(128);
+            enemyObstacleCueMaterial = BoardOverlayMaterial.CreateUnlitBlended(
+                EnemyObstacleCueMaterialName, new Color(0.86f, 0.22f, 0.22f, 1f));
+            enemyObstacleCueMaterial.mainTexture = enemyObstacleCueTexture;
+            return enemyObstacleCueMaterial;
+        }
 
         /// <summary>The spaces currently tinted by a live disk, in board order.</summary>
         public IReadOnlyList<HexTileView> LitAuraTiles => litAuraTiles;
@@ -368,6 +413,14 @@ namespace GuardsDigital.Presentation.Match
             var activeEffectHeroes = new HashSet<HeroId>(activeEffects.MarkedHeroes);
             var activeEffectAura = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
                 activeEffects.AuraSpaces);
+            // Milestone 9.32g: the EMPTY spaces of a disk that bars the enemy units (mockup E).
+            var occupied = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.Heroes.Select(value => value.Coordinate)
+                    .Concat(model.Minions.Select(value => value.Coordinate))
+                    .Concat(model.Obstacles.Select(value => value.Coordinate))
+                    .Concat(model.PlacedTokens.Select(value => value.Coordinate)));
+            var barredForEnemies = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                activeEffects.BarredSpaces.Where(space => !occupied.Contains(space)));
             litAuraTiles.Clear();
 
             // Milestone 9.21i. One standee per standing BODY. A body the scene never authored is drawn
@@ -616,6 +669,12 @@ namespace GuardsDigital.Presentation.Match
                 {
                     litAuraTiles.Add(tile);
                 }
+
+                var barred = tile.IsPlayable && barredForEnemies.Contains(tile.Coordinate);
+                tile.SetEnemyObstacleCue(
+                    barred,
+                    barred ? EnsureActiveEffectAuraMesh(tile.OuterRadius) : null,
+                    barred ? EnsureEnemyObstacleCueMaterial() : null);
 
                 if (cornerHighlightTemplate != null)
                 {

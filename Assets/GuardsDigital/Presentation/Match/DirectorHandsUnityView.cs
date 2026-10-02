@@ -117,6 +117,21 @@ namespace GuardsDigital.Presentation.Match
         public const float PeekCardOverlap = PeekCardOuterWidth - PeekCardSlotFootprint;
 
         /// <summary>
+        /// Milestone 9.32g (approved mockup A). The step between two cards of a compact row of
+        /// <paramref name="cardCount"/>: five or fewer step as they always have; more fit into the same
+        /// footprint, each covered card showing a narrower column - Takahide's six after Ready for War.
+        /// </summary>
+        public static float PeekSlotFootprintFor(int cardCount) => cardCount <= 5
+            ? PeekCardSlotFootprint
+            : (ConfiguredMatchHudRenderer.CompactHandRightEdge - PeekCardOuterWidth) / (cardCount - 1);
+
+        /// <summary>Milestone 9.32g. The overlap that pairs with <see cref="PeekSlotFootprintFor"/>.</summary>
+        public static float PeekOverlapFor(int cardCount) => PeekCardOuterWidth - PeekSlotFootprintFor(cardCount);
+
+        // The overlap of the compact row being built, set from its card count before its cards are.
+        private float rowPeekOverlap = PeekCardOverlap;
+
+        /// <summary>
         /// The exposed top strip of each unavailable card in the right-side vertical fan. Five
         /// complete faces remain individually targetable while the final face stays fully visible.
         /// </summary>
@@ -530,6 +545,7 @@ namespace GuardsDigital.Presentation.Match
                 confirmAction.Add(confirm);
             }
 
+            rowPeekOverlap = PeekOverlapFor(drawnCards.Length);
             for (var index = 0; index < drawnCards.Length; index++)
             {
                 cards.Add(BuildCard(
@@ -538,6 +554,8 @@ namespace GuardsDigital.Presentation.Match
                     false,
                     Model.ViewedHandDrawsActionControls));
             }
+
+            rowPeekOverlap = PeekCardOverlap;
 
             if (decidedFor != null)
             {
@@ -559,6 +577,7 @@ namespace GuardsDigital.Presentation.Match
             unavailableCards.style.height = unavailableHeight;
             unavailableCards.style.minHeight = unavailableHeight;
             unavailableCards.style.maxHeight = unavailableHeight;
+            stackOverlap = PeekCardOuterHeight - UnavailableSlotFootprintFor(unavailable.Length);
             for (var index = 0; index < unavailable.Length; index++)
             {
                 unavailableCards.Add(BuildCard(
@@ -566,6 +585,8 @@ namespace GuardsDigital.Presentation.Match
                     compactPeekMode && index == unavailable.Length - 1,
                     true));
             }
+
+            stackOverlap = UnavailableCardOverlap;
             unavailableGroup.style.display = !trayHidden && unavailable.Length > 0
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
@@ -625,11 +646,23 @@ namespace GuardsDigital.Presentation.Match
 
         private static float CompactCardRowWidth(int cardCount) => cardCount <= 0
             ? 0f
-            : PeekCardOuterWidth + ((cardCount - 1) * PeekCardSlotFootprint);
+            : PeekCardOuterWidth + ((cardCount - 1) * PeekSlotFootprintFor(cardCount));
 
         public static float CompactUnavailableStackHeight(int cardCount) => cardCount <= 0
             ? 0f
-            : PeekCardOuterHeight + ((cardCount - 1) * UnavailableCardSlotFootprint);
+            : PeekCardOuterHeight + ((cardCount - 1) * UnavailableSlotFootprintFor(cardCount));
+
+        /// <summary>
+        /// Milestone 9.32g (approved mockup A's rule, applied to the stack beneath the rail): five or
+        /// fewer unavailable cards step as they always have; more fit into the five-card height the HUD
+        /// reserves, so a six-card hand never pushes the stack into the rail above it.
+        /// </summary>
+        public static float UnavailableSlotFootprintFor(int cardCount) => cardCount <= 5
+            ? UnavailableCardSlotFootprint
+            : 4f * UnavailableCardSlotFootprint / (cardCount - 1);
+
+        // The vertical overlap of the unavailable stack being built, set from its count first.
+        private float stackOverlap = UnavailableCardOverlap;
 
         private VisualElement BuildCard(
             TrayCardViewModel card,
@@ -684,11 +717,11 @@ namespace GuardsDigital.Presentation.Match
                 if (isUnavailableGroup)
                 {
                     slot.style.marginRight = 0f;
-                    slot.style.marginBottom = isLastPeekCard ? 0f : -UnavailableCardOverlap;
+                    slot.style.marginBottom = isLastPeekCard ? 0f : -stackOverlap;
                 }
                 else
                 {
-                    slot.style.marginRight = isLastPeekCard ? 0f : -PeekCardOverlap;
+                    slot.style.marginRight = isLastPeekCard ? 0f : -rowPeekOverlap;
                 }
                 slot.style.flexShrink = 0f;
             }

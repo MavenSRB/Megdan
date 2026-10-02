@@ -48,6 +48,9 @@ namespace GuardsDigital.Presentation.Match
         /// them the pointer is on. Making it two dictionaries and two previews would have allowed two
         /// faces on screen at once, which is the one thing a hover reveal must not do.
         /// </summary>
+        // Milestone 9.32g: the hero whose card back a withheld facedown card's hover draws.
+        private readonly Dictionary<object, HeroContentId> withheldOwners = new Dictionary<object, HeroContentId>();
+
         private readonly Dictionary<object, VisualElement> revealAnchors =
             new Dictionary<object, VisualElement>();
         private readonly Dictionary<HeroId, VisualElement> heroRails =
@@ -299,7 +302,9 @@ namespace GuardsDigital.Presentation.Match
                 : model is SpellCardViewModel spell
                     // Milestone 9.30h: a drawer spell reveals its full landscape face.
                     ? SpellCardFaceView.Build(spell)
-                    : card == null ? null : DirectorHandsUnityView.BuildStandaloneCard(card);
+                    : model != null && withheldOwners.TryGetValue(model, out var owner)
+                        ? BuildCardBack(owner)
+                        : card == null ? null : BuildFace(card);
             if (face == null)
             {
                 highlighted = null;
@@ -328,6 +333,30 @@ namespace GuardsDigital.Presentation.Match
             {
                 DiscardCardHighlighted?.Invoke(HighlightedDiscardCard);
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. A card's hover face; a facedown card the seat may read is its own face,
+        /// dimmed and hatched (approved mockup B).
+        /// </summary>
+        private static VisualElement BuildFace(TrayCardViewModel card)
+        {
+            var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+            if (card.IsFacedown)
+            {
+                var dim = new VisualElement { name = "gd-facedown-dim" };
+                dim.pickingMode = PickingMode.Ignore;
+                dim.style.position = Position.Absolute;
+                dim.style.left = 0f;
+                dim.style.top = 0f;
+                dim.style.right = 0f;
+                dim.style.bottom = 0f;
+                dim.style.backgroundColor = new Color(0.04f, 0.04f, 0.05f, 0.42f);
+                dim.Add(new FacedownHatch());
+                face.Add(dim);
+            }
+
+            return face;
         }
 
         private static TrayCardViewModel CardOf(object model)
@@ -446,6 +475,7 @@ namespace GuardsDigital.Presentation.Match
             // longer drawn.
             SetHighlight(null);
             revealAnchors.Clear();
+            withheldOwners.Clear();
             heroRails.Clear();
             heroRailRestingTopColors.Clear();
             redColumn.Clear();
@@ -919,7 +949,9 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.11b: the card that resolved on this turn, as its own icon, or an empty
                 // card outline for a turn with none. The slot is named the same and sits in the same
                 // fixed position, so the row still reads left to right as turns one to four.
-                var element = slot.IsOccupied
+                var element = slot.IsWithheld
+                    ? BuildWithheldMiniCard("gd-turn-slot", slot.Color, slot.AssistiveLabel, slot, hero.ContentId)
+                    : slot.IsOccupied
                     ? BuildMiniCard("gd-turn-slot", slot.PlayedCard, slot.AssistiveLabel, slot)
                     : BuildEmptyMiniCard("gd-turn-slot", slot.AssistiveLabel);
 
@@ -997,7 +1029,14 @@ namespace GuardsDigital.Presentation.Match
                 pile.Add(BuildMiniCard("gd-discard-card", card, card.AssistiveLabel, card));
             }
 
-            if (hero.DiscardCards.Count == 0)
+            // Milestone 9.32g: a facedown card this seat may not name, by its known colour (mockup B).
+            foreach (var withheld in hero.WithheldDiscards)
+            {
+                pile.Add(BuildWithheldMiniCard(
+                    "gd-discard-card", withheld.Color, withheld.AssistiveLabel, withheld, withheld.OwnerContentId));
+            }
+
+            if (hero.DiscardCount == 0)
             {
                 // An empty pile says so in words rather than with a nought, for the reason the count
                 // went: nothing here is a number any more.
@@ -1565,7 +1604,136 @@ namespace GuardsDigital.Presentation.Match
             element.tooltip = assistiveLabel;
             revealAnchors[revealed] = element;
             HudElements.OnPointedAt(element, entered => SetHighlight(entered ? revealed : null));
+            if (card.IsFacedown)
+            {
+                element.Add(new FacedownHatch());
+            }
+
             return element;
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. A facedown card this seat may not name: the same hatched mini every seat
+        /// sees (approved mockup B, amended 2026-10-02 - "show them the same thing that his seat sees"),
+        /// in its known colour. Its hover draws the owner's card back, never a face.
+        /// </summary>
+        private VisualElement BuildWithheldMiniCard(
+            string name, CardColor color, string assistiveLabel, object revealed, HeroContentId owner)
+        {
+            var element = BuildMiniCardShape(name);
+            element.style.backgroundColor = MatchHudTheme.Face(color);
+            HudElements.Border(element, MatchHudTheme.PanelBorder, 1f, 3f);
+            ConfiguredCardFaceView.AddExteriorOutline(element, 1.5f, 4.5f);
+            var band = new VisualElement { name = "gd-mini-card-band" };
+            band.style.height = 4f;
+            band.style.marginLeft = 3f;
+            band.style.marginRight = 3f;
+            band.style.marginTop = 3f;
+            var ink = MatchHudTheme.FaceText(color);
+            band.style.backgroundColor = new Color(ink.r, ink.g, ink.b, 0.30f);
+            element.Add(band);
+            element.Add(new FacedownHatch());
+            element.tooltip = assistiveLabel;
+            revealAnchors[revealed] = element;
+            withheldOwners[revealed] = owner;
+            HudElements.OnPointedAt(element, entered => SetHighlight(entered ? revealed : null));
+            return element;
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. The hover of a withheld facedown card: the owner's card back at the size a
+        /// face would draw, the prepared back art where the checkout has it (private, optional - the
+        /// same rule a hero profile follows), the HUD's own card-back colour where it does not.
+        /// </summary>
+        internal static VisualElement BuildCardBack(HeroContentId owner)
+        {
+            var element = new VisualElement { name = "gd-card-back-preview" };
+            element.style.width = CardFootprint.StandardWidth;
+            element.style.height = CardFootprint.StandardHeight;
+            element.style.backgroundColor = MatchHudTheme.CardBack;
+            HudElements.Border(element, MatchHudTheme.PanelBorder, 2f, 8f);
+            var registered = RegisteredHeroRoster.ForThisBuild.FirstOrDefault(value => value.ContentId.Equals(owner));
+            var texture = string.IsNullOrEmpty(registered.HeroIdValue)
+                ? null
+                : Resources.Load<Texture2D>("Private/CardBacks/" + registered.HeroIdValue);
+            if (texture != null)
+            {
+                element.Add(new Image
+                {
+                    name = "gd-card-back-art",
+                    image = texture,
+                    scaleMode = ScaleMode.StretchToFill,
+                    pickingMode = PickingMode.Ignore,
+                    style = { flexGrow = 1f }
+                });
+            }
+
+            element.tooltip = "Facedown card";
+            return element;
+        }
+
+        /// <summary>
+        /// Milestone 9.32g. The diagonal hatch a facedown card wears wherever it is drawn small
+        /// (approved mockup B): thin dark lines over the card's own colour, drawn rather than imaged so
+        /// it scales with the mini and takes no artwork.
+        /// </summary>
+        internal sealed class FacedownHatch : VisualElement
+        {
+            private const float Spacing = 4f;
+
+            internal FacedownHatch()
+            {
+                name = "gd-facedown-hatch";
+                pickingMode = PickingMode.Ignore;
+                style.position = Position.Absolute;
+                style.left = 0f;
+                style.top = 0f;
+                style.right = 0f;
+                style.bottom = 0f;
+                generateVisualContent += OnGenerateVisualContent;
+            }
+
+            private void OnGenerateVisualContent(MeshGenerationContext context)
+            {
+                var rect = contentRect;
+                if (rect.width <= 1f || rect.height <= 1f)
+                {
+                    return;
+                }
+
+                var painter = context.painter2D;
+                painter.strokeColor = new Color(0.10f, 0.085f, 0.07f, 0.62f);
+                painter.lineWidth = 1f;
+                // Lines rising left to right at 45 degrees, each clipped to the card.
+                for (var start = -rect.height; start < rect.width; start += Spacing)
+                {
+                    var x0 = rect.xMin + start;
+                    var y0 = rect.yMax;
+                    var x1 = x0 + rect.height;
+                    var y1 = rect.yMin;
+                    if (x0 < rect.xMin)
+                    {
+                        y0 -= rect.xMin - x0;
+                        x0 = rect.xMin;
+                    }
+
+                    if (x1 > rect.xMax)
+                    {
+                        y1 += x1 - rect.xMax;
+                        x1 = rect.xMax;
+                    }
+
+                    if (x1 <= x0)
+                    {
+                        continue;
+                    }
+
+                    painter.BeginPath();
+                    painter.MoveTo(new Vector2(x0, y0));
+                    painter.LineTo(new Vector2(x1, y1));
+                    painter.Stroke();
+                }
+            }
         }
 
         /// <summary>

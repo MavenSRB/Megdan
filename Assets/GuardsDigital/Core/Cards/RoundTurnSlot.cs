@@ -32,6 +32,21 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId? cardInstanceId,
             bool passedWithEmptyHand,
             bool isFacedown)
+            : this(heroId, cardInstanceId, passedWithEmptyHand, isFacedown, CardColor.None)
+        {
+        }
+
+        /// <param name="knownColor">
+        /// Milestone 9.32g. On a withheld slot only: the colour every seat knows the facedown card
+        /// has, though not which card it is - a card Bushido turns facedown can only be a gold (the
+        /// user's 2026-10-02 presentation ruling). <see cref="CardColor.None"/> everywhere else.
+        /// </param>
+        public TurnCardAssignment(
+            HeroId heroId,
+            CardInstanceId? cardInstanceId,
+            bool passedWithEmptyHand,
+            bool isFacedown,
+            CardColor knownColor)
         {
             if (!heroId.IsDefined)
             {
@@ -55,18 +70,31 @@ namespace GuardsDigital.Core.Cards
                     nameof(cardInstanceId));
             }
 
+            if (knownColor != CardColor.None && !withheld)
+            {
+                throw new ArgumentException(
+                    "Only a withheld facedown slot carries a known colour; any other names its card.",
+                    nameof(knownColor));
+            }
+
+            if (!Enum.IsDefined(typeof(CardColor), knownColor) || knownColor == CardColor.Purple)
+            {
+                throw new ArgumentException("A known colour is a printed hand colour.", nameof(knownColor));
+            }
+
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
             PassedWithEmptyHand = passedWithEmptyHand;
             IsFacedown = isFacedown;
+            KnownColor = knownColor;
         }
 
         /// <summary>
         /// Milestone 9.32a. A seat's view of a slot holding a facedown card it may not read: the
         /// identity is absent, the fact that a card is there is not.
         /// </summary>
-        public static TurnCardAssignment Withheld(HeroId heroId) =>
-            new TurnCardAssignment(heroId, null, false, true);
+        public static TurnCardAssignment Withheld(HeroId heroId, CardColor knownColor = CardColor.None) =>
+            new TurnCardAssignment(heroId, null, false, true, knownColor);
 
         public HeroId HeroId { get; }
 
@@ -79,6 +107,13 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>Milestone 9.32a. A facedown card is here and this view may not name it.</summary>
         public bool IsWithheld => IsFacedown && !CardInstanceId.HasValue;
+
+        /// <summary>
+        /// Milestone 9.32g. The colour a withheld facedown card is known to have, or
+        /// <see cref="CardColor.None"/>. Presentation only: p.10 gives a facedown card no colour for
+        /// any rule, and nothing in the rules reads this.
+        /// </summary>
+        public CardColor KnownColor { get; }
 
         public PlayerId GetControllingPlayerId(MatchParticipants participants)
         {

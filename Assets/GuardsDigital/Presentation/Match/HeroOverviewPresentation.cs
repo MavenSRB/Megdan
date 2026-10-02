@@ -229,7 +229,8 @@ namespace GuardsDigital.Presentation.Match
             bool isActiveEffectSource = false,
             bool isResolving = false,
             bool isAwaitedAnswer = false,
-            bool isDimmedByResolution = false)
+            bool isDimmedByResolution = false,
+            bool isFacedown = false)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -270,6 +271,7 @@ namespace GuardsDigital.Presentation.Match
             IsResolving = isResolving;
             IsAwaitedAnswer = isAwaitedAnswer;
             IsDimmedByResolution = isDimmedByResolution;
+            IsFacedown = isFacedown;
             ColorName = MatchHudTheme.ColorName(color);
             // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
             // assignment history names its turn from the moment that turn starts - so a card in play
@@ -294,7 +296,10 @@ namespace GuardsDigital.Presentation.Match
                 // live. Milestone 8.75b appended one; the user dropped that reading along with the
                 // corner badge it explained ("Drop the badge and rely on the coin strip alone"), so
                 // EVERY card of every hero reads exactly as it did before her.
-                (isAwaitedAnswer ? " - AWAITING YOUR ANSWER" : string.Empty);
+                (isAwaitedAnswer ? " - AWAITING YOUR ANSWER" : string.Empty) +
+                // Milestone 9.32g. Spoken and in the tooltip only: the drawn mini says it by its hatch,
+                // with no caption (the user's 2026-10-02 amendment to mockup B).
+                (isFacedown ? " - FACEDOWN" : string.Empty);
         }
 
         public CardInstanceId CardInstanceId { get; }
@@ -388,6 +393,13 @@ namespace GuardsDigital.Presentation.Match
         /// view model on a different surface, not a member of this hand at all.
         /// </summary>
         public bool IsDimmedByResolution { get; }
+
+        /// <summary>
+        /// Milestone 9.32g. p.10's facedown resolved or discarded card (Bushido), drawn to the seat that
+        /// may read it: its own face, hatched (approved mockup B). Another seat never holds this view
+        /// model for such a card - it holds a <see cref="WithheldCardViewModel"/>.
+        /// </summary>
+        public bool IsFacedown { get; }
 
         /// <summary>
         /// `RESOLVING`, `PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.
@@ -712,19 +724,31 @@ namespace GuardsDigital.Presentation.Match
             CardColor color,
             bool isOccupied,
             TrayCardViewModel playedCard = null,
-            TurnSlotMarkerViewModel turnSlotMarker = null)
+            TurnSlotMarkerViewModel turnSlotMarker = null,
+            bool isWithheldFacedown = false)
         {
             if (turnIndex < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(turnIndex));
             }
 
-            if (isOccupied != (playedCard != null))
+            // Milestone 9.32g. A facedown card this seat may not name occupies its slot with no card,
+            // known only by its colour (mockup B: every seat sees the hatched gold).
+            if (isWithheldFacedown && (!isOccupied || playedCard != null || color == CardColor.None))
+            {
+                throw new ArgumentException(
+                    "A withheld facedown slot is occupied, names no card and carries its known colour.",
+                    nameof(isWithheldFacedown));
+            }
+
+            if (!isWithheldFacedown && isOccupied != (playedCard != null))
             {
                 throw new ArgumentException(
                     "An occupied slot names the card played on its turn, and only an occupied one does.",
                     nameof(playedCard));
             }
+
+            IsWithheld = isWithheldFacedown;
 
             TurnIndex = turnIndex;
             if (turnSlotMarker != null && turnSlotMarker.TurnSlotIndex != turnIndex)
@@ -737,14 +761,17 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.7a: the same projected active-source fact the tray reads, asked of the card
             // in the slot rather than derived again here, so the two surfaces mark and unmark one card
             // on the same refresh.
-            IsActiveEffectSource = isOccupied && playedCard.IsActiveEffectSource;
+            IsActiveEffectSource = isOccupied && playedCard != null && playedCard.IsActiveEffectSource;
             ActiveLabel = IsActiveEffectSource ? "ACTIVE" : string.Empty;
             // Milestone 8.11b: the slot draws no text at all now, so this is where the turn ordinal and
             // the card's name live. A player using a screen reader hears more than the four numbers
             // ever said, and a sighted player reads the same facts off the icon's own hover.
-            AssistiveLabel = isOccupied
+            AssistiveLabel = isWithheldFacedown
+                ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - facedown"
+                : isOccupied
                 ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
-                    (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty)
+                    (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty) +
+                    (playedCard.IsFacedown ? " - FACEDOWN" : string.Empty)
                 : $"Turn {ordinal}: empty";
             if (TurnSlotMarker != null)
                 AssistiveLabel += " - " + TurnSlotMarker.DisplayName;
@@ -777,6 +804,31 @@ namespace GuardsDigital.Presentation.Match
         public TurnSlotMarkerViewModel TurnSlotMarker { get; }
 
         public string AssistiveLabel { get; }
+
+        /// <summary>Milestone 9.32g. A facedown card is here and this seat may not name it.</summary>
+        public bool IsWithheld { get; }
+
+        /// <summary>Milestone 9.32g. The slot's card lies facedown, whether this seat may read it or not.</summary>
+        public bool IsFacedown => IsWithheld || (PlayedCard != null && PlayedCard.IsFacedown);
+    }
+
+    /// <summary>
+    /// Milestone 9.32g. A facedown card another seat may not name - in a turn slot or a discard pile -
+    /// drawn as the hatched mini of its known colour, its hover a card back (approved mockup B, as
+    /// amended on 2026-10-02: "they just cannot see what's on it").
+    /// </summary>
+    public sealed class WithheldCardViewModel
+    {
+        public WithheldCardViewModel(HeroContentId ownerContentId, CardColor color, string assistiveLabel)
+        {
+            OwnerContentId = ownerContentId;
+            Color = color;
+            AssistiveLabel = assistiveLabel ?? throw new ArgumentNullException(nameof(assistiveLabel));
+        }
+
+        public HeroContentId OwnerContentId { get; }
+        public CardColor Color { get; }
+        public string AssistiveLabel { get; }
     }
 
     /// <summary>
@@ -808,12 +860,18 @@ namespace GuardsDigital.Presentation.Match
             int worth = 0,
             TurnSlotMarkerViewModel currentTurnMarker = null,
             SpellbookViewModel spellbook = null,
-            GuardsDigital.Core.Rules.Victory.TeamVictoryTally? ultimateTally = null)
+            GuardsDigital.Core.Rules.Victory.TeamVictoryTally? ultimateTally = null,
+            IEnumerable<CardColor> withheldDiscardColors = null)
         {
             if (!heroId.IsDefined)
             {
                 throw new ArgumentException("An overview names its hero.", nameof(heroId));
             }
+
+            WithheldDiscards = Array.AsReadOnly((withheldDiscardColors ?? Enumerable.Empty<CardColor>())
+                .Select(color => new WithheldCardViewModel(
+                    contentId, color, $"{MatchHudTheme.ColorName(color)} card - facedown - DISCARDED"))
+                .ToArray());
 
             if (spellbook != null && !spellbook.HeroId.Equals(heroId))
             {
@@ -1003,8 +1061,14 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<TrayCardViewModel> DiscardCards { get; }
 
+        /// <summary>
+        /// Milestone 9.32g. The facedown cards in this hero's pile that this seat may not name, by known
+        /// colour, drawn after the named ones (mockup B).
+        /// </summary>
+        public IReadOnlyList<WithheldCardViewModel> WithheldDiscards { get; }
+
         /// <summary>How many cards are in the pile. It is the list's own length, and it is not drawn.</summary>
-        public int DiscardCount => DiscardCards.Count;
+        public int DiscardCount => DiscardCards.Count + WithheldDiscards.Count;
 
         /// <summary>Whether the tray is currently showing this hero, which the rail marks.</summary>
         public bool IsViewed { get; }
@@ -1224,7 +1288,8 @@ namespace GuardsDigital.Presentation.Match
                 spellbook != null
                     ? GuardsDigital.Core.Rules.Victory.TeamVictoryTallyQuery.ForHero(
                         projection.Participants, projection.TeamVictoryTallies, heroId)
-                    : null);
+                    : null,
+                CurrentRoundCards.WithheldDiscardColors(projection, heroId));
         }
     }
 
@@ -1299,10 +1364,23 @@ namespace GuardsDigital.Presentation.Match
             for (var turnIndex = 1; turnIndex <= RoundResolutionAuthority.TurnsPerRound; turnIndex++)
             {
                 var turnSlotMarker = TurnSlotMarker(projection, heroId, turnIndex);
-                var assignment = projection.TurnSlots
+                var assignments = projection.TurnSlots
                     .Where(slot => slot.RoundIndex == projection.RoundIndex && slot.TurnIndex == turnIndex)
                     .SelectMany(slot => slot.Assignments)
-                    .FirstOrDefault(value => value.HeroId.Equals(heroId) && value.CardInstanceId.HasValue);
+                    .Where(value => value.HeroId.Equals(heroId))
+                    .ToArray();
+
+                // Milestone 9.32g. A facedown card this seat may not name: the slot is occupied by a card
+                // of its known colour (every seat sees the hatched gold, mockup B).
+                var withheld = assignments.FirstOrDefault(value => value.IsWithheld);
+                if (withheld != null && withheld.KnownColor != CardColor.None)
+                {
+                    slots.Add(new HeroTurnSlotViewModel(
+                        turnIndex, withheld.KnownColor, true, null, turnSlotMarker, isWithheldFacedown: true));
+                    continue;
+                }
+
+                var assignment = assignments.FirstOrDefault(value => value.CardInstanceId.HasValue);
                 var card = assignment == null
                     ? null
                     : projection.Cards.FirstOrDefault(value =>
@@ -1345,6 +1423,37 @@ namespace GuardsDigital.Presentation.Match
         /// would not survive a restore or a replay; this survives both because it is a reading of the
         /// projection alone.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 9.32g. The colours of the facedown cards in this hero's pile that this seat's
+        /// projection withholds: the table-public summary's facedown discards beyond the ones the seat
+        /// holds as cards (its own), so the owner's seat never draws one twice.
+        /// </summary>
+        public static IReadOnlyList<CardColor> WithheldDiscardColors(IMatchReadModel projection, HeroId heroId)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            var summary = projection.HandSummaries?.FirstOrDefault(value => value.HeroId.Equals(heroId));
+            if (summary == null || summary.FacedownDiscardColors.Count == 0)
+            {
+                return Array.Empty<CardColor>();
+            }
+
+            var held = projection.Cards
+                .Where(card => card.OwnerId.Equals(heroId) && card.State.Location == CardLocation.DiscardPile &&
+                    CardLifecycleAuthority.IsFacedownRestingCard(card))
+                .Select(card => CurrentRoundCards.ColorOf(projection, card))
+                .ToList();
+            var withheld = new List<CardColor>();
+            foreach (var color in summary.FacedownDiscardColors)
+            {
+                if (!held.Remove(color))
+                {
+                    withheld.Add(color);
+                }
+            }
+
+            return withheld.AsReadOnly();
+        }
+
         public static IReadOnlyList<TrayCardViewModel> DiscardedCards(
             IMatchReadModel projection,
             HeroId heroId)
@@ -1511,7 +1620,9 @@ namespace GuardsDigital.Presentation.Match
                 projection.IsActiveEffectSource(card.Id),
                 isResolving,
                 isAwaitedAnswer,
-                isDimmedByResolution);
+                isDimmedByResolution,
+                // Milestone 9.32g: a seat that holds the card may read it, facedown or not.
+                CardLifecycleAuthority.IsFacedownRestingCard(card));
         }
 
         /// <summary>

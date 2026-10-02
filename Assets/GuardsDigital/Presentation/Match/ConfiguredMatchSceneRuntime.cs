@@ -201,7 +201,7 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartPresenter = Seat == null ? new UndoRestartPresenter(session, UndoRestartView) : null;
             DiagnosticPresenter = Seat == null ? new DiagnosticLogPresenter(session, DiagnosticView) : null;
             MinionChoicePresenter = new MinionChoicePresenter(client, MinionChoiceView);
-            MatchLogPresenter = new MatchLogPresenter(client, MatchLogView);
+            MatchLogPresenter = new MatchLogPresenter(client, MatchLogView, ContentCatalogs?.Capabilities);
 
             // Milestone 8.35y. The kinetic pass is composed like any other panel: a view that
             // consumes typed cues, and a presenter that derives them from the seat-public match log.

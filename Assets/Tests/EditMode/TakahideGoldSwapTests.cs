@@ -305,6 +305,81 @@ namespace GuardsDigital.Tests.EditMode
                 Is.SameAs(rounds));
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 9.32g: every seat sees that a facedown card is a gold (the user's 2026-10-02 ruling)
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AWithheldSlotCard_CarriesItsKnownColour_AndTheHistoryKeepsIt()
+        {
+            var stage = StageAFacedownSlot();
+            var participants = StagedBoardParticipants.Create();
+            var masked = GuardsDigital.Application.FacedownSlotMask.Mask(
+                stage.Round.TurnSlots, Seat(Stage.Enemy), stage.Cards, participants, stage.Definitions);
+            var withheld = masked.Single(slot => slot.TurnIndex == 1).Assignments
+                .Single(assignment => assignment.HeroId.Equals(Stage.Taka));
+            Assert.That(withheld.IsWithheld, Is.True, "still not which card");
+            Assert.That(withheld.KnownColor, Is.EqualTo(CardColor.Gold), "but every seat knows it is a gold");
+            Assert.That(masked.Single(slot => slot.TurnIndex == 2).Assignments
+                .Single(assignment => assignment.HeroId.Equals(Stage.Taka)).KnownColor, Is.EqualTo(CardColor.None),
+                "a faceup card names itself and carries no known colour");
+
+            var turnOne = stage.Round.TurnSlots.Single(slot => slot.TurnIndex == 1);
+            var round = new CompletedRoundRecord(
+                1,
+                Enumerable.Range(1, RoundResolutionAuthority.TurnsPerRound).Select(turn =>
+                    new RoundTurnSlot(1, turn, turnOne.Assignments, stage.Cards, participants)),
+                Enum.GetValues(typeof(EndOfRoundStage)).Cast<EndOfRoundStage>()
+                    .Where(value => value != EndOfRoundStage.Complete)
+                    .Select(value => new EndOfRoundStageOutcome(value, EndOfRoundStageOutcomeKind.Completed)));
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(stage.Card(Tiger)), Is.True);
+            var history = GuardsDigital.Application.FacedownSlotMask.MaskRounds(
+                new[] { round }, Seat(Stage.Enemy), stage.Cards, participants, stage.Definitions);
+            Assert.That(history.Single().TurnSlots.All(slot => slot.Assignments
+                    .Single(assignment => assignment.HeroId.Equals(Stage.Taka)).KnownColor == CardColor.Gold),
+                Is.True, "the slot's facedown record keeps its colour after p.8 returns the card faceup");
+        }
+
+        [Test]
+        public void AFacedownDiscard_IsCountedByItsKnownColour_ForEverySeat()
+        {
+            var stage = new Stage(played: Bushido, discarded: new[] { Butterfly }, deck: new[] { Bee, Tiger });
+            stage.StartSkill();
+            stage.ChooseCard(Bee);
+            var summary = GuardsDigital.Application.SeatHandSummary.Derive(
+                    StagedBoardParticipants.Create(), stage.Cards, stage.Definitions)
+                .Single(row => row.HeroId.Equals(Stage.Taka));
+            Assert.That(summary.FacedownDiscardColors, Is.EqualTo(new[] { CardColor.Gold }),
+                "the table-public summary says the pile holds one facedown gold, naming no card");
+            var enemyView = GuardsDigital.Application.SeatHandSummary.Derive(
+                StagedBoardParticipants.Create(), stage.Cards, stage.Definitions);
+            Assert.That(enemyView.Single(row => row.HeroId.Equals(Stage.Enemy)).FacedownDiscardColors, Is.Empty);
+        }
+
+        [Test]
+        public void TheWire_RefusesAKnownColourOnANamedRow_AndAcceptsItOnAWithheldOne()
+        {
+            bool Read(int color, string cardId, bool facedown)
+            {
+                using (var buffer = new System.IO.MemoryStream())
+                {
+                    using (var writer = new System.IO.BinaryWriter(buffer, System.Text.Encoding.UTF8, true))
+                        writer.Write(color);
+                    buffer.Position = 0;
+                    using (var reader = new System.IO.BinaryReader(buffer))
+                        return GuardsDigital.Application.NetworkSeatProjectionCodec.TryReadKnownColor(
+                            reader, cardId, facedown, out _);
+                }
+            }
+
+            Assert.That(Read((int)CardColor.Gold, null, true), Is.True, "a withheld facedown row");
+            Assert.That(Read((int)CardColor.Gold, "taka-tiger", true), Is.False, "a named row names its card");
+            Assert.That(Read((int)CardColor.Gold, null, false), Is.False, "only a facedown row is withheld");
+            Assert.That(Read((int)CardColor.Purple, null, true), Is.False, "Purple prints on no hand card");
+            Assert.That(Read(99, null, true), Is.False);
+            Assert.That(Read((int)CardColor.None, "taka-tiger", false), Is.True);
+        }
+
         [Test]
         public void TheFacedownSlotFact_SurvivesARestore()
         {
@@ -608,6 +683,9 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             private CardDefinition DefinitionOf(CardDefinitionId id) => Definitions.Single(value => value.Id.Equals(id));
+
+            /// <summary>Milestone 9.32g. Every round event this stage's accepted commands produced.</summary>
+            internal IReadOnlyList<RoundResolutionEvent> Events => events;
 
             private void Accept(RoundResolutionResult result)
             {

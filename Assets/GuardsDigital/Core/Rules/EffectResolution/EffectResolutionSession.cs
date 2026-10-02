@@ -42,9 +42,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<RevealedCard> revealedCards = null,
             IEnumerable<DiscardedCard> discardedCards = null,
             IEnumerable<RemovedMinion> removedMinions = null,
-            IEnumerable<SpellbookChange> spellbookChanges = null)
+            IEnumerable<SpellbookChange> spellbookChanges = null,
+            IEnumerable<CardSwapFact> cardSwaps = null)
         {
             NodeId = nodeId;
+            CardSwaps = new ReadOnlyCollection<CardSwapFact>(
+                (cardSwaps ?? Enumerable.Empty<CardSwapFact>()).ToArray());
             SpellbookChanges = new ReadOnlyCollection<SpellbookChange>(
                 (spellbookChanges ?? Enumerable.Empty<SpellbookChange>()).ToArray());
             ResultKind = resultKind;
@@ -92,6 +95,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>Milestone 9.30h. The changes this node made to a spellbook: a cast, a removal, a refill.</summary>
         public IReadOnlyList<SpellbookChange> SpellbookChanges { get; }
+
+        /// <summary>Milestone 9.32g. The swaps this node made, or the card its chooser kept by declining.</summary>
+        public IReadOnlyList<CardSwapFact> CardSwaps { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
@@ -978,7 +984,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (resolvedBy == EffectChoiceCommandKind.Decline)
             {
                 Pop(continuation);
-                Record(outcomes, events, node.Id, EffectExecutionResultKind.DeclinedOptional);
+                Record(outcomes, events, node.Id, EffectExecutionResultKind.DeclinedOptional,
+                    DeclineReport(frame, node, outcomes, context));
                 return Advance(Rebuild(frame, continuation, outcomes, choices), context, events);
             }
 
@@ -2116,6 +2123,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
         }
 
+        /// <summary>
+        /// Milestone 9.32g. What a declined capability publishes about the decline, asked of the
+        /// handler before the frame moves on (<see cref="IEffectDeclineReport"/>); null for every node
+        /// whose decline is silent, which is every node but a swap's.
+        /// </summary>
+        private static EffectExecutionResult DeclineReport(
+            PendingResolution frame,
+            EffectNodeDefinition node,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context)
+        {
+            if (node.Kind != EffectNodeKind.Capability ||
+                !(context.Catalog.Load(node.Capability) is IEffectDeclineReport report))
+            {
+                return null;
+            }
+
+            var kept = report.Declined(BuildCapabilityContext(frame, node, outcomes, context));
+            return kept == null ? null : EffectExecutionResult.DeclinedOptional(new[] { kept });
+        }
+
         private static void Record(
             ICollection<EffectNodeOutcome> outcomes,
             ICollection<EffectResolutionEvent> events,
@@ -2130,7 +2158,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             events.Add(new EffectResolutionEvent(
                 nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
                 blocking, result?.RevealedCards, result?.DiscardedCards, result?.RemovedMinions,
-                result?.SpellbookChanges));
+                result?.SpellbookChanges, result?.CardSwaps));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

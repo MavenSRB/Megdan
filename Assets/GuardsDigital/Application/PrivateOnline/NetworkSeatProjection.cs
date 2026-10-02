@@ -450,12 +450,14 @@ namespace GuardsDigital.Application
     public sealed class NetworkTurnAssignmentRow
     {
         public NetworkTurnAssignmentRow(
-            string heroId, string cardInstanceId, bool passedWithEmptyHand, bool isFacedown = false)
+            string heroId, string cardInstanceId, bool passedWithEmptyHand, bool isFacedown = false,
+            CardColor knownColor = CardColor.None)
         {
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
             PassedWithEmptyHand = passedWithEmptyHand;
             IsFacedown = isFacedown;
+            KnownColor = knownColor;
         }
 
         public string HeroId { get; }
@@ -473,6 +475,9 @@ namespace GuardsDigital.Application
         /// id it is withheld from this seat (<see cref="GuardsDigital.Core.Cards.TurnCardAssignment.IsWithheld"/>).
         /// </summary>
         public bool IsFacedown { get; }
+
+        /// <summary>Milestone 9.32g, protocol /35. A withheld facedown card's known colour.</summary>
+        public CardColor KnownColor { get; }
     }
 
     public sealed class NetworkCommitmentRow
@@ -503,7 +508,8 @@ namespace GuardsDigital.Application
             int handCount,
             int deckCount,
             int spellbookCount,
-            IEnumerable<SpellbookBackCount> spellbookBacks = null)
+            IEnumerable<SpellbookBackCount> spellbookBacks = null,
+            IEnumerable<CardColor> facedownDiscardColors = null)
         {
             HeroId = heroId;
             HandCount = handCount;
@@ -511,6 +517,8 @@ namespace GuardsDigital.Application
             SpellbookCount = spellbookCount;
             SpellbookBacks = Array.AsReadOnly(
                 (spellbookBacks ?? Enumerable.Empty<SpellbookBackCount>()).ToArray());
+            FacedownDiscardColors = Array.AsReadOnly(
+                (facedownDiscardColors ?? Enumerable.Empty<CardColor>()).ToArray());
         }
 
         public string HeroId { get; }
@@ -525,6 +533,9 @@ namespace GuardsDigital.Application
         /// per back, summing to <see cref="SpellbookCount"/> - the tier backs every seat sees.
         /// </summary>
         public IReadOnlyList<SpellbookBackCount> SpellbookBacks { get; }
+
+        /// <summary>Milestone 9.32g, protocol /35. The pile's facedown cards, by known colour.</summary>
+        public IReadOnlyList<CardColor> FacedownDiscardColors { get; }
     }
 
     public sealed class NetworkCardRow
@@ -792,6 +803,8 @@ namespace GuardsDigital.Application
                             assignment.CardInstanceId.HasValue ? assignment.CardInstanceId.Value.Value : null);
                         writer.Write(assignment.PassedWithEmptyHand);
                         writer.Write(assignment.IsFacedown);
+                        // Milestone 9.32g, protocol /35: a withheld card's known colour.
+                        writer.Write((int)assignment.KnownColor);
                     }
                 }
 
@@ -821,6 +834,13 @@ namespace GuardsDigital.Application
                     {
                         writer.Write((int)back.Back);
                         writer.Write(back.Count);
+                    }
+
+                    // Milestone 9.32g, protocol /35: the discard pile's facedown cards, by known colour.
+                    writer.Write(summary.FacedownDiscardColors.Count);
+                    foreach (var color in summary.FacedownDiscardColors)
+                    {
+                        writer.Write((int)color);
                     }
                 }
 
@@ -1173,8 +1193,14 @@ namespace GuardsDigital.Application
                             }
 
                             var slotPassed = reader.ReadBoolean();
+                            var slotFacedown = reader.ReadBoolean();
+                            if (!TryReadKnownColor(reader, slotCard, slotFacedown, out var slotColor))
+                            {
+                                return false;
+                            }
+
                             assignments.Add(new NetworkTurnAssignmentRow(
-                                slotHero, slotCard, slotPassed, reader.ReadBoolean()));
+                                slotHero, slotCard, slotPassed, slotFacedown, slotColor));
                         }
 
                         slots.Add(new NetworkTurnSlotRow(
@@ -1239,7 +1265,26 @@ namespace GuardsDigital.Application
                             return false;
                         }
 
-                        summaries.Add(new NetworkHandSummaryRow(id, handCount, deckCount, spellbookCount, backs));
+                        // Milestone 9.32g, protocol /35. One known colour per facedown discard.
+                        if (!TryReadCount(reader, out var facedownCount))
+                        {
+                            return false;
+                        }
+
+                        var facedownColors = new List<CardColor>(facedownCount);
+                        for (var colorIndex = 0; colorIndex < facedownCount; colorIndex++)
+                        {
+                            var color = reader.ReadInt32();
+                            if (!Enum.IsDefined(typeof(CardColor), color) || color == (int)CardColor.Purple)
+                            {
+                                return false;
+                            }
+
+                            facedownColors.Add((CardColor)color);
+                        }
+
+                        summaries.Add(new NetworkHandSummaryRow(
+                            id, handCount, deckCount, spellbookCount, backs, facedownColors));
                     }
 
                     if (!TryReadCards(reader, out var ownCards) || !TryReadCards(reader, out var publicCards))
@@ -1543,6 +1588,22 @@ namespace GuardsDigital.Application
 
             commands = Array.AsReadOnly(decoded.ToArray());
             return true;
+        }
+
+        /// <summary>
+        /// Milestone 9.32g, protocol /35. A slot row's known colour: a printed hand colour, and anything
+        /// but None only on a withheld facedown row (no card id) - or the frame is refused.
+        /// </summary>
+        internal static bool TryReadKnownColor(BinaryReader reader, string cardId, bool isFacedown, out CardColor color)
+        {
+            var value = reader.ReadInt32();
+            color = (CardColor)value;
+            if (!Enum.IsDefined(typeof(CardColor), value) || value == (int)CardColor.Purple)
+            {
+                return false;
+            }
+
+            return color == CardColor.None || (isFacedown && cardId == null);
         }
 
         private static bool TryReadCount(BinaryReader reader, out int count)

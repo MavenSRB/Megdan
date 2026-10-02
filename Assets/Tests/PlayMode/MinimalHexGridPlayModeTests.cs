@@ -1155,6 +1155,382 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 9.32g, the user's approved mockups A-F (2026-10-02). Takahide's presentation drawn
+        /// on the live HUD at the three validated viewports and captured for the user's review in
+        /// <c>tmp/9-32g-takahide/</c>: B the hatched gold on every seat (the card back on another seat's
+        /// hover, the dimmed and hatched face on his), A his six-card hand, C the deck-gold choice with
+        /// its FACEDOWN tags, D the teammate's one-window swap with KEEP MY CARD, E the barred empty
+        /// spaces around him, F the log rows on his seat and on every other.
+        ///
+        /// <para>Takahide is dealt at 9.32h, so his plaque stands on the Red seat of a dealt 2v2 with no
+        /// portrait, his faces are the generated ones (his art joins at dealing), and the models are
+        /// composed here from his own definitions. That the projection produces them is proved in
+        /// <c>TakahidePresentationTests</c> and <c>TakahideTableFactsTests</c>; this case is about where
+        /// they land and how they read.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_TakahidesPresentationAtTheThreeValidatedViewports()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            RegisteredHero Hero(string id) => roster.Single(hero => hero.ContentId.Value == id);
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.TwoVersusTwoQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { Hero("wasp"), Hero("brogan") }, new[] { Hero("arien"), Hero("sabina") });
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            yield return LoadComposedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var standIn = new HeroId(Hero("wasp").HeroIdValue);
+            var teammate = new HeroId(Hero("brogan").HeroIdValue);
+            var board = runtime.BoardView.Model;
+            const string folder = "tmp/9-32g-takahide/";
+            try
+            {
+                foreach (var size in new[]
+                {
+                    new Vector2Int(2560, 1440), new Vector2Int(2048, 1152), new Vector2Int(2560, 540)
+                })
+                {
+                    var where = size.x + "x" + size.y;
+                    UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "9.32g Takahide");
+
+                    // B, every other seat: the same hatched gold in slot 1 and the pile; the back on hover.
+                    var slot = RenderTakahidePlaque(runtime, standIn, ownerSeat: false);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var hatched = Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-facedown-hatch" && UiPlayer.IsShown(element.parent))
+                        .ToArray();
+                    Assert.That(hatched.Length, Is.EqualTo(2), "the slot and the pile each draw one hatched gold at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "b-facedown-gold-other-seats-plaque-" + where + ".png");
+                    runtime.HeroOverviewsView.ForwardTurnSlotHighlight(slot);
+                    yield return null;
+                    yield return null;
+                    Assert.That(Descendants(root.Hud.RootElement)
+                            .Any(element => element.name == "gd-card-back-preview" && UiPlayer.IsShown(element)), Is.True,
+                        "another seat's hover is the card back at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "b-facedown-gold-other-seats-" + where + ".png");
+                    runtime.HeroOverviewsView.ForwardTurnSlotHighlight(null);
+
+                    // B, his own seat: the same minis; the face, dimmed and hatched, on hover.
+                    slot = RenderTakahidePlaque(runtime, standIn, ownerSeat: true);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    yield return UiPlayer.CaptureScreen(folder + "b-facedown-gold-his-seat-plaque-" + where + ".png");
+                    runtime.HeroOverviewsView.ForwardTurnSlotHighlight(slot);
+                    yield return null;
+                    yield return null;
+                    Assert.That(Descendants(root.Hud.RootElement)
+                            .Any(element => element.name == "gd-card-back-preview" && UiPlayer.IsShown(element)), Is.False,
+                        "his own hover is the face at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "b-facedown-gold-his-seat-" + where + ".png");
+                    runtime.HeroOverviewsView.ForwardTurnSlotHighlight(null);
+
+                    // A: six cards in the five-card footprint (Ready for War's hand).
+                    RenderSixCardHand(runtime, standIn);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var handSlots = Descendants(Named(root.Hud.RootElement, "gd-card-buttons"))
+                        .Where(element => element.name == "gd-card-slot" && UiPlayer.IsShown(element))
+                        .ToArray();
+                    Assert.That(handSlots.Length, Is.EqualTo(6), "six cards in the hand at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "a-six-card-hand-" + where + ".png");
+
+                    // C: the deck-gold choice, Bushido on a resolved gold - each candidate FACEDOWN.
+                    StandDeckGoldChoice(runtime);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var window = Descendants(runtime.DecisionWindowView.Root)
+                        .Single(element => element.name == "gd-decision-window-expanded");
+                    AssertInside(window.worldBound, root.Hud.RootElement.worldBound, "the gold choice at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "c-deck-gold-choice-" + where + ".png");
+
+                    // D: the teammate's one window, on their seat.
+                    StandTeammateSwap(runtime, teammate);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    window = Descendants(runtime.DecisionWindowView.Root)
+                        .Single(element => element.name == "gd-decision-window-expanded");
+                    AssertInside(window.worldBound, root.Hud.RootElement.worldBound, "the teammate swap at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "d-teammate-swap-" + where + ".png");
+                    runtime.DecisionWindowView.Render(null);
+
+                    // E: the empty spaces of the disk around him, barred for the enemy.
+                    var barred = RenderEnemyObstacles(runtime, standIn);
+                    yield return null;
+                    yield return null;
+                    var cued = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                        .Where(tile => tile.HasEnemyObstacleCue)
+                        .Select(tile => tile.Coordinate)
+                        .ToArray();
+                    Assert.That(cued, Is.Not.Empty, "an empty space of the disk wears the cue at " + where);
+                    Assert.That(cued.All(barred.Contains), Is.True, "only the disk's spaces at " + where);
+                    yield return UiPlayer.CaptureScreen(folder + "e-enemy-obstacles-" + where + ".png");
+                    runtime.BoardView.Render(board);
+
+                    // F: the log rows, on his seat and on every other.
+                    runtime.MatchLogView.Render(TakahideLogRows(ownerSeat: true));
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    yield return UiPlayer.CaptureScreen(folder + "f-log-his-seat-" + where + ".png");
+                    runtime.MatchLogView.Render(TakahideLogRows(ownerSeat: false));
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    yield return UiPlayer.CaptureScreen(folder + "f-log-other-seats-" + where + ".png");
+                    runtime.MatchLogView.Render(new MatchLogViewModel(0L, false, new MatchLogLineViewModel[0]));
+                }
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(
+                    restoreWidth, restoreHeight, "9.32g restore the viewport this session was running at");
+            }
+
+            yield return null;
+        }
+
+        private static IReadOnlyList<CardDefinition> TakahideCards =>
+            TakahideCardContent.BasicAndRedDefinitions
+                .Concat(TakahideCardContent.BlueAndGreenDefinitions)
+                .Concat(TakahideCardContent.UltimateDefinitions)
+                .ToArray();
+
+        private static TrayCardViewModel TakahideTray(
+            CardDefinitionId id, TrayCardGroup group = TrayCardGroup.Available, int playedTurn = 0, bool facedown = false)
+        {
+            var definition = TakahideCards.Single(value => value.Id.Equals(id));
+            return new TrayCardViewModel(
+                new CardInstanceId("staged-" + id.Value), definition.Reference, definition.DisplayName,
+                definition.Progression.Color, CurrentRoundCards.ReadFace(definition), group, playedTurn,
+                group == TrayCardGroup.Available, false, isFacedown: facedown);
+        }
+
+        /// <summary>
+        /// Mockup B on the stand-in plaque, renamed Takahide with no portrait: slot 1 holds the gold
+        /// Bushido turned facedown, slot 2 Bushido itself, and the pile one facedown gold - as his own
+        /// seat reads them (cards) or as every other seat does (withheld golds). Returns slot 1.
+        /// </summary>
+        private static HeroTurnSlotViewModel RenderTakahidePlaque(
+            ConfiguredMatchSceneRuntime runtime, HeroId heroId, bool ownerSeat)
+        {
+            var sourceModel = runtime.HeroOverviewsView.Model;
+            var source = sourceModel.Heroes.Single(hero => hero.HeroId.Equals(heroId));
+            var slots = new[]
+            {
+                ownerSeat
+                    ? new HeroTurnSlotViewModel(1, CardColor.Gold, true,
+                        TakahideTray(TakahideCardContent.StrikeLikeATiger, TrayCardGroup.Played, 1, facedown: true))
+                    : new HeroTurnSlotViewModel(1, CardColor.Gold, true, null, null, isWithheldFacedown: true),
+                new HeroTurnSlotViewModel(2, CardColor.Silver, true,
+                    TakahideTray(TakahideCardContent.Bushido, TrayCardGroup.Played, 2)),
+                new HeroTurnSlotViewModel(3, CardColor.None, false),
+                new HeroTurnSlotViewModel(4, CardColor.None, false)
+            };
+            var replacement = new HeroOverviewViewModel(
+                source.HeroId,
+                source.TeamSide,
+                new HeroContentId("takahide"),
+                "Takahide",
+                source.Level,
+                source.Coins,
+                source.ItemBonuses,
+                slots,
+                ownerSeat
+                    ? new[] { TakahideTray(TakahideCardContent.FloatLikeAButterfly, TrayCardGroup.Discarded, facedown: true) }
+                    : new TrayCardViewModel[0],
+                source.IsViewed,
+                source.CurrentCard,
+                source.UltimateCard,
+                source.HeldMarkers,
+                source.IsAwaited,
+                source.Worth,
+                source.CurrentTurnMarker,
+                source.Spellbook,
+                withheldDiscardColors: ownerSeat ? null : new[] { CardColor.Gold });
+            runtime.HeroOverviewsView.Render(new HeroOverviewsViewModel(
+                sourceModel.Version + 1,
+                sourceModel.Heroes.Select(hero => hero.HeroId.Equals(heroId) ? replacement : hero)));
+            return slots[0];
+        }
+
+        /// <summary>Mockup A: Ready for War's six cards as the viewed hand.</summary>
+        private static void RenderSixCardHand(ConfiguredMatchSceneRuntime runtime, HeroId heroId)
+        {
+            var model = runtime.HandsView.Model;
+            var source = model.Hands.Single(hand => hand.HeroId.Equals(heroId));
+            var ids = new[]
+            {
+                TakahideCardContent.FloatLikeAButterfly, TakahideCardContent.StingLikeABee,
+                TakahideCardContent.StrikeLikeATiger, TakahideCardContent.HoldMySake,
+                TakahideCardContent.TacticalGambit, TakahideCardContent.LoyalRetainer
+            };
+            var definitions = TakahideCards.Where(definition => ids.Contains(definition.Id)).ToArray();
+            var cards = ids.Select(id => CardInstance.CreateInHand(new CardInstanceId("staged-" + id.Value),
+                definitions.Single(definition => definition.Id.Equals(id)).Reference, heroId)).ToArray();
+            var hand = new DirectorHandViewModel(
+                source.TeamSide, heroId, "Takahide", source.CommitmentStatus, source.CanPass, null, null,
+                cards, definitions, null, ids.Select(id => TakahideTray(id)).ToArray());
+            runtime.HandsView.Render(new DirectorHandsViewModel(
+                model.Version + 1,
+                model.Hands.Select(value => value.HeroId.Equals(heroId) ? hand : value),
+                heroId));
+        }
+
+        /// <summary>Mockup C: Bushido on a resolved gold - his deck's two golds, each arriving facedown.</summary>
+        private static void StandDeckGoldChoice(ConfiguredMatchSceneRuntime runtime)
+        {
+            var bushido = TakahideTray(TakahideCardContent.Bushido);
+            DecisionWindowControlViewModel Candidate(CardDefinitionId id)
+            {
+                var card = TakahideTray(id);
+                return new DecisionWindowControlViewModel(
+                    card.DisplayName.ToUpperInvariant() + " - FACEDOWN", DirectorCommand.AdvanceEndOfRound(), card: card);
+            }
+
+            runtime.DecisionWindowView.Render(new DecisionWindowViewModel(
+                9320L,
+                DecisionWindowFamily.CardChoice,
+                DecisionWindowState.Expanded,
+                "9.32g-deck-gold-choice",
+                "BUSHIDO",
+                "GOLD SWAP",
+                "Swap your gold card with a different gold card in your deck.",
+                contextCards: new[] { new DecisionWindowCardViewModel(bushido) },
+                controls: new[] { Candidate(TakahideCardContent.StingLikeABee), Candidate(TakahideCardContent.FloatLikeAButterfly) }));
+        }
+
+        /// <summary>
+        /// Mockup D on the teammate's seat: their unresolved card on the left captioned with its
+        /// Initiative, their hand's cards captioned by Initiative, KEEP MY CARD in the corner - the
+        /// words <c>SwapChoicePresentation</c> gives the presenter.
+        /// </summary>
+        private static void StandTeammateSwap(ConfiguredMatchSceneRuntime runtime, HeroId teammate)
+        {
+            var hand = runtime.HandsView.Model.Hands.Single(value => value.HeroId.Equals(teammate)).TrayCards;
+            var definitions = runtime.HandsView.Model.Hands.Single(value => value.HeroId.Equals(teammate)).Definitions;
+            string Initiative(TrayCardViewModel card) => "INITIATIVE " + definitions
+                .Single(definition => definition.Reference.Equals(card.DefinitionReference)).Initiative.Value;
+            var unresolved = hand.First();
+            runtime.DecisionWindowView.Render(new DecisionWindowViewModel(
+                9321L,
+                DecisionWindowFamily.CardChoice,
+                DecisionWindowState.Expanded,
+                "9.32g-teammate-swap",
+                "SWAP YOUR UNRESOLVED CARD?",
+                "TAKAHIDE - SET AN EXAMPLE",
+                "You may swap it with a card in your hand. The new card's Initiative decides when you act.",
+                contextCards: new[]
+                {
+                    new DecisionWindowCardViewModel(unresolved, "YOUR UNRESOLVED CARD - " + Initiative(unresolved))
+                },
+                controls: hand.Skip(1).Select(card => new DecisionWindowControlViewModel(
+                    Initiative(card), DirectorCommand.AdvanceEndOfRound(), card: card)).ToArray(),
+                cornerControl: new DecisionWindowControlViewModel(
+                    "KEEP MY CARD", DirectorCommand.AdvanceEndOfRound(), role: DecisionWindowControlRole.Corner)));
+        }
+
+        /// <summary>
+        /// Mockup E: Spinning Blade's disk around him (his space and the six adjacent ones), barring the
+        /// enemy. Returns the disk; the board marks only its EMPTY spaces.
+        /// </summary>
+        private static HexCoordinate[] RenderEnemyObstacles(ConfiguredMatchSceneRuntime runtime, HeroId heroId)
+        {
+            var model = runtime.BoardView.Model;
+            var center = model.Heroes.Single(hero => hero.HeroId.Equals(heroId)).Coordinate;
+            var disk = new[]
+            {
+                center,
+                new HexCoordinate(center.Q + 1, center.R), new HexCoordinate(center.Q - 1, center.R),
+                new HexCoordinate(center.Q, center.R + 1), new HexCoordinate(center.Q, center.R - 1),
+                new HexCoordinate(center.Q + 1, center.R - 1), new HexCoordinate(center.Q - 1, center.R + 1)
+            };
+            runtime.BoardView.Render(new BoardInteractionViewModel(
+                model.Version + 1,
+                model.Heroes,
+                model.Minions,
+                new HexCoordinate[0],
+                new HeroId[0],
+                new MinionId[0],
+                model.FocusedHeroId,
+                placedTokens: model.PlacedTokens,
+                obstacles: model.Obstacles,
+                activeEffects: new ActiveEffectVisibilityModel(
+                    new[] { heroId },
+                    new[] { new ActiveEffectAuraViewModel(heroId, center, 1, disk, barsEnemyUnits: true) })));
+            return disk;
+        }
+
+        /// <summary>Mockup F's rows, worded by the log's own move wording, newest first.</summary>
+        private static MatchLogViewModel TakahideLogRows(bool ownerSeat)
+        {
+            var cards = TakahideCards.Concat(WaspCardContent.AllDefinitions).ToArray();
+            CardMoveFact Move(CardDefinitionId id, CardMoveZone from, CardMoveZone to, bool facedown = false,
+                CardColor color = CardColor.Gold)
+            {
+                var move = new CardMoveFact(id, from, to, arrivesFacedown: facedown, knownColor: color);
+                return ownerSeat || move.IsSeenByTheTable() ? move : move.Unnamed();
+            }
+
+            var sting = TakahideCardContent.StingLikeABee;
+            var strike = TakahideCardContent.StrikeLikeATiger;
+            var butterfly = TakahideCardContent.FloatLikeAButterfly;
+            var rows = new[]
+            {
+                CardMoveWords.Swapped(cards, "TAKAHIDE", new[]
+                {
+                    Move(sting, CardMoveZone.TurnArea, CardMoveZone.Deck), Move(strike, CardMoveZone.Deck, CardMoveZone.TurnArea)
+                }, string.Empty),
+                CardMoveWords.Swapped(cards, "TAKAHIDE", new[]
+                {
+                    Move(butterfly, CardMoveZone.Hand, CardMoveZone.Deck), Move(sting, CardMoveZone.Deck, CardMoveZone.Hand)
+                }, string.Empty),
+                CardMoveWords.Swapped(cards, "TAKAHIDE", new[]
+                {
+                    Move(sting, CardMoveZone.TurnArea, CardMoveZone.Deck),
+                    Move(strike, CardMoveZone.Deck, CardMoveZone.TurnArea, facedown: true)
+                }, string.Empty),
+                CardMoveWords.Swapped(cards, "TAKAHIDE", new[]
+                {
+                    Move(butterfly, CardMoveZone.DiscardPile, CardMoveZone.Deck),
+                    Move(strike, CardMoveZone.Deck, CardMoveZone.DiscardPile, facedown: true)
+                }, string.Empty),
+                CardMoveWords.Swapped(cards, "WASP", new[]
+                {
+                    Move(WaspCardContent.Electrocute, CardMoveZone.TurnArea, CardMoveZone.Hand, color: CardColor.None),
+                    Move(WaspCardContent.StaticBarrier, CardMoveZone.Hand, CardMoveZone.TurnArea, color: CardColor.None)
+                }, " (SET AN EXAMPLE)"),
+                CardMoveWords.Swapped(cards, "WASP", new[]
+                {
+                    Move(WaspCardContent.Electrocute, CardMoveZone.TurnArea, CardMoveZone.DiscardPile, color: CardColor.None),
+                    Move(WaspCardContent.Shock, CardMoveZone.DiscardPile, CardMoveZone.TurnArea, color: CardColor.None)
+                }, " (HOLD MY SAKE)"),
+                "WASP KEPT " + CardMoveWords.NameOrNull(cards,
+                    Move(WaspCardContent.Electrocute, CardMoveZone.TurnArea, CardMoveZone.TurnArea, color: CardColor.None)) +
+                    " (SET AN EXAMPLE)",
+                "TAKAHIDE: EMPTY SPACES ADJACENT ARE OBSTACLES FOR THE ENEMY THIS TURN",
+                "TAKAHIDE UNLOCKED READY FOR WAR: " + CardMoveWords.Grouped(cards, new[]
+                {
+                    Move(TakahideCardContent.Bushido, CardMoveZone.Hand, CardMoveZone.Deck, color: CardColor.Silver),
+                    Move(sting, CardMoveZone.Deck, CardMoveZone.Hand),
+                    Move(strike, CardMoveZone.Deck, CardMoveZone.Hand)
+                })
+            };
+            var lines = new List<MatchLogLineViewModel> { new MatchLogLineViewModel(1, "ROUND 3 - TURN 2", true) };
+            lines.AddRange(rows.Reverse().Select((text, index) => new MatchLogLineViewModel(2 + index, text, false)));
+            return new MatchLogViewModel(ownerSeat ? 9322L : 9323L, true, lines);
+        }
+
+        /// <summary>
         /// The drawer's panel lies between the two rails, below the status strip, and above the hand's
         /// band the rails end at (9.30h1: a book of full-size faces scrolls rather than covering it).
         /// </summary>

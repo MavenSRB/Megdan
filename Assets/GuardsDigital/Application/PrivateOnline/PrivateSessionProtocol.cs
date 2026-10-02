@@ -423,7 +423,16 @@ namespace GuardsDigital.Application
         // id names its definition. A v33 reader would take the flag for the next row's hero id, so
         // v33 peers are refused from the header. The admission tuple's snapshot schema advances to 54
         // with it (the slot record persists the fact).
-        public const int Version = 34;
+        // v35 (milestone 9.32g): every seat sees a facedown gold as a gold (the user's 2026-10-02
+        // ruling: a card Bushido turns facedown can only be a gold). Each turn-slot assignment row -
+        // current and completed - ends with its known colour (None but on a withheld row), and each
+        // hand-summary row ends with the colours of the facedown cards in that hero's discard pile.
+        // Each match-log row ends with its card moves (a swap's, a kept swap's or Ready for War's,
+        // named on the owner's seat alone), and the log gains three kinds a v34 peer's Enum.IsDefined
+        // check would refuse. A v34 reader would take the colour for the next row's hero id, so v34
+        // peers are refused from the header. The snapshot schema does not move: withheld rows exist
+        // only in projections, and the log is derived from the rule-event log.
+        public const int Version = 35;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

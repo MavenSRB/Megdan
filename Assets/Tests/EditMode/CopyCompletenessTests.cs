@@ -1137,6 +1137,11 @@ namespace GuardsDigital.Tests.EditMode
                 // can until 9.32h; TakahideGoldSwapTests proves the mask, and 9.32h removes these two.
                 { "TurnCardAssignment.IsFacedown", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
                 { "TurnCardAssignment.IsWithheld", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
+                // Milestone 9.32g: a facedown card's known colour reaches another seat only once Takahide is
+                // dealt; TakahideGoldSwapTests proves the mask and the summary, and 9.32h removes these two.
+                { "TurnCardAssignment.KnownColor", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
+                { "SeatHandSummary.FacedownDiscardColors", NotReached("a facedown card in a discard pile (Takahide, dealt at 9.32h)") },
+                { "MatchLogEntry.CardMoves", NotReached("a card swap or Ready for War's unlock (Takahide, dealt at 9.32h)") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },

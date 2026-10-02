@@ -178,6 +178,14 @@ namespace GuardsDigital.Application
                 case MatchLogEntryKind.SpellbookRefilled:
                     return hero + " returned " + Int(entry.Amount) +
                         (entry.Amount == 1 ? " spell" : " spells") + " to their spellbook";
+                // Milestone 9.32g. A swap, a kept swap and an Ultimate's unlock that moved cards,
+                // each move as this seat's row states it: a card it may not name stays unnamed.
+                case MatchLogEntryKind.CardSwappedByCardText:
+                    return hero + " swapped " + Moves(entry) + " by " + Card(entry);
+                case MatchLogEntryKind.CardKeptByCardText:
+                    return hero + " kept " + Moves(entry) + " against " + Card(entry);
+                case MatchLogEntryKind.UltimateMovedCards:
+                    return hero + " unlocked " + Card(entry) + ", moving " + Moves(entry);
                 case MatchLogEntryKind.Move:
                     return hero + " moved" + Journey(entry);
                 case MatchLogEntryKind.FastTravel:
@@ -320,6 +328,17 @@ namespace GuardsDigital.Application
 
         private static string Card(MatchLogEntry entry) =>
             entry.SubjectCardInstanceId.IsDefined ? entry.SubjectCardInstanceId.Value : "a card";
+
+        /// <summary>Milestone 9.32g. "definition (From -> To)" per move, "a gold card" where unnamed.</summary>
+        private static string Moves(MatchLogEntry entry) =>
+            string.Join(" and ", entry.CardMoves.Select(move =>
+                (move.Definition.IsDefined
+                    ? move.Definition.Value
+                    : move.KnownColor != GuardsDigital.Core.Cards.CardColor.None
+                        ? "a " + move.KnownColor.ToString().ToLowerInvariant() + " card"
+                        : "a card") +
+                " (" + move.From + " -> " + move.To +
+                (move.ArrivesFacedown ? ", facedown" : string.Empty) + ")"));
 
         private static string Name(string heroId) =>
             string.IsNullOrEmpty(heroId) ? "an unnamed hero" : heroId;

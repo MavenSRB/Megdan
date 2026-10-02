@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
@@ -33,8 +36,10 @@ namespace GuardsDigital.Application
             int outcome,
             int amount,
             string blockingHeroId = null,
-            string blockingCardInstanceId = null)
+            string blockingCardInstanceId = null,
+            IEnumerable<CardMoveFact> cardMoves = null)
         {
+            CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
             Sequence = sequence;
             Kind = kind;
             RoundIndex = roundIndex;
@@ -82,6 +87,12 @@ namespace GuardsDigital.Application
 
         /// <summary>Milestone 8.35z14. Beside <see cref="BlockingHeroId"/>.</summary>
         public string BlockingCardInstanceId { get; }
+
+        /// <summary>
+        /// Milestone 9.32g, protocol /35. A swap's, a kept swap's or an Ultimate's unlock's moves, as
+        /// the seat this frame is for may read them - a move it may not name arrives unnamed.
+        /// </summary>
+        public IReadOnlyList<CardMoveFact> CardMoves { get; }
     }
 
     /// <summary>
@@ -95,6 +106,12 @@ namespace GuardsDigital.Application
         /// here as well so a decoder refuses an oversized claim before allocating for it.
         /// </summary>
         public const int MaxRows = MatchLogProjection.RetainedEntries;
+
+        /// <summary>
+        /// Milestone 9.32g. The most card moves one row may carry: a swap's two and Ready for War's
+        /// three, with room - stated so a decoder refuses an oversized claim before allocating for it.
+        /// </summary>
+        public const int MaxCardMovesPerRow = 8;
 
         /// <summary>The typed entry as the row the wire carries.</summary>
         public static NetworkMatchLogRow ToRow(MatchLogEntry entry)
@@ -120,7 +137,8 @@ namespace GuardsDigital.Application
                 (int)entry.Outcome,
                 entry.Amount,
                 entry.BlockingHeroId.Value,
-                entry.BlockingCardInstanceId.Value);
+                entry.BlockingCardInstanceId.Value,
+                entry.CardMoves);
         }
 
         /// <summary>
@@ -170,6 +188,19 @@ namespace GuardsDigital.Application
             // reading these two fields as the start of whatever it expects to come next.
             WriteOptional(writer, row.BlockingHeroId);
             WriteOptional(writer, row.BlockingCardInstanceId);
+
+            // Milestone 9.32g, protocol /35: the row's card moves, appended at the end on 8.35z14's
+            // terms - a /34 peer is refused from the header before it could read them.
+            writer.Write(row.CardMoves.Count);
+            foreach (var move in row.CardMoves)
+            {
+                WriteOptional(writer, move.Definition.IsDefined ? move.Definition.Value : null);
+                writer.Write((int)move.From);
+                writer.Write((int)move.To);
+                writer.Write(move.DepartsFacedown);
+                writer.Write(move.ArrivesFacedown);
+                writer.Write((int)move.KnownColor);
+            }
         }
 
         internal static bool TryRead(BinaryReader reader, out NetworkMatchLogRow row)
@@ -223,7 +254,8 @@ namespace GuardsDigital.Application
 
             var amount = reader.ReadInt32();
             if (!TryReadOptional(reader, out var blockingHero) ||
-                !TryReadOptional(reader, out var blockingCard))
+                !TryReadOptional(reader, out var blockingCard) ||
+                !TryReadCardMoves(reader, out var cardMoves))
             {
                 return false;
             }
@@ -233,7 +265,54 @@ namespace GuardsDigital.Application
                 subjectHero, targetHero, subjectMinion, subjectCard, subjectTeam,
                 hasOrigin, originQ, originR,
                 hasDestination, destinationQ, destinationR,
-                outcome, amount, blockingHero, blockingCard);
+                outcome, amount, blockingHero, blockingCard, cardMoves);
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 9.32g, protocol /35. At most <see cref="MaxCardMovesPerRow"/> moves, each between
+        /// two named zones with a card colour or none - or the frame is refused. Like every other
+        /// field of a row, the moves are carried whatever the row's kind.
+        /// </summary>
+        private static bool TryReadCardMoves(BinaryReader reader, out IReadOnlyList<CardMoveFact> moves)
+        {
+            moves = null;
+            var count = reader.ReadInt32();
+            if (count < 0 || count > MaxCardMovesPerRow)
+            {
+                return false;
+            }
+
+            var read = new List<CardMoveFact>(count);
+            for (var index = 0; index < count; index++)
+            {
+                if (!TryReadOptional(reader, out var definition))
+                {
+                    return false;
+                }
+
+                var from = reader.ReadInt32();
+                var to = reader.ReadInt32();
+                var departsFacedown = reader.ReadBoolean();
+                var arrivesFacedown = reader.ReadBoolean();
+                var color = reader.ReadInt32();
+                if (!Enum.IsDefined(typeof(CardMoveZone), from) || from == (int)CardMoveZone.None ||
+                    !Enum.IsDefined(typeof(CardMoveZone), to) || to == (int)CardMoveZone.None ||
+                    !Enum.IsDefined(typeof(CardColor), color) || color == (int)CardColor.Purple)
+                {
+                    return false;
+                }
+
+                read.Add(new CardMoveFact(
+                    definition == null ? default : new CardDefinitionId(definition),
+                    (CardMoveZone)from,
+                    (CardMoveZone)to,
+                    departsFacedown,
+                    arrivesFacedown,
+                    (CardColor)color));
+            }
+
+            moves = read;
             return true;
         }
 
@@ -277,7 +356,8 @@ namespace GuardsDigital.Application
                     : new HeroId(row.BlockingHeroId),
                 blockingCardInstanceId: string.IsNullOrEmpty(row.BlockingCardInstanceId)
                     ? default
-                    : new CardInstanceId(row.BlockingCardInstanceId));
+                    : new CardInstanceId(row.BlockingCardInstanceId),
+                cardMoves: row.CardMoves);
         }
 
         private static void WriteOptional(BinaryWriter writer, string value)

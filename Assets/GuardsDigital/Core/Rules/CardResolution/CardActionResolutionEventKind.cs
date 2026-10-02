@@ -161,6 +161,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// (Prepare Spells). The owner rides the target field and the count the spell-count field; no
         /// spell is named, because every one of them is facedown now.
         /// </summary>
-        CardTextRefilledSpellbook = 57
+        CardTextRefilledSpellbook = 57,
+
+        /// <summary>
+        /// Milestone 9.32g. Card text swapped two of a hero's cards (Takahide's gold faces, Bushido,
+        /// Set an Example, Hold my Sake): the cards' owner rides the target field and the two moves
+        /// the swap field, on <see cref="CardTextDiscardedCard"/>'s terms.
+        /// </summary>
+        CardTextSwappedCards = 58,
+
+        /// <summary>
+        /// Milestone 9.32g. A swap's chooser declined it and kept their card, on the terms above with
+        /// the one card that stayed.
+        /// </summary>
+        CardTextKeptCard = 59
     }
 }

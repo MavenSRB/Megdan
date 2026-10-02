@@ -98,6 +98,12 @@ namespace GuardsDigital.Core.Diagnostics
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRemovedSpell);
         private static readonly string CardTextRefilledSpellbook =
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRefilledSpellbook);
+
+        // Milestone 9.32g. A swap, a kept swap, and an Ultimate's unlock that moved cards.
+        private static readonly string CardTextSwappedCards =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextSwappedCards);
+        private static readonly string CardTextKeptCard =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextKeptCard);
         private static readonly string MinionDefeatRecorded =
             ActionPrefix + nameof(CardActionResolutionEventKind.MinionDefeatRecorded);
         private static readonly string MinionRemovalCompleted =
@@ -158,6 +164,8 @@ namespace GuardsDigital.Core.Diagnostics
             RoundPrefix + "HeroLevelUp" + nameof(HeroLevelUpOutcomeKind.CardUpgraded);
         private static readonly string HeroLevelUpItemGained =
             RoundPrefix + "HeroLevelUp" + nameof(HeroLevelUpOutcomeKind.ItemGained);
+        private static readonly string HeroLevelUpUltimateUnlocked =
+            RoundPrefix + "HeroLevelUp" + nameof(HeroLevelUpOutcomeKind.UltimateUnlocked);
 
         private static readonly string CardRevealed =
             CommitmentPrefix + nameof(TurnCardCommitmentEventKind.CardRevealed);
@@ -392,6 +400,25 @@ namespace GuardsDigital.Core.Diagnostics
                 return;
             }
 
+            // ---- Milestone 9.32g. An Ultimate's unlock writes a row only where it moved cards (Ready
+            // for War); every other unlock stays as silent as it was.
+            if (type == HeroLevelUpUltimateUnlocked)
+            {
+                if (Text(detail, "moves", out var unlockMoves))
+                {
+                    derived.Add(new MatchLogEntry(
+                        entry.Sequence,
+                        MatchLogEntryKind.UltimateMovedCards,
+                        round,
+                        turn,
+                        subjectHeroId: Hero(references, entry),
+                        subjectCardInstanceId: Optional(detail, "card", value => new CardInstanceId(value)),
+                        cardMoves: CardMoveText.Decode(unlockMoves)));
+                }
+
+                return;
+            }
+
             // ---- The one-for-one rows.
             var kind = KindOf(type);
             if (kind == MatchLogEntryKind.None)
@@ -533,6 +560,18 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectCardInstanceId: Optional(
                             references, "discardedCard", value => new CardInstanceId(value)));
 
+                // Milestone 9.32g. A swap and a kept swap are the cards' OWNER's rows - `target`, the
+                // reveal's and the discard's reading - naming the text's own source card (`card`,
+                // public as it resolves) and every move, each card named: the seat projection is what
+                // unnames a move another seat may not read.
+                case MatchLogEntryKind.CardSwappedByCardText:
+                case MatchLogEntryKind.CardKeptByCardText:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        subjectCardInstanceId: Card(references),
+                        cardMoves: CardMoveText.Decode(Text(detail, "moves", out var moves) ? moves : null));
+
                 // Milestone 9.30h. A cast is the CASTER's row - `hero`, the acting hero, which a
                 // delegated chooser (Hanu's The Ultimate Trick) never is - naming the spell it cast,
                 // faceup in the open removed pile as this row is written.
@@ -653,6 +692,8 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == CardTextCastSpell) return MatchLogEntryKind.SpellCast;
             if (type == CardTextRemovedSpell) return MatchLogEntryKind.SpellRemovedFaceup;
             if (type == CardTextRefilledSpellbook) return MatchLogEntryKind.SpellbookRefilled;
+            if (type == CardTextSwappedCards) return MatchLogEntryKind.CardSwappedByCardText;
+            if (type == CardTextKeptCard) return MatchLogEntryKind.CardKeptByCardText;
             return MatchLogEntryKind.None;
         }
 

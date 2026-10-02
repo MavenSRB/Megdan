@@ -869,6 +869,11 @@ namespace GuardsDigital.Presentation.Match
                 : FamilyOf(subject);
             var sourceCardId = SourceCardOf(projection, choice);
             var sourceDefinitionId = DefinitionIdOf(projection, sourceCardId);
+            // Milestone 9.32g. The two swap windows Takahide's text raises (approved mockups C and D),
+            // told apart by the capability the pending node names - a typed reading, never a card name.
+            var pendingNode = PendingNodeOf(projection, choice, sourceDefinitionId);
+            var unresolvedSwap = SwapChoicePresentation.IsUnresolvedSwap(pendingNode);
+            var arrivesFacedown = SwapChoicePresentation.ArrivesFacedown(projection, choice, pendingNode);
             var previews = new HashSet<EffectValue>(
                 projection.PendingEffectChoicePreview.Select(preview => preview.CandidateValue));
             // Milestone 8.46e. A piece-or-space question docks only when the board can answer ALL
@@ -886,7 +891,7 @@ namespace GuardsDigital.Presentation.Match
             DecisionWindowControlViewModel corner = null;
             BuildEffectControls(
                 projection, choice, subject, sourceDefinitionId, previews, boardAnswered, controls,
-                out var spellArms, out var mixesWordedOptions);
+                out var spellArms, out var mixesWordedOptions, unresolvedSwap, arrivesFacedown);
 
             // Milestone 9.30j. A choice offering worded options beside a spell face is not a cast among
             // spells: it is the replacement a standing Ultimate offers - "Add all spell cards to the
@@ -905,7 +910,9 @@ namespace GuardsDigital.Presentation.Match
             if (choice.DeclineInvocation != null)
             {
                 corner = new DecisionWindowControlViewModel(
-                    DeclineLabelFor(subject, sourceDefinitionId, choice),
+                    unresolvedSwap
+                        ? SwapChoicePresentation.KeepMyCardLabel
+                        : DeclineLabelFor(subject, sourceDefinitionId, choice),
                     PendingDecisionCommandBinding.Require(
                         projection,
                         PendingDecisionFamilies.Effect,
@@ -932,7 +939,16 @@ namespace GuardsDigital.Presentation.Match
             // different cards and the strip could only ever draw the second set. A board-answered
             // question is the slim bar and shows none.
             var contextCards = new List<DecisionWindowCardViewModel>();
-            if (!boardAnswered)
+            var unresolvedCard = unresolvedSwap
+                ? SwapChoicePresentation.UnresolvedCardOf(projection, choice.ChooserId)
+                : null;
+            if (unresolvedCard != null)
+            {
+                contextCards.Add(new DecisionWindowCardViewModel(
+                    CardFace(projection, unresolvedCard.Id),
+                    SwapChoicePresentation.UnresolvedCaption(projection, unresolvedCard)));
+            }
+            else if (!boardAnswered)
             {
                 var face = CardFace(projection, sourceCardId);
                 if (face != null)
@@ -951,15 +967,22 @@ namespace GuardsDigital.Presentation.Match
                 boardAnswered ? DecisionWindowState.Docked : DecisionWindowState.Expanded,
                 "effect/" + choice.ResolutionId + "/" + choice.ChoiceId + "/" + choice.NodeId,
                 Scoped(
-                    TitleOf(subject, sourceCardId, projection),
+                    unresolvedSwap
+                        ? SwapChoicePresentation.UnresolvedSwapTitle
+                        : TitleOf(subject, sourceCardId, projection),
                     HeroName(projection, choice.ChooserId), viewerHeroId),
                 // Milestone 9.30h. A choice whose options are spells is a SPELL CHOICE (approved
                 // mockup A), and says what the card printed: cast one, or remove up to N.
+                (unresolvedSwap
+                    ? SwapChoicePresentation.SourceEyebrow(projection, sourceCardId)
+                    : null) ??
                 replacementEyebrow ??
                     (spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
                         ? SpellbookPresentation.SpellChoiceEyebrow
                         : EffectChoicePromptLabels.SectionLabel(subject)),
-                replacementQuestion != null
+                unresolvedSwap
+                    ? SwapChoicePresentation.UnresolvedSwapQuestion(pendingNode)
+                    : replacementQuestion != null
                     ? replacementQuestion
                     : spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Cast
                     ? SpellbookPresentation.CastQuestion
@@ -996,7 +1019,9 @@ namespace GuardsDigital.Presentation.Match
             bool boardAnswered,
             List<DecisionWindowControlViewModel> controls,
             out SyntheticSpellbookCapabilities.SpellArmKind spellArms,
-            out bool mixesWordedOptions)
+            out bool mixesWordedOptions,
+            bool unresolvedSwap = false,
+            bool arrivesFacedown = false)
         {
             spellArms = SyntheticSpellbookCapabilities.SpellArmKind.None;
             var spellOptions = new Dictionary<DecisionWindowControlViewModel, EffectNodeId>();
@@ -1085,7 +1110,9 @@ namespace GuardsDigital.Presentation.Match
                         ReferenceEquals(value.EffectChoice, invocation));
                 var answer = new DecisionWindowControlViewModel(
                     spell?.Caption ??
-                        CandidateLabel(projection, choice, candidate, ordinals[candidate], sourceDefinitionId),
+                        SwapChoicePresentation.Relabel(
+                            projection, candidate, unresolvedSwap, arrivesFacedown,
+                            CandidateLabel(projection, choice, candidate, ordinals[candidate], sourceDefinitionId)),
                     command,
                     role: deselect != null
                         ? DecisionWindowControlRole.Deselect
@@ -1304,6 +1331,22 @@ namespace GuardsDigital.Presentation.Match
         /// the chooser's unlocked Ultimate, which is faceup for every seat. Null when the choice stands
         /// under no such branch.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.32g. The node definition the pending choice answers, read from its source card's
+        /// own actions (<see cref="GatingUltimateName"/>'s reading), or null where the card is not one
+        /// this seat's projection defines.
+        /// </summary>
+        private static EffectNodeDefinition PendingNodeOf(
+            IMatchReadModel projection, PendingEffectChoice choice, CardDefinitionId sourceDefinitionId)
+        {
+            var source = projection.Definitions.FirstOrDefault(value => value.Id.Equals(sourceDefinitionId));
+            return source?.ActionDefinitions
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(effect => effect != null)
+                .SelectMany(effect => effect.Nodes)
+                .FirstOrDefault(node => node.Id.Equals(choice.NodeId));
+        }
+
         private static string GatingUltimateName(
             IMatchReadModel projection, PendingEffectChoice choice, CardDefinitionId sourceDefinitionId)
         {

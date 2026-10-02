@@ -821,6 +821,183 @@ namespace GuardsDigital.Core.Effects
         public override string ToString() => Kind + ":" + OwnerHeroId + ":" + SpellCardInstanceId + "x" + Count;
     }
 
+    /// <summary>Milestone 9.32g. Where a card stood before or after card text moved it.</summary>
+    public enum CardMoveZone
+    {
+        None = 0,
+        Hand = 1,
+        Deck = 2,
+        TurnArea = 3,
+        DiscardPile = 4
+    }
+
+    /// <summary>
+    /// Milestone 9.32g. One card a swap or an Ultimate's unlock moved (or a swap left where it was),
+    /// as the seat-public log needs it: which card, by its definition; from where to where; whether
+    /// it lay facedown before or arrives facedown after; and the colour the moving text itself fixes
+    /// ("your gold card", "return your silver card") - <see cref="CardColor.None"/> where it fixes
+    /// none.
+    ///
+    /// <para><b>Who may be told which card it is.</b> <see cref="IsSeenByTheTable"/>: the card lay
+    /// faceup in an open zone before the move, or lies faceup in one after it. A hand or deck card
+    /// that stays out of sight, and a card that arrives facedown, are named to their owner's seat
+    /// alone (approved mockup F) - the seat projection clears <see cref="Definition"/> for every other
+    /// seat, and the known colour is all that seat reads.</para>
+    /// </summary>
+    public readonly struct CardMoveFact : IEquatable<CardMoveFact>
+    {
+        public CardMoveFact(
+            CardDefinitionId definition,
+            CardMoveZone from,
+            CardMoveZone to,
+            bool departsFacedown = false,
+            bool arrivesFacedown = false,
+            CardColor knownColor = CardColor.None)
+        {
+            if (from == CardMoveZone.None || to == CardMoveZone.None)
+            {
+                throw new ArgumentException("A card move names where the card was and where it went.");
+            }
+
+            if (knownColor == CardColor.Purple)
+            {
+                throw new ArgumentException(
+                    "Text fixes a card's colour only as one of the four card colours.", nameof(knownColor));
+            }
+
+            Definition = definition;
+            From = from;
+            To = to;
+            DepartsFacedown = departsFacedown;
+            ArrivesFacedown = arrivesFacedown;
+            KnownColor = knownColor;
+        }
+
+        /// <summary>The moved card's definition; undefined on a row another seat may not name.</summary>
+        public CardDefinitionId Definition { get; }
+
+        public CardMoveZone From { get; }
+
+        public CardMoveZone To { get; }
+
+        public bool DepartsFacedown { get; }
+
+        public bool ArrivesFacedown { get; }
+
+        public CardColor KnownColor { get; }
+
+        /// <summary>Whether every seat saw this card's face at one end of the move.</summary>
+        public bool IsSeenByTheTable() =>
+            (IsOpen(From) && !DepartsFacedown) || (IsOpen(To) && !ArrivesFacedown);
+
+        /// <summary>The same move with its card left unnamed - the form another seat reads.</summary>
+        public CardMoveFact Unnamed() =>
+            new CardMoveFact(default, From, To, DepartsFacedown, ArrivesFacedown, KnownColor);
+
+        /// <summary>The zone a card in this state stands in, or <see cref="CardMoveZone.None"/>.</summary>
+        public static CardMoveZone ZoneOf(CardInstance card)
+        {
+            switch (card?.State.Location ?? CardLocation.None)
+            {
+                case CardLocation.Hand: return CardMoveZone.Hand;
+                case CardLocation.Deck: return CardMoveZone.Deck;
+                case CardLocation.TurnArea: return CardMoveZone.TurnArea;
+                case CardLocation.DiscardPile: return CardMoveZone.DiscardPile;
+                default: return CardMoveZone.None;
+            }
+        }
+
+        private static bool IsOpen(CardMoveZone zone) =>
+            zone == CardMoveZone.TurnArea || zone == CardMoveZone.DiscardPile;
+
+        public bool Equals(CardMoveFact other) =>
+            Definition.Equals(other.Definition) && From == other.From && To == other.To &&
+            DepartsFacedown == other.DepartsFacedown && ArrivesFacedown == other.ArrivesFacedown &&
+            KnownColor == other.KnownColor;
+
+        public override bool Equals(object obj) => obj is CardMoveFact other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = Definition.GetHashCode();
+                hash = (hash * 397) ^ (int)From;
+                hash = (hash * 397) ^ (int)To;
+                hash = (hash * 397) ^ (DepartsFacedown ? 1 : 0);
+                hash = (hash * 397) ^ (ArrivesFacedown ? 2 : 0);
+                return (hash * 397) ^ (int)KnownColor;
+            }
+        }
+
+        public override string ToString() => Definition + ":" + From + ">" + To;
+    }
+
+    /// <summary>Milestone 9.32g. Whether a swap's card text exchanged two cards or its chooser kept theirs.</summary>
+    public enum CardSwapKind
+    {
+        None = 0,
+        Swapped = 1,
+        Kept = 2
+    }
+
+    /// <summary>
+    /// Milestone 9.32g. A swap card text made - or declined - reported by the swap handlers on the
+    /// terms <see cref="DiscardedCard"/> set at 9.19, so the seat-public log can say it happened
+    /// (approved mockup F). The owner is the hero whose cards moved, never necessarily the actor: Set
+    /// an Example's swap is the teammate's.
+    /// </summary>
+    public sealed class CardSwapFact : IEquatable<CardSwapFact>
+    {
+        private CardSwapFact(CardSwapKind kind, HeroId ownerHeroId, IEnumerable<CardMoveFact> moves)
+        {
+            if (!ownerHeroId.IsDefined)
+            {
+                throw new ArgumentException("A swap names the hero whose cards it moved.", nameof(ownerHeroId));
+            }
+
+            Kind = kind;
+            OwnerHeroId = ownerHeroId;
+            Moves = Array.AsReadOnly(moves.ToArray());
+        }
+
+        /// <summary>The outgoing card's move first, then the incoming card's.</summary>
+        public static CardSwapFact Swapped(HeroId ownerHeroId, CardMoveFact outgoing, CardMoveFact incoming) =>
+            new CardSwapFact(CardSwapKind.Swapped, ownerHeroId, new[] { outgoing, incoming });
+
+        /// <summary>The chooser declined: the card stays where it was.</summary>
+        public static CardSwapFact Kept(HeroId ownerHeroId, CardMoveFact kept) =>
+            new CardSwapFact(CardSwapKind.Kept, ownerHeroId, new[] { kept });
+
+        public CardSwapKind Kind { get; }
+
+        public HeroId OwnerHeroId { get; }
+
+        public IReadOnlyList<CardMoveFact> Moves { get; }
+
+        public bool Equals(CardSwapFact other) =>
+            other != null && Kind == other.Kind && OwnerHeroId.Equals(other.OwnerHeroId) &&
+            Moves.SequenceEqual(other.Moves);
+
+        public override bool Equals(object obj) => Equals(obj as CardSwapFact);
+
+        public override int GetHashCode() => ((int)Kind * 397) ^ OwnerHeroId.GetHashCode();
+
+        public override string ToString() => Kind + ":" + OwnerHeroId + ":" + string.Join(",", Moves);
+    }
+
+    /// <summary>
+    /// Milestone 9.32g. A capability whose chooser may decline it (a May node) and whose decline is
+    /// itself something the table sees - a teammate keeping the unresolved card Set an Example
+    /// offered to swap. The resolver asks it once, as the decline is accepted, and publishes what it
+    /// returns beside the node's declined outcome; the answer changes no state and no outcome.
+    /// </summary>
+    public interface IEffectDeclineReport
+    {
+        /// <summary>The fact the decline publishes, or null where it publishes none.</summary>
+        CardSwapFact Declined(EffectCapabilityContext context);
+    }
+
     /// <summary>
     /// Milestone 9.15. A minion that card text removed from the board (rulebook p.19's Remove, no
     /// coins), reported by the removing handler on the terms <see cref="DiscardedCard"/> set, so the
@@ -862,8 +1039,23 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<DiscardedCard> discardedCards = null,
             IEnumerable<RemovedMinion> removedMinions = null,
-            IEnumerable<SpellbookChange> spellbookChanges = null)
+            IEnumerable<SpellbookChange> spellbookChanges = null,
+            IEnumerable<CardSwapFact> cardSwaps = null)
         {
+            // Milestone 9.32g. A swap is reported by the handler that made it; a KEPT card by the
+            // decline that left it - the one fact a declined result may carry.
+            var swaps = (cardSwaps ?? Enumerable.Empty<CardSwapFact>()).ToArray();
+            if (swaps.Any(swap => swap == null) ||
+                swaps.Any(swap => kind == EffectExecutionResultKind.Applied
+                    ? swap.Kind != CardSwapKind.Swapped
+                    : kind != EffectExecutionResultKind.DeclinedOptional || swap.Kind != CardSwapKind.Kept))
+            {
+                throw new ArgumentException(
+                    "An applied result reports the swaps it made, and only a declined one the card it kept.",
+                    nameof(cardSwaps));
+            }
+
+            CardSwaps = new ReadOnlyCollection<CardSwapFact>(swaps);
             var spellbook = (spellbookChanges ?? Enumerable.Empty<SpellbookChange>()).ToArray();
             if (spellbook.Any(change => !change.IsDefined))
             {
@@ -1018,6 +1210,12 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<SpellbookChange> SpellbookChanges { get; }
 
         /// <summary>
+        /// Milestone 9.32g. The swaps this handler made (or, on a decline, the card its chooser kept),
+        /// and empty for every handler that swapped nothing. See <see cref="CardSwapFact"/>.
+        /// </summary>
+        public IReadOnlyList<CardSwapFact> CardSwaps { get; }
+
+        /// <summary>
         /// Milestone 8.40h. The hero this handler GAVE a marker to, or the undefined id for every
         /// handler that gave none - which is every handler in this build but the giving one.
         ///
@@ -1059,11 +1257,12 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<PlacedToken> placedTokens = null,
             IEnumerable<DiscardedCard> discardedCards = null,
             IEnumerable<RemovedMinion> removedMinions = null,
-            IEnumerable<SpellbookChange> spellbookChanges = null) =>
+            IEnumerable<SpellbookChange> spellbookChanges = null,
+            IEnumerable<CardSwapFact> cardSwaps = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
                 appliedPushes, revealedCards, markerGivenTo, placedTokens, discardedCards,
-                removedMinions, spellbookChanges);
+                removedMinions, spellbookChanges, cardSwaps);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(
@@ -1077,6 +1276,12 @@ namespace GuardsDigital.Core.Effects
         public static EffectExecutionResult DeclinedOptional() =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.DeclinedOptional, null, null, null, null);
+
+        /// <summary>Milestone 9.32g. A decline that publishes the card its chooser kept.</summary>
+        public static EffectExecutionResult DeclinedOptional(IEnumerable<CardSwapFact> keptCards) =>
+            new EffectExecutionResult(
+                EffectExecutionResultKind.DeclinedOptional, null, null, null, null,
+                cardSwaps: keptCards);
     }
 
     /// <summary>

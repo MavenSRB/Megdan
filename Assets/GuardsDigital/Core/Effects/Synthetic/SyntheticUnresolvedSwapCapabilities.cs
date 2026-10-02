@@ -41,7 +41,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new SwapUnresolvedCardHandler();
         }
 
-        private sealed class SwapUnresolvedCardHandler : IEffectCapabilityHandler
+        private sealed class SwapUnresolvedCardHandler : IEffectCapabilityHandler, IEffectDeclineReport
         {
             public EffectCapabilityReference Reference => SwapUnresolvedCardV1;
 
@@ -83,18 +83,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         card.Id.Equals(selected[0].CardInstanceId))
                     : null;
                 var swap = context.RosterState.UnresolvedCardSwap;
+                // Milestone 9.32g. Where the incoming card stood - the hand, or the discard pile.
+                var incomingFrom = CardMoveFact.ZoneOf(chosen);
                 if (chosen == null || swap == null ||
                     !swap.TrySwapUnresolvedCard(unresolved.OwnerId, unresolved.Id, chosen.Id))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact(SwappedOutOutputName, EffectValue.Card(unresolved.Id)),
-                    new EffectOutcomeFact(SwappedInOutputName, EffectValue.Card(chosen.Id))
-                });
+                return EffectExecutionResult.Applied(
+                    new[]
+                    {
+                        new EffectOutcomeFact(SwappedOutOutputName, EffectValue.Card(unresolved.Id)),
+                        new EffectOutcomeFact(SwappedInOutputName, EffectValue.Card(chosen.Id))
+                    },
+                    cardSwaps: new[]
+                    {
+                        CardSwapFact.Swapped(
+                            unresolved.OwnerId,
+                            new CardMoveFact(DefinitionOf(context, unresolved), CardMoveZone.TurnArea, incomingFrom),
+                            new CardMoveFact(DefinitionOf(context, chosen), incomingFrom, CardMoveZone.TurnArea))
+                    });
             }
+
+            /// <summary>
+            /// Milestone 9.32g (approved mockup F). The teammate who declines keeps their unresolved
+            /// card, and the table sees them keep it: "WASP KEPT ELECTROCUTE (SET AN EXAMPLE)".
+            /// </summary>
+            public CardSwapFact Declined(EffectCapabilityContext context)
+            {
+                var unresolved = Unresolved(context);
+                return unresolved == null
+                    ? null
+                    : CardSwapFact.Kept(
+                        unresolved.OwnerId,
+                        new CardMoveFact(DefinitionOf(context, unresolved), CardMoveZone.TurnArea, CardMoveZone.TurnArea));
+            }
+
+            private static CardDefinitionId DefinitionOf(EffectCapabilityContext context, CardInstance card) =>
+                context.CardState.Definitions
+                    .FirstOrDefault(definition => definition.Reference.Equals(card.DefinitionReference))
+                    ?.Id ?? default;
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {

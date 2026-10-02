@@ -94,7 +94,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CoinResourceOperation> coinAwards = null,
             CardInstanceId discardedCardInstanceId = default,
             CardInstanceId spellCardInstanceId = default,
-            int spellCount = 0)
+            int spellCount = 0,
+            CardSwapFact cardSwap = null)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -160,6 +161,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DiscardedCardInstanceId = discardedCardInstanceId;
             SpellCardInstanceId = spellCardInstanceId;
             SpellCount = spellCount;
+            CardSwap = cardSwap;
             MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
             CoinAwards = Array.AsReadOnly((coinAwards ?? Enumerable.Empty<CoinResourceOperation>()).ToArray());
         }
@@ -193,6 +195,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// fact returned to the book; zero on every other fact.
         /// </summary>
         public int SpellCount { get; }
+
+        /// <summary>Milestone 9.32g. The swap a swapped-cards or kept-card fact reports; null elsewhere.</summary>
+        public CardSwapFact CardSwap { get; }
 
         /// <summary>
         /// Milestone 8.61e. How many cards the token this event revealed costs the hero who walked over
@@ -797,6 +802,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 DiscardedCardInstanceId.Equals(other.DiscardedCardInstanceId) &&
                 SpellCardInstanceId.Equals(other.SpellCardInstanceId) &&
                 SpellCount == other.SpellCount &&
+                Equals(CardSwap, other.CardSwap) &&
                 (CoinAwards ?? Array.Empty<CoinResourceOperation>()).SequenceEqual(
                     other.CoinAwards ?? Array.Empty<CoinResourceOperation>());
         }
@@ -1099,7 +1105,44 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node))
                 // Milestone 9.30h. Last, so every fact a node already published keeps its place.
                 .Concat(SpellbookFacts(
+                    resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node))
+                // Milestone 9.32g. After the spellbook's, for the same reason.
+                .Concat(CardSwapFacts(
                     resolutionId, sourceCardInstanceId, actionDefinitionId, actorId, node));
+
+        /// <summary>
+        /// Milestone 9.32g. One fact per swap the node made, or per card its chooser kept by declining,
+        /// on <see cref="DiscardedCardFacts"/>'s terms: the cards' owner rides the target field, the
+        /// swap the swap field, and the step id names the node and the swap's kind.
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> CardSwapFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            (node ?? throw new ArgumentNullException(nameof(node))).CardSwaps
+                .Select((swap, index) => new CardActionResolutionEvent(
+                    swap.Kind == CardSwapKind.Kept
+                        ? CardActionResolutionEventKind.CardTextKeptCard
+                        : CardActionResolutionEventKind.CardTextSwappedCards,
+                    resolutionId,
+                    sourceCardInstanceId,
+                    actionDefinitionId,
+                    default,
+                    actorId,
+                    swap.OwnerHeroId,
+                    new ActionResolutionStepId(
+                        node.NodeId.Value + ":swap:" + swap.Kind + ":" +
+                        index.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    0,
+                    0,
+                    default,
+                    0,
+                    AttackResolutionOutcome.None,
+                    default,
+                    default,
+                    cardSwap: swap));
 
         /// <summary>
         /// Milestone 9.30h. One fact per change the node made to a spellbook - a cast, a faceup

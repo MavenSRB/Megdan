@@ -81,6 +81,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/SpellbookPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StandardMinionViewTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StatusDerivationConformanceTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/TakahidePresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/UrpMigrationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/VictoryScreenPresenterTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/WaveRemainingHudTests.cs" />

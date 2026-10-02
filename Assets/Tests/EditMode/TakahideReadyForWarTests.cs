@@ -75,6 +75,36 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheUnlock_ReportsItsMoves_AndTheLogNamesThemToTakahidesSeatAlone()
+        {
+            var fixture = new LevelUpFixture(takaCoins: 1, enemyCoins: 0);
+            Assert.That(fixture.Begin().Accepted, Is.True);
+            var unlocked = fixture.Outcomes.Single(outcome => outcome.Kind == HeroLevelUpOutcomeKind.UltimateUnlocked);
+            Assert.That(unlocked.CardMoves, Is.EqualTo(new[]
+            {
+                new CardMoveFact(TakahideCardContent.Bushido, CardMoveZone.Hand, CardMoveZone.Deck,
+                    knownColor: CardColor.Silver),
+                new CardMoveFact(TakahideCardContent.StingLikeABee, CardMoveZone.Deck, CardMoveZone.Hand,
+                    knownColor: CardColor.Gold),
+                new CardMoveFact(TakahideCardContent.StrikeLikeATiger, CardMoveZone.Deck, CardMoveZone.Hand,
+                    knownColor: CardColor.Gold)
+            }), "9.32g (mockup F): Bushido to the deck, then the two golds to the hand");
+
+            var log = TakahideTableFactsTests.Log(new[] { RoundResolutionEvent.HeroLevelUpProgressed(1, 1, unlocked) });
+            var row = log.Single(entry => entry.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.UltimateMovedCards);
+            Assert.That(row.SubjectHeroId, Is.EqualTo(Taka));
+            Assert.That(row.SubjectCardInstanceId, Is.EqualTo(fixture.Id(TakahideCardContent.ReadyForWar)));
+            Assert.That(row.CardMoves, Is.EqualTo(unlocked.CardMoves));
+            Assert.That(GuardsDigital.Application.CardMoveMask.Mask(log,
+                    TakahideTableFactsTests.Seat(Taka, TeamSide.Blue)).Single().CardMoves,
+                Is.EqualTo(unlocked.CardMoves), "his own seat names all three");
+            Assert.That(GuardsDigital.Application.CardMoveMask.Mask(log,
+                    TakahideTableFactsTests.Seat(Enemy, TeamSide.Red)).Single().CardMoves,
+                Is.EqualTo(unlocked.CardMoves.Select(move => move.Unnamed())),
+                "another seat reads the silver card to the deck and two gold cards to hand");
+        }
+
+        [Test]
         public void TheUnlock_DuringSimultaneousLeveling_MovesTheCardsWhileAnotherHeroStillUpgrades()
         {
             var fixture = new LevelUpFixture(takaCoins: 1, enemyCoins: 1);

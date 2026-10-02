@@ -627,7 +627,7 @@ namespace GuardsDigital.Application
             ? trusted.HandSummaries
             : Array.AsReadOnly(wire.HandSummaries.Select(row => new SeatHandSummary(
                 new HeroId(row.HeroId), row.HandCount, row.DeckCount, row.SpellbookCount,
-                row.SpellbookBacks)).ToArray());
+                row.SpellbookBacks, row.FacedownDiscardColors)).ToArray());
 
         private NetworkProjectionDetailRecord PublicDetail => wire?.Detail;
         private NetworkProjectionDetailRecord Detail => actionable ? PublicDetail : null;
@@ -1173,7 +1173,8 @@ namespace GuardsDigital.Application
                 value.CardInstanceId == null ? (CardInstanceId?)null :
                     new CardInstanceId(value.CardInstanceId),
                 value.PassedWithEmptyHand,
-                value.IsFacedown)).ToArray();
+                value.IsFacedown,
+                value.KnownColor)).ToArray();
             var visible = Cards;
             var validationCards = assignments
                 .Where(value => value.CardInstanceId.HasValue)

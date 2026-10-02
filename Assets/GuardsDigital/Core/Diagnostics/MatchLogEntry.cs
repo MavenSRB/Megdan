@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
@@ -209,7 +212,36 @@ namespace GuardsDigital.Core.Diagnostics
         /// subject is the book's owner and <see cref="MatchLogEntry.Amount"/> how many returned; the row
         /// names no card, because every spell it counts is facedown again.
         /// </summary>
-        SpellbookRefilled = 38
+        SpellbookRefilled = 38,
+
+        /// <summary>
+        /// Milestone 9.32g. Card text swapped two of a hero's cards (approved mockup F): Takahide's
+        /// gold faces and Bushido, and a teammate's swap by Set an Example or Hold my Sake. The
+        /// subject is the cards' OWNER, the card the text's own source card, and
+        /// <see cref="MatchLogEntry.CardMoves"/> the outgoing card's move then the incoming card's.
+        ///
+        /// <para><b>The one row whose content is scoped by seat.</b> A move whose card no other seat
+        /// saw - a hand card, a deck card, a card arriving facedown - is named on its owner's seat
+        /// alone: the seat projection clears that move's definition for every other seat
+        /// (<see cref="CardMoveFact.IsSeenByTheTable()"/>), which then reads only its zone and the colour
+        /// the text fixes. No move card ever rides <see cref="MatchLogEntry.SubjectCardInstanceId"/>,
+        /// which would make a hand card public.</para>
+        /// </summary>
+        CardSwappedByCardText = 39,
+
+        /// <summary>
+        /// Milestone 9.32g. A swap's chooser declined it and kept their card, on the terms above with
+        /// the one move that stayed where it was: "WASP KEPT ELECTROCUTE (SET AN EXAMPLE)".
+        /// </summary>
+        CardKeptByCardText = 40,
+
+        /// <summary>
+        /// Milestone 9.32g. A hero unlocked an Ultimate whose unlock moved cards (Ready for War,
+        /// 9.32f): the subject is the hero, the card the Ultimate, faceup in its open area, and
+        /// <see cref="MatchLogEntry.CardMoves"/> the returned cards then the taken ones, on the
+        /// swap row's seat-scoped terms. An unlock that moves no card writes no row, as before.
+        /// </summary>
+        UltimateMovedCards = 41
     }
 
     /// <summary>
@@ -244,6 +276,10 @@ namespace GuardsDigital.Core.Diagnostics
     /// hand, no unrevealed commitment and no pending choice's option set can reach this type, because
     /// no <see cref="MatchLogEntryKind"/> names one. That is why every seat's log is the SAME log,
     /// and why the seat filter is an identity rather than a redaction.</para>
+    /// <para><b>Milestone 9.32g's one exception</b> is <see cref="CardMoves"/>: a swap or an
+    /// Ultimate's unlock can move a card no other seat sees, which its owner's seat still names. The
+    /// seat projection unnames exactly those moves for every other seat, so a log with no such move is
+    /// handed to every seat unchanged.</para>
     /// <para><b>Derived, never stored.</b> These are rebuilt from the retained rule-event log on
     /// every reconstruction, so an undo, a replay, a resync and a snapshot restore each redraw the
     /// log without this type appearing in any persisted payload.</para>
@@ -267,7 +303,8 @@ namespace GuardsDigital.Core.Diagnostics
             MatchLogOutcome outcome = MatchLogOutcome.None,
             int amount = 0,
             HeroId blockingHeroId = default,
-            CardInstanceId blockingCardInstanceId = default)
+            CardInstanceId blockingCardInstanceId = default,
+            IEnumerable<CardMoveFact> cardMoves = null)
         {
             if (sequence < 1)
             {
@@ -301,6 +338,7 @@ namespace GuardsDigital.Core.Diagnostics
             Amount = amount;
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
+            CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
         }
 
         /// <summary>
@@ -364,6 +402,20 @@ namespace GuardsDigital.Core.Diagnostics
         /// <summary>Milestone 8.35z14. The card the blocking modification's source came off.</summary>
         public CardInstanceId BlockingCardInstanceId { get; }
 
+        /// <summary>
+        /// Milestone 9.32g. The cards a swap, a kept swap or an Ultimate's unlock moved, on the three
+        /// kinds that say so; empty on every other row. See <see cref="MatchLogEntryKind.CardSwappedByCardText"/>
+        /// for whose seat reads which card.
+        /// </summary>
+        public IReadOnlyList<CardMoveFact> CardMoves { get; }
+
+        /// <summary>Milestone 9.32g. This row with other moves - the form another seat reads.</summary>
+        public MatchLogEntry WithCardMoves(IEnumerable<CardMoveFact> cardMoves) =>
+            new MatchLogEntry(
+                Sequence, Kind, RoundIndex, TurnIndex, SubjectHeroId, TargetHeroId, SubjectMinionId,
+                SubjectCardInstanceId, SubjectTeamId, Origin, Destination, HasOrigin, HasDestination,
+                Outcome, Amount, BlockingHeroId, BlockingCardInstanceId, cardMoves);
+
         public bool Equals(MatchLogEntry other)
         {
             return other != null &&
@@ -383,7 +435,8 @@ namespace GuardsDigital.Core.Diagnostics
                 Outcome == other.Outcome &&
                 Amount == other.Amount &&
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
-                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId);
+                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
+                CardMoves.SequenceEqual(other.CardMoves);
         }
 
         public override bool Equals(object obj) => Equals(obj as MatchLogEntry);

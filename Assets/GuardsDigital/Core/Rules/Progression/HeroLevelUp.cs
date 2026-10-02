@@ -276,8 +276,11 @@ namespace GuardsDigital.Core.Rules.Progression
             CardInstanceId takenCardInstanceId,
             CardInstanceId setAsideCardInstanceId,
             CardInstanceId ultimateCardInstanceId,
-            HeroItem item)
+            HeroItem item,
+            IEnumerable<GuardsDigital.Core.Effects.CardMoveFact> cardMoves = null)
         {
+            CardMoves = Array.AsReadOnly(
+                (cardMoves ?? Enumerable.Empty<GuardsDigital.Core.Effects.CardMoveFact>()).ToArray());
             Kind = kind;
             HeroId = heroId;
             Level = level;
@@ -312,6 +315,12 @@ namespace GuardsDigital.Core.Rules.Progression
 
         public HeroItem Item { get; }
 
+        /// <summary>
+        /// Milestone 9.32g. The cards an Ultimate's unlock moved (Ready for War, 9.32f), returned
+        /// cards first, in the order they moved; empty for every other outcome.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Effects.CardMoveFact> CardMoves { get; }
+
         public static HeroLevelUpOutcome LevelPurchased(
             HeroId heroId, HeroLevel level, CoinSpendOperation spend) =>
             new HeroLevelUpOutcome(
@@ -335,10 +344,13 @@ namespace GuardsDigital.Core.Rules.Progression
                 default, default, default, default, default, default, item);
 
         public static HeroLevelUpOutcome UltimateUnlocked(
-            HeroId heroId, HeroLevel level, CardInstanceId ultimateCardInstanceId) =>
+            HeroId heroId,
+            HeroLevel level,
+            CardInstanceId ultimateCardInstanceId,
+            IEnumerable<GuardsDigital.Core.Effects.CardMoveFact> cardMoves = null) =>
             new HeroLevelUpOutcome(
                 HeroLevelUpOutcomeKind.UltimateUnlocked, heroId, level, default,
-                default, default, default, ultimateCardInstanceId, null);
+                default, default, default, ultimateCardInstanceId, null, cardMoves);
 
         public override string ToString() => $"{HeroId} {Kind} (Level {Level})";
     }
@@ -653,8 +665,8 @@ namespace GuardsDigital.Core.Rules.Progression
                     $"{unlock.RejectionReason}.");
             }
 
-            PerformUnlockCardMovement(heroId, unlock.Ultimate.Rule.UnlockCardMovement);
-            outcomes.Add(HeroLevelUpOutcome.UltimateUnlocked(heroId, level, ultimateCard.Id));
+            var moved = PerformUnlockCardMovement(heroId, unlock.Ultimate.Rule.UnlockCardMovement);
+            outcomes.Add(HeroLevelUpOutcome.UltimateUnlocked(heroId, level, ultimateCard.Id, moved));
             resolution = SystemTransitionStepResolution.ItemCompleted(
                 new HeroLevelUpItem(heroId, level, HeroLevelUpItemKind.Ultimate).ToItemId());
             return true;
@@ -673,12 +685,25 @@ namespace GuardsDigital.Core.Rules.Progression
         /// says. Takahide always holds exactly one gold outside his deck, so "two gold cards" are the
         /// two in it; were there more, the order is the cards' stable ids.
         /// </summary>
-        private void PerformUnlockCardMovement(HeroId heroId, UltimateUnlockCardMovement movement)
+        private IReadOnlyList<GuardsDigital.Core.Effects.CardMoveFact> PerformUnlockCardMovement(
+            HeroId heroId, UltimateUnlockCardMovement movement)
         {
+            var moved = new List<GuardsDigital.Core.Effects.CardMoveFact>();
             if (movement == null)
             {
-                return;
+                return moved;
             }
+
+            // Milestone 9.32g. Each card it moves is reported for the log (approved mockup F), with the
+            // colour the printed sentence fixes - which is all another seat is told of a card that goes
+            // from the hand to the deck, or from the deck to the hand.
+            GuardsDigital.Core.Effects.CardMoveFact Move(
+                CardInstance card, GuardsDigital.Core.Effects.CardMoveZone from,
+                GuardsDigital.Core.Effects.CardMoveZone to, CardColor color) =>
+                new GuardsDigital.Core.Effects.CardMoveFact(
+                    definitions.FirstOrDefault(definition => definition != null &&
+                        definition.Reference.Equals(card.DefinitionReference))?.Id ?? default,
+                    from, to, knownColor: color);
 
             CardColor ColorOf(CardInstance card) =>
                 definitions.FirstOrDefault(definition => definition != null &&
@@ -696,6 +721,9 @@ namespace GuardsDigital.Core.Rules.Progression
                     throw new InvalidOperationException(
                         $"Hero '{heroId}' could not return '{returned.Id}' to the deck at its Ultimate's unlock.");
                 }
+
+                moved.Add(Move(returned, GuardsDigital.Core.Effects.CardMoveZone.Hand,
+                    GuardsDigital.Core.Effects.CardMoveZone.Deck, movement.ReturnedToDeckColor));
             }
 
             foreach (var taken in owned
@@ -708,7 +736,12 @@ namespace GuardsDigital.Core.Rules.Progression
                     throw new InvalidOperationException(
                         $"Hero '{heroId}' could not take '{taken.Id}' into the hand at its Ultimate's unlock.");
                 }
+
+                moved.Add(Move(taken, GuardsDigital.Core.Effects.CardMoveZone.Deck,
+                    GuardsDigital.Core.Effects.CardMoveZone.Hand, movement.TakenFromDeckColor));
             }
+
+            return moved;
         }
 
         private SystemTransitionOpenItem OpenUpgradeItem(HeroId heroId, HeroLevel level)

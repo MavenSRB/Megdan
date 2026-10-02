@@ -1217,6 +1217,45 @@ namespace GuardsDigital.Tests.EditMode
                         subjectHeroId: hero,
                         amount: 5),
                     "RETURNED 5 SPELLS TO THE SPELLBOOK", false),
+                // Milestone 9.32g minted the THIRTY-NINTH to FORTY-FIRST kinds - a card swap, a kept
+                // swap and an Ultimate's unlock that moved cards - and sweeps this walk in the same
+                // change. Each case is the form another seat reads: no card named, its colour told.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CardSwappedByCardText,
+                        1,
+                        1,
+                        subjectHeroId: hero,
+                        cardMoves: new[]
+                        {
+                            new GuardsDigital.Core.Effects.CardMoveFact(default,
+                                GuardsDigital.Core.Effects.CardMoveZone.Hand, GuardsDigital.Core.Effects.CardMoveZone.Deck,
+                                knownColor: CardColor.Gold),
+                            new GuardsDigital.Core.Effects.CardMoveFact(default,
+                                GuardsDigital.Core.Effects.CardMoveZone.Deck, GuardsDigital.Core.Effects.CardMoveZone.Hand,
+                                knownColor: CardColor.Gold)
+                        }),
+                    "SWAPPED THE GOLD CARD IN HAND WITH ONE FROM THE DECK", false),
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CardKeptByCardText,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "KEPT A CARD", false),
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.UltimateMovedCards,
+                        1,
+                        1,
+                        subjectHeroId: hero,
+                        cardMoves: new[]
+                        {
+                            new GuardsDigital.Core.Effects.CardMoveFact(default,
+                                GuardsDigital.Core.Effects.CardMoveZone.Hand, GuardsDigital.Core.Effects.CardMoveZone.Deck,
+                                knownColor: CardColor.Silver)
+                        }),
+                    "UNLOCKED AN ULTIMATE: THE SILVER CARD TO THE DECK", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

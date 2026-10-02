@@ -384,9 +384,15 @@ namespace GuardsDigital.Presentation.Match
 
             var total = ResolveRadius(declared.Radius, radiusItemBonus);
 
+            // Milestone 9.32g. An overlay that bars the opposing side's units (Takahide's Spinning
+            // Blade and Blade Helix, 9.32c's unit arm) is its own disk: its empty spaces wear the
+            // barred cue (approved mockup E) as well as the tint.
+            var barsEnemyUnits = declared.ObstacleOverlays.Any(overlay => overlay != null &&
+                overlay.Arms.Contains(ObstacleOverlayArm.EmptySpacesInsideForUnits));
+
             // One disk per carrier per radius. Two definitions of the same size on the same hero draw
             // the same circle, and drawing it twice would say nothing a player can see.
-            if (!auraKeys.Add(controller.Value + "/" + total))
+            if (!auraKeys.Add(controller.Value + "/" + total + (barsEnemyUnits ? "/barred" : string.Empty)))
             {
                 return;
             }
@@ -397,7 +403,8 @@ namespace GuardsDigital.Presentation.Match
                 total,
                 RadiusQuery.Spaces(
                     anchor,
-                    RadiusTotal(declared.Radius, sourceCardInstanceId, actionDefinitionId, total))));
+                    RadiusTotal(declared.Radius, sourceCardInstanceId, actionDefinitionId, total)),
+                barsEnemyUnits));
         }
 
         /// <summary>
@@ -566,6 +573,9 @@ namespace GuardsDigital.Presentation.Match
                 .Where(value => value != null).ToArray());
             AuraSpaces = Array.AsReadOnly(Auras
                 .SelectMany(value => value.Spaces).Distinct().ToArray());
+            BarredSpaces = Array.AsReadOnly(Auras
+                .Where(value => value.BarsEnemyUnits)
+                .SelectMany(value => value.Spaces).Distinct().ToArray());
         }
 
         /// <summary>
@@ -605,6 +615,12 @@ namespace GuardsDigital.Presentation.Match
         /// so a disk hanging over the edge of the map needs no special case anywhere.</para>
         /// </summary>
         public IReadOnlyList<HexCoordinate> AuraSpaces { get; }
+
+        /// <summary>
+        /// Milestone 9.32g. The spaces of every disk whose overlay bars the opposing side's units; the
+        /// board marks the EMPTY ones (approved mockup E) - an occupied space is not an obstacle.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> BarredSpaces { get; }
 
         public bool IsEmpty => MarkedHeroes.Count == 0 && AuraSpaces.Count == 0;
 
@@ -646,8 +662,10 @@ namespace GuardsDigital.Presentation.Match
             HeroId carrier,
             HexCoordinate center,
             int radius,
-            IEnumerable<HexCoordinate> spaces)
+            IEnumerable<HexCoordinate> spaces,
+            bool barsEnemyUnits = false)
         {
+            BarsEnemyUnits = barsEnemyUnits;
             Carrier = carrier;
             Center = center;
             Radius = radius;
@@ -676,5 +694,8 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexCoordinate> Spaces { get; }
 
         public bool Covers(HexCoordinate space) => covered.Contains(space);
+
+        /// <summary>Milestone 9.32g. This disk's empty spaces are obstacles for the enemy units.</summary>
+        public bool BarsEnemyUnits { get; }
     }
 }

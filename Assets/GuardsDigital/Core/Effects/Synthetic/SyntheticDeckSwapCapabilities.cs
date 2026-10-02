@@ -115,21 +115,44 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         card.Id.Equals(selected[0].CardInstanceId))
                     : null;
                 var swap = context.RosterState.DeckCardSwap;
+                // Milestone 9.32g. Where the outgoing card stood, read before the swap moves it.
+                var outgoingFrom = CardMoveFact.ZoneOf(subject);
+                var outgoingFacedown = subject?.State.FaceOrientation == CardFaceOrientation.FaceDown;
                 if (chosen == null || swap == null ||
                     !swap.TrySwapWithDeckCard(subject.OwnerId, subject.Id, chosen.Id, FacedownWhenResting(context)))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                var incoming = context.CardState.Instances.SingleOrDefault(card => card.Id.Equals(chosen.Id)) ?? chosen;
+                var color = Color(context);
+
                 // p.17: the outgoing card changed state, so an Active effect it was the source of ends
                 // now, before the next node, as a spell returned to the book ends its own (9.30c).
                 context.Timing?.CancelForSourceCardStateChange(subject.Id, context.RoundIndex, context.TurnIndex);
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact(SwappedOutOutputName, EffectValue.Card(subject.Id)),
-                    new EffectOutcomeFact(SwappedInOutputName, EffectValue.Card(chosen.Id))
-                });
+                return EffectExecutionResult.Applied(
+                    new[]
+                    {
+                        new EffectOutcomeFact(SwappedOutOutputName, EffectValue.Card(subject.Id)),
+                        new EffectOutcomeFact(SwappedInOutputName, EffectValue.Card(chosen.Id))
+                    },
+                    cardSwaps: new[]
+                    {
+                        CardSwapFact.Swapped(
+                            subject.OwnerId,
+                            new CardMoveFact(DefinitionOf(context, subject), outgoingFrom, CardMoveZone.Deck,
+                                departsFacedown: outgoingFacedown, knownColor: color),
+                            new CardMoveFact(DefinitionOf(context, chosen), CardMoveZone.Deck,
+                                CardMoveFact.ZoneOf(incoming),
+                                arrivesFacedown: incoming.State.FaceOrientation == CardFaceOrientation.FaceDown,
+                                knownColor: color))
+                    });
             }
+
+            private static CardDefinitionId DefinitionOf(EffectCapabilityContext context, CardInstance card) =>
+                context.CardState.Definitions
+                    .FirstOrDefault(definition => definition.Reference.Equals(card.DefinitionReference))
+                    ?.Id ?? default;
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
