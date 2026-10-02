@@ -369,7 +369,12 @@ namespace GuardsDigital.Tests.EditMode
             // EveryDealtDefinition in the same change. The first pin over FORTY definitions: his
             // eighteen dealt fronts and the twenty-two spells setup puts in his book (GY-Q1), which a
             // configured match loads beside them and his fronts cast.
-            new IdentityPin("gydion", "gydion-9-30i-rev-1", "72823dd661056db657a5b01cdd68af70a72a95954dd87236c32915292e43f03c", 40)
+            new IdentityPin("gydion", "gydion-9-30i-rev-1", "72823dd661056db657a5b01cdd68af70a72a95954dd87236c32915292e43f03c", 40),
+            // Milestone 9.32h. Takahide, dealt under his first dealt revision (takahide-9-32g-rev-1 ->
+            // takahide-9-32h-rev-1); measured on the run that dealt him, with his staged configuration in
+            // EveryDealtDefinition in the same change. Twenty definitions: his three gold cards are all
+            // dealt, and Shameful Display is boxed.
+            new IdentityPin("takahide", "takahide-9-32h-rev-1", "c05e96e251f9693704ed7e3e39f00214032dbf2a2058defcdfb40fbfcc0f9d52", 20)
         };
 
         [Test]
@@ -562,6 +567,9 @@ namespace GuardsDigital.Tests.EditMode
                     .CardDefinitions)
                 // Milestone 9.30i. Gydion's staged configuration, added in the same change as his pin.
                 .Concat(MatchConfiguration.CreateStagedGydionForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 9.32h. Takahide's staged configuration, added in the same change as his pin.
+                .Concat(MatchConfiguration.CreateStagedTakahideForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

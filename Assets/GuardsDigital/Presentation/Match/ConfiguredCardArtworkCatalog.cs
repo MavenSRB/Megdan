@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -177,8 +178,25 @@ namespace GuardsDigital.Presentation.Match
                 { "razzle", "Razzle" },
                 // Milestone 9.30i. His card folder is `Gydion`; the dashboard prints "Gydion the
                 // Archwizard" (inventory 9.30, GY-02). His spells are the catalog's "spells" rows.
-                { "gydion", "Gydion" }
+                { "gydion", "Gydion" },
+                // Milestone 9.32h. His card folder is `Takahide`; the dashboard prints "Takahide the
+                // Warlord" (inventory 9.32).
+                { "takahide", "Takahide" }
             };
+
+        /// <summary>
+        /// Milestone 9.32h. A hero's playable fronts run from the bare stem (1) to this count; every
+        /// hero prints eighteen but those named here. Takahide deals twenty (his three gold cards); his
+        /// twenty-first, Shameful Display, is the boxed Handicap. Mirrors
+        /// <c>Tools/Prepare-CardArtwork.ps1</c>'s <c>$playableFronts</c>.
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, int> PlayableFrontCounts =
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                { "takahide", 20 }
+            };
+
+        private const int PrintedPlayableFrontCount = 18;
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
 
@@ -369,14 +387,20 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var fileName = entry.SourcePath.Substring(prefix.Length);
+            var frontCount = PlayableFrontCounts.TryGetValue(hero, out var declared)
+                ? declared
+                : PrintedPlayableFrontCount;
             var playableFront = new Regex(
-                $"^{Regex.Escape(hero)}(?:[2-9]|1[0-8])?__\\d+__front\\.png$",
+                $"^{Regex.Escape(hero)}(?<number>[2-9]|[1-9][0-9])?__\\d+__front\\.png$",
                 RegexOptions.CultureInvariant);
-            if (!playableFront.IsMatch(fileName))
+            var match = playableFront.Match(fileName);
+            if (!match.Success ||
+                (match.Groups["number"].Success &&
+                 int.Parse(match.Groups["number"].Value, CultureInfo.InvariantCulture) > frontCount))
             {
                 throw EntryFailure(
                     entry,
-                    "is not one of that hero's eighteen playable __front.png sources " +
+                    $"is not one of that hero's {frontCount} playable __front.png sources " +
                     "(dashboard, back-face, Handicap, and unrelated files are excluded)");
             }
 
@@ -522,6 +546,8 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 9.30i. Gydion's eighteen dealt fronts; Cheap Trick is p.20's Handicap and his
                 // spells are SpellArtworkCatalog's own bijection with GydionCardContent.SpellDefinitions.
                 .Concat(GydionCardContent.DealtDefinitions)
+                // Milestone 9.32h. Takahide's twenty dealt fronts; Shameful Display is p.20's Handicap.
+                .Concat(TakahideCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

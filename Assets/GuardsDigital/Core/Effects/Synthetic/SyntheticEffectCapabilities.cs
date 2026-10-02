@@ -166,6 +166,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticSpellbookCapabilities.RegisteredHandlers())
                 .Concat(SyntheticTeamVictoryCapabilities.RegisteredHandlers())
                 .Concat(SyntheticTeamLifeCapabilities.RegisteredHandlers())
+                // Milestone 9.32h, the milestone that deals Takahide the Warlord. The three families
+                // 9.32a, 9.32b and 9.32e built and left out of the catalog on the same half of the rule
+                // every line above states: the swap with a deck card (his gold faces and Bushido), the
+                // swap of a teammate's unresolved card (Set an Example, Lead from the Front, Hold my
+                // Sake) and the choice of a card in a teammate's discard (Proven Warrior, Chosen
+                // Champion, The Right Hand). Each handler TYPE was proved on synthetic hands and staged
+                // rounds by those blocks.
+                .Concat(SyntheticDeckSwapCapabilities.Handlers())
+                .Concat(SyntheticUnresolvedSwapCapabilities.Handlers())
+                .Concat(SyntheticDiscardedCardChoiceCapabilities.Handlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

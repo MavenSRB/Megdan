@@ -923,17 +923,20 @@ namespace GuardsDigital.Tests.EditMode
         // 9.32a re-pins all nine for schema v54: every turn-slot assignment now ends with whether its
         // card was placed facedown (Takahide's Bushido) - one byte per assignment, false in every
         // scenario. No scenario swaps a card; the three groups still hold.
+        // 9.32h re-pins all nine for dealing Takahide: six capabilities join the recorded registration
+        // lists (the same +199 bytes the sibling corpus measures on all seventeen captures). No scenario
+        // seats him; the three groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "fa2ab702807eebf43f89deef6cc84fa14178349faf057f1e5c8f6ad9c468aa08", "c759538099a309f366bdc86d98cad4c85913bc589597e5b3c3e8e20f95836139"),
-            new ScenarioDigest("rejected", "fa2ab702807eebf43f89deef6cc84fa14178349faf057f1e5c8f6ad9c468aa08", "c759538099a309f366bdc86d98cad4c85913bc589597e5b3c3e8e20f95836139"),
-            new ScenarioDigest("stale", "fa2ab702807eebf43f89deef6cc84fa14178349faf057f1e5c8f6ad9c468aa08", "c759538099a309f366bdc86d98cad4c85913bc589597e5b3c3e8e20f95836139"),
-            new ScenarioDigest("restored", "fa2ab702807eebf43f89deef6cc84fa14178349faf057f1e5c8f6ad9c468aa08", "c759538099a309f366bdc86d98cad4c85913bc589597e5b3c3e8e20f95836139"),
-            new ScenarioDigest("replayed", "fa2ab702807eebf43f89deef6cc84fa14178349faf057f1e5c8f6ad9c468aa08", "c759538099a309f366bdc86d98cad4c85913bc589597e5b3c3e8e20f95836139"),
-            new ScenarioDigest("undo-truncated", "582f958240ee13953bd80c37cee9167ded20408eaead2e73500222d2d9d1ae79", "b19447fa3a9db074c763a4ddb0504bd87c9459f06059cb51303be0aabc1f11ea"),
-            new ScenarioDigest("defense-discarded", "ae7cd011230592a233038aba6d70a3e1c064b5ead938452fa7bbd89c96b1765d", "3ec052b53ab06883e66d086993815c9ba2fbd173e02c3ea28410c2fd217513fe"),
-            new ScenarioDigest("defense-discarded-restored", "ae7cd011230592a233038aba6d70a3e1c064b5ead938452fa7bbd89c96b1765d", "3ec052b53ab06883e66d086993815c9ba2fbd173e02c3ea28410c2fd217513fe"),
-            new ScenarioDigest("defense-discarded-replayed", "ae7cd011230592a233038aba6d70a3e1c064b5ead938452fa7bbd89c96b1765d", "3ec052b53ab06883e66d086993815c9ba2fbd173e02c3ea28410c2fd217513fe"),
+            new ScenarioDigest("accepted", "d77a11c74e746c04b59820a70cbedb3ea1733f1b635eb4c360735a2454753550", "0d198080d656de80d2157d589c92b216a70a38ca665562dd9d29783be37c5a91"),
+            new ScenarioDigest("rejected", "d77a11c74e746c04b59820a70cbedb3ea1733f1b635eb4c360735a2454753550", "0d198080d656de80d2157d589c92b216a70a38ca665562dd9d29783be37c5a91"),
+            new ScenarioDigest("stale", "d77a11c74e746c04b59820a70cbedb3ea1733f1b635eb4c360735a2454753550", "0d198080d656de80d2157d589c92b216a70a38ca665562dd9d29783be37c5a91"),
+            new ScenarioDigest("restored", "d77a11c74e746c04b59820a70cbedb3ea1733f1b635eb4c360735a2454753550", "0d198080d656de80d2157d589c92b216a70a38ca665562dd9d29783be37c5a91"),
+            new ScenarioDigest("replayed", "d77a11c74e746c04b59820a70cbedb3ea1733f1b635eb4c360735a2454753550", "0d198080d656de80d2157d589c92b216a70a38ca665562dd9d29783be37c5a91"),
+            new ScenarioDigest("undo-truncated", "553a829f9d6f88328eb43dd4c76ce9e546a26c78d2d3b4e46cbd15ffc45f99ab", "72946aba554d0926a92aed09a910fcd273670fd0df31de5f2fa74dc43b3220ec"),
+            new ScenarioDigest("defense-discarded", "e5aceb7dc767f89ee7cb9fd39e1b2048a4b5c729ba99960ae3fed76d8c57b4a2", "87d754ca6e78520aacd66f37a93cef116748ed51e86d72d65b97d25f4c83478f"),
+            new ScenarioDigest("defense-discarded-restored", "e5aceb7dc767f89ee7cb9fd39e1b2048a4b5c729ba99960ae3fed76d8c57b4a2", "87d754ca6e78520aacd66f37a93cef116748ed51e86d72d65b97d25f4c83478f"),
+            new ScenarioDigest("defense-discarded-replayed", "e5aceb7dc767f89ee7cb9fd39e1b2048a4b5c729ba99960ae3fed76d8c57b4a2", "87d754ca6e78520aacd66f37a93cef116748ed51e86d72d65b97d25f4c83478f"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

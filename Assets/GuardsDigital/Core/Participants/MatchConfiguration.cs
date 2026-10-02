@@ -639,6 +639,10 @@ namespace GuardsDigital.Core.Participants
                 // spellbook (GY-Q1).
                 case Setup.QuickGameSetupConfiguration.GydionHeroIdValue:
                     return Cards.Verified.GydionCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 9.32h. The THIRTIETH hero; Shameful Display, his p.20 Handicap, is boxed by
+                // his set's own ReturnedToBoxAtSetup, and two of his three gold cards start in his deck.
+                case Setup.QuickGameSetupConfiguration.TakahideHeroIdValue:
+                    return Cards.Verified.TakahideCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2289,6 +2293,36 @@ namespace GuardsDigital.Core.Participants
                     Cards.Verified.WaspCardContent.HighVoltage) ||
                 card.DefinitionReference.DefinitionId.Equals(
                     Cards.Verified.GydionCardContent.TheArchwizard)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
+        /// <summary>Milestone 9.32h. Wasp on Red against Takahide with his p.6 starting hand.</summary>
+        public static MatchConfiguration CreateStagedTakahideForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.TakahideCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>
+        /// Milestone 9.32h. Wasp against Takahide, both on Tier III, as Ready for War leaves him: the
+        /// Ultimate faceup, Bushido back in his deck and all three golds in his six-card hand (TK-Q5).
+        /// </summary>
+        public static MatchConfiguration CreateStagedTakahideTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.TakahideProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.TakahideCardContent.ReadyForWar)))
                 if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
                     throw new InvalidOperationException(
                         "The staged Tier III match could not unlock a dealt Ultimate.");

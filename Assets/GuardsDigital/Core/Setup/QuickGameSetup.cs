@@ -437,6 +437,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.30i. Gydion the Archwizard, the TWENTY-NINTH hero.</summary>
         public const string GydionHeroIdValue = "hero-gydion";
 
+        /// <summary>Milestone 9.32h. Takahide the Warlord, the THIRTIETH hero.</summary>
+        public const string TakahideHeroIdValue = "hero-takahide";
+
         /// <summary>
         /// Milestone 9.21j. How many bodies of Razzle can stand on the board at once: RZ-Q1 (a), settled
         /// by the user on 2026-09-30 - four in all, the hero plus the three "Spawn up to 3 more of you"
@@ -633,7 +636,14 @@ namespace GuardsDigital.Core.Setup
                 (GydionHeroIdValue, "gydion", "Gydion the Archwizard",
                     HeroComplexity.Wizard,
                     HeroRole.Sniper | HeroRole.Tactician | HeroRole.Farming |
-                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens),
+                // Milestone 9.32h. His selection front prints FOUR stars and the roles Durable, Sniper,
+                // Tactician, Damager and Farming (inventory 9.32); the dashboard names him "Takahide the
+                // Warlord". He uses no tokens or markers (TK-02).
+                (TakahideHeroIdValue, "takahide", "Takahide the Warlord",
+                    HeroComplexity.Wizard,
+                    HeroRole.Durable | HeroRole.Sniper | HeroRole.Tactician |
+                    HeroRole.Damager | HeroRole.Farming)
             };
 
         /// <summary>
@@ -1010,6 +1020,10 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.30i. Wasp on Red against Gydion on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusGydionOneVsOne() =>
             CreateOneVsOne(new HeroContentId("gydion"), "Gydion");
+
+        /// <summary>Milestone 9.32h. Wasp on Red against Takahide on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTakahideOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("takahide"), "Takahide");
 
         /// <summary>Milestone 9.21j. Wasp on Red against Razzle on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusRazzleOneVsOne() =>

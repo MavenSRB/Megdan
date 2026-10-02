@@ -15,19 +15,23 @@ namespace GuardsDigital.Editor
     /// <para>Milestone 9.30h1 adds the prepared spell fronts and backs: a 372-by-260 spell was
     /// imported at a power-of-two size and every spell face was drawn squeezed (the user: "scaling is
     /// a bit off for those spells").</para>
+    ///
+    /// <para>Milestone 9.32h adds the prepared card backs (a withheld facedown gold's hover shows its
+    /// owner's 372-by-520 back).</para>
     /// </summary>
     public sealed class ConfiguredCardArtImporter : AssetPostprocessor
     {
         private const string ArtFolder = "Assets/Resources/Private/Cards/";
 
-        public override uint GetVersion() => 3u;
+        public override uint GetVersion() => 4u;
 
         private void OnPreprocessTexture()
         {
             if ((!assetPath.StartsWith(ArtFolder, StringComparison.Ordinal) &&
                  !assetPath.StartsWith("Assets/Resources/Private/HeroSelection/", StringComparison.Ordinal) &&
                  !assetPath.StartsWith("Assets/Resources/Private/Markers/", StringComparison.Ordinal) &&
-                 !assetPath.StartsWith("Assets/Resources/Private/Spells/", StringComparison.Ordinal)) ||
+                 !assetPath.StartsWith("Assets/Resources/Private/Spells/", StringComparison.Ordinal) &&
+                 !assetPath.StartsWith("Assets/Resources/Private/CardBacks/", StringComparison.Ordinal)) ||
                 !assetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             {
                 return;

@@ -728,6 +728,8 @@ namespace GuardsDigital.Tests.EditMode
                 // which setup puts in his book - a card this build deals as surely as one in a hand.
                 .Concat(GydionCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(GydionCardContent.SpellDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 9.32h. Takahide's twenty dealt fronts.
+                .Concat(TakahideCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -768,6 +770,7 @@ namespace GuardsDigital.Tests.EditMode
                     "AdvanceHandler",
                     "AnySupportRuneHandler",
                     "CastSpellHandler",
+                    "ChooseDiscardedCardHandler",
                     "ChooseFriendlyUnitAndTreeHandler",
                     "ChooseOtherActorBody",
                     "ChooseOwnedItemHandler",
@@ -802,8 +805,13 @@ namespace GuardsDigital.Tests.EditMode
                     "SpellInBookPresent",
                     "SwapItemWithCardHandler",
                     "SwapResolvedWithHandHandler",
+                    "SwapUnresolvedCardHandler",
+                    "SwapWithDeckCardHandler",
                     "TrampledEnemyHeroesHandler"
                 }),
+                "Takahide's three swap and choice handlers - the swap with a deck card, the swap of a " +
+                "teammate's unresolved card and the choice of a card in a teammate's discard (9.32h; the " +
+                "9.32a, 9.32b and 9.32e fixtures prove each on synthetic hands and staged rounds), " +
                 "Gydion's nine spellbook, team-victory and regained-Life handlers - a spell's naming step, " +
                 "Wish's presence predicate, the cast, the refill, the count of other spells removed and " +
                 "Find Familiar's removal, the team count and claim, and Energy Drain's regain (9.30i; the " +

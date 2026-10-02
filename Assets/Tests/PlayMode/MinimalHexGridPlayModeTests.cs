@@ -1162,11 +1162,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// its FACEDOWN tags, D the teammate's one-window swap with KEEP MY CARD, E the barred empty
         /// spaces around him, F the log rows on his seat and on every other.
         ///
-        /// <para>Takahide is dealt at 9.32h, so his plaque stands on the Red seat of a dealt 2v2 with no
-        /// portrait, his faces are the generated ones (his art joins at dealing), and the models are
-        /// composed here from his own definitions. That the projection produces them is proved in
-        /// <c>TakahidePresentationTests</c> and <c>TakahideTableFactsTests</c>; this case is about where
-        /// they land and how they read.</para>
+        /// <para>Milestone 9.32h retakes them with Takahide dealt on the Red seat of a 2v2 beside Wasp:
+        /// his own plaque with his portrait, his standee on the board and his printed card art on every
+        /// face (the user: "you have synthetic cards instead of real art, and no art on hero token").
+        /// The models are composed from his own definitions; that the projection produces them is proved
+        /// in <c>TakahidePresentationTests</c> and <c>TakahideTableFactsTests</c>.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator Scene_TakahidesPresentationAtTheThreeValidatedViewports()
@@ -1178,15 +1178,19 @@ namespace GuardsDigital.Tests.PlayMode
             MatchSceneCompositionRoot.NextComposedSeat = null;
             MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.TwoVersusTwoQuick;
             MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
-                new[] { Hero("wasp"), Hero("brogan") }, new[] { Hero("arien"), Hero("sabina") });
+                new[] { Hero("takahide"), Hero("wasp") }, new[] { Hero("arien"), Hero("sabina") });
             MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
             yield return LoadComposedScene();
             var root = Root();
             var runtime = root.Runtime;
-            var standIn = new HeroId(Hero("wasp").HeroIdValue);
-            var teammate = new HeroId(Hero("brogan").HeroIdValue);
+            var standIn = new HeroId(Hero("takahide").HeroIdValue);
+            var teammate = new HeroId(Hero("wasp").HeroIdValue);
             var board = runtime.BoardView.Model;
-            const string folder = "tmp/9-32g-takahide/";
+            const string folder = "tmp/9-32h-takahide/";
+            Assert.That(Resources.Load<Texture2D>("Private/Heroes/takahide-red"), Is.Not.Null,
+                "his standee art is prepared (Tools/Prepare-HeroTokens.ps1 -Hero takahide)");
+            Assert.That(Resources.Load<Texture2D>("Private/CardBacks/hero-takahide"), Is.Not.Null,
+                "his card back is prepared (Tools/Prepare-CardBacks.ps1)");
             try
             {
                 foreach (var size in new[]
@@ -1240,6 +1244,9 @@ namespace GuardsDigital.Tests.PlayMode
                         .Where(element => element.name == "gd-card-slot" && UiPlayer.IsShown(element))
                         .ToArray();
                     Assert.That(handSlots.Length, Is.EqualTo(6), "six cards in the hand at " + where);
+                    Assert.That(handSlots.Count(slot => Descendants(slot).Any(element =>
+                            element.name == "gd-card-artwork" && UiPlayer.IsShown(element))), Is.EqualTo(6),
+                        "every card in the hand shows its printed art at " + where);
                     yield return UiPlayer.CaptureScreen(folder + "a-six-card-hand-" + where + ".png");
 
                     // C: the deck-gold choice, Bushido on a resolved gold - each candidate FACEDOWN.
@@ -1316,7 +1323,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Mockup B on the stand-in plaque, renamed Takahide with no portrait: slot 1 holds the gold
+        /// Mockup B on his own plaque: slot 1 holds the gold
         /// Bushido turned facedown, slot 2 Bushido itself, and the pile one facedown gold - as his own
         /// seat reads them (cards) or as every other seat does (withheld golds). Returns slot 1.
         /// </summary>
@@ -1339,8 +1346,8 @@ namespace GuardsDigital.Tests.PlayMode
             var replacement = new HeroOverviewViewModel(
                 source.HeroId,
                 source.TeamSide,
-                new HeroContentId("takahide"),
-                "Takahide",
+                source.ContentId,
+                source.HeroDisplayName,
                 source.Level,
                 source.Coins,
                 source.ItemBonuses,
@@ -1378,7 +1385,7 @@ namespace GuardsDigital.Tests.PlayMode
             var cards = ids.Select(id => CardInstance.CreateInHand(new CardInstanceId("staged-" + id.Value),
                 definitions.Single(definition => definition.Id.Equals(id)).Reference, heroId)).ToArray();
             var hand = new DirectorHandViewModel(
-                source.TeamSide, heroId, "Takahide", source.CommitmentStatus, source.CanPass, null, null,
+                source.TeamSide, heroId, source.HeroDisplayName, source.CommitmentStatus, source.CanPass, null, null,
                 cards, definitions, null, ids.Select(id => TakahideTray(id)).ToArray());
             runtime.HandsView.Render(new DirectorHandsViewModel(
                 model.Version + 1,

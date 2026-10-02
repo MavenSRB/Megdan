@@ -400,9 +400,7 @@ namespace GuardsDigital.Tests.EditMode
                 var defaults = MatchContentCatalogs.ForThisBuild();
                 var catalogs = new MatchContentCatalogs(
                     new EffectCapabilityCatalog(defaults.Capabilities.Registered
-                        .Select(defaults.Capabilities.Load)
-                        .Concat(TakahideCardContent.BasicAndRedHandlers())
-                        .Concat(TakahideCardContent.BlueAndGreenHandlers())),
+                        .Select(defaults.Capabilities.Load)),
                     defaults.Components,
                     defaults.TriggeredEffects);
                 Definitions = TakahideCardContent.BlueAndGreenDefinitions

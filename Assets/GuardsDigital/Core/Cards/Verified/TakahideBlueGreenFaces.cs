@@ -79,8 +79,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> BlueAndGreenDefinitions => LazyBlueAndGreen.Value;
 
         /// <summary>The handler 9.32e's faces need beyond the build's catalog. Registered with the dealing (9.32h).</summary>
-        public static IEnumerable<IEffectCapabilityHandler> BlueAndGreenHandlers() =>
-            SyntheticDiscardedCardChoiceCapabilities.Handlers();
+        // Milestone 9.32h: choose-discarded-card@1 is registered in the build's synthetic catalog.
 
         /// <summary>Blue, Tier I: Initiative 9, Defense 4, Movement 2, Skill, Radius 3.</summary>
         public static CardDefinition ProvenWarriorDefinition { get; } = BlueSkill(

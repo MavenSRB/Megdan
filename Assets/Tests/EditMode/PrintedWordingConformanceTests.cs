@@ -162,6 +162,7 @@ namespace GuardsDigital.Tests.EditMode
                 ["trinkets | trinkets-self-destruct"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
                 ["trinkets | trinkets-emergency-protocol"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
                 ["gydion | gydion-burning-hands"] = "W3: \"Up to 1 enemy hero adjacent to the target discards\" hits the hero present.",
+                ["takahide | takahide-the-right-hand"] = "W3: \"Up to two enemy heroes in radius discard ..., if able\" hits the heroes present: two nested IfAble passes, the second excluding the first (TakahideBlueAndGreenFacesTests).",
                 ["mortimer | mortimer-master-of-puppets"] = "The Ultimate composes no node: \"up to five times\" is the two extra UpTo passes on the seven faces it raises (MortimerRepeatedChoice)."
             };
 
@@ -407,7 +408,13 @@ namespace GuardsDigital.Tests.EditMode
                 ["gydion | gydion-sunburst"] = "\"each other spell card removed\" is SpellbookQuery.OtherRemoved, which excludes the casting spell (GydionCountingSpellTests).",
                 ["gydion | gydion-dimension-door"] = "\"each other spell card removed\" is SpellbookQuery.OtherRemoved, Sunburst's count (GydionCountingSpellTests).",
                 ["gydion | gydion-midas-touch"] = "\"every two other spell cards removed\" is count-other-removed-spells@1 over SpellbookQuery.OtherRemoved (GydionCountingSpellTests).",
-                ["gydion | gydion-find-familiar"] = "\"up to three other spell cards\" offers one removal option per spell but Find Familiar itself (FindFamiliarRemovableSpells, GydionCountingSpellTests)."
+                ["gydion | gydion-find-familiar"] = "\"up to three other spell cards\" offers one removal option per spell but Find Familiar itself (FindFamiliarRemovableSpells, GydionCountingSpellTests).",
+                // Milestone 9.32h. Takahide's "a different gold card in your deck" leaves the swapping
+                // card out: it is outside the deck, and the swap's candidate list excludes it by contract.
+                ["takahide | takahide-sting-like-a-bee"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, which exclude the swapping card (TakahideGoldSwapTests).",
+                ["takahide | takahide-float-like-a-butterfly"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, Sting like a Bee's rule.",
+                ["takahide | takahide-strike-like-a-tiger"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, Sting like a Bee's rule.",
+                ["takahide | takahide-bushido"] = "\"your gold card with a different gold card in your deck\" is swap-owned-color-card-with-deck-card@1, whose deck candidates exclude the subject (TakahideGoldSwapTests)."
             };
 
         /// <summary>

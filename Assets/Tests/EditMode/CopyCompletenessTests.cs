@@ -841,8 +841,14 @@ namespace GuardsDigital.Tests.EditMode
                     GuardsDigital.Core.Components.MarkerReturnCondition.RetainedAtRoundEndAndDefeat);
             var overlaid = Rebuild(source, new Dictionary<string, object>(StringComparer.Ordinal)
             {
+                // Milestone 9.32h: one gold card lies facedown in its owner's discard pile (Bushido's p.10
+                // swap, owed by 9.32g), so every seat's hand summary counts it by its known colour.
                 ["cards"] = source.Cards.Select(card => new CardInstance(
-                    card.Id, card.DefinitionReference, card.OwnerId, card.State,
+                    card.Id, card.DefinitionReference, card.OwnerId,
+                    card.Id.Equals(FacedownGoldOf(source))
+                        ? new CardStateFacts(CardLocation.DiscardPile, false, CardResolutionStatus.None,
+                            CardFaceOrientation.FaceDown)
+                        : card.State,
                     new PrintedInitiativeOverride(populator.NextInt(), source.Cards[0].Id))).ToArray(),
                 ["availableTurnActions"] = source.AvailableTurnActions.Select(offer =>
                     offer.WithAvailability(false, ActionUnavailability.BlockedBy(
@@ -893,6 +899,16 @@ namespace GuardsDigital.Tests.EditMode
 
             return checkedViews;
         }
+
+        /// <summary>Milestone 9.32h. The first gold card in a hand, the overlay's facedown discard.</summary>
+        private static CardInstanceId FacedownGoldOf(MatchSessionProjection source) =>
+            source.Cards
+                .Where(card => card.State.Location == CardLocation.Hand &&
+                    source.Definitions.Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                        .Progression.Color == CardColor.Gold)
+                .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                .Select(card => card.Id)
+                .First();
 
         /// <summary>
         /// The projection's public constructor, called with <paramref name="source"/>'s own value
@@ -1115,7 +1131,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "DefenseChoicePreviewProjection.SuppressesMinionContributions", NotReached("a Defense card suppressing minion support") },
                 { "EffectChoiceCandidatePreview.ResultingCoordinate", NotReached("an effect-choice preview with a resulting space") },
                 { "EffectValue.BooleanValue", NotReached("a true boolean effect value in a projected choice") },
-                { "EffectValue.CardInstanceId", NotReached("a card candidate in a projected effect choice") },
                 { "EffectValue.NodeId", NotReached("a node value in a projected effect choice") },
                 { "EndOfRoundStageOutcome.Kind", NotReached("a non-default end-of-round stage outcome in the retained window") },
                 { "HeroRespawnDestination.IsFallback", NotReached("a respawn with only fallback destinations") },
@@ -1133,15 +1148,20 @@ namespace GuardsDigital.Tests.EditMode
                 { "SystemTransitionStepDescription.RemainingCoins", NotReached("a level-up with coins left over") },
                 { "TeamAgreementParticipantProjection.PreferredCardInstanceId", NotReached("a team agreement with a statement made") },
                 { "TurnCardAssignment.PassedWithEmptyHand", NotReached("a pass with an empty hand") },
-                // Milestone 9.32a: only Takahide's Bushido places a facedown slot card, and no dealt hero
-                // can until 9.32h; TakahideGoldSwapTests proves the mask, and 9.32h removes these two.
-                { "TurnCardAssignment.IsFacedown", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
-                { "TurnCardAssignment.IsWithheld", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
-                // Milestone 9.32g: a facedown card's known colour reaches another seat only once Takahide is
-                // dealt; TakahideGoldSwapTests proves the mask and the summary, and 9.32h removes these two.
-                { "TurnCardAssignment.KnownColor", NotReached("a turn-slot card placed facedown (Takahide, dealt at 9.32h)") },
-                { "SeatHandSummary.FacedownDiscardColors", NotReached("a facedown card in a discard pile (Takahide, dealt at 9.32h)") },
-                { "MatchLogEntry.CardMoves", NotReached("a card swap or Ready for War's unlock (Takahide, dealt at 9.32h)") },
+                // Milestone 9.32h removed the five 9.32a and 9.32g declarations here (a facedown slot card,
+                // its withheld row and known colour, a facedown discard's colour, a log row's card moves):
+                // the "facedown gold fixture" walk and the overlay now reach every one.
+                // A card move never departs facedown: no swap names a facedown card (p.10, 9.32a).
+                { "CardMoveFact.DepartsFacedown", NotReached("a card moved from a facedown state") },
+                // Milestone 9.32h. Thirty dealt heroes rotate the six-hero line-ups so that none of their
+                // seeded walks reaches a Clear with an adjacent token any more (9.30i's twenty-nine did);
+                // the declarations 9.30i removed come back, the command fields covered by the codec's
+                // own factory walk as before.
+                { "DirectorCommand.ActionDefinitionId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
+                { "DirectorCommand.TokenInstanceIds", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
+                { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
+                { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
+                { "BoardObjectReference.TokenInstanceId", NotReached("a Clear with an adjacent token") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
@@ -1217,6 +1237,11 @@ namespace GuardsDigital.Tests.EditMode
             // card in its new location while the book's facedown spells reach their owner alone.
             yield return new Walk("spellbook fixture",
                 new MatchHost(SpellbookZoneTests.CreateSession(true)), 0, 1);
+            // Milestone 9.32h (owed by 9.32a and 9.32g). Takahide dealt: Float like a Butterfly swapped
+            // for a deck gold (a swap row with card moves in the log), then Bushido turned the resolved
+            // gold facedown in its slot - the withheld row and its known colour on every other seat.
+            yield return new Walk("facedown gold fixture",
+                new MatchHost(TakahideDealingTests.CreateFacedownGoldSession()), 0, 1);
         }
 
         /// <summary>

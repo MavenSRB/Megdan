@@ -9,8 +9,9 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>
     /// Takahide the Warlord's printed content (the thirtieth hero; [his shard](Docs/AI/Rules/HERO_TAKAHIDE.md)).
     /// Milestone 9.32d composes his three gold cards, Bushido and his five Red faces on 9.32a-9.32c's
-    /// contracts; 9.32e composes the Blue and Green faces and 9.32f the Ultimate. Nothing here is
-    /// registered: Takahide sits behind milestone 7.9's gate until 9.32h deals him.
+    /// contracts; 9.32e composes the Blue and Green faces and 9.32f the Ultimate. 9.32h deals him: his
+    /// set is <c>TakahideCardContent.Set.cs</c>, the swap and discard-choice families are registered in
+    /// the build's synthetic catalog and his two obstacle effects' creations in its content catalog.
     ///
     /// <para><b>Three gold cards.</b> Float like a Butterfly starts in the hand and Sting like a Bee
     /// and Strike like a Tiger in the deck, by their own reminder text; each swaps itself with a
@@ -20,7 +21,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class TakahideCardContent
     {
         /// <summary>The revision every Takahide definition carries.</summary>
-        public const string ContentRevision = "takahide-9-32g-rev-1";
+        public const string ContentRevision = "takahide-9-32h-rev-1";
 
         public const string ContentSetId = "takahide";
 
@@ -65,15 +66,12 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> BasicAndRedDefinitions => LazyBasicAndRed.Value;
 
         /// <summary>
-        /// The handlers 9.32d's faces need beyond the build's catalog: the two swap families and the
-        /// two obstacle effects' creation steps. Registered with the dealing (9.32h).
+        /// Milestone 9.32h. The two creations his content owns - Spinning Blade's and Blade Helix's
+        /// enemy-obstacle effects - joined to <c>MatchContentCatalogs</c>. The swap and discard-choice
+        /// families his faces name are the synthetic catalog's (<c>SyntheticEffectCapabilities</c>).
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> BasicAndRedHandlers()
+        public static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
-            foreach (var handler in SyntheticDeckSwapCapabilities.Handlers())
-                yield return handler;
-            foreach (var handler in SyntheticUnresolvedSwapCapabilities.Handlers())
-                yield return handler;
             yield return new ActiveEffectCreationHandler(GrantSpinningBladeV1, SpinningBladeObstacles);
             yield return new ActiveEffectCreationHandler(GrantBladeHelixV1, BladeHelixObstacles);
         }

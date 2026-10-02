@@ -466,7 +466,10 @@ namespace GuardsDigital.Tests.EditMode
             // the owned-token and hero-token handlers, Dimension Door and Create Undead PlaceHandler and
             // RespawnFriendlyMinionHandler, and Expeditious Retreat, Shield and Invulnerability
             // ActiveEffectCreationHandler.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(143),
+            // Takahide's dealing adds three at 9.32h: the swap with a deck card (9.32a), the swap of a
+            // teammate's unresolved card (9.32b) and the choice of a card in a teammate's discard
+            // (9.32e). His two obstacle effects reuse ActiveEffectCreationHandler.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(146),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

@@ -68,6 +68,15 @@ $heroFolders = [ordered]@{
     mortimer = 'Mortimer'
     razzle = 'Razzle'
     gydion = 'Gydion'
+    takahide = 'Takahide'
+}
+
+# Milestone 9.32h. Every hero deals eighteen fronts except Takahide, whose three gold cards are all
+# dealt: twenty (his twenty-first front, Shameful Display, is the boxed Handicap).
+$playableFronts = @{ takahide = 20 }
+function Get-PlayableFrontCount([string] $hero) {
+    if ($playableFronts.ContainsKey($hero)) { return $playableFronts[$hero] }
+    return 18
 }
 
 function Assert-PathUnder([string] $path, [string] $root, [string] $label) {
@@ -115,7 +124,8 @@ if ($catalog.version -ne 1 -or $null -eq $catalog.entries) {
 }
 else {
     $entries = @($catalog.entries)
-    $expectedCount = $heroFolders.Count * 18
+    $expectedCount = 0
+    foreach ($configured in $heroFolders.Keys) { $expectedCount += Get-PlayableFrontCount $configured }
     if ($entries.Count -ne $expectedCount) {
         $errors.Add("Expected $expectedCount configured entries; found $($entries.Count).")
     }
@@ -160,7 +170,8 @@ else {
         }
 
         $fileName = $sourcePath.Substring($prefix.Length)
-        $frontPattern = '^' + [regex]::Escape($hero) + '(?:[2-9]|1[0-8])?__\d+__front\.png$'
+        $numbers = if ((Get-PlayableFrontCount $hero) -eq 20) { '(?:[2-9]|1[0-9]|20)' } else { '(?:[2-9]|1[0-8])' }
+        $frontPattern = '^' + [regex]::Escape($hero) + $numbers + '?__\d+__front\.png$'
         if ($fileName -cnotmatch $frontPattern) {
             $errors.Add("$stable is not one of the eighteen playable __front.png sources.")
             continue
@@ -198,8 +209,9 @@ else {
 
     foreach ($hero in $heroFolders.Keys) {
         $count = @($inventory | Where-Object { $_.Hero -ceq $hero }).Count
-        if ($count -ne 18) {
-            $errors.Add("Configured hero '$hero' resolved $count playable fronts; expected 18.")
+        $expected = Get-PlayableFrontCount $hero
+        if ($count -ne $expected) {
+            $errors.Add("Configured hero '$hero' resolved $count playable fronts; expected $expected.")
         }
     }
 }
@@ -209,7 +221,7 @@ if ($errors.Count -gt 0) {
         ($errors -join "`n - "))
 }
 
-Write-Output "PASS: the tracked catalog resolves $($inventory.Count) unique playable 372x520 fronts, 18 for each of $($heroFolders.Count) configured heroes."
+Write-Output "PASS: the tracked catalog resolves $($inventory.Count) unique playable 372x520 fronts across $($heroFolders.Count) configured heroes (18 each, 20 for Takahide)."
 
 function Test-PreparedSet([switch] $ReportErrors) {
     $preparedErrors = New-Object 'System.Collections.Generic.List[string]'

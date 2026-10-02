@@ -175,15 +175,17 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.21j: 486 -> 504, Razzle's eighteen dealt faces (Stunted Doubles boxed).
             // Milestone 9.30i: 504 -> 522, Gydion's eighteen dealt fronts (Cheap Trick boxed; his spells
             // are the catalog's separate "spells" rows, which this action-card reader ignores).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(522));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(522));
+            // Milestone 9.32h: 522 -> 542, Takahide's TWENTY dealt fronts (his three gold cards are all
+            // dealt; Shameful Display boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(542));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(542));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(522),
+                Is.EqualTo(542),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -197,7 +199,7 @@ namespace GuardsDigital.Tests.EditMode
                     ("mortimer", 18), ("mrak", 18),
                     ("razzle", 18), ("rowenna", 18),
                     ("sabina", 18),
-                    ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("tali", 18),
+                    ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("takahide", 20), ("tali", 18),
                     ("tigerclaw", 18), ("trinkets", 18), ("ursafar", 18), ("wasp", 18),
                     ("whisper", 18), ("widget", 18), ("wuk", 18), ("xargatha", 18)
                 }));
@@ -486,6 +488,29 @@ namespace GuardsDigital.Tests.EditMode
                 original.Reference,
                 original.SourcePath.Replace("__front.png", "__back.png"));
             AssertEntryFailure(entry, "playable __front.png");
+        }
+
+        [Test]
+        public void Catalog_BoundsEachHerosFrontsByTheirOwnPlayableCount()
+        {
+            // Milestone 9.32h. Takahide deals twenty fronts, so his catalog admits takahide19 and
+            // takahide20 (the shipped catalog loads them); his twenty-first is the boxed Handicap and a
+            // nineteenth Wasp front does not exist.
+            var entries = ConfiguredCardArtworkCatalog.Catalog.Entries;
+            bool From(CardArtworkCatalogEntry entry, string prefix) =>
+                entry.SourcePath.StartsWith("active-hero-cards/" + prefix, StringComparison.Ordinal);
+
+            var takahide = entries.First(entry => From(entry, "Takahide/takahide20__"));
+            Assert.That(entries.Count(entry => From(entry, "Takahide/takahide19__")), Is.EqualTo(1));
+            AssertEntryFailure(
+                new CardArtworkCatalogEntry(
+                    takahide.Reference, "active-hero-cards/Takahide/takahide21__1__front.png"),
+                "20 playable __front.png");
+
+            var wasp = entries.First(entry => From(entry, "Wasp/"));
+            AssertEntryFailure(
+                new CardArtworkCatalogEntry(wasp.Reference, "active-hero-cards/Wasp/wasp19__1__front.png"),
+                "18 playable __front.png");
         }
 
         [Test]

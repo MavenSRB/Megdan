@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32h Takahide dealt evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32h | Takahide dealt as the thirtieth hero with his card art, standee, selection front and card back: twenty fronts, Shameful Display boxed, his swap and choice families and obstacle creations registered, the bots and a teammate's wire-decoded seat answering his decisions, and the wire completeness walk reaching his facedown gold. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932h-deal-takahide-with-his-artwork). | `milestone/9.32h` |
+
 ## Milestone 9.32g Takahide presentation evidence
 
 | Milestone | Outcome and definition | Commit |

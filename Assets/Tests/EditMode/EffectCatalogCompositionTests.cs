@@ -242,6 +242,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(GydionCardContent.ReuseSpellHandlers())
                 .Concat(GydionCardContent.ImmunityDiscardLifeMoveHandlers())
                 .Concat(GydionCardContent.ArchwizardHandlers())
+                // Milestone 9.32h. Takahide's two enemy-obstacle creations.
+                .Concat(TakahideCardContent.Handlers())
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

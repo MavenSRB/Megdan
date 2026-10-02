@@ -2031,9 +2031,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Select(button =>
                     ((PrivateLobbyHeroOption)button.userData).Complexity),
                 Is.All.EqualTo(HeroComplexity.Wizard));
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(4),
-                "and she, Snorri (8.93f), Razzle (9.21j) and Gydion (9.30i), the other four-star heroes, " +
-                "are the four behind it.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(5),
+                "and she, Snorri (8.93f), Razzle (9.21j), Gydion (9.30i) and Takahide (9.32h), the other " +
+                "four-star heroes, are the five behind it.");
 
             UiPlayer.Click(Role(HeroRole.Sniper));
             yield return null;

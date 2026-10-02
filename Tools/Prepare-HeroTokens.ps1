@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion', 'takahide')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -277,6 +277,9 @@ $declaredHeroes = @{
     # Milestone 9.30i. Gydion's standee is the VerticalTokens element 8629710 named `Gydion`
     # (publicElementId 5019250, inventory 9.30, GY-03). The crop decides, never the name.
     gydion = @{ ElementId = 8629710; ElementName = 'Gydion'; DisplayName = 'Gydion' }
+    # Milestone 9.32h. Takahide's standee is the VerticalTokens element 8596254 named `Taka`
+    # (publicElementId 5917489, inventory 9.32, TK-02). The crop decides, never the name.
+    takahide = @{ ElementId = 8596254; ElementName = 'Taka'; DisplayName = 'Takahide' }
 }
 
 $declared = $declaredHeroes[$Hero]

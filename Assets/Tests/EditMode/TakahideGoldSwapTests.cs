@@ -573,8 +573,7 @@ namespace GuardsDigital.Tests.EditMode
                 var defaults = MatchContentCatalogs.ForThisBuild();
                 return new MatchContentCatalogs(
                     new EffectCapabilityCatalog(defaults.Capabilities.Registered
-                        .Select(defaults.Capabilities.Load)
-                        .Concat(SyntheticGoldSwapHand.Handlers())),
+                        .Select(defaults.Capabilities.Load)),
                     defaults.Components,
                     defaults.TriggeredEffects);
             }

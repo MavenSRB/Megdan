@@ -27,7 +27,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedWuk_DealsTheEighteenPlayableFacesInEitherFormat(int perTeam)
         {
             var wuk = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "wuk");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(30));
             Assert.That(wuk.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.WukHeroIdValue));
             Assert.That(wuk.DisplayName, Is.EqualTo("Wuk the Grove Keeper"));
             Assert.That(wuk.Complexity, Is.EqualTo(HeroComplexity.VeryComplex), "three stars");

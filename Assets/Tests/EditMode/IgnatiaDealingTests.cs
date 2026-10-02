@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var ignatia = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == IgnatiaCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(30),
                 "She is the twenty-second hero this build can put on a board.");
             Assert.That(
                 ignatia.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.IgnatiaHeroIdValue));
@@ -99,9 +99,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RegisteredHeroRoster.ForThisBuild
                     .Count(hero => hero.Complexity == HeroComplexity.Wizard),
-                Is.EqualTo(4),
-                "and she, Snorri (8.93f), Razzle (9.21j) and Gydion (9.30i) are the four four-star heroes the " +
-                "filter finds.");
+                Is.EqualTo(5),
+                "and she, Snorri (8.93f), Razzle (9.21j), Gydion (9.30i) and Takahide (9.32h) are the five " +
+                "four-star heroes the filter finds.");
         }
 
         [TestCase(1, IgnatiaUpgradeBranch.FirstSibling)]
@@ -584,14 +584,16 @@ namespace GuardsDigital.Tests.EditMode
                 var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
                     hero.HeroIdValue, "probe");
                 Assert.That(hand, Is.Not.Null, hero.HeroIdValue);
-                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell), Is.EqualTo(18),
-                    hero.HeroIdValue + ": eighteen printed fronts; a spell (9.30i, Gydion) lies in the book, not the deck");
+                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell),
+                    Is.EqualTo(hero.ContentId.Value == "takahide" ? 20 : 18),
+                    hero.HeroIdValue + ": eighteen printed fronts (twenty for Takahide, whose three gold cards " +
+                    "are all dealt - 9.32h); a spell (9.30i, Gydion) lies in the book, not the deck");
                 dealt.Add(hero.ContentId.Value);
             }
 
             Assert.That(dealt, Has.Member(IgnatiaCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(29));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(29),
+            Assert.That(dealt, Has.Count.EqualTo(30));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(30),
                 "and no two rows name one printed set.");
         }
 

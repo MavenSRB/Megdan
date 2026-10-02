@@ -873,6 +873,7 @@ namespace GuardsDigital.Presentation.Match
             // told apart by the capability the pending node names - a typed reading, never a card name.
             var pendingNode = PendingNodeOf(projection, choice, sourceDefinitionId);
             var unresolvedSwap = SwapChoicePresentation.IsUnresolvedSwap(pendingNode);
+            var deckSwap = SwapChoicePresentation.IsDeckSwap(pendingNode);
             var arrivesFacedown = SwapChoicePresentation.ArrivesFacedown(projection, choice, pendingNode);
             var previews = new HashSet<EffectValue>(
                 projection.PendingEffectChoicePreview.Select(preview => preview.CandidateValue));
@@ -975,6 +976,8 @@ namespace GuardsDigital.Presentation.Match
                 // mockup A), and says what the card printed: cast one, or remove up to N.
                 (unresolvedSwap
                     ? SwapChoicePresentation.SourceEyebrow(projection, sourceCardId)
+                    : deckSwap
+                    ? SwapChoicePresentation.DeckSwapEyebrow(pendingNode)
                     : null) ??
                 replacementEyebrow ??
                     (spellArms != SyntheticSpellbookCapabilities.SpellArmKind.None
@@ -982,6 +985,8 @@ namespace GuardsDigital.Presentation.Match
                         : EffectChoicePromptLabels.SectionLabel(subject)),
                 unresolvedSwap
                     ? SwapChoicePresentation.UnresolvedSwapQuestion(pendingNode)
+                    : deckSwap
+                    ? SwapChoicePresentation.DeckSwapQuestion(pendingNode)
                     : replacementQuestion != null
                     ? replacementQuestion
                     : spellArms == SyntheticSpellbookCapabilities.SpellArmKind.Cast

@@ -35,6 +35,35 @@ namespace GuardsDigital.Presentation.Match
             node != null && node.Capability.Equals(SyntheticUnresolvedSwapCapabilities.SwapUnresolvedCardV1);
 
         /// <summary>
+        /// Milestone 9.32h (mockup C). The gold swaps' choice: a gold card's own swap
+        /// (<c>swap-this-card-with-deck-card@1</c>) or Bushido's (<c>swap-owned-color-card-with-deck-card@1</c>).
+        /// </summary>
+        internal static bool IsDeckSwap(EffectNodeDefinition node) =>
+            node != null &&
+            (node.Capability.Equals(SyntheticDeckSwapCapabilities.SwapThisCardWithDeckCardV1) ||
+             node.Capability.Equals(SyntheticDeckSwapCapabilities.SwapOwnedColorCardWithDeckCardV1));
+
+        /// <summary>Mockup C's eyebrow: "GOLD SWAP", the colour the node's own literal names.</summary>
+        internal static string DeckSwapEyebrow(EffectNodeDefinition node) =>
+            ColourWord(node).ToUpperInvariant() + " SWAP";
+
+        /// <summary>
+        /// Mockup C's question, the sentence the card prints: "Swap this card with a different gold card
+        /// in your deck." for a gold face's own swap, "Swap your gold card ..." for Bushido's.
+        /// </summary>
+        internal static string DeckSwapQuestion(EffectNodeDefinition node)
+        {
+            var colour = ColourWord(node);
+            return node.Capability.Equals(SyntheticDeckSwapCapabilities.SwapThisCardWithDeckCardV1)
+                ? "Swap this card with a different " + colour + " card in your deck."
+                : "Swap your " + colour + " card with a different " + colour + " card in your deck.";
+        }
+
+        private static string ColourWord(EffectNodeDefinition node) =>
+            ((CardColor)Literal(node, SyntheticDeckSwapCapabilities.ColorParameterName).IntegerValue)
+                .ToString().ToLowerInvariant();
+
+        /// <summary>
         /// Whether the card a deck swap brings in arrives facedown: the node is the colour-named swap
         /// declaring Bushido's flag, and the chooser's card of that colour outside the deck is resolved or
         /// discarded - exactly the case <c>CardLifecycleAuthority.TrySwapWithDeckCard</c> turns facedown.

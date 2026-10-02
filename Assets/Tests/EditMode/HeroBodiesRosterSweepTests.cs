@@ -146,6 +146,11 @@ namespace GuardsDigital.Tests.EditMode
             // Binds the Attack's target as the hero; a many-bodied hero bound so is body 1.
             ["SyntheticContinuationCapabilities+SetAttackTargetHandler"] = Reading.OpenBodyNotChosen,
             ["SyntheticCoupledMoveCapabilities+CoupledMoveHandler"] = Reading.SpaceNamesBody,
+            // Milestone 9.32h. Takahide's three: each reads cards (a hero's deck, unresolved card or
+            // discard pile named by an earlier selection), no hero or unit on the board.
+            ["SyntheticDeckSwapCapabilities+SwapWithDeckCardHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticDiscardedCardChoiceCapabilities+ChooseDiscardedCardHandler"] = Reading.NoHeroOrUnit,
+            ["SyntheticUnresolvedSwapCapabilities+SwapUnresolvedCardHandler"] = Reading.NoHeroOrUnit,
             ["SyntheticDisplacementCapabilities+BatchDirectMoveHandler"] = Reading.SpaceNamesBody,
             ["SyntheticDisplacementCapabilities+ChooseDirectionHandler"] = Reading.ActingBody,
             ["SyntheticDisplacementCapabilities+DirectMoveHandler"] = Reading.SpaceNamesBody,

@@ -175,7 +175,11 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 9.30i. Gydion's selection front: four stars; Sniper, Tactician, Farming,
                 // Damager, Pusher and Tokens (GY-01).
                 ["hero-gydion"] = (HeroComplexity.Wizard, HeroRole.Sniper | HeroRole.Tactician |
-                    HeroRole.Farming | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
+                    HeroRole.Farming | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens),
+                // Milestone 9.32h. Takahide's selection front: four stars; Durable, Sniper, Tactician,
+                // Damager and Farming (inventory 9.32).
+                ["hero-takahide"] = (HeroComplexity.Wizard, HeroRole.Durable | HeroRole.Sniper |
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));
@@ -337,9 +341,11 @@ namespace GuardsDigital.Tests.EditMode
                     hand, Is.Not.Null,
                     $"'{hero.HeroIdValue}' is offered by the selector, so the composer must deal it.");
                 Assert.That(
-                    hand.Definitions.Count(definition => !definition.Progression.IsSpell), Is.EqualTo(18),
+                    hand.Definitions.Count(definition => !definition.Progression.IsSpell),
+                    Is.EqualTo(hero.ContentId.Value == "takahide" ? 20 : 18),
                     $"'{hero.HeroIdValue}' deals a printed set of eighteen like every dealt hero " +
-                    "(a spell - 9.30i, Gydion - lies in the book rather than among the fronts).");
+                    "(a spell - 9.30i, Gydion - lies in the book rather than among the fronts; Takahide " +
+                    "deals twenty, his three gold cards all dealt - 9.32h).");
             }
         }
 

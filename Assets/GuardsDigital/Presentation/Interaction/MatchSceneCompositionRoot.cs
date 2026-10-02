@@ -1088,7 +1088,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedGydion = 142,
 
         /// <summary>Wasp versus Gydion with Tier III hands, The Archwizard faceup and Wish in the book (9.30i).</summary>
-        VerifiedTierThreeEngagedStagedGydion = 143
+        VerifiedTierThreeEngagedStagedGydion = 143,
+
+        /// <summary>Wasp versus Takahide with his p.6 starting hand (9.32h).</summary>
+        VerifiedEngagedStagedTakahide = 144,
+
+        /// <summary>Wasp versus Takahide with Tier III hands, Ready for War faceup and his six-card hand (9.32h).</summary>
+        VerifiedTierThreeEngagedStagedTakahide = 145
     }
 
     [ExecuteAlways]
@@ -1828,6 +1834,10 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedGydionForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedStagedGydion =>
                     MatchConfiguration.CreateStagedGydionTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedTakahide =>
+                    MatchConfiguration.CreateStagedTakahideForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedTakahide =>
+                    MatchConfiguration.CreateStagedTakahideTierThreeForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1924,7 +1934,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedRazzle ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedRazzle ||
                 content == SceneCardContent.VerifiedEngagedStagedGydion ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion ||
+                content == SceneCardContent.VerifiedEngagedStagedTakahide ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2577,6 +2589,13 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusGydionOneVsOne();
+                    }
+
+                    // Milestone 9.32h. Takahide's staged boards: his seat reads "Takahide" and his art.
+                    if (content == SceneCardContent.VerifiedEngagedStagedTakahide ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTakahideOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

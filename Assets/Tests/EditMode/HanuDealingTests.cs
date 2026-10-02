@@ -38,7 +38,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var hanu = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == HanuCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(29),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(30),
                 "He is the twenty-first hero this build can put on a board.");
             Assert.That(hanu.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.HanuHeroIdValue));
             Assert.That(hanu.DisplayName, Is.EqualTo("Hanu the Trickster"),
@@ -494,14 +494,16 @@ namespace GuardsDigital.Tests.EditMode
                 var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
                     hero.HeroIdValue, "probe");
                 Assert.That(hand, Is.Not.Null, hero.HeroIdValue);
-                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell), Is.EqualTo(18),
-                    hero.HeroIdValue + ": eighteen printed fronts; a spell (9.30i, Gydion) lies in the book, not the deck");
+                Assert.That(hand.Definitions.Count(definition => !definition.Progression.IsSpell),
+                    Is.EqualTo(hero.ContentId.Value == "takahide" ? 20 : 18),
+                    hero.HeroIdValue + ": eighteen printed fronts (twenty for Takahide, whose three gold cards " +
+                    "are all dealt - 9.32h); a spell (9.30i, Gydion) lies in the book, not the deck");
                 dealt.Add(hero.ContentId.Value);
             }
 
             Assert.That(dealt, Has.Member(HanuCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(29));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(29),
+            Assert.That(dealt, Has.Count.EqualTo(30));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(30),
                 "and no two rows name one printed set.");
         }
 

@@ -4765,7 +4765,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(RazzleCardContent.DealtDefinitions)
                 // Milestone 9.30i. The twenty-ninth: his eighteen dealt fronts (his spells are drawn
                 // by SpellCardFaceView from their own catalog rows, not the shine manifest).
-                .Concat(GydionCardContent.DealtDefinitions).ToArray();
+                .Concat(GydionCardContent.DealtDefinitions)
+                // Milestone 9.32h. The thirtieth: his twenty dealt fronts.
+                .Concat(TakahideCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

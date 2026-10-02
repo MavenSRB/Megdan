@@ -314,10 +314,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static EffectCapabilityCatalog Catalog()
         {
-            var defaults = MatchContentCatalogs.ForThisBuild();
-            return new EffectCapabilityCatalog(defaults.Capabilities.Registered
-                .Select(defaults.Capabilities.Load)
-                .Concat(TakahideCardContent.BasicAndRedHandlers()));
+            // Milestone 9.32h: his handlers are the build's own.
+            return MatchContentCatalogs.ForThisBuild().Capabilities;
         }
 
         private static byte[] Bytes(NetworkMatchLogRow row)

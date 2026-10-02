@@ -534,6 +534,10 @@ namespace GuardsDigital.Core.Cards
                 .Concat(GydionCardContent.ReuseSpellHandlers())
                 .Concat(GydionCardContent.ImmunityDiscardLifeMoveHandlers())
                 .Concat(GydionCardContent.ArchwizardHandlers())
+                // Milestone 9.32h, the milestone that deals Takahide the Warlord as the THIRTIETH hero:
+                // Spinning Blade's and Blade Helix's enemy-obstacle creations (9.32c, 9.32d), ordinary
+                // `ActiveEffectCreationHandler`s over 9.32c's unit overlay.
+                .Concat(TakahideCardContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary
