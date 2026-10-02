@@ -71,6 +71,8 @@ Outcome: Takahide registered in the roster and pickable with his profile, stande
 Completed 2026-10-02. Takahide is the thirtieth dealt hero: four stars, Durable, Sniper, Tactician, Damager and Farming; twenty fronts dealt (Float like a Butterfly, Bushido and the Tier I faces in hand, the other two golds in the deck by their own text) and Shameful Display boxed. The three swap and choice families join the build's synthetic catalog and his two obstacle creations its content catalog; his art, standee, selection front and card back are prepared by the tools. His faces raise no confirm-or-decline, so he declares no decision labels; mockup C's GOLD SWAP eyebrow and printed question are read off the swap node. The bots answer his swaps and a teammate answers Set an Example from their own wire-decoded seat; the completeness walk now reaches a facedown gold, its known colour and a log row's card moves. Captures retaken with his art at the three sizes. Detail in [his shard](../Rules/HERO_TAKAHIDE.md) under "Built by 9.32h".
 Historical evidence: [9.32h completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-932h-takahide-dealt-evidence).
 
-### [ ] 9.32i Gate Takahide on the player path
+### [~] 9.32i Gate Takahide on the player path
+
+Authorized 2026-10-02 by the user ("Go.", relayed by the "Agent work status review" session).
 
 Outcome: the permanent player-path gate for Takahide, journeys reading outcomes (lesson 4), full harness, Edit Mode and Play Mode green with zero skips. T3.
