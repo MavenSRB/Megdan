@@ -352,7 +352,7 @@ namespace GuardsDigital.Presentation.Match
                 dim.style.right = 0f;
                 dim.style.bottom = 0f;
                 dim.style.backgroundColor = new Color(0.04f, 0.04f, 0.05f, 0.42f);
-                dim.Add(new FacedownHatch());
+                dim.Add(new FacedownHatch(FacedownHatch.Weight.Full));
                 face.Add(dim);
             }
 
@@ -419,16 +419,37 @@ namespace GuardsDigital.Presentation.Match
             var faceHeight = face == null
                 ? CardFootprint.Height
                 : face.style.height.value.value;
-            var onLeft = anchor.center.x < width / 2f;
+            // Milestone 9.36. A rail mini - a turn slot, the current card, a discard - sits inside its
+            // column, so a face placed off the mini's own edge drew over the owner's tray and the plaque
+            // below it. Its face is placed off the rail's edge instead. The hero profile keeps 8.42b's
+            // placement beside the portrait, and a drawer spell, between the rails, its own.
+            var beside = model is HeroOverviewViewModel || model is SpellCardViewModel
+                ? anchor
+                : RailColumnOf(element)?.worldBound ?? anchor;
+            var onLeft = beside.center.x < width / 2f;
             var left = onLeft
-                ? anchor.xMax + 10f
-                : anchor.xMin - faceWidth - 10f;
+                ? beside.xMax + 10f
+                : beside.xMin - faceWidth - 10f;
             preview.style.left = Mathf.Clamp(left, 0f, Mathf.Max(0f, width - faceWidth));
             preview.style.top = Mathf.Max(
                 0f,
                 Mathf.Min(
                     anchor.yMin - 40f,
                     Mathf.Max(0f, height - faceHeight - 8f)));
+        }
+
+        /// <summary>Milestone 9.36: the rail column an element is drawn in, or null outside both.</summary>
+        private VisualElement RailColumnOf(VisualElement element)
+        {
+            for (var ancestor = element; ancestor != null; ancestor = ancestor.parent)
+            {
+                if (ReferenceEquals(ancestor, redColumn) || ReferenceEquals(ancestor, blueColumn))
+                {
+                    return ancestor;
+                }
+            }
+
+            return null;
         }
 
         public void Layout(Rect red, Rect blue, Rect playfield)
@@ -1551,9 +1572,9 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>The mini card's footprint, and the gap between two of them.</summary>
-        private const float MiniCardWidth = 24f;
+        internal const float MiniCardWidth = 24f;
 
-        private const float MiniCardHeight = 34f;
+        internal const float MiniCardHeight = 34f;
 
         private const float MiniCardGap = 4f;
 
@@ -1606,7 +1627,7 @@ namespace GuardsDigital.Presentation.Match
             HudElements.OnPointedAt(element, entered => SetHighlight(entered ? revealed : null));
             if (card.IsFacedown)
             {
-                element.Add(new FacedownHatch());
+                element.Add(new FacedownHatch(FacedownHatch.Weight.Mini));
             }
 
             return element;
@@ -1632,7 +1653,7 @@ namespace GuardsDigital.Presentation.Match
             var ink = MatchHudTheme.FaceText(color);
             band.style.backgroundColor = new Color(ink.r, ink.g, ink.b, 0.30f);
             element.Add(band);
-            element.Add(new FacedownHatch());
+            element.Add(new FacedownHatch(FacedownHatch.Weight.Mini));
             element.tooltip = assistiveLabel;
             revealAnchors[revealed] = element;
             withheldOwners[revealed] = owner;
@@ -1673,16 +1694,29 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 9.32g. The diagonal hatch a facedown card wears wherever it is drawn small
-        /// (approved mockup B): thin dark lines over the card's own colour, drawn rather than imaged so
-        /// it scales with the mini and takes no artwork.
+        /// Milestone 9.32g. The diagonal hatch a facedown card wears (approved mockup B): dark lines over
+        /// the card's own colour, drawn rather than imaged so it scales with the card and takes no
+        /// artwork.
+        ///
+        /// <para>Milestone 9.36. Two weights. On a mini (a turn slot or the discard pile) the fine
+        /// hatch read as plain gold at normal viewing, so a mini wears a bolder diagonal hatch with
+        /// fewer, thicker strokes (the user, 2026-10-02: "a bolder diagonal hatch with fewer, thicker
+        /// strokes. approved."); the full-size face a hover reveals keeps the fine hatch.</para>
         /// </summary>
         internal sealed class FacedownHatch : VisualElement
         {
-            private const float Spacing = 4f;
-
-            internal FacedownHatch()
+            internal enum Weight
             {
+                /// <summary>A rail mini: few, thick, dark strokes.</summary>
+                Mini,
+
+                /// <summary>A full-size face: the fine hatch 9.32g drew everywhere.</summary>
+                Full
+            }
+
+            internal FacedownHatch(Weight weight)
+            {
+                HatchWeight = weight;
                 name = "gd-facedown-hatch";
                 pickingMode = PickingMode.Ignore;
                 style.position = Position.Absolute;
@@ -1693,19 +1727,31 @@ namespace GuardsDigital.Presentation.Match
                 generateVisualContent += OnGenerateVisualContent;
             }
 
-            private void OnGenerateVisualContent(MeshGenerationContext context)
+            internal Weight HatchWeight { get; }
+
+            /// <summary>How far apart successive strokes start along the card's edge.</summary>
+            internal static float SpacingOf(Weight weight) => weight == Weight.Mini ? 10f : 4f;
+
+            internal static float LineWidthOf(Weight weight) => weight == Weight.Mini ? 3f : 1f;
+
+            internal static Color StrokeColorOf(Weight weight) =>
+                new Color(0.10f, 0.085f, 0.07f, weight == Weight.Mini ? 0.85f : 0.62f);
+
+            /// <summary>
+            /// The strokes the hatch draws over <paramref name="rect"/>: lines rising left to right at
+            /// 45 degrees, each clipped to the card. Exposed so the drawn geometry is testable without
+            /// a renderer.
+            /// </summary>
+            internal static IReadOnlyList<KeyValuePair<Vector2, Vector2>> Strokes(Rect rect, Weight weight)
             {
-                var rect = contentRect;
+                var strokes = new List<KeyValuePair<Vector2, Vector2>>();
                 if (rect.width <= 1f || rect.height <= 1f)
                 {
-                    return;
+                    return strokes;
                 }
 
-                var painter = context.painter2D;
-                painter.strokeColor = new Color(0.10f, 0.085f, 0.07f, 0.62f);
-                painter.lineWidth = 1f;
-                // Lines rising left to right at 45 degrees, each clipped to the card.
-                for (var start = -rect.height; start < rect.width; start += Spacing)
+                var spacing = SpacingOf(weight);
+                for (var start = -rect.height; start < rect.width; start += spacing)
                 {
                     var x0 = rect.xMin + start;
                     var y0 = rect.yMax;
@@ -1728,9 +1774,28 @@ namespace GuardsDigital.Presentation.Match
                         continue;
                     }
 
+                    strokes.Add(new KeyValuePair<Vector2, Vector2>(new Vector2(x0, y0), new Vector2(x1, y1)));
+                }
+
+                return strokes;
+            }
+
+            private void OnGenerateVisualContent(MeshGenerationContext context)
+            {
+                var strokes = Strokes(contentRect, HatchWeight);
+                if (strokes.Count == 0)
+                {
+                    return;
+                }
+
+                var painter = context.painter2D;
+                painter.strokeColor = StrokeColorOf(HatchWeight);
+                painter.lineWidth = LineWidthOf(HatchWeight);
+                foreach (var stroke in strokes)
+                {
                     painter.BeginPath();
-                    painter.MoveTo(new Vector2(x0, y0));
-                    painter.LineTo(new Vector2(x1, y1));
+                    painter.MoveTo(stroke.Key);
+                    painter.LineTo(stroke.Value);
                     painter.Stroke();
                 }
             }

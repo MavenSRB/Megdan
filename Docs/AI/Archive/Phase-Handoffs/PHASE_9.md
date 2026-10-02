@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.36 Rail hover and hatch evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.36 | A rail mini's hover face is placed beside its rail on both rails (8.42b placed it off the mini, over the owner's tray and plaque), the hero-profile hover unchanged; a facedown mini wears a bolder diagonal hatch with fewer, thicker strokes (the user's ruling), the face a hover reveals the fine one. [Definition](../../Roadmap/PHASE_9.md#x-936-a-rail-minis-hover-sits-beside-the-rail-and-a-facedown-minis-hatch-reads-at-mini-size). | `milestone/9.36` |
+
 ## Milestone 9.32h Takahide dealt evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -1165,6 +1165,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// <para>Milestone 9.32h retakes them with Takahide dealt on the Red seat of a 2v2 beside Wasp:
         /// his own plaque with his portrait, his standee on the board and his printed card art on every
         /// face (the user: "you have synthetic cards instead of real art, and no art on hero token").
+        /// Milestone 9.36 retakes B with the hover beside the rail and the bolder mini hatch.
         /// The models are composed from his own definitions; that the projection produces them is proved
         /// in <c>TakahidePresentationTests</c> and <c>TakahideTableFactsTests</c>.</para>
         /// </summary>
@@ -1186,7 +1187,8 @@ namespace GuardsDigital.Tests.PlayMode
             var standIn = new HeroId(Hero("takahide").HeroIdValue);
             var teammate = new HeroId(Hero("wasp").HeroIdValue);
             var board = runtime.BoardView.Model;
-            const string folder = "tmp/9-32h-takahide/";
+            // Milestone 9.36 retakes them into its own folder, keeping 9.32h's set as it was.
+            const string folder = "tmp/9-36-takahide/";
             Assert.That(Resources.Load<Texture2D>("Private/Heroes/takahide-red"), Is.Not.Null,
                 "his standee art is prepared (Tools/Prepare-HeroTokens.ps1 -Hero takahide)");
             Assert.That(Resources.Load<Texture2D>("Private/CardBacks/hero-takahide"), Is.Not.Null,
@@ -1304,6 +1306,201 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             yield return null;
+        }
+
+        /// <summary>
+        /// Milestone 9.36. A rail mini's hover - another seat's card back of a facedown gold, a
+        /// facedown discard's face on its owner's seat, a resolved card on the right rail - is revealed
+        /// beside the rail it belongs to and never over it: out from the left rail's right edge, in
+        /// from the right rail's left edge, inside the screen, at every validated viewport. The user,
+        /// on the 9.32h captures: the card back drew over Takahide's own tray and the plaque below it.
+        /// The hero-profile hover keeps 8.42b's placement beside the portrait, pinned here unchanged.
+        /// Failures are gathered so one run reports every rail and viewport.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator RailMiniHover_SitsBesideItsRail_OnBothRails_AtTheThreeValidatedViewports()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            RegisteredHero Hero(string id) => roster.Single(hero => hero.ContentId.Value == id);
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.TwoVersusTwoQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { Hero("takahide"), Hero("wasp") }, new[] { Hero("arien"), Hero("sabina") });
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            yield return LoadComposedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var view = runtime.HeroOverviewsView;
+            var takahide = new HeroId(Hero("takahide").HeroIdValue);
+            var arien = new HeroId(Hero("arien").HeroIdValue);
+            var failures = new List<string>();
+
+            void BesideItsRail(string column, string what)
+            {
+                var face = view.HoverPreviewRoot.Children().SingleOrDefault();
+                if (face == null || !UiPlayer.IsShown(face))
+                {
+                    failures.Add(what + ": no preview is shown");
+                    return;
+                }
+
+                var rail = Named(root.Hud.RootElement, column).worldBound;
+                var drawn = face.worldBound;
+                // One device pixel of snapping on each edge is not an overlap.
+                var inset = new Rect(drawn.x + 1f, drawn.y + 1f, drawn.width - 2f, drawn.height - 2f);
+                if (inset.Overlaps(rail))
+                {
+                    failures.Add(what + ": the preview " + drawn + " draws over its rail " + rail);
+                }
+
+                var screen = root.Hud.RootElement.worldBound;
+                if (drawn.xMin < screen.xMin - 1f || drawn.xMax > screen.xMax + 1f || drawn.yMin < screen.yMin - 1f)
+                {
+                    failures.Add(what + ": the preview " + drawn + " leaves the screen " + screen);
+                }
+            }
+
+            void Point(VisualElement element, bool entered)
+            {
+                if (entered)
+                {
+                    using (var enter = PointerEnterEvent.GetPooled())
+                    {
+                        enter.target = element;
+                        element.SendEvent(enter);
+                    }
+                }
+                else
+                {
+                    using (var leave = PointerLeaveEvent.GetPooled())
+                    {
+                        leave.target = element;
+                        element.SendEvent(leave);
+                    }
+                }
+            }
+
+            try
+            {
+                foreach (var size in new[]
+                {
+                    new Vector2Int(2560, 1440), new Vector2Int(2048, 1152), new Vector2Int(2560, 540)
+                })
+                {
+                    var where = size.x + "x" + size.y;
+                    UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "9.36 rail hover");
+
+                    // The left rail on another seat: the card back of his facedown gold. The right rail:
+                    // a resolved card on Arien's first slot.
+                    var withheld = RenderTakahidePlaque(runtime, takahide, ownerSeat: false);
+                    var resolved = RenderFirstSlot(runtime, arien, new HeroTurnSlotViewModel(
+                        1, ArienCardContent.DealtDefinitions[0].Progression.Color, true,
+                        StagedTray(ArienCardContent.DealtDefinitions[0], TrayCardGroup.Played, 1)));
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    view.ForwardTurnSlotHighlight(withheld);
+                    yield return null;
+                    yield return null;
+                    BesideItsRail("gd-hero-rail-red", "another seat's card back, left rail, " + where);
+                    view.ForwardTurnSlotHighlight(resolved);
+                    yield return null;
+                    yield return null;
+                    BesideItsRail("gd-hero-rail-blue", "a resolved card, right rail, " + where);
+                    view.ForwardTurnSlotHighlight(null);
+
+                    // His own seat: the facedown discard's face, dimmed and hatched.
+                    RenderTakahidePlaque(runtime, takahide, ownerSeat: true);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    view.ForwardDiscardCardHighlight(
+                        view.Model.Heroes.Single(hero => hero.HeroId.Equals(takahide)).DiscardCards.Single());
+                    yield return null;
+                    yield return null;
+                    BesideItsRail("gd-hero-rail-red", "his facedown discard, left rail, " + where);
+                    view.ForwardDiscardCardHighlight(null);
+                    yield return null;
+
+                    // The hero profile keeps 8.42b's placement: beside the portrait it was pointed from.
+                    foreach (var pointed in new[] { (Hero: takahide, OnLeft: true), (Hero: arien, OnLeft: false) })
+                    {
+                        var medallion = Descendants(root.Hud.RootElement)
+                            .Single(element => element.name == "gd-hero-rail" &&
+                                element.userData is HeroId id && id.Equals(pointed.Hero))
+                            .Q("gd-hero-medallion");
+                        Point(medallion, true);
+                        yield return null;
+                        yield return null;
+                        var profile = view.HoverPreviewRoot.Q<UnityEngine.UIElements.Image>("gd-hero-profile-preview");
+                        if (profile == null)
+                        {
+                            failures.Add("no hero profile on the portrait at " + where);
+                        }
+                        else
+                        {
+                            var anchor = medallion.worldBound;
+                            var faceWidth = profile.resolvedStyle.width;
+                            var expected = Mathf.Clamp(
+                                pointed.OnLeft ? anchor.xMax + 10f : anchor.xMin - faceWidth - 10f,
+                                0f,
+                                Mathf.Max(0f, view.Root.resolvedStyle.width - faceWidth));
+                            if (Mathf.Abs(view.HoverPreviewRoot.worldBound.xMin - expected) > 1.5f)
+                            {
+                                failures.Add("the hero profile moved at " + where + ": " +
+                                    view.HoverPreviewRoot.worldBound.xMin + " where 8.42b puts it at " + expected);
+                            }
+                        }
+
+                        Point(medallion, false);
+                        yield return null;
+                    }
+                }
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(restoreWidth, restoreHeight, "9.36 restore the viewport");
+            }
+
+            Assert.That(failures, Is.Empty, string.Join("\n", failures));
+        }
+
+        private static TrayCardViewModel StagedTray(CardDefinition definition, TrayCardGroup group, int playedTurn) =>
+            new TrayCardViewModel(
+                new CardInstanceId("staged-" + definition.Id.Value), definition.Reference, definition.DisplayName,
+                definition.Progression.Color, CurrentRoundCards.ReadFace(definition), group, playedTurn,
+                group == TrayCardGroup.Available, false);
+
+        /// <summary>Milestone 9.36: one hero's first turn slot replaced, every other reading kept.</summary>
+        private static HeroTurnSlotViewModel RenderFirstSlot(
+            ConfiguredMatchSceneRuntime runtime, HeroId heroId, HeroTurnSlotViewModel first)
+        {
+            var sourceModel = runtime.HeroOverviewsView.Model;
+            var source = sourceModel.Heroes.Single(hero => hero.HeroId.Equals(heroId));
+            var replacement = new HeroOverviewViewModel(
+                source.HeroId,
+                source.TeamSide,
+                source.ContentId,
+                source.HeroDisplayName,
+                source.Level,
+                source.Coins,
+                source.ItemBonuses,
+                new[] { first }.Concat(source.TurnSlots.Skip(1)).ToArray(),
+                source.DiscardCards,
+                source.IsViewed,
+                source.CurrentCard,
+                source.UltimateCard,
+                source.HeldMarkers,
+                source.IsAwaited,
+                source.Worth,
+                source.CurrentTurnMarker,
+                source.Spellbook);
+            runtime.HeroOverviewsView.Render(new HeroOverviewsViewModel(
+                sourceModel.Version + 1,
+                sourceModel.Heroes.Select(hero => hero.HeroId.Equals(heroId) ? replacement : hero)));
+            return first;
         }
 
         private static IReadOnlyList<CardDefinition> TakahideCards =>

@@ -14,6 +14,8 @@ using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine.UIElements;
+using Hatch = GuardsDigital.Presentation.Match.HeroOverviewsUnityView.FacedownHatch;
 using GoldStage = GuardsDigital.Tests.EditMode.TakahideGoldSwapTests.Stage;
 using RedStage = GuardsDigital.Tests.EditMode.TakahideBasicAndRedFacesTests.Stage;
 
@@ -204,6 +206,80 @@ namespace GuardsDigital.Tests.EditMode
                 handSummaries: summaries);
             Assert.That(CurrentRoundCards.WithheldDiscardColors(ownView, GoldStage.Taka), Is.Empty,
                 "his own seat holds the card itself, so it is never drawn twice");
+        }
+
+        /// <summary>
+        /// Milestone 9.36. The fine 9.32g hatch read as plain gold on a mini; the user settled "a bolder
+        /// diagonal hatch with fewer, thicker strokes". These are the strokes the hatch's content
+        /// generator paints, at the rail mini's footprint and at a full face.
+        /// </summary>
+        [Test]
+        public void TheMiniHatch_DrawsFewerThickerDarkerStrokes_AndTheFullFaceKeepsTheFineHatch()
+        {
+            var mini = new UnityEngine.Rect(
+                0f, 0f, HeroOverviewsUnityView.MiniCardWidth, HeroOverviewsUnityView.MiniCardHeight);
+            var bold = Hatch.Strokes(mini, Hatch.Weight.Mini);
+            var fine = Hatch.Strokes(mini, Hatch.Weight.Full);
+
+            Assert.That(Hatch.LineWidthOf(Hatch.Weight.Mini), Is.GreaterThanOrEqualTo(2.5f),
+                "thicker strokes on a mini");
+            Assert.That(bold.Count, Is.InRange(3, 6), "fewer strokes, and still a hatch rather than one strike");
+            Assert.That(bold.Count * 2, Is.LessThanOrEqualTo(fine.Count),
+                "at most half the fine hatch's strokes on the same mini");
+            Assert.That(Hatch.StrokeColorOf(Hatch.Weight.Mini).a, Is.GreaterThanOrEqualTo(0.8f), "and darker");
+            foreach (var stroke in bold)
+            {
+                Assert.That(mini.Contains(stroke.Key) || OnTheEdge(mini, stroke.Key), Is.True, "clipped to the card");
+                Assert.That(mini.Contains(stroke.Value) || OnTheEdge(mini, stroke.Value), Is.True, "clipped to the card");
+                Assert.That(stroke.Value.x - stroke.Key.x, Is.EqualTo(stroke.Key.y - stroke.Value.y).Within(0.001f),
+                    "diagonal, rising left to right at 45 degrees");
+            }
+
+            var full = new UnityEngine.Rect(0f, 0f, CardFootprint.StandardWidth, CardFootprint.StandardHeight);
+            Assert.That(Hatch.LineWidthOf(Hatch.Weight.Full), Is.EqualTo(1f), "the full face keeps the fine hatch");
+            Assert.That(Hatch.SpacingOf(Hatch.Weight.Full), Is.EqualTo(4f));
+            Assert.That(Hatch.StrokeColorOf(Hatch.Weight.Full).a, Is.EqualTo(0.62f).Within(0.001f));
+            Assert.That(Hatch.Strokes(full, Hatch.Weight.Full).Count, Is.GreaterThan(150));
+        }
+
+        private static bool OnTheEdge(UnityEngine.Rect rect, UnityEngine.Vector2 point) =>
+            point.x >= rect.xMin - 0.001f && point.x <= rect.xMax + 0.001f &&
+            point.y >= rect.yMin - 0.001f && point.y <= rect.yMax + 0.001f;
+
+        /// <summary>
+        /// Milestone 9.36, through the rail itself: on every seat of a configured match holding his
+        /// facedown gold, each hatched mini is the bold weight; on his seat the face a hover reveals is
+        /// the only fine one.
+        /// </summary>
+        [Test]
+        public void EveryMiniWearsTheBoldHatch_AndOnlyTheRevealedFaceTheFine()
+        {
+            var host = new MatchHost(TakahideDealingTests.CreateFacedownGoldSession());
+            var reachedHisSeat = false;
+            foreach (var seat in host.Seats.Seats)
+            {
+                var view = new HeroOverviewsUnityView();
+                new HeroOverviewsPresenter(new SeatMatchClient(host.ClientForSeat(seat.Id)), view).Refresh();
+                var minis = view.Root.Query<Hatch>().ToList();
+                Assert.That(minis, Is.Not.Empty, "every seat draws the facedown gold hatched");
+                Assert.That(minis.Select(hatch => hatch.HatchWeight), Has.All.EqualTo(Hatch.Weight.Mini),
+                    "and every mini wears the bold hatch");
+
+                var takahide = view.Model.Heroes.Single(hero => hero.ContentId.Value == "takahide");
+                if (!seat.Owns(takahide.HeroId))
+                {
+                    continue;
+                }
+
+                reachedHisSeat = true;
+                var slot = takahide.TurnSlots.Single(value => value.PlayedCard != null && value.PlayedCard.IsFacedown);
+                view.ForwardTurnSlotHighlight(slot);
+                var revealed = view.HoverPreviewRoot.Query<Hatch>().ToList();
+                Assert.That(revealed.Select(hatch => hatch.HatchWeight), Is.EqualTo(new[] { Hatch.Weight.Full }),
+                    "his hover reveals the face, dimmed and finely hatched");
+            }
+
+            Assert.That(reachedHisSeat, Is.True, "Fixture: his own seat is among the seats");
         }
 
         // -------------------------------------------------------------------------------------------
