@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.14 Printed-spelling evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.14 | Mortimer's Tier III Attack displays its printed name `Braaaaaaaains...!` (eight a's, counted on the card); identity id and content revision unchanged, the pinned digest re-measured with the reason recorded; the expected-outcome executor's spelling bridge retired. [Definition](../../Roadmap/PHASE_9.md#x-914-print-mortimers-tier-iii-attack-as-braaaaaaaains-eight-as). | `milestone/9.14` |
+
 ## Milestone 9.38 Borrowed-skill offer evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -295,7 +295,7 @@
   "id": "mortimer-braaaaaaaains-two-moves-then-one-retrieve",
   "kind": "executor-gap",
   "ref": "content finding: Braaaaaaaains...! display name",
-  "note": "The card prints BRAAAAAAAAINS...! (eight a’s, mortimer7__7703468, verified by the coordinator); the content display name has seven and feeds Mortimer’s pinned semantic identity digest (VerifiedContentIdentityTests), so it is left for its own corrective. The executor resolves the printed spelling to the dealt card; the case runs as written | reader note (recorded, not executed): actor level 5 or higher; setup: token-1 within distance 4 of actor with an open two-step path toward enemy-hero-1 that stays within distance 4 of actor"
+  "note": "The card prints BRAAAAAAAAINS...! (eight a’s, mortimer7__7703468, verified by the coordinator); the content display name has seven and feeds Mortimer’s pinned semantic identity digest (VerifiedContentIdentityTests), so it was left for its own corrective; 9.14 (2026-10-02) corrected the display name to the printed eight a’s and re-pinned the digest, and the executor’s spelling bridge was retired. The case runs as written | reader note (recorded, not executed): actor level 5 or higher; setup: token-1 within distance 4 of actor with an open two-step path toward enemy-hero-1 that stays within distance 4 of actor"
  },
  {
   "id": "mortimer-braaaaaaaains-choices-run-out-before-retrieve",

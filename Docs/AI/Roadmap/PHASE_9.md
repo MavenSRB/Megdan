@@ -48,9 +48,17 @@ Queued: the last four heroes, plus one invariant per numbered rulebook rule that
 
 ## Queued by 9.13, not authorized
 
-### [ ] 9.14 Print Mortimer's Tier III Attack as BRAAAAAAAAINS...! (eight a's)
+On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
+
+### [x] 9.14 Print Mortimer's Tier III Attack as BRAAAAAAAAINS...! (eight a's)
 
 Queued 2026-09-29 by 9.13's content finding: the card prints eight a's, the content display name seven. Outcome: the display name corrected to the printed spelling and Mortimer's pinned semantic identity digest re-measured and re-pinned with the reason recorded; no identity id or rule changes. Closing check: `VerifiedContentIdentityTests` green at the new pin, the card-name resolver in `ExpectedOutcomeExecutor` no longer needing its spelling bridge, harness and Edit Mode green. T1.
+
+Result: the card prints eight a's - counted on `mortimer7__7703468__front.png` beside the Tier II `Braains...!` at the same scale - and the shard's own inventory had carried the seven-a spelling, so it is corrected with the content. `MortimerAttackFaces` now names the face `Braaaaaaaains...!`; the identity id `mortimer-braaaaaaains`, the content revision `mortimer-9-8-rev-1`, every printed value and every reading are as 9.8f dealt them, and Mortimer's pinned digest moved (`057a98dc...` -> `5a8a7b9d...`) because the display name feeds it, with that reason recorded beside the pin. The expected-outcome executor's `PrintedSpellings` bridge is retired: a reader's spelling the content does not print is now an unresolved card by design, and Mortimer's three eight-a tables resolve without it. The player-path gate row, the leash sweep's reasons, the disposition note and the tables guide read the printed spelling. No rule, snapshot or wire change.
+
+Completed 2026-10-02.
+
+Historical evidence: [9.14 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-914-printed-spelling-evidence).
 
 ### [x] 9.15 The match log records triggered-effect Defeats and card-text Removals
 

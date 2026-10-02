@@ -264,23 +264,15 @@ namespace GuardsDigital.Tests.EditMode
             Regex.Replace((text ?? string.Empty).Trim().ToLowerInvariant(), "\\s+", " ");
 
         /// <summary>
-        /// Card names compare without case, punctuation variants or spacing. Printed names the content spells differently, pending their own corrective. 9.13: Mortimer's
-        /// Tier III red card prints BRAAAAAAAAINS...! (eight a's, mortimer7__7703468); the content's display
-        /// name has seven, and the display name feeds Mortimer's pinned semantic identity digest, so it
-        /// is not changed here. The reader's printed spelling resolves to the dealt card.
+        /// Card names compare without case, punctuation variants or spacing, and a reader's printed
+        /// spelling must be the content's: the one bridge this held (9.13, Mortimer's BRAAAAAAAAINS...!
+        /// printed with eight a's against a seven-a display name) was retired when 9.14 corrected the
+        /// display name, so a spelling the content does not print is an unresolved card, by design.
         /// </summary>
-        private static readonly Dictionary<string, string> PrintedSpellings = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["br" + new string('a', 8) + "ins"] = "br" + new string('a', 7) + "ins"
-        };
-
-        private static string CardKey(string name)
-        {
-            var key = Regex.Replace((name ?? string.Empty).ToLowerInvariant()
+        private static string CardKey(string name) =>
+            Regex.Replace((name ?? string.Empty).ToLowerInvariant()
                 .Replace('’', '\'').Replace('‘', '\'').Replace('–', '-').Replace('—', '-'),
                 "[^a-z0-9']+", " ").Trim();
-            return PrintedSpellings.TryGetValue(key, out var content) ? content : key;
-        }
 
         private static int Dist(HexCoordinate a, HexCoordinate b) => HexDistanceQuery.Calculate(a, b);
 

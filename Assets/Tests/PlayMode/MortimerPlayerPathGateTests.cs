@@ -91,7 +91,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Row(MortimerAttackFaces.RacingDead, "Racing Dead",
                     "MortimerAttackFacesTests.Walking_EachEnemyHeroCanOnlyBeTargetedOnce",
                     Attack(Dead, before: false, upTo: true)),
-                Row(MortimerAttackFaces.Braaaaaaains, "Braaaaaaains...!",
+                Row(MortimerAttackFaces.Braaaaaaains, "Braaaaaaaains...!",
                     "MortimerAttackFacesTests.Braains_WithAnEnemyHeroInRadiusBesideAZombie_RetrievesADiscardedCard",
                     Attack(Brains, before: true, upTo: true)),
                 Row(MortimerBlueFaces.CorpseSlam, "Corpse Slam",

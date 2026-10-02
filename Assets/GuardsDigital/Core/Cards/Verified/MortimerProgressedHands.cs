@@ -6,7 +6,7 @@ using GuardsDigital.Core.Units.Heroes;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// Milestone 9.8f. Mortimer's staged Tier III hand: both basics, Braaaaaaains...! (an up-to-three
+    /// Milestone 9.8f. Mortimer's staged Tier III hand: both basics, Braaaaaaaains...! (an up-to-three
     /// before-the-attack modal), Macabre Mayhem (the Zombie push) and Army of Darkness (the once-per-turn
     /// Replace), with Master of Puppets in his deck for the staging to unlock.
     /// </summary>

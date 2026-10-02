@@ -30,7 +30,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// "If able" is the discard's own policy, as Garrus's Light Pilum and Sabina's Close Support
     /// compose it: the hero is chosen whatever their hand holds.</para>
     ///
-    /// <para><b>Braains...! and Braaaaaaains...!</b>: "Before the attack, choose up to two / three
+    /// <para><b>Braains...! and Braaaaaaaains...!</b> (the Tier III card prints eight a's, mortimer7__7703468;
+    /// 9.14 corrected the display name from seven, the identity id staying <c>braaaaaaains</c>): "Before the attack, choose up to two / three
     /// times - Move a Zombie token in radius 1 space. / If an enemy hero in radius is adjacent to a
     /// Zombie token, retrieve a discarded card." The "If" is printed, so it is a single-child
     /// Conditional (RULING 53 for the whole action; as a modal option the gate is read and a false
@@ -106,7 +107,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     Red(CardTier.III, PrintedValueChannel.Range),
                     Body(RacingDead, DeadPrefix, 3, pass => DeadPass(pass, true)), CardTextTiming.AfterTheAttack,
                     DeadText(3)),
-                Face(Braaaaaaains, "Braaaaaaains...!", 8, 8, 3, 7,
+                Face(Braaaaaaains, "Braaaaaaaains...!", 8, 8, 3, 7,
                     Red(CardTier.III, PrintedValueChannel.Movement),
                     Body(Braaaaaaains, BrainsPrefix, 3, BrainsPass), CardTextTiming.BeforeTheAttack,
                     BrainsText(3))

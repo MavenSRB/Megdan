@@ -10,11 +10,11 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5; all thirty heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v54 persists turn-slot marker positions, temporary rune activation, held action selections, Minion-Battle exclusions, the last completed Movement walk, minion Defeats held behind a removal-prevention question, hero bodies (9.21a), the acting body (9.21b), a hero's spellbook (9.30b), Wish tallies (9.30g) and each team's starting Lives (9.30f) and a turn-slot card placed facedown (9.32a); wire protocol is `guards-private-online/35`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All thirty heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
-FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
+FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.38**.
+- Current completed milestone: **9.14**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **9.26**.
 
@@ -26,7 +26,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero: **9.30-9.30j** and the user-directed **9.30h1** are complete - dealt, artworked, pickable and gated ([roadmap](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md), [shard](Rules/HERO_GYDION.md); schema v53, wire /33), built by agents as Razzle was; GY-Q1-GY-Q12 settled by the user.
 
-Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete; 9.26 stays queued.
+Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete. Housekeeping sequence authorized 2026-10-02: **9.14 -> 9.26 -> 8.35z70 closure with the brief trim**.
 
 After that playtest the user reported three defects; correctives **[9.33 -> 9.35](Roadmap/PHASE_9.md)** (terrain lit, spell spotlight, "up to" line moves offer 0) are complete.
 

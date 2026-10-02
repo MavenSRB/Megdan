@@ -358,8 +358,13 @@ namespace GuardsDigital.Tests.EditMode
             new IdentityPin("mrak", "mrak-9-1-rev-1", "64e08e4bbb2648ce18fd527214f65db082e8d3fa3007f14ad2c10f108c45ef70"),
             new IdentityPin("wuk", "wuk-9-2-rev-1", "854744166c1704481f665728f4f34b4ad7aa0dbe97fed4663d17c124d10a2fc4"),
             // Milestone 9.8f. Mortimer, dealt; measured on the run that dealt him, with his staged
-            // configuration in EveryDealtDefinition in the same change.
-            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "057a98dcfc77c4c3f9ebbd03645e3c7da81962467386d5e2016b6776c27cc56a"),
+            // configuration in EveryDealtDefinition in the same change (057a98dc...).
+            // MILESTONE 9.14 MOVED THIS PIN, revision unchanged: the Tier III red card prints
+            // BRAAAAAAAAINS...! with eight a's (mortimer7__7703468) and the display name had seven;
+            // the display name feeds this digest, so it moved, while the identity id (braaaaaaains),
+            // every printed value, every reading and the reachable semantics are as 9.8f dealt them.
+            // Measured, not predicted.
+            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "5a8a7b9d013b6f5def35bf570588e469b7c4f9d5f77a8d8ff89e1f709ab26ca6"),
             // Milestone 9.21j. Razzle, dealt under his first dealt revision (razzle-9-21d-prep ->
             // razzle-9-21j-rev-1); measured on the run that dealt him, with his staged configuration
             // in EveryDealtDefinition in the same change.

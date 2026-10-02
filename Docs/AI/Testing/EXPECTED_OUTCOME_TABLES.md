@@ -34,7 +34,7 @@ Each is taken only where the table says nothing, and the trace names it:
 
 - An enemy seat with a numeric `defends-with` is given, in roster order, the first dealt hero (never the actor's) whose deck prints a card with that Defense.
 - Another hero's own which-card question (an enemy's discard, the card a friendly hero retrieves) the answers do not name takes that hero's first card in hand; p.19's displaced-minion correction takes the first space offered.
-- A printed card name the content spells differently resolves to the dealt card while its content corrective is pending (today only Mortimer's BRAAAAAAAAINS...!, printed with eight a's; the content has seven and its display name feeds a pinned identity digest).
+- A printed card name must be spelled as the content spells it; a spelling the content does not print is reported as an unresolved card. (9.13 bridged one such name, Mortimer's BRAAAAAAAAINS...! printed with eight a's against a seven-a display name; 9.14 corrected the display name and retired the bridge.)
 - `handicap: true` is not executed (p.6 boxes the Handicap cards). A placement's parenthetical is ignored. `action: Defense` without `attack` fails by name.
 - Staging prefers open ground clear of terrain (unless terrain is staged) and puts every "in a straight line" piece from one piece on its first file, relaxing each only when no anchor meets it. A `toward X` walk follows X's file, so a straight-line trample runs through the named pieces.
 - A trailing `decline` of a question never asked declines nothing; a selection at its maximum closes itself; a "one or both" bullet listed later is selected where the choice asks it; a play expected not offered that the rules refuse even past the offer leaves the board unchanged.

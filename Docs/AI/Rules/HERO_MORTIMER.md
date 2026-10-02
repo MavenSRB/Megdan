@@ -37,7 +37,7 @@ File stems below are under the Mortimer source directory and end in `__front.png
 | mortimer4__7703471 | Walking Dead / Red / II | 7 | 7 | 3 | Attack / A 7, r 4 | Defense |
 | mortimer5__7703470 | Braains...! / Red / II | 7 | 7 | 3 | Attack / A 7, r 4 | Initiative |
 | mortimer6__7703469 | Racing Dead / Red / III | 8 | 8 | 3 | Attack / A 7, r 4 | Range |
-| mortimer7__7703468 | Braaaaaaains...! / Red / III | 8 | 8 | 3 | Attack / A 7, r 4 | Movement |
+| mortimer7__7703468 | Braaaaaaaains...! / Red / III | 8 | 8 | 3 | Attack / A 7, r 4 | Movement |
 | mortimer8__7695016 | Corpse Slam / Blue / I | 9 | 6 | 3 | Skill - Ranged / R 4 | - |
 | mortimer9__7695014 | Morbid Mosh / Blue / II | 9 | 6 | 3 | Skill - Ranged / R 4 | Attack |
 | mortimer10__7695010 | Robbing Zombies / Blue / II | 9 | 6 | 3 | Skill - Ranged / R 4 | Defense |
@@ -52,7 +52,7 @@ File stems below are under the Mortimer source directory and end in `__front.png
 | mortimer19__7695026 | Shallow Graves / Gold / Handicap | 10 | 1 | 1 | Basic Attack / A 3+, r 4 | - |
 
 Items: Attack x3, Defense x3, Initiative x3, Movement x1, Range x1, Radius x1. Awaken!'s 3 is its Defense value; it prints no Movement icon. **Corrected at 9.8f:** its banner prints the Defense/Skill icon (p.13-14), so it is played as a Skill or discarded to defend with Defense 3, and its text applies either way. Upgrade lines (by name family, validated as a whole against p.15 at dealing):
-- Red: Crawling Dead -> Walking Dead or Braains...! -> Racing Dead or Braaaaaaains...!
+- Red: Crawling Dead -> Walking Dead or Braains...! -> Racing Dead or Braaaaaaaains...!
 - Blue: Corpse Slam -> Morbid Mosh or Robbing Zombies -> Macabre Mayhem or Stalking Scalpers.
 - Green: Stage Dive -> Crowd Drift or Gathering Horde -> Crowd Surf or Army of Darkness.
 
@@ -64,7 +64,7 @@ Quoted from the fronts; each implementation test uses the front, not this routin
 - **Awaken!:** "Place up to 4 Zombie tokens into spawn points in radius, counting spaces adjacent to you as spaces with spawn points; Zombie tokens are not removed at the end of round."
 - **Crawling Dead:** "Target a unit adjacent to you. After the attack, choose one - Move a Zombie token in radius 1 space. / Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able."
 - **Walking Dead / Racing Dead:** the same with "choose up to two / three times", and the second bullet ending "; each enemy hero can only be targeted once."
-- **Braains...! / Braaaaaaains...!:** "Target a unit adjacent to you. Before the attack, choose up to two / three times - Move a Zombie token in radius 1 space. / If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card."
+- **Braains...! / Braaaaaaaains...!:** "Target a unit adjacent to you. Before the attack, choose up to two / three times - Move a Zombie token in radius 1 space. / If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card."
 - **Corpse Slam:** "Choose one - Move a Zombie token in range up to 1 space; that Zombie token may push a unit or a token adjacent to it 1 space. / Move 1 space." **Morbid Mosh / Macabre Mayhem:** "Choose up to two / three times -" the same bullets.
 - **Robbing Zombies / Stalking Scalpers:** "Choose up to two / three times - Move a Zombie token in range up to 1 space. Gain 1 coin. / Move 1 space."
 - **Stage Dive:** "Choose one - Move a Zombie token in range 1 space. / Swap with a Zombie token in range." **Crowd Drift / Crowd Surf:** "Choose up to two / three times -" the same bullets.
@@ -78,7 +78,7 @@ Quoted from the fronts; each implementation test uses the front, not this routin
 - **"Move a Zombie token in radius (range) 1 space"** moves a token standing within the printed reach of Mortimer to an adjacent empty space. The reach bounds which token, not where it goes. "Up to 1 space" admits 0 under W5 ([PRINTED_WORDING](PRINTED_WORDING.md)); "1 space" is exact (p.11). With no Zombie in reach the step cannot be performed, and p.10 stops that bullet (MO-Q3).
 - **"That Zombie token may push a unit or a token adjacent to it 1 space"** is p.18's Push with the Zombie as the pusher: straight away from the token's space. "A unit" names any unit, friendly included, and Mortimer himself when adjacent. An immune unit is not pushed (p.19).
 - **"Choose up to two (three) times"** is Wuk's Treetop Ride, Rowenna's Grand Melee and Brynn's BR-Q4 reading: up to that many performances, each choosing either bullet, the same bullet allowed again, and each performance reading the board the last one left. Stopping early is the player's choice. "Choose one" (Tier I) is one performance.
-- **Master of Puppets** changes only faces that print "up to three times": Knife of the Living Dead, Racing Dead, Braaaaaaains...!, Macabre Mayhem, Stalking Scalpers, Crowd Surf and Army of Darkness. "Choose one" and "up to two times" are unchanged. It is a p.16 permanent Ultimate ability, and "may" lets him keep three.
+- **Master of Puppets** changes only faces that print "up to three times": Knife of the Living Dead, Racing Dead, Braaaaaaaains...!, Macabre Mayhem, Stalking Scalpers, Crowd Surf and Army of Darkness. "Choose one" and "up to two times" are unchanged. It is a p.16 permanent Ultimate ability, and "may" lets him keep three.
 - **"Remove a Zombie token adjacent to the target; if you do, gain +1 Attack"** is a Remove (p.19; the token returns to the supply) whose success gives +1 Attack to this Attack. Chosen twice or three times, each removal adds one.
 - **"Another enemy hero in radius, adjacent to a Zombie token, discards a card, if able"** names an enemy hero other than this Attack's target who stands in radius of Mortimer and adjacent to a Zombie. "Each enemy hero can only be targeted once" makes the repeated bullet name a different hero each time. With nobody qualifying, the bullet cannot be performed.
 - **"If an enemy hero in radius is adjacent to a Zombie token, retrieve a discarded card"** is a printed "If" gate (RULING 53: a false gate is a legal do-nothing choice); when it holds, Mortimer retrieves a card of his own.

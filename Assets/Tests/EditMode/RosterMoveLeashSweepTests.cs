@@ -352,15 +352,15 @@ namespace GuardsDigital.Tests.EditMode
                 ["mortimer-racing-dead-attack-text | dead-5-move-step"] =
                     "Racing Dead: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
                 ["mortimer-braaaaaaains-attack-text | brains-1-move-step"] =
-                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                    "Braaaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
                 ["mortimer-braaaaaaains-attack-text | brains-2-move-step"] =
-                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                    "Braaaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
                 ["mortimer-braaaaaaains-attack-text | brains-3-move-step"] =
-                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
+                    "Braaaaaaaains...!: \"Move a Zombie token in radius 1 space\"",
                 ["mortimer-braaaaaaains-attack-text | brains-4-move-step"] =
-                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                    "Braaaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
                 ["mortimer-braaaaaaains-attack-text | brains-5-move-step"] =
-                    "Braaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
+                    "Braaaaaaaains...!: \"Move a Zombie token in radius 1 space\" (Master of Puppets' extra pass)",
                 ["mortimer-corpse-slam-skill | slam-1-push"] =
                     "Corpse Slam: \"that Zombie token may push a unit or a token adjacent to it 1 space\"",
                 ["mortimer-corpse-slam-skill | slam-1-step-move"] =
