@@ -157,9 +157,14 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 Reconciled from the private local `tmp/8-35d-8-35e-multiplayer-corrections/PLAN.md` post-polish queue and relevant Claude project notes. These are retrieval sources, not rule authorities. Status is based on source/commit evidence rather than the age of a note. All current instructions supersede historical agent instructions. Each proposed implementation still requires user approval.
 
-### [ ] 8.35z70 Complete Tali as the twelfth playable hero
+### [x] 8.35z70 Complete Tali as the twelfth playable hero
 
 Outcome: verified Tali definitions/tokens integrate into configuration, draft, and the permanent player-path gate. Dependency: validate the existing prep branch/checklist and remaining printed face/capability against rules authority; reconcile private rulings before registration. Closing check: focused content/identity/token/borrow scenarios plus full hero gate and required Unity tier. No execution authorized by cleanup.
+
+**Discharged on 2026-10-02 by milestones already complete rather than executed as its own milestone.** Tali the Spiritcaller was dealt, registered and player-path gated as the twelfth hero by [8.37](PHASE_8_COMPLETED_10.md#x-837-deal-register-and-player-path-gate-tali-the-spiritcaller-as-the-twelfth-hero), given controls a player can answer for her named-colour, chosen-direction and runtime-integer decisions by [8.37b](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and had her last deferred face (Blizzard's End-of-turn repeat) composed by [8.37a](PHASE_8_COMPLETED_10.md#x-837a-compose-blizzards-end-of-turn-repeat-and-close-talis-last-deferred-face); the session brief has carried "8.37/8.37b/8.37a deal Tali the Spiritcaller" and "No dealt hero now carries an engine deferral" since, and the thirty-hero roster passes the permanent gate with her in it. Every clause of this entry's outcome and closing check was met there: her verified definitions and tokens are in configuration, draft and the gate, and her private rulings were reconciled in [her shard](../Rules/HERO_TALI.md) before registration. Nothing remained to execute, so this entry closes as discharged on the user's 2026-10-02 housekeeping authorization; recorded by the agent, not a new milestone.
+
+Historical evidence: exempt - no milestone was executed here, so there is no phase-handoff row of its own; the discharging evidence belongs to 8.37, 8.37b and 8.37a.
+
 
 ### [x] 8.35z71 Diagnose reported bot in-match spinning
 

@@ -36,17 +36,9 @@ On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 
-On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
-
 On 2026-09-18 the user selected **Widget** (Razzle withdrawn): the SEVENTEENTH hero's **8.43-8.43f** ([dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md), [shard](Rules/HERO_WIDGET.md)) is COMPLETE and gated (WI-Q1-WI-Q3 resolved; his build-smoke exception approved in his shard). **[8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)** is complete: status narration names the hero a public decision waits on, from `DecisionOwner`.
 
-On 2026-09-18 the user authorized two packages, both complete: **[8.44](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.44-seventeen-hero`, seventeen heroes) and **[8.45](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.45-undo-corrections`, the same heroes plus 8.42d's visible seat rewind and 8.42e's interaction wall, content digest unchanged). Neither authorizes upload or public distribution.
-
-The 2026-09-18 invited playtest drove **[8.47](Roadmap/PHASE_8.md)**-**[8.53](Roadmap/PHASE_8.md)** and **[8.56](Roadmap/PHASE_8.md)**, all complete: the phase-banner package, Bounce's borrowed repeat, lives paid by Tier with a worth badge, the banner speaking only when a player is up, press provenance in the log, END TURN answering the pointer alone, and the victory screen (`MatchScoreboard`, snapshot v43, wire /17) packaged as `Builds/Playtest-8.53-victory-screen`.
-
 The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57h](Roadmap/PHASE_8_EIGHTEENTH_HERO.md) and [her shard](Rules/HERO_ROWENNA.md) own the detail (RO-03 settled by the user as the ribbon colour). The same day's **8.58** (the decision window per the mockup), **8.59** (the line picker's floor), **8.54** (Bounce through Bullet Time), **8.55** (the "6+1" badge) and **[8.60](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.55-rowenna`, cut at the 8.55 tag, digest `36da22a7...`) are complete.
-
-- 2026-09-19 (later): the user authorized two HUD corrections from playtest screenshots as roadmap amendments - **[8.62](Roadmap/PHASE_8.md)** (targeting cues read as blood-red light) and **[8.63](Roadmap/PHASE_8.md)** (the decision window above every other panel) and **[8.64](Roadmap/PHASE_8.md)** (the victory screen drops its column legend); all three COMPLETE 2026-09-20 on the user's approval of their photographs (`c9c615ec`, `4feec1c4`, `de886e51`; the 8.62 cue settled as solid corner marks by side with a full hex on hover, not a ring).
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`).
 
