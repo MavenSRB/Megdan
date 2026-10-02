@@ -1573,7 +1573,22 @@ namespace GuardsDigital.Tests.PlayMode
                 // meets this declaration is ever asked the type. A later hero carrying that overlay and
                 // naming this id would owe the type question here, as Dodger's own two ids do.
                 ["synthetic-respawn-friendly-minion-in-range"] =
-                    new[] { PlayerInteractionShape.BoardSpaceSelection }
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Milestone 9.32i. Takahide the Warlord's four card questions - the thirtieth hero, and
+                // a dealing that introduces no new SHAPE. Each asks for a card chosen on its whole
+                // face, the input `take-deck-card-as-item` and `swap-owned-resolved-card-with-hand`
+                // already ask: his three golds' swap and Bushido's pick a gold out of his own DECK
+                // (milestone 8.40k: the candidates' privacy is a projection property asserted in the
+                // journey, not a control); Set an Example's and Hold my Sake's swap picks a card from
+                // the teammate's hand or discard, on the teammate's own seat; and Blade Helix's and
+                // Pledge of Allegiance's family picks a card out of a discard pile. Who answers - his
+                // seat or the teammate's - is the seat the decision is addressed to, which Whisper's
+                // forced move settled is not a shape of its own.
+                ["swap-this-card-with-deck-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["swap-owned-color-card-with-deck-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["swap-unresolved-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["choose-discarded-card"] = new[] { PlayerInteractionShape.HandCardSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

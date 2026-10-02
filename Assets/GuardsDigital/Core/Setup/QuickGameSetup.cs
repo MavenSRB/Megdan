@@ -1025,6 +1025,31 @@ namespace GuardsDigital.Core.Setup
         public static QuickGameSetupConfiguration CreateStagedWaspVersusTakahideOneVsOne() =>
             CreateOneVsOne(new HeroContentId("takahide"), "Takahide");
 
+        /// <summary>
+        /// Milestone 9.32i. Takahide with Arien as his Blue ally, on Wuk's ally board: his Red swaps,
+        /// Blue discards and Green aid all name "a friendly hero", which has a candidate only here
+        /// (p.17: Friendly never includes Takahide).
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTakahideWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("takahide"), "Takahide");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
         /// <summary>Milestone 9.21j. Wasp on Red against Razzle on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusRazzleOneVsOne() =>
             CreateOneVsOne(new HeroContentId("razzle"), "Razzle");

@@ -2308,6 +2308,23 @@ namespace GuardsDigital.Core.Participants
                 ownerId => Cards.Verified.TakahideCardContent.CreateHand(ownerId, "blue"));
 
         /// <summary>
+        /// Milestone 9.32i. Wasp against Takahide with Arien as his Blue ally: the friendly hero his
+        /// Red swaps, Blue discards and Green aid name.
+        /// </summary>
+        public static MatchConfiguration CreateStagedTakahideWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                Cards.Verified.TakahideCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue), "blue"),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
+        /// <summary>
         /// Milestone 9.32h. Wasp against Takahide, both on Tier III, as Ready for War leaves him: the
         /// Ultimate faceup, Bushido back in his deck and all three golds in his six-card hand (TK-Q5).
         /// </summary>

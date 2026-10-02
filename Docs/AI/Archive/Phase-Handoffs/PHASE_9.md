@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.32i Takahide gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.32i | Takahide gated on the player path: twenty-one face rows and four components proved by eighteen real-input journeys reading outcomes, his four card questions classified as card choices with no new shape, and staged board 146 giving his friendly-hero faces Arien as his ally. [Definition](../../Roadmap/PHASE_9_THIRTIETH_HERO.md#x-932i-gate-takahide-on-the-player-path). | `milestone/9.32i` |
+
 ## Milestone 9.36 Rail hover and hatch evidence
 
 | Milestone | Outcome and definition | Commit |

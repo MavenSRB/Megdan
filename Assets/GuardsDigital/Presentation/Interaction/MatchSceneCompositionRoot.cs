@@ -1094,7 +1094,10 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedEngagedStagedTakahide = 144,
 
         /// <summary>Wasp versus Takahide with Tier III hands, Ready for War faceup and his six-card hand (9.32h).</summary>
-        VerifiedTierThreeEngagedStagedTakahide = 145
+        VerifiedTierThreeEngagedStagedTakahide = 145,
+
+        /// <summary>Wasp versus Takahide with Arien as his Blue ally (9.32i).</summary>
+        VerifiedStagedTakahideWithAlly = 146
     }
 
     [ExecuteAlways]
@@ -1838,6 +1841,8 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedTakahideForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedStagedTakahide =>
                     MatchConfiguration.CreateStagedTakahideTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedStagedTakahideWithAlly =>
+                    MatchConfiguration.CreateStagedTakahideWithAllyForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -2596,6 +2601,12 @@ namespace GuardsDigital.Presentation.Interaction
                         content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusTakahideOneVsOne();
+                    }
+
+                    // Milestone 9.32i. Not restaged, like Wuk's ally arm: the journeys stage every piece.
+                    if (content == SceneCardContent.VerifiedStagedTakahideWithAlly)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTakahideWithAllyOneVsTwo();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
