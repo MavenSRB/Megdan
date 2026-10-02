@@ -570,21 +570,80 @@ namespace GuardsDigital.Tests.EditMode
         /// reads what each action can do took it to 200 s (the offline harness measures 82 s before
         /// and 86 s after). Nothing else about the case moves - seeds, sides, floor and gate are as
         /// they were; a timeout guards against a hung test, and this one is not hung.</para>
+        ///
+        /// <para>Milestone 9.26 split the MEASUREMENT from the CLAIM and changed neither. With the
+        /// twenty-eight-hero roster the one case took 197 s in a full Unity Edit Mode run, over the
+        /// framework's 180 s per-case budget, and passed only because that budget is applied at the
+        /// case's next yield. Each gate seed is now measured by its own case
+        /// (<see cref="TierTwoIsMeasuredAgainstTierOne_OnOneSeedItWasNotTunedOn"/>: both sides, a
+        /// quarter of the old cost), the reports are kept for the run in <see cref="SuiteGateReports"/>,
+        /// and this case merges them and asserts exactly what it always asserted over exactly the same
+        /// eight matches - at least four decided, at least a quarter of them won. A seed no earlier
+        /// case measured in this run is measured here, so a focused run of this case alone still makes
+        /// the whole claim, at the old cost; the cache is emptied when the fixture starts, so no run
+        /// reads another run's matches. No seed, side, floor or bot policy moved.</para>
         /// </remarks>
         [Test]
+        [Order(2)]
         [Timeout(600000)]
         public void TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn()
         {
-            var report = BotTierTwoBench.Measure(
-                BotTier.TierTwo, BotTier.TierOne, SuiteGateSeeds);
+            var report = BotMatchupReport.Merge(SuiteGateSeeds.Select(SuiteGateReport).ToList());
             TestContext.WriteLine(report.Summary());
 
+            Assert.That(report.Decided + report.Undecided, Is.EqualTo(2 * SuiteGateSeeds.Length),
+                "The merge covers every gate seed from both sides. " + report.Summary());
             Assert.That(report.Decided, Is.GreaterThanOrEqualTo(SuiteGateSeeds.Length),
                 "Too few matches reached a winner to say anything. " + report.Summary());
             Assert.That(report.WinRate, Is.GreaterThanOrEqualTo(0.25),
                 "Tier-2 broke outright against the tier-1 brain it replaces, on seeds it was not " +
                 "tuned on. This floor is an outright-break tripwire, not a margin: the margin is " +
                 nameof(TheHeldOutGateMeasurement) + "'s twenty held-out seeds. " + report.Summary());
+        }
+
+        /// <summary>
+        /// One gate seed, both sides, measured and kept for <see cref="TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn"/>
+        /// (milestone 9.26). The claim is the merge's; this case only proves the seed was played from
+        /// both sides, so a seed that cannot be measured fails here by name rather than vanishing from
+        /// the gate's denominator.
+        /// </summary>
+        [TestCaseSource(nameof(SuiteGateSeeds))]
+        [Order(1)]
+        [Timeout(600000)]
+        public void TierTwoIsMeasuredAgainstTierOne_OnOneSeedItWasNotTunedOn(int seed)
+        {
+            var report = SuiteGateReport(seed);
+            TestContext.WriteLine(report.ToString());
+
+            Assert.That(report.Decided + report.Undecided, Is.EqualTo(2),
+                "Seed " + seed + " was played from both sides. " + report.Summary());
+        }
+
+        /// <summary>The run's per-seed gate reports, by seed; see the gate's remarks (9.26).</summary>
+        private static readonly Dictionary<int, BotMatchupReport> SuiteGateReports =
+            new Dictionary<int, BotMatchupReport>();
+
+        [OneTimeSetUp]
+        public void EmptyTheSuiteGateReports()
+        {
+            lock (SuiteGateReports)
+            {
+                SuiteGateReports.Clear();
+            }
+        }
+
+        private static BotMatchupReport SuiteGateReport(int seed)
+        {
+            lock (SuiteGateReports)
+            {
+                if (!SuiteGateReports.TryGetValue(seed, out var report))
+                {
+                    report = BotTierTwoBench.Measure(BotTier.TierTwo, BotTier.TierOne, new[] { seed });
+                    SuiteGateReports[seed] = report;
+                }
+
+                return report;
+            }
         }
 
         /// <summary>

@@ -88,6 +88,48 @@ namespace GuardsDigital.Tests.EditMode
                 " commands=" + result.Commands + " rounds=" + result.RoundsReached);
         }
 
+        /// <summary>
+        /// One report over several, as if their matches had been added to it in turn. Milestone 9.26
+        /// measures each suite-gate seed in its own case and asserts the gate over the merge, so the
+        /// merge must read exactly as the report <see cref="BotTierTwoBench.Measure"/> would have
+        /// produced over all of their seeds in one call: the same counts, the same side split, the
+        /// same per-decision means weighted by decisions, the same rows in seed order.
+        /// </summary>
+        public static BotMatchupReport Merge(IReadOnlyList<BotMatchupReport> parts)
+        {
+            if (parts == null || parts.Count == 0)
+            {
+                throw new ArgumentException("A merge needs at least one report.", nameof(parts));
+            }
+
+            var merged = new BotMatchupReport(
+                parts[0].Subject, parts[0].Opponent, parts.Sum(part => part.SeedCount));
+            foreach (var part in parts)
+            {
+                if (part.Subject != merged.Subject || part.Opponent != merged.Opponent)
+                {
+                    throw new ArgumentException(
+                        "The reports measure different matchups: " + merged.Subject + " vs " +
+                        merged.Opponent + " and " + part.Subject + " vs " + part.Opponent + ".",
+                        nameof(parts));
+                }
+
+                merged.Wins += part.Wins;
+                merged.Losses += part.Losses;
+                merged.Undecided += part.Undecided;
+                merged.WinsAsRed += part.WinsAsRed;
+                merged.WinsAsBlue += part.WinsAsBlue;
+                merged.SimulatedPlies += part.SimulatedPlies;
+                merged.subjectTicksMs += part.subjectTicksMs;
+                merged.subjectDecisions += part.subjectDecisions;
+                merged.opponentTicksMs += part.opponentTicksMs;
+                merged.opponentDecisions += part.opponentDecisions;
+                merged.rows.AddRange(part.rows);
+            }
+
+            return merged;
+        }
+
         public string Summary() =>
             Subject + " vs " + Opponent + "  " + Wins + "W " + Losses + "L " + Undecided + "U   " +
             (WinRate * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%   [red " +

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.26 Bot gate split evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.26 | The bot tier-two suite gate measures each held-out seed (101-104, both sides) in its own case and asserts its unchanged outright-break floor over the merged report, so every Edit Mode case stays inside the 180 s budget (41.7-61.0 s per seed in Unity; the same eight matches, 6W 2L); no seed, floor or bot policy change. [Definition](../../Roadmap/PHASE_9.md#x-926-the-bot-tier-two-seed-sweep-fits-unitys-per-case-budget). | `milestone/9.26` |
+
 ## Milestone 9.14 Printed-spelling evidence
 
 | Milestone | Outcome and definition | Commit |

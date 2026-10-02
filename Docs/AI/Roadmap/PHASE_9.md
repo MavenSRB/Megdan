@@ -182,9 +182,16 @@ Completed 2026-10-01.
 
 Historical evidence: [9.23 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-923-stance-declarations-evidence).
 
-### [ ] 9.26 The bot tier-two seed sweep fits Unity's per-case budget
+### [x] 9.26 The bot tier-two seed sweep fits Unity's per-case budget
 
 Queued 2026-09-30 by 9.21k: `BotTierTwoTests.TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn` took 197 s in the full Edit Mode run of the twenty-eight-hero roster, over the 180 s per-case budget the launcher enforces, and passed only because the budget is applied at the case's next yield. No bot code changed in the Razzle sequence; the sweep grew with the roster. Outcome: the case split by seed group or its line-up sample bounded so every case stays under 120 s, with the same seeds covered and the tier-two-not-worse claim unchanged; the split named in `Docs/AI/Testing` where the bot sweep is described. Closing check: the split cases green in Edit Mode with their durations recorded, and the full Edit Mode run green. T1.
+
+Result: the measurement and the claim are split, and neither moved. `BotTierTwoTests` measures each gate seed (101-104, both sides) in its own `TierTwoIsMeasuredAgainstTierOne_OnOneSeedItWasNotTunedOn(seed)` case (`TestCaseSource` over the unchanged `SuiteGateSeeds`, `Order(1)`), keeps the four reports for the run in a fixture-static cache emptied by `OneTimeSetUp`, and `TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn` (`Order(2)`) asserts over `BotMatchupReport.Merge` of them exactly what it asserted before - at least four decided, at least a quarter won - plus that the merge saw all eight matches; a seed no earlier case measured is measured by the gate case itself, so a focused run of the gate alone still makes the whole claim at the old cost. The per-seed cases assert only that both sides were played. No seed, side, floor or bot policy changed; the merge reproduces `Measure`'s counts, side split, decision-weighted means and rows, and the merged gate read 6W 2L (75%) in Unity and offline alike, the same eight matches as before. Measured in Unity Edit Mode: seeds 101-104 took 41.7/61.0/43.9/45.5 s focused and 39.6/59.3/44.3/45.3 s inside the full run, the gate case under 5 ms (the offline harness 20-27 s per seed). The full run's slowest case is now `BotBrainTests.TheMovedGreedyPassStillBeatsRandomLegal` at 164 s - inside the budget, outside this milestone, and the next candidate if the roster grows again. The split is named in [the suites shard](../Testing/PLAYMODE_AND_SUITES.md). One trap recorded for the next reader: a fixture-name `-testFilter` is an explicit selection, so it also runs the fixture's `[Explicit]` instruments (here the 72-match held-out measurement); name the cases when focusing on this fixture.
+
+
+Completed 2026-10-02.
+
+Historical evidence: [9.26 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-926-bot-gate-split-evidence).
 
 ### [x] 9.27 Package the 2026-10-01 build with Razzle
 
