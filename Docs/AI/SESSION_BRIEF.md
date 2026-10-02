@@ -10,13 +10,13 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5; all thirty heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v54 persists turn-slot marker positions, temporary rune activation, held action selections, Minion-Battle exclusions, the last completed Movement walk, minion Defeats held behind a removal-prevention question, hero bodies (9.21a), the acting body (9.21b), a hero's spellbook (9.30b), Wish tallies (9.30g) and each team's starting Lives (9.30f) and a turn-slot card placed facedown (9.32a); wire protocol is `guards-private-online/35`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the p.20 Handicap cards p.6 returns to the box at setup. All thirty heroes pass the permanent player-path gate. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
-FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current `Playtest-9.31-gydion` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
+FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.32i**.
-- Active authorized milestone: **9.37**.
-- Next proposed milestone: **9.37**.
+- Current completed milestone: **9.37**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **9.26**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus, host session ID and IP, non-playing host Director tools) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -54,7 +54,7 @@ The TWENTIETH hero, **Brynn the Seeker**, is COMPLETE: **[8.69-8.69h](Roadmap/PH
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.31](Roadmap/PHASE_9.md)'s Windows `Builds/Playtest-9.31-gydion` (twenty-nine heroes, protocol `/33`, schema 53, stamp `...a0b8662d`); earlier packages cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
+Current package: [9.37](Roadmap/PHASE_9.md)'s Windows `Builds/Playtest-9.37-takahide` (thirty heroes, protocol `/35`, schema 54, stamp `...73d9864f`); earlier packages, `Playtest-9.31-gydion` among them, stay preserved and cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.37 Package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.37 | Windows playtest package `Builds/Playtest-9.37-takahide` (thirty heroes, protocol /35, schema 54, stamp `1.0-9.37-takahide+20261002181847-73d9864f`, digest `416b6167...`) cut from main `42238321` after the T3 gate, the build-and-launch, board visual and multi-client lobby smokes; completed history 9.1-9.12 moved to its own shard first. [Definition](../../Roadmap/PHASE_9.md#x-937-package-the-2026-10-02-build-with-takahide). | `milestone/9.37` |
+
 ## Milestone 9.32i Takahide gate evidence
 
 | Milestone | Outcome and definition | Commit |
