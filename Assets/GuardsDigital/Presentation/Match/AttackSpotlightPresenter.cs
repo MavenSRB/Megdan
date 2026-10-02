@@ -413,36 +413,9 @@ namespace GuardsDigital.Presentation.Match
                     turnIndex: 0),
                 PrintsRangedAttack(
                     projection, entry.SubjectCardInstanceId, entry.SubjectHeroId),
-                CaptureSpell(projection, entry.SubjectCardInstanceId));
-        }
-
-        /// <summary>
-        /// Milestone 9.34. The spell face of the card the Attack row names, or <c>null</c> when that
-        /// card is not a spell. Gydion's spell attacks name the spell card they were cast from (9.30c),
-        /// and a spell is drawn by its own face - the one the spell choice and the SPELLBOOK drawer
-        /// draw - never by the hero-card builder, which knows no spell artwork and would draw a
-        /// generated hero card instead.
-        /// </summary>
-        private static SpellCardViewModel CaptureSpell(
-            IMatchReadModel projection, CardInstanceId cardInstanceId)
-        {
-            if (!cardInstanceId.IsDefined || projection.Cards == null || projection.Definitions == null)
-            {
-                return null;
-            }
-
-            var instance = projection.Cards.FirstOrDefault(card =>
-                card != null && card.Id.Equals(cardInstanceId));
-            if (instance == null)
-            {
-                return null;
-            }
-
-            var definition = projection.Definitions.FirstOrDefault(value =>
-                value != null && value.Reference.Equals(instance.DefinitionReference));
-            return definition != null && definition.Progression.IsSpell
-                ? new SpellCardViewModel(definition)
-                : null;
+                // Milestone 9.34. Gydion's spell attacks name the spell card they were cast from
+                // (9.30c), and a spell is drawn by its own face - never by the hero-card builder.
+                SpellbookPresentation.FaceOfCard(projection, entry.SubjectCardInstanceId));
         }
 
         /// <summary>

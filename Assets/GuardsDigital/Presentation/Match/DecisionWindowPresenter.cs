@@ -706,7 +706,11 @@ namespace GuardsDigital.Presentation.Match
                     // mouseover when mousing over the defense cards." The card and its one chip stay;
                     // what the total is MADE OF is the hover breakdown's to say, on the one layer that
                     // has said it since 8.11b.
-                    contextCards.Add(new DecisionWindowCardViewModel(face, chip));
+                    // Milestone 9.34 corrective: a spell attack's card is the spell it was cast from,
+                    // drawn by its own face rather than as a generated hero card.
+                    contextCards.Add(new DecisionWindowCardViewModel(
+                        face, chip,
+                        spell: SpellbookPresentation.FaceOfCard(projection, choice.SourceCardInstanceId)));
                 }
             }
 
@@ -934,8 +938,10 @@ namespace GuardsDigital.Presentation.Match
                 if (face != null)
                 {
                     // No caption: the window's own title IS this card's name, and a second copy of it
-                    // under the face would be the strip's `MODE CHOICE` gutter back again.
-                    contextCards.Add(new DecisionWindowCardViewModel(face));
+                    // under the face would be the strip's `MODE CHOICE` gutter back again. Milestone
+                    // 9.34 corrective: a spell's own text shows the spell's own face.
+                    contextCards.Add(new DecisionWindowCardViewModel(
+                        face, spell: SpellbookPresentation.FaceOfCard(projection, sourceCardId)));
                 }
             }
 

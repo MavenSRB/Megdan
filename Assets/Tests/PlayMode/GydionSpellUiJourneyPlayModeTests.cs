@@ -70,6 +70,15 @@ namespace GuardsDigital.Tests.PlayMode
             var wasp = Wasp(runtime);
             yield return Cast(root, GydionCardContent.Cantrip, GydionCardContent.ShockingGrasp);
             yield return TargetHero(root, wasp);
+
+            // Milestone 9.34 corrective, the same report as the spotlight's: the window Wasp defends in
+            // shows the attacking card (8.80), and a spell attack's card is the spell - drawn by its
+            // own face, not as a generated hero card.
+            Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Where(element => element.name == "gd-decision-attack-card")
+                    .SelectMany(UiPlayer.Descendants)
+                    .Any(element => element.name == "gd-spell-face"), Is.True,
+                "The defender's window shows Shocking Grasp as its spell face. " + Remaining(runtime));
             yield return ClickDefenseFace(root, WaspCardContent.Shock);
             Assert.That(Card(runtime, wasp, WaspCardContent.Shock).State.Location, Is.EqualTo(CardLocation.DiscardPile),
                 "Her Shock's Defense 6 holds against Attack 3.");

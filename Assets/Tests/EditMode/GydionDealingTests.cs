@@ -355,6 +355,68 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(CardLocation.Spellbook), "\"Add all spell cards to the spellbook.\"");
         }
 
+        /// <summary>
+        /// Milestone 9.34 corrective, the user's report: "Gydion when he attacks animation shows
+        /// syntetic card for spell attack, it needs to be actual spell card". The defending seat's
+        /// window draws the incoming attack's card (8.80), and a spell attack's card is the spell, so
+        /// that context card carries the spell's own face - the one every spell surface draws - rather
+        /// than a generated hero card. Cast from Cantrip: whichever of its two Attack spells can reach
+        /// Wasp on the staged board.
+        /// </summary>
+        [Test]
+        public void ASpellAttacksDefenseWindow_ShowsTheSpellsOwnFace()
+        {
+            var reached = 0;
+            foreach (var spell in new[] { GydionCardContent.ShockingGrasp, GydionCardContent.MagicMissile })
+            {
+                var session = StagedSession(tierThree: false, out var wasp, out var gydion);
+                ActWith(session, wasp, gydion, GydionCardContent.Cantrip);
+                Accept(session, StartPrimary(session, GydionCardContent.Cantrip));
+                var arm = session.Projection.PendingEffectChoice.Candidates
+                    .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Option)
+                    .Select(candidate => candidate.OptionNodeId)
+                    .Single(node => SyntheticSpellbookCapabilities.TryReadSpellArm(
+                            GydionCardContent.Definition(GydionCardContent.Cantrip).ActionDefinitions
+                                .Select(action => action.EffectRoot).Where(root => root != null),
+                            node, GydionCardContent.SpellDefinitions, out var named, out _) &&
+                        named.Id.Equals(spell));
+                var asked = session.Projection.PendingEffectChoice.ChoiceId;
+                Accept(session, SelectArm(session, arm));
+                ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, asked);
+                var targets = session.Projection.PendingAttackTargetChoice;
+                if (targets == null || !targets.LegalTargetHeroIds.Contains(wasp))
+                {
+                    continue;
+                }
+
+                Accept(session, DirectorCommand.ChooseAttackTarget(wasp));
+                var defense = session.Projection.PendingDefenseChoice;
+                Assert.That(defense, Is.Not.Null, spell.Value + ": Wasp is asked to defend.");
+                Assert.That(defense.SourceDefinitionReference.DefinitionId, Is.EqualTo(spell),
+                    "The attack's card is the spell it was cast from (9.30c).");
+                Assert.That(DefinitionOf(session, session.Projection.Cards.Single(card =>
+                        card.Id.Equals(defense.SourceCardInstanceId))).Progression.IsSpell, Is.True,
+                    "and that card is a spell - the window's attacking card is a spell card.");
+
+#if UNITY_EDITOR
+                // The window's presenter is Unity-tier (the offline harness compiles no Presentation
+                // window), so this half runs in Unity Edit Mode.
+                var model = GuardsDigital.Presentation.Match.DecisionWindowPresenter.CreateViewModel(
+                    session.Projection, defense.ChooserId);
+                Assert.That(model?.Family,
+                    Is.EqualTo(GuardsDigital.Presentation.Match.DecisionWindowFamily.Defense));
+                Assert.That(model.ContextCards, Has.Count.EqualTo(1), "The attacking card is shown.");
+                Assert.That(model.ContextCards[0].Spell?.DefinitionReference.DefinitionId,
+                    Is.EqualTo(spell),
+                    spell.Value + ": the defender sees the spell's own face, not a generated hero card.");
+#endif
+                reached++;
+            }
+
+            Assert.That(reached, Is.GreaterThan(0),
+                "Fixture: one of Cantrip's Attack spells reaches Wasp on the staged board.");
+        }
+
         // -------------------------------------------------------------------------------------------
         // The bots answer every decision family his spells raise
         // -------------------------------------------------------------------------------------------

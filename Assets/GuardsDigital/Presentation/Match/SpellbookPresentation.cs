@@ -173,6 +173,33 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class SpellbookPresentation
     {
+        /// <summary>
+        /// Milestone 9.34. The spell face of the projected card <paramref name="cardInstanceId"/>, or
+        /// <c>null</c> when that card is not a spell (or this projection does not carry it). A surface
+        /// showing a card that may be a cast spell - a spell attack's card in the spotlight or in the
+        /// defender's window - asks this first, because the hero-card builder knows no spell artwork and
+        /// draws a generated hero card for one.
+        /// </summary>
+        public static SpellCardViewModel FaceOfCard(IMatchReadModel projection, CardInstanceId cardInstanceId)
+        {
+            if (projection?.Cards == null || projection.Definitions == null || !cardInstanceId.IsDefined)
+            {
+                return null;
+            }
+
+            var instance = projection.Cards.FirstOrDefault(card => card != null && card.Id.Equals(cardInstanceId));
+            if (instance == null)
+            {
+                return null;
+            }
+
+            var definition = projection.Definitions.FirstOrDefault(value =>
+                value != null && value.Reference.Equals(instance.DefinitionReference));
+            return definition != null && definition.Progression.IsSpell
+                ? new SpellCardViewModel(definition)
+                : null;
+        }
+
         /// <summary>The words a spell multi-pick is confirmed with (the user, 2026-10-01: "then CONFIRM").</summary>
         public const string ConfirmLabel = "CONFIRM";
 

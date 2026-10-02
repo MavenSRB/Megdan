@@ -402,6 +402,8 @@ Result: `AttackSpotlightPresenter` reads the attacking card's definition and, fo
 
 Completed 2026-10-01.
 
+Corrective (2026-10-02): the defending seat's window also drew a spell attack's card (8.80's attacking card) as a generated hero card, and so did the source card of a spell's own text window. Both now carry the spell's own face (`DecisionWindowCardViewModel.Spell`, drawn by `SpellCardFaceView`), read through one shared `SpellbookPresentation.FaceOfCard` that the spotlight now uses too. `GydionDealingTests.ASpellAttacksDefenseWindow_ShowsTheSpellsOwnFace` and the Shocking Grasp journey's Defense-window check pin it.
+
 Historical evidence: [9.34 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-934-spell-attack-spotlight-evidence).
 
 ### [x] 9.35 The "up to" line moves of Cutter, Misa and Silverarrow offer 0 spaces

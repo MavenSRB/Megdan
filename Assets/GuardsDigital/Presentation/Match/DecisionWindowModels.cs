@@ -251,14 +251,23 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class DecisionWindowCardViewModel
     {
-        public DecisionWindowCardViewModel(TrayCardViewModel card, string caption = null, string detail = null)
+        public DecisionWindowCardViewModel(
+            TrayCardViewModel card, string caption = null, string detail = null, SpellCardViewModel spell = null)
         {
             Card = card ?? throw new ArgumentNullException(nameof(card));
             Caption = caption;
             Detail = detail;
+            Spell = spell;
         }
 
         public TrayCardViewModel Card { get; }
+
+        /// <summary>
+        /// Milestone 9.34 corrective. The spell's own printed face when <see cref="Card"/> is a spell -
+        /// the attack a Defense is asked about, or the spell whose text raised the question - which the
+        /// window draws in place of the hero-card face; <c>null</c> for every other card.
+        /// </summary>
+        public SpellCardViewModel Spell { get; }
 
         /// <summary>`ATTACK 7` - what this card is contributing to the question.</summary>
         public string Caption { get; }

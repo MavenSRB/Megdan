@@ -1670,7 +1670,11 @@ namespace GuardsDigital.Presentation.Match
             slot.style.flexShrink = 0f;
             slot.style.width = CardFaceWidth;
             slot.pickingMode = PickingMode.Ignore;
-            slot.Add(BuildFace(card.Card, CardShineSlot.None));
+            // Milestone 9.34 corrective: a spell is drawn by the one spell-face builder every spell
+            // surface shares, never as a generated hero card.
+            slot.Add(card.Spell != null
+                ? SpellCardFaceView.Build(card.Spell)
+                : BuildFace(card.Card, CardShineSlot.None));
             if (!string.IsNullOrEmpty(card.Caption))
             {
                 // Milestone 8.58: the mockup's `.chip.gold`. The incoming attack's own total is the
