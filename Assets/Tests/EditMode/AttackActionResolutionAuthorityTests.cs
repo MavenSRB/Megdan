@@ -17,6 +17,24 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class AttackActionResolutionAuthorityTests
     {
+        [TestCase(-1)]
+        [TestCase(-2)]
+        public void PendingDefenseResponse_PreservesSignedAttackTotal(int attackTotal)
+        {
+            // Dodger D-08: Weakness/Enfeeblement reduce the total without a zero floor.
+            var fixture = CreateFixture();
+            var original = OpenDefenseResponse(fixture).PendingDefenseChoice;
+            var signed = new PendingDefenseResponseChoice(
+                original.ResolutionId, original.ChoiceId, original.ChooserId, original.AttackerId,
+                original.SourceCardInstanceId, original.SourceDefinitionReference,
+                original.ActionDefinitionId, attackTotal, original.LegalDefenseOffers, original.CanDecline);
+
+            Assert.That(signed.AttackTotal, Is.EqualTo(attackTotal));
+            Assert.That(signed.LegalDefenseOffers, Is.EqualTo(original.LegalDefenseOffers));
+            Assert.That(signed.ChooserId, Is.EqualTo(original.ChooserId));
+            Assert.That(signed.CanDecline, Is.EqualTo(original.CanDecline));
+        }
+
         [Test]
         public void OutcomeComparison_UsesTypedBlockOverrideInsteadOfMagicDefenseTotal()
         {

@@ -40,9 +40,17 @@ Historical evidence: [9.13a completion index](../Archive/Phase-Handoffs/PHASE_9.
 
 Additional coverage backlog (not part of the per-face acceptance): `arien-liquid-leap-spawn-exclusions` remains **parked, not executed** because the neutral format cannot name an excluded destination. Owner: expected-outcome executor; dependency: a source-relative destination-offer assertion; closing check: reject both a spawn-point landing and a non-spawn landing adjacent to an empty spawn point, with a legal landing as control. Arien's ordinary Liquid Leap outcome still executes. The five boxed Handicap faces remain outside standard dealt play under p.6, not passing action coverage.
 
-### [ ] 9.13b Tables for Xargatha, Dodger, Misa, Silverarrow and Ursafar
+### [x] 9.13b Tables for Xargatha, Dodger, Misa, Silverarrow and Ursafar
 
 Queued as 9.13a. T2.
+
+Result: independent source-only readers authored 152 cases; 146 execute, covering every dealt face and each unlocked Ultimate. Dispositions preserve original readings and neutral fixture adaptations. Generic executor checks now cover real reserve respawns and exact empty minion spawn counts, owned item/card facts, explicit delayed checkpoints and declines, same-actor next-turn actions, exact swaps, completed Attack counts, maximum offered Movement and actual obstacle traversal. Wrong-fact controls prove assertions fail on their intended observations. One printed-rule disagreement exposed invalid negative Attack Total guards in the pending Defense choice and network decoder; both now preserve signed totals under Dodger D-08, with stable identity/offer checks and unchanged snapshot/wire shapes.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.13b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913b-second-five-outcome-tables-evidence).
+
+Additional coverage backlog: `xargatha-stone-gaze-heroes-also-terrain` remains **parked, not executed**. Owner: expected-outcome executor; dependency: simultaneous object-type and turn-lifetime assertions; closing check: prove the enemy remains a hero and also counts as terrain only during the next turn, with before/after controls. Stone Gaze's Movement prohibition executes separately. The five boxed Handicap cases remain outside standard dealt play under p.6, not passing action coverage.
 
 ### [ ] 9.13c Tables for Whisper, Tali, Swift, Cutter and Bain
 

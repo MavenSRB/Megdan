@@ -1,0 +1,87 @@
+[
+  {
+    "id": "silverarrow-fae-healing-decline-no-coins",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed Fae Healing optional retrieval",
+    "note": "Original answers were friendly-hero-1, decline. The selected friendly hero owns the optional retrieval; integration qualifies that decline as friendly-hero-1: decline to avoid assigning it to a later actor question. Original zero-coins expectation is preserved."
+  },
+  {
+    "id": "silverarrow-nature's-blessing-decline-no-coins",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed Nature's Blessing optional retrieval",
+    "note": "Original answers were friendly-hero-1, decline. The selected friendly hero owns the optional retrieval; integration qualifies that decline as friendly-hero-1: decline to avoid assigning it to a later actor question. Original zero-coins expectation is preserved."
+  },
+  {
+    "id": "silverarrow-warning-shot-end-turn-discard",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed Warning Shot End of turn clause",
+    "note": "Original unsupported timing note is preserved. Explicit end-of-turn checkpoint now completes the shared turn through ordinary commands and answers the delayed question; Focus is staged explicitly in the target's hand. Original expected discard unchanged."
+  },
+  {
+    "id": "silverarrow-treetop-sentinel-end-turn-discard",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed Treetop Sentinel End of turn clause",
+    "note": "Original unsupported timing note is preserved. Explicit end-of-turn checkpoint now completes the shared turn through ordinary commands and answers the delayed question; Focus is staged explicitly in the target's hand. Original expected discard unchanged."
+  },
+  {
+    "id": "silverarrow-treetop-empty-hand-defeat",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed Treetop Sentinel End of turn clause",
+    "note": "Original unsupported timing note is preserved. Explicit end-of-turn checkpoint now completes the shared turn through ordinary commands and answers the delayed question. Original empty-hand setup and defeat expectation unchanged."
+  },
+  {
+    "id": "silverarrow-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6 step11",
+    "note": "Handicap H face is returned to the box in standard setup; odd-player handicap coverage is not executed by this dealt-card runner."
+  },
+  {
+    "id": "silverarrow-snap-shot-isolated",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer. The two target descriptions are one candidate union, with no separate branch control; name the same isolated target directly. Bare Attack/coins facts elsewhere gained explicit actor references only, with unchanged values.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"actor","attack":3},{"ref":"enemy-hero-1","is":"defeated"}]
+  },
+  {
+    "id": "silverarrow-snap-shot-adjacent-option",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer; the single target union needs only the same adjacent target.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"enemy-hero-1","is":"defeated"}]
+  },
+  {
+    "id": "silverarrow-opportunity-shot-isolated",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer; the single target union needs only the same isolated target.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"actor","attack":4},{"ref":"enemy-hero-1","is":"defeated"}]
+  },
+  {
+    "id": "silverarrow-opportunity-shot-adjacent-option",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer; the single target union needs only the same adjacent target.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"enemy-hero-1","is":"defeated"}]
+  },
+  {
+    "id": "silverarrow-clear-shot-isolated",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer; the single target union needs only the same isolated target.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"actor","attack":5},{"ref":"enemy-hero-1","is":"defeated"}]
+  },
+  {
+    "id": "silverarrow-clear-shot-adjacent-option",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/HERO_SILVERARROW.md, settled Red-modal candidate-set reading",
+    "note": "Preserve blind modal answer; the single target union needs only the same adjacent target.",
+    "answers-override": ["enemy-hero-1"],
+    "expect-override": [{"ref":"enemy-hero-1","is":"defeated"}]
+  }
+]

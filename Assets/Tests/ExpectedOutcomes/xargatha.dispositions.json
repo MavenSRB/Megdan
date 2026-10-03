@@ -1,0 +1,64 @@
+[
+  {
+    "id": "xargatha-charm-moves-ranged",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"enemy-minion-1\",\"space: distance 2 from actor and adjacent to enemy-minion-1\",\"distance 0\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome."
+  },
+  {
+    "id": "xargatha-control-moves-melee",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"enemy-minion-1\",\"space: distance 2 from actor and adjacent to enemy-minion-1\",\"distance 0\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome."
+  },
+  {
+    "id": "xargatha-dominate-moves-heavy",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"enemy-minion-1\",\"space: distance 2 from actor and adjacent to enemy-minion-1\",\"distance 0\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome."
+  },
+  {
+    "id": "xargatha-charm-melee-is-not-target",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"distance 2\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome. Original frozen fixture: {\"pieces\":[{\"ref\":\"enemy-minion-1\",\"where\":\"adjacent to actor\",\"type\":\"melee\"}]}. Second run exposed no targeting question with only an invalid melee candidate, which cannot establish exclusion. Added a legal adjacent ranged minion positive control, selected it and moved it one space before actor's unchanged Movement 2. Closing check: actual targeting choice includes ranged minion and excludes melee; melee remains unmoved, ranged moves 1, actor moves 2."
+  },
+  {
+    "id": "xargatha-constrict-end-round-defeat",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen unsupported note: Needs an explicit advance-to-end-of-round-before-minion-battle checkpoint. Immediately after Skill the target remains alive; at end of round it is defeated and actor gains 2 coins before minion battle. Do not assert the defeat immediately or count round pity coins. Added before-minion-battle checkpoint; original end-round answer enemy-minion-1 and defeat/2-coin expectations retained. Closing check: both facts pass after end-round card effects and before minion battle or level-up."
+  },
+  {
+    "id": "xargatha-final-embrace-end-round-defeat",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen unsupported note: Needs an explicit advance-to-end-of-round-before-minion-battle checkpoint. Immediately after Skill the target remains alive; at end of round it is defeated and actor gains 2 coins before minion battle. Do not assert the defeat immediately or count round pity coins. Added before-minion-battle checkpoint; original end-round answer enemy-minion-1 and defeat/2-coin expectations retained. Closing check: both facts pass after end-round card effects and before minion battle or level-up."
+  },
+  {
+    "id": "xargatha-metamorphosis-unlocked-movement-bonus",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"distance 3\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome."
+  },
+  {
+    "id": "xargatha-metamorphosis-crosses-obstacle",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Frozen answers [\"space: distance 2 from actor in a straight line through obstacle-1\"]. Added explicit public timing label before movement to express the frozen intended ordering. Closing check: case consumes the timing choice and reaches every unchanged printed outcome. Frozen unsupported note: Needs a route assertion: actor ends two spaces from its starting space in the same straight line, crossing the adjacent obstacle for movement cost 2. Existing 'at' phrase cannot name the actor's start; add an explicit initial-position reference. Added moved-through obstacle-1 assertion with original two-step move. Closing check: recorded Movement route crosses obstacle-1 and costs 2."
+  },
+  {
+    "id": "xargatha-stone-gaze-heroes-also-terrain",
+    "kind": "not-executable",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Parked extra type coverage; owner milestone 9.13 shared backlog. Primary Stone Gaze movement prohibition is executed separately. Frozen note: Needs next-turn type assertion: enemy-hero-1 simultaneously remains a hero and counts as terrain during next turn; outside that turn it is only a hero. Movement prohibition cases do not prove the added terrain type. Closing check: add generic simultaneous-type/time assertions and show enemy hero counts as both hero and terrain only next turn.",
+    "execute": false
+  },
+  {
+    "id": "xargatha-desperate-cleave-boxed-handicap",
+    "kind": "not-executable",
+    "ref": "tmp/9-13b/9-13b-first-all-stable.trx; printed sources in xargatha.json",
+    "note": "Printed p.6 returns H to box; not an ordinary dealt face. Frozen note: Printed H face is returned to the box and is not an ordinary dealt card. Explicitly unsupported/not dealt. Closing check for any future handicap workflow: explicitly stage Handicap rules and run the printed H face.",
+    "execute": false
+  }
+]

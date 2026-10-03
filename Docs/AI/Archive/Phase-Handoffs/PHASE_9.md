@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13b Second-five outcome tables evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13b | Independent Xargatha, Dodger, Misa, Silverarrow and Ursafar tables, explicit disagreement dispositions, exact delayed/respawn/item/Movement assertions, and signed Attack Total support through Defense and its network projection. [Definition](../../Roadmap/PHASE_9.md#x-913b-tables-for-xargatha-dodger-misa-silverarrow-and-ursafar). | `milestone/9.13b` |
+
 ## Milestone 9.13a First-five outcome tables evidence
 
 | Milestone | Outcome and definition | Commit |

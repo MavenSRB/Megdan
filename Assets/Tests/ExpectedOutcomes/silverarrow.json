@@ -1,0 +1,1070 @@
+{
+  "hero": "Silverarrow",
+  "cases": [
+    {
+      "id": "silverarrow-shoot-and-scoot-maximum",
+      "card": "Shoot and Scoot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow__7522565__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "actor", "attack": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-shoot-and-scoot-too-close",
+      "card": "Shoot and Scoot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow__7522565__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-long-shot-maximum",
+      "card": "Long Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow5__7506051__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "actor", "attack": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-long-shot-too-close",
+      "card": "Long Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow5__7506051__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-snap-shot-isolated",
+      "card": "Snap Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow3__7506058__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit in range, which is not adjacent to any other unit.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor", "attack": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-snap-shot-adjacent-option",
+      "card": "Snap Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow3__7506058__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit adjacent to you.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-opportunity-shot-isolated",
+      "card": "Opportunity Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow4__7506062__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit in range, which is not adjacent to any other unit.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor", "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-opportunity-shot-adjacent-option",
+      "card": "Opportunity Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow4__7506062__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit adjacent to you.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-clear-shot-isolated",
+      "card": "Clear Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow6__7506063__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit in range, which is not adjacent to any other unit.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor", "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-clear-shot-adjacent-option",
+      "card": "Clear Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow6__7506063__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Target a unit adjacent to you.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-rain-two-heroes-then-minion",
+      "card": "Rain of Arrows",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow7__7506055__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        },
+        "enemy-hero-2": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor", "coins": 2
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-rain-minion-does-not-repeat",
+      "card": "Rain of Arrows",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow7__7506055__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-minion-2",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-grasping-roots-inside",
+      "card": "Grasping Roots",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow8__7510563__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 1},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 1"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-grasping-roots-outside",
+      "card": "Grasping Roots",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow8__7510563__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 2},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 2"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-entangling-vines-inside",
+      "card": "Entangling Vines",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow9__7510561__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 1},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 1"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-entangling-vines-outside",
+      "card": "Entangling Vines",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow9__7510561__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 2},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 2"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-grappling-branches-inside",
+      "card": "Grappling Branches",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow11__7510560__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 1},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 1"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-grappling-branches-outside",
+      "card": "Grappling Branches",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow11__7510560__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {"ref": "enemy-hero-1", "movement-offered-max": 2},
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "away from actor",
+          "distance 2"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-trailblazer-ally-crosses-obstacle",
+      "card": "Trailblazer",
+      "action": "Skill",
+      "note": "Integration makes the intended traversal unambiguous: ally starts three spaces from Silverarrow and obstacle is the intervening second space on the same file, leaving its two-space endpoint empty. Original ally distance2 placed Silverarrow on the intended endpoint and allowed a detour. Original toward/distance answers and moved2 outcome preserved; traversal is now asserted.",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow2__7525566__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "friendly-hero-1": {
+          "hero": "Misa"
+        }
+      },
+      "answers": [
+        "decline"
+      ],
+      "expect": [
+        {"ref": "friendly-hero-1", "moved-through": "obstacle-1"},
+        {
+          "ref": "friendly-hero-1",
+          "moved": 2
+        }
+      ],
+      "follow-up": {
+        "hero": "friendly-hero-1",
+        "card": "Focus",
+        "action": "Movement",
+        "answers": [
+          "toward obstacle-1",
+          "distance 2"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "silverarrow-disorient-moves-both",
+      "card": "Disorient",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow13__7506050__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "away from actor",
+        "distance 1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-divert-attention-moves-both",
+      "card": "Divert Attention",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow14__7506060__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "away from actor",
+        "distance 2",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-lead-astray-moves-both",
+      "card": "Lead Astray",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow16__7506052__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "away from actor",
+        "distance 3",
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-fae-healing-retrieve-gains-coins",
+      "card": "Fae Healing",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow15__7506057__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "friendly-hero-1": {
+          "hero": "Misa",
+          "discard": [
+            "Focus"
+          ],
+          "coins": 0
+        }
+      },
+      "answers": [
+        "friendly-hero-1",
+        "card: Focus"
+      ],
+      "expect": [
+        {
+          "ref": "friendly-hero-1",
+          "coins": 1
+        },
+        {
+          "ref": "friendly-hero-1",
+          "card": "Focus",
+          "state": "retrieved"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-fae-healing-decline-no-coins",
+      "card": "Fae Healing",
+      "action": "Skill",
+      "note": "Original unprefixed decline means the selected friendly hero declines retrieval, not Silverarrow declining a later question. The answer now names that chooser explicitly; expected zero coins is unchanged.",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow15__7506057__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "friendly-hero-1": {
+          "hero": "Misa",
+          "discard": [
+            "Focus"
+          ],
+          "coins": 0
+        }
+      },
+      "answers": [
+        "friendly-hero-1",
+        "friendly-hero-1: decline"
+      ],
+      "expect": [
+        {
+          "ref": "friendly-hero-1",
+          "coins": 0
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-nature's-blessing-retrieve-gains-coins",
+      "card": "Nature's Blessing",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow17__7506066__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "friendly-hero-1": {
+          "hero": "Misa",
+          "discard": [
+            "Focus"
+          ],
+          "coins": 0
+        }
+      },
+      "answers": [
+        "friendly-hero-1",
+        "card: Focus"
+      ],
+      "expect": [
+        {
+          "ref": "friendly-hero-1",
+          "coins": 2
+        },
+        {
+          "ref": "friendly-hero-1",
+          "card": "Focus",
+          "state": "retrieved"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-nature's-blessing-decline-no-coins",
+      "card": "Nature's Blessing",
+      "action": "Skill",
+      "note": "Original unprefixed decline means the selected friendly hero declines retrieval, not Silverarrow declining a later question. The answer now names that chooser explicitly; expected zero coins is unchanged.",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow17__7506066__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "friendly-hero-1": {
+          "hero": "Misa",
+          "discard": [
+            "Focus"
+          ],
+          "coins": 0
+        }
+      },
+      "answers": [
+        "friendly-hero-1",
+        "friendly-hero-1: decline"
+      ],
+      "expect": [
+        {
+          "ref": "friendly-hero-1",
+          "coins": 0
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-warning-shot-end-turn-discard",
+      "card": "Warning Shot",
+      "action": "Skill",
+      "checkpoint": "end-of-turn",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow10__7512603__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa", "hand": ["Focus"]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-1: discard Focus"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "card": "Focus",
+          "state": "discarded"
+        }
+      ],
+      "unsupported": "Need explicit advance-to-end-of-turn control and answers for its delayed question; immediate post-action expectation cannot prove printed end-turn discard."
+    },
+    {
+      "id": "silverarrow-treetop-sentinel-end-turn-discard",
+      "card": "Treetop Sentinel",
+      "action": "Skill",
+      "checkpoint": "end-of-turn",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow12__7512602__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Misa", "hand": ["Focus"]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-1: discard Focus"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "card": "Focus",
+          "state": "discarded"
+        }
+      ],
+      "unsupported": "Need explicit advance-to-end-of-turn control and answers for its delayed question; immediate post-action expectation cannot prove printed end-turn discard."
+    },
+    {
+      "id": "silverarrow-treetop-empty-hand-defeat",
+      "card": "Treetop Sentinel",
+      "action": "Skill",
+      "checkpoint": "end-of-turn",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow12__7512602__front.png",
+        "rulebook pp.9-14, 17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hand": []
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "unsupported": "Need explicit advance-to-end-of-turn control; verify forced defeat when target has no card to discard."
+    },
+    {
+      "id": "silverarrow-ultimate-pre-attack-movement",
+      "card": "Shoot and Scoot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow__7522565__front.png",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow18__7506067__front.png",
+        "rulebook pp.11,13,16"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 2",
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor", "attack": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "silverarrow-boxed-handicap",
+      "card": "Keep the Distance",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/SilverArrow/silverarrow19__7506068__front.png",
+        "rulebook p.6"
+      ],
+      "setup": {},
+      "answers": [],
+      "expect": [],
+      "unsupported": "H face is boxed and not dealt under rulebook p.6; intentionally not executable."
+    }
+  ]
+}

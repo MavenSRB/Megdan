@@ -1,8 +1,10 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.CardResolution;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -13,6 +15,84 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class OnlineMatchHudRulesPrivacyTests
     {
+        [TestCase(-1)]
+        [TestCase(-2)]
+        public void DefenseChoiceCodec_PreservesSignedAttackTotal(int attackTotal)
+        {
+            // Isolate this wire boundary from the domain constructor so the decoder's old
+            // unsigned assumption is independently red even while the constructor rejects it.
+            var host = new MatchHost(ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse());
+            var seat = host.Seats.Seats.Single(value =>
+                host.ProjectionForSeat(value.Id).PendingDefenseChoice != null);
+            var choice = host.ProjectionForSeat(seat.Id).PendingDefenseChoice;
+            var read = typeof(NetworkProjectionDetailCodec).GetMethod(
+                "TryReadDefenseChoice", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(read, Is.Not.Null);
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write(true);
+                writer.Write(choice.ResolutionId.Value);
+                writer.Write(choice.ChoiceId.Value);
+                writer.Write(choice.ChooserId.Value);
+                writer.Write(choice.AttackerId.Value);
+                writer.Write(choice.SourceCardInstanceId.Value);
+                writer.Write(choice.SourceDefinitionReference.DefinitionId.Value);
+                writer.Write(choice.SourceDefinitionReference.ContentRevision);
+                writer.Write(choice.ActionDefinitionId.Value);
+                writer.Write(attackTotal);
+                writer.Write(true);
+                writer.Write(0); // An empty legal-defense set still permits declining.
+                writer.Flush();
+                stream.Position = 0;
+                using (var reader = new BinaryReader(stream))
+                {
+                    var arguments = new object[] { reader, null };
+                    Assert.That(read.Invoke(null, arguments), Is.True);
+                    var row = (NetworkDefenseChoiceRow)arguments[1];
+                    Assert.That(row.AttackTotal, Is.EqualTo(attackTotal));
+                    Assert.That(stream.Position, Is.EqualTo(stream.Length));
+                }
+            }
+        }
+
+        [TestCase(-1)]
+        [TestCase(-2)]
+        public void DefenseChoiceCodec_RoundTripsSignedAttackWithItsLegalOffers(int attackTotal)
+        {
+            var host = new MatchHost(ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse());
+            var seat = host.Seats.Seats.Single(value =>
+                host.ProjectionForSeat(value.Id).PendingDefenseChoice != null);
+            var original = host.ProjectionForSeat(seat.Id).PendingDefenseChoice;
+            var signed = new PendingDefenseResponseChoice(
+                original.ResolutionId, original.ChoiceId, original.ChooserId, original.AttackerId,
+                original.SourceCardInstanceId, original.SourceDefinitionReference,
+                original.ActionDefinitionId, attackTotal, original.LegalDefenseOffers, original.CanDecline);
+            var codec = typeof(NetworkProjectionDetailCodec);
+            var write = codec.GetMethod("WriteDefenseChoice", BindingFlags.NonPublic | BindingFlags.Static);
+            var read = codec.GetMethod("TryReadDefenseChoice", BindingFlags.NonPublic | BindingFlags.Static);
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                write.Invoke(null, new object[] { writer, signed });
+                writer.Flush();
+                stream.Position = 0;
+                using (var reader = new BinaryReader(stream))
+                {
+                    var arguments = new object[] { reader, null };
+                    Assert.That(read.Invoke(null, arguments), Is.True);
+                    var row = (NetworkDefenseChoiceRow)arguments[1];
+                    Assert.That(row.AttackTotal, Is.EqualTo(attackTotal));
+                    Assert.That(row.ChooserId, Is.EqualTo(original.ChooserId.Value));
+                    Assert.That(row.AttackerId, Is.EqualTo(original.AttackerId.Value));
+                    Assert.That(row.SourceCardInstanceId, Is.EqualTo(original.SourceCardInstanceId.Value));
+                    Assert.That(row.CanDecline, Is.EqualTo(original.CanDecline));
+                    Assert.That(row.LegalDefenseOffers.Count, Is.EqualTo(original.LegalDefenseOffers.Count));
+                    Assert.That(stream.Position, Is.EqualTo(stream.Length));
+                }
+            }
+        }
+
         /// <summary>
         /// Milestone 8.80. The Defense question now names the ATTACKING CARD, and this is the case
         /// that says the defender learns nothing from it that its own projection did not already

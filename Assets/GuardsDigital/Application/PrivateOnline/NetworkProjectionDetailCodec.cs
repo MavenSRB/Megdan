@@ -1093,7 +1093,7 @@ namespace GuardsDigital.Application
                 string.IsNullOrWhiteSpace(sourceDefinitionId) ||
                 string.IsNullOrWhiteSpace(sourceContentRevision) ||
                 string.IsNullOrWhiteSpace(actionDefinitionId) ||
-                attackTotal < 0 || !TryReadCount(reader, out var offerCount))
+                !TryReadCount(reader, out var offerCount))
             {
                 return false;
             }

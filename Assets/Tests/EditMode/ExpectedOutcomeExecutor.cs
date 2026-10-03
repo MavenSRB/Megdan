@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
     /// state's box grant), captured as a snapshot and restored into a fresh session, so every command
     /// after that runs on an ordinary restored match.</para>
     /// </summary>
-    internal static class ExpectedOutcomeExecutor
+    internal static partial class ExpectedOutcomeExecutor
     {
         internal sealed class Report
         {
@@ -311,7 +311,7 @@ namespace GuardsDigital.Tests.EditMode
             return best;
         }
 
-        private sealed class CaseRun
+        private sealed partial class CaseRun
         {
             internal readonly List<string> Failures = new List<string>();
             internal readonly StringBuilder Trace = new StringBuilder();
@@ -355,6 +355,9 @@ namespace GuardsDigital.Tests.EditMode
 
             // What the play did, observed while it ran.
             private int? observedAttack;
+            private readonly Dictionary<HeroId, int> observedAttacks = new Dictionary<HeroId, int>();
+            private readonly Dictionary<HeroId, int> attackCounts = new Dictionary<HeroId, int>();
+            private readonly Dictionary<HeroId, int> maximumMovementOffered = new Dictionary<HeroId, int>();
             private readonly Dictionary<string, int> walked = new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly List<HashSet<string>> targetQuestions = new List<HashSet<string>>();
             private readonly Dictionary<string, HashSet<string>> defenseQuestions = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
@@ -482,7 +485,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 var consequences = expectations.Where(value => !value.Has("offered") || value.Has("bullet")).ToArray();
-                if (followup == null && consequences.Length == 0 && answers.Count == 0 && expectedOffered.Length > 0)
+                if (followup == null && !entry.Has("checkpoint") && consequences.Length == 0 && answers.Count == 0 && expectedOffered.Length > 0)
                 {
                     return;
                 }
@@ -503,6 +506,12 @@ namespace GuardsDigital.Tests.EditMode
                 Play(forced);
                 if (followup != null) RunFollowup();
                 after = session.Projection;
+                if (entry.Has("checkpoint"))
+                {
+                    RunTheRoundEnd(entry.Get("checkpoint") as string == "before-minion-battle",
+                        entry.Get("checkpoint") as string == "end-of-turn");
+                    after = afterRound;
+                }
                 LogAfter(after);
                 if (consequences.Any(NeedsTheRoundEnd))
                 {
@@ -551,7 +560,7 @@ namespace GuardsDigital.Tests.EditMode
             private static readonly HashSet<string> CaseKeys = new HashSet<string>(StringComparer.Ordinal)
             {
                 "id", "card", "action", "source", "setup", "answers", "expect", "unsupported", "hero",
-                "handicap", "note", "notes", "comment", "why", "description", "follow-up"
+                "handicap", "note", "notes", "comment", "why", "description", "follow-up", "checkpoint"
             };
 
             private void ReadCase()
@@ -603,8 +612,8 @@ namespace GuardsDigital.Tests.EditMode
                         throw Unsupported("follow-up turn", Describe(followup.Get("turn")));
                     followupNextTurn = (string)followup.Get("turn") == "next";
                     followupHero = HeroOfRef(followup.Get("hero") as string ?? string.Empty);
-                    if (!followupHero.IsDefined || followupHero.Equals(actor))
-                        throw Refuse("follow-up must name another hero acting later this turn");
+                    if (!followupHero.IsDefined || followupHero.Equals(actor) && !followupNextTurn)
+                        throw Refuse("follow-up must name another hero this turn, or a hero next turn");
                     followupCard = Instance(followupHero, OwnedDefinition(followupHero, followup.Get("card") as string));
                 }
 
@@ -631,6 +640,9 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (isDefend && followup != null)
                     throw Refuse("a Defend/Defense case does not support a follow-up");
+                if (entry.Has("checkpoint") && (isDefend || !(entry.Get("checkpoint") is string checkpoint) ||
+                    checkpoint != "before-minion-battle" && checkpoint != "end-of-turn"))
+                    throw Refuse("checkpoint must be before-minion-battle or end-of-turn on a non-Defense case");
 
                 if (!isHold && !isDefend && caseAction == null)
                 {
@@ -832,7 +844,7 @@ namespace GuardsDigital.Tests.EditMode
             private static readonly HashSet<string> SetupKeys = new HashSet<string>(StringComparer.Ordinal)
             {
                 "actor", "pieces", "standing", "hand", "discard", "team-lives", "enemy-team-lives", "attack",
-                "minions-in-lane"
+                "minions-in-lane", "empty-minion-spawns", "reserve-minions"
             };
 
             private static readonly HashSet<string> ActorKeys = new HashSet<string>(StringComparer.Ordinal)
@@ -847,7 +859,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private static readonly HashSet<string> RefSetupKeys = new HashSet<string>(StringComparer.Ordinal)
             {
-                "defends-with", "hand", "discard", "coins", "hero"
+                "defends-with", "hand", "discard", "coins", "hero", "items"
             };
 
             private void StageAndBuild()
@@ -941,11 +953,13 @@ namespace GuardsDigital.Tests.EditMode
                     byRef[reference] = piece;
                 }
 
+                ReadSpawnStaging(spec);
                 AssignIdentities();
                 StageCards(spec, actorSpec);
                 CollectSpawnNeeds();
                 PlaceEverything();
                 Build(spec, actorSpec);
+                VerifySpawnStaging();
             }
 
             private void CollectSpawnNeeds()
@@ -1112,6 +1126,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private HeroId HeroOfRef(string reference)
             {
+                if (reference == "actor") return actor;
                 if (byRef.TryGetValue(reference, out var piece) && piece.IsHero) return piece.Hero;
                 var shape = RefShape.Match(reference);
                 if (!shape.Success || !shape.Groups[2].Success) return default;
@@ -1163,31 +1178,14 @@ namespace GuardsDigital.Tests.EditMode
                 var actorHand = spec.Get("hand") ?? actorSpec.Get("hand");
                 var actorDiscard = spec.Get("discard") ?? actorSpec.Get("discard");
                 var actorNeeds = new List<CardInstance> { caseInstance };
+                if (followupCard != null && followupHero.Equals(actor)) actorNeeds.Add(followupCard);
                 actorNeeds.AddRange(standing.Where(value => value.Creator.Equals(actor))
                     .Select(value => configuration.CardInstances.Single(card => card.Id.Equals(value.Card))));
                 StageHand(actor, "actor", actorHand == null ? null : Names(actorHand, "hand"),
                     actorDiscard == null ? null : Names(actorDiscard, "discard"), actorNeeds,
                     isDefend ? turnsBefore + 1 : followupNextTurn ? 1 : 0, null);
 
-                var items = actorSpec.Get("items") == null ? new List<string>() : Names(actorSpec.Get("items"), "actor.items");
-                foreach (var item in items)
-                {
-                    var match = Regex.Match(Normalize(item), "^(attack|defense|initiative|movement|range|radius) \\+1$");
-                    if (!match.Success) throw Unsupported("item", item);
-                    var icon = (PrintedValueChannel)Enum.Parse(typeof(PrintedValueChannel), match.Groups[1].Value, true);
-                    var card = configuration.CardInstances
-                        .Where(value => value.OwnerId.Equals(actor) && value.State.Location == CardLocation.Deck &&
-                            DefinitionOf(value).Progression.ItemIcon == icon)
-                        .OrderBy(value => value.Id.Value, StringComparer.Ordinal)
-                        .FirstOrDefault();
-                    if (card == null || !CardLifecycleAuthority.TrySetAsideFromDeck(card))
-                    {
-                        throw Refuse($"setup actor.items \"{item}\": no card left in {hero.DisplayName}'s deck prints " +
-                            "that item icon (rulebook p.16 items are set-aside cards)");
-                    }
-
-                    itemCards.Add((item, card));
-                }
+                StageItems(actor, "actor", actorSpec);
 
                 // Everyone else: their hand, their discard, their Defense card, and one card to commit
                 // for each turn up to and including the actor's.
@@ -1204,6 +1202,7 @@ namespace GuardsDigital.Tests.EditMode
                         refSpec?.Get("hand") == null && refSpec?.Has("hand") != true ? null : Names(refSpec.Get("hand"), reference + ".hand"),
                         refSpec?.Get("discard") == null ? null : Names(refSpec.Get("discard"), reference + ".discard"),
                         needs, turnsBefore + (followupNextTurn ? 2 : 1) - needs.Count, refSpec?.Get("defends-with"));
+                    if (refSpec != null) StageItems(seat.HeroId, reference, refSpec);
                 }
 
                 // Levels: p.15's eighth Level is the Ultimate's (rulebook p.16).
@@ -1228,9 +1227,34 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             /// <summary>
-            /// v1.1 item 18. The attacker plays a printed Attack card of its own whose printed Attack
-            /// value is the table's; among several, the one with a non-ranged primary and no card text
-            /// is preferred, so the attack is as plain as that hero's cards allow.
+            /// Stage real set-aside cards for either the actor or another named hero.
+            /// </summary>
+            private void StageItems(HeroId owner, string reference, JsonObject itemSpec)
+            {
+                var items = itemSpec.Get("items") == null ? new List<string>() : Names(itemSpec.Get("items"), reference + ".items");
+                foreach (var item in items)
+                {
+                    var match = Regex.Match(Normalize(item), "^(attack|defense|initiative|movement|range|radius) \\+1$");
+                    if (!match.Success) throw Unsupported("item", item);
+                    var icon = (PrintedValueChannel)Enum.Parse(typeof(PrintedValueChannel), match.Groups[1].Value, true);
+                    var card = configuration.CardInstances
+                        .Where(value => value.OwnerId.Equals(owner) && value.State.Location == CardLocation.Deck &&
+                            DefinitionOf(value).Progression.ItemIcon == icon)
+                        .OrderBy(value => value.Id.Value, StringComparer.Ordinal)
+                        .FirstOrDefault();
+                    if (card == null || !CardLifecycleAuthority.TrySetAsideFromDeck(card))
+                    {
+                        throw Refuse($"setup {reference}.items \"{item}\": no card left in {reference}'s deck prints " +
+                            "that item icon (rulebook p.16 items are set-aside cards)");
+                    }
+
+                    itemCards.Add((item, card));
+                }
+            }
+
+            /// <summary>
+            /// v1.1 item 18. Choose a real printed Attack with the requested base value.
+            /// Prefer a non-ranged primary with no card text where one is available.
             /// </summary>
             private void ReadTheAttack(object value)
             {
@@ -1514,6 +1538,8 @@ namespace GuardsDigital.Tests.EditMode
                     occupied.Add(chosen.Value);
                 }
 
+                if (!FitsSpawnStaging(positions, occupied, out reason)) return false;
+
                 // An answer or fact naming an empty spawn point near the actor needs one there.
                 foreach (var distance in spawnNeeds)
                 {
@@ -1657,7 +1683,12 @@ namespace GuardsDigital.Tests.EditMode
 
                 // Tokens and items: committed to the fresh graphs, then carried by a snapshot.
                 var tokens = pieces.Where(piece => piece.IsTokenLike).ToArray();
-                if (tokens.Length == 0 && itemCards.Count == 0) return;
+                foreach (var reserve in reservePieces)
+                {
+                    var removed = session.aggregate.Board.CommitValidatedRemoval(BoardObjectReference.ForMinion(reserve.Minion));
+                    if (!removed.Accepted) throw Refuse("staged reserve removal refused: " + reserve.Ref);
+                }
+                if (tokens.Length == 0 && itemCards.Count == 0 && reservePieces.Count == 0) return;
                 foreach (var group in tokens.GroupBy(piece => (piece.TokenDefinition.Id.Value, piece.TokenOwner.Value)))
                 {
                     var definition = group.First().TokenDefinition;
@@ -2093,12 +2124,22 @@ namespace GuardsDigital.Tests.EditMode
                 foreach (var value in result.Events ?? Array.Empty<RoundResolutionEvent>())
                 {
                     var fact = value.TurnEvent.CardActionEvent;
-                    if (fact.ActorId.Equals(actor) && fact.AttackTotal > 0 &&
+                    if (
                         (fact.Kind == GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEventKind.AttackResolutionCompleted ||
                          fact.Kind == GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEventKind.AttackSuccessful ||
                          fact.Kind == GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEventKind.AttackSuccessfullyDefended))
                     {
-                        observedAttack = fact.AttackTotal;
+                        // Minion attacks do not compare values; their event's default zero is not a computed total.
+                        if (fact.TargetHeroId.IsDefined)
+                        {
+                            observedAttacks[fact.ActorId] = fact.AttackTotal;
+                            if (fact.ActorId.Equals(actor)) observedAttack = fact.AttackTotal;
+                        }
+                        if (fact.Kind == GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEventKind.AttackResolutionCompleted)
+                        {
+                            attackCounts.TryGetValue(fact.ActorId, out var count);
+                            attackCounts[fact.ActorId] = count + 1;
+                        }
                     }
                 }
             }
@@ -2107,6 +2148,8 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var attack = projection.PendingAttackResolution?.AttackValue?.Total ??
                     projection.PendingDefenseChoice?.AttackTotal ?? projection.PendingDefensePreview?.AttackTotal;
+                var attackingHero = projection.PendingAttackResolution?.ActorId ?? projection.PendingDefenseChoice?.AttackerId;
+                if (attack.HasValue && attackingHero.HasValue) observedAttacks[attackingHero.Value] = attack.Value;
                 if (attack.HasValue && projection.PendingAttackResolution?.ActorId.Equals(actor) != false)
                 {
                     observedAttack = attack;
@@ -2124,7 +2167,7 @@ namespace GuardsDigital.Tests.EditMode
                 return answer;
             }
 
-            private enum AnswerShape { None, Reference, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat }
+            private enum AnswerShape { None, Reference, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline }
 
             private AnswerShape ShapeOf(string answer, out string value, out string who)
             {
@@ -2132,6 +2175,12 @@ namespace GuardsDigital.Tests.EditMode
                 who = null;
                 if (answer == null) return AnswerShape.None;
                 var text = Normalize(answer);
+                var ownedDecline = Regex.Match(text, "^" + RefPattern + @":\s*decline$");
+                if (ownedDecline.Success)
+                {
+                    who = ownedDecline.Groups[1].Value;
+                    return AnswerShape.RefDecline;
+                }
                 var prefixed = Regex.Match(answer.Trim(), "^" + RefPattern + ":\\s*(discard (.+)|take defeat)$",
                     RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
                 if (prefixed.Success && RefShape.IsMatch(prefixed.Groups[1].Value.ToLowerInvariant()))
@@ -2336,6 +2385,9 @@ namespace GuardsDigital.Tests.EditMode
             private DirectorCommand AnswerMovement(MatchSessionProjection projection, PendingDecisionContract contract, string next)
             {
                 var choice = projection.PendingMovementChoice;
+                var maximum = choice.LegalDestinations.Select(destination => destination.Cost).DefaultIfEmpty(0).Max();
+                maximumMovementOffered.TryGetValue(choice.MovingHeroId, out var previousMaximum);
+                maximumMovementOffered[choice.MovingHeroId] = Math.Max(previousMaximum, maximum);
                 var stop = contract.Commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.StopMovement);
                 var shape = ShapeOf(next, out var value, out _);
                 var moverRef = RefOfHero(choice.MovingHeroId);
@@ -2546,6 +2598,11 @@ namespace GuardsDigital.Tests.EditMode
                 var decline = EffectCommand(contract, choice.DeclineInvocation) ?? EffectCommand(contract, choice.StopInvocation);
                 var confirm = EffectCommand(contract, choice.ConfirmInvocation);
                 var chooserRef = RefOfHero(choice.ChooserId);
+                if (shape == AnswerShape.RefDecline)
+                {
+                    if (who != chooserRef || decline == null) throw NotCovered(projection, contract, next);
+                    return Consume(decline);
+                }
 
                 if (choice.Kind == EffectChoiceKind.SelectOption)
                 {
@@ -2865,14 +2922,30 @@ namespace GuardsDigital.Tests.EditMode
                 expectation.Has("on-board-after-round-end") || expectation.Has("minion-battle") ||
                 expectation.Has("lane-pushed");
 
-            private void RunTheRoundEnd()
+            private void RunTheRoundEnd(bool stopBeforeMinionBattle = false, bool stopAfterTurn = false)
             {
                 var round = session.Projection.RoundIndex;
+                var turn = session.Projection.TurnIndex;
+                var preBattleStarted = false;
+                var checkpointReached = false;
                 var mark = session.Projection.MatchLog.Select(value => value.Sequence).DefaultIfEmpty(0).Max();
                 var turnsCommitted = new Dictionary<HeroId, int>();
                 for (var step = 0; step < 1000; step++)
                 {
                     var projection = session.Projection;
+                    if (stopAfterTurn && projection.TurnIndex != turn && projection.DecisionContract == null)
+                    {
+                        checkpointReached = true;
+                        break;
+                    }
+                    if (stopBeforeMinionBattle && preBattleStarted &&
+                        projection.Phase == RoundResolutionPhase.EndOfRound &&
+                        projection.CurrentEndOfRoundStage == EndOfRoundStage.MinionBattle &&
+                        projection.DecisionContract == null && projection.PendingMinionBattleChoice == null)
+                    {
+                        checkpointReached = true;
+                        break;
+                    }
                     if (projection.Phase == RoundResolutionPhase.GameEnded || projection.RoundIndex != round) break;
                     DirectorCommand next = null;
                     if (projection.Phase == RoundResolutionPhase.AwaitingCommitments && projection.DecisionContract == null)
@@ -2896,7 +2969,10 @@ namespace GuardsDigital.Tests.EditMode
                         next = DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId);
                     }
                     else if (projection.DecisionContract != null && answers.Count > 0 &&
-                        projection.DecisionOwner.HeroId.Equals(actor) && projection.PendingMinionBattleChoice == null)
+                        (projection.DecisionOwner.HeroId.Equals(actor) ||
+                         ShapeOf(Peek(), out _, out var answerOwner) != AnswerShape.None &&
+                         answerOwner != null && projection.DecisionOwner.HeroId.IsDefined &&
+                         answerOwner == RefOfHero(projection.DecisionOwner.HeroId)) && projection.PendingMinionBattleChoice == null)
                     {
                         // The actor's own question at the round's end (Wuk's Claim Dominance choosing the
                         // minions that do not count, WU-Q3) is answered from the table like any other.
@@ -2919,11 +2995,22 @@ namespace GuardsDigital.Tests.EditMode
                         next = legal[0];
                     }
 
+                    var visitsPreBattle = next.Kind == DirectorCommandKind.AdvanceEndOfRound &&
+                        projection.Phase == RoundResolutionPhase.EndOfRound &&
+                        projection.CurrentEndOfRoundStage == EndOfRoundStage.MinionBattle;
                     var result = session.Execute(next);
                     if (!result.Accepted) throw Refuse($"{next.Kind} refused while running the round end: {result.Detail}");
+                    if (visitsPreBattle) preBattleStarted = true;
                 }
 
                 afterRound = session.Projection;
+                if (stopBeforeMinionBattle || stopAfterTurn)
+                {
+                    if (!checkpointReached) throw Refuse("requested timing checkpoint was not reached before the round ended");
+                    Log(stopAfterTurn ? "end of turn: all delayed questions resolved before next commitments" :
+                        "round end: resolved trigger choices before minion battle; no battle or pity coins applied");
+                    return;
+                }
                 if (minionBattleWinner == null)
                 {
                     var removed = afterRound.MatchLog.Where(value => value.Sequence > mark &&
@@ -2985,11 +3072,38 @@ namespace GuardsDigital.Tests.EditMode
 
             private static readonly HashSet<string> ExpectationKeys = new HashSet<string>(StringComparer.Ordinal)
             {
-                "ref", "is", "at", "moved", "pushed", "coins", "hand", "attack", "level", "targetable", "chose"
+                "ref", "is", "at", "moved", "pushed", "coins", "hand", "attack", "level", "targetable", "chose",
+                "attack-count", "movement-offered-max"
             };
 
             private void Evaluate(JsonObject expectation)
             {
+                if (expectation.Get("ref") is string itemOwner && expectation.Get("item-count") is JsonObject itemCounts)
+                {
+                    if (expectation.Count != 2 || itemCounts.Count == 0) throw Unsupported("item-count expectation", Describe(expectation));
+                    var progression = after.HeroProgression.Single(value => value.HeroId.Equals(HeroOfRef(itemOwner)));
+                    foreach (var item in itemCounts)
+                    {
+                        var match = Regex.Match(item.Key, @"^(Attack|Defense|Movement|Initiative|Range) \+1$", RegexOptions.IgnoreCase);
+                        if (!match.Success || !Enum.TryParse(match.Groups[1].Value, true, out PrintedValueChannel channel))
+                            throw Unsupported("item-count expectation", Describe(expectation));
+                        var actual = progression.ItemBonuses.Where(value => value.Key == channel).Sum(value => value.Value);
+                        if (actual != IntOf(item.Value, "item-count")) Mismatch(expectation, item.Key + " count is " + actual);
+                    }
+                    return;
+                }
+                if (expectation.Get("ref") is string moving && expectation.Get("moved-through") is string crossed)
+                {
+                    if (expectation.Count != 2) throw Unsupported("moved-through expectation", Describe(expectation));
+                    var restored = AuthoritativeSnapshotSerializer.Deserialize(MatchContentCatalogs.ForThisBuild(),
+                        after.AuthoritativeSnapshot, after.Definitions, new[] { after.SelectedMap }, after.Setup.Minions);
+                    var walk = restored.Board.LastCompletedMovementWalk;
+                    var at = PositionOf(before, crossed);
+                    if (walk == null || !walk.Mover.Equals(HeroOfRef(moving)) || !at.HasValue ||
+                        !walk.SpacesMovedThrough.Contains(at.Value))
+                        Mismatch(expectation, "the last completed Movement did not traverse the named initial space");
+                    return;
+                }
                 if (expectation.Get("ref") is string defender && expectation.Get("defense-offered") is JsonObject wantedDefenses)
                 {
                     if (expectation.Count != 2) throw Unsupported("expectation", Describe(expectation));
@@ -3020,9 +3134,9 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     var restored = AuthoritativeSnapshotSerializer.Deserialize(MatchContentCatalogs.ForThisBuild(),
                         after.AuthoritativeSnapshot, after.Definitions, new[] { after.SelectedMap }, after.Setup.Minions);
-                    var modifications = RuleModificationQuery.Build(null, restored.Board, restored.Participants,
+                    var modifications = RuleModificationQuery.Build(restored.Round.Timing, restored.Board, restored.Participants,
                         restored.Round.TieBreakerState, UltimateUnlockQuery.Derive(after.Definitions, restored.Cards),
-                        RuleObject.None, null, restored.Round.Markers);
+                        RuleObject.None, restored.Round.HeroItems, restored.Round.Markers);
                     foreach (var modifierFact in expectation.Where(pair => pair.Key != "ref"))
                     {
                         if (!modifierFact.Key.EndsWith("-modifier", StringComparison.Ordinal) || !Enum.TryParse(
@@ -3034,6 +3148,20 @@ namespace GuardsDigital.Tests.EditMode
                     }
                     return;
                 }
+                if (expectation.Has("swapped-with"))
+                {
+                    if (expectation.Count != 2 || !(expectation.Get("ref") is string subject) ||
+                        !(expectation.Get("swapped-with") is string other) || subject == other)
+                        throw Unsupported("swap expectation", Describe(expectation));
+                    var original = PositionOf(before, subject);
+                    var otherOriginal = PositionOf(before, other);
+                    if (!original.HasValue || !otherOriginal.HasValue || original.Equals(otherOriginal))
+                        throw Refuse("swap expectation requires two distinct initially on-board pieces");
+                    if (!PositionOf(after, subject).Equals(otherOriginal) || !PositionOf(after, other).Equals(original))
+                        Mismatch(expectation, "the two pieces did not exchange their initial positions");
+                    return;
+                }
+                if (expectation.Has("respawned")) { EvaluateRespawn(expectation); return; }
                 if (expectation.Has("tokens")) { EvaluateTokens(expectation); return; }
                 if (expectation.Has("card")) { EvaluateCard(expectation); return; }
                 if (expectation.Has("team-lives") || expectation.Has("enemy-team-lives")) { EvaluateLives(expectation); return; }
@@ -3128,8 +3256,20 @@ namespace GuardsDigital.Tests.EditMode
                     case "attack":
                     {
                         var expected = IntOf(fact.Value, "attack");
-                        if (reference != "actor") throw Unsupported("expectation", Describe(expectation));
-                        if (observedAttack != expected) Mismatch(expectation, observedAttack.HasValue ? $"the attack resolved with {observedAttack}" : "no Attack total was computed (the engine compares totals only against a defending hero; an attack on a minion computes none)");
+                        if (!observedAttacks.TryGetValue(piece.Hero, out var total)) Mismatch(expectation, "no Attack total was observed for " + reference);
+                        else if (total != expected) Mismatch(expectation, $"the attack resolved with {total}");
+                        break;
+                    }
+                    case "attack-count":
+                    {
+                        attackCounts.TryGetValue(piece.Hero, out var actual);
+                        if (actual != IntOf(fact.Value, "attack-count")) Mismatch(expectation, $"completed {actual} attacks");
+                        break;
+                    }
+                    case "movement-offered-max":
+                    {
+                        if (!maximumMovementOffered.TryGetValue(piece.Hero, out var actual)) Mismatch(expectation, "no Movement question was observed");
+                        else if (actual != IntOf(fact.Value, "movement-offered-max")) Mismatch(expectation, $"maximum offered walk cost was {actual}");
                         break;
                     }
                     case "targetable":
@@ -3269,9 +3409,15 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var cardName = expectation.Get("card") as string;
                 var state = Normalize(expectation.Get("state") as string ?? string.Empty);
-                if (cardName == null || expectation.Count != 2 || !expectation.Has("state")) throw Unsupported("expectation", Describe(expectation));
+                if (cardName == null || expectation.Count != (expectation.Has("ref") ? 3 : 2) || !expectation.Has("state")) throw Unsupported("expectation", Describe(expectation));
                 var key = CardKey(cardName);
                 var matching = after.Cards.Where(card => CardKey(DefinitionIn(after, card).DisplayName) == key).ToList();
+                if (expectation.Has("ref"))
+                {
+                    var owner = HeroOfRef(expectation.Get("ref") as string);
+                    if (!owner.IsDefined) throw Unsupported("card owner", Describe(expectation));
+                    matching = matching.Where(card => card.OwnerId.Equals(owner)).ToList();
+                }
                 var mine = matching.Where(card => card.OwnerId.Equals(actor)).ToList();
                 var chosen = mine.Count == 1 ? mine[0] : matching.Count == 1 ? matching[0] : null;
                 if (chosen == null) throw Refuse($"unknown card name \"{cardName}\" in expectation {Describe(expectation)}");

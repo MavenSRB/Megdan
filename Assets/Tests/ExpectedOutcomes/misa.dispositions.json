@@ -1,0 +1,69 @@
+[
+  {
+    "id": "misa-challenge-accepted-defeat",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs Evaluate modifier branch; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "First run read modifier 0 because generic RuleModificationQuery.Build omitted the restored active-effect lifecycle. Preserve printed Defense bonus unchanged and query live restored timing when evaluating modifiers."
+  },
+  {
+    "id": "misa-matter-of-honor-defeat",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs Evaluate modifier branch; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "First run read modifier 0 because generic RuleModificationQuery.Build omitted the restored active-effect lifecycle. Preserve printed Defense bonus unchanged and query live restored timing when evaluating modifiers."
+  },
+  {
+    "id": "misa-worthy-opponent-defeat",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs Evaluate modifier branch; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "First run read modifier 0 because generic RuleModificationQuery.Build omitted the restored active-effect lifecycle. Preserve printed Defense bonus unchanged and query live restored timing when evaluating modifiers."
+  },
+  {
+    "id": "misa-focus-next-primary-move",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs ReadCase/StageHand/Commitment/RunFollowup; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "Frozen source reading requires the same actor to perform its next-turn primary after this Skill. First run refused same-actor follow-up. Extend generic staging/continuation; preserve follow-up answers and expected movement unchanged. Remains executable and must pass."
+  },
+  {
+    "id": "misa-discipline-next-primary-move",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs ReadCase/StageHand/Commitment/RunFollowup; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "Frozen source reading requires the same actor to perform its next-turn primary after this Skill. First run refused same-actor follow-up. Extend generic staging/continuation; preserve follow-up answers and expected movement unchanged. Remains executable and must pass."
+  },
+  {
+    "id": "misa-mastery-next-primary-move",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs ReadCase/StageHand/Commitment/RunFollowup; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "Frozen source reading requires the same actor to perform its next-turn primary after this Skill. First run refused same-actor follow-up. Extend generic staging/continuation; preserve follow-up answers and expected movement unchanged. Remains executable and must pass."
+  },
+  {
+    "id": "misa-living-tornado-swap",
+    "kind": "executor-gap",
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf printed p.19 Swap; Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs Evaluate; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "Reader explicitly requested exact exchange of both initial positions and used moved:0 only as an unsupported placeholder because a rules Swap is not Movement. Existing moved vocabulary measures displacement. The frozen placeholder is retained in original-expect here; case now uses swapped-with to verify that each unit finishes at the other unit's initial position. This is an executor vocabulary gap, not a ruling change.",
+    "original-expect": [
+      {
+        "ref": "enemy-hero-1",
+        "moved": 0
+      }
+    ]
+  },
+  {
+    "id": "misa-storm-spirit-swap",
+    "kind": "executor-gap",
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf printed p.19 Swap; Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs Evaluate; tmp/9-13b/9-13b-misa-first.trx",
+    "note": "Reader explicitly requested exact exchange of both initial positions and used moved:0 only as an unsupported placeholder because a rules Swap is not Movement. Existing moved vocabulary measures displacement. The frozen placeholder is retained in original-expect here; case now uses swapped-with to verify that each unit finishes at the other unit's initial position. This is an executor vocabulary gap, not a ruling change.",
+    "original-expect": [
+      {
+        "ref": "enemy-hero-1",
+        "moved": 0
+      }
+    ]
+  },
+  {
+    "id": "misa-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf printed p.6 step 11",
+    "note": "Standard setup returns the H face to the box. Leaf on the Wind is preserved as inventoried source coverage and not claimed as an executed outcome."
+  }
+]

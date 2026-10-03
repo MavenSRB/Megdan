@@ -1,0 +1,9 @@
+[
+  {
+    "id": "ursafar-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6 step11",
+    "note": "Handicap H face is returned to the box in standard setup; odd-player handicap coverage is not executed by this dealt-card runner. Integration normalized bare Attack/coins expectations to explicit actor references; expected values were unchanged."
+  }
+]

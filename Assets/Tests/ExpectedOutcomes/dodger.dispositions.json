@@ -1,0 +1,127 @@
+[
+  {
+    "id": "dodger-dread-razor-spawn-enables-ranged",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger__7435380__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-death-trap-discards-selected-heros-card",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger2__7435377__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-death-trap-outside-radius-excluded",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger2__7435377__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-shield-of-decay-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger8__7435389__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-shield-of-decay-1-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger8__7435389__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-vampiric-shield-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger9__7435378__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-vampiric-shield-1-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger9__7435378__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-aegis-of-doom-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger11__7435390__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts. First stable run refused printed Attack8 because no dealt card prints8. The frozen8 is preserved as incoming total: Arien printed7 plus a real Attack+1 item, now separately asserted at8. No source defense outcome changed.",
+    "original-attack": {
+      "by": "enemy-hero-1",
+      "value": 8
+    }
+  },
+  {
+    "id": "dodger-aegis-of-doom-1-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger11__7435390__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts. First stable run refused printed Attack8 because no dealt card prints8. The frozen8 is preserved as incoming total: Arien printed7 plus a real Attack+1 item, now separately asserted at8. No source defense outcome changed.",
+    "original-attack": {
+      "by": "enemy-hero-1",
+      "value": 8
+    }
+  },
+  {
+    "id": "dodger-enfeeblement-prevents-rapid-thrusts-repeat",
+    "kind": "engine-defect",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs follow-up attack-count evaluation; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger12__7722007__front.png",
+    "note": "Frozen note now executable via per-hero attack-count:1 in addition to both survival facts. The -2 Attack Total failed in the first stable run; removing invalid negative-total guards in PendingDefenseResponseChoice and its network decoder permits the signed value required by D-08. Four focused domain/decoder regressions failed before the fix; this unchanged outcome and actual codec roundtrips pass after it."
+  },
+  {
+    "id": "dodger-weakness-does-not-prohibit-negative-attack",
+    "kind": "engine-defect",
+    "ref": "Docs/AI/Rules/HERO_DODGER.md D-08; PendingDefenseResponse_PreservesSignedAttackTotal; DefenseChoiceCodec_PreservesSignedAttackTotal",
+    "note": "The unchanged printed -1 Attack outcome threw before the correction. Attack Total is signed with no floor at zero; removed only the domain/decoder negative-total guards, retaining all identity and offer validation. The source case and focused signed-value regression are green."
+  },
+  {
+    "id": "dodger-dark-ritual-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger13__7435385__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-dark-ritual-1-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger13__7435385__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-darker-ritual-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger14__7435384__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-darkest-ritual-2-empty-spawns",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger16__7435395__front.png",
+    "note": "Frozen source expectation retained. Opt-in official-map spawn constraints and public board removal/snapshot reserve staging make the declared prerequisites executable; post-staging EmptyMinionSpawnPointQuery verifies exact counts."
+  },
+  {
+    "id": "dodger-necromancy-respawns-missing-melee",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger15__7435394__front.png",
+    "note": "Frozen prose required a newly respawned friendly melee miniature, exact pre-action empty spawn destination, side/type count +1 and zero coins. Added these explicit facts from the frozen note; actual reserve uses public board removal and snapshot restore. Original empty expectation array retained here; no rules change.",
+    "original-expect": []
+  },
+  {
+    "id": "dodger-necromastery-respawns-missing-melee",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.Spawns.cs; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger17__7435383__front.png",
+    "note": "Frozen prose required a newly respawned friendly melee miniature, exact pre-action empty spawn destination, side/type count +1 and zero coins. Added these explicit facts from the frozen note; actual reserve uses public board removal and snapshot restore. Original empty expectation array retained here; no rules change.",
+    "original-expect": []
+  },
+  {
+    "id": "dodger-darkest-ritual-unlocked-grants-attack-item",
+    "kind": "executor-gap",
+    "ref": "Assets/Tests/EditMode/ExpectedOutcomeExecutor.cs item-count evaluation; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Dodger/dodger16__7435395__front.png",
+    "note": "Frozen note now explicit through item-count Attack+1:1 plus coin gain2. The item-count fact is the final total from a zero-item setup and verifies the Ultimate-dependent second sentence."
+  },
+  {
+    "id": "dodger-rusty-razor-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf printed p.6 step 11",
+    "note": "Rusty Razor is returned to the box by standard setup; retained as inventoried source coverage, not an executed face."
+  }
+]

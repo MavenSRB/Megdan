@@ -466,11 +466,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("Pending Defense response choice requires defined stable identities.");
             }
 
-            if (attackTotal < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attackTotal), attackTotal, "Attack Total cannot be negative.");
-            }
-
+            // Attack Total is signed: Dodger's printed Weakness reminder and D-08
+            // explicitly allow attacking below zero. Identity and offer guards still apply.
             if (legalDefenseOffers == null)
             {
                 throw new ArgumentNullException(nameof(legalDefenseOffers));

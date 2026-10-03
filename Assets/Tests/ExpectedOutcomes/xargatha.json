@@ -1,0 +1,1145 @@
+{
+  "hero": "Xargatha",
+  "cases": [
+    {
+      "id": "xargatha-cleave-two-different-heroes",
+      "card": "Cleave",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha__7679536__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        },
+        {
+          "enemy-team-lives": 3
+        }
+      ]
+    },
+    {
+      "id": "xargatha-cleave-minion-then-hero",
+      "card": "Cleave",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha__7679536__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-minion-1",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "coins": 3,
+          "ref": "actor"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"coins\":3}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-sirens-call-pulls-distant-hero",
+      "card": "Siren's Call",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha2__7632831__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: adjacent to actor and distance 2 from enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "at": "adjacent to actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "xargatha-sirens-call-cannot-target-adjacent",
+      "card": "Siren's Call",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha2__7632831__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "xargatha-sirens-call-range-three-boundary",
+      "card": "Siren's Call",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha2__7632831__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "xargatha-dangerous-slash-other-enemy-bonus",
+      "card": "Dangerous Slash",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha3__7679537__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 6,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"attack\":6}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-deadly-swipe-other-enemy-bonus",
+      "card": "Deadly Swipe",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha4__7439587__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 7,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"attack\":7}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-lethal-spin-other-enemy-bonus",
+      "card": "Lethal Spin",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha6__7439588__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 8,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"attack\":8}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-dangerous-slash-does-not-count-target",
+      "card": "Dangerous Slash",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha3__7679537__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 5
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 5,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"attack\":5}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-long-thrust-adjacent-enemy-extends-range",
+      "card": "Long Thrust",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha5__7643642__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "attack": 3,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"attack\":3}] now explicitly name actor; values unchanged."
+    },
+    {
+      "id": "xargatha-long-thrust-no-adjacent-enemy-no-extension",
+      "card": "Long Thrust",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha5__7643642__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "xargatha-rapid-thrusts-repeat-different-hero",
+      "card": "Rapid Thrusts",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha7__7643643__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "xargatha-stone-gaze-next-turn-lock",
+      "card": "Stone Gaze",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha8__7679539__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Dodger"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 0
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Dark Ritual",
+        "action": "Movement",
+        "turn": "next",
+        "answers": [],
+        "offered": false
+      }
+    },
+    {
+      "id": "xargatha-petrifying-stare-next-turn-lock",
+      "card": "Petrifying Stare",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha9__7717923__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Dodger"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 0
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Dark Ritual",
+        "action": "Movement",
+        "turn": "next",
+        "answers": [],
+        "offered": false
+      }
+    },
+    {
+      "id": "xargatha-turn-into-statues-next-turn-lock",
+      "card": "Turn into Statues",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha11__7717921__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Dodger"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 0
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Dark Ritual",
+        "action": "Movement",
+        "turn": "next",
+        "answers": [],
+        "offered": false
+      }
+    },
+    {
+      "id": "xargatha-stone-gaze-outside-radius-can-move",
+      "card": "Stone Gaze",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha8__7679539__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Dodger"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Dark Ritual",
+        "action": "Movement",
+        "turn": "next",
+        "answers": [
+          "distance 1"
+        ],
+        "offered": true
+      }
+    },
+    {
+      "id": "xargatha-fresh-converts-retrieves-discard",
+      "card": "Fresh Converts",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha10__7719750__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "discard": [
+          "Cleave"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "card: Cleave"
+      ],
+      "expect": [
+        {
+          "card": "Cleave",
+          "state": "hand"
+        }
+      ]
+    },
+    {
+      "id": "xargatha-devoted-followers-retrieves-discard",
+      "card": "Devoted Followers",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha12__7719751__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "discard": [
+          "Cleave"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "card: Cleave"
+      ],
+      "expect": [
+        {
+          "card": "Cleave",
+          "state": "hand"
+        }
+      ]
+    },
+    {
+      "id": "xargatha-fresh-converts-hero-does-not-qualify",
+      "card": "Fresh Converts",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha10__7719750__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "discard": [
+          "Cleave"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "card": "Cleave",
+          "state": "discarded"
+        }
+      ]
+    },
+    {
+      "id": "xargatha-charm-moves-ranged",
+      "card": "Charm",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha13__7659041__front.png",
+        "rulebook p.11",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "ranged"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor",
+            "type": "melee"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "enemy-minion-1",
+        "space: distance 2 from actor and adjacent to enemy-minion-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        }
+      ],
+      "note": "Choose the optional minion move before own movement; destination stays in the Battle Zone. Dominate case includes another enemy non-heavy minion to prove explicit immunity override."
+    },
+    {
+      "id": "xargatha-control-moves-melee",
+      "card": "Control",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha14__7659042__front.png",
+        "rulebook p.11",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "melee"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor",
+            "type": "melee"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "enemy-minion-1",
+        "space: distance 2 from actor and adjacent to enemy-minion-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        }
+      ],
+      "note": "Choose the optional minion move before own movement; destination stays in the Battle Zone. Dominate case includes another enemy non-heavy minion to prove explicit immunity override."
+    },
+    {
+      "id": "xargatha-dominate-moves-heavy",
+      "card": "Dominate",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha16__7659043__front.png",
+        "rulebook p.11",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "heavy"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor",
+            "type": "melee"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "enemy-minion-1",
+        "space: distance 2 from actor and adjacent to enemy-minion-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        }
+      ],
+      "note": "Choose the optional minion move before own movement; destination stays in the Battle Zone. Dominate case includes another enemy non-heavy minion to prove explicit immunity override."
+    },
+    {
+      "id": "xargatha-charm-melee-is-not-target",
+      "card": "Charm",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha13__7659041__front.png",
+        "rulebook p.11",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "melee"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "adjacent to actor",
+            "type": "ranged"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "enemy-minion-2",
+        "space: distance 2 from actor and adjacent to enemy-minion-2",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "enemy-minion-1",
+          "moved": 0
+        },
+        {
+          "ref": "enemy-minion-1",
+          "targetable": false
+        },
+        {
+          "ref": "enemy-minion-2",
+          "targetable": true
+        },
+        {
+          "ref": "enemy-minion-2",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "xargatha-constrict-end-round-defeat",
+      "card": "Constrict",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha15__7659037__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "melee"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "friendly-minion-1",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "friendly-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "coins": 2,
+          "ref": "actor"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"coins\":2}] now explicitly name actor; values unchanged.",
+      "checkpoint": "before-minion-battle"
+    },
+    {
+      "id": "xargatha-final-embrace-end-round-defeat",
+      "card": "Final Embrace",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha17__7639363__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor",
+            "type": "ranged"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "friendly-minion-1",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "friendly-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "coins": 2,
+          "ref": "actor"
+        }
+      ],
+      "note": "Frozen bare expectations [{\"coins\":2}] now explicitly name actor; values unchanged.",
+      "checkpoint": "before-minion-battle"
+    },
+    {
+      "id": "xargatha-metamorphosis-unlocked-movement-bonus",
+      "card": "Charm",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha18__7578825__front.png",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha13__7659041__front.png",
+        "rulebook p.11",
+        "rulebook p.16",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ],
+      "note": "Ultimate is a permanent ability, not an action card; primary Charm movement is 2+1 from the one adjacent enemy at movement start."
+    },
+    {
+      "id": "xargatha-metamorphosis-crosses-obstacle",
+      "card": "Charm",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha18__7578825__front.png",
+        "rulebook p.11",
+        "rulebook p.18",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha13__7659041__front.png",
+        "rulebook p.16"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Move the minion before my movement",
+        "space: distance 2 from actor in a straight line through obstacle-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "moved-through": "obstacle-1"
+        }
+      ]
+    },
+    {
+      "id": "xargatha-stone-gaze-heroes-also-terrain",
+      "card": "Stone Gaze",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha8__7679539__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [],
+      "unsupported": "Needs next-turn type assertion: enemy-hero-1 simultaneously remains a hero and counts as terrain during next turn; outside that turn it is only a hero. Movement prohibition cases do not prove the added terrain type."
+    },
+    {
+      "id": "xargatha-desperate-cleave-boxed-handicap",
+      "card": "Desperate Cleave",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha19__7576067__front.png",
+        "rulebook p.6"
+      ],
+      "setup": {},
+      "answers": [],
+      "expect": [],
+      "unsupported": "Printed H face is returned to the box and is not an ordinary dealt card. Explicitly unsupported/not dealt."
+    }
+  ]
+}
