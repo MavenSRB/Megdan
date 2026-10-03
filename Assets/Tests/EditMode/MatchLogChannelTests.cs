@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -147,7 +148,6 @@ namespace GuardsDigital.Tests.EditMode
                 ("Action.CoinAwarded", MatchLogEntryKind.CoinAwarded),
                 ("Action.MovementActionCompleted", MatchLogEntryKind.Move),
                 ("Action.FastTravelActionCompleted", MatchLogEntryKind.FastTravel),
-                ("Action.AttackResolutionCompleted", MatchLogEntryKind.Attack),
                 ("Action.DefenseResponseCompleted", MatchLogEntryKind.Defense),
                 ("Action.SkillActionCompleted", MatchLogEntryKind.SkillUsed),
                 ("Action.TokenCleared", MatchLogEntryKind.Clear),
@@ -181,6 +181,20 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
+            var expectedAttackRows = events.Count(entry =>
+                    entry.EventType == "Action.AttackSuccessful" ||
+                    entry.EventType == "Action.AttackSuccessfullyDefended") +
+                events.Count(entry =>
+                    entry.EventType == "Action.AttackStarted" &&
+                    entry.StableReferences.Contains("minion="));
+            Assert.That(derived.Count(entry => entry.Kind == MatchLogEntryKind.Attack),
+                Is.EqualTo(expectedAttackRows),
+                "Hero attacks publish at their final outcome; minion attacks, which cannot defend, " +
+                "publish when they start. Each must produce exactly one public Attack row.");
+            if (expectedAttackRows > 0)
+            {
+                covered++;
+            }
             Assert.That(covered, Is.GreaterThan(3),
                 "This walk exercised too few rows for the identity above to mean much.");
 
@@ -255,8 +269,8 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// An attack folds the same way: started, resolved, and closed by its own completion, as one
-        /// line naming the attacker, the target and the outcome.
+        /// An attack becomes one public line at its final outcome, before its after-Attack text, and
+        /// its later lifecycle completion does not duplicate that line.
         /// </summary>
         [Test]
         public void AnAttack_FoldsToOneLine_CarryingItsOutcome()
@@ -268,21 +282,52 @@ namespace GuardsDigital.Tests.EditMode
             })
             {
                 var references = "round=3;turn=1;resolution=r9;hero=brogan;card=c2;action=a2;target=sabina";
-                var log = MatchLogProjection.Derive(new[]
+                var throughOutcome = new[]
                 {
                     Entry(1, "Action.AttackStarted", references, "step=s1"),
                     Entry(2, "Action.AttackTotalCalculated", references, "step=s2;attack=4"),
-                    Entry(3, resolved, references, "step=s3;outcome=Successful"),
+                    Entry(3, resolved, references, "step=s3;outcome=Successful")
+                };
+                var beforeCompletion = MatchLogProjection.Derive(throughOutcome);
+                var log = MatchLogProjection.Derive(throughOutcome.Concat(new[]
+                {
                     Entry(4, "Action.AttackResolutionCompleted", references, "step=s4")
-                });
+                }).ToArray());
 
+                Assert.That(beforeCompletion.Count, Is.EqualTo(1),
+                    "The public attack did not exist while after-Attack text could stand.");
                 Assert.That(log.Count, Is.EqualTo(1), resolved);
                 Assert.That(log[0].Kind, Is.EqualTo(MatchLogEntryKind.Attack));
-                Assert.That(log[0].Sequence, Is.EqualTo(4));
+                Assert.That(log[0].Sequence, Is.EqualTo(3));
                 Assert.That(log[0].SubjectHeroId, Is.EqualTo(new HeroId("brogan")));
                 Assert.That(log[0].TargetHeroId, Is.EqualTo(new HeroId("sabina")));
                 Assert.That(log[0].Outcome, Is.EqualTo(expected), resolved);
             }
+        }
+
+        [Test]
+        public void AMinionAttack_IsPublicWhenItStarts_AndCompletionDoesNotDuplicateIt()
+        {
+            var references =
+                "round=2;turn=3;resolution=r5;hero=wasp;card=shock;action=attack;minion=m2";
+            var throughStart = new[]
+            {
+                Entry(1, "Action.AttackStarted", references, "step=s1")
+            };
+            var beforeAfterAttackText = MatchLogProjection.Derive(throughStart);
+            var completed = MatchLogProjection.Derive(throughStart.Concat(new[]
+            {
+                Entry(2, "Action.MinionDefeatRecorded", references, "step=s2"),
+                Entry(3, "Action.AttackResolutionCompleted", references, "step=s3")
+            }).ToArray());
+
+            Assert.That(beforeAfterAttackText, Has.Count.EqualTo(1));
+            Assert.That(beforeAfterAttackText[0].Sequence, Is.EqualTo(1));
+            Assert.That(beforeAfterAttackText[0].SubjectHeroId, Is.EqualTo(new HeroId("wasp")));
+            Assert.That(beforeAfterAttackText[0].SubjectMinionId, Is.EqualTo(new MinionId("m2")));
+            Assert.That(beforeAfterAttackText[0].Outcome,
+                Is.EqualTo(MatchLogOutcome.AttackSuccessful));
+            Assert.That(completed.Count(value => value.Kind == MatchLogEntryKind.Attack), Is.EqualTo(1));
         }
 
         /// <summary>

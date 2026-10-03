@@ -259,8 +259,10 @@ namespace GuardsDigital.Core.Diagnostics
             var round = Number(references, "round");
             var turn = Number(references, "turn");
 
-            // ---- The two folds. A move and an attack are ONE line each, closed by their own
-            // completion event, so the steps and totals in between are read and never emitted.
+            // ---- The two folds. A move and an attack are ONE line each, so the steps and totals
+            // in between are read and never emitted. Movement closes on completion. Attack becomes
+            // public at a hero's final outcome, or at a minion attack's start because it cannot
+            // defend, so Presentation can frame either arm before any after-Attack text.
             if (type == MovementStepCommitted)
             {
                 var resolution = Required(references, "resolution", entry);
@@ -307,6 +309,23 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == AttackStarted)
             {
                 attacks[Required(references, "resolution", entry)] = new AttackFold();
+                var minion = Optional(references, "minion", value => new MinionId(value));
+                if (minion.IsDefined)
+                {
+                    // p.13: minions cannot defend and are simply defeated. This is therefore the
+                    // minion arm's authoritative resolved-attack boundary; it has no later outcome
+                    // fact like a hero attack does, and its after-Attack text follows the Defeat.
+                    derived.Add(new MatchLogEntry(
+                        entry.Sequence,
+                        MatchLogEntryKind.Attack,
+                        round,
+                        turn,
+                        subjectHeroId: Hero(references, entry),
+                        subjectMinionId: minion,
+                        subjectCardInstanceId: Card(references),
+                        outcome: MatchLogOutcome.AttackSuccessful));
+                }
+
                 return;
             }
 
@@ -322,14 +341,6 @@ namespace GuardsDigital.Core.Diagnostics
                 fold.Outcome = type == AttackSuccessful
                     ? MatchLogOutcome.AttackSuccessful
                     : MatchLogOutcome.AttackSuccessfullyDefended;
-                return;
-            }
-
-            if (type == AttackResolutionCompleted)
-            {
-                var resolution = Required(references, "resolution", entry);
-                attacks.TryGetValue(resolution, out var fold);
-                attacks.Remove(resolution);
                 derived.Add(new MatchLogEntry(
                     entry.Sequence,
                     MatchLogEntryKind.Attack,
@@ -339,7 +350,14 @@ namespace GuardsDigital.Core.Diagnostics
                     targetHeroId: Optional(references, "target", value => new HeroId(value)),
                     subjectMinionId: Optional(references, "minion", value => new MinionId(value)),
                     subjectCardInstanceId: Card(references),
-                    outcome: fold?.Outcome ?? MatchLogOutcome.None));
+                    outcome: fold.Outcome));
+                return;
+            }
+
+            if (type == AttackResolutionCompleted)
+            {
+                var resolution = Required(references, "resolution", entry);
+                attacks.Remove(resolution);
                 return;
             }
 

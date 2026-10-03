@@ -216,6 +216,17 @@ namespace GuardsDigital.Presentation.Match
             // their own projection carries.
             SpotlightView = new AttackSpotlightUnityView(BoardView, hud);
             SpotlightPresenter = new AttackSpotlightPresenter(client, SpotlightView);
+            DecisionWindowPresenter.DeferWhile(() =>
+            {
+                if (SpotlightPresenter.DefersCues)
+                {
+                    return true;
+                }
+
+                var framedAttack = SpotlightPresenter.Stage.Current;
+                return framedAttack != null &&
+                    !KineticView.Playback.LungeTargetFor(framedAttack.Attacker).IsDefined;
+            });
 
             // MILESTONE 8.35z12: THE TWO CONDUCTORS BECOME ONE, AND THIS IS THE WHOLE OF IT.
             //
@@ -275,6 +286,12 @@ namespace GuardsDigital.Presentation.Match
                 return scene != null && (SpotlightPresenter.DefersCues || !strikeStarted);
             };
             SpotlightPresenter.CuesReleased += () => KineticPresenter.Resume();
+            // Queue release is not necessarily attack start: an earlier reveal or flight can still
+            // own the conductor. This first attempt handles an interruption (whose stage is gone),
+            // while SceneStarted retries at each actual scene boundary. The predicate above releases
+            // only when the framed attack's lunge has entered playback.
+            SpotlightPresenter.CuesReleased += () => DecisionWindowPresenter.ResumePresentation();
+            KineticView.SceneStarted += () => DecisionWindowPresenter.ResumePresentation();
 
             BoardView.BindIntentHandlers(
                 // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click

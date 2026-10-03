@@ -96,8 +96,9 @@ namespace GuardsDigital.Presentation.Match
     /// <para><b>Both faces are already public at exactly the moment they are needed,</b> which is the
     /// feasibility answer the amendment records and it was verified at HEAD rather than assumed. The
     /// Attack row carries the attacking card's instance
-    /// (<c>MatchLogProjection</c> passes <c>subjectCardInstanceId: Card(references)</c> on
-    /// <c>AttackResolutionCompleted</c>); the Defense row carries the spent defense card's instance
+    /// (<c>MatchLogProjection</c> passes <c>subjectCardInstanceId: Card(references)</c> on a hero's
+    /// final outcome or a minion attack's start); the Defense row carries the spent defense card's
+    /// instance
     /// (from its own <c>DefenseFold.DefenseCardInstanceId</c>); and <c>SeatProjection.IsPublic</c>
     /// admits any face-up card in the turn area or a discard pile to every seat's
     /// <c>Cards</c>. There is no privacy work here and no new wire field, because there is nothing to

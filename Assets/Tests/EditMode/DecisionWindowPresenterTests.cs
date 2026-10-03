@@ -1096,6 +1096,29 @@ namespace GuardsDigital.Tests.EditMode
                 "The answered decision is gone, so nothing may still be carrying its toggle.");
         }
 
+        [Test]
+        public void AfterAttackQuestionWaitsForTheAttackPresentationToRelease()
+        {
+            var session = CreateSessionAwaitingTheDiscardChooser();
+            var view = new CapturingDecisionWindowView();
+            var presenter = new DecisionWindowPresenter(session, view);
+            var attackPresentationPending = true;
+            presenter.DeferWhile(() => attackPresentationPending);
+
+            presenter.Refresh();
+
+            Assert.That(view.Model, Is.Null,
+                "Shock's real after-Attack discard question must not appear before the framed Attack.");
+
+            attackPresentationPending = false;
+            presenter.ResumePresentation();
+
+            Assert.That(view.Model, Is.Not.Null);
+            Assert.That(view.Model.Family, Is.EqualTo(DecisionWindowFamily.CardChoice));
+            Assert.That(view.Model.Controls, Is.Not.Empty,
+                "Releasing presentation reveals the untouched authoritative question and its commands.");
+        }
+
         // -------------------------------------------------------------------------------------
         // Helpers
         // -------------------------------------------------------------------------------------

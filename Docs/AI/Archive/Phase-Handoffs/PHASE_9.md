@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.43 Attack-before-after-attack presentation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.43 | Hero attacks publish their public presentation row at the final outcome and non-defending minion attacks at their already-fixed start; the spotlight claims the projection before the decision window, and the after-Attack question waits through framing, the beat and earlier queued scenes until the attack lunge actually enters playback. Authority, printed timing, reconnect priming and wire format remain unchanged. [Definition](../../Roadmap/PHASE_9.md#x-943-show-the-attack-before-its-after-attack-presentation). | `milestone/9.43` |
+
 ## Milestone 9.42 Standing joined-seat level-up window evidence
 
 | Milestone | Outcome and definition | Commit |

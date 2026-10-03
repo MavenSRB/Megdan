@@ -868,6 +868,10 @@ namespace GuardsDigital.Presentation.Match
             RefreshPanel("victory-screen", () => victoryScreen?.Refresh(), failed, errors);
             RefreshPanel("board", board.Refresh, failed, errors);
             RefreshPanel("hands", hands.Refresh, failed, errors);
+            // Milestone 9.43: the attack presentation claims the new projection before any
+            // after-Attack question can draw. The decision presenter reads its deferral immediately
+            // below; kinetics remains later so the spotlight can pace its cues as before.
+            RefreshPanel("attack-spotlight", () => attackSpotlight?.Refresh(), failed, errors);
             // Milestone 8.46c, immediately before the strip it takes the decision families from: the
             // strip asks the window what it is drawing while it rebuilds, so the window has to have
             // observed this projection first. Isolated like every other panel.
@@ -877,10 +881,8 @@ namespace GuardsDigital.Presentation.Match
             RefreshPanel("diagnostics", () => diagnostics?.Refresh(), failed, errors);
             RefreshPanel("minion-choice", minionChoice.Refresh, failed, errors);
             RefreshPanel("hero-overviews", () => heroOverviews?.Refresh(), failed, errors);
-            // Milestone 8.35z12, immediately before the kinetics it paces: the spotlight
-            // decides whether that panel plays this projection's cues now or holds them until the
-            // camera has arrived, so it must observe this projection first.
-            RefreshPanel("attack-spotlight", () => attackSpotlight?.Refresh(), failed, errors);
+            // The spotlight already observed this projection above, before the decision window; the
+            // kinetic pass stays last so it reads the pacing decision made there.
             // Last, and isolated like every other panel: a kinetic is a flourish, and it must be the
             // one thing on this list that can never cost a player a fact on the surfaces above it.
             RefreshPanel("kinetics", () => kinetics?.Refresh(), failed, errors);

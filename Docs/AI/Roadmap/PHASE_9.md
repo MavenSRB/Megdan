@@ -46,11 +46,19 @@ Completed 2026-10-03.
 
 Historical evidence: [9.42 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-942-standing-joined-seat-level-up-window-evidence).
 
-### [~] 9.43 Show the attack before its after-attack presentation
+### [x] 9.43 Show the attack before its after-attack presentation
 
 Authorized 2026-10-03: attack animations should happen before "after the attack" text happens. Inspect the presenter/conductor ordering; show the attack before its consequent prompts and visual effects, without delaying authoritative rules/network progression or changing printed timing. Cover a choice-bearing after-Attack branch, an automatic consequence, interruption/reconnect and queued attacks. T2; ordered presentation regression and focused rendered player-path/visual evidence. Keep distinct from 9.42's stale visibility correction.
 
-### [ ] 9.44 Implement hero-hover Defense contributors
+Result: the public Attack row now reaches Presentation at the first authoritative resolved-attack boundary instead of waiting for the action's later lifecycle completion: hero attacks publish at their final success/defended outcome, while minion attacks publish at `AttackStarted` because p.13 fixes that non-defending arm as successful and emits no later outcome fact. The spotlight refreshes before the decision window. A newly authoritative after-Attack model is cached but drawn as absent through camera framing, the post-zoom beat and any earlier queued kinetic scenes; a kinetic scene-start notification releases it only after the framed attack's lunge has genuinely entered playback. Interruption releases the standing question, first-sight/reconnect still primes old attacks without replay, and authority, commands, printed timing, snapshot and wire format are unchanged.
+
+Closing evidence: the new decision regression first failed with the after-Attack model already drawn, and the real Wasp/Shock minion path then demonstrated the missing Attack row while its effect choice stood; both passed after the two-arm timing correction. Focused Edit Mode passed 3/3 and the focused rendered Play Mode journey passed 1/1. Directly affected `MatchLogChannelTests`, `AttackSpotlightTests`, `KineticCueTests`, `KineticConductorTests`, `MatchFeaturePresenterTests` and `DecisionWindowPresenterTests` passed 230/230, including automatic smack pacing, queued/repeated attacks, first-sight/reconnect, projection loss, rewind and interruption; the complete real-scene `WavePresentationPlayModeTests` passed 5/5. The batch-capable visual capture `tmp/943-captures/attack-before-after-attack-question.png` was inspected at the lunge boundary. T2.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.43 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-943-attack-before-after-attack-presentation-evidence).
+
+### [~] 9.44 Implement hero-hover Defense contributors
 
 Mockup approved for implementation 2026-10-03: "Implement this, and all the other stuff previous agent was working on as well." Preserve the hovered hero highlight and highlight only minions contributing to that hero's Defense: green positive and blood-red negative, without numeric labels on the minions. The user's latest correction requires a very small shield near the hero token's bottom edge containing only the centered signed modifier (illustratively "-1"), with no "DEF" text. Mockup uses an illustrative net minion modifier, not an invented complete Defense total before a card is chosen. Implementation must consume authoritative contribution facts, not reimplement rules in UI. Closing checks: exact contributing identities/signs, clearing on hover exit, no unrelated-minion highlight, and non-mutating hover/visual evidence. Root's interactive mockup is outside tracked source; no game implementation yet.
 

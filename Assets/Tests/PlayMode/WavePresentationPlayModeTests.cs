@@ -9,6 +9,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -87,6 +88,89 @@ namespace GuardsDigital.Tests.PlayMode
                 "A resolved anchor is also LAID OUT - an element found but never placed would send " +
                 "every flight from the panel's origin, which is the same silent no-op in a different " +
                 "costume.");
+        }
+
+        [UnityTest]
+        public IEnumerator AfterAttackQuestionAppearsOnlyAfterTheFramedAttackStarts()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var redHeroId = HeroOf(runtime, TeamSide.Red);
+
+            Commit(runtime, TeamSide.Red, WaspCardContent.Shock);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.StopProjectiles);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
+
+            var attack = runtime.RoundView.Model.Actions.Single(value =>
+                ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
+            Assert.That(runtime.RoundPresenter.Submit(attack), Is.True);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var minion = Object.FindObjectsByType<StandardMinionView>().Single(value =>
+                value.Occupancy != null && value.Occupancy.MinionId.Equals(targetId));
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), hud,
+                minion.transform.position), Is.True);
+
+            // The command refresh is synchronous. Assert before yielding a real frame: on a loaded
+            // batch runner one frame can exceed the entire enter-and-beat duration, which would
+            // correctly release the question before this test had inspected the ordering boundary.
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "Shock's after-Attack hero chooser is authoritatively standing.");
+            var attackRow = runtime.ReadModel.MatchLog.LastOrDefault(value =>
+                value.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.Attack);
+            Assert.That(attackRow, Is.Not.Null,
+                "The resolved-attack boundary must already have published the Attack row. Attack facts: " +
+                string.Join(", ", runtime.DiagnosticEvents
+                    .Where(value => value.EventType.Contains("Attack"))
+                    .Select(value => value.EventType)) + ". Director rows: " +
+                string.Join(", ", runtime.Projection.MatchLog.Select(value =>
+                    value.Sequence + ":" + value.Kind)) + ".");
+            Assert.That(runtime.SpotlightPresenter.DefersCues, Is.True,
+                "The resolved Attack row " + attackRow.Sequence + " has claimed its local " +
+                "presentation before the question draws. Stage=" +
+                runtime.SpotlightPresenter.Stage.Phase + ", observed=" +
+                runtime.SpotlightPresenter.ObservedSequence + ", skipped=" +
+                runtime.SpotlightPresenter.SkippedWindowCount + ".");
+            Assert.That(runtime.DecisionWindowView.Model, Is.Null,
+                "The after-Attack question does not flash before the framed Attack.");
+
+            if (runtime.SpotlightPresenter.Stage.Phase == AttackSpotlightPhase.Requested)
+            {
+                runtime.KineticView.Tick(0f);
+            }
+            TickBy(runtime.SpotlightPresenter,
+                AttackSpotlightTiming.EnterSeconds +
+                AttackSpotlightTiming.PostZoomBeatSeconds + 0.05f);
+
+            Assert.That(runtime.SpotlightPresenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held));
+            Assert.That(runtime.SpotlightPresenter.DefersCues, Is.False);
+            Assert.That(runtime.DecisionWindowView.Model, Is.Null,
+                "Releasing the queue is not enough: earlier scenes may still precede the Attack.");
+
+            var lunge = KineticSubject.ForHero(redHeroId);
+            for (var step = 0; step < 64 &&
+                !runtime.KineticView.Playback.LungeTargetFor(lunge).IsDefined; step++)
+            {
+                runtime.KineticView.Tick(0.25f);
+                if (!runtime.KineticView.Playback.LungeTargetFor(lunge).IsDefined)
+                {
+                    Assert.That(runtime.DecisionWindowView.Model, Is.Null,
+                        "An earlier queued scene must not release the after-Attack question.");
+                }
+            }
+
+            Assert.That(runtime.KineticView.Playback.LungeTargetFor(lunge).IsDefined,
+                Is.True,
+                "The Attack's framed smack reaches playback.");
+            Assert.That(runtime.DecisionWindowView.Model, Is.Not.Null,
+                "The untouched authoritative after-Attack question is released after the Attack starts.");
+            Assert.That(runtime.DecisionWindowView.Model.Family,
+                Is.EqualTo(DecisionWindowFamily.PieceOrSpace),
+                "Shock's first rider question is still the real board-target chooser.");
+            yield return UiPlayer.CaptureScreen(
+                "tmp/943-captures/attack-before-after-attack-question.png");
         }
 
         /// <summary>

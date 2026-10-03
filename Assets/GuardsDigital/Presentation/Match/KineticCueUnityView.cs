@@ -101,6 +101,13 @@ namespace GuardsDigital.Presentation.Match
         public KineticPlayback Playback => playback;
 
         /// <summary>
+        /// Raised after a conducted kinetic scene has entered playback. Presentation that must wait
+        /// for motion to genuinely start uses this boundary rather than equating queue release with
+        /// animation start.
+        /// </summary>
+        public event Action SceneStarted;
+
+        /// <summary>
         /// Milestone 8.35z11. The queue, exposed for the same reason the clock is: a Play Mode
         /// case asserting that six reveals stage one at a time has to be able to see the queue.
         /// </summary>
@@ -154,6 +161,7 @@ namespace GuardsDigital.Presentation.Match
                 // the piece clock a card's journey would leave it reporting a motion it never animated.
                 playback.Begin(KineticCueFamilies.BoardCuesOf(started));
                 flights.Begin(started, model.ViewerHeroId);
+                SceneStarted?.Invoke();
             }
 
             playback.Advance(deltaSeconds);

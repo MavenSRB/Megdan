@@ -46,6 +46,7 @@ namespace GuardsDigital.Presentation.Match
         private HeroId homeHeroId;
         private IMatchReadModel lastProjection;
         private DecisionWindowViewModel lastViewModel;
+        private Func<bool> presentationDeferred;
 
         // The manual toggle. It is keyed by the decision it was made on, so it survives exactly as
         // long as that decision stands: the user's rule is that every NEW decision re-decides the
@@ -77,6 +78,16 @@ namespace GuardsDigital.Presentation.Match
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
 
+        /// <summary>
+        /// Supplies the local presentation gate that may temporarily withhold a newly authoritative
+        /// question while an earlier visual beat finishes. It never withholds or changes authority.
+        /// </summary>
+        public void DeferWhile(Func<bool> shouldDefer) =>
+            presentationDeferred = shouldDefer ?? throw new ArgumentNullException(nameof(shouldDefer));
+
+        /// <summary>Re-reads and redraws the standing question when the local visual gate releases.</summary>
+        public void ResumePresentation() => Refresh();
+
         /// <summary>The window currently drawn, or null while this viewer owns no standing decision.</summary>
         public DecisionWindowViewModel Model => lastViewModel;
 
@@ -97,7 +108,20 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        public void Refresh() => view.Render(GetOrCreateViewModel(session.Projection));
+        public void Refresh()
+        {
+            var next = GetOrCreateViewModel(session.Projection);
+            if (presentationDeferred?.Invoke() == true)
+            {
+                // The authority has already reached this question, but an earlier local visual beat
+                // still owns the stage. Keep the typed model cached and draw no premature question;
+                // ResumePresentation reveals this same model without rebuilding authority.
+                view.Render(null);
+                return;
+            }
+
+            view.Render(next);
+        }
 
         /// <summary>
         /// Toggles the standing window between its two states, and remembers the choice for as long as
