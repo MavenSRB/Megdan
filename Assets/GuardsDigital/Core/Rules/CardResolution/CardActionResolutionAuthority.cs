@@ -303,10 +303,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public CardActionResolutionResult ReopenDefenseChoice(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            MatchParticipants participants)
         {
             var choice = attackDefenseBackend.ReopenDefenseChoice(
-                definitions, instances, modifications);
+                definitions, instances, modifications, participants);
             return CardActionResolutionResult.Accept(false, null, null,
                 new[]
                 {

@@ -30,6 +30,15 @@ Phrases (format v1 plus the v1.1 additions) and how the executor reads them:
 
 ## Executor defaults
 
+### Batch extensions (9.13a)
+
+- Another hero's setup may name `hero` (printed name or content ID) and `coins`. An explicit `attack.ranged` boolean selects a matching printed Attack and roster hero; without it the attack-value fixture can choose any matching hero. Geometry and prerequisites must still make that actual printed card legal. Every staged hero starts at Level 1 unless the actor's level is stated.
+- `standing` may append `using Hold` to its existing phrase. This resolves the named card without applying its primary text, for a scenario about the type of card played rather than its action's consequences.
+- A non-Defense case may add `follow-up: {hero, card, action, answers, offered}` for another hero later that turn, or `turn: "next"` for the next turn. That printed card is reserved in hand, committed on the specified turn, and executed through ordinary commands, even when the original case only asserts its offer. The intervening heroes Hold. `offered` must be boolean and `answers` a string array; `offered: false` probes an unavailable action without forcing it. Movement selects the primary or secondary Movement printed on the card. Expectations read the resulting board; the original case's `offered` still describes its original action. Defense follow-ups are refused, not ignored.
+- A Defend case defaults to using its named card when offered, otherwise declining; explicit `defense:` answers take precedence. The primary Defense's availability is checked separately from a secondary value on the same card.
+- `{ref, marker: "Poison"}` checks an attached marker by its displayed name; `{ref, "attack-modifier": -1, "defense-modifier": -1, "initiative-modifier": -1}` reads live value contributions from a restored snapshot. `{ref, "defense-offered": {"Aspiring Duelist": false}}` checks named Defense cards in the actual question; a missing question fails rather than proving exclusion vacuously.
+- `EveryBatchFace_HasAnExecutableOutcomeTable` requires each completed batch's ordinary dealt face to have an executable table with an outcome, and its Ultimate to have a scenario with the Ultimate unlocked. The per-case tests execute those outcomes. Boxed Handicap faces and explicit extra coverage gaps are reported separately, never counted as executed coverage.
+
 Each is taken only where the table says nothing, and the trace names it:
 
 - An enemy seat with a numeric `defends-with` is given, in roster order, the first dealt hero (never the actor's) whose deck prints a card with that Defense.

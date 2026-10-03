@@ -1,0 +1,84 @@
+[
+  {
+    "id": "tigerclaw-ballista-without-friendly-allows-primary-defense",
+    "kind": "engine-defect",
+    "ref": "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png; rulebook pp.10,14,17",
+    "note": "Fourth run refuses Aspiring Duelist even with no friendly unit adjacent to the target. Reinspection confirms the printed If clause governs both coordinated consequences: +2 Attack and the target cannot perform a primary action to defend. There is no intervening sentence break making the Defense prohibition unconditional. TigerclawCardContent.DefenseRestriction currently declares PrintedPrimaryOnly unconditionally, while RaisedAttack checks friendly adjacency. Preserve the positive-control expectation. Closing check: no-friendly control offers Aspiring Duelist and survives Attack5; companion friendly-adjacent case excludes it and resolves Attack7."
+  },
+  {
+    "id": "tigerclaw-nimble-strike-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "rulebook p.6; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw19__7379735__front.png",
+    "note": "H-tier Nimble Strike is boxed in the standard game. It is not a dealt face or a passed execution case. Replacement standard-game gold coverage is tigerclaw-blink-through-target and tigerclaw-blink-cannot-land-on-obstacle."
+  },
+  {
+    "id": "tigerclaw-blend-next-turn-immunity",
+    "kind": "executor-gap",
+    "ref": "rulebook pp.17-18; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw2__7379736__front.png",
+    "note": "Initial trace rejected an immune assertion. Case now stages a radius-2 placement beside Arien and probes Noble Blade availability next turn; it must not be offered against the immune actor. Placement case separately covers radius boundary. Closing check: next-turn probe passes; expiration beyond next turn is not asserted by this single follow-up."
+  },
+  {
+    "id": "tigerclaw-ballista-primary-defense-forbidden",
+    "kind": "executor-gap",
+    "ref": "rulebook p.14; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png",
+    "note": "Initial semantic defender fixture was unsupported. Named Arien now holds Aspiring Duelist and the defense-offered dictionary must exclude that primary Defense with a friendly unit beside the target. Companion tigerclaw-ballista-without-friendly-allows-primary-defense must offer the same Defense and survive Attack5. Closing check: both opposing offer assertions pass."
+  },
+  {
+    "id": "tigerclaw-blink-cannot-land-on-obstacle",
+    "kind": "engine-defect",
+    "ref": "rulebook pp.10-11,18; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw__7379728__front.png",
+    "note": "Initial trace offered Attack despite a generic obstacle at landing. ThroughTargetLineHandler used a displaceable-object query that omitted generic obstacles. Canonical ObstacleQuery correction preserves unit/terrain/overlay behavior. Focused BlinkStrike_WithAGenericObstacleAtEndSpace_IsUnavailable failed before fix and passed afterward; original table expectation remains unchanged. Final table rerun is required."
+  },
+  {
+    "id": "tigerclaw-poisoned-dagger-poison-at-range-edge",
+    "kind": "executor-gap",
+    "ref": "rulebook pp.9,18; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw15__7723259__front.png",
+    "note": "Initial trace rejects marker assertion. Closing check: range-3 recipient receives Poison marker and Initiative, Attack, Defense each change by -1; marker is not an on-board token. Out-of-range case is executable boundary coverage but does not replace primary effect coverage."
+  },
+  {
+    "id": "tigerclaw-poisoned-dart-poison-at-range-edge",
+    "kind": "executor-gap",
+    "ref": "rulebook pp.9,18; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw17__7723261__front.png",
+    "note": "Initial trace rejects marker assertion. Closing check: range-3 recipient receives Poison marker and Initiative, Attack, Defense each change by -2; marker is not an on-board token. Out-of-range case is executable boundary coverage but does not replace primary effect coverage."
+  },
+  {
+    "id": "tigerclaw-light-fingered-steals-and-retreats",
+    "kind": "executor-gap",
+    "ref": "rulebook p.11; printed card source in case",
+    "note": "Initial draft used 'away' as if it guaranteed retracing the approach. Hex geometry permits another farther hex, so net displacement was underspecified. Answers now constrain retreat to the straight line through current actor and target, preserving exact printed movement and coin transfer expectations. Closing check: rerun verifies transfer and stated net displacement."
+  },
+  {
+    "id": "tigerclaw-pick-pocket-steals-and-retreats",
+    "kind": "executor-gap",
+    "ref": "rulebook p.11; printed card source in case",
+    "note": "Initial draft used 'away' as if it guaranteed retracing the approach. Hex geometry permits another farther hex, so net displacement was underspecified. Answers now constrain retreat to the straight line through current actor and target, preserving exact printed movement and coin transfer expectations. Closing check: rerun verifies transfer and stated net displacement."
+  },
+  {
+    "id": "tigerclaw-master-thief-steals-and-retreats",
+    "kind": "executor-gap",
+    "ref": "rulebook p.11; printed card source in case",
+    "note": "Initial draft used 'away' as if it guaranteed retracing the approach. Hex geometry permits another farther hex, so net displacement was underspecified. Answers now constrain retreat to the straight line through current actor and target, preserving exact printed movement and coin transfer expectations. Closing check: rerun verifies transfer and stated net displacement."
+  },
+  {
+    "id": "tigerclaw-riposte-attacker-chooses-defeat",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md item 13; rulebook pp.10,17",
+    "note": "Preserve blind reader's voluntary-defeat interpretation in the table. Settled item13 reads 'discards a card, or is defeated' as mandatory discard when able, defeat only when unable. Replace only executed answers and expectations: attacker with cards discards, both heroes survive. Initial voluntary answer fails; closing check is mandatory-discard outcome.",
+    "answers-override": [],
+    "expect-override": [
+      {
+        "ref": "actor",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "chose": "discard"
+      }
+    ]
+  }
+]

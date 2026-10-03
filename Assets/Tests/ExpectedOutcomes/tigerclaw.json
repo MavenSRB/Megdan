@@ -1,0 +1,1146 @@
+{
+  "hero": "Tigerclaw",
+  "cases": [
+    {
+      "id": "tigerclaw-ballista-without-friendly-allows-primary-defense",
+      "card": "Backstab with a Ballista",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Arien",
+          "hand": [
+            "Aspiring Duelist"
+          ],
+          "defends-with": "Aspiring Duelist"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "defense-offered": { "Aspiring Duelist": true }
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-blink-through-target",
+      "card": "Blink Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw__7379728__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "attack": 3,
+          "ref": "actor"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-blink-cannot-land-on-obstacle",
+      "card": "Blink Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw__7379728__front.png",
+        "rulebook p.11",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 1 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-blend-place-at-radius-edge",
+      "card": "Blend Into Shadows",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw2__7379736__front.png",
+        "rulebook p.10",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "kind": "terrain",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "place: distance 2 from actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-blend-next-turn-immunity",
+      "card": "Blend Into Shadows",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw2__7379736__front.png",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "kind": "terrain",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Arien"
+        }
+      },
+      "answers": [
+        "place: distance 2 from actor and adjacent to enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ],
+      "follow-up": {
+        "turn": "next",
+        "hero": "enemy-hero-1",
+        "card": "Noble Blade",
+        "action": "Attack",
+        "answers": [],
+        "offered": false
+      }
+    },
+    {
+      "id": "tigerclaw-hit-and-run-after-defended-attack",
+      "card": "Hit and Run",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw3__7379734__front.png",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 3
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "away from enemy-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "attack": 3,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-combat-reflexes-pre-move",
+      "card": "Combat Reflexes",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw4__7379720__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "attack": 4,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-combat-reflexes-post-move",
+      "card": "Combat Reflexes",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw4__7379720__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "decline",
+        "enemy-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-backstab-friendly-enables-bonus",
+      "card": "Backstab",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw5__7379732__front.png",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to enemy-hero-1 and actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 7,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-backstab-self-does-not-enable-bonus",
+      "card": "Backstab",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw5__7379732__front.png",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 5
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 5,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-leaping-strike-both-moves",
+      "card": "Leaping Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw6__7379729__front.png",
+        "rulebook p.11",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 2 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1",
+        "toward friendly-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "attack": 4,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-ballista-friendly-enables-bonus",
+      "card": "Backstab with a Ballista",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png",
+        "rulebook p.9",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to enemy-hero-1 and actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 7,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-ballista-primary-defense-forbidden",
+      "card": "Backstab with a Ballista",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to enemy-hero-1 and actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Arien",
+          "hand": [
+            "Aspiring Duelist"
+          ],
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "defense-offered": { "Aspiring Duelist": false }
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-ballista-outside-range",
+      "card": "Backstab with a Ballista",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw7__7379725__front.png",
+        "rulebook p.9",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-dodge-blocks-ranged",
+      "card": "Dodge",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw8__7379730__front.png",
+        "rulebook p.10",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3,
+          "ranged": true
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor off every straight line"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Dodge",
+          "state": "discarded"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-sidestep-blocks-ranged",
+      "card": "Sidestep",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw9__7379719__front.png",
+        "rulebook p.10",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3,
+          "ranged": true
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor off every straight line"
+          }
+        ]
+      },
+      "answers": [
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Sidestep",
+          "state": "discarded"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-evade-blocks-ranged",
+      "card": "Evade",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw11__7379724__front.png",
+        "rulebook p.10",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3,
+          "ranged": true
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor off every straight line"
+          }
+        ],
+        "discard": [
+          "Blend Into Shadows"
+        ]
+      },
+      "answers": [
+        "distance 1",
+        "card: Blend Into Shadows"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Evade",
+          "state": "discarded"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        },
+        {
+          "card": "Blend Into Shadows",
+          "state": "hand"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-dodge-fails-nonranged",
+      "card": "Dodge",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw8__7379730__front.png",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-parry-blocks-and-discards",
+      "card": "Parry",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw10__7379721__front.png",
+        "rulebook p.10",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "chose": "discard"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-riposte-attacker-chooses-defeat",
+      "card": "Riposte",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw12__7379723__front.png",
+        "rulebook p.10",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 3
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1: take defeat"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "chose": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-light-fingered-steals-and-retreats",
+      "card": "Light-Fingered",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw13__7723257__front.png",
+        "rulebook p.10",
+        "rulebook p.11"
+      ],
+      "setup": {
+        "actor": {
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "coins": 2
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1",
+        "space: distance 2 from enemy-hero-1 in a straight line through actor"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "coins": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "coins": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-pick-pocket-steals-and-retreats",
+      "card": "Pick Pocket",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw14__7723258__front.png",
+        "rulebook p.10",
+        "rulebook p.11"
+      ],
+      "setup": {
+        "actor": {
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "coins": 2
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 2",
+        "enemy-hero-1",
+        "space: distance 2 from enemy-hero-1 in a straight line through actor"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "coins": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "coins": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-master-thief-steals-and-retreats",
+      "card": "Master Thief",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw16__7723260__front.png",
+        "rulebook p.10",
+        "rulebook p.11"
+      ],
+      "setup": {
+        "actor": {
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "coins": 2
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 2",
+        "enemy-hero-1",
+        "distance 2",
+        "space: distance 3 from enemy-hero-1 in a straight line through actor"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "coins": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "coins": 0
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-poisoned-dagger-poison-at-range-edge",
+      "card": "Poisoned Dagger",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw15__7723259__front.png",
+        "rulebook p.9",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "marker": "Poison"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "initiative-modifier": -1,
+          "attack-modifier": -1,
+          "defense-modifier": -1
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-poisoned-dagger-outside-range",
+      "card": "Poisoned Dagger",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw15__7723259__front.png",
+        "rulebook p.9",
+        "rulebook p.10"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-poisoned-dart-poison-at-range-edge",
+      "card": "Poisoned Dart",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw17__7723261__front.png",
+        "rulebook p.9",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "marker": "Poison"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "initiative-modifier": -2,
+          "attack-modifier": -2,
+          "defense-modifier": -2
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-poisoned-dart-outside-range",
+      "card": "Poisoned Dart",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw17__7723261__front.png",
+        "rulebook p.9",
+        "rulebook p.10"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-ultimate-blink-two-different-heroes",
+      "card": "Blink Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw__7379728__front.png",
+        "rulebook p.10",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw18__7379722__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 2 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-ultimate-cannot-retarget-same-hero",
+      "card": "Blink Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw__7379728__front.png",
+        "rulebook p.10",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw18__7379722__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 3
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "tigerclaw-nimble-strike-boxed-handicap",
+      "card": "Nimble Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw19__7379735__front.png",
+        "rulebook p.6",
+        "rulebook p.20"
+      ],
+      "setup": {},
+      "answers": [],
+      "expect": [],
+      "unsupported": "Handicap H card is returned to the box in the standard game, and format v1.1 does not execute handicap setup. Printed alternative requires moving exactly 2 spaces in a straight line through an enemy hero (not a minion), then attacking that hero at Attack 2.",
+      "handicap": true
+    }
+  ]
+}

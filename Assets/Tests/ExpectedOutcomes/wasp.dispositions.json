@@ -1,0 +1,37 @@
+[
+  {
+    "id": "wasp-electroblast-discard-or-defeat",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md item 13 (answered 2026-08-22); rulebook printed pp.10,17",
+    "note": "Blind reader interpreted 'or is defeated' as an affected-hero election. Settled ruling makes discard mandatory when cards remain; defeat follows inability. Preserve independent original expectation and answer, run mandatory-discard replacement.",
+    "expect-override": [
+      {
+        "attack": 6,
+        "ref": "actor"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-2",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-2",
+        "hand": -1
+      }
+    ],
+    "answers-override": [
+      "enemy-hero-1",
+      "enemy-hero-2"
+    ]
+  },
+  {
+    "id": "wasp-crackling-dagger-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6 step11",
+    "note": "Handicap H face is returned to the box in standard setup (printed rulebook p.6); odd-player handicap variants are outside the dealt-card runner. This is outstanding coverage, not evidence that the printed outcome passed."
+  }
+]

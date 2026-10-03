@@ -152,7 +152,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal PendingDefenseResponseChoice ReopenDefenseChoice(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            MatchParticipants participants)
         {
             if (pendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
                 pendingDefenseChoice != null)
@@ -162,7 +163,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!attack.HasValue)
                 throw new InvalidOperationException("The interrupted Attack source is unavailable.");
             var offers = FindDefenseOffers(definitions, instances,
-                pendingAttackResolution.TargetHeroId, modifications, attack.Value);
+                pendingAttackResolution.TargetHeroId, modifications, attack.Value, participants);
             pendingDefenseChoice = new PendingDefenseResponseChoice(
                 pendingAttackResolution.ResolutionId,
                 pendingAttackResolution.CurrentStepId,
@@ -1128,7 +1129,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 excludedTargets: resolution.ExcludedTargets);
             var defenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances, defenseResolution.TargetHeroId,
-                modifications, offer.Value);
+                modifications, offer.Value, participants);
             pendingAttackResolution = defenseResolution;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = new PendingDefenseResponseChoice(
@@ -2135,7 +2136,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var currentDefenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances,
-                pendingAttackResolution.TargetHeroId, modifications, attackOffer.Value);
+                pendingAttackResolution.TargetHeroId, modifications, attackOffer.Value, participants);
             if (!DefenseChoicesMatch(pendingAttackResolution, currentDefenseOffers, pendingDefenseChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -2834,9 +2835,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         throw new ArgumentException(
                             "An interrupted Defense cannot also offer a card.",
                             nameof(verifiedDefenseChoice));
-                    var expectedDefenseOffers = FindDefenseOffers(
+                    var expectedDefenseOffers = backend.FindDefenseOffers(
                         materializedDefinitions, materializedInstances,
-                        pendingResolution.TargetHeroId, modifications, offer.Value);
+                        pendingResolution.TargetHeroId, modifications, offer.Value, participants);
                     if (verifiedDefenseChoice != null &&
                         !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, verifiedDefenseChoice))
                     {
@@ -3784,18 +3785,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Milestone 8.11 moved this rule to <see cref="DefenseOfferQuery"/>, which both test tiers can
         /// name and which now also asks milestone 8.4.s honesty question of a Defense.
         /// </summary>
-        private static ActionOffer[] FindDefenseOffers(
+        private ActionOffer[] FindDefenseOffers(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             HeroId defenderId,
             RuleModificationSet modifications,
-            ActionOffer incomingAttack) =>
+            ActionOffer incomingAttack,
+            MatchParticipants participants) =>
             DefenseOfferQuery.Offers(
                 definitions,
                 instances,
                 defenderId,
                 modifications,
-                ActionOfferQuery.FindActionDefinition(incomingAttack, definitions)).ToArray();
+                ActionOfferQuery.FindActionDefinition(incomingAttack, definitions),
+                incomingAttack.ActorId, participants, adjacentMoveAuthority).ToArray();
 
         private static bool DefenseChoicesMatch(
             PendingAttackResolution resolution,

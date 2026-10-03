@@ -26,9 +26,19 @@ Completed 2026-09-29.
 
 Historical evidence: [9.13 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913-expected-outcome-pilot-evidence).
 
-### [ ] 9.13a Tables for Wasp, Arien, Brogan, Sabina and Tigerclaw
+Authorized 2026-10-03: **9.13a -> 9.13b -> 9.13c -> 9.13d -> 9.13e** ("Go for 9.13a/b", extended to "Up to E"). Execute in order with independent readers, separate T2 validation, disagreement dispositions and local commits.
+
+### [x] 9.13a Tables for Wasp, Arien, Brogan, Sabina and Tigerclaw
 
 Queued: the pilot format applied by blind readers to the first five dealt heroes; same closing check per hero. T2.
+
+Result: three independent source-only readers authored 138 cases across the five heroes; 132 execute, covering every dealt face and each unlocked Ultimate. Dispositions preserve settled-ruling disagreements and name corrected staging/format issues. A per-face guard prevents missing executable coverage. Generic executor additions support explicit roster/coin setup, ranged Defense probes, held-card history, same/next-turn follow-ups, Poison/modifier facts and actual Defense-offer assertions; regression checks refuse omitted follow-ups and malformed inputs. Two source disagreements corrected engine behavior: Blink Strike cannot land on a generic obstacle, and Ballista's primary-Defense prohibition shares its +2 Attack's friendly-adjacency condition. Conditional offers survive paused-Defense restoration. Tigerclaw advances to `tigerclaw-9-13a-rev-1`; the new generic restriction field mechanically changes all identity pins, isolated from the one semantic content change. No snapshot or wire change.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.13a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913a-first-five-outcome-tables-evidence).
+
+Additional coverage backlog (not part of the per-face acceptance): `arien-liquid-leap-spawn-exclusions` remains **parked, not executed** because the neutral format cannot name an excluded destination. Owner: expected-outcome executor; dependency: a source-relative destination-offer assertion; closing check: reject both a spawn-point landing and a non-spawn landing adjacent to an empty spawn point, with a legal landing as control. Arien's ordinary Liquid Leap outcome still executes. The five boxed Handicap faces remain outside standard dealt play under p.6, not passing action coverage.
 
 ### [ ] 9.13b Tables for Xargatha, Dodger, Misa, Silverarrow and Ursafar
 

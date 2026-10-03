@@ -1,0 +1,47 @@
+[
+  {
+    "id": "brogan-shield-protects-defeated-friendly-minion",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md#writing-a-case; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Brogan/brogan13__7718726__front.png",
+    "note": "The blind table originally declared the absent later-enemy-attack vocabulary unsupported. It now executes a next-turn Noble Blade attack through the generic follow-up extension and checks paid discard, retained minion location, and attacker's 2 coins. Required failing-then-passing closure: brogan-shield-protects-defeated-friendly-minion against tmp/9-13a/9-13a-first-all.trx and the integration rerun."
+  },
+  {
+    "id": "brogan-bolster-protects-defeated-friendly-minion",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md#writing-a-case; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Brogan/brogan14__7702707__front.png",
+    "note": "The blind table originally declared the absent later-enemy-attack vocabulary unsupported. It now executes a next-turn Noble Blade attack through the generic follow-up extension and checks paid discard, retained minion location, and attacker's 2 coins. Required failing-then-passing closure: brogan-bolster-protects-defeated-friendly-minion against tmp/9-13a/9-13a-first-all.trx and the integration rerun."
+  },
+  {
+    "id": "brogan-fortify-protects-defeated-friendly-minion",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md#writing-a-case; Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Brogan/brogan16__7718728__front.png",
+    "note": "The blind table originally declared the absent later-enemy-attack vocabulary unsupported. It now executes a next-turn Noble Blade attack through the generic follow-up extension and checks paid discard, retained minion location, and attacker's 2 coins. Required failing-then-passing closure: brogan-fortify-protects-defeated-friendly-minion against tmp/9-13a/9-13a-first-all.trx and the integration rerun."
+  },
+  {
+    "id": "brogan-leap-forward-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6; Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md#executor-defaults",
+    "note": "Handicap H card is returned to the box in supported standard setup (printed p.6); odd-player handicap setup is outside this table executor."
+  },
+  {
+    "id": "brogan-counterattack-defeats-attacker-who-refuses-discard",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md, question 13; Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.10 Mandatory and Optional Steps and Making Choices",
+    "note": "The blind reader treated 'discards a card, or is defeated' as the affected hero's election. Settled source reading requires a hand discard if possible; defeat follows inability. Preserve the original expectation as the reader record and execute the corrected mandatory discard. The named discard card was available in the staged hand.",
+    "answers-override": [
+      "enemy-hero-1",
+      "enemy-hero-1: discard Aspiring Duelist"
+    ],
+    "expect-override": [
+      {
+        "ref": "enemy-hero-1",
+        "chose": "discard"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      }
+    ]
+  }
+]

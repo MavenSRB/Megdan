@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -35,7 +38,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> instances,
             HeroId defenderId,
             RuleModificationSet modifications,
-            ActionDefinition incomingAttack = null)
+            ActionDefinition incomingAttack = null,
+            HeroId incomingActor = default,
+            MatchParticipants participants = null,
+            IBoardDisplacementAuthority board = null)
         {
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             if (instances == null) throw new ArgumentNullException(nameof(instances));
@@ -55,7 +61,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     ActionOfferQuery.SourceCardColor(candidate, definitions)))
                 .Where(candidate => IsPerformable(candidate, definitions))
                 .Where(candidate => !IsForbiddenByIncomingAttack(
-                    candidate, definitions, incomingAttack))
+                    candidate, definitions, incomingAttack, incomingActor, defenderId,
+                    participants, board, modifications))
                 .ToArray());
         }
 
@@ -109,11 +116,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static bool IsForbiddenByIncomingAttack(
             ActionOffer defenseOffer,
             IReadOnlyList<CardDefinition> definitions,
-            ActionDefinition incomingAttack)
+            ActionDefinition incomingAttack,
+            HeroId incomingActor,
+            HeroId defenderId,
+            MatchParticipants participants,
+            IBoardDisplacementAuthority board,
+            RuleModificationSet modifications)
         {
             if (incomingAttack == null || !incomingAttack.DefenseOfferRestriction.IsDefined)
             {
                 return false;
+            }
+
+            if (incomingAttack.DefenseOfferRestriction.RequiresFriendlyUnitAdjacentToTarget)
+            {
+                if (!incomingActor.IsDefined || participants == null || board == null)
+                    throw new ArgumentException("A conditional Defense restriction requires the incoming actor and board context.");
+                if (!RosterPresenceQuery.HasFriendlyUnitAdjacentToTarget(
+                        incomingActor, BoardObjectReference.ForHero(defenderId),
+                        board, participants, modifications))
+                    return false;
             }
 
             var defense = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);

@@ -95,6 +95,19 @@ namespace GuardsDigital.Tests.EditMode
                 "complete mandatory move-and-target continuation, so the Attack is unavailable.");
         }
 
+        [Test]
+        public void BlinkStrike_WithAGenericObstacleAtEndSpace_IsUnavailable()
+        {
+            var fixture = StagedHeroBoard.Create(
+                TigerclawBoard.Spec,
+                minionPlacements: At("red-melee-01", FirstAdjacent),
+                obstacles: new[] { TwoAway });
+
+            Assert.That(fixture.IsPrimaryAvailable(TigerclawCardContent.BlinkStrike), Is.False,
+                "A generic obstacle blocks the landing just as a unit does: rulebook p.18 " +
+                "permits crossing obstacles, never ending movement on one.");
+        }
+
         // -----------------------------------------------------------------------------------------
         // "Before the attack: You may move 1 space ... After the attack: If you did not move ..."
         // -----------------------------------------------------------------------------------------
@@ -353,6 +366,31 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(action.DefenseOfferRestriction.Forbids(secondary), Is.False,
                 "p.14's ordinary secondary Defense remains legal; the clause restricts the origin " +
                 "rather than the card or the value.");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Ballista_PendingDefenseRoundTripsWithItsConditionalRestriction(bool friendlyAdjacent)
+        {
+            var fixture = Create(
+                tier: 3,
+                branch: TigerclawUpgradeBranch.SecondSibling,
+                minionPlacements: friendlyAdjacent ? At("blue-melee-01", FourthAdjacent) : null,
+                heroPlacements: At("primitive-hero", FirstAdjacent));
+            fixture.PlayAttackAt(
+                TigerclawCardContent.BackstabWithABallista, fixture.Enemy, defendSuccessfully: false);
+            var before = fixture.Session.Projection.PendingDefensePreview;
+            Assert.That(before, Is.Not.Null);
+            Assert.That(before.AttackTotal, Is.EqualTo(friendlyAdjacent ? 7 : 5));
+            var offeredCards = before.Choices.Select(choice => choice.CardInstanceId).ToArray();
+
+            fixture.RoundTripThroughASnapshot();
+
+            var restored = fixture.Session.Projection.PendingDefensePreview;
+            Assert.That(restored, Is.Not.Null);
+            Assert.That(restored.AttackTotal, Is.EqualTo(before.AttackTotal));
+            Assert.That(restored.Choices.Select(choice => choice.CardInstanceId), Is.EqualTo(offeredCards),
+                "Restoring the pending Defense must rebuild offers with the same board and attacker context.");
         }
 
         // -----------------------------------------------------------------------------------------

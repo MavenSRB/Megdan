@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using NUnit.Framework;
 using JsonObject = GuardsDigital.Tests.EditMode.ExpectedOutcomeJson.JsonObject;
 
@@ -25,6 +27,49 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ExpectedOutcomeTableTests
     {
         internal const string TableFolder = "Assets/Tests/ExpectedOutcomes";
+
+        public static IEnumerable<TestCaseData> CompletedBatchHeroes()
+        {
+            yield return new TestCaseData("wasp", WaspCardContent.DealtDefinitions).SetName("coverage/wasp");
+            yield return new TestCaseData("arien", ArienCardContent.DealtDefinitions).SetName("coverage/arien");
+            yield return new TestCaseData("brogan", BroganCardContent.DealtDefinitions).SetName("coverage/brogan");
+            yield return new TestCaseData("sabina", SabinaCardContent.DealtDefinitions).SetName("coverage/sabina");
+            yield return new TestCaseData("tigerclaw", TigerclawCardContent.DealtDefinitions).SetName("coverage/tigerclaw");
+        }
+
+        [TestCaseSource(nameof(CompletedBatchHeroes))]
+        public void EveryBatchFace_HasAnExecutableOutcomeTable(string hero, IEnumerable<CardDefinition> definitions)
+        {
+            var folder = Path.Combine(RepositoryRoot(), TableFolder);
+            var path = Path.Combine(folder, hero + ".json");
+            Assert.That(File.Exists(path), Is.True, hero + " has no independent table.");
+            var document = (JsonObject)ExpectedOutcomeJson.Parse(File.ReadAllText(path));
+            var dispositions = Dispositions(folder, hero);
+            var cases = ((List<object>)document.Get("cases")).OfType<JsonObject>().Where(entry =>
+            {
+                if (entry.Get("handicap") is bool handicap && handicap) return false;
+                if (!dispositions.TryGetValue((string)entry.Get("id"), out var disposition)) return true;
+                return (string)disposition.Get("kind") != "open-question" &&
+                    !(disposition.Get("execute") is bool execute && !execute);
+            }).ToArray();
+            foreach (var definition in definitions)
+            {
+                if (definition.Progression.IsUltimate)
+                {
+                    Assert.That(cases.Any(entry =>
+                    {
+                        var actor = (entry.Get("setup") as JsonObject)?.Get("actor") as JsonObject;
+                        return actor != null && (actor.Get("ultimate") is bool unlocked && unlocked ||
+                            Convert.ToString(actor.Get("level"), System.Globalization.CultureInfo.InvariantCulture) == "8");
+                    }), Is.True, hero + ": no executed Ultimate scenario.");
+                    continue;
+                }
+
+                Assert.That(cases.Any(entry => string.Equals((string)entry.Get("card"), definition.DisplayName,
+                    StringComparison.OrdinalIgnoreCase) && entry.Get("expect") is List<object> facts && facts.Count > 0),
+                    Is.True, hero + ": no executable outcome table for " + definition.DisplayName);
+            }
+        }
 
         public static IEnumerable<TestCaseData> Cases()
         {

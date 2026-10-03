@@ -49,8 +49,10 @@ namespace GuardsDigital.Core.Cards.Verified
         /// Milestone 8.35z25 moves it once more: Combat Reflexes and Leaping Strike now
         /// compose their step-1 sentences in the order the faces print them, which changes the nodes
         /// those two cards declare and the moment their target is bound.
+        /// Milestone 9.13a makes Ballista's primary-defense restriction conditional on the same
+        /// friendly-unit adjacency as its Attack bonus, preserving the scope of its printed If.
         /// </summary>
-        public const string ContentRevision = "tigerclaw-8-83-rev-1";
+        public const string ContentRevision = "tigerclaw-9-13a-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -632,7 +634,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static DefenseOfferOriginRestriction DefenseRestriction(TigerclawCardProfile profile) =>
             profile.ForbidsPrimaryDefense
-                ? DefenseOfferOriginRestriction.PrintedPrimaryOnly
+                ? DefenseOfferOriginRestriction.PrintedPrimaryWhenFriendlyUnitAdjacentToTarget
                 : DefenseOfferOriginRestriction.None;
 
         /// <summary>

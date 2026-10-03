@@ -1,0 +1,1132 @@
+{
+  "hero": "Wasp",
+  "cases": [
+    {
+      "id": "wasp-magnetic-dagger-attack",
+      "card": "Magnetic Dagger",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp__7540381__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "attack": 3,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-magnetic-dagger-locks-enemy-placement",
+      "card": "Magnetic Dagger",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp__7540381__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Arien",
+          "defends-with": 6,
+          "hand": [
+            "Noble Blade",
+            "Spell Break",
+            "Dangerous Current",
+            "Expert Duelist",
+            "Liquid Leap"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Liquid Leap",
+        "action": "Skill",
+        "answers": [],
+        "offered": false
+      },
+      "notes": "Converted prior unexecuted placement-lock reading to a same-turn enemy Liquid Leap offer probe. Printed Magnetic Dagger applies after the defended attack and prevents the adjacent enemy placing itself."
+    },
+    {
+      "id": "wasp-static-barrier-separates-radius",
+      "card": "Static Barrier",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp2__7679533__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Arien",
+          "hand": [
+            "Noble Blade",
+            "Spell Break",
+            "Dangerous Current",
+            "Aspiring Duelist",
+            "Stranger Tide"
+          ]
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "at": "distance 3 from actor"
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Stranger Tide",
+        "action": "Skill",
+        "answers": [
+          "toward actor"
+        ]
+      },
+      "notes": "Enemy starts outside Static Barrier radius 2. Its nearest legal Stranger Tide destination must remain outside radius, distance 3, because every inside space counts as an obstacle during its action. Stranger Tide's printed Range 3 would otherwise allow approaching within radius."
+    },
+    {
+      "id": "wasp-shock-remote-discard",
+      "card": "Shock",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp3__7541335__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "attack": 5,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-electrocute-remote-discard",
+      "card": "Electrocute",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp4__7541336__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "attack": 5,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-shock-excludes-adjacent-discard",
+      "card": "Shock",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp3__7541335__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "hand": 0
+        }
+      ]
+    },
+    {
+      "id": "wasp-charged-boomerang-off-line",
+      "card": "Charged Boomerang",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp5__7541337__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "attack": 3,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-charged-boomerang-rejects-line",
+      "card": "Charged Boomerang",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp5__7541337__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "wasp-thunder-boomerang-off-line",
+      "card": "Thunder Boomerang",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp7__7598094__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "attack": 4,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-thunder-boomerang-rejects-line",
+      "card": "Thunder Boomerang",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp7__7598094__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": false
+        }
+      ]
+    },
+    {
+      "id": "wasp-electroblast-discard-or-defeat",
+      "card": "Electroblast",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp6__7541339__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "enemy-hero-2: take defeat"
+      ],
+      "expect": [
+        {
+          "attack": 6,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Added explicit actor reference to the unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "wasp-thunder-boomerang-repeat-different-target",
+      "card": "Thunder Boomerang",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp7__7598094__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor off every straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "wasp-lift-up-maintains-radius",
+      "card": "Lift Up",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp8__7718510__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: distance 2 from actor and adjacent to enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "at": "distance 2 from actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-control-gravity-maintains-radius",
+      "card": "Control Gravity",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp9__7718509__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: distance 3 from actor and adjacent to enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "at": "distance 3 from actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-center-of-mass-maintains-radius",
+      "card": "Center of Mass",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp11__7718512__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: distance 3 from actor and adjacent to enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "at": "distance 3 from actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-kinetic-repulse-full-push",
+      "card": "Kinetic Repulse",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp10__7718513__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": 0
+        }
+      ],
+      "notes": "Straight-line push distance expressed as moved; numeric pushed was parsed as a placement. No printed outcome changed."
+    },
+    {
+      "id": "wasp-kinetic-repulse-obstacle-discard",
+      "card": "Kinetic Repulse",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp10__7718513__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 2 beyond enemy-hero-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ],
+      "notes": "Straight-line push distance expressed as moved; numeric pushed was parsed as a placement. No printed outcome changed."
+    },
+    {
+      "id": "wasp-kinetic-blast-full-push",
+      "card": "Kinetic Blast",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp12__7718511__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 4"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": 0
+        }
+      ],
+      "notes": "Selection auto-confirms its only remaining command; removed surplus decline before printed 3-or-4 choice. Straight-line push asserted as moved distance."
+    },
+    {
+      "id": "wasp-kinetic-blast-obstacle-discard",
+      "card": "Kinetic Blast",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp12__7718511__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 2 beyond enemy-hero-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 4"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ],
+      "notes": "Selection auto-confirms its only remaining command; removed surplus decline before printed 3-or-4 choice. Straight-line push asserted as moved distance."
+    },
+    {
+      "id": "wasp-stop-projectiles-nonranged-fails",
+      "card": "Stop Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp13__7718506__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4
+        }
+      },
+      "answers": [
+        "defense: Stop Projectiles"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window."
+    },
+    {
+      "id": "wasp-stop-projectiles-ranged-block",
+      "card": "Stop Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp13__7718506__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4,
+          "ranged": true
+        }
+      },
+      "answers": [
+        "defense: Stop Projectiles"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window. Staged ranged attacker adjacent: selected Rapid Thrusts prints Range 1+, so distance 2 without an adjacent enemy did not offer an attack. Ranged remains a subtype at adjacency."
+    },
+    {
+      "id": "wasp-deflect-projectiles-nonranged-fails",
+      "card": "Deflect Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp14__7718505__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4
+        }
+      },
+      "answers": [
+        "defense: Deflect Projectiles"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window."
+    },
+    {
+      "id": "wasp-deflect-projectiles-ranged-block",
+      "card": "Deflect Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp14__7718505__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4,
+          "ranged": true
+        }
+      },
+      "answers": [
+        "defense: Deflect Projectiles",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window. Staged ranged attacker adjacent: selected Rapid Thrusts prints Range 1+, so distance 2 without an adjacent enemy did not offer an attack. Ranged remains a subtype at adjacency."
+    },
+    {
+      "id": "wasp-reflect-projectiles-nonranged-fails",
+      "card": "Reflect Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp16__7718507__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4
+        }
+      },
+      "answers": [
+        "defense: Reflect Projectiles"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window."
+    },
+    {
+      "id": "wasp-reflect-projectiles-ranged-block",
+      "card": "Reflect Projectiles",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp16__7718507__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 4,
+          "ranged": true
+        }
+      },
+      "answers": [
+        "defense: Reflect Projectiles",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ],
+      "notes": "Name the chosen Defense card explicitly; the table action alone does not answer the reaction window. Staged ranged attacker adjacent: selected Rapid Thrusts prints Range 1+, so distance 2 without an adjacent enemy did not offer an attack. Ranged remains a subtype at adjacency."
+    },
+    {
+      "id": "wasp-telekinesis-places-off-line-unit",
+      "card": "Telekinesis",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp15__7718504__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: adjacent to actor",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "at": "adjacent to actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-mass-telekinesis-places-off-line-unit",
+      "card": "Mass Telekinesis",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp17__7718508__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: adjacent to actor",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "at": "adjacent to actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-mass-telekinesis-second-unit",
+      "card": "Mass Telekinesis",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp17__7718508__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor off every straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor off every straight line"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "space: adjacent to actor",
+        "enemy-hero-2",
+        "space: adjacent to actor"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-1",
+          "at": "adjacent to actor"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "at": "adjacent to actor"
+        }
+      ]
+    },
+    {
+      "id": "wasp-high-voltage-basic-skill-defeat-and-discard",
+      "card": "Static Barrier",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp18__7542128__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to enemy-minion-1"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        }
+      ]
+    },
+    {
+      "id": "wasp-crackling-dagger-boxed-handicap",
+      "card": "Crackling Dagger",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wasp/wasp19__7679535__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "handicap": true
+      },
+      "answers": [],
+      "expect": [],
+      "unsupported": "Handicap H face is returned to the box in standard setup (printed rulebook p.6); odd-player handicap variants are outside the dealt-card runner."
+    }
+  ]
+}

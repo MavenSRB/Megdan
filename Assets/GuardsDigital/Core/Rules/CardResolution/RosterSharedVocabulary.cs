@@ -400,9 +400,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
     public readonly struct DefenseOfferOriginRestriction :
         IEquatable<DefenseOfferOriginRestriction>
     {
-        private DefenseOfferOriginRestriction(ActionDefinitionOrigin forbiddenOrigin)
+        private DefenseOfferOriginRestriction(
+            ActionDefinitionOrigin forbiddenOrigin, bool requiresFriendlyUnitAdjacentToTarget = false)
         {
             ForbiddenOrigin = forbiddenOrigin;
+            RequiresFriendlyUnitAdjacentToTarget = requiresFriendlyUnitAdjacentToTarget;
         }
 
         public static DefenseOfferOriginRestriction None => default;
@@ -410,7 +412,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static DefenseOfferOriginRestriction PrintedPrimaryOnly { get; } =
             new DefenseOfferOriginRestriction(ActionDefinitionOrigin.PrintedPrimary);
 
+        public static DefenseOfferOriginRestriction PrintedPrimaryWhenFriendlyUnitAdjacentToTarget { get; } =
+            new DefenseOfferOriginRestriction(ActionDefinitionOrigin.PrintedPrimary, true);
+
         public ActionDefinitionOrigin ForbiddenOrigin { get; }
+
+        public bool RequiresFriendlyUnitAdjacentToTarget { get; }
 
         public bool IsDefined => ForbiddenOrigin != ActionDefinitionOrigin.None;
 
@@ -418,12 +425,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IsDefined && action != null && action.Origin == ForbiddenOrigin;
 
         public bool Equals(DefenseOfferOriginRestriction other) =>
-            ForbiddenOrigin == other.ForbiddenOrigin;
+            ForbiddenOrigin == other.ForbiddenOrigin &&
+            RequiresFriendlyUnitAdjacentToTarget == other.RequiresFriendlyUnitAdjacentToTarget;
 
         public override bool Equals(object obj) =>
             obj is DefenseOfferOriginRestriction other && Equals(other);
 
-        public override int GetHashCode() => (int)ForbiddenOrigin;
+        public override int GetHashCode() =>
+            ((int)ForbiddenOrigin * 397) ^ RequiresFriendlyUnitAdjacentToTarget.GetHashCode();
     }
 
     /// <summary>
@@ -432,6 +441,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// </summary>
     public static class RosterPresenceQuery
     {
+        public static bool HasFriendlyUnitAdjacentToTarget(
+            HeroId actorId, BoardObjectReference target, IBoardDisplacementAuthority board,
+            MatchParticipants participants, RuleModificationSet modifications) =>
+            target.IsDefined && board.TryGetObjectCoordinate(target, out var targetAt) &&
+            FindUnitsWithin(targetAt, 1, RosterUnitKind.Unit, SourceTeamRelation.AlliedWithSource,
+                actorId, board, participants, modifications,
+                BoardObjectReference.ForHero(actorId)).Count > 0;
+
         public static IReadOnlyList<BoardObjectReference> FindUnitsWithin(
             HexCoordinate origin,
             int distance,
@@ -917,12 +934,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         : 0;
 
                 case RosterValueQueryKind.FriendlyUnitAdjacentToTargetExcludingActor:
-                    if (!targetObject.IsDefined ||
-                        !board.TryGetObjectCoordinate(targetObject, out var targetAt)) return 0;
-                    return RosterPresenceQuery.FindUnitsWithin(
-                        targetAt, 1, RosterUnitKind.Unit, SourceTeamRelation.AlliedWithSource,
-                        actorId, board, participants, modifications,
-                        BoardObjectReference.ForHero(actorId)).Count > 0 ? 1 : 0;
+                    return RosterPresenceQuery.HasFriendlyUnitAdjacentToTarget(
+                        actorId, targetObject, board, participants, modifications) ? 1 : 0;
 
                 case RosterValueQueryKind.EnemyUnitsAdjacentToActorExcludingTarget:
                     return RosterPresenceQuery.FindUnitsWithin(

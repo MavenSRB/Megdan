@@ -1,0 +1,1090 @@
+{
+  "hero": "Arien",
+  "cases": [
+    {
+      "id": "arien-noble-blade-moves-another-unit",
+      "card": "Noble Blade",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien__7507116__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "friendly-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "ref": "friendly-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "moved": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "attack": 4,
+          "ref": "actor"
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-spell-break-restricts-nongold-skills",
+      "card": "Spell Break",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien2__7506070__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Wasp",
+          "hand": [
+            "Magnetic Dagger",
+            "Static Barrier",
+            "Shock",
+            "Lift Up",
+            "Stop Projectiles"
+          ]
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": true
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Lift Up",
+        "action": "Skill",
+        "answers": [],
+        "offered": false
+      },
+      "notes": "Converted unexecuted restriction reading to same-turn Wasp Lift Up offer probe at radius boundary. Adjacent second hero supplies a normally movable target; non-gold Skill must be unavailable."
+    },
+    {
+      "id": "arien-dangerous-current-behind-target-defeat",
+      "card": "Dangerous Current",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien3__7717453__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 2 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "enemy-hero-2: take defeat",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "attack": 6,
+          "ref": "actor"
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-raging-stream-behind-target-defeat",
+      "card": "Raging Stream",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien4__7717452__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "enemy-hero-2: take defeat",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "attack": 7,
+          "ref": "actor"
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-violent-torrent-behind-target-defeat",
+      "card": "Violent Torrent",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien6__7717449__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 5 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "enemy-hero-2: take defeat",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "attack": 7,
+          "ref": "actor"
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-dangerous-current-outside-two-behind",
+      "card": "Dangerous Current",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien3__7717453__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "hand": 0
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "arien-dangerous-current-discard-prevents-defeat",
+      "card": "Dangerous Current",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien3__7717453__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 1 beyond enemy-hero-1 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "arien-rogue-wave-attack-and-push",
+      "card": "Rogue Wave",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien5__7717451__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "attack": 4,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "moved": 2
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-tidal-blast-attack-and-push",
+      "card": "Tidal Blast",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien7__7717448__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 6
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "attack": 4,
+          "ref": "actor"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "moved": 3
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-aspiring-duelist-ignores-enemy-minion-penalty",
+      "card": "Aspiring Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien8__7507117__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 5
+        }
+      },
+      "answers": [
+        "defense: Aspiring Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Aspiring Duelist",
+          "state": "discarded"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window."
+    },
+    {
+      "id": "arien-aspiring-duelist-ignores-friendly-minion-bonus",
+      "card": "Aspiring Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien8__7507117__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 6
+        }
+      },
+      "answers": [
+        "defense: Aspiring Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window."
+    },
+    {
+      "id": "arien-expert-duelist-ignores-enemy-minion-penalty",
+      "card": "Expert Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien9__7542898__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 6
+        }
+      },
+      "answers": [
+        "defense: Expert Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Expert Duelist",
+          "state": "discarded"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window."
+    },
+    {
+      "id": "arien-expert-duelist-ignores-friendly-minion-bonus",
+      "card": "Expert Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien9__7542898__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 7
+        }
+      },
+      "answers": [
+        "defense: Expert Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window. Staged Attack-7 Furious Charge three spaces away so its printed mandatory move of 2 can finish adjacent."
+    },
+    {
+      "id": "arien-master-duelist-ignores-enemy-minion-penalty",
+      "card": "Master Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien11__7542897__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 6
+        }
+      },
+      "answers": [
+        "defense: Master Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        },
+        {
+          "card": "Master Duelist",
+          "state": "discarded"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window."
+    },
+    {
+      "id": "arien-master-duelist-ignores-friendly-minion-bonus",
+      "card": "Master Duelist",
+      "action": "Defend",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien11__7542897__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-minion-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "attack": {
+          "by": "enemy-hero-1",
+          "value": 7
+        }
+      },
+      "answers": [
+        "defense: Master Duelist"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Name chosen Defense card explicitly; table action alone does not answer the reaction window. Staged Attack-7 Furious Charge three spaces away so its printed mandatory move of 2 can finish adjacent."
+    },
+    {
+      "id": "arien-slippery-ground-primary-movement",
+      "card": "Slippery Ground",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien10__7507024__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        }
+      },
+      "answers": [
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ]
+    },
+    {
+      "id": "arien-slippery-ground-limits-adjacent-enemy",
+      "card": "Slippery Ground",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien10__7507024__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Wasp",
+          "hand": [
+            "Magnetic Dagger",
+            "Static Barrier",
+            "Shock",
+            "Lift Up",
+            "Stop Projectiles"
+          ]
+        }
+      },
+      "answers": [
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Shock",
+        "action": "Movement",
+        "answers": [
+          "away from actor"
+        ]
+      },
+      "notes": "Enemy Wasp starts adjacent. Take farthest offered movement away using Shock's printed Movement 4; this turn the restriction must cap that Movement action to one space."
+    },
+    {
+      "id": "arien-deluge-primary-movement",
+      "card": "Deluge",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien12__7507025__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        }
+      },
+      "answers": [
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ]
+    },
+    {
+      "id": "arien-deluge-limits-adjacent-enemy",
+      "card": "Deluge",
+      "action": "Movement",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien12__7507025__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Wasp",
+          "hand": [
+            "Magnetic Dagger",
+            "Static Barrier",
+            "Shock",
+            "Lift Up",
+            "Stop Projectiles"
+          ]
+        }
+      },
+      "answers": [
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Shock",
+        "action": "Movement",
+        "answers": [
+          "away from actor"
+        ]
+      },
+      "notes": "Enemy Wasp starts adjacent. Take farthest offered movement away using Shock's printed Movement 4; this turn the restriction must cap that Movement action to one space."
+    },
+    {
+      "id": "arien-liquid-leap-places-at-printed-range",
+      "card": "Liquid Leap",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien13__7452180__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        }
+      },
+      "answers": [
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "id": "arien-magical-current-places-at-printed-range",
+      "card": "Magical Current",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien14__7452182__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        }
+      },
+      "answers": [
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ]
+    },
+    {
+      "id": "arien-stranger-tide-places-at-printed-range",
+      "card": "Stranger Tide",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien16__7452197__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        }
+      },
+      "answers": [
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        }
+      ]
+    },
+    {
+      "id": "arien-liquid-leap-spawn-exclusions",
+      "card": "Liquid Leap",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien13__7452180__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "empty spawn point within distance 2 of actor"
+          }
+        ]
+      },
+      "answers": [],
+      "expect": [],
+      "unsupported": "A landing on a spawn point is illegal even when occupied; a non-spawn landing adjacent to an empty spawn point is also illegal. Neutral format cannot assert a space excluded from destination offers or stage every alternative space."
+    },
+    {
+      "id": "arien-arcane-whirlpool-swaps-minion-at-range-four",
+      "card": "Arcane Whirlpool",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien15__7506069__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-minion-1",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 0
+        }
+      ]
+    },
+    {
+      "id": "arien-ebb-and-flow-distant-swap-cannot-repeat",
+      "card": "Ebb and Flow",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien17__7452183__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-minion-1",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-minion-2",
+          "moved": 0
+        }
+      ]
+    },
+    {
+      "id": "arien-ebb-and-flow-adjacent-swap-enables-repeat",
+      "card": "Ebb and Flow",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien17__7452183__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 3 beyond enemy-minion-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "enemy-minion-2"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-minion-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-minion-2",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "coins": 0
+        }
+      ]
+    },
+    {
+      "id": "arien-living-tsunami-closes-gap-before-attack",
+      "card": "Noble Blade",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien18__7702299__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "ref": "actor",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "attack": 4,
+          "ref": "actor"
+        }
+      ],
+      "notes": "Added explicit actor reference to unchanged printed Attack-total expectation; initial failure was unsupported bare attack syntax."
+    },
+    {
+      "id": "arien-ceremonial-blade-boxed-handicap",
+      "card": "Ceremonial Blade",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien19__7452193__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.10, 13-14, 18-19"
+      ],
+      "setup": {
+        "handicap": true
+      },
+      "answers": [],
+      "expect": [],
+      "unsupported": "Handicap H face is returned to the box in standard setup (printed rulebook p.6); odd-player handicap variants are outside the dealt-card runner."
+    }
+  ]
+}

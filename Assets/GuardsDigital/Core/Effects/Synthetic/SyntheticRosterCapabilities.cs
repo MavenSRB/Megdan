@@ -3299,8 +3299,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static IReadOnlyList<ThroughOption> Options(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
+                var spaces = context.Components?.Tokens;
                 var kind = (RosterUnitKind)context.Input(UnitKindParameter).IntegerValue;
-                if (board == null || context.Participants == null ||
+                if (board == null || spaces == null || context.Participants == null ||
                     kind == RosterUnitKind.None || !Enum.IsDefined(typeof(RosterUnitKind), kind) ||
                     !board.TryGetObjectCoordinate(
                         BoardObjectReference.ForHero(context.ActorId), out var actorAt))
@@ -3321,9 +3322,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             target.AsRuleObject(), context.EnclosingActivity,
                             actor.AsRuleObject(), board, context.Participants,
                             context.Modifications, context.ImmunityOverrides) ||
-                        !board.MapDefinition.PlayableCoordinates.Contains(destination) ||
-                        board.TryGetObjectAt(destination, out _) ||
-                        context.Modifications.AnyOverlayMakesAnObstacleOf(destination))
+                        ObstacleQuery.IsObstacle(spaces, destination, context.Modifications))
                         continue;
                     options.Add(new ThroughOption(target, destination));
                 }

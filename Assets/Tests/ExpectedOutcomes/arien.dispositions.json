@@ -1,0 +1,103 @@
+[
+  {
+    "id": "arien-dangerous-current-behind-target-defeat",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md item 13 (answered 2026-08-22); rulebook printed pp.10,17",
+    "note": "Blind reader interpreted 'or is defeated' as an affected-hero election. Settled ruling makes discard mandatory when cards remain; defeat follows inability. Preserve original expectation and answer; execute mandatory-discard replacement.",
+    "expect-override": [
+      {
+        "ref": "enemy-hero-2",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "attack": 6,
+        "ref": "actor"
+      },
+      {
+        "ref": "enemy-hero-2",
+        "hand": -1
+      }
+    ],
+    "answers-override": [
+      "enemy-hero-1",
+      "enemy-hero-2",
+      "decline"
+    ]
+  },
+  {
+    "id": "arien-raging-stream-behind-target-defeat",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md item 13 (answered 2026-08-22); rulebook printed pp.10,17",
+    "note": "Blind reader interpreted 'or is defeated' as an affected-hero election. Settled ruling makes discard mandatory when cards remain; defeat follows inability. Preserve original expectation and answer; execute mandatory-discard replacement.",
+    "expect-override": [
+      {
+        "ref": "enemy-hero-2",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "attack": 7,
+        "ref": "actor"
+      },
+      {
+        "ref": "enemy-hero-2",
+        "hand": -1
+      }
+    ],
+    "answers-override": [
+      "enemy-hero-1",
+      "enemy-hero-2",
+      "decline"
+    ]
+  },
+  {
+    "id": "arien-violent-torrent-behind-target-defeat",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md item 13 (answered 2026-08-22); rulebook printed pp.10,17",
+    "note": "Blind reader interpreted 'or is defeated' as an affected-hero election. Settled ruling makes discard mandatory when cards remain; defeat follows inability. Preserve original expectation and answer; execute mandatory-discard replacement.",
+    "expect-override": [
+      {
+        "ref": "enemy-hero-2",
+        "is": "not defeated"
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "attack": 7,
+        "ref": "actor"
+      },
+      {
+        "ref": "enemy-hero-2",
+        "hand": -1
+      }
+    ],
+    "answers-override": [
+      "enemy-hero-1",
+      "enemy-hero-2",
+      "decline"
+    ]
+  },
+  {
+    "id": "arien-liquid-leap-spawn-exclusions",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md, format v1.1 limitations",
+    "note": "A landing on a spawn point is illegal even when occupied; a non-spawn landing adjacent to an empty spawn point is also illegal. Neutral format cannot assert a space excluded from destination offers or stage every alternative space. This remains outstanding coverage, not a passing outcome."
+  },
+  {
+    "id": "arien-ceremonial-blade-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6 step11",
+    "note": "Handicap H face is returned to the box in standard setup (printed rulebook p.6); odd-player handicap variants are outside the dealt-card runner. This remains outstanding coverage, not a passing outcome."
+  }
+]

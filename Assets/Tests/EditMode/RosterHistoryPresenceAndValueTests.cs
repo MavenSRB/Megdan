@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -471,6 +472,51 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restricted.Select(value => value.SourceCardInstanceId),
                 Is.EqualTo(new[] { ordinaryCard.Id }),
                 "PrintedPrimary-only is an origin restriction, not a blanket Defense restriction.");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Ballista_PrimaryDefenseRestrictionRequiresAnotherFriendlyUnit(bool friendlyAdjacent)
+        {
+            var primary = Definition("conditional-primary-defense", BlockAction());
+            var secondary = Definition("conditional-secondary-defense",
+                DefenseAction("ordinary", MinionDefenseContributionPolicy.IncludeAll));
+            var primaryCard = CardInstance.CreateInHand(
+                new CardInstanceId("conditional-primary-instance"), primary.Reference, Blue);
+            var secondaryCard = CardInstance.CreateInHand(
+                new CardInstanceId("conditional-secondary-instance"), secondary.Reference, Blue);
+            var incoming = TigerclawCardContent.Definition(TigerclawCardContent.BackstabWithABallista)
+                .ActionDefinitions.Single(action => action.Kind == ActionKind.Attack);
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0),
+                friendlyAdjacent
+                    ? new[] { Minion("friendly-beside-target", TeamSide.Red, new HexCoordinate(1, 1)) }
+                    : Array.Empty<QuickGameMinionSetupState>());
+
+            var offers = DefenseOfferQuery.Offers(
+                new[] { primary, secondary }, new[] { primaryCard, secondaryCard },
+                Blue, RuleModificationSet.Empty, incoming, Red,
+                StagedBoardParticipants.Create(), board);
+
+            Assert.That(offers.Any(offer => offer.SourceCardInstanceId.Equals(primaryCard.Id)),
+                Is.EqualTo(!friendlyAdjacent),
+                "The printed If clause governs both the Attack bonus and the primary Defense ban; " +
+                "the attacker itself is not a friendly unit.");
+            Assert.That(offers.Any(offer => offer.SourceCardInstanceId.Equals(secondaryCard.Id)), Is.True);
+        }
+
+        [Test]
+        public void ConditionalDefenseRestriction_RefusesMissingBoardContext()
+        {
+            var primary = Definition("conditional-primary-defense", BlockAction());
+            var card = CardInstance.CreateInHand(
+                new CardInstanceId("conditional-primary-instance"), primary.Reference, Blue);
+            var incoming = AttackAction("conditional-attack", AttackRangeKind.Ranged,
+                defenseRestriction:
+                    DefenseOfferOriginRestriction.PrintedPrimaryWhenFriendlyUnitAdjacentToTarget);
+
+            Assert.That(() => DefenseOfferQuery.Offers(
+                new[] { primary }, new[] { card }, Blue, RuleModificationSet.Empty, incoming),
+                Throws.ArgumentException);
         }
 
         private static IEffectCapabilityHandler Handler(EffectCapabilityReference reference) =>

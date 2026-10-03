@@ -3018,7 +3018,7 @@ namespace GuardsDigital.Core.Cards
                 GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeDefenseResponse)
             {
                 var reopened = cardActions.ReopenDefenseChoice(
-                    definitions, instances, CurrentModifications());
+                    definitions, instances, CurrentModifications(), participants);
                 events.AddRange(MaterializeSteps(
                     reopened.Steps, TurnResolutionEvent.FromAttackAction));
                 return TurnResolutionResult.Accept(events);

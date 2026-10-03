@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13a First-five outcome tables evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13a | Independent Wasp, Arien, Brogan, Sabina and Tigerclaw tables, per-face coverage guard, explicit disagreement dispositions, executor follow-up/Defense evidence, and source-correct Blink Strike landing and conditional Ballista restrictions. [Definition](../../Roadmap/PHASE_9.md#x-913a-tables-for-wasp-arien-brogan-sabina-and-tigerclaw). | `milestone/9.13a` |
+
 ## Milestone 9.40 Choice-control labels evidence
 
 | Milestone | Outcome and definition | Commit |

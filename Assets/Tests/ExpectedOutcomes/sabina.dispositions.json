@@ -1,0 +1,34 @@
+[
+  {
+    "id": "sabina-bang-boxed-handicap",
+    "kind": "not-executable",
+    "execute": false,
+    "ref": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.6; Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md#executor-defaults",
+    "note": "Handicap H card is returned to the box in supported standard setup (printed p.6); odd-player handicap setup is outside this table executor."
+  }
+,
+{
+  "id": "sabina-big-sodding-gun-push-demands-another-card",
+  "kind": "ruling",
+  "ref": "Docs/AI/Rules/OPEN_QUESTIONS.md, question 13; Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.10 Mandatory and Optional Steps and Making Choices",
+  "note": "The blind reader treated 'discards a card, or is defeated' as the affected hero's election. Settled source reading requires a hand discard if possible; defeat follows inability. Preserve the original expectation as the reader record and execute the corrected mandatory discard. The named discard card was available in the staged hand.",
+  "answers-override": [
+    "enemy-hero-1",
+    "enemy-hero-1: discard Lift Up"
+  ],
+  "expect-override": [
+    {
+      "ref": "enemy-hero-1",
+      "moved": 1
+    },
+    {
+      "ref": "enemy-hero-1",
+      "chose": "discard"
+    },
+    {
+      "ref": "enemy-hero-1",
+      "is": "not defeated"
+    }
+  ]
+}
+]

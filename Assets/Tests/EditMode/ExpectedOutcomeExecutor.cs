@@ -15,6 +15,8 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Progression;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -335,6 +337,10 @@ namespace GuardsDigital.Tests.EditMode
             private bool isDefend;
             private HeroId attacker;
             private CardInstance attackCard;
+            private JsonObject followup;
+            private HeroId followupHero;
+            private CardInstance followupCard;
+            private bool followupNextTurn;
             private bool? defendOffered;
             private MatchSessionInitialState initial;
             private MatchSession session;
@@ -345,11 +351,13 @@ namespace GuardsDigital.Tests.EditMode
                 new List<(string, HeroId, CardInstanceId, bool)>();
             private readonly Dictionary<HeroId, List<CardInstanceId>> fillers = new Dictionary<HeroId, List<CardInstanceId>>();
             private readonly Dictionary<HeroId, HashSet<CardInstanceId>> reserved = new Dictionary<HeroId, HashSet<CardInstanceId>>();
+            private readonly HashSet<CardInstanceId> heldStanding = new HashSet<CardInstanceId>();
 
             // What the play did, observed while it ran.
             private int? observedAttack;
             private readonly Dictionary<string, int> walked = new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly List<HashSet<string>> targetQuestions = new List<HashSet<string>>();
+            private readonly Dictionary<string, HashSet<string>> defenseQuestions = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
             private readonly List<(CardDefinition Card, EffectNodeId Node, HashSet<EffectNodeId> Available, List<EffectChoiceCandidate> All)> optionQuestions =
                 new List<(CardDefinition, EffectNodeId, HashSet<EffectNodeId>, List<EffectChoiceCandidate>)>();
             private string lastReferenced;
@@ -474,7 +482,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 var consequences = expectations.Where(value => !value.Has("offered") || value.Has("bullet")).ToArray();
-                if (consequences.Length == 0 && answers.Count == 0 && expectedOffered.Length > 0)
+                if (followup == null && consequences.Length == 0 && answers.Count == 0 && expectedOffered.Length > 0)
                 {
                     return;
                 }
@@ -493,6 +501,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 Capture();
                 Play(forced);
+                if (followup != null) RunFollowup();
                 after = session.Projection;
                 LogAfter(after);
                 if (consequences.Any(NeedsTheRoundEnd))
@@ -542,7 +551,7 @@ namespace GuardsDigital.Tests.EditMode
             private static readonly HashSet<string> CaseKeys = new HashSet<string>(StringComparer.Ordinal)
             {
                 "id", "card", "action", "source", "setup", "answers", "expect", "unsupported", "hero",
-                "handicap", "note", "notes", "comment", "why", "description"
+                "handicap", "note", "notes", "comment", "why", "description", "follow-up"
             };
 
             private void ReadCase()
@@ -579,6 +588,25 @@ namespace GuardsDigital.Tests.EditMode
                 if (string.IsNullOrWhiteSpace(cardName)) throw Refuse("the case names no \"card\"");
                 caseCard = OwnedDefinition(actor, cardName);
                 caseInstance = Instance(actor, caseCard);
+                if (entry.Has("follow-up"))
+                {
+                    followup = entry.Get("follow-up") as JsonObject ?? throw Unsupported("follow-up", Describe(entry.Get("follow-up")));
+                    foreach (var pair in followup)
+                        if (!new[] { "hero", "card", "action", "answers", "offered", "turn" }.Contains(pair.Key))
+                            throw Unsupported("follow-up key", pair.Key);
+                    if (followup.Has("offered") && !(followup.Get("offered") is bool))
+                        throw Unsupported("follow-up offered", Describe(followup.Get("offered")));
+                    if (followup.Has("answers") && (!(followup.Get("answers") is List<object> followupAnswers) ||
+                        followupAnswers.Any(answer => !(answer is string))))
+                        throw Unsupported("follow-up answers", Describe(followup.Get("answers")));
+                    if (followup.Has("turn") && !(followup.Get("turn") is string nextTurn && nextTurn == "next"))
+                        throw Unsupported("follow-up turn", Describe(followup.Get("turn")));
+                    followupNextTurn = (string)followup.Get("turn") == "next";
+                    followupHero = HeroOfRef(followup.Get("hero") as string ?? string.Empty);
+                    if (!followupHero.IsDefined || followupHero.Equals(actor))
+                        throw Refuse("follow-up must name another hero acting later this turn");
+                    followupCard = Instance(followupHero, OwnedDefinition(followupHero, followup.Get("card") as string));
+                }
 
                 actionName = entry.Get("action") as string;
                 switch (actionName)
@@ -593,13 +621,16 @@ namespace GuardsDigital.Tests.EditMode
                         break;
                     case "Hold": isHold = true; break;
                     case "Defend":
-                    case "Defense": isDefend = true; break;
+                    case "Defense": isDefend = true; caseAction = PrimaryOf(ActionKind.Defense); break;
                     case "Ultimate":
                         throw Refuse($"unsupported action \"Ultimate\" on \"{cardName}\": an Ultimate prints no " +
                             "action of its own, so format v1 cannot name the play that uses it - play the card " +
                             "that triggers it with setup.actor.ultimate true");
                     default: throw Unsupported("action", actionName ?? "(none)");
                 }
+
+                if (isDefend && followup != null)
+                    throw Refuse("a Defend/Defense case does not support a follow-up");
 
                 if (!isHold && !isDefend && caseAction == null)
                 {
@@ -634,9 +665,45 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var spec = entry.Get("setup") as JsonObject ?? new JsonObject();
                 var seats = new RegisteredHero?[3];
+                var friends = new RegisteredHero?[2];
                 var assigned = new HashSet<string>(StringComparer.Ordinal) { hero.ContentId.Value };
+                foreach (var side in new[] { "enemy-hero-", "friendly-hero-" })
+                {
+                    var selected = side == "enemy-hero-" ? seats : friends;
+                    for (var index = 0; index < selected.Length; index++)
+                    {
+                        if (!((spec.Get(side + (index + 1)) as JsonObject)?.Get("hero") is string requested)) continue;
+                        var matches = QuickGameSetupConfiguration.DealtHeroes.Where(candidate =>
+                            string.Equals(candidate.ContentId.Value, requested, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(candidate.DisplayName, requested, StringComparison.OrdinalIgnoreCase) ||
+                            candidate.DisplayName.StartsWith(requested + " ", StringComparison.OrdinalIgnoreCase)).ToArray();
+                        if (matches.Length != 1 || !assigned.Add(matches[0].ContentId.Value))
+                            throw Refuse("unknown or duplicate staged hero: " + requested);
+                        selected[index] = matches[0];
+                    }
+                }
+                if (spec.Get("attack") is JsonObject attackSpec)
+                {
+                    var attackRef = Normalize(attackSpec.Get("by") as string ?? string.Empty);
+                    var shape = RefShape.Match(attackRef);
+                    if (!shape.Success || shape.Groups[1].Value != "enemy-hero" ||
+                        !int.TryParse(shape.Groups[2].Value, out var seat) || seat < 1 || seat > 3)
+                        throw Unsupported("setup", "attack.by: " + attackRef);
+                    var printed = IntOf(attackSpec.Get("value"), "attack.value");
+                    var chosen = seats[seat - 1] ?? QuickGameSetupConfiguration.DealtHeroes.FirstOrDefault(candidate =>
+                    {
+                        if (assigned.Contains(candidate.ContentId.Value)) return false;
+                        DefenseValues(candidate); // Populates the shared printed-value inventory.
+                        return AttacksByHero[candidate.ContentId.Value].Any(attack => attack.Value == printed &&
+                            (!(attackSpec.Get("ranged") is bool ranged) || attack.Ranged == ranged));
+                    });
+                    if (!chosen.ContentId.IsDefined) throw Refuse("no dealt hero has the specified ranged/Attack value");
+                    seats[seat - 1] = chosen;
+                    assigned.Add(chosen.ContentId.Value);
+                }
                 for (var seat = 1; seat <= 3; seat++)
                 {
+                    if (seats[seat - 1].HasValue) continue;
                     if (!((spec.Get($"enemy-hero-{seat}") as JsonObject)?.Get("defends-with") is double value)) continue;
                     var wanted = (int)value;
                     var chosen = QuickGameSetupConfiguration.DealtHeroes.FirstOrDefault(candidate =>
@@ -652,13 +719,15 @@ namespace GuardsDigital.Tests.EditMode
 
                 var others = new Queue<RegisteredHero>(QuickGameSetupConfiguration.DealtHeroes
                     .Where(candidate => !assigned.Contains(candidate.ContentId.Value)));
-                var red = new[] { hero, others.Dequeue(), others.Dequeue() };
+                var red = new[] { hero }.Concat(friends.Select(value => value ?? others.Dequeue())).ToArray();
                 var blue = seats.Select(value => value ?? others.Dequeue()).ToArray();
                 return new HeroLineup(red, blue);
             }
 
             private static readonly Dictionary<string, HashSet<int>> DefenseByHero =
                 new Dictionary<string, HashSet<int>>(StringComparer.Ordinal);
+            private static readonly Dictionary<string, HashSet<(int Value, bool Ranged)>> AttacksByHero =
+                new Dictionary<string, HashSet<(int Value, bool Ranged)>>(StringComparer.Ordinal);
 
             private static HashSet<int> DefenseValues(RegisteredHero candidate)
             {
@@ -684,6 +753,14 @@ namespace GuardsDigital.Tests.EditMode
                                 .Where(item => item.Channel == PrintedValueChannel.Defense)
                                 .Select(item => item.Amount));
                             DefenseByHero[member.ContentId.Value] = values;
+                            AttacksByHero[member.ContentId.Value] = new HashSet<(int, bool)>(probe.CardInstances
+                                .Where(card => card.DefinitionReference.DefinitionId.Value.StartsWith(
+                                    member.ContentId.Value + "-", StringComparison.Ordinal))
+                                .Select(card => probe.CardDefinitions.Single(definition => definition.Reference.Equals(card.DefinitionReference)))
+                                .SelectMany(definition => definition.ActionDefinitions)
+                                .Where(action => action.Kind == ActionKind.Attack && action.Origin == ActionDefinitionOrigin.PrintedPrimary)
+                                .SelectMany(action => action.BaseValues.Where(item => item.Channel == PrintedValueChannel.Attack)
+                                    .Select(item => (item.Amount, action.AttackRange == AttackRangeKind.Ranged))));
                         }
                     }
 
@@ -770,7 +847,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private static readonly HashSet<string> RefSetupKeys = new HashSet<string>(StringComparer.Ordinal)
             {
-                "defends-with", "hand", "discard"
+                "defends-with", "hand", "discard", "coins", "hero"
             };
 
             private void StageAndBuild()
@@ -1054,7 +1131,7 @@ namespace GuardsDigital.Tests.EditMode
                 // The standing plays first: their cards must be in hand to be committed.
                 var standingList = spec.Get("standing");
                 if (standingList != null && !(standingList is List<object>)) throw Unsupported("standing", Describe(standingList));
-                var standingPattern = new Regex("^" + RefPattern + " played (.+) (last turn|this turn)$", RegexOptions.CultureInvariant);
+                var standingPattern = new Regex("^" + RefPattern + " played (.+) (last turn|this turn)( using Hold)?$", RegexOptions.CultureInvariant);
                 foreach (var item in (standingList as List<object>) ?? new List<object>())
                 {
                     var phrase = item as string ?? throw Unsupported("standing", Describe(item));
@@ -1076,6 +1153,7 @@ namespace GuardsDigital.Tests.EditMode
 
                     var definition = OwnedDefinition(creator, match.Groups[2].Value.Trim());
                     standing.Add((phrase, creator, Instance(creator, definition).Id, lastTurn));
+                    if (match.Groups[4].Success) heldStanding.Add(Instance(creator, definition).Id);
                 }
 
                 var turnsBefore = standing.Any(value => value.LastTurn) ? 1 : 0;
@@ -1089,7 +1167,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(value => configuration.CardInstances.Single(card => card.Id.Equals(value.Card))));
                 StageHand(actor, "actor", actorHand == null ? null : Names(actorHand, "hand"),
                     actorDiscard == null ? null : Names(actorDiscard, "discard"), actorNeeds,
-                    isDefend ? turnsBefore + 1 : 0, null);
+                    isDefend ? turnsBefore + 1 : followupNextTurn ? 1 : 0, null);
 
                 var items = actorSpec.Get("items") == null ? new List<string>() : Names(actorSpec.Get("items"), "actor.items");
                 foreach (var item in items)
@@ -1121,10 +1199,11 @@ namespace GuardsDigital.Tests.EditMode
                         .Select(value => configuration.CardInstances.Single(card => card.Id.Equals(value.Card)))
                         .ToList();
                     if (isDefend && seat.HeroId.Equals(attacker)) needs.Add(attackCard);
+                    if (followupCard != null && seat.HeroId.Equals(followupHero)) needs.Add(followupCard);
                     StageHand(seat.HeroId, reference,
                         refSpec?.Get("hand") == null && refSpec?.Has("hand") != true ? null : Names(refSpec.Get("hand"), reference + ".hand"),
                         refSpec?.Get("discard") == null ? null : Names(refSpec.Get("discard"), reference + ".discard"),
-                        needs, turnsBefore + 1 - needs.Count, refSpec?.Get("defends-with"));
+                        needs, turnsBefore + (followupNextTurn ? 2 : 1) - needs.Count, refSpec?.Get("defends-with"));
                 }
 
                 // Levels: p.15's eighth Level is the Ultimate's (rulebook p.16).
@@ -1158,8 +1237,9 @@ namespace GuardsDigital.Tests.EditMode
                 var spec = value as JsonObject ?? throw Unsupported("setup", $"attack: {Describe(value)}");
                 foreach (var pair in spec)
                 {
-                    if (pair.Key != "by" && pair.Key != "value") throw Unsupported("setup key", $"attack.{pair.Key}");
+                    if (pair.Key != "by" && pair.Key != "value" && pair.Key != "ranged") throw Unsupported("setup key", $"attack.{pair.Key}");
                 }
+                if (spec.Has("ranged") && !(spec.Get("ranged") is bool)) throw Unsupported("setup", "attack.ranged must be boolean");
 
                 var by = spec.Get("by") as string ?? throw Unsupported("setup", $"attack: {Describe(value)}");
                 attacker = HeroOfRef(Normalize(by));
@@ -1175,6 +1255,8 @@ namespace GuardsDigital.Tests.EditMode
                         action.Kind == ActionKind.Attack && action.Origin == ActionDefinitionOrigin.PrintedPrimary)))
                     .Where(pair => pair.action != null && pair.action.BaseValues.Any(item =>
                         item.Channel == PrintedValueChannel.Attack && item.Amount == printed))
+                    .Where(pair => !(spec.Get("ranged") is bool ranged) ||
+                        (pair.action.AttackRange == AttackRangeKind.Ranged) == ranged)
                     .OrderBy(pair => pair.action.AttackRange == AttackRangeKind.Ranged ? 1 : 0)
                     .ThenBy(pair => pair.action.EffectRoot == null ? 0 : 1)
                     .ThenBy(pair => pair.card.Id.Value, StringComparer.Ordinal)
@@ -1264,7 +1346,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     var filler = target.Where(card => !keep.Contains(card) && !turnFillers.Contains(card.Id))
                         .Concat(owned.Where(card => !target.Contains(card) && !wantedDiscard.Contains(card)))
-                        .Where(card => !turnFillers.Contains(card.Id))
+                        .Where(card => !keep.Contains(card) && !turnFillers.Contains(card.Id))
                         .OrderBy(card => target.Contains(card) && defaultHand ? 0 : 1)
                         .ThenBy(card => DefinitionOf(card).Initiative.Value)
                         .ThenBy(card => card.Id.Value, StringComparer.Ordinal)
@@ -1548,13 +1630,18 @@ namespace GuardsDigital.Tests.EditMode
 
                 var level = actorSpec.Get("level") == null ? 1 : IntOf(actorSpec.Get("level"), "actor.level");
                 var coins = actorSpec.Get("coins") == null ? 0 : IntOf(actorSpec.Get("coins"), "actor.coins");
-                var progression = level == 1 && coins == 0
-                    ? MatchStagedProgression.None
-                    : new MatchStagedProgression(
+                int CoinsOfSeat(HeroId id)
+                {
+                    if (id.Equals(actor)) return coins;
+                    var reference = RefOfHero(id);
+                    return refSetups.TryGetValue(reference, out var values) && values.Has("coins")
+                        ? IntOf(values.Get("coins"), reference + ".coins") : 0;
+                }
+                var progression = new MatchStagedProgression(
                         setup.Heroes.Select(seat => new KeyValuePair<HeroId, HeroLevel>(
                             seat.HeroId, new HeroLevel(seat.HeroId.Equals(actor) ? level : 1))),
                         setup.Heroes.Select(seat => new KeyValuePair<HeroId, int>(
-                            seat.HeroId, seat.HeroId.Equals(actor) ? coins : 0)));
+                            seat.HeroId, CoinsOfSeat(seat.HeroId))));
 
                 var scenario = new InitialScenarioDescription(
                     configuration.Participants,
@@ -1658,6 +1745,8 @@ namespace GuardsDigital.Tests.EditMode
                     else if (projection.IsTurnActive && projection.SelectedActor.IsDefined && projection.DecisionContract == null)
                     {
                         var selected = projection.SelectedActor;
+                        if (followupCard != null && selected.CardInstanceId.Equals(followupCard.Id))
+                            throw Refuse("follow-up card acts before the case card; choose a lower-Initiative follow-up");
                         if (isDefend && selected.CardInstanceId.Equals(attackCard.Id))
                         {
                             return;
@@ -1683,6 +1772,13 @@ namespace GuardsDigital.Tests.EditMode
                         var creation = standing.FirstOrDefault(value => value.Card.Equals(selected.CardInstanceId));
                         if (creation.Phrase != null && !played.Contains(creation.Card))
                         {
+                            if (heldStanding.Contains(creation.Card))
+                            {
+                                next = DirectorCommand.PerformHold(creation.Card);
+                                startedCreator = creation.Card;
+                            }
+                            else
+                            {
                             var primary = projection.AvailableTurnActions.FirstOrDefault(offer => offer.IsAvailable &&
                                 offer.SourceCardInstanceId.Equals(creation.Card) &&
                                 offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
@@ -1693,6 +1789,7 @@ namespace GuardsDigital.Tests.EditMode
 
                             next = DirectorCommand.StartAction(primary.SourceCardInstanceId, primary.ActionDefinitionId);
                             startedCreator = creation.Card;
+                            }
                         }
                         else if (projection.AvailableHoldOffer.HasValue && projection.AvailableHoldOffer.Value.IsAvailable)
                         {
@@ -1713,7 +1810,7 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     var result = session.Execute(next);
-                    if (!result.Accepted) throw Refuse($"{next.Kind} refused before the actor's turn: {result.Detail}");
+                    if (!result.Accepted) throw Refuse($"{next.Kind} {next.CardInstanceId} refused before the actor's turn: {result.Detail}");
                 }
 
                 throw Refuse("the actor's turn was not reached");
@@ -1728,13 +1825,17 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     chosen = fillers[actor].Count > turn ? fillers[actor][turn] : default;
                 }
-                else if (owner.Equals(actor))
+                else if (owner.Equals(actor) && turn <= (hasLastTurn ? 1 : 0))
                 {
                     chosen = hasLastTurn && turn == 0 ? standing.First(value => value.LastTurn).Card : caseInstance.Id;
                 }
                 else if (isDefend && owner.Equals(attacker) && turn == (hasLastTurn ? 1 : 0))
                 {
                     chosen = attackCard.Id;
+                }
+                else if (followupCard != null && owner.Equals(followupHero) && turn == (hasLastTurn ? 1 : 0) + (followupNextTurn ? 1 : 0))
+                {
+                    chosen = followupCard.Id;
                 }
                 else
                 {
@@ -1847,6 +1948,64 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 RunTheAnswers();
+            }
+
+            private void RunFollowup()
+            {
+                if (answers.Count > 0 && answers.All(value => Normalize(value) == "decline")) answers.Clear();
+                if (answers.Count > 0) throw Refuse("case answers remain before follow-up: " + string.Join(", ", answers));
+                for (var step = 0; step < 200; step++)
+                {
+                    var projection = session.Projection;
+                    if (projection.Phase == RoundResolutionPhase.GameEnded)
+                        throw Refuse("match ended before the follow-up");
+                    if (projection.IsTurnActive && projection.SelectedActor.IsDefined &&
+                        projection.SelectedActor.CardInstanceId.Equals(followupCard.Id) && projection.DecisionContract == null &&
+                        projection.PendingTurnRelease == null)
+                    {
+                        if (!Enum.TryParse(followup.Get("action") as string, out ActionKind kind))
+                            throw Unsupported("follow-up action", followup.Get("action") as string);
+                        var definition = DefinitionOf(followupCard).ActionDefinitions.Where(action => action.Kind == kind)
+                            .OrderBy(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary ? 0 : 1).FirstOrDefault();
+                        if (definition == null) throw Refuse("follow-up card has no such primary action");
+                        var offers = projection.AvailableTurnActions.Where(offer => offer.SourceCardInstanceId.Equals(followupCard.Id) &&
+                            offer.ActionDefinitionId.Equals(definition.Id)).ToArray();
+                        var available = offers.Any(offer => offer.IsAvailable);
+                        var wanted = !(followup.Get("offered") is bool explicitOffer) || explicitOffer;
+                        Log("follow-up " + DefinitionOf(followupCard).DisplayName + ": offered " + available + ", expected " + wanted);
+                        if (available != wanted) Failures.Add(name + ": follow-up offered " + available + ", expected " + wanted);
+                        if (!available || !wanted) return;
+                        foreach (var answer in (followup.Get("answers") as List<object>) ?? new List<object>())
+                            answers.Enqueue(answer as string ?? throw Unsupported("follow-up answer", Describe(answer)));
+                        var started = session.Execute(DirectorCommand.StartAction(followupCard.Id, definition.Id));
+                        if (!started.Accepted) throw Refuse("follow-up start refused: " + started.Detail);
+                        ObserveEvents(started);
+                        RunTheAnswers();
+                        return;
+                    }
+                    DirectorCommand next;
+                    if (projection.Phase == RoundResolutionPhase.AwaitingCommitments && projection.DecisionContract == null)
+                    {
+                        if (!followupNextTurn) throw Refuse("follow-up did not act later in the same turn");
+                        var asked = projection.Commitments.First(value => value.Status == TurnCardCommitmentStatus.AwaitingResponse);
+                        var hasLastTurn = standing.Any(value => value.LastTurn);
+                        next = Commitment(projection, asked, hasLastTurn ? 2 : 1, hasLastTurn);
+                    }
+                    else if (projection.PendingTurnRelease != null && projection.DecisionContract == null) next = DirectorCommand.ReleaseTurn();
+                    else if (projection.PendingInitiativeChoice != null)
+                    {
+                        var tie = projection.PendingInitiativeChoice;
+                        next = DirectorCommand.ChooseTiedActor(tie.OwningSide,
+                            tie.CandidateCardInstanceIds.OrderBy(id => id.Equals(followupCard.Id) ? 0 : 1).First());
+                    }
+                    else if (projection.DecisionContract != null) next = projection.DecisionContract.Commands.OrderBy(OfferOutcomeTests.Doing).First();
+                    else if (projection.IsTurnActive && projection.SelectedActor.IsDefined) next = DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId);
+                    else throw Refuse("follow-up cannot advance from " + projection.Phase);
+                    var result = session.Execute(next);
+                    if (!result.Accepted) throw Refuse("follow-up advance refused: " + result.Detail);
+                    ObserveEvents(result);
+                }
+                throw Refuse("follow-up exceeded its step budget");
             }
 
             private void RunTheAnswers()
@@ -2301,9 +2460,14 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var choice = projection.PendingDefenseChoice;
                 var chooserRef = RefOfHero(choice.ChooserId);
+                defenseQuestions[chooserRef] = new HashSet<string>(choice.LegalDefenseOffers.Select(offer =>
+                    CardKey(projection.Definitions.Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference)).DisplayName)),
+                    StringComparer.Ordinal);
                 if (isDefend && choice.ChooserId.Equals(actor))
                 {
-                    defendOffered = choice.LegalDefenseOffers.Any(offer => offer.SourceCardInstanceId.Equals(caseInstance.Id));
+                    defendOffered = choice.LegalDefenseOffers.Any(offer => offer.SourceCardInstanceId.Equals(caseInstance.Id) &&
+                        (caseAction == null || caseAction.Origin != ActionDefinitionOrigin.PrintedPrimary ||
+                            offer.ActionDefinitionId.Equals(caseAction.Id)));
                 }
                 var decline = contract.Commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.DeclineDefense);
                 DirectorCommand ByValue(object wanted, string phrase)
@@ -2341,6 +2505,9 @@ namespace GuardsDigital.Tests.EditMode
                     Dequeue();
                     return command;
                 }
+
+                if (isDefend && choice.ChooserId.Equals(actor))
+                    return defendOffered == true ? ByValue(caseCard.DisplayName, "case Defense") : decline;
 
                 throw NotCovered(projection, contract, next);
             }
@@ -2823,6 +2990,50 @@ namespace GuardsDigital.Tests.EditMode
 
             private void Evaluate(JsonObject expectation)
             {
+                if (expectation.Get("ref") is string defender && expectation.Get("defense-offered") is JsonObject wantedDefenses)
+                {
+                    if (expectation.Count != 2) throw Unsupported("expectation", Describe(expectation));
+                    if (!defenseQuestions.TryGetValue(defender, out var offeredDefenses))
+                    {
+                        Mismatch(expectation, "no Defense question was asked of " + defender);
+                        return;
+                    }
+                    foreach (var namedDefense in wantedDefenses)
+                    {
+                        if (!(namedDefense.Value is bool wanted)) throw Unsupported("expectation", Describe(expectation));
+                        if (offeredDefenses.Contains(CardKey(namedDefense.Key)) != wanted)
+                            Mismatch(expectation, namedDefense.Key + " offered: " + offeredDefenses.Contains(CardKey(namedDefense.Key)));
+                    }
+                    return;
+                }
+                if (expectation.Get("ref") is string holder && expectation.Has("marker"))
+                {
+                    var marker = expectation.Get("marker") as string;
+                    if (expectation.Count != 2 || string.IsNullOrWhiteSpace(marker))
+                        throw Unsupported("marker expectation", Describe(expectation));
+                    if (!after.HeldMarkers.Any(value => value.HolderHeroId.Equals(HeroOfRef(holder)) &&
+                        value.Definition.DisplayName.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0))
+                        Mismatch(expectation, "no such marker is attached to " + holder);
+                    return;
+                }
+                if (expectation.Get("ref") is string modified && expectation.Any(pair => pair.Key.EndsWith("-modifier", StringComparison.Ordinal)))
+                {
+                    var restored = AuthoritativeSnapshotSerializer.Deserialize(MatchContentCatalogs.ForThisBuild(),
+                        after.AuthoritativeSnapshot, after.Definitions, new[] { after.SelectedMap }, after.Setup.Minions);
+                    var modifications = RuleModificationQuery.Build(null, restored.Board, restored.Participants,
+                        restored.Round.TieBreakerState, UltimateUnlockQuery.Derive(after.Definitions, restored.Cards),
+                        RuleObject.None, null, restored.Round.Markers);
+                    foreach (var modifierFact in expectation.Where(pair => pair.Key != "ref"))
+                    {
+                        if (!modifierFact.Key.EndsWith("-modifier", StringComparison.Ordinal) || !Enum.TryParse(
+                            modifierFact.Key.Substring(0, modifierFact.Key.Length - 9), true, out PrintedValueChannel channel))
+                            throw Unsupported("expectation", Describe(expectation));
+                        var actual = modifications.ValueContributions(RuleObject.ForHero(HeroOfRef(modified)), channel,
+                            RuleValueApplicability.Always).Sum(contribution => contribution.Amount);
+                        if (actual != IntOf(modifierFact.Value, modifierFact.Key)) Mismatch(expectation, modifierFact.Key + " is " + actual);
+                    }
+                    return;
+                }
                 if (expectation.Has("tokens")) { EvaluateTokens(expectation); return; }
                 if (expectation.Has("card")) { EvaluateCard(expectation); return; }
                 if (expectation.Has("team-lives") || expectation.Has("enemy-team-lives")) { EvaluateLives(expectation); return; }
