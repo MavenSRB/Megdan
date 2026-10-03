@@ -896,6 +896,30 @@
       "unsupported": "A landing on a spawn point is illegal even when occupied; a non-spawn landing adjacent to an empty spawn point is also illegal. Neutral format cannot assert a space excluded from destination offers or stage every alternative space."
     },
     {
+      "id": "arien-liquid-leap-spawn-exclusions-supplement",
+      "card": "Liquid Leap",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Arien/arien13__7452180__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed p.12"
+      ],
+      "setup": {},
+      "answers": [
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "landing-offers": {
+            "range": 2,
+            "spawn-point": false,
+            "beside-empty-spawn": false,
+            "other-open-space": true
+          }
+        }
+      ],
+      "notes": "The source-relative probe requires three free destinations within Range 2 before reading the placement question: an empty spawn point, a non-spawn space beside an empty spawn point, and a legal control."
+    },
+    {
       "id": "arien-arcane-whirlpool-swaps-minion-at-range-four",
       "card": "Arcane Whirlpool",
       "action": "Skill",

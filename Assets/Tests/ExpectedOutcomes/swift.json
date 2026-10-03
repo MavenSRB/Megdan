@@ -545,6 +545,26 @@
       "checkpoint": "end-of-turn"
     },
     {
+      "id": "swift-mobile-scout-fast-travel-supplement",
+      "card": "Mobile Scout",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift12__7505635__front.png", "Docs/AI/Rules/HERO_SWIFT.md, Mobile Scout", "rulebook pp.11, 17-19"],
+      "setup": {"actor":{"level":5}},
+      "answers": ["space: distance 2 from actor off every straight line", "space: distance 3 from actor"],
+      "expect": [{"offered":true},{"card-text-fast-travel":true}],
+      "checkpoint": "end-of-turn"
+    },
+    {
+      "id": "swift-mobile-scout-enemy-zone-blocks-travel-supplement",
+      "card": "Mobile Scout",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift12__7505635__front.png", "Docs/AI/Rules/HERO_SWIFT.md, Mobile Scout", "rulebook pp.11, 17-19"],
+      "setup": {"actor":{"level":5},"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}]},
+      "answers": ["space: distance 2 from actor off every straight line in zone of enemy-hero-1"],
+      "expect": [{"offered":true},{"same-zone":{"a":"actor","b":"enemy-hero-1"}},{"card-text-fast-travel":false}],
+      "checkpoint": "end-of-turn"
+    },
+    {
       "id": "swift-suppress-edge-discard",
       "card": "Suppress",
       "action": "Skill",

@@ -41,6 +41,33 @@
       ]
     },
     {
+      "id": "cutter-plank-same-zone-no-discard-supplement",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png", "Docs/AI/Rules/HERO_CUTTER.md, CU-13", "rulebook pp.10, 13, 18"],
+      "setup": {"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor","push-zone":"same"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Salvage Parts","Rapid Redeployment"]}},
+      "answers": ["option: Push an enemy hero adjacent to you up to 4 spaces","enemy-hero-1","distance 1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","pushed":"distance 2 from actor"},{"push-zone":{"ref":"enemy-hero-1","relation":"same"}},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "cutter-plank-cross-zone-discards-supplement",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png", "Docs/AI/Rules/HERO_CUTTER.md, CU-13", "rulebook pp.10, 13, 18"],
+      "setup": {"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor","push-zone":"cross"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Salvage Parts","Rapid Redeployment"]}},
+      "answers": ["option: Push an enemy hero adjacent to you up to 4 spaces","enemy-hero-1","distance 1","enemy-hero-1: discard Rapid Redeployment"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","pushed":"distance 2 from actor"},{"push-zone":{"ref":"enemy-hero-1","relation":"cross"}},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"discarded"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "cutter-plank-cross-zone-empty-hand-defeat-supplement",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png", "Docs/AI/Rules/HERO_CUTTER.md, CU-13", "rulebook pp.10, 13, 18"],
+      "setup": {"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor","push-zone":"cross"}],"enemy-hero-1":{"hero":"Trinkets","hand":[]}},
+      "answers": ["option: Push an enemy hero adjacent to you up to 4 spaces","enemy-hero-1","distance 1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","is":"defeated"}]
+    },
+    {
       "id": "cutter-grappling-bolt-five-range",
       "card": "Grappling Bolt",
       "action": "Skill",
@@ -614,6 +641,52 @@
           "ref": "enemy-hero-1",
           "moved": 0
         }
+      ]
+    },
+    {
+      "id": "cutter-fistful-ten-plus-three-wins-alone-supplement",
+      "card": "A Fistful of Coins",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter12__7718206__front.png",
+        "Docs/AI/Rules/HERO_CUTTER.md, CU-D1",
+        "rulebook pp.9-10"
+      ],
+      "setup": {
+        "actor": { "level": 5, "coins": 10 },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": ["enemy-hero-1", "option: You gain 3 coins."],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 13 },
+        { "solo-outcome": { "winner": "actor", "teammate": "friendly-hero-1" } }
+      ]
+    },
+    {
+      "id": "cutter-fistful-nine-plus-three-does-not-win-supplement",
+      "card": "A Fistful of Coins",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter12__7718206__front.png",
+        "Docs/AI/Rules/HERO_CUTTER.md, CU-D1",
+        "rulebook pp.9-10"
+      ],
+      "setup": {
+        "actor": { "level": 5, "coins": 9 },
+        "pieces": [
+          { "ref": "enemy-hero-1", "where": "distance 3 from actor" },
+          { "ref": "friendly-hero-1", "where": "distance 2 from actor" }
+        ]
+      },
+      "answers": ["enemy-hero-1", "option: You gain 3 coins."],
+      "expect": [
+        { "offered": true },
+        { "ref": "actor", "coins": 12 },
+        { "match-ongoing": true }
       ]
     },
     {

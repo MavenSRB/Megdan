@@ -361,6 +361,9 @@ namespace GuardsDigital.Tests.EditMode
             private readonly Dictionary<HeroId, int> maximumMovementOffered = new Dictionary<HeroId, int>();
             private readonly Dictionary<string, int> walked = new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly List<HashSet<string>> targetQuestions = new List<HashSet<string>>();
+            private readonly List<HashSet<HexCoordinate>> offeredEffectDestinations = new List<HashSet<HexCoordinate>>();
+            private bool cardTextFastTravelOffered;
+            private bool cardTextFastTravelCommitted;
             private readonly Dictionary<string, HashSet<string>> defenseQuestions = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
             private readonly List<(CardDefinition Card, EffectNodeId Node, HashSet<EffectNodeId> Available, List<EffectChoiceCandidate> All)> optionQuestions =
                 new List<(CardDefinition, EffectNodeId, HashSet<EffectNodeId>, List<EffectChoiceCandidate>)>();
@@ -370,6 +373,8 @@ namespace GuardsDigital.Tests.EditMode
 
             // The position the play started from.
             private MatchSessionProjection before;
+            private MatchSessionProjection afterOriginalAction;
+            private MatchSessionProjection atFollowup;
             private int logBaseline;
             private MatchSessionProjection after;
             private MatchSessionProjection afterRound;
@@ -506,6 +511,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 Capture();
                 Play(forced);
+                afterOriginalAction = session.Projection;
                 if (followup != null) RunFollowup();
                 after = session.Projection;
                 if (entry.Has("checkpoint"))
@@ -642,8 +648,6 @@ namespace GuardsDigital.Tests.EditMode
                     default: throw Unsupported("action", actionName ?? "(none)");
                 }
 
-                if (isDefend && followup != null)
-                    throw Refuse("a Defend/Defense case does not support a follow-up");
                 if (entry.Has("checkpoint") && (isDefend || !(entry.Get("checkpoint") is string checkpoint) ||
                     checkpoint != "before-minion-battle" && checkpoint != "end-of-turn"))
                     throw Refuse("checkpoint must be before-minion-battle or end-of-turn on a non-Defense case");
@@ -860,7 +864,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private static readonly HashSet<string> PieceKeys = new HashSet<string>(StringComparer.Ordinal)
             {
-                "ref", "where", "kind", "owner", "type", "battle-zone", "identity-kind"
+                "ref", "where", "kind", "owner", "type", "battle-zone", "identity-kind", "push-zone"
             };
 
             private static readonly HashSet<string> RefSetupKeys = new HashSet<string>(StringComparer.Ordinal)
@@ -956,6 +960,11 @@ namespace GuardsDigital.Tests.EditMode
 
                     piece.BattleZone = pieceSpec.Get("battle-zone") is bool zone && zone;
                     ReadPieceKind(piece);
+                    if (pieceSpec.Has("push-zone") &&
+                        (!piece.IsHero || !(pieceSpec.Get("push-zone") is string relation) ||
+                         relation != "same" && relation != "cross" ||
+                         piece.Where.Kind != "adjacent" || piece.Where.A != "actor"))
+                        throw Unsupported("push-zone setup", Describe(pieceSpec.Get("push-zone")));
                     pieces.Add(piece);
                     byRef[reference] = piece;
                 }
@@ -1253,17 +1262,24 @@ namespace GuardsDigital.Tests.EditMode
                 foreach (var item in items)
                 {
                     var match = Regex.Match(Normalize(item), "^(attack|defense|initiative|movement|range|radius) \\+1$");
-                    if (!match.Success) throw Unsupported("item", item);
-                    var icon = (PrintedValueChannel)Enum.Parse(typeof(PrintedValueChannel), match.Groups[1].Value, true);
+                    var namedCard = item.StartsWith("card: ", StringComparison.OrdinalIgnoreCase)
+                        ? item.Substring("card: ".Length) : null;
+                    if (!match.Success && namedCard == null) throw Unsupported("item", item);
+                    var icon = match.Success
+                        ? (PrintedValueChannel)Enum.Parse(typeof(PrintedValueChannel), match.Groups[1].Value, true)
+                        : PrintedValueChannel.None;
                     var card = configuration.CardInstances
                         .Where(value => value.OwnerId.Equals(owner) && value.State.Location == CardLocation.Deck &&
-                            DefinitionOf(value).Progression.ItemIcon == icon)
+                            (namedCard != null
+                                ? CardKey(DefinitionOf(value).DisplayName) == CardKey(namedCard) &&
+                                  DefinitionOf(value).Progression.ItemIcon != PrintedValueChannel.None
+                                : DefinitionOf(value).Progression.ItemIcon == icon))
                         .OrderBy(value => value.Id.Value, StringComparer.Ordinal)
                         .FirstOrDefault();
                     if (card == null || !CardLifecycleAuthority.TrySetAsideFromDeck(card))
                     {
-                        throw Refuse($"setup {reference}.items \"{item}\": no card left in {reference}'s deck prints " +
-                            "that item icon (rulebook p.16 items are set-aside cards)");
+                        throw Refuse($"setup {reference}.items \"{item}\": no matching item card remains in " +
+                            $"{reference}'s deck (rulebook p.16 items are set-aside cards)");
                     }
 
                     itemCards.Add((item, card));
@@ -1532,6 +1548,7 @@ namespace GuardsDigital.Tests.EditMode
                     var fileNeeded = straight && strictFiles && files.ContainsKey(placement.A) ? files[placement.A] : (int?)null;
                     var chosen = spaces.Keys
                         .Where(at => acceptable(piece, at) && Satisfies(placement, at, positions) &&
+                            PushZoneFits(piece, at, positions, spaces) &&
                             (fileNeeded == null || SectorOf(positions[placement.A], at) == fileNeeded.Value))
                         .OrderBy(at => placement.Prefer == null ? 0 : (placement.PreferAway ? -1 : 1) * Dist(at, positions[placement.Prefer]))
                         .ThenBy(at => placement.Kind == "distance" && placement.Line == null && !Aligned(positions[placement.A], at) ? 1 : 0)
@@ -2028,6 +2045,7 @@ namespace GuardsDigital.Tests.EditMode
                         projection.SelectedActor.CardInstanceId.Equals(followupCard.Id) && projection.DecisionContract == null &&
                         projection.PendingTurnRelease == null)
                     {
+                        atFollowup = projection;
                         if (!Enum.TryParse(followup.Get("action") as string, out ActionKind kind))
                             throw Unsupported("follow-up action", followup.Get("action") as string);
                         var definition = DefinitionOf(followupCard).ActionDefinitions.Where(action => action.Kind == kind)
@@ -2086,6 +2104,9 @@ namespace GuardsDigital.Tests.EditMode
                     if (contract != null && !IsFamily(contract, PendingDecisionFamilies.TurnRelease))
                     {
                         var pending = answers.Count;
+                        var isCardTextFastTravel = projection.PendingEffectChoice?.NodeId.Value == "late-travel";
+                        var travelFrom = isCardTextFastTravel ? PositionOf(projection, "actor") : null;
+                        if (isCardTextFastTravel) cardTextFastTravelOffered = true;
                         lastConsumed.Clear();
                         var command = Answer(projection, contract);
                         Log($"  asked: {DescribeQuestion(projection, contract)} -> {command.Kind}" +
@@ -2093,6 +2114,9 @@ namespace GuardsDigital.Tests.EditMode
                             (answers.Count < pending ? $" (answered \"{string.Join("\", \"", lastConsumed)}\")" : " (implicit)"));
                         var result = session.Execute(command);
                         if (!result.Accepted) throw Refuse($"the engine refused the answer {command.Kind}: {result.Detail}");
+                        if (isCardTextFastTravel && travelFrom.HasValue &&
+                            !PositionOf(session.Projection, "actor").Equals(travelFrom))
+                            cardTextFastTravelCommitted = true;
                         ObserveEvents(result);
                         continue;
                     }
@@ -2126,6 +2150,8 @@ namespace GuardsDigital.Tests.EditMode
                 var started = session.Execute(DirectorCommand.StartAction(attack.SourceCardInstanceId, attack.ActionDefinitionId));
                 if (!started.Accepted) throw Refuse("the attack did not start: " + started.Detail);
                 RunTheAnswers();
+                afterOriginalAction = session.Projection;
+                if (followup != null) RunFollowup();
                 after = session.Projection;
                 LogAfter(after);
                 foreach (var expectation in expectations)
@@ -2680,6 +2706,13 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (choice.Kind == EffectChoiceKind.SelectTarget)
                 {
+                    var offeredSpaces = choice.Candidates
+                        .Where(candidate => !choice.UnavailableCandidates.Contains(candidate) &&
+                            candidate.Kind == EffectChoiceCandidateKind.Value &&
+                            candidate.Value.Kind == EffectValueKind.Coordinate)
+                        .Select(candidate => candidate.Value.Coordinate).ToArray();
+                    if (offeredSpaces.Length > 0)
+                        offeredEffectDestinations.Add(new HashSet<HexCoordinate>(offeredSpaces));
                     targetQuestions.Add(new HashSet<string>(choice.Candidates
                         .Where(candidate => !choice.UnavailableCandidates.Contains(candidate))
                         .Select(candidate => DescribeCandidate(projection, choice, candidate)
@@ -2908,11 +2941,27 @@ namespace GuardsDigital.Tests.EditMode
                     }
                     case AnswerShape.Space:
                     {
-                        var placement = ParsePlacement(value) ?? throw Unsupported("placement", value);
+                        var zoneClause = Regex.Match(value, @"^(.*?) in zone of (actor|(?:enemy|friendly)-(?:hero|minion)-[1-9][0-9]*)$",
+                            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                        var placementText = zoneClause.Success ? zoneClause.Groups[1].Value : value;
+                        var placement = ParsePlacement(placementText) ?? throw Unsupported("placement", value);
                         var positions = Positions(projection, byRef.Keys.Concat(placement.Refs()));
+                        ZoneId? targetZone = null;
+                        if (zoneClause.Success)
+                        {
+                            var zoneRef = zoneClause.Groups[2].Value.ToLowerInvariant();
+                            var zoneAt = PositionOf(projection, zoneRef) ??
+                                throw Refuse("zone-scoped placement reference " + zoneRef + " is not on the board");
+                            targetZone = Map.Value.Spaces.Single(space => space.Coordinate.Equals(zoneAt)).ZoneId;
+                            if (!targetZone.HasValue)
+                                throw Refuse("zone-scoped placement reference " + zoneRef + " has no zone");
+                        }
                         var spaces = open.Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
                             candidate.Value.Kind == EffectValueKind.Coordinate &&
-                            Satisfies(placement, candidate.Value.Coordinate, positions, space => !Occupied(projection, space))).ToList();
+                            Satisfies(placement, candidate.Value.Coordinate, positions, space => !Occupied(projection, space)) &&
+                            (!targetZone.HasValue || Map.Value.Spaces.Any(space =>
+                                space.Coordinate.Equals(candidate.Value.Coordinate) &&
+                                space.ZoneId.HasValue && space.ZoneId.Value.Equals(targetZone.Value)))).ToList();
                         var best = Ordered(spaces.Select(candidate => candidate.Value.Coordinate), placement, positions, null, false)
                             .Select(at => (HexCoordinate?)at).FirstOrDefault();
                         return best.HasValue
@@ -3089,8 +3138,14 @@ namespace GuardsDigital.Tests.EditMode
                     var visitsPreBattle = next.Kind == DirectorCommandKind.AdvanceEndOfRound &&
                         projection.Phase == RoundResolutionPhase.EndOfRound &&
                         projection.CurrentEndOfRoundStage == EndOfRoundStage.MinionBattle;
+                    var isCardTextFastTravel = projection.PendingEffectChoice?.NodeId.Value == "late-travel";
+                    var travelFrom = isCardTextFastTravel ? PositionOf(projection, "actor") : null;
+                    if (isCardTextFastTravel) cardTextFastTravelOffered = true;
                     var result = session.Execute(next);
                     if (!result.Accepted) throw Refuse($"{next.Kind} refused while running the round end: {result.Detail}");
+                    if (isCardTextFastTravel && travelFrom.HasValue &&
+                        !PositionOf(session.Projection, "actor").Equals(travelFrom))
+                        cardTextFastTravelCommitted = true;
                     if (visitsPreBattle) preBattleStarted = true;
                 }
 
@@ -3169,6 +3224,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private void Evaluate(JsonObject expectation)
             {
+                if (TryEvaluateSupplemental(expectation)) return;
                 if (TryEvaluateRunes(expectation)) return;
                 if (TryEvaluateBatchEFacts(expectation)) return;
                 if (expectation.Has("owned-obstacle"))
@@ -3557,6 +3613,7 @@ namespace GuardsDigital.Tests.EditMode
                     case "played": holds = now.Location == CardLocation.TurnArea; break;
                     case "resolved": holds = now.Location == CardLocation.TurnArea && now.ResolutionStatus == CardResolutionStatus.Resolved; break;
                     case "discarded": holds = now.Location == CardLocation.DiscardPile; break;
+                    case "item": holds = now.Location == CardLocation.ItemSlot; break;
                     case "retrieved": holds = now.Location == CardLocation.Hand && then.Location != CardLocation.Hand; break;
                     default: throw Unsupported("card state", state);
                 }

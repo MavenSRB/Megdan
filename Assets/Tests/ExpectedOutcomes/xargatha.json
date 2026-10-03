@@ -1106,6 +1106,46 @@
       ]
     },
     {
+      "id": "xargatha-stone-gaze-hero-terrain-lifetime-supplement",
+      "card": "Stone Gaze",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Xargatha/xargatha8__7679539__front.png",
+        "Docs/Guards of Atlantis II - 2nd Printing_web.pdf, printed pp.17-19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Dodger"
+        }
+      },
+      "answers": [],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "hero-terrain-lifetime": {
+            "ref": "enemy-hero-1"
+          }
+        }
+      ],
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Dark Ritual",
+        "action": "Movement",
+        "turn": "next",
+        "answers": [],
+        "offered": false
+      },
+      "checkpoint": "end-of-turn"
+    },
+    {
       "id": "xargatha-stone-gaze-heroes-also-terrain",
       "card": "Stone Gaze",
       "action": "Skill",

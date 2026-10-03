@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13f Supplemental outcome coverage evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13f | The recorded supplemental gaps for Arien, Xargatha, Swift, Cutter, Garrus, Rowenna, Widget, Brynn and Snorri are closed with source-linked boundary cases and narrow test-only executor vocabulary; no production-rule correction was required. [Definition](../../Roadmap/PHASE_9.md#x-913f-close-recorded-supplemental-outcome-coverage). | `milestone/9.13f` |
+
 ## Milestone 9.13e Final-four outcome tables and rulebook evidence
 
 | Milestone | Outcome and definition | Commit |

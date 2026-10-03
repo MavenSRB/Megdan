@@ -146,5 +146,226 @@
       "answers": ["rune: 3", "enemy-minion-1", "card: Rune Sigils"],
       "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }]
     }
+    ,
+    {
+      "id": "snorri-runestone-green-wrong-color-supplement",
+      "card": "Charged Runestone",
+      "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-runestone-silver-discard-supplement",
+      "card": "Charged Runestone",
+      "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Salvage Parts","Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1","enemy-hero-1: discard Salvage Parts"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Salvage Parts","state":"discarded"},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"}]
+    },
+    {
+      "id": "snorri-runestone-silver-wrong-color-supplement",
+      "card": "Charged Runestone",
+      "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-runestone-blue-discard-supplement",
+      "card": "Charged Runestone",
+      "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Disruptor Jolt","Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1","enemy-hero-1: discard Disruptor Jolt"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Disruptor Jolt","state":"discarded"},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"}]
+    },
+    {
+      "id": "snorri-runestone-blue-wrong-color-supplement",
+      "card": "Charged Runestone",
+      "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-runebomb-green-discard-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Early Prototype","Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1","enemy-hero-1: discard Early Prototype"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Early Prototype","state":"discarded"},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"}]
+    },
+    {
+      "id": "snorri-runebomb-green-wrong-color-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-runebomb-silver-discard-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Salvage Parts","Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1","enemy-hero-1: discard Salvage Parts"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Salvage Parts","state":"discarded"},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"}]
+    },
+    {
+      "id": "snorri-runebomb-silver-wrong-color-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-runebomb-blue-discard-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Disruptor Jolt","Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1","enemy-hero-1: discard Disruptor Jolt"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Disruptor Jolt","state":"discarded"},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"}]
+    },
+    {
+      "id": "snorri-runebomb-blue-wrong-color-supplement",
+      "card": "Inscribed Runebomb",
+      "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Trinkets","hand":["Rapid Redeployment"]}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered":true},{"ref":"enemy-hero-1","card":"Rapid Redeployment","state":"hand"},{"ref":"enemy-hero-1","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-grace-resolved-card-swap-supplement",
+      "card": "Ancestral Grace",
+      "action": "Skill",
+      "source": ["snorri12__7505428__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn","friendly-hero-1 played Rapid Redeployment this turn using Hold"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"friendly-hero-1","where":"adjacent to actor"}],"friendly-hero-1":{"hero":"Trinkets","hand":["Salvage Parts"]}},
+      "answers": ["friendly-hero-1","card: Rapid Redeployment","card: Salvage Parts"],
+      "expect": [{"offered":true},{"ref":"friendly-hero-1","card":"Rapid Redeployment","state":"retrieved"},{"ref":"friendly-hero-1","card":"Salvage Parts","state":"resolved"}]
+    }
+    ,
+    {
+      "id": "snorri-hidden-passage-traversal-supplement",
+      "card": "Hidden Passage",
+      "action": "Movement",
+      "source": ["snorri9__7387415__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[2,1,3,4],"pieces":[{"ref":"obstacle-1","where":"distance 1 from actor in a straight line"}]},
+      "answers": ["distance 2","toward obstacle-1"],
+      "expect": [{"offered":true},{"ref":"actor","moved-through":"obstacle-1"},{"ref":"actor","at-initial":"distance 2 from actor in a straight line through obstacle-1"}]
+    },
+    {
+      "id": "snorri-hidden-passage-immunity-expires-supplement",
+      "card": "Hidden Passage",
+      "action": "Movement",
+      "source": ["snorri9__7387415__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Sabina"}},
+      "answers": ["distance 0"],
+      "follow-up": {"turn":"next","hero":"enemy-hero-1","card":"Quickdraw","action":"Attack","answers":["actor","defense: none"],"offered":true},
+      "expect": [{"offered":true},{"ref":"actor","is":"defeated"}]
+    },
+    {
+      "id": "snorri-deep-passage-traversal-supplement",
+      "card": "Deep Passage",
+      "action": "Movement",
+      "source": ["snorri11__7387424__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[2,1,3,4],"pieces":[{"ref":"obstacle-1","where":"distance 1 from actor in a straight line"}]},
+      "answers": ["distance 2","toward obstacle-1"],
+      "expect": [{"offered":true},{"ref":"actor","moved-through":"obstacle-1"},{"ref":"actor","at-initial":"distance 2 from actor in a straight line through obstacle-1"}]
+    },
+    {
+      "id": "snorri-deep-passage-immunity-same-turn-supplement",
+      "card": "Deep Passage",
+      "action": "Movement",
+      "source": ["snorri11__7387424__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Sabina"}},
+      "answers": ["distance 0"],
+      "follow-up": {"hero":"enemy-hero-1","card":"Quickdraw","action":"Attack","answers":[],"offered":false},
+      "expect": [{"offered":true},{"ref":"actor","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-deep-passage-immunity-expires-supplement",
+      "card": "Deep Passage",
+      "action": "Movement",
+      "source": ["snorri11__7387424__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,3,2,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Sabina"}},
+      "answers": ["distance 0"],
+      "follow-up": {"turn":"next","hero":"enemy-hero-1","card":"Quickdraw","action":"Attack","answers":["actor","defense: none"],"offered":true},
+      "expect": [{"offered":true},{"ref":"actor","is":"defeated"}]
+    },
+    {
+      "id": "snorri-runecaster-two-space-move-supplement",
+      "card": "Runecaster",
+      "action": "Attack",
+      "source": ["snorri5__7728051__front.png"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-minion-1","where":"distance 3 from actor"}]},
+      "answers": ["enemy-minion-1","distance 2"],
+      "expect": [{"offered":true},{"ref":"enemy-minion-1","is":"defeated"},{"ref":"actor","moved":2}]
+    },
+    {
+      "id": "snorri-runeblaster-two-space-move-supplement",
+      "card": "Runeblaster",
+      "action": "Attack",
+      "source": ["snorri7__7728052__front.png"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-minion-1","where":"distance 3 from actor"}]},
+      "answers": ["enemy-minion-1","distance 2"],
+      "expect": [{"offered":true},{"ref":"enemy-minion-1","is":"defeated"},{"ref":"actor","moved":2}]
+    },
+    {
+      "id": "snorri-grace-item-exchange-supplement",
+      "card": "Ancestral Grace",
+      "action": "Skill",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Snorri/snorri12__7505428__front.png", "Docs/AI/Rules/HERO_SNORRI.md, user's item-exchange ruling", "rulebook pp.12, 16"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[2,1,3,4],"pieces":[{"ref":"friendly-hero-1","where":"adjacent to actor"}],"friendly-hero-1":{"hero":"Trinkets","items":["card: Deployable Bastion"],"hand":["Disruptor Grid","Salvage Parts"]}},
+      "answers": ["friendly-hero-1", "card: Deployable Bastion", "card: Disruptor Grid"],
+      "expect": [{"offered":true},{"ref":"friendly-hero-1","card":"Deployable Bastion","state":"hand"},{"ref":"friendly-hero-1","card":"Disruptor Grid","state":"item"}]
+    },
+    {
+      "id": "snorri-sigils-rune-one-range-minion-supplement",
+      "card": "Rune Sigils",
+      "action": "Attack",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Snorri/snorri__7387414__front.png", "Docs/AI/Rules/HERO_SNORRI.md, Rune Sigils", "rulebook pp.9, 14"],
+      "setup": {"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[2,1,3,4],"pieces":[{"ref":"enemy-minion-1","where":"distance 2 from actor"}]},
+      "answers": ["enemy-minion-1"],
+      "expect": [{"offered":true},{"ref":"actor","attack-count":1},{"ref":"enemy-minion-1","is":"defeated"}]
+    },
+    {
+      "id": "snorri-endurance-rune-two-nonranged-block-supplement",
+      "card": "Oath of Endurance",
+      "action": "Defend",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Snorri/snorri13__7728043__front.png", "Docs/AI/Rules/HERO_SNORRI.md, Oath categories", "rulebook p.14"],
+      "setup": {"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,2,3,4],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Wasp"},"attack":{"by":"enemy-hero-1","value":5,"ranged":false}},
+      "answers": [],
+      "expect": [{"offered":true},{"ref":"actor","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-fortitude-rune-four-basic-block-supplement",
+      "card": "Oath of Fortitude",
+      "action": "Defend",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Snorri/snorri14__7728044__front.png", "Docs/AI/Rules/HERO_SNORRI.md, Oath categories", "rulebook p.14"],
+      "setup": {"actor":{"level":3},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[1,4,2,3],"pieces":[{"ref":"enemy-hero-1","where":"adjacent to actor"}],"enemy-hero-1":{"hero":"Sabina"},"attack":{"by":"enemy-hero-1","card":"Point Blank Shot","value":2,"ranged":true}},
+      "answers": [],
+      "expect": [{"offered":true},{"ref":"actor","is":"not defeated"}]
+    },
+    {
+      "id": "snorri-perseverance-rune-one-ranged-block-supplement",
+      "card": "Oath of Perseverance",
+      "action": "Defend",
+      "source": ["Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Snorri/snorri16__7728046__front.png", "Docs/AI/Rules/HERO_SNORRI.md, Oath categories", "rulebook p.14"],
+      "setup": {"actor":{"level":5},"standing":["actor played Inscribe the Runes last turn"],"rune-slots":[2,1,3,4],"pieces":[{"ref":"enemy-hero-1","where":"distance 2 from actor"}],"enemy-hero-1":{"hero":"Sabina"},"attack":{"by":"enemy-hero-1","card":"Quickdraw","value":2,"ranged":true}},
+      "answers": [],
+      "expect": [{"offered":true},{"ref":"actor","is":"not defeated"}]
+    }
   ]
 }
