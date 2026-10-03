@@ -57,11 +57,21 @@ namespace GuardsDigital.Tests.EditMode
             yield return new DealtHero("brynn", BrynnCardContent.ContentRevision, BrynnCardContent.DealtDefinitions);
             yield return new DealtHero("hanu", HanuCardContent.ContentRevision, HanuCardContent.DealtDefinitions);
             yield return new DealtHero("ignatia", IgnatiaCardContent.ContentRevision, IgnatiaCardContent.DealtDefinitions);
+            // Milestone 9.40. The seven heroes dealt after the catalog's last joining: their controls read
+            // "OPTION 1" until this roster named them (Wuk's and Razzle's tables existed beside their
+            // content but were never joined to the catalog; Mortimer, Mrak, Snorri and Trinkets had none).
+            yield return new DealtHero("trinkets", TrinketsCardContent.ContentRevision, TrinketsCardContent.DealtDefinitions);
+            yield return new DealtHero("snorri", SnorriCardContent.ContentRevision, SnorriCardContent.DealtDefinitions);
+            yield return new DealtHero("mrak", MrakCardContent.ContentRevision, MrakCardContent.DealtDefinitions);
+            yield return new DealtHero("wuk", WukCardContent.ContentRevision, WukCardContent.DealtDefinitions);
+            yield return new DealtHero("mortimer", MortimerCardContent.ContentRevision, MortimerCardContent.DealtDefinitions);
+            yield return new DealtHero("razzle", RazzleCardContent.ContentRevision, RazzleCardContent.DealtDefinitions);
             // Milestone 9.30i. Gydion's dealt fronts and the spells setup puts in his book: a spell's
             // own decisions (Find Familiar's removals, Wish's casts, Vampiric Touch's retrieval) are
             // raised by a card this build deals as surely as a front's are.
             yield return new DealtHero("gydion", GydionCardContent.ContentRevision,
                 GydionCardContent.DealtDefinitions.Concat(GydionCardContent.SpellDefinitions).ToArray());
+            yield return new DealtHero("takahide", TakahideCardContent.ContentRevision, TakahideCardContent.DealtDefinitions);
         }
 
         /// <summary>
@@ -71,7 +81,7 @@ namespace GuardsDigital.Tests.EditMode
         /// since, each of which is what makes that hero one a match configuration deals - and Gydion the
         /// Archwizard (milestone 9.30i), the first dealing since to join the catalog's own tables.
         /// </summary>
-        private const int MatchConfigurationRosterSize = 23;
+        private const int MatchConfigurationRosterSize = 30;
 
         /// <summary>
         /// The longest label in the content as milestone 8.46a shipped it is 58 characters. The bound

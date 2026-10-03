@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.40 Choice-control labels evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.40 | Every choice control of all thirty heroes says what pressing it does in the card's own words: 215 controls that read "OPTION n" / "DO IT" (Mortimer, Wuk, Razzle, Trinkets, Snorri, Mrak) gained catalog labels, the coverage guard rosters the full roster, generic words stay titles only; before/after captures of Corpse Slam's modal at 2560x1440. [Definition](../../Roadmap/PHASE_9.md#x-940-every-choice-control-says-what-it-does-no-ordinal-labels). | `milestone/9.40` |
+
 ## Milestone 9.39 Declined up-to pass evidence
 
 | Milestone | Outcome and definition | Commit |

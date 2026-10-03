@@ -15,6 +15,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
@@ -281,6 +282,100 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(DrawnZombies(), Is.EqualTo(2), "Both Zombies are drawn on the board.");
             Assert.That(runtime.PendingEffectChoice, Is.Null, "The third placement was declined, and W10 (9.39) closed the count: no fourth was asked.");
             Healthy(runtime);
+        }
+
+        /// <summary>
+        /// Milestone 9.40 (the user, 2026-10-03: "never have option X label on the button, always write
+        /// what the button does"). Corpse Slam's "Choose one" is the window the user photographed with
+        /// OPTION 1 / OPTION 2 on its two controls, and Morbid Mosh's second pass is the confirm-or-decline
+        /// that read DO IT / STOP HERE. This journey photographs the modal at 2560x1440 (the same test
+        /// taken before and after the labels joined the catalog - the file is named for which) and, once
+        /// the catalog holds Mortimer's table, reads both window kinds in the card's own words.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SlamWindows_SayWhatTheirControlsDo_AndTheModalIsPhotographed()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            try
+            {
+                yield return Stage(SceneCardContent.VerifiedEngagedStagedMortimer,
+                    new[] { MortimerCardContent.Awaken, MortimerBlueFaces.CorpseSlam });
+                var root = Root();
+                var runtime = root.Runtime;
+                yield return ZombiesThen(root, MortimerBlueFaces.CorpseSlam, ActionKind.Skill);
+                var modal = runtime.PendingEffectChoice;
+                Assert.That(modal, Is.Not.Null, "Corpse Slam opens its \"Choose one\". " + Remaining(runtime));
+                Assert.That(modal.NodeId.Value, Is.EqualTo(MortimerRepeatedChoice.ModalNode(MortimerBlueFaces.SlamPrefix, 1)));
+
+                UiPlayer.SetPlayerViewport(2560u, 1440u, "9.40 Corpse Slam modal capture");
+                yield return null;
+                yield return null;
+                var labelled = DecisionLabelCatalog.TryGetLabel(
+                    MortimerBlueFaces.CorpseSlam, new EffectNodeId(MortimerBlueFaces.ShoveBullet(1)), out var declaredShove);
+                var zombieControl = BulletControl(root, MortimerBlueFaces.ShoveBullet(1));
+                var stepControl = BulletControl(root, MortimerBlueFaces.StepBullet(MortimerBlueFaces.SlamPrefix, 1));
+                TestContext.WriteLine("Corpse Slam modal controls (" + (labelled ? "after" : "before") + " 9.40): \"" +
+                    zombieControl.Label + "\" / \"" + stepControl.Label + "\"");
+                yield return UiPlayer.CaptureScreen(
+                    "tmp/9-40-captures/corpse-slam-modal-" + (labelled ? "after" : "before") + "-2560x1440.png");
+
+                if (labelled)
+                {
+                    Assert.That(zombieControl.Label, Is.EqualTo(declaredShove.Chosen.ToUpperInvariant()),
+                        "the first bullet says what pressing it does, in the card's words. " + UiPlayer.Describe(root.Hud));
+                    DecisionLabelCatalog.TryGetLabel(MortimerBlueFaces.CorpseSlam,
+                        new EffectNodeId(MortimerBlueFaces.StepBullet(MortimerBlueFaces.SlamPrefix, 1)), out var declaredStep);
+                    Assert.That(stepControl.Label, Is.EqualTo(declaredStep.Chosen.ToUpperInvariant()),
+                        "and so does the second. " + UiPlayer.Describe(root.Hud));
+                    Assert.That(zombieControl.Label, Does.Not.StartWith("OPTION"));
+                    Assert.That(stepControl.Label, Does.Not.StartWith("OPTION"));
+                }
+
+                // The other window kind: Morbid Mosh's second "up to" pass is a confirm-or-decline.
+                yield return Stage(SceneCardContent.VerifiedEngagedStagedMortimer,
+                    new[] { MortimerCardContent.Awaken, MortimerBlueFaces.MorbidMosh });
+                root = Root();
+                runtime = root.Runtime;
+                yield return ZombiesThen(root, MortimerBlueFaces.MorbidMosh, ActionKind.Skill);
+                yield return TakePass(root, MortimerBlueFaces.SlamPrefix, 1);
+                yield return Bullet(root, MortimerBlueFaces.StepBullet(MortimerBlueFaces.SlamPrefix, 1));
+                yield return PickWhere(root, value => value.Kind == EffectValueKind.Coordinate, "Move 1 space: a destination.");
+                var secondPass = runtime.PendingEffectChoice;
+                Assert.That(secondPass, Is.Not.Null, Remaining(runtime));
+                Assert.That(secondPass.NodeId.Value, Is.EqualTo(MortimerRepeatedChoice.UpToNode(MortimerBlueFaces.SlamPrefix, 2)));
+                var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
+                var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
+                Assert.That(confirm, Is.Not.Null, UiPlayer.Describe(root.Hud));
+                Assert.That(decline, Is.Not.Null, UiPlayer.Describe(root.Hud));
+                TestContext.WriteLine("Morbid Mosh second-pass controls (" + (labelled ? "after" : "before") + " 9.40): \"" +
+                    confirm.Label + "\" / \"" + decline.Label + "\"");
+                if (DecisionLabelCatalog.TryGetLabel(MortimerBlueFaces.MorbidMosh, secondPass.NodeId, out var declaredPass))
+                {
+                    Assert.That(confirm.Label, Is.EqualTo(declaredPass.Chosen.ToUpperInvariant()),
+                        "the pass says what choosing again does. " + UiPlayer.Describe(root.Hud));
+                    Assert.That(decline.Label, Is.EqualTo(declaredPass.Declined.ToUpperInvariant()),
+                        "and what stopping does. " + UiPlayer.Describe(root.Hud));
+                }
+
+                yield return May(root, false);
+                Assert.That(runtime.PendingEffectChoice, Is.Null, "W10: the decline closes the count. " + Remaining(runtime));
+                Healthy(runtime);
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(restoreWidth, restoreHeight, "9.40 restore");
+            }
+        }
+
+        private static DecisionWindowControlViewModel BulletControl(MatchSceneCompositionRoot root, string node)
+        {
+            var control = UiPlayer.DecisionControl(root.Runtime, command =>
+                command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                command.EffectChoice.Candidate.OptionNodeId.Value == node);
+            Assert.That(control, Is.Not.Null, "No window control for bullet " + node + ". " + UiPlayer.Describe(root.Hud));
+            return control;
         }
 
         [UnityTest]

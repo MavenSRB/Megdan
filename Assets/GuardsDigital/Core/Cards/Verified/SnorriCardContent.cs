@@ -6,7 +6,7 @@ using GuardsDigital.Core.Units.Heroes;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>The reconciled nineteen-front Snorri inventory, still behind the registration gate.</summary>
-    public static class SnorriCardContent
+    public static partial class SnorriCardContent
     {
         public const string ContentRevision = "snorri-9-17a-rev-1";
         public static IReadOnlyList<CardDefinitionId> StartingHand { get; } =

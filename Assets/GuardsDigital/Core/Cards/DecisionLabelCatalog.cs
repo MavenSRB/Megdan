@@ -159,6 +159,19 @@ namespace GuardsDigital.Core.Cards
                 // for it and none is declared.
                 .Concat(IgnatiaEffectContent.DecisionLabels())
                 .Concat(IgnatiaEffectContent.UltimateDecisionLabels())
+                // Milestone 9.40 (the user, 2026-10-03: "never have option X label on the button,
+                // always write what the button does"). Six tables joined at once: Wuk's (8.114e) and
+                // Razzle's (9.21) existed beside their content and were never joined, so their
+                // controls read "OPTION 1" / "DO IT"; Trinkets, Snorri, Mrak and Mortimer declared
+                // none. Takahide's faces raise no Choose arm and no confirm-or-decline
+                // (TakahideDealingTests), so he has no table, exactly as Silverarrow. The coverage
+                // check now rosters all thirty heroes.
+                .Concat(TrinketsEffectContent.DecisionLabels())
+                .Concat(SnorriCardContent.DecisionLabels())
+                .Concat(MrakCardContent.DecisionLabels())
+                .Concat(WukCardContent.DecisionLabels())
+                .Concat(MortimerCardContent.DecisionLabels())
+                .Concat(RazzleCardContent.DecisionLabels())
                 // Milestone 9.30i, the milestone that deals Gydion the Archwizard as the TWENTY-NINTH
                 // hero, joined here as the twenty-third table (Mrak, Wuk, Mortimer and Razzle declare
                 // theirs beside their content). Every label is DERIVED from his content: each
