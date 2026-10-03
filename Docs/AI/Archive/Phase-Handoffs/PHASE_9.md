@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13e Final-four outcome tables and rulebook evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13e | Independent Hanu, Ignatia, Trinkets and Snorri outcomes, preserved source dispositions, typed test adapters and source-linked rulebook ledger invariants. [Definition](../../Roadmap/PHASE_9.md#x-913e-tables-for-hanu-ignatia-trinkets-and-snorri-and-the-rulebook-ledger-invariants). | `milestone/9.13e` |
+
 ## Milestone 9.13d Fourth-five outcome tables evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -119,6 +119,7 @@ namespace GuardsDigital.Tests.EditMode
             internal HeroId TokenOwner;
             internal ObstacleId Obstacle;
             internal string ObstacleKind;
+            internal string OwnedObstacleKind;
             internal bool BattleZone;
             internal bool IsTerrain => Kind == RefKind.Obstacle && ObstacleKind == "terrain";
             internal bool IsTokenLike => Kind == RefKind.Token || (Kind == RefKind.Obstacle && TokenDefinition != null);
@@ -458,6 +459,7 @@ namespace GuardsDigital.Tests.EditMode
                 ReadCase();
                 StageAndBuild();
                 ReachTheActorsTurn();
+                ValidateRuneSlotConsumption();
                 var expectations = ReadExpectations();
                 var offered = TheOffer(out var offer);
                 Log($"offered: {offered}");
@@ -583,7 +585,9 @@ namespace GuardsDigital.Tests.EditMode
 
                 var lineup = Lineup();
                 configuration = MatchConfiguration.CreateForLineupForInternalTest(
-                    MatchFormat.ThreeVersusThreeQuick, lineup, TeamSide.Red);
+                    MatchFormat.ThreeVersusThreeQuick, lineup,
+                    (entry.Get("setup") as JsonObject)?.Get("tie-breaker") is object coin
+                        ? ReadCoinSide(coin) : TeamSide.Red);
                 setup = QuickGameSetupAuthority.Create(
                     HeroLineupComposition.Compose(MatchFormat.ThreeVersusThreeQuick, lineup),
                     configuration.Participants, Map.Value, configuration.TieBreakerState);
@@ -702,6 +706,8 @@ namespace GuardsDigital.Tests.EditMode
                         !int.TryParse(shape.Groups[2].Value, out var seat) || seat < 1 || seat > 3)
                         throw Unsupported("setup", "attack.by: " + attackRef);
                     var printed = IntOf(attackSpec.Get("value"), "attack.value");
+                    if (attackSpec.Has("card") && !seats[seat - 1].HasValue)
+                        throw Refuse("setup attack.card requires the attacker's named hero in setup " + attackRef + ".hero");
                     var chosen = seats[seat - 1] ?? QuickGameSetupConfiguration.DealtHeroes.FirstOrDefault(candidate =>
                     {
                         if (assigned.Contains(candidate.ContentId.Value)) return false;
@@ -844,7 +850,7 @@ namespace GuardsDigital.Tests.EditMode
             private static readonly HashSet<string> SetupKeys = new HashSet<string>(StringComparer.Ordinal)
             {
                 "actor", "pieces", "standing", "hand", "discard", "team-lives", "enemy-team-lives", "attack",
-                "minions-in-lane", "empty-minion-spawns", "reserve-minions"
+                "minions-in-lane", "empty-minion-spawns", "reserve-minions", "rune-slots", "tie-breaker"
             };
 
             private static readonly HashSet<string> ActorKeys = new HashSet<string>(StringComparer.Ordinal)
@@ -854,7 +860,7 @@ namespace GuardsDigital.Tests.EditMode
 
             private static readonly HashSet<string> PieceKeys = new HashSet<string>(StringComparer.Ordinal)
             {
-                "ref", "where", "kind", "owner", "type", "battle-zone"
+                "ref", "where", "kind", "owner", "type", "battle-zone", "identity-kind"
             };
 
             private static readonly HashSet<string> RefSetupKeys = new HashSet<string>(StringComparer.Ordinal)
@@ -867,6 +873,7 @@ namespace GuardsDigital.Tests.EditMode
                 var spec = entry.Get("setup") as JsonObject ?? new JsonObject();
                 if (entry.Has("setup") && !(entry.Get("setup") is JsonObject)) throw Unsupported("setup", Describe(entry.Get("setup")));
                 var actorSpec = spec.Get("actor") as JsonObject ?? new JsonObject();
+                ValidateRuneSlotDeclaration();
                 foreach (var pair in spec)
                 {
                     if (SetupKeys.Contains(pair.Key)) continue;
@@ -983,6 +990,9 @@ namespace GuardsDigital.Tests.EditMode
                 var kind = piece.Spec.Get("kind") as string;
                 var owner = piece.Spec.Get("owner") as string;
                 var type = piece.Spec.Get("type") as string;
+                if (piece.Spec.Has("identity-kind") &&
+                    (piece.Kind != RefKind.Obstacle || Normalize(kind ?? "") != "owned"))
+                    throw Unsupported("piece key", piece.Ref + ".identity-kind");
                 if (piece.Spec.Has("kind") && kind == null) throw Unsupported("piece kind", Describe(piece.Spec.Get("kind")));
                 if (type != null && !piece.IsMinion) throw Unsupported("piece key", $"{piece.Ref}.type");
                 if (piece.IsMinion)
@@ -1014,6 +1024,12 @@ namespace GuardsDigital.Tests.EditMode
                     piece.ObstacleKind = kind == null ? null : Normalize(kind);
                     switch (piece.ObstacleKind)
                     {
+                        case "owned":
+                            piece.OwnedObstacleKind = piece.Spec.Get("identity-kind") as string;
+                            if (string.IsNullOrWhiteSpace(piece.OwnedObstacleKind))
+                                throw Refuse("owned obstacle requires a nonempty identity-kind");
+                            piece.TokenOwner = OwnerOf(owner ?? "actor", piece.Ref);
+                            break;
                         case null:
                         case "terrain":
                             if (owner != null) throw Unsupported("piece key", $"{piece.Ref}.owner");
@@ -1105,6 +1121,8 @@ namespace GuardsDigital.Tests.EditMode
                             break;
                         case RefKind.Obstacle:
                             if (piece.TokenDefinition != null) piece.Token = new TokenInstanceId("table-" + piece.Ref);
+                            else if (piece.OwnedObstacleKind != null)
+                                piece.Obstacle = OwnedObstacleIdentity.For(piece.OwnedObstacleKind, piece.TokenOwner);
                             else if (!piece.IsTerrain) piece.Obstacle = new ObstacleId("table-" + piece.Ref);
                             break;
                     }
@@ -1261,9 +1279,13 @@ namespace GuardsDigital.Tests.EditMode
                 var spec = value as JsonObject ?? throw Unsupported("setup", $"attack: {Describe(value)}");
                 foreach (var pair in spec)
                 {
-                    if (pair.Key != "by" && pair.Key != "value" && pair.Key != "ranged") throw Unsupported("setup key", $"attack.{pair.Key}");
+                    if (pair.Key != "by" && pair.Key != "value" && pair.Key != "ranged" && pair.Key != "card")
+                        throw Unsupported("setup key", $"attack.{pair.Key}");
                 }
                 if (spec.Has("ranged") && !(spec.Get("ranged") is bool)) throw Unsupported("setup", "attack.ranged must be boolean");
+                var namedAttack = spec.Get("card") as string;
+                if (spec.Has("card") && string.IsNullOrWhiteSpace(namedAttack))
+                    throw Unsupported("setup", "attack.card must be a printed card name");
 
                 var by = spec.Get("by") as string ?? throw Unsupported("setup", $"attack: {Describe(value)}");
                 attacker = HeroOfRef(Normalize(by));
@@ -1279,6 +1301,7 @@ namespace GuardsDigital.Tests.EditMode
                         action.Kind == ActionKind.Attack && action.Origin == ActionDefinitionOrigin.PrintedPrimary)))
                     .Where(pair => pair.action != null && pair.action.BaseValues.Any(item =>
                         item.Channel == PrintedValueChannel.Attack && item.Amount == printed))
+                    .Where(pair => namedAttack == null || CardKey(DefinitionOf(pair.card).DisplayName) == CardKey(namedAttack))
                     .Where(pair => !(spec.Get("ranged") is bool ranged) ||
                         (pair.action.AttackRange == AttackRangeKind.Ranged) == ranged)
                     .OrderBy(pair => pair.action.AttackRange == AttackRangeKind.Ranged ? 1 : 0)
@@ -1287,7 +1310,8 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(pair => pair.card)
                     .FirstOrDefault()
                     ?? throw Refuse($"setup attack: {by} ({setup.Heroes.Single(seat => seat.HeroId.Equals(attacker)).DisplayName}) " +
-                        $"has no card whose primary Attack prints {printed}");
+                        $"has no {(namedAttack == null ? "card" : "named " + namedAttack)} whose primary Attack prints {printed}" +
+                        (spec.Get("ranged") is bool requiredRange ? $" with ranged={requiredRange}" : string.Empty));
                 Log($"the attack: {by} plays {DefinitionOf(attackCard).DisplayName}");
             }
 
@@ -1832,7 +1856,8 @@ namespace GuardsDigital.Tests.EditMode
                         // Explicit staged Defense applies to the prerequisite play too. Other
                         // prerequisite questions retain the documented doing-way default.
                         var defender = projection.PendingDefenseChoice;
-                        next = defender != null && refSetups.TryGetValue(RefOfHero(defender.ChooserId), out var spec) &&
+                        if (TryAnswerStagedRuneAssignment(projection, out var runeCommand)) next = runeCommand;
+                        else next = defender != null && refSetups.TryGetValue(RefOfHero(defender.ChooserId), out var spec) &&
                             spec.Has("defends-with")
                             ? AnswerDefense(projection, projection.DecisionContract, null)
                             : projection.DecisionContract.Commands.OrderBy(OfferOutcomeTests.Doing).First();
@@ -2017,8 +2042,10 @@ namespace GuardsDigital.Tests.EditMode
                         if (!available || !wanted) return;
                         foreach (var answer in (followup.Get("answers") as List<object>) ?? new List<object>())
                             answers.Enqueue(answer as string ?? throw Unsupported("follow-up answer", Describe(answer)));
+                        var deciding = SeatProjectionFactory.DecidingActor(projection);
                         var started = session.Execute(DirectorCommand.StartAction(followupCard.Id, definition.Id));
                         if (!started.Accepted) throw Refuse("follow-up start refused: " + started.Detail);
+                        actionChoosers[followupCard.OwnerId] = deciding;
                         ObserveEvents(started);
                         RunTheAnswers();
                         return;
@@ -2176,7 +2203,7 @@ namespace GuardsDigital.Tests.EditMode
                 return answer;
             }
 
-            private enum AnswerShape { None, Reference, Confirm, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline, Color }
+            private enum AnswerShape { None, Reference, Confirm, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline, Color, RuneSlot, Rune, TextFace }
 
             private AnswerShape ShapeOf(string answer, out string value, out string who)
             {
@@ -2184,6 +2211,24 @@ namespace GuardsDigital.Tests.EditMode
                 who = null;
                 if (answer == null) return AnswerShape.None;
                 var text = Normalize(answer);
+                if (text.StartsWith("text-face:", StringComparison.Ordinal))
+                {
+                    value = text.Substring(10).Trim();
+                    if (value != "sun" && value != "moon") throw Unsupported("printed text face", value);
+                    return AnswerShape.TextFace;
+                }
+                var runeSlot = Regex.Match(text, @"^slot:\s*([1-4]),\s*rune ([1-4])$");
+                if (runeSlot.Success)
+                {
+                    value = runeSlot.Groups[1].Value + "," + runeSlot.Groups[2].Value;
+                    return AnswerShape.RuneSlot;
+                }
+                var rune = Regex.Match(text, @"^rune:\s*([1-4])$");
+                if (rune.Success)
+                {
+                    value = rune.Groups[1].Value;
+                    return AnswerShape.Rune;
+                }
                 if (text.StartsWith("color:", StringComparison.Ordinal))
                 {
                     value = text.Substring(6).Trim();
@@ -2741,8 +2786,18 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var open = choice.Candidates.Where(candidate => !choice.UnavailableCandidates.Contains(candidate) &&
                     !choice.SelectedCandidates.Contains(candidate)).ToList();
+                if (shape == AnswerShape.RuneSlot || shape == AnswerShape.Rune)
+                    return SelectRuneCandidate(projection, choice, open, shape, value);
                 switch (shape)
                 {
+                    case AnswerShape.TextFace:
+                    {
+                        if (choice.ValueVocabulary != EffectChoiceValueVocabulary.PrintedTextFace) return null;
+                        var face = value == "sun" ? PrintedTextFace.Sun : PrintedTextFace.Moon;
+                        return open.Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
+                                candidate.Value.Kind == EffectValueKind.Integer && candidate.Value.IntegerValue == (int)face)
+                            .Select(candidate => (EffectChoiceCandidate?)candidate).FirstOrDefault();
+                    }
                     case AnswerShape.Color:
                     {
                         if (choice.ValueVocabulary != EffectChoiceValueVocabulary.CardColor) return null;
@@ -3114,6 +3169,37 @@ namespace GuardsDigital.Tests.EditMode
 
             private void Evaluate(JsonObject expectation)
             {
+                if (TryEvaluateRunes(expectation)) return;
+                if (TryEvaluateBatchEFacts(expectation)) return;
+                if (expectation.Has("owned-obstacle"))
+                {
+                    if (expectation.Count != 1 || !(expectation.Get("owned-obstacle") is JsonObject spec) ||
+                        !(spec.Get("kind") is string kind) || string.IsNullOrWhiteSpace(kind) ||
+                        !(spec.Get("owner") is string owner) ||
+                        spec.Any(pair => pair.Key != "kind" && pair.Key != "owner" &&
+                            pair.Key != "at" && pair.Key != "on-board") ||
+                        spec.Has("at") == spec.Has("on-board"))
+                        throw Unsupported("owned-obstacle expectation", Describe(expectation));
+                    var id = OwnedObstacleIdentity.For(kind, OwnerOf(owner, "owned-obstacle"));
+                    var found = after.Obstacles.Where(value => value.ObstacleId.Equals(id))
+                        .Select(value => (HexCoordinate?)value.Coordinate).SingleOrDefault();
+                    if (spec.Has("on-board"))
+                    {
+                        if (!(spec.Get("on-board") is bool wanted))
+                            throw Unsupported("owned-obstacle expectation", Describe(expectation));
+                        if (found.HasValue != wanted) Mismatch(expectation, "on-board is " + found.HasValue);
+                    }
+                    else
+                    {
+                        var phrase = spec.Get("at") as string;
+                        var placement = ParsePlacement(phrase ?? "") ??
+                            throw Unsupported("placement", phrase ?? "(none)");
+                        if (!found.HasValue) Mismatch(expectation, "the owned obstacle is not on the board");
+                        else if (!Satisfies(placement, found.Value, Positions(after, placement.Refs())))
+                            Mismatch(expectation, "it is at " + found.Value);
+                    }
+                    return;
+                }
                 if (expectation.Get("ref") is string itemOwner && expectation.Get("item-count") is JsonObject itemCounts)
                 {
                     if (expectation.Count != 2 || itemCounts.Count == 0) throw Unsupported("item-count expectation", Describe(expectation));

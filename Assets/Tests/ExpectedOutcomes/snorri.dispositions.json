@@ -1,0 +1,74 @@
+[
+  {
+    "id": "snorri-inscribe-the-runes-places-four-markers",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri2__7387420__front.png; HERO_SNORRI.md SN-Q1; rulebook pp.7-8",
+    "note": "Four distinct markers are assigned one per numbered slot; only the rune below the current slot is active. Replace provisional color-slot answers with printed glyph ordinals, preserve all-four assignment and exact current activation.",
+    "original-case": { "id": "snorri-inscribe-the-runes-places-four-markers", "card": "Inscribe the Runes", "action": "Skill", "source": ["snorri2__7387420__front.png"], "setup": {}, "answers": ["slot: next turn, silver", "slot: next turn, blue", "slot: next turn, green", "slot: next turn, gold"], "expect": [{ "offered": true }, { "runes": { "assigned": 4, "active": 4 } }] }
+  },
+  {
+    "id": "snorri-runic-hammer-moves-before-attack",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri4__7728050__front.png; HERO_SNORRI.md printed-clause inventory",
+    "note": "Pre-Attack Move 1 belongs to G4, retrieval to distinct G3. With one current-slot rune and no Ultimate, retain the printed pre-Attack move and Defeat as the one ordinary outcome; retrieval needs separate simultaneous-rune coverage.",
+    "original-case": { "id": "snorri-runic-hammer-moves-before-attack-and-retrieves", "card": "Runic Hammer", "action": "Attack", "source": ["snorri4__7728050__front.png"], "setup": { "actor": { "level": 3 }, "standing": "actor played Inscribe the Runes last turn", "discard": ["Rune Sigils"], "pieces": [{ "ref": "enemy-minion-1", "where": "distance 2 from actor" }] }, "answers": ["distance 1", "toward enemy-minion-1", "enemy-minion-1", "card: Rune Sigils"], "expect": [{ "offered": true }, { "ref": "actor", "moved": 1 }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }] }
+  },
+  {
+    "id": "snorri-runecaster-forces-nearby-discard",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri5__7728051__front.png; HERO_SNORRI.md printed-clause inventory",
+    "note": "Post-Attack Move 2 belongs to G4 and nearby enemy discard to G2. The ordinary one-rune fixture keeps the printed nearby discard; separate simultaneous-rune coverage may exercise both with Rune Mastery.",
+    "original-case": { "id": "snorri-runecaster-moves-and-forces-nearby-discard", "card": "Runecaster", "action": "Attack", "source": ["snorri5__7728051__front.png"], "setup": { "actor": { "level": 3 }, "standing": "actor played Inscribe the Runes last turn", "pieces": [{ "ref": "enemy-minion-1", "where": "distance 3 from actor" }, { "ref": "enemy-hero-1", "where": "adjacent to enemy-minion-1", "hero": "Trinkets" }], "enemy-hero-1": { "hand": ["Early Prototype"] } }, "answers": ["enemy-minion-1", "distance 2", "toward enemy-minion-1", "enemy-hero-1: discard Early Prototype"], "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "ref": "actor", "moved": 2 }, { "ref": "enemy-hero-1", "hand": -1 }] }
+  },
+  {
+    "id": "snorri-runic-battleaxe-repeats-minion-attack",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri6__7728053__front.png; HERO_SNORRI.md printed-clause inventory",
+    "note": "Battleaxe's pre-Attack Move is G4, repeat is G2, retrieval is G3. An ordinary turn has only one current physical rune; retain the repeated minion Attack and its two Defeats without claiming all three glyphs activate.",
+    "original-case": { "id": "snorri-runic-battleaxe-repeats-minion-attack-and-retrieves", "card": "Runic Battleaxe", "action": "Attack", "source": ["snorri6__7728053__front.png"], "setup": { "actor": { "level": 5 }, "standing": "actor played Inscribe the Runes last turn", "discard": ["Rune Sigils"], "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }, { "ref": "enemy-minion-2", "where": "adjacent to actor" }] }, "answers": ["distance 0", "enemy-minion-1", "enemy-minion-2", "card: Rune Sigils"], "expect": [{ "offered": true }, { "ref": "actor", "attack-count": 2 }, { "ref": "enemy-minion-1", "is": "defeated" }, { "ref": "enemy-minion-2", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }] }
+  },
+  {
+    "id": "snorri-runeblaster-targets-within-maximum-range",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri7__7728052__front.png; rulebook pp.9-10,13-14",
+    "note": "Printed Range is 3; G1 changes the target from maximum range to any distance within that range. Distance four from the blind table was outside both readings; distance two proves the G1 change.",
+    "original-case": { "id": "snorri-runeblaster-targets-beyond-printed-maximum-range", "card": "Runeblaster", "action": "Attack", "source": ["snorri7__7728052__front.png"], "setup": { "actor": { "level": 5 }, "standing": "actor played Inscribe the Runes last turn", "pieces": [{ "ref": "enemy-minion-1", "where": "distance 4 from actor" }] }, "answers": ["enemy-minion-1", "distance 0"], "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }] }
+  },
+  {
+    "id": "snorri-rune-mastery-activates-inactive-rune-for-action",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri18__7730144__front.png; HERO_SNORRI.md SN-Q3",
+    "note": "Rune Mastery is passive, and requires four physical runes from a previous Inscribe. On slot 2 G2 is physically active, while the Ultimate selects inactive G3 for Runic Dagger's retrieval until the next action. Boolean Ultimate unlock replaces the original string.",
+    "original-case": { "id": "snorri-rune-mastery-activates-inactive-rune-for-action", "card": "Runic Dagger", "action": "Attack", "source": ["snorri18__7730144__front.png", "snorri3__7728049__front.png"], "setup": { "actor": { "level": 8, "ultimate": "Rune Mastery" }, "discard": ["Rune Sigils"], "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] }, "answers": ["rune: silver", "enemy-minion-1", "card: Rune Sigils"], "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }] }
+  },
+  {
+    "id": "snorri-rune-sigils-gains-three-coins-from-hero",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri__7387414__front.png; rulebook pp.15-16",
+    "note": "The Gold face grants exactly three coins with G3 active. The real prerequisite Silver play advances through an earlier turn and adds one normal progression coin before this Attack; the current absolute balance is four, preserving the printed +3 causal outcome."
+  },
+  {
+    "id": "snorri-hidden-passage-grants-immunity",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri9__7387415__front.png; HERO_SNORRI.md Passage clauses",
+    "note": "The original `immune:true` abstract assertion is not a legal executor observation. A later real Quickdraw from an adjacent Sabina is unavailable after G3 Hidden Passage, directly checking the printed this-turn immunity."
+  },
+  {
+    "id": "snorri-oath-of-endurance-blocks-basic-attack",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri13__7728043__front.png; Sabina Point Blank Shot Basic face",
+    "note": "Use Sabina's printed Basic Attack 2 at adjacent range so G4's basic Block can be answered. The outcome verifies the Defense and no Defeat; its later this-turn immunity is separate untested coverage."
+  },
+  {
+    "id": "snorri-oath-of-fortitude-blocks-ranged-attack",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri14__7728044__front.png; Sabina Quickdraw face",
+    "note": "Place Sabina two spaces away within Quickdraw's printed ranged Attack geometry so G1's ranged Block is a real Defense reaction. The later immunity clause remains separate coverage."
+  },
+  {
+    "id": "snorri-oath-of-perseverance-blocks-non-basic-attack",
+    "kind": "not-executable", "execute": true,
+    "ref": "snorri16__7728046__front.png; Wasp Electrocute face",
+    "note": "Place Wasp adjacent for its printed non-basic Attack so G3's category Block is a real Defense reaction. The later immunity clause remains separate coverage."
+  }
+]

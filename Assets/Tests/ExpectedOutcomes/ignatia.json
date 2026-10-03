@@ -1,0 +1,150 @@
+{
+  "hero": "Ignatia",
+  "cases": [
+    {
+      "id": "ignatia-chaos-bolt-orange-hero",
+      "card": "Chaos Bolt", "action": "Attack",
+      "source": ["ignatia__7635279__front.png", "rulebook pp. 7, 13-14"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 2}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-equilibrium-selects-either-mode",
+      "card": "Equilibrium", "action": "Skill",
+      "source": ["ignatia2__7694856__front.png", "ignatia__7635279__front.png", "rulebook pp. 7, 17"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": [],
+      "follow-up": {"hero": "actor", "turn": "next", "card": "Chaos Bolt", "action": "Attack", "answers": ["text-face: Moon", "enemy-hero-1"], "offered": true},
+      "expect": [{"offered": true}, {"ref": "actor", "attack-count": 1}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-playing-with-fire-blue-off-line",
+      "card": "Playing with Fire", "action": "Attack",
+      "source": ["ignatia3__7729010__front.png", "rulebook pp. 9, 13-14, 19"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor off every straight line"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 3}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-erratic-fireblast-orange-on-line",
+      "card": "Erratic Fireblast", "action": "Attack",
+      "source": ["ignatia4__7729009__front.png", "rulebook pp. 9, 13-14, 19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 3}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-crack-of-doom-orange-maximum-range",
+      "card": "Crack of Doom", "action": "Attack",
+      "source": ["ignatia5__7729008__front.png", "rulebook pp. 9, 13-14"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 5 from actor"}], "enemy-hero-1": {"defends-with": 7}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 5}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-loosely-aimed-firebolts-repeat-new-hero",
+      "card": "Loosely-Aimed Firebolts", "action": "Attack",
+      "source": ["ignatia6__7729007__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor in a straight line"}, {"ref": "enemy-hero-2", "where": "distance 3 from actor in a straight line"}], "enemy-hero-1": {"defends-with": 5}, "enemy-hero-2": {"defends-with": 5}},
+      "answers": ["enemy-hero-1", "confirm", "enemy-hero-2"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack-count": 2}, {"ref": "enemy-hero-1", "is": "not defeated"}, {"ref": "enemy-hero-2", "is": "not defeated"}]
+    },
+    {
+      "id": "ignatia-imminent-eruption-blue-repeat-minion",
+      "card": "Imminent Eruption", "action": "Attack",
+      "source": ["ignatia7__7729004__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "adjacent to actor"}, {"ref": "enemy-minion-1", "where": "adjacent to actor", "battle-zone": true}], "enemy-hero-1": {"defends-with": 7}},
+      "answers": ["enemy-hero-1", "confirm", "enemy-minion-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack-count": 2}, {"ref": "enemy-minion-1", "is": "defeated"}]
+    },
+    {
+      "id": "ignatia-abrupt-combustion-makes-hero-discard",
+      "card": "Abrupt Combustion", "action": "Skill",
+      "source": ["ignatia8__7641669__front.png", "rulebook pp. 10, 17-18"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1", "battle-zone": true}]},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "enemy-hero-1", "hand": -1}]
+    },
+    {
+      "id": "ignatia-spontaneous-immolation-removes-minion",
+      "card": "Spontaneous Immolation", "action": "Skill",
+      "source": ["ignatia9__7729011__front.png", "rulebook pp. 8, 19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1", "battle-zone": true}]},
+      "answers": ["enemy-minion-1"],
+      "expect": [{"offered": true}, {"ref": "enemy-minion-1", "is": "removed"}]
+    },
+    {
+      "id": "ignatia-searing-heat-moves-friendly-hero",
+      "card": "Searing Heat", "action": "Skill",
+      "source": ["ignatia10__7729013__front.png", "rulebook pp. 11, 19"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 4}, "pieces": [{"ref": "friendly-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["friendly-hero-1", "distance 2"],
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "moved": 2}]
+    },
+    {
+      "id": "ignatia-violent-conflagration-defeats-hero",
+      "card": "Violent Conflagration", "action": "Skill",
+      "source": ["ignatia11__7641666__front.png", "rulebook pp. 13, 17-18"],
+      "setup": {"tie-breaker": "Blue", "actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to enemy-hero-1", "battle-zone": true}], "enemy-hero-1": {"hand": []}},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "enemy-hero-1", "is": "defeated"}]
+    },
+    {
+      "id": "ignatia-scorching-blaze-moves-enemy-hero",
+      "card": "Scorching Blaze", "action": "Skill",
+      "source": ["ignatia12__7641665__front.png", "rulebook pp. 11, 19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1", "distance 3"],
+      "expect": [{"offered": true}, {"ref": "enemy-hero-1", "moved": 3}]
+    },
+    {
+      "id": "ignatia-path-of-ashes-places-magma",
+      "card": "Path of Ashes", "action": "Skill",
+      "source": ["ignatia13__7641664__front.png", "rulebook pp. 18-19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 1}},
+      "answers": ["place: adjacent to actor", "place: distance 2 from actor", "decline"],
+      "expect": [{"offered": true}, {"tokens": "Magma", "on-board": 2}]
+    },
+    {
+      "id": "ignatia-path-of-cinders-places-three-magma",
+      "card": "Path of Cinders", "action": "Skill",
+      "source": ["ignatia14__7641663__front.png", "rulebook pp. 18-19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 4}},
+      "answers": ["place: adjacent to actor", "place: distance 2 from actor", "place: distance 3 from actor", "decline"],
+      "expect": [{"offered": true}, {"tokens": "Magma", "on-board": 3}]
+    },
+    {
+      "id": "ignatia-unstable-portal-swaps-enemy",
+      "card": "Unstable Portal", "action": "Skill",
+      "source": ["ignatia15__7641662__front.png", "rulebook p. 19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "swapped-with": "enemy-hero-1"}]
+    },
+    {
+      "id": "ignatia-path-of-flames-places-four-magma",
+      "card": "Path of Flames", "action": "Skill",
+      "source": ["ignatia16__7641661__front.png", "rulebook pp. 18-19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 7}},
+      "answers": ["place: adjacent to actor", "place: distance 2 from actor", "place: distance 3 from actor", "place: distance 4 from actor", "decline"],
+      "expect": [{"offered": true}, {"tokens": "Magma", "on-board": 4}]
+    },
+    {
+      "id": "ignatia-chaos-gate-swaps-and-steps",
+      "card": "Chaos Gate", "action": "Skill",
+      "source": ["ignatia17__7641660__front.png", "rulebook pp. 11, 19"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1", "distance 1"],
+      "expect": [{"offered": true}, {"ref": "enemy-hero-1", "at-initial": "distance 0 from actor"}, {"ref": "actor", "at-initial": "distance 1 from enemy-hero-1"}]
+    },
+    {
+      "id": "ignatia-chaos-incarnate-repeats-different-target",
+      "card": "Chaos Bolt", "action": "Attack",
+      "source": ["ignatia18__7590071__front.png", "ignatia__7635279__front.png", "rulebook pp. 7, 10, 16-17"],
+      "setup": {"tie-breaker": "Red", "actor": {"level": 8, "ultimate": true}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to actor", "battle-zone": true}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["enemy-hero-1", "confirm", "enemy-minion-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack-count": 2}, {"tie-breaker": "Blue"}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    }
+  ]
+}

@@ -1,0 +1,338 @@
+[
+  {
+    "id": "hanu-outnumber-attacks-minion-by-friend",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu5__7635520__front.png; rulebook pp. 10, 13-14; Docs/AI/Rules/HERO_HANU.md",
+    "note": "The minion Defeat was logged and remains required. The original Attack-total check used a hero-only observation; the executor does not expose a computed Attack total for a defeated minion. No rule effect was removed.",
+    "original-case": {
+      "id": "hanu-outnumber-attacks-minion-by-friend",
+      "card": "Outnumber",
+      "action": "Attack",
+      "source": [
+        "hanu5__7635520__front.png",
+        "rulebook pp. 10, 13-14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 4
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to friendly-hero-1 and distance 2 from actor",
+            "battle-zone": true
+          }
+        ]
+      },
+      "answers": [
+        "option: Target a minion in range, adjacent to your friendly hero.",
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-pile-on-attacks-with-friend",
+    "kind": "not-executable",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu7__7635512__front.png; rulebook pp. 10, 13-14; Docs/AI/Rules/HERO_HANU.md",
+    "note": "Source correction: Pile On's second bullet targets a minion in range adjacent to a friendly hero, not an enemy hero. The corrected case proves that printed bullet with a logged minion Defeat.",
+    "original-case": {
+      "id": "hanu-pile-on-attacks-with-friend",
+      "card": "Pile On",
+      "action": "Attack",
+      "source": [
+        "hanu7__7635512__front.png",
+        "rulebook pp. 10, 13-14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 7
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to friendly-hero-1 and distance 2 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 7
+        }
+      },
+      "answers": [
+        "option: Target a hero in range, adjacent to your friendly hero.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-this-way-moves-pair",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu10__7635523__front.png; rulebook pp. 11, 19; Docs/AI/Rules/HERO_HANU.md",
+    "note": "The target friendly hero chooses the printed distance on their own seat. The public option label and an actual destination answer replace an unsupported bare distance as the modal answer; the two-space co-move remains required.",
+    "original-case": {
+      "id": "hanu-this-way-moves-pair",
+      "card": "This Way!",
+      "action": "Skill",
+      "source": [
+        "hanu10__7635523__front.png",
+        "rulebook pp. 11, 19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 4
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "friendly-hero-1",
+        "distance 2",
+        "toward enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "friendly-hero-1",
+          "moved": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-that-way-moves-three",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu12__7635524__front.png; rulebook pp. 11, 19; Docs/AI/Rules/HERO_HANU.md",
+    "note": "The target friendly hero chooses the printed distance on their own seat. The public option label and an actual destination answer replace an unsupported bare distance as the modal answer; the three-space co-move remains required.",
+    "original-case": {
+      "id": "hanu-that-way-moves-three",
+      "card": "That Way!",
+      "action": "Skill",
+      "source": [
+        "hanu12__7635524__front.png",
+        "rulebook pp. 11, 19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 7
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "friendly-hero-1",
+        "distance 3",
+        "toward enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "friendly-hero-1",
+          "moved": 3
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-monkey-trick-friendly-swap",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu13__7635529__front.png; rulebook p. 19; Docs/AI/Rules/HERO_HANU.md",
+    "note": "Monkey Trick prints Radius 1, so both friendly units must begin adjacent to Hanu; the original second unit at distance 2 made the action unavailable. The pair swap remains required.",
+    "original-case": {
+      "id": "hanu-monkey-trick-friendly-swap",
+      "card": "Monkey Trick",
+      "action": "Skill",
+      "source": [
+        "hanu13__7635529__front.png",
+        "rulebook p. 19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "friendly-hero-2",
+            "where": "distance 2 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "friendly-hero-1",
+        "friendly-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "friendly-hero-1",
+          "swapped-with": "friendly-hero-2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-see-nothing-swap-and-move",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu17__7635527__front.png; rulebook pp. 11, 19; Docs/AI/Rules/HERO_HANU.md",
+    "note": "The frozen swapped-with matcher required both pieces' final positions to equal their initial counterpart positions, which conflicts with Hanu's subsequent optional one-space move. Initial-position assertions now prove enemy swap and Hanu's printed step.",
+    "original-case": {
+      "id": "hanu-see-nothing-swap-and-move",
+      "card": "See Nothing",
+      "action": "Skill",
+      "source": [
+        "hanu17__7635527__front.png",
+        "rulebook pp. 11, 19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 7
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-hero-1"
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "hanu-ultimate-trick-directs-next-action",
+    "kind": "executor-gap",
+    "execute": true,
+    "ref": "tmp/9-13e/9-13e-hanu-ignatia-first.trx; hanu18__7635514__front.png; hanu2__7635511__front.png; rulebook pp. 7, 16-17; Docs/AI/Rules/HERO_HANU.md",
+    "note": "The first follow-up named Noble Blade, a card Wasp does not own; Wasp's actual Shock replaces it. The Ultimate flag is Boolean, a real Defense 5 resolves the later attack, and Wasp is pinned as the friendly seat so defense-compatible roster selection cannot change the Shock owner. The delegated chooser plus attack count remain required.",
+    "original-case": {
+      "id": "hanu-ultimate-trick-directs-next-action",
+      "card": "Hurry Up!",
+      "action": "Skill",
+      "source": [
+        "hanu18__7635514__front.png",
+        "hanu2__7635511__front.png",
+        "rulebook pp. 7, 16-17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8,
+          "ultimate": "The Ultimate Trick"
+        },
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to friendly-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "friendly-hero-1"
+      ],
+      "follow-up": {
+        "hero": "friendly-hero-1",
+        "card": "Noble Blade",
+        "action": "Attack",
+        "answers": [
+          "enemy-hero-1"
+        ],
+        "offered": true
+      },
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "friendly-hero-1",
+          "action-chosen-by": "actor"
+        },
+        {
+          "ref": "friendly-hero-1",
+          "attack-count": 1
+        }
+      ]
+    }
+  }
+]

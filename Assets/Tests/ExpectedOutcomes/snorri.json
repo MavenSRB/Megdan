@@ -1,0 +1,150 @@
+{
+  "hero": "Snorri",
+  "cases": [
+    {
+      "id": "snorri-rune-sigils-gains-three-coins-from-hero",
+      "card": "Rune Sigils", "action": "Attack",
+      "source": ["snorri__7387414__front.png"],
+      "setup": { "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 3, 2, 4], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "defends-with": "none" } },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "coins": 4 }]
+    },
+    {
+      "id": "snorri-inscribe-the-runes-places-four-markers",
+      "card": "Inscribe the Runes", "action": "Skill",
+      "source": ["snorri2__7387420__front.png"],
+      "setup": {},
+      "answers": ["slot: 1, rune 1", "slot: 2, rune 2", "slot: 3, rune 3", "slot: 4, rune 4"],
+      "expect": [{ "offered": true }, { "runes": { "assigned": 4, "slots": [1, 2, 3, 4], "active": [2] } }]
+    },
+    {
+      "id": "snorri-runic-dagger-retrieves-with-active-rune",
+      "card": "Runic Dagger", "action": "Attack",
+      "source": ["snorri3__7728049__front.png"],
+      "setup": { "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 3, 2, 4], "discard": ["Rune Sigils"], "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-minion-1", "card: Rune Sigils"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }]
+    },
+    {
+      "id": "snorri-runic-hammer-moves-before-attack",
+      "card": "Runic Hammer", "action": "Attack",
+      "source": ["snorri4__7728050__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 4, 2, 3], "pieces": [{ "ref": "enemy-minion-1", "where": "distance 2 from actor" }] },
+      "answers": ["distance 1", "toward enemy-minion-1", "enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "moved": 1 }, { "ref": "enemy-minion-1", "is": "defeated" }]
+    },
+    {
+      "id": "snorri-runecaster-forces-nearby-discard",
+      "card": "Runecaster", "action": "Attack",
+      "source": ["snorri5__7728051__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 2, 3, 4], "pieces": [{ "ref": "enemy-minion-1", "where": "distance 3 from actor" }, { "ref": "enemy-hero-1", "where": "adjacent to enemy-minion-1" }], "enemy-hero-1": { "hero": "Trinkets", "hand": ["Early Prototype"] } },
+      "answers": ["enemy-minion-1", "enemy-hero-1", "enemy-hero-1: discard Early Prototype"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "ref": "enemy-hero-1", "hand": -1 }]
+    },
+    {
+      "id": "snorri-runic-battleaxe-repeats-minion-attack",
+      "card": "Runic Battleaxe", "action": "Attack",
+      "source": ["snorri6__7728053__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 2, 3, 4], "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }, { "ref": "enemy-minion-2", "where": "adjacent to actor" }] },
+      "answers": ["enemy-minion-1", "enemy-minion-2"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack-count": 2 }, { "ref": "enemy-minion-1", "is": "defeated" }, { "ref": "enemy-minion-2", "is": "defeated" }]
+    },
+    {
+      "id": "snorri-runeblaster-targets-within-maximum-range",
+      "card": "Runeblaster", "action": "Attack",
+      "source": ["snorri7__7728052__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [2, 1, 3, 4], "pieces": [{ "ref": "enemy-minion-1", "where": "distance 2 from actor" }] },
+      "answers": ["enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }]
+    },
+    {
+      "id": "snorri-safe-passage-ignores-obstacle",
+      "card": "Safe Passage", "action": "Movement",
+      "source": ["snorri8__7387431__front.png"],
+      "setup": { "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [2, 1, 3, 4], "pieces": [{ "ref": "obstacle-1", "where": "distance 1 from actor in a straight line" }] },
+      "answers": ["distance 2", "toward obstacle-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "moved-through": "obstacle-1" }]
+    },
+    {
+      "id": "snorri-hidden-passage-grants-immunity",
+      "card": "Hidden Passage", "action": "Movement",
+      "source": ["snorri9__7387415__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 3, 2, 4], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hero": "Sabina" } },
+      "answers": ["distance 0"],
+      "follow-up": { "hero": "enemy-hero-1", "card": "Quickdraw", "action": "Attack", "answers": [], "offered": false },
+      "expect": [{ "offered": true }, { "ref": "actor", "is": "not defeated" }]
+    },
+    {
+      "id": "snorri-ancestral-boon-swaps-friend-resolved-card",
+      "card": "Ancestral Boon", "action": "Skill",
+      "source": ["snorri10__7505429__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn", "friendly-hero-1 played Rapid Redeployment this turn using Hold"], "rune-slots": [1, 2, 3, 4], "pieces": [{ "ref": "friendly-hero-1", "where": "adjacent to actor" }], "friendly-hero-1": { "hero": "Trinkets", "hand": ["Salvage Parts"] } },
+      "answers": ["friendly-hero-1", "card: Rapid Redeployment", "card: Salvage Parts"],
+      "expect": [{ "offered": true }, { "ref": "friendly-hero-1", "card": "Rapid Redeployment", "state": "retrieved" }, { "ref": "friendly-hero-1", "card": "Salvage Parts", "state": "resolved" }]
+    },
+    {
+      "id": "snorri-deep-passage-adds-two-movement",
+      "card": "Deep Passage", "action": "Movement",
+      "source": ["snorri11__7387424__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 4, 2, 3] },
+      "answers": ["distance 5"],
+      "expect": [{ "offered": true }, { "ref": "actor", "movement-offered-max": 5 }, { "ref": "actor", "moved": 5 }]
+    },
+    {
+      "id": "snorri-ancestral-grace-retrieves-all-friend-discards",
+      "card": "Ancestral Grace", "action": "Skill",
+      "source": ["snorri12__7505428__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 3, 2, 4], "pieces": [{ "ref": "friendly-hero-1", "where": "adjacent to actor" }], "friendly-hero-1": { "hero": "Trinkets", "discard": ["Salvage Parts", "Rapid Redeployment"] } },
+      "answers": ["friendly-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "friendly-hero-1", "card": "Salvage Parts", "state": "retrieved" }, { "ref": "friendly-hero-1", "card": "Rapid Redeployment", "state": "retrieved" }]
+    },
+    {
+      "id": "snorri-oath-of-endurance-blocks-basic-attack",
+      "card": "Oath of Endurance", "action": "Defend",
+      "source": ["snorri13__7728043__front.png"],
+      "setup": { "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 4, 2, 3], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hero": "Sabina" }, "attack": { "by": "enemy-hero-1", "card": "Point Blank Shot", "value": 2, "ranged": true } },
+      "answers": [],
+      "expect": [{ "offered": true }, { "ref": "actor", "is": "not defeated" }]
+    },
+    {
+      "id": "snorri-oath-of-fortitude-blocks-ranged-attack",
+      "card": "Oath of Fortitude", "action": "Defend",
+      "source": ["snorri14__7728044__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [2, 1, 3, 4], "pieces": [{ "ref": "enemy-hero-1", "where": "distance 2 from actor" }], "enemy-hero-1": { "hero": "Sabina" }, "attack": { "by": "enemy-hero-1", "card": "Quickdraw", "value": 2, "ranged": true } },
+      "answers": [],
+      "expect": [{ "offered": true }, { "ref": "actor", "is": "not defeated" }]
+    },
+    {
+      "id": "snorri-charged-runestone-discards-green-card",
+      "card": "Charged Runestone", "action": "Skill",
+      "source": ["snorri15__7728045__front.png"],
+      "setup": { "actor": { "level": 3 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 4, 2, 3], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hero": "Trinkets", "hand": ["Early Prototype"] } },
+      "answers": ["enemy-hero-1", "enemy-hero-1: discard Early Prototype"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "card": "Early Prototype", "state": "discarded" }]
+    },
+    {
+      "id": "snorri-oath-of-perseverance-blocks-non-basic-attack",
+      "card": "Oath of Perseverance", "action": "Defend",
+      "source": ["snorri16__7728046__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 3, 2, 4], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hero": "Wasp" }, "attack": { "by": "enemy-hero-1", "value": 5, "ranged": false } },
+      "answers": [],
+      "expect": [{ "offered": true }, { "ref": "actor", "is": "not defeated" }]
+    },
+    {
+      "id": "snorri-inscribed-runebomb-discards-gold-card",
+      "card": "Inscribed Runebomb", "action": "Skill",
+      "source": ["snorri17__7728048__front.png"],
+      "setup": { "actor": { "level": 5 }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [2, 1, 3, 4], "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hero": "Trinkets", "hand": ["Rapid Redeployment"] } },
+      "answers": ["enemy-hero-1", "enemy-hero-1: discard Rapid Redeployment"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "card": "Rapid Redeployment", "state": "discarded" }]
+    },
+    {
+      "id": "snorri-rune-mastery-activates-inactive-rune-for-action",
+      "card": "Runic Dagger", "action": "Attack",
+      "source": ["snorri18__7730144__front.png", "snorri3__7728049__front.png"],
+      "setup": { "actor": { "level": 8, "ultimate": true }, "standing": ["actor played Inscribe the Runes last turn"], "rune-slots": [1, 2, 3, 4], "discard": ["Rune Sigils"], "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["rune: 3", "enemy-minion-1", "card: Rune Sigils"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Rune Sigils", "state": "retrieved" }]
+    }
+  ]
+}

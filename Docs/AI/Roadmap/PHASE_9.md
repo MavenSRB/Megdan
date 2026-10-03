@@ -87,9 +87,19 @@ Additional source-reader coverage backlog (parked, not passing coverage; recordi
 
 Min's Viper/Cobra staged-Smoke-bomb cases are explicitly synthetic diagnostics, not legal-reachability evidence under settled MI-Q13k; separate no-bomb attacks cover legal ordinary play. The five boxed Handicap faces remain outside standard dealt play under p.6.
 
-### [ ] 9.13e Tables for Hanu, Ignatia, Trinkets and Snorri, and the rulebook ledger invariants
+### [x] 9.13e Tables for Hanu, Ignatia, Trinkets and Snorri, and the rulebook ledger invariants
 
 Queued: the last four heroes, plus one invariant per numbered rulebook rule that changes lives, coins or levels, read from the page rather than the code. T2.
+
+Result: independent source-only readers froze the four tables and the printed rulebook economy map before implementation inspection. All ordinary faces and actual Ultimates have executable outcomes: Hanu 18, Ignatia 18, Trinkets 20 (including paired Ultimate-Radius controls), Snorri 18. Dispositions retain changed source proposals and settled rulings; none skips an E case. Test-only adapters observe owned obstacles, rewritten Initiative, actual action choosers, the coin/text face and real rune assignments; Defense scenarios can pin a printed attacking card. No production rules, content, identity, snapshot or wire change.
+
+[The source-to-check map](../Testing/RULEBOOK_LEDGER_INVARIANTS.md) owns numbered setup, lane-push and Attack-order coverage and the economy tables, including live no-reward respawn, pity ordering and mandatory level purchases. The four Handicap faces remain boxed; odd-player/two-hero-per-player/double-lane variants are source-only, not passing configured coverage.
+
+Supplemental Snorri table coverage is parked, not authorized or counted as passing. Owner: expected-outcome corpus maintainer. Dependencies: legal glyph assignments and real public turn/action transitions. Closing checks: remaining Attack glyph clauses need exact target, movement and retrieval outcomes; Hidden/Deep Passage need remaining traversal/immunity and expiry probes; Ancestral recovery/swap branches and Grace's item exchange need exact before/after card/item states; Oaths need later same-turn immunity and alternate category Blocks with named attacks; Runestone/Runebomb need remaining glyph-to-color discard and wrong-color controls; Inscribe persistence and Rune Mastery expiry need before/after rune sets across defeat, round and next-action boundaries. These supplement, not replace, the ordinary per-face outcomes and existing hero-specific tests.
+
+Completed 2026-10-03. The approved A-E sequence ends here; further work requires authorization.
+
+Historical evidence: [9.13e completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913e-final-four-outcome-tables-and-rulebook-evidence).
 
 ## Queued by 9.13, not authorized
 

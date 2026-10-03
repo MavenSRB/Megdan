@@ -14,11 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.13d**.
+- Current completed milestone: **9.13e**.
 - Active authorized milestone: **none**.
 - Approved sequence: **9.13a -> 9.13b -> 9.13c -> 9.13d -> 9.13e**, authorized 2026-10-03 ("Go for 9.13a/b", then "Up to E"). Separate validation and commits for each batch.
 - Delegation approved by the user; on 2026-10-03 they requested cost-aware model selection. Use lighter agents for bounded source-reading/table work in D/E, escalating ambiguous rules; retain source-only reader independence and serial integration/validation.
-- Next proposed milestone: **9.13e**.
+- Next proposed milestone: **10.1**.
+
+The approved A-E sequence is complete. Stop: no further work is authorized. The retained 10.1 route is publisher-pitch work, still parked by the private-game scope amendment; it requires a new user decision, not automatic continuation. Supplemental table branches and source-only variants remain visible in the 9.13e definition and testing map.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 

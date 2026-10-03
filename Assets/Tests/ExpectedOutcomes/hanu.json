@@ -1,0 +1,170 @@
+{
+  "hero": "Hanu",
+  "cases": [
+    {
+      "id": "hanu-fight-and-flight-attacks-then-moves",
+      "card": "Fight and Flight",
+      "action": "Attack",
+      "source": ["hanu__7635525__front.png", "rulebook pp. 10-11, 19"],
+      "setup": {"actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "adjacent to actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["enemy-hero-1", "distance 3"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 2}, {"ref": "actor", "moved": 3}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "hanu-hurry-up-targets-unresolved-card",
+      "card": "Hurry Up!",
+      "action": "Skill",
+      "source": ["hanu2__7635511__front.png", "rulebook pp. 7, 17"],
+      "setup": {"actor": {"level": 1}, "pieces": [{"ref": "friendly-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["friendly-hero-1"],
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "targetable": true}, {"ref": "friendly-hero-1", "unresolved-initiative": 11}]
+    },
+    {
+      "id": "hanu-helping-hand-adjacent-unit",
+      "card": "Helping Hand",
+      "action": "Attack",
+      "source": ["hanu3__7635516__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "adjacent to actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["option: Target a unit adjacent to you.", "enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 3}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "hanu-even-the-odds-extended-target",
+      "card": "Even the Odds",
+      "action": "Attack",
+      "source": ["hanu4__7635517__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "friendly-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-hero-1", "where": "adjacent to friendly-hero-1 and distance 2 from actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["option: Target a hero in range, adjacent to your friendly hero.", "enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 4}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "hanu-outnumber-attacks-minion-by-friend",
+      "card": "Outnumber",
+      "action": "Attack",
+      "source": ["hanu5__7635520__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "friendly-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to friendly-hero-1 and distance 2 from actor", "battle-zone": true}]},
+      "answers": ["option: Target a minion in range, adjacent to your friendly hero.", "enemy-minion-1"],
+      "expect": [{"offered": true}, {"ref": "enemy-minion-1", "is": "defeated"}]
+    },
+    {
+      "id": "hanu-trusted-sidekick-two-modes-first",
+      "card": "Trusted Sidekick",
+      "action": "Attack",
+      "source": ["hanu6__7635518__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "adjacent to actor"}], "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["option: Target a unit adjacent to you.", "enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "attack": 4}, {"ref": "enemy-hero-1", "is": "not defeated"}]
+    },
+    {
+      "id": "hanu-pile-on-attacks-with-friend",
+      "card": "Pile On",
+      "action": "Attack",
+      "source": ["hanu7__7635512__front.png", "rulebook pp. 10, 13-14"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "friendly-hero-1", "where": "distance 2 from actor"}, {"ref": "enemy-minion-1", "where": "adjacent to friendly-hero-1 and distance 2 from actor", "battle-zone": true}]},
+      "answers": ["option: Target a minion in range, adjacent to your friendly hero.", "enemy-minion-1"],
+      "expect": [{"offered": true}, {"ref": "enemy-minion-1", "is": "defeated"}]
+    },
+    {
+      "id": "hanu-unexpected-journey-swap-returns",
+      "card": "Unexpected Journey",
+      "action": "Skill",
+      "source": ["hanu8__7635528__front.png", "rulebook pp. 17, 19"],
+      "setup": {"actor": {"level": 1}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1"],
+      "checkpoint": "end-of-turn",
+      "expect": [{"offered": true}, {"ref": "actor", "at": "distance 0 from actor"}, {"ref": "enemy-hero-1", "at": "distance 2 from actor"}]
+    },
+    {
+      "id": "hanu-there-and-back-again-swaps",
+      "card": "There and Back Again",
+      "action": "Skill",
+      "source": ["hanu9__7635513__front.png", "rulebook pp. 17, 19"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "swapped-with": "enemy-hero-1"}]
+    },
+    {
+      "id": "hanu-this-way-moves-pair",
+      "card": "This Way!",
+      "action": "Skill",
+      "source": ["hanu10__7635523__front.png", "rulebook pp. 11, 19"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}]},
+      "answers": ["friendly-hero-1", "option: Move both of us 2 spaces", "distance 2"],
+      "expect": [{"offered": true}, {"ref": "actor", "moved": 2}, {"ref": "friendly-hero-1", "moved": 2}]
+    },
+    {
+      "id": "hanu-safe-travels-swap-and-step",
+      "card": "Safe Travels",
+      "action": "Skill",
+      "source": ["hanu11__7635522__front.png", "rulebook pp. 11, 17, 19"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1", "distance 1"],
+      "checkpoint": "end-of-turn",
+      "expect": [{"offered": true}, {"ref": "actor", "moved": 1}]
+    },
+    {
+      "id": "hanu-that-way-moves-three",
+      "card": "That Way!",
+      "action": "Skill",
+      "source": ["hanu12__7635524__front.png", "rulebook pp. 11, 19"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}]},
+      "answers": ["friendly-hero-1", "option: Move both of us 3 spaces", "distance 3"],
+      "expect": [{"offered": true}, {"ref": "actor", "moved": 3}, {"ref": "friendly-hero-1", "moved": 3}]
+    },
+    {
+      "id": "hanu-monkey-trick-friendly-swap",
+      "card": "Monkey Trick",
+      "action": "Skill",
+      "source": ["hanu13__7635529__front.png", "rulebook p. 19"],
+      "setup": {"actor": {"level": 1}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}, {"ref": "friendly-hero-2", "where": "adjacent to actor"}]},
+      "answers": ["friendly-hero-1", "friendly-hero-2"],
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "swapped-with": "friendly-hero-2"}]
+    },
+    {
+      "id": "hanu-monkey-twist-friendly-swap",
+      "card": "Monkey Twist",
+      "action": "Skill",
+      "source": ["hanu14__7635519__front.png", "rulebook p. 19"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}, {"ref": "friendly-hero-2", "where": "distance 2 from actor"}]},
+      "answers": ["friendly-hero-1", "friendly-hero-2"],
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "swapped-with": "friendly-hero-2"}]
+    },
+    {
+      "id": "hanu-hear-nothing-enemy-swap",
+      "card": "Hear Nothing",
+      "action": "Skill",
+      "source": ["hanu15__7635515__front.png", "rulebook p. 19"],
+      "setup": {"actor": {"level": 4}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1"],
+      "expect": [{"offered": true}, {"ref": "actor", "swapped-with": "enemy-hero-1"}]
+    },
+    {
+      "id": "hanu-monkey-business-swap-and-move",
+      "card": "Monkey Business",
+      "action": "Skill",
+      "source": ["hanu16__7635521__front.png", "rulebook pp. 11, 19"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}, {"ref": "friendly-hero-2", "where": "distance 2 from actor"}]},
+      "answers": ["friendly-hero-1", "friendly-hero-2", "distance 1"],
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "swapped-with": "friendly-hero-2"}, {"ref": "actor", "moved": 1}]
+    },
+    {
+      "id": "hanu-see-nothing-swap-and-move",
+      "card": "See Nothing",
+      "action": "Skill",
+      "source": ["hanu17__7635527__front.png", "rulebook pp. 11, 19"],
+      "setup": {"actor": {"level": 7}, "pieces": [{"ref": "enemy-hero-1", "where": "distance 2 from actor"}]},
+      "answers": ["enemy-hero-1", "distance 1"],
+      "expect": [{"offered": true}, {"ref": "enemy-hero-1", "at-initial": "distance 0 from actor"}, {"ref": "actor", "at-initial": "distance 1 from enemy-hero-1"}]
+    },
+    {
+      "id": "hanu-ultimate-trick-directs-next-action",
+      "card": "Hurry Up!",
+      "action": "Skill",
+      "source": ["hanu18__7635514__front.png", "hanu2__7635511__front.png", "rulebook pp. 7, 16-17"],
+      "setup": {"actor": {"level": 8, "ultimate": true}, "pieces": [{"ref": "friendly-hero-1", "where": "adjacent to actor"}, {"ref": "enemy-hero-1", "where": "adjacent to friendly-hero-1"}], "friendly-hero-1": {"hero": "Wasp"}, "enemy-hero-1": {"defends-with": 5}},
+      "answers": ["friendly-hero-1"],
+      "follow-up": {"hero": "friendly-hero-1", "card": "Shock", "action": "Attack", "answers": ["enemy-hero-1"], "offered": true},
+      "expect": [{"offered": true}, {"ref": "friendly-hero-1", "action-chosen-by": "actor"}, {"ref": "friendly-hero-1", "attack-count": 1}]
+    }
+  ]
+}
