@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-03
+Last updated: 2026-10-04
 
 ## Purpose and authority
 
@@ -14,11 +14,12 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.44**.
-- Active authorized milestone: **None - the approved 9.41 -> 9.44 sequence is complete.**
-- Approved sequence: **9.41 -> 9.42 -> 9.43 -> 9.44**, authorized 2026-10-03: readable faded-card hover without duplicate text, persistent level-up visibility, attack-before-after-attack presentation ordering, then authoritative hero-hover Defense contributors using the approved number-only shield design. Separate validation and commits.
-- Delegation remains allowed from the earlier user direction, but the current sequence is executing serially in one implementation agent.
-- Next proposed milestone: **None; await the user's next direction.**
+- Current completed milestone: **9.45**.
+- Active authorized milestone: **none**.
+- Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E2 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. Execute serially with separate validation and commits.
+- This sequence uses one implementation agent.
+- Next proposed milestone: **9.46**.
+- Next route: **9.46** Emmitt turn and position history, then the rest of the approved final-two-hero sequence; stop after 9.54 or at a genuinely new decision outside scope.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 

@@ -88,4 +88,4 @@ Milestone 8.35b reuses this HUD after the primitive lobby: it binds the admitted
 
 ## Maintenance rule
 
-Maintain this as a subject-oriented snapshot of what the player-facing HUD does now. Replace or consolidate affected statements when behavior changes; do not append a milestone-by-milestone journal. Detailed completed outcome, validation, and review evidence belongs once in the commit message body, addressed by SHA, with one row in the indexed phase-handoff archive.
+Follow [documentation governance](../DOCUMENTATION_GOVERNANCE.md#history-and-archive-workflow) for subject-oriented upkeep and evidence. That authority owns the complete handoff rule.

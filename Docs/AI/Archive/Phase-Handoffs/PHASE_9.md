@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.45 Final-two-hero inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.45 | Emmitt and NebKher: all thirty-eight fronts, profiles, dashboards, backs, printed clauses, values, item glyphs and upgrade lines inventoried; six rule readings settled by the user and both three-token supplies confirmed; separate implementation contracts mapped. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-945-inventory-the-final-two-heroes-and-map-their-contracts). | `milestone/9.45` |
+
 ## Milestone 9.44 Hero-hover Defense contributors evidence
 
 | Milestone | Outcome and definition | Commit |
