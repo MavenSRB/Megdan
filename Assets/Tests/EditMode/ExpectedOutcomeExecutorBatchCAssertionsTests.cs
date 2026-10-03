@@ -44,6 +44,19 @@ namespace GuardsDigital.Tests.EditMode
                 expectation), correct, "it is at");
         }
 
+        // Batch D: equality to a named initial position must be expressible after a swap.
+        [TestCase(true)]
+        [TestCase(false)]
+        public void AtInitial_ZeroDistanceChecksTheExactOriginalSpace(bool correct)
+        {
+            var reference = correct ? "actor" : "enemy-hero-1";
+            var expectation = "{\"ref\":\"enemy-hero-1\",\"at-initial\":\"distance 0 from " + reference + "\"}";
+            Verify(Run("Brynn",
+                @"{""id"":""probe"",""card"":""Tread Lightly"",""action"":""Skill"",
+                    ""setup"":{""pieces"":[{""ref"":""enemy-hero-1"",""where"":""adjacent to actor""}]},
+                    ""answers"":[""enemy-hero-1""]}", expectation), correct, "it is at");
+        }
+
         // cutter-brace-for-impact-charge-through-obstacle: charge changes the actor's coordinate.
         [TestCase(true)]
         [TestCase(false)]

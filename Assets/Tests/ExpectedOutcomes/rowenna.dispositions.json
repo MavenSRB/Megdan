@@ -1,0 +1,65 @@
+[
+  {
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged.",
+    "id": "rowenna-throw-the-gauntlet-places-next-to-enemy-hero",
+    "ref": "rowenna2__7645264__front.png; rulebook p.9; rulebook p.12; rulebook p.18",
+    "execute": true,
+    "kind": "not-executable"
+  },
+  {
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged.",
+    "id": "rowenna-stand-guard-swaps-with-friendly-hero",
+    "ref": "rowenna8__7550331__front.png; rulebook p.9; rulebook p.12; rulebook p.19",
+    "execute": true,
+    "kind": "not-executable"
+  },
+  {
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged.",
+    "id": "rowenna-protect-the-weak-swaps-with-friendly-hero",
+    "ref": "rowenna9__7550332__front.png; rulebook p.9; rulebook p.12; rulebook p.19",
+    "execute": true,
+    "kind": "not-executable"
+  },
+  {
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged.",
+    "id": "rowenna-accept-surrender-defeats-hero-with-empty-hand",
+    "ref": "rowenna10__7605650__front.png; rulebook p.9; rulebook p.12; rulebook p.13",
+    "execute": true,
+    "kind": "not-executable"
+  },
+  {
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged.",
+    "id": "rowenna-defend-the-innocent-swaps-and-retrieves",
+    "ref": "rowenna11__7550335__front.png; rulebook p.9; rulebook p.10; rulebook p.12; rulebook p.19",
+    "execute": true,
+    "kind": "not-executable"
+  },
+  {
+    "execute": true,
+    "id": "rowenna-glorious-triumph-defeats-hero-and-triples-assist",
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged. Removed unsupported enemy.level1 because every other staged hero already defaults to Level1. Empty hand alone retained only an arbitrary TierIII commitment; the reward reads lowest owned active tier, not Level. Explicit Min with discarded TierI Crane Stance preserves original intended lowestTierI and triple-assist3; Level1 and Life1 are also checked.",
+    "ref": "rowenna12__7624923__front.png; rulebook p.9; rulebook p.12; rulebook p.13",
+    "kind": "not-executable"
+  },
+  {
+    "execute": true,
+    "id": "rowenna-close-quarters-places-enemy-minion",
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged. Printed numbered bullets (1)/(2) were not parsed by the generic table adapter; retain printed option text and correct that grammar. Explicitly name selected minions in answer sequence.",
+    "ref": "rowenna13__7727061__front.png; rulebook p.9; rulebook p.10; rulebook p.11; rulebook p.18",
+    "kind": "executor-gap"
+  },
+  {
+    "execute": true,
+    "id": "rowenna-melee-places-enemy-minion",
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged. Printed numbered bullets (1)/(2) were not parsed by the generic table adapter; retain printed option text and correct that grammar. Explicitly name selected minions in answer sequence.",
+    "ref": "rowenna14__7727060__front.png; rulebook p.9; rulebook p.10; rulebook p.11; rulebook p.18",
+    "kind": "executor-gap"
+  },
+  {
+    "execute": true,
+    "id": "rowenna-grand-melee-places-two-minions",
+    "note": "Removed redundant defends-with:none from non-Attack fixture: original case never intended a Defense question. Expected printed effects unchanged. Printed numbered bullets (1)/(2) were not parsed by the generic table adapter; retain printed option text and correct that grammar. Explicitly name selected minions in answer sequence.",
+    "ref": "rowenna16__7727058__front.png; rulebook p.9; rulebook p.10; rulebook p.11; rulebook p.18",
+    "kind": "executor-gap"
+  }
+]

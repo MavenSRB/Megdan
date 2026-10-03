@@ -227,7 +227,7 @@ namespace GuardsDigital.Tests.EditMode
                 if (match.Groups[3].Success) placement.Line = "straight";
                 if (match.Groups[4].Success) placement.Through = match.Groups[4].Value;
                 if (match.Groups[5].Success) placement.Line = "off";
-                return placement.D >= 1 ? placement : null;
+                return placement.D >= 0 ? placement : null;
             }
 
             if ((match = BeyondPattern.Match(text)).Success)
@@ -2176,7 +2176,7 @@ namespace GuardsDigital.Tests.EditMode
                 return answer;
             }
 
-            private enum AnswerShape { None, Reference, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline, Color }
+            private enum AnswerShape { None, Reference, Confirm, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline, Color }
 
             private AnswerShape ShapeOf(string answer, out string value, out string who)
             {
@@ -2218,6 +2218,7 @@ namespace GuardsDigital.Tests.EditMode
                     return AnswerShape.Reference;
                 }
 
+                if (text == "confirm") return AnswerShape.Confirm;
                 if (text == "decline") return AnswerShape.Decline;
                 Match match;
                 if ((match = Regex.Match(text, "^distance ([0-9]+)$")).Success)
@@ -2675,6 +2676,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (choice.Kind == EffectChoiceKind.ConfirmOrDecline)
                 {
+                    if (shape == AnswerShape.Confirm && confirm != null) return Consume(confirm);
                     if ((shape == AnswerShape.Decline || shape == AnswerShape.RefDefeat) && decline != null) return Consume(decline);
                     if (confirm != null) return confirm;
                     throw NotCovered(projection, contract, next);
@@ -2926,15 +2928,24 @@ namespace GuardsDigital.Tests.EditMode
 
             /// <summary>
             /// A face's printed bullets: after '•' marks, or - where the transcription writes a
-            /// "Choose ... -" clause with its arms separated by " / " - those arms.
+            /// "Choose ... -" clause with slash-separated or consecutively numbered arms - those arms.
             /// </summary>
             private static List<string> Bullets(string printed)
             {
                 if (printed.IndexOf('\u2022') >= 0) return printed.Split('\u2022').Skip(1).ToList();
                 var clause = Regex.Match(printed, "choose[^-\u2014\u2013.]*[-\u2014\u2013]\\s*(.*)$",
                     RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant);
-                return clause.Success ? clause.Groups[1].Value.Split(new[] { " / " }, StringSplitOptions.None).ToList()
-                    : new List<string>();
+                if (!clause.Success) return new List<string>();
+                var body = clause.Groups[1].Value;
+                if (body.StartsWith("(1)", StringComparison.Ordinal))
+                {
+                    var marks = Regex.Matches(body, @"\(([1-9][0-9]*)\)\s*");
+                    if (marks.Count > 1 && marks.Cast<Match>().Select((mark, index) =>
+                            mark.Groups[1].Value == (index + 1).ToString(CultureInfo.InvariantCulture)).All(value => value))
+                        return marks.Cast<Match>().Select((mark, index) => body.Substring(mark.Index + mark.Length,
+                            (index + 1 < marks.Count ? marks[index + 1].Index : body.Length) - mark.Index - mark.Length)).ToList();
+                }
+                return body.Split(new[] { " / " }, StringSplitOptions.None).ToList();
             }
 
             private static string Words(string text) =>

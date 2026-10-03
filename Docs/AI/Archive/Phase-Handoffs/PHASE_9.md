@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13d Fourth-five outcome tables evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13d | Independent Garrus, Widget, Rowenna, Min and Brynn tables, preserved disagreement dispositions, explicit synthetic-state limitations and bounded test-only grammar corrections. [Definition](../../Roadmap/PHASE_9.md#x-913d-tables-for-garrus-widget-rowenna-min-and-brynn). | `milestone/9.13d` |
+
 ## Milestone 9.13c Third-five outcome tables evidence
 
 | Milestone | Outcome and definition | Commit |

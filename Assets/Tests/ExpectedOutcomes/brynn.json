@@ -1,0 +1,173 @@
+{
+  "hero": "Brynn",
+  "cases": [
+    {
+      "id": "brynn-familiar-ground-adjacent-unit",
+      "card": "Familiar Ground", "action": "Attack",
+      "source": ["brynn__7690719__front.png", "rulebook p.9", "rulebook p.13"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["option: Target a unit adjacent to you.", "enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }]
+    },
+    {
+      "id": "brynn-familiar-ground-obstacle-gated-hero",
+      "card": "Familiar Ground", "action": "Attack",
+      "source": ["brynn__7690719__front.png", "rulebook p.9", "rulebook p.18"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-hero-1", "where": "distance 2 from actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-3", "where": "adjacent to enemy-hero-1" }], "enemy-hero-1": { "defends-with": 2 } },
+      "answers": ["option: Target a hero in range who is adjacent to 3 or more obstacles.", "enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "targetable": true }, { "ref": "actor", "attack": 2 }, { "ref": "enemy-hero-1", "is": "not defeated" }]
+    },
+    {
+      "id": "brynn-decoy-moves-enemy-minion",
+      "card": "Decoy", "action": "Skill",
+      "source": ["brynn2__7711616__front.png", "rulebook p.10", "rulebook p.11"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["option: Move an enemy minion in radius 1 space.", "enemy-minion-1", "distance 1", "decline"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "moved": 1 }]
+    },
+    {
+      "id": "brynn-high-ground-obstacle-bonus",
+      "card": "High Ground", "action": "Attack",
+      "source": ["brynn3__7696235__front.png", "rulebook p.13", "rulebook p.18"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }], "enemy-hero-1": { "defends-with": 6 } },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack": 6 }, { "ref": "enemy-hero-1", "is": "not defeated" }]
+    },
+    {
+      "id": "brynn-elevated-ambush-obstacle-bonus",
+      "card": "Elevated Ambush", "action": "Attack",
+      "source": ["brynn4__7696236__front.png", "rulebook p.13", "rulebook p.18"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }], "enemy-hero-1": { "defends-with": 6 } },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack": 7 }, { "ref": "enemy-hero-1", "is": "defeated" }]
+    },
+    {
+      "id": "brynn-split-attack-adjacent-repeat",
+      "card": "Split Attack", "action": "Attack",
+      "source": ["brynn5__7690722__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "enemy-hero-1", "where": "distance 2 from actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-3", "where": "adjacent to enemy-hero-1" }, { "ref": "enemy-minion-1", "where": "adjacent to actor" }], "enemy-hero-1": { "defends-with": 3 } },
+      "answers": ["enemy-hero-1", "enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack-count": 2 }, { "ref": "enemy-hero-1", "is": "not defeated" }, { "ref": "enemy-minion-1", "is": "defeated" }]
+    },
+    {
+      "id": "brynn-peak-precision-retrieves-after-attack",
+      "card": "Peak Precision", "action": "Attack",
+      "source": ["brynn6__7696234__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Peak Precision", "state": "resolved" }]
+    },
+    {
+      "id": "brynn-peak-precision-qualifying-hero-retrieves",
+      "card": "Peak Precision", "action": "Attack",
+      "source": ["brynn6__7696234__front.png", "rulebook p.10", "rulebook p.13", "rulebook p.14", "rulebook p.18"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }], "enemy-hero-1": { "defends-with": 7 } },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack": 7 }, { "ref": "enemy-hero-1", "is": "not defeated" }, { "card": "Peak Precision", "state": "retrieved" }]
+    },
+    {
+      "id": "brynn-split-throw-repeats-on-different-ranged-unit",
+      "card": "Split Throw", "action": "Attack",
+      "source": ["brynn7__7690723__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "distance 2 from actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-3", "where": "adjacent to enemy-hero-1" }, { "ref": "enemy-hero-2", "where": "distance 2 from actor" }], "enemy-hero-1": { "defends-with": 3 }, "enemy-hero-2": { "defends-with": 3 } },
+      "answers": ["enemy-hero-1", "enemy-hero-2"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack-count": 2 }, { "ref": "enemy-hero-1", "is": "not defeated" }, { "ref": "enemy-hero-2", "is": "not defeated" }]
+    },
+    {
+      "id": "brynn-tread-lightly-swaps-adjacent-unit",
+      "card": "Tread Lightly", "action": "Skill",
+      "source": ["brynn8__7690726__front.png", "rulebook p.12", "rulebook p.19"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "swapped-with": "enemy-hero-1" }]
+    },
+    {
+      "id": "brynn-cover-tracks-swaps-and-moves",
+      "card": "Cover Tracks", "action": "Skill",
+      "source": ["brynn9__7690727__front.png", "rulebook p.11", "rulebook p.19"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-hero-1", "distance 1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "at-initial": "distance 0 from actor" }, { "ref": "actor", "at-initial": "distance 1 from enemy-hero-1" }, { "ref": "actor", "moved": 2 }]
+    },
+    {
+      "id": "brynn-mountain-guide-moves-friendly-unit",
+      "card": "Mountain Guide", "action": "Skill",
+      "source": ["brynn10__7724914__front.png", "rulebook p.11", "rulebook p.17"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "friendly-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["friendly-hero-1", "distance 2"],
+      "expect": [{ "offered": true }, { "ref": "friendly-hero-1", "moved": 2 }]
+    },
+    {
+      "id": "brynn-hide-traces-swaps-and-moves-two",
+      "card": "Hide Traces", "action": "Skill",
+      "source": ["brynn11__7690728__front.png", "rulebook p.11", "rulebook p.19"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-hero-1", "distance 2"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "at-initial": "distance 0 from actor" }, { "ref": "actor", "at-initial": "distance 2 from enemy-hero-1" }, { "ref": "actor", "moved": 3 }]
+    },
+    {
+      "id": "brynn-expedition-leader-moves-friendly-unit",
+      "card": "Expedition Leader", "action": "Skill",
+      "source": ["brynn12__7724915__front.png", "rulebook p.11", "rulebook p.17"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "friendly-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["friendly-hero-1", "distance 3"],
+      "expect": [{ "offered": true }, { "ref": "friendly-hero-1", "moved": 3 }]
+    },
+    {
+      "id": "brynn-bear-trap-makes-adjacent-hero-discard",
+      "card": "Bear Trap", "action": "Skill",
+      "source": ["brynn13__7715988__front.png", "rulebook p.10", "rulebook p.12"],
+      "setup": { "actor": { "level": 1 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["option: An enemy hero adjacent to you discards a card, if able.", "enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "hand": -1 }]
+    },
+    {
+      "id": "brynn-log-trap-makes-gated-hero-discard",
+      "card": "Log Trap", "action": "Skill",
+      "source": ["brynn14__7715987__front.png", "rulebook p.10", "rulebook p.18"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "enemy-hero-1", "where": "distance 3 from actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-3", "where": "adjacent to enemy-hero-1" }] },
+      "answers": ["option: An enemy hero in radius who is adjacent to 3 or more obstacles discards a card, if able.", "enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "hand": -1 }]
+    },
+    {
+      "id": "brynn-true-grit-retrieves-discarded-attack",
+      "card": "True Grit", "action": "Skill",
+      "source": ["brynn15__7418476__front.png", "rulebook p.10", "rulebook p.12"],
+      "setup": { "actor": { "level": 4, "discard": ["Familiar Ground"] } },
+      "answers": ["card: Familiar Ground"],
+      "expect": [{ "offered": true }, { "card": "Familiar Ground", "state": "retrieved" }]
+    },
+    {
+      "id": "brynn-deadfall-trap-hero-takes-defeat",
+      "card": "Deadfall Trap", "action": "Skill",
+      "source": ["brynn16__7715986__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["option: An enemy hero adjacent to you discards a card, or is defeated.", "enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "hand": -1 }, { "ref": "enemy-hero-1", "is": "not defeated" }]
+    },
+    {
+      "id": "brynn-deadfall-trap-empty-hand-defeats",
+      "card": "Deadfall Trap", "action": "Skill",
+      "source": ["brynn16__7715986__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "hand": [] } },
+      "answers": ["option: An enemy hero adjacent to you discards a card, or is defeated.", "enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "is": "defeated" }]
+    },
+    {
+      "id": "brynn-die-hard-retrieves-and-moves",
+      "card": "Die Hard", "action": "Skill",
+      "source": ["brynn17__7418486__front.png", "rulebook p.10", "rulebook p.11"],
+      "setup": { "actor": { "level": 7, "discard": ["Familiar Ground"] }, "pieces": [{ "ref": "enemy-hero-1", "where": "distance 3 from actor" }, { "ref": "obstacle-1", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-2", "where": "adjacent to enemy-hero-1" }, { "ref": "obstacle-3", "where": "adjacent to enemy-hero-1" }] },
+      "answers": ["card: Familiar Ground", "distance 4"],
+      "expect": [{ "offered": true }, { "card": "Familiar Ground", "state": "retrieved" }, { "ref": "actor", "moved": 4 }]
+    },
+    {
+      "id": "brynn-over-the-top-makes-peak-precision-bonus-unconditional",
+      "card": "Peak Precision", "action": "Attack",
+      "source": ["brynn6__7696234__front.png", "brynn18__7550498__front.png", "rulebook p.16", "rulebook p.18"],
+      "setup": { "actor": { "level": 8, "ultimate": true }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }], "enemy-hero-1": { "defends-with": 7 } },
+      "answers": ["enemy-hero-1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "attack": 7 }, { "ref": "enemy-hero-1", "is": "not defeated" }, { "card": "Peak Precision", "state": "retrieved" }]
+    }
+  ]
+}

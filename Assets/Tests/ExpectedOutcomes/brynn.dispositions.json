@@ -1,0 +1,56 @@
+[
+  {
+    "id": "brynn-peak-precision-retrieves-after-attack",
+    "kind": "ruling",
+    "ref": "tmp/9-13d/9-13d-brynn-first.trx; Docs/AI/Rules/HERO_BRYNN.md BR-Q7; brynn6__7696234__front.png; rulebook p.14",
+    "note": "The frozen reader expected retrieval after attacking a minion. Settled BR-Q7 binds the After-the-attack retrieval to the same qualifying-hero condition as +2 Attack; this minion defeat leaves Peak Precision resolved. A separate qualifying-hero case now requires retrieval.",
+    "expect-override": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Peak Precision", "state": "resolved" }],
+    "original-case": {
+      "id": "brynn-peak-precision-retrieves-after-attack", "card": "Peak Precision", "action": "Attack",
+      "source": ["brynn6__7696234__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-minion-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-minion-1"],
+      "expect": [{ "offered": true }, { "ref": "enemy-minion-1", "is": "defeated" }, { "card": "Peak Precision", "state": "retrieved" }]
+    }
+  },
+  {
+    "id": "brynn-cover-tracks-swaps-and-moves",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13d/9-13d-brynn-first.trx; brynn9__7690727__front.png; rulebook p.11; rulebook p.19",
+    "note": "Frozen swapped-with and moved facts measured only the final state. Trace shows the enemy in Brynn's initial space and Brynn one card-text move beyond the enemy's initial space. at-initial facts preserve those separate outcomes; moved is final displacement (2), including the swap, not the printed one-space walk alone.",
+    "original-case": {
+      "id": "brynn-cover-tracks-swaps-and-moves", "card": "Cover Tracks", "action": "Skill",
+      "source": ["brynn9__7690727__front.png", "rulebook p.11", "rulebook p.19"],
+      "setup": { "actor": { "level": 4 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-hero-1", "distance 1"],
+      "expect": [{ "offered": true }, { "ref": "actor", "swapped-with": "enemy-hero-1" }, { "ref": "actor", "moved": 1 }]
+    }
+  },
+  {
+    "id": "brynn-hide-traces-swaps-and-moves-two",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13d/9-13d-brynn-first.trx; brynn11__7690728__front.png; rulebook p.11; rulebook p.19",
+    "note": "Frozen swapped-with and moved facts measured only the final state. Trace shows the enemy in Brynn's initial space and Brynn two card-text moves beyond the enemy's initial space. at-initial facts preserve those separate outcomes; moved is final displacement (3), including the swap, not the printed two-space walk alone.",
+    "original-case": {
+      "id": "brynn-hide-traces-swaps-and-moves-two", "card": "Hide Traces", "action": "Skill",
+      "source": ["brynn11__7690728__front.png", "rulebook p.11", "rulebook p.19"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["enemy-hero-1", "distance 2"],
+      "expect": [{ "offered": true }, { "ref": "actor", "swapped-with": "enemy-hero-1" }, { "ref": "actor", "moved": 2 }]
+    }
+  },
+  {
+    "id": "brynn-deadfall-trap-hero-takes-defeat",
+    "kind": "ruling",
+    "ref": "tmp/9-13d/9-13d-brynn-first.trx; Docs/AI/Rules/HERO_BRYNN.md BR-Q11; brynn16__7715986__front.png; rulebook p.10; rulebook p.13",
+    "note": "Frozen reader treated 'or is defeated' as an elective enemy answer. Settled BR-Q11 makes defeat the inability escalation: the hero with a card must discard one. The empty-hand case now requires the Defeat, while this case requires the hand loss and survival.",
+    "expect-override": [{ "offered": true }, { "ref": "enemy-hero-1", "hand": -1 }, { "ref": "enemy-hero-1", "is": "not defeated" }],
+    "original-case": {
+      "id": "brynn-deadfall-trap-hero-takes-defeat", "card": "Deadfall Trap", "action": "Skill",
+      "source": ["brynn16__7715986__front.png", "rulebook p.10", "rulebook p.13"],
+      "setup": { "actor": { "level": 7 }, "pieces": [{ "ref": "enemy-hero-1", "where": "adjacent to actor" }] },
+      "answers": ["option: An enemy hero adjacent to you discards a card, or is defeated.", "enemy-hero-1", "enemy-hero-1: take defeat"],
+      "expect": [{ "offered": true }, { "ref": "enemy-hero-1", "is": "defeated" }]
+    }
+  }
+]

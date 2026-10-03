@@ -73,9 +73,19 @@ Additional source-reader coverage backlog (parked, not passing coverage; recordi
 | Cutter A Fistful of Coins solo win | Match-outcome and solo-winner assertions | Ten coins plus three wins for Cutter alone, including loss for her teammates; nine plus three does not win under CU-D1. |
 | Cutter Legend of the Skies limit | Scoped primary-action/grant history | First primary grants the previous own-slot action once; borrowed primary cannot recurse; turn-one no-previous-slot control. |
 
-### [ ] 9.13d Tables for Garrus, Widget, Rowenna, Min and Brynn
+### [x] 9.13d Tables for Garrus, Widget, Rowenna, Min and Brynn
 
 Queued as 9.13a. T2.
+
+Result: source-only readings integrated as 95 executed cases covering every ordinary face and each actual Ultimate effect. Dispositions retain original disagreements, source corrections and staging adaptations. Test-only generic grammar now accepts consecutive numbered bullets, exact zero-distance position assertions and explicit confirm answers, with refusal/wrong-fact controls. No production rule, content identity, snapshot or wire changes.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.13d completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913d-fourth-five-outcome-tables-evidence).
+
+Additional source-reader coverage backlog (parked, not passing coverage; recording does not authorize expansion). Owner: expected-outcome corpus maintainer. Dependencies and closing checks: Garrus's Howl aura needs a follow-up Fast Travel offer and an outside-radius control; Rowenna's Paragon of Grace repeat needs two adjacent enemy units and both Defeats after the coin; Brynn's conditional branches need two distinct Decoy targets, obstacle-qualified remote swap targets, and guides' second different friendly unit, each with its condition absent as a negative control. Ordinary per-face outcomes are separate. Widget paired-move boundary: an exact common-vector assertion with a blocked endpoint control, beyond the current equal-distance/adjacency outcome.
+
+Min's Viper/Cobra staged-Smoke-bomb cases are explicitly synthetic diagnostics, not legal-reachability evidence under settled MI-Q13k; separate no-bomb attacks cover legal ordinary play. The five boxed Handicap faces remain outside standard dealt play under p.6.
 
 ### [ ] 9.13e Tables for Hanu, Ignatia, Trinkets and Snorri, and the rulebook ledger invariants
 

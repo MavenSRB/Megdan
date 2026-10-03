@@ -45,6 +45,11 @@ namespace GuardsDigital.Tests.EditMode
             yield return new TestCaseData("swift", SwiftCardContent.DealtDefinitions).SetName("coverage/swift");
             yield return new TestCaseData("cutter", CutterCardContent.DealtDefinitions).SetName("coverage/cutter");
             yield return new TestCaseData("bain", BainCardContent.DealtDefinitions).SetName("coverage/bain");
+            yield return new TestCaseData("garrus", GarrusCardContent.DealtDefinitions).SetName("coverage/garrus");
+            yield return new TestCaseData("widget", WidgetCardContent.DealtDefinitions).SetName("coverage/widget");
+            yield return new TestCaseData("rowenna", RowennaCardContent.DealtDefinitions).SetName("coverage/rowenna");
+            yield return new TestCaseData("min", MinCardContent.DealtDefinitions).SetName("coverage/min");
+            yield return new TestCaseData("brynn", BrynnCardContent.DealtDefinitions).SetName("coverage/brynn");
         }
 
         [TestCaseSource(nameof(CompletedBatchHeroes))]
