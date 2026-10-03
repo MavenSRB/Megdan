@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.41 Readable faded-card hover evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.41 | A faded tray card's pointer/keyboard inspection redraws its complete face at full brightness, then restores the untouched resting fade; printed rules remain on the face rather than repeating in a tooltip, and unavailable-card commands remain absent. [Definition](../../Roadmap/PHASE_9.md#x-941-readable-faded-card-hover). | `milestone/9.41` |
+
 ## Milestone 9.13f Supplemental outcome coverage evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -2312,6 +2312,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "map clicks even if its contents ignored picking.");
             var fullFace = Descendants(preview)
                 .Single(element => element.name == "gd-card-preview");
+            var inspectedCard = root.Runtime.HandsView.Model.ViewedHand.TrayCards
+                .Single(model => model.AssistiveLabel == card.tooltip);
+            Assert.That(card.tooltip, Is.EqualTo(inspectedCard.AssistiveLabel),
+                "The complete printed face needs no second tooltip repeating its rules text.");
+            Assert.That(fullFace.resolvedStyle.opacity, Is.EqualTo(1f),
+                "The inspection face is restored to full brightness while the resting card remains " +
+                "the pointer target underneath it.");
             Assert.That(fullFace.worldBound.width,
                 Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()));
             Assert.That(fullFace.worldBound.height,

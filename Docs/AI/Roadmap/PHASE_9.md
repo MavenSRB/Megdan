@@ -26,11 +26,17 @@ Milestones 9.13 through 9.13f are complete; their definitions live in [the compl
 
 #### [x] 9.13f Close recorded supplemental outcome coverage
 
-### [~] 9.41 Readable faded-card hover
+### [x] 9.41 Readable faded-card hover
 
 Authorized 2026-10-03 after 9.13f: faded cards display at full brightness on hover; remove the redundant separate card-text tooltip, preserving printed face text and action eligibility. T2: faded/readable/restored states, unchanged unavailable-card input, affected card-hover regressions and focused Unity player-path/visual checks. No level-up or network correction is implied.
 
-### [ ] 9.42 Preserve the standing level-up window across spotlight completion
+Result: the ordinary hand's shared full-face hover replacement explicitly renders at full opacity and omits the resting unavailable veil, while the hidden anchor retains its projected unavailable or resolution-dimmed state and returns unchanged on exit. Tray controls keep only `AssistiveLabel` as their tooltip; the complete face remains the sole rendering of printed rules text. The unavailable group stays enabled and focusable for inspection but carries no selection or drag command. Focused Unity evidence: Edit Mode 2/2 (`UnavailableCards_RetainDimmingAndRebuildWithoutDuplicatesCommandsOrHiddenIdentityLeaks`, `TheResolvingCard_ShinesWhileTheRestOfTheHandDims_UntilItResolvesAndReleases`) and Play Mode 1/1 (`Scene_OverlappedHandHoverRevealDoesNotStealTheCardClick`), with zero skips or inconclusive cases.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.41 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-941-readable-faded-card-hover-evidence).
+
+### [~] 9.42 Preserve the standing level-up window across spotlight completion
 
 Authorized 2026-10-03: "Yes, reproduce and fix it." Joining players report the level-up window briefly appears then disappears without input on current and older builds; reconnect restores it. Source finding, not yet a reproduced player incident: AttackSpotlightUnityView captures HUD-child display values in ApplyChrome and restores them verbatim in RestoreChrome; a DecisionWindowUnityView opened meanwhile can be hidden again, and its same-model Render short-circuit leaves it hidden. Reproduce that overlap before correction; preserve closed panels, current prompt ownership, input authorization and reconnect. Closing check: LevelUpWindowSurvivesSpotlightRestoration failing then passing, directly affected spotlight/decision-window regressions, focused Play Mode and visual evidence. T2. No rules, wire or network authority change.
 

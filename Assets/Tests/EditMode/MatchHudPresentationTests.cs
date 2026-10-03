@@ -787,9 +787,10 @@ namespace GuardsDigital.Tests.EditMode
                 .OfType<Button>()
                 .ToArray();
             Assert.That(controls, Has.Length.EqualTo(expected.Length));
-            Assert.That(controls.Select(control => control.tooltip.Split(
-                    new[] { " - " }, StringSplitOptions.None)[0]),
-                Is.EqualTo(expected.Select(card => card.DisplayName)));
+            Assert.That(controls.Select(control => control.tooltip),
+                Is.EqualTo(expected.Select(card => card.AssistiveLabel)),
+                "The compact face keeps only its concise assistive reading; its already-visible " +
+                "printed rules are not repeated in a separate tooltip.");
             for (var index = 0; index < controls.Length; index++)
             {
                 var control = controls[index];
@@ -804,6 +805,20 @@ namespace GuardsDigital.Tests.EditMode
                     "commitment state removes its command.");
             }
             Assert.That(expected, Has.All.Matches<TrayCardViewModel>(card => !card.IsSelectable));
+
+            var unavailablePreview = new VisualElement();
+            DirectorHandsUnityView.PopulatePeekPreview(
+                unavailablePreview,
+                expected[0],
+                new VisualElement(),
+                isRightSideGroup: true,
+                dimUnavailable: false);
+            var revealedUnavailableFace = unavailablePreview.ElementAt(0);
+            Assert.That(revealedUnavailableFace.style.opacity.value, Is.EqualTo(1f),
+                "Inspecting a faded unavailable card restores its complete face to full strength.");
+            Assert.That(Descendants(revealedUnavailableFace).Any(element =>
+                    element.name == "gd-card-unavailable-veil"), Is.False,
+                "The inspection copy does not repeat the resting unavailable veil.");
 
             var before = CardNames(unavailableHost).ToArray();
             presenter.SelectViewedHero(ownerId);
@@ -6491,6 +6506,18 @@ namespace GuardsDigital.Tests.EditMode
                 element.tooltip.StartsWith(others[0].DisplayName, StringComparison.Ordinal));
             Assert.That(otherControl.style.opacity.value,
                 Is.EqualTo(MatchHudTheme.DimmedByResolutionOpacity));
+
+            var resolutionPreview = new VisualElement();
+            DirectorHandsUnityView.PopulatePeekPreview(
+                resolutionPreview,
+                others[0],
+                new VisualElement(),
+                dimUnavailable: false);
+            Assert.That(resolutionPreview.ElementAt(0).style.opacity.value, Is.EqualTo(1f),
+                "Hover inspection restores a resolution-dimmed card to full brightness without " +
+                "changing the authoritative resting state.");
+            Assert.That(others[0].IsDimmedByResolution, Is.True,
+                "Presentation-only inspection never changes the projected resolution fact.");
 
             // Drive this exact turn to its own end - the Hold every mirrored Wasp turn this fixture
             // stages resolves through, then the 8.35g release the finished turn now waits behind -

@@ -769,10 +769,9 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
-            var printed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed
-                ? card.Face.PrintedText
-                : card.Face.EmptyTextLabel;
-            button.tooltip = $"{card.AssistiveLabel} - {printed}";
+            // The complete face already carries its printed words. Keep the tooltip to the concise
+            // assistive identity/lifecycle reading instead of showing those same rules a second time.
+            button.tooltip = card.AssistiveLabel;
             slot.Add(button);
             BindCardDrag(button, slot, card);
             if (compactPeekMode && !card.IsResolving)
@@ -1957,7 +1956,15 @@ namespace GuardsDigital.Presentation.Match
             }
 
             highlightedPeekCard = card;
-            PopulatePeekPreview(hoverPreview, card, anchor, isUnavailableGroup);
+            // A faded resting card returns to full strength while it is being inspected. The
+            // underlying anchor retains its unavailable/temporarily-dimmed state and is restored
+            // unchanged when the pointer or keyboard focus leaves.
+            PopulatePeekPreview(
+                hoverPreview,
+                card,
+                anchor,
+                isUnavailableGroup,
+                dimUnavailable: false);
         }
 
         /// <summary>
