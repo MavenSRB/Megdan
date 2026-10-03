@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-02
+Last updated: 2026-10-03
 
 ## Purpose and authority
 
@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.26**.
+- Current completed milestone: **9.39**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **9.13a**.
+- Next proposed milestone: **9.40**.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).
 
@@ -26,13 +26,13 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero: **9.30-9.30j** and the user-directed **9.30h1** are complete - dealt, artworked, pickable and gated ([roadmap](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md), [shard](Rules/HERO_GYDION.md); schema v53, wire /33), built by agents as Razzle was; GY-Q1-GY-Q12 settled by the user.
 
-Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete. Housekeeping sequence authorized 2026-10-02: **9.14 -> 9.26 -> 8.35z70 closure with the brief trim**.
+Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete. Housekeeping sequence authorized 2026-10-02: **9.14 -> 9.26 -> 8.35z70 closure with the brief trim**. On 2026-10-03 the user ruled W10 (a decline ends an "up to N") and gave the control-label directive; sequence **[9.39 -> 9.40](Roadmap/PHASE_9.md)** authorized.
 
 After that playtest the user reported three defects; correctives **[9.33 -> 9.35](Roadmap/PHASE_9.md)** (terrain lit, spell spotlight, "up to" line moves offer 0) are complete.
 
 On 2026-09-29 the user named **Mortimer** next and authorized [9.8-9.8g](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md) ([his shard](Rules/HERO_MORTIMER.md)); 9.8-9.8g are complete: dealt, artworked, pickable and gated.
 
-On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)** (complete; `Builds/Playtest-9.12-bugnet`) and then **9.13** (expected-outcome corpus; 9.13a-e and 9.14 queued; OQ-9.13 awaits the user), **9.15-9.20** and **9.22-9.29**, all complete except the queued 9.26 - [Phase 9](Roadmap/PHASE_9.md) owns each result. On 2026-09-30 the user authorized **Razzle** as the TWENTY-EIGHTH hero: [9.21-9.21k](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md) are complete (RZ-Q1-RZ-Q14 settled by the user; schema v50). The same day the user reversed W6 as **W9** (an already-adjacent target is offered), built at 9.22.
+On 2026-09-29 the user authorized the **[bug net 9.9 -> 9.12](Roadmap/PHASE_9.md)** (complete; `Builds/Playtest-9.12-bugnet`) and then **9.13** (expected-outcome corpus; 9.13a-e and 9.14 queued; OQ-9.13 answered as W10 at 9.39), **9.15-9.20** and **9.22-9.29**, all complete except the queued 9.26 - [Phase 9](Roadmap/PHASE_9.md) owns each result. On 2026-09-30 the user authorized **Razzle** as the TWENTY-EIGHTH hero: [9.21-9.21k](Roadmap/PHASE_9_TWENTY_EIGHTH_HERO.md) are complete (RZ-Q1-RZ-Q14 settled by the user; schema v50). The same day the user reversed W6 as **W9** (an already-adjacent target is offered), built at 9.22.
 
 **Snorri** ([8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md), [shard](Rules/HERO_SNORRI.md)) is complete. No publication authorized.
 

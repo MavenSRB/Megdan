@@ -401,7 +401,32 @@ namespace GuardsDigital.Tests.EditMode
                     places.All(node => node.FailurePolicy == EffectFailurePolicy.May), Is.True,
                     pair.Card.Value + ": each is a `may`, which is how \"up to\" is honoured one " +
                     "token at a time.");
+
+                var arm = IgnatiaBoard.PrimaryText(pair.Card).Nodes
+                    .Single(node => node.Kind == EffectNodeKind.Sequence &&
+                        node.ChildNodeIds.Contains(places[0].Id));
+                Assert.That(arm.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),
+                    pair.Card.Value + ": the arm that orders the passes is one `up to` count (W10, " +
+                    "milestone 9.39), so the first declined pass closes it.");
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.39, ruling W10: one of "up to 3" placed and the second declined - the third is
+        /// not asked, and the placed token stands. Before it the third placement was still a question.
+        /// </summary>
+        [Test]
+        public void TheScatter_OneOfThreeThenADecline_AsksNoThird()
+        {
+            var frame = new IgnatiaFrame(IgnatiaCardContent.PathOfCinders, IgnatiaBoard.Moon, Board());
+            frame.Pick(new HexCoordinate(2, 0));
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-place-2"));
+
+            frame.Decline();
+
+            Assert.That(frame.Step.IsComplete, Is.True, "W10: the decline closes the count.");
+            Assert.That(frame.Step.Frame?.PendingChoice, Is.Null, "no third placement is asked.");
+            Assert.That(frame.TokenSpaces(), Is.EqualTo(new[] { new HexCoordinate(2, 0) }));
         }
 
         /// <summary>
@@ -506,14 +531,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-3"));
             frame.Decline();
-            Assert.That(frame.Outcome("ignatia-magma-moon-place-3"),
-                Is.Not.EqualTo(EffectExecutionResultKind.Applied),
-                "declining the reclamation declines that token: the pile is empty and nothing lands.");
 
-            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-magma-moon-reclaim-4"));
-            frame.Decline();
-
-            Assert.That(frame.Step.IsComplete, Is.True);
+            Assert.That(frame.Step.IsComplete, Is.True,
+                "declining the reclamation declines that pass, and W10 (9.39) closes the count with " +
+                "it: the fourth is not asked.");
+            Assert.That(frame.Step.Frame?.PendingChoice, Is.Null);
             Assert.That(frame.Tokens, Has.Count.EqualTo(IgnatiaMagmaContent.MagmaSupplyCount),
                 "still four magma on the board, never five.");
         }

@@ -40,7 +40,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <c>ignatia-8-75-rev-1</c>: her magma supply became four and her magma placements gained
         /// p.18's short-supply step, so the semantics her faces reach changed with it.
         /// </summary>
-        public const string ContentRevision = "ignatia-8-113-rev-1";
+        public const string ContentRevision = "ignatia-9-39-rev-1";
 
         /// <summary>p.5's content-set identity - the printed set a seat deals from. Every id is prefixed with it.</summary>
         public const string ContentSetId = "ignatia";

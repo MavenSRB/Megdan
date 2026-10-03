@@ -57,7 +57,16 @@ namespace GuardsDigital.Core.Effects
         /// <summary>`may`. Always opens a confirm-or-decline choice; declining continues the action.</summary>
         May = 2,
 
-        /// <summary>`up to`. The count is the choice; selecting fewer is a legal result, not a failure.</summary>
+        /// <summary>
+        /// `up to`. The count is the choice; selecting fewer is a legal result, not a failure.
+        ///
+        /// <para>Milestone 9.39 (ruling W10). On a <see cref="EffectNodeKind.Sequence"/> it declares
+        /// that the children are the passes of ONE printed "up to N" - "Place up to 4 Zombie tokens",
+        /// "Choose up to two times" - asked a pass at a time: the first pass the player declines closes
+        /// the count, no later pass is offered, and everything the earlier passes did stands. A pass
+        /// the resolver skips on its own because it has nothing to offer (8.35z15) is not a decline
+        /// and closes nothing; the next pass is judged on its own and is, in practice, as empty.</para>
+        /// </summary>
         UpTo = 3,
 
         /// <summary>`if able`. Opens no choice; impossible is skipped silently and the action continues.</summary>
@@ -270,9 +279,14 @@ namespace GuardsDigital.Core.Effects
                     RequireNoCapability();
                     if (ChildNodeIds.Count == 0)
                         throw new ArgumentException("A Sequence node requires at least one child.");
-                    if (FailurePolicy != EffectFailurePolicy.Mandatory)
+                    // Milestone 9.39 (W10): `up to` is the one optionality a Sequence itself carries -
+                    // its children are the passes of one printed count, and a player's decline of a
+                    // pass closes it. `may` and `if able` still belong to the children it orders.
+                    if (FailurePolicy != EffectFailurePolicy.Mandatory &&
+                        FailurePolicy != EffectFailurePolicy.UpTo)
                         throw new ArgumentException(
-                            "A Sequence node is mandatory; optionality belongs to the children it orders.");
+                            "A Sequence node is mandatory, or `up to` when its children are the passes of one " +
+                            "printed count; other optionality belongs to the children it orders.");
                     RequireNoChooser();
                     RequireNoSelectionBounds();
                     break;

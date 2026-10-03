@@ -23,7 +23,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MortimerCardContent
     {
         /// <summary>The revision every Mortimer definition carries.</summary>
-        public const string ContentRevision = "mortimer-9-8-rev-1";
+        public const string ContentRevision = "mortimer-9-39-rev-1";
 
         public const string ContentSetId = "mortimer";
 
@@ -161,7 +161,7 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             nodes.Insert(0, new EffectNodeDefinition(
-                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: steps));
+                root, EffectNodeKind.Sequence, EffectFailurePolicy.UpTo, childNodeIds: steps));
             return new EffectDefinition(
                 new EffectDefinitionId(card.Value + suffix), ContentRevision, root, nodes);
         }

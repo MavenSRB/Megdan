@@ -225,7 +225,7 @@ namespace GuardsDigital.Core.Cards.Verified
             var nodes = new List<EffectNodeDefinition>
             {
                 new EffectNodeDefinition(
-                    arm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    arm, EffectNodeKind.Sequence, EffectFailurePolicy.UpTo,
                     childNodeIds: steps)
             };
 

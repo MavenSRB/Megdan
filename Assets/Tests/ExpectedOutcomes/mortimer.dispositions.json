@@ -61,12 +61,6 @@
   "execute": true
  },
  {
-  "id": "mortimer-awaken-up-to-declined-after-two",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
- },
- {
   "id": "mortimer-awaken-only-empty-spaces-take-tokens",
   "kind": "not-executable",
   "ref": "format v1.1 cannot state the reader's setup",
@@ -360,23 +354,11 @@
   "execute": true
  },
  {
-  "id": "mortimer-macabre-mayhem-zombie-pushes-friendly-never-actor",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
- },
- {
   "id": "mortimer-stalking-scalpers-three-coins",
   "kind": "not-executable",
   "ref": "reader note (the format could not state it)",
   "note": "Every executed fact passes; the reader's own note names what the table could not state: actor level 5 or higher (Tier III card in hand); offer check: no fourth choice",
   "execute": true
- },
- {
-  "id": "mortimer-stalking-scalpers-range-item-reaches-distance-5",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
  },
  {
   "id": "mortimer-crowd-drift-two-swaps-chain",
@@ -446,12 +428,6 @@
   "execute": true
  },
  {
-  "id": "mortimer-crowd-surf-swap-ignores-blocked-path",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
- },
- {
   "id": "mortimer-army-of-darkness-two-moves-then-replace",
   "kind": "not-executable",
   "ref": "format v1.1 cannot state the reader's setup",
@@ -513,5 +489,33 @@
   "ref": "rulebook p.6",
   "note": "The p.20 Handicap cards are returned to the box at setup; this build deals none.",
   "execute": false
+ },
+ {
+  "id": "mortimer-awaken-up-to-declined-after-two",
+  "kind": "not-executable",
+  "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
+  "note": "Executed under W10: two Zombies placed, the decline closes the count, no further pass is asked, both stand. The reader's own note names what the table could not state: setup: no spawn point within distance 4 of actor; answer 'place: <placement>'.",
+  "execute": true
+ },
+ {
+  "id": "mortimer-stalking-scalpers-range-item-reaches-distance-5",
+  "kind": "not-executable",
+  "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
+  "note": "Executed under W10: one pass taken (token-1 moved 1, one coin), the decline closes the count and token-2 never moves. The reader's own note names what the table could not state: actor level 5 or higher with the Range item from Racing Dead; offer check: token-2 (distance 6) is not offered with range 5.",
+  "execute": true
+ },
+ {
+  "id": "mortimer-crowd-surf-swap-ignores-blocked-path",
+  "kind": "not-executable",
+  "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
+  "note": "Executed under W10: the swap lands, the decline closes the count. The reader's own note names what the table could not state: actor level 5 or higher; offer check: the move bullet does not offer token-1 (no empty space to move into) while the swap bullet does.",
+  "execute": true
+ },
+ {
+  "id": "mortimer-macabre-mayhem-zombie-pushes-friendly-never-actor",
+  "kind": "not-executable",
+  "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
+  "note": "Executed under W10: the Zombie pushes the friendly minion, the decline closes the count. The reader's own note names what the table could not state: actor level 5 or higher; offer check: actor is not offered as the push target although adjacent to token-1 (the build offers him: the 9.8 dealing reads \"a unit or a token adjacent to it\" as including Mortimer, MortimerBlueFacesTests.CorpseSlam_TheZombieMayPushMortimerHimself; a reader difference for the user, not a W10 matter); setup: friendly-minion-1 stays in the Battle Zone after the push.",
+  "execute": true
  }
 ]

@@ -148,6 +148,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.ActionEnded, Is.True, "four placed is the printed most.");
         }
 
+        /// <summary>
+        /// Milestone 9.39, ruling W10 (the user, 2026-10-03): "A decline ends it. 'Up to 4' is one
+        /// decision about how many. Once you say no, you are done." Before it each placement was its
+        /// own "up to" step and the third and fourth were still asked after the second was declined.
+        /// </summary>
         [Test]
         public void Awaken_UpToFour_StopsWhereMortimerDeclines()
         {
@@ -156,12 +161,30 @@ namespace GuardsDigital.Tests.EditMode
             round.PickSpaces(H(0, 1));
             Assert.That(round.PendingNode, Is.EqualTo("awaken-place-2"));
             round.Decline();
-            Assert.That(round.PendingNode, Is.EqualTo("awaken-place-3"), "each placement is its own \"up to\" step.");
-            round.Decline();
-            round.Decline();
 
+            Assert.That(round.PendingNode, Is.Null, "W10: the decline closes the count; no third placement is asked.");
             Assert.That(round.Zombies(), Is.EqualTo(new[] { H(0, 1) }));
             Assert.That(round.ActionEnded, Is.True);
+        }
+
+        /// <summary>
+        /// The 9.13 reader's own case (`mortimer-awaken-up-to-declined-after-two`), under W10: two of
+        /// four placed, one decline, nothing further asked, and both Zombies standing.
+        /// </summary>
+        [Test]
+        public void Awaken_TwoOfFourThenADecline_EndsTheCountWithBothStanding()
+        {
+            var round = new Round();
+            round.StartPrimarySkill();
+            round.PickSpaces(MinionSpawn);
+            round.PickSpaces(H(0, 1));
+            Assert.That(round.PendingNode, Is.EqualTo("awaken-place-3"));
+            round.Decline();
+
+            Assert.That(round.ActionEnded, Is.True, "no fourth pass is offered after the decline.");
+            Assert.That(round.PendingNode, Is.Null);
+            Assert.That(round.Zombies(), Is.EquivalentTo(new[] { MinionSpawn, H(0, 1) }),
+                "everything already placed stands.");
         }
 
         [Test]
@@ -170,11 +193,8 @@ namespace GuardsDigital.Tests.EditMode
             var round = new Round();
             round.StartPrimarySkill();
             round.Decline();
-            round.Decline();
-            round.Decline();
-            round.Decline();
 
-            Assert.That(round.Zombies(), Is.Empty, "\"up to 4\" includes none.");
+            Assert.That(round.Zombies(), Is.Empty, "\"up to 4\" includes none, and one decline says so (W10).");
             Assert.That(round.ActionEnded, Is.True);
         }
 
@@ -192,10 +212,12 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(round.PendingNode, Is.EqualTo("awaken-place-1"));
             round.PickSpaces(MinionSpawn);
-            round.Decline();
-            round.Decline();
+            Assert.That(round.PendingNode, Is.EqualTo("awaken-reclaim-2"),
+                "the pile is empty again, so the second pass opens with p.18's step.");
             round.Decline();
 
+            Assert.That(round.ActionEnded, Is.True,
+                "W10: declining the short-supply step is declining the pass, and the count closes with it.");
             Assert.That(round.Zombies(), Is.EquivalentTo(new[] { standing[0], standing[2], standing[3], MinionSpawn }),
                 "the named Zombie came back to the pile and went out again; the other three stayed.");
         }
@@ -207,7 +229,8 @@ namespace GuardsDigital.Tests.EditMode
             round.StartPrimarySkill();
 
             Assert.That(round.PendingNode, Is.EqualTo("awaken-place-1"),
-                "one Zombie is still in the pile, so the first placement asks nothing first.");
+                "one Zombie is still in the pile, so the first placement asks nothing first - and the " +
+                "step standing aside on its own is not a decline, so W10 closes nothing here.");
             round.PickSpaces(H(0, 1));
             Assert.That(round.PendingNode, Is.EqualTo("awaken-reclaim-2"),
                 "the pile is empty now, so the second placement starts with p.18's step.");

@@ -50,9 +50,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.Chooser, Is.EqualTo(MortimerRound.Mortimer));
             round.PickSpaces(H(0, 1));
             round.Decline();
-            round.Decline();
-            round.Decline();
 
+            Assert.That(round.PendingNode, Is.Null, "W10 (9.39): one decline closes the \"up to 4\" at step 4 too.");
             Assert.That(round.Zombies(), Is.EqualTo(new[] { H(0, 1) }));
         }
     }

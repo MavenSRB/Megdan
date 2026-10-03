@@ -67,7 +67,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, and the one string every effect body of hers is
         /// composed under. Minted at 8.57f, where the set became whole - see the type's own remarks.
         /// </summary>
-        public const string ContentRevision = "rowenna-9-1-rev-1";
+        public const string ContentRevision = "rowenna-9-39-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

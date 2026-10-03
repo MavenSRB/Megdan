@@ -167,11 +167,67 @@ namespace GuardsDigital.Tests.EditMode
             round.Pass(Place(1), H(1, 0));
             round.Pass(Place(2), H(0, 1));
             round.Pass(Place(3), H(-1, 0));
-            round.Decline();
+            Assert.That(round.PendingNode, Is.EqualTo(MortimerRepeatedChoice.UpToNode(Prefix, 4)));
             round.Decline();
 
+            Assert.That(round.PendingNode, Is.Null, "W10 (9.39): declining the fourth asks no fifth.");
             Assert.That(round.Zombies(), Has.Length.EqualTo(3), "\"may\": he keeps three.");
             Assert.That(round.ActionEnded, Is.True);
+        }
+
+        /// <summary>
+        /// Milestone 9.39, ruling W10 (the user, 2026-10-03): "Choose up to three times" is one
+        /// decision about how many, so declining the second pass asks no third. Before it each pass
+        /// was its own "up to" and the third was still opened.
+        /// </summary>
+        [Test]
+        public void UpToThree_DecliningTheSecondPass_AsksNoThird()
+        {
+            var round = new Round(printedPasses: 3);
+            round.StartPrimarySkill();
+            round.Pass(Place(1), H(1, 0));
+            Assert.That(round.PendingNode, Is.EqualTo(MortimerRepeatedChoice.UpToNode(Prefix, 2)));
+            round.Decline();
+
+            Assert.That(round.PendingNode, Is.Null, "no third pass is offered.");
+            Assert.That(round.Zombies(), Is.EqualTo(new[] { H(1, 0) }), "what the first pass did stands.");
+            Assert.That(round.ActionEnded, Is.True);
+        }
+
+        /// <summary>
+        /// With the Ultimate unlocked, declining the THIRD pass closes the printed count and the gate
+        /// behind it: the fourth and fifth are not offered either, because "you may choose up to five
+        /// times instead" raises the same one count rather than opening a second.
+        /// </summary>
+        [Test]
+        public void UpToThree_WithMasterOfPuppetsUnlocked_DecliningTheThird_SkipsTheRaisedPasses()
+        {
+            var round = new Round(printedPasses: 3, puppetsUnlocked: true);
+            round.StartPrimarySkill();
+            round.Pass(Place(1), H(1, 0));
+            round.Pass(Place(2), H(0, 1));
+            Assert.That(round.PendingNode, Is.EqualTo(MortimerRepeatedChoice.UpToNode(Prefix, 3)));
+            round.Decline();
+
+            Assert.That(round.PendingNode, Is.Null, "neither the fourth nor the fifth pass is asked.");
+            Assert.That(round.Zombies(), Is.EquivalentTo(new[] { H(1, 0), H(0, 1) }));
+            Assert.That(round.ActionEnded, Is.True);
+        }
+
+        /// <summary>
+        /// The fixture's own root carries the same policy the dealt faces do, so these cases exercise
+        /// W10 at the printed count and not only at Master of Puppets' raised passes.
+        /// </summary>
+        [Test]
+        public void TheCountSequence_IsUpToWhenMoreThanOnePassIsPrinted()
+        {
+            Assert.That(MortimerRepeatedChoice.CountPolicy(1), Is.EqualTo(EffectFailurePolicy.Mandatory),
+                "\"Choose one\" is the bare modal.");
+            Assert.That(MortimerRepeatedChoice.CountPolicy(2), Is.EqualTo(EffectFailurePolicy.UpTo));
+            Assert.That(MortimerRepeatedChoice.CountPolicy(3), Is.EqualTo(EffectFailurePolicy.UpTo));
+            var unlocked = FixtureSkill(3).Nodes.Single(node => node.Id.Value == $"{Prefix}-puppets-passes");
+            Assert.That(unlocked.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),
+                "the raised passes behind the gate are the same one count.");
         }
 
         [Test]
@@ -268,7 +324,7 @@ namespace GuardsDigital.Tests.EditMode
             var steps = MortimerRepeatedChoice.Compose(Prefix, printedPasses, Bullets, nodes);
             var root = new EffectNodeId("fixture-root");
             nodes.Insert(0, new EffectNodeDefinition(
-                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: steps));
+                root, EffectNodeKind.Sequence, MortimerRepeatedChoice.CountPolicy(printedPasses), childNodeIds: steps));
             return new EffectDefinition(
                 new EffectDefinitionId($"mortimer-fixture-{printedPasses}-skill"), "rev-1", root, nodes);
         }

@@ -609,8 +609,13 @@ namespace GuardsDigital.Tests.EditMode
         /// Grand Melee asks the same question twice and neither asking is a "may": "up to two times"
         /// makes zero a legal count, so each performance is declinable on its own.
         /// </summary>
+        /// <summary>
+        /// Milestone 9.39, ruling W10: "Choose up to two times" is one count, so declining the first
+        /// performance asks no second. Before it the second "may" was still opened after the first
+        /// was declined.
+        /// </summary>
         [Test]
-        public void GrandMelee_AsksTwiceAndBothPerformancesAreDeclinable()
+        public void GrandMelee_DecliningTheFirstPerformance_AsksNoSecond()
         {
             var world = World.Melee(RowennaCardContent.GrandMelee);
 
@@ -618,21 +623,18 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(first.NodeId.Value, Is.EqualTo("melee-first-may"));
             Assert.That(first.DeclineInvocation, Is.Not.Null);
 
-            var second = world.Answer(first, first.DeclineInvocation);
-            Assert.That(second.NodeId.Value, Is.EqualTo("melee-second-may"));
-            Assert.That(second.DeclineInvocation, Is.Not.Null);
+            var finished = world.SubmitToCompletion(first.DeclineInvocation);
 
-            var finished = world.SubmitToCompletion(second.DeclineInvocation);
-
-            Assert.That(finished.IsComplete, Is.True);
+            Assert.That(finished.IsComplete, Is.True, "W10: one decline closes the count.");
+            Assert.That(finished.Frame?.PendingChoice, Is.Null, "no second performance is asked.");
             Assert.That(world.Where(FriendlyNear), Is.EqualTo(FriendlyNearAt),
                 "Zero is a legal count, which is what 'up to' means.");
             Assert.That(world.Where(EnemyNear), Is.EqualTo(EnemyNearAt));
         }
 
         /// <summary>
-        /// Taking one and stopping is the middle count, and the second question is still asked before
-        /// it is refused - "up to two times" does not end at the first refusal.
+        /// Taking one and stopping is the middle count: the second question is asked after a taken
+        /// first performance, and declining it ends the card.
         /// </summary>
         [Test]
         public void GrandMelee_MayTakeOnePerformanceAndStop()

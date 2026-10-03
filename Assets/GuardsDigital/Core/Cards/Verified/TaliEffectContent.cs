@@ -1268,7 +1268,7 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             nodes.Insert(0, new EffectNodeDefinition(
-                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                root, EffectNodeKind.Sequence, upTo ? EffectFailurePolicy.UpTo : EffectFailurePolicy.Mandatory,
                 childNodeIds: rootChildren));
 
             return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);

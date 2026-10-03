@@ -834,17 +834,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.PendingEffectChoice.NodeId.Value,
                 Is.EqualTo("ignatia-magma-moon-reclaim-2"), Remaining(runtime));
-            for (var remaining = 2; remaining <= 4; remaining++)
-            {
-                Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
-                Assert.That(runtime.PendingEffectChoice.NodeId.Value,
-                    Is.EqualTo("ignatia-magma-moon-reclaim-" + remaining), Remaining(runtime));
-                yield return May(root, accept: false);
-                yield return null;
-            }
+            Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null, Remaining(runtime));
+            yield return May(root, accept: false);
+            yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "Declining each reclamation declines its token, and the card completes. " +
+                "Declining the reclamation declines its pass, and W10 (milestone 9.39) closes the " +
+                "\"up to 4\" with it: the third and fourth are not asked and the card completes. " +
                 Remaining(runtime));
             Assert.That(MagmaSpaces(runtime), Has.Length.EqualTo(4),
                 "four magma on the board, never five. " + Remaining(runtime));

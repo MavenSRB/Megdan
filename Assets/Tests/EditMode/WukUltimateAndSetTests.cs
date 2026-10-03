@@ -46,11 +46,10 @@ namespace GuardsDigital.Tests.EditMode
             var round = new WukRound(WukCardContent.MysticSaplingsDefinition, withUltimate: true);
             round.StartPrimarySkill();
             round.Decline();
-            round.Decline();
-            round.Decline();
 
             Assert.That(round.PendingNode, Is.EqualTo(WukCardContent.MarchOfNaturePlaceNode),
-                "\"a card\" - his Silver basic, resolved while placing nothing, is still a card resolved.");
+                "\"a card\" - his Silver basic, resolved while placing nothing (one decline closes the " +
+                "\"up to 3\", W10), is still a card resolved.");
         }
 
         [Test]

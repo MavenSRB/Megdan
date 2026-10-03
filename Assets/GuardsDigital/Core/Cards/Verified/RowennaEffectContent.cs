@@ -1403,7 +1403,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 Gate(gate, presence, SyntheticRosterCapabilities.PresentOutput, choices),
 
                 new EffectNodeDefinition(
-                    choices, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    choices, EffectNodeKind.Sequence,
+                    performances > 1 ? EffectFailurePolicy.UpTo : EffectFailurePolicy.Mandatory,
                     childNodeIds: Enumerable
                         .Range(0, performances)
                         .Select(pass => new EffectNodeId(MeleeNodeName(pass, "may")))

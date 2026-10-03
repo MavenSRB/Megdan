@@ -35,7 +35,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class WukCardContent
     {
         /// <summary>The revision every Wuk definition carries.</summary>
-        public const string ContentRevision = "wuk-9-2-rev-1";
+        public const string ContentRevision = "wuk-9-39-rev-1";
 
         public const string ContentSetId = "wuk";
 
@@ -265,7 +265,7 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             nodes.Insert(0, new EffectNodeDefinition(
-                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: steps));
+                root, EffectNodeKind.Sequence, EffectFailurePolicy.UpTo, childNodeIds: steps));
             return new EffectDefinition(
                 new EffectDefinitionId(card.Value + "-skill"), ContentRevision, root, nodes);
         }

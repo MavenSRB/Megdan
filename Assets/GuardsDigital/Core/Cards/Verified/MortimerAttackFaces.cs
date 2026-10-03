@@ -154,7 +154,7 @@ namespace GuardsDigital.Core.Cards.Verified
             var steps = MortimerRepeatedChoice.Compose(prefix, passes, pass, nodes);
             var root = new EffectNodeId($"{prefix}-root");
             nodes.Insert(0, new EffectNodeDefinition(
-                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: steps));
+                root, EffectNodeKind.Sequence, MortimerRepeatedChoice.CountPolicy(passes), childNodeIds: steps));
             return new EffectDefinition(
                 new EffectDefinitionId(card.Value + "-attack-text"), MortimerCardContent.ContentRevision,
                 root, nodes);

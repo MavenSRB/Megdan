@@ -925,7 +925,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionAndEveryBody()
         {
-            Assert.That(IgnatiaCardContent.ContentRevision, Is.EqualTo("ignatia-8-113-rev-1"));
+            Assert.That(IgnatiaCardContent.ContentRevision, Is.EqualTo("ignatia-9-39-rev-1"));
             Assert.That(IgnatiaCardContent.ContentSetId, Is.EqualTo("ignatia"));
 
             Assert.That(

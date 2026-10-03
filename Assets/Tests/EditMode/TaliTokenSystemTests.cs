@@ -98,6 +98,32 @@ namespace GuardsDigital.Tests.EditMode
                 "Both roles read the same pile, so both report the same number.");
         }
 
+        /// <summary>
+        /// Milestone 9.39, ruling W10 (the user, 2026-10-03): "Place up to 3 Ice tokens in radius" is
+        /// one decision about how many. One placed and the second "up to" declined asks no third -
+        /// before it the third was still opened - and the Ice token already placed stands.
+        /// </summary>
+        [Test]
+        public void PackIce_OneOfThreeThenADecline_AsksNoThird_AndTheFirstStands()
+        {
+            var board = TaliBoard.Create(tier: 3, branch: TaliUpgradeBranch.FirstSibling);
+            board.StartPrimary(TaliCardContent.PackIce);
+            Assert.That(board.Session.Projection.PendingEffectChoice?.NodeId.Value, Is.EqualTo("place-optional-0"));
+            board.Confirm();
+            Assert.That(board.Session.Projection.PendingEffectChoice?.NodeId.Value, Is.EqualTo("place-token-0"));
+            board.SelectFirst();
+            board.ConfirmIfStillOwed();
+            Assert.That(board.Session.Projection.PlacedTokens, Has.Count.EqualTo(1));
+            Assert.That(board.Session.Projection.PendingEffectChoice?.NodeId.Value, Is.EqualTo("place-optional-1"),
+                "the second copy is the next question.");
+
+            board.Decline();
+
+            Assert.That(board.Session.Projection.PendingEffectChoice, Is.Null,
+                "W10: the decline closes the count; place-optional-2 is never asked.");
+            Assert.That(board.Session.Projection.PlacedTokens, Has.Count.EqualTo(1), "the first Ice token stands.");
+        }
+
         [Test]
         public void TheShortSupplyStepReachesAcrossRoles()
         {

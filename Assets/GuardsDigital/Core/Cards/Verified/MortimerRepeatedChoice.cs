@@ -47,6 +47,16 @@ namespace GuardsDigital.Core.Cards.Verified
         public static string PuppetsGateNode(string prefix) => $"{prefix}-puppets-gate";
 
         /// <summary>
+        /// Milestone 9.39 (ruling W10). The policy of the Sequence that orders a face's passes: "Choose up
+        /// to N times" is one printed count, so with more than one pass the Sequence is `up to` and the
+        /// first pass the player declines closes it; "Choose one" is the bare modal, and its Sequence
+        /// stays mandatory. Master of Puppets' two extra passes are ordered by a Sequence of their own
+        /// behind the gate, which carries the same policy: he may stop at four as he may stop at three.
+        /// </summary>
+        public static EffectFailurePolicy CountPolicy(int printedPasses) =>
+            printedPasses > 1 ? EffectFailurePolicy.UpTo : EffectFailurePolicy.Mandatory;
+
+        /// <summary>
         /// The steps a face's own Sequence runs, in order, with every node they need added to
         /// <paramref name="nodes"/>. <paramref name="pass"/> names one pass's bullets (at least two)
         /// and returns their nodes; it is called once per pass with the 1-based pass number, so
@@ -98,7 +108,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         new EffectOutputBinding(SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
                     }));
                 nodes.Add(new EffectNodeDefinition(
-                    unlockedPasses, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: extra));
+                    unlockedPasses, EffectNodeKind.Sequence, EffectFailurePolicy.UpTo, childNodeIds: extra));
                 nodes.Add(new EffectNodeDefinition(
                     locked, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                     SyntheticRosterCapabilities.UltimateUnlockedV1,

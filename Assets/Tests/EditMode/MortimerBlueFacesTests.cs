@@ -109,6 +109,31 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.SpaceOf(Mortimer), Is.EqualTo(H(0, 1)), "\"Move 1 space\".");
         }
 
+        /// <summary>
+        /// Milestone 9.39, ruling W10's boundary: a decline INSIDE a pass is that pass's own business
+        /// and closes no count. Morbid Mosh's "that Zombie token may push" declined after the move
+        /// leaves the second "up to" pass asked as printed - the pass Sequence is `up to`, the push's
+        /// parent is not - and declining THAT pass is what ends the card.
+        /// </summary>
+        [Test]
+        public void MorbidMosh_DecliningThePushInsideAPass_StillAsksTheNextPass()
+        {
+            var round = new MortimerRound(Face(MortimerBlueFaces.MorbidMosh), enemyAt: H(3, 0),
+                zombiesAt: new[] { H(2, 0) });
+            round.StartPrimarySkill();
+            round.Accept();
+            round.TakeBullets(MortimerBlueFaces.ShoveBullet(1));
+            round.PickSpaces(H(2, 0));
+            round.PickSpaces(H(2, 0));
+            round.Decline();
+
+            Assert.That(round.PendingNode, Is.EqualTo(MortimerRepeatedChoice.UpToNode(MortimerBlueFaces.SlamPrefix, 2)),
+                "the push's decline belonged to the first pass, not to the count.");
+            Assert.That(round.SpaceOf(Enemy), Is.EqualTo(H(3, 0)), "nothing was pushed.");
+            round.Decline();
+            Assert.That(round.ActionEnded, Is.True, "and declining the second pass ends the card (W10).");
+        }
+
         [Test]
         public void MorbidMosh_APausedPushRestoresAndReplays()
         {

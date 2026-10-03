@@ -50,18 +50,6 @@
   "execute": true
  },
  {
-  "id": "wuk-mystic-saplings-up-to-one-and-radius-limit",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
- },
- {
-  "id": "wuk-mystic-saplings-short-supply-takes-from-board",
-  "kind": "open-question",
-  "ref": "W2 (partial); not settled",
-  "note": "After the reader's decline of one \"up to\" pass (a placement, or a \"choose up to N times\" pass), the engine asks the next pass again: the composition is N sibling optional passes, so declining one does not end the sequence. The reader reads a decline as stopping the whole \"up to\". W2 settles that the count is the player's choice, but not whether one decline ends the remaining passes."
- },
- {
   "id": "wuk-natures-protector-unit-adjacent-to-tree-in-range",
   "kind": "not-executable",
   "ref": "reader note (the format could not state it)",
@@ -447,6 +435,20 @@
   "kind": "not-executable",
   "ref": "format v1.1 cannot state the reader's setup",
   "note": "the reader's play is a Hold (declared note) but the table's action is \"Skill\"; the table is not edited | reader note: actor.level 8; action is HOLD (no v1 action word): Wuk resolves Monstrous Throw with a Hold action and does nothing. Expected: the card is still resolved, so March of Nature still offers its Tree placement.",
+  "execute": false
+ },
+ {
+  "id": "wuk-mystic-saplings-up-to-one-and-radius-limit",
+  "kind": "not-executable",
+  "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
+  "note": "Executed under W10: one Tree placed at distance 3, the decline closes the count, no further pass is asked, the card is resolved. The reader's own note names what the table could not state: answers name a placement space; also expected: a space at distance 4 from actor is NOT offered as a placement space (radius 3) - the offered set printed in the run reaches distance 3 and no further.",
+  "execute": true
+ },
+ {
+  "id": "wuk-mystic-saplings-short-supply-takes-from-board",
+  "kind": "not-executable",
+  "ref": "setup the reader could only describe (supply size): the table stages one Tree of three, so the pile is not empty",
+  "note": "Not executed as written. The reader's note says it: 'Setup needs: every Tree token Wuk owns is already on the board (supply 0); only token-1 is spelled out because the printed supply size is not on any source I may read.' With one Tree staged the first placement comes from the pile and 'supply: 0' cannot hold. The behaviour it describes (an empty pile reclaims a standing Tree before the placement) is proved by WukBasicFacesTests.MysticSaplings_AnEmptyPileAsksWhichStandingTreeComesBack, and W10 (9.39) now ends the count at the decline.",
   "execute": false
  }
 ]

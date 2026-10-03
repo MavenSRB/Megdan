@@ -166,7 +166,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 root, EffectNodeKind.Optional, EffectFailurePolicy.UpTo,
                 childNodeIds: new[] { placements }, chooser: EffectChooserRole.Actor));
             nodes.Insert(1, new EffectNodeDefinition(
-                placements, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                placements, EffectNodeKind.Sequence,
+                maximumPlacements > 1 ? EffectFailurePolicy.UpTo : EffectFailurePolicy.Mandatory,
                 childNodeIds: children));
             return new EffectDefinition(
                 new EffectDefinitionId($"{cardId.Value}-skill"), revision, root, nodes);

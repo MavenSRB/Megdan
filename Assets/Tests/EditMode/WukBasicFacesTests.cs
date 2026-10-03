@@ -81,6 +81,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.ActionEnded, Is.True, "three placed is the printed most.");
         }
 
+        /// <summary>
+        /// Milestone 9.39, ruling W10: one decline closes the "up to 3"; the third placement is not
+        /// asked. The 9.13 reader's `wuk-mystic-saplings-up-to-one-and-radius-limit` is this case.
+        /// </summary>
         [Test]
         public void MysticSaplings_UpToThree_StopsWhereWukDeclines()
         {
@@ -90,11 +94,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.PendingNode, Is.EqualTo("mystic-saplings-place-2"));
             round.Decline();
 
-            Assert.That(round.PendingNode, Is.EqualTo("mystic-saplings-place-3"),
-                "each placement is its own \"up to\" step.");
-            round.Decline();
+            Assert.That(round.PendingNode, Is.Null, "W10: the decline closes the count; no third placement is asked.");
             Assert.That(round.Trees(), Is.EqualTo(new[] { H(0, 1) }));
             Assert.That(round.ActionEnded, Is.True);
+        }
+
+        [Test]
+        public void MysticSaplings_TwoOfThreeThenADecline_EndsTheCountWithBothStanding()
+        {
+            var round = new Round(WukCardContent.MysticSaplingsDefinition);
+            round.StartPrimarySkill();
+            round.PickSpaces(H(0, 1));
+            round.PickSpaces(H(2, -1));
+            Assert.That(round.PendingNode, Is.EqualTo("mystic-saplings-place-3"));
+            round.Decline();
+
+            Assert.That(round.ActionEnded, Is.True);
+            Assert.That(round.Trees(), Is.EquivalentTo(new[] { H(0, 1), H(2, -1) }), "both placed Trees stand.");
         }
 
         [Test]
@@ -111,9 +127,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(round.PendingNode, Is.EqualTo("mystic-saplings-place-1"));
             round.PickSpaces(H(0, 2));
-            round.Decline();
+            Assert.That(round.PendingNode, Is.EqualTo("mystic-saplings-reclaim-2"));
             round.Decline();
 
+            Assert.That(round.ActionEnded, Is.True,
+                "W10: declining the short-supply step is declining the pass, and the count closes with it.");
             Assert.That(round.Trees(), Is.EquivalentTo(new[] { standing[0], standing[2], H(0, 2) }),
                 "the named Tree came back to the pile and went out again; the other two stayed.");
         }

@@ -986,6 +986,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Pop(continuation);
                 Record(outcomes, events, node.Id, EffectExecutionResultKind.DeclinedOptional,
                     DeclineReport(frame, node, outcomes, context));
+                CloseDeclinedUpToCount(continuation, outcomes, events, context);
                 return Advance(Rebuild(frame, continuation, outcomes, choices), context, events);
             }
 
@@ -1701,6 +1702,50 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     return null;
             }
+        }
+
+        /// <summary>
+        /// Milestone 9.39, ruling W10 (the user, 2026-10-03): "A decline ends it. 'Up to 4' is one
+        /// decision about how many. Once you say no, you are done." A Sequence that declares
+        /// <see cref="EffectFailurePolicy.UpTo"/> is one printed count asked a pass at a time - "Place
+        /// up to 4 Zombie tokens", "Choose up to two times" - so when the player declines one of its
+        /// passes the count is closed: the Sequence is popped as applied, no later pass is offered, and
+        /// everything the earlier passes did stands.
+        ///
+        /// <para><b>Only a player's decline closes it</b>, which is why this is called from the Decline
+        /// arm of <see cref="Resume"/> alone. A pass the resolver skips on its own - a `may` with
+        /// nothing to offer (8.29e, 8.35z15), a short-supply step that stands aside while the pile
+        /// holds a token - records the same <see cref="EffectExecutionResultKind.DeclinedOptional"/>
+        /// but is nobody's answer, and the Sequence carries on to judge the next pass for itself.</para>
+        ///
+        /// <para><b>The declined pass's immediate Sequence, never a further ancestor.</b> A pass is a
+        /// direct child of the count it belongs to in every composition that prints one (a `may`
+        /// placement, an "up to" Optional over a modal, a pair under its own Optional), so the frame
+        /// beneath the popped node is the count. A decline deeper inside a pass - a "that Zombie may
+        /// push" after a chosen move - is answered by its own ordinary parent, which is not `up to`,
+        /// and the pass it sits in finishes as the card prints.</para>
+        /// </summary>
+        private static void CloseDeclinedUpToCount(
+            List<EffectContinuationFrame> continuation,
+            List<EffectNodeOutcome> outcomes,
+            List<EffectResolutionEvent> events,
+            EffectResolutionContext context)
+        {
+            if (continuation.Count == 0)
+            {
+                return;
+            }
+
+            var top = continuation[continuation.Count - 1];
+            if (!context.Definition.TryGetNode(top.NodeId, out var parent) ||
+                parent.Kind != EffectNodeKind.Sequence ||
+                parent.FailurePolicy != EffectFailurePolicy.UpTo)
+            {
+                return;
+            }
+
+            Pop(continuation);
+            Record(outcomes, events, parent.Id, EffectExecutionResultKind.Applied);
         }
 
         /// <summary>

@@ -750,7 +750,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneRealRevision_CoversEveryDefinitionAndEveryBody()
         {
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-1-rev-1"));
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-39-rev-1"));
             Assert.That(RowennaCardContent.ContentSetId, Is.EqualTo("rowenna"));
 
             Assert.That(

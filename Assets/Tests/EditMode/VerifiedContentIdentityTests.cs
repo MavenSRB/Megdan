@@ -92,6 +92,12 @@ namespace GuardsDigital.Tests.EditMode
         // names its consumer; Swift's subject excludes a hero beside terrain; Bain's and Cutter's line
         // targets name their Move (W6), and Cutter reads her own space first. Every other pin is
         // byte-identical, which is the measurement that the engine's new reading changed no content.
+        // Milestone 9.39 (W10: a decline ends an "up to N" asked a pass at a time) moved six to
+        // `-9-39-rev-1`, the six whose pass Sequences now declare `up to`: Mortimer (Awaken! and the
+        // seven "choose up to N times" faces, Master of Puppets' raised passes with them), Wuk (Mystic
+        // Saplings, Treetop Ride), Ignatia (the three moon scatters), Tali (Wall of Frost, Pack Ice),
+        // Trinkets (both Barrier faces) and Rowenna (Grand Melee). Every other pin is byte-identical:
+        // Swift's and Brynn's nested passes already stopped on a decline and were not touched.
         // Milestone 9.22 (W9, superseding W6) moved no pin: Bain's and Cutter's targets still name
         // their Move, and the engine now reads a Move of 0 spaces as a move.
         // MILESTONE 9.30b MOVED ALL TWENTY-EIGHT PINS, revisions unchanged: the shared
@@ -228,7 +234,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("tali", "tali-9-6-rev-1", "b37a65515e5b4f05b9d774c3b429cc70ff7ed9f9159bf64e46ffa62e6b0d107e"),
+            new IdentityPin("tali", "tali-9-39-rev-1", "7683c89e36e233314278d39952ef036da922379138efde8377c6e8e47825cee4"),
             // Milestone 8.38e. THE THIRTEENTH PIN, and the first added after the package arc closed.
             // It arrives on exactly the terms the seventh through twelfth did: a pin is a claim about
             // content a configured match loads, and milestone 8.38d composed Swift without dealing
@@ -292,7 +298,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: her staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("rowenna", "rowenna-9-1-rev-1", "269810608f4781d4ceeb3c85163d36b94ea92bc62677adc2754a0a27f95ca430"),
+            new IdentityPin("rowenna", "rowenna-9-39-rev-1", "993b3eb96cc3525d00353661912d1c38455537dfd6853aef21e9f013a210421b"),
             // Milestone 8.61j. THE NINETEENTH PIN, on exactly the terms every pin from the seventh
             // on arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.61i composed Min's nineteen faces without dealing her.
@@ -344,11 +350,11 @@ namespace GuardsDigital.Tests.EditMode
             // `ignatia-reclaim-magma@1` node before each moon placement and a shortfall question in
             // the wake), so the reachable semantics changed and the revision moved with them
             // (ignatia-8-75-rev-1 / 166986e3... -> ignatia-8-113-rev-1). Measured, not predicted.
-            new IdentityPin("ignatia", "ignatia-8-113-rev-1", "6568d848c1184d46ab612fac15d743ebeec2f03a573676338879e157bc7fa096"),
+            new IdentityPin("ignatia", "ignatia-9-39-rev-1", "b538c7abec5381cfabadcaf2bb5e6dd6c2d0d3341873421646c46b03b06739ec"),
             // 8.92d's generic object-selection vocabulary widened the canonical walk for eight
             // earlier owners above without changing their printed behavior; the measured pins move
             // with the shared contract. Trinkets is the newly dealt owner of its full graph.
-            new IdentityPin("trinkets", "trinkets-9-1-rev-1", "dfc4fbbba30203fd42ec54dcb709fce9d631084e878dc5bd0bd1c02eba45926f"),
+            new IdentityPin("trinkets", "trinkets-9-39-rev-1", "9de3d0aeedd4adc7c23b61b14aa3b93c354ac2be23c2ef2cbe952fa524a0e6bf"),
             // Milestone 9.17a MOVED THIS PIN WITH ITS REVISION: Charged Runestone's blue clause and
             // Inscribed Runebomb's blue and gold colours were bound to the wrong rune ordinals (blue is
             // the anvil, rune 3; gold the winged rune 1, by the glyphs on Rune Sigils), so the
@@ -356,7 +362,7 @@ namespace GuardsDigital.Tests.EditMode
             // Measured, not predicted.
             new IdentityPin("snorri", "snorri-9-17a-rev-1", "24ab75edf099c2c96e4b4c91654e465ecd5f62920921c04035e270dd01dab976"),
             new IdentityPin("mrak", "mrak-9-1-rev-1", "64e08e4bbb2648ce18fd527214f65db082e8d3fa3007f14ad2c10f108c45ef70"),
-            new IdentityPin("wuk", "wuk-9-2-rev-1", "854744166c1704481f665728f4f34b4ad7aa0dbe97fed4663d17c124d10a2fc4"),
+            new IdentityPin("wuk", "wuk-9-39-rev-1", "8d0688e4155b99702895b9bd78e9fa2bc102f9ec897e6a53d2a1b7f590ce64d7"),
             // Milestone 9.8f. Mortimer, dealt; measured on the run that dealt him, with his staged
             // configuration in EveryDealtDefinition in the same change (057a98dc...).
             // MILESTONE 9.14 MOVED THIS PIN, revision unchanged: the Tier III red card prints
@@ -364,7 +370,7 @@ namespace GuardsDigital.Tests.EditMode
             // the display name feeds this digest, so it moved, while the identity id (braaaaaaains),
             // every printed value, every reading and the reachable semantics are as 9.8f dealt them.
             // Measured, not predicted.
-            new IdentityPin("mortimer", "mortimer-9-8-rev-1", "5a8a7b9d013b6f5def35bf570588e469b7c4f9d5f77a8d8ff89e1f709ab26ca6"),
+            new IdentityPin("mortimer", "mortimer-9-39-rev-1", "43c3dbc48ec6cf08a24cfdef3274aeac89eaa4ced0044e57ce50b7aed7ed4e53"),
             // Milestone 9.21j. Razzle, dealt under his first dealt revision (razzle-9-21d-prep ->
             // razzle-9-21j-rev-1); measured on the run that dealt him, with his staged configuration
             // in EveryDealtDefinition in the same change.

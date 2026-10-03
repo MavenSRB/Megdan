@@ -340,6 +340,28 @@ namespace GuardsDigital.Tests.EditMode
                 "The producer sits behind a `may`, so it may never have run when the reader binds it.");
         }
 
+        /// <summary>
+        /// Milestone 9.39 (ruling W10). A Sequence may declare `up to` - its children are the passes
+        /// of one printed count, closed by the first pass the player declines - and nothing else: the
+        /// other optionalities still belong to the children it orders.
+        /// </summary>
+        [Test]
+        public void ASequence_MayBeUpTo_ButNeverMayNorIfAble()
+        {
+            EffectNodeDefinition Sequence(EffectFailurePolicy policy) => new EffectNodeDefinition(
+                new EffectNodeId("passes"), EffectNodeKind.Sequence, policy,
+                childNodeIds: new[] { new EffectNodeId("a"), new EffectNodeId("b") });
+
+            Assert.That(Sequence(EffectFailurePolicy.Mandatory).FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory));
+            Assert.That(Sequence(EffectFailurePolicy.UpTo).FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo));
+            Assert.That(() => Sequence(EffectFailurePolicy.May), Throws.ArgumentException);
+            Assert.That(() => Sequence(EffectFailurePolicy.IfAble), Throws.ArgumentException);
+            Assert.That(
+                Validate(Sequence(EffectFailurePolicy.UpTo), Leaf("a"), Leaf("b")), Is.Empty,
+                "an `up to` Sequence validates exactly as a mandatory one: reaching a later pass still " +
+                "means every earlier pass was entered.");
+        }
+
         [Test]
         public void NodeOutputReadFromAnEarlierMandatorySequenceStep_IsAccepted()
         {

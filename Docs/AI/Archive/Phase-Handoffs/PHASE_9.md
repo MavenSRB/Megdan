@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.39 Declined up-to pass evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.39 | Ruling W10: declining one pass of a printed "up to N" asked a pass at a time ends the remaining passes, keeping everything already placed; declared once as the pass Sequence's `UpTo` policy and read by the resolver on a player's Decline alone; thirteen faces across Mortimer, Wuk, Ignatia, Tali, Trinkets and Rowenna; the six parked 9.13 reader cases executed and dispositioned. [Definition](../../Roadmap/PHASE_9.md#x-939-declining-one-pass-of-an-up-to-n-repeat-ends-the-remaining-passes). | `milestone/9.39` |
+
 ## Milestone 9.26 Bot gate split evidence
 
 | Milestone | Outcome and definition | Commit |

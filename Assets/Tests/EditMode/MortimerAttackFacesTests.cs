@@ -125,24 +125,21 @@ namespace GuardsDigital.Tests.EditMode
                 zombiesAt: new[] { H(2, 0), H(1, -1), H(1, 1), H(2, -1) }, withUltimate: true);
             round.StartPrimaryAttack();
             round.Target(Enemy);
-            foreach (var (pass, zombie) in new[] { (1, H(2, 0)), (2, H(1, -1)), (4, H(1, 1)), (5, H(2, -1)) })
+            // W10 (9.39): a declined pass would close the count, so the four removals are the first
+            // four passes - the printed three and the Ultimate's fourth - and the fifth, with no Zombie
+            // left to remove or move, has nothing to offer and closes on its own.
+            foreach (var (pass, zombie) in new[] { (1, H(2, 0)), (2, H(1, -1)), (3, H(1, 1)), (4, H(2, -1)) })
             {
-                if (pass == 3)
-                {
-                    continue;
-                }
-
-                if (pass == 4)
-                {
-                    round.Decline();
-                }
-
                 round.Accept();
                 round.TakeBullets(MortimerAttackFaces.RemoveBullet(pass));
                 round.PickSpaces(zombie);
             }
 
             Assert.That(round.Zombies(), Is.Empty);
+            if (!round.ActionEnded && round.PendingNode == MortimerRepeatedChoice.UpToNode(MortimerAttackFaces.KnifePrefix, 5))
+            {
+                round.Decline();
+            }
             Assert.That(round.AttackTotal, Is.EqualTo(8),
                 "every Zombie removed adds one, on the Ultimate's extra passes too.");
         }

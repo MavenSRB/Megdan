@@ -177,6 +177,51 @@ namespace GuardsDigital.Tests.EditMode
                 card.Progression.ItemIcon == PrintedValueChannel.Initiative), Is.True);
         }
 
+        /// <summary>
+        /// Milestone 9.39, ruling W10: "Place up to 3 barrier tokens" is one count. After the mandatory
+        /// first Barrier, declining the second "up to" asks no third - before it the third was still
+        /// opened - and the Barrier already placed stands.
+        /// </summary>
+        [Test]
+        public void DecliningTheSecondBarrier_AsksNoThird_AndTheFirstStands()
+        {
+            var board = Board();
+            var turret = OwnedObstacleIdentity.For(TrinketsComponentContent.TurretKind, Trinkets);
+            var card = TrinketsCardContent.BarrierDefinitions[1];
+            var skill = card.ActionDefinitions.Single(action => action.Kind == ActionKind.Skill);
+            var catalog = SyntheticEffectCapabilities.CreateCatalog(
+                TrinketsComponentContent.BarrierHandlers());
+            var components = new MatchComponents(
+                new ComponentDefinitionCatalog(TrinketsComponentContent.Tokens(),
+                    Array.Empty<MarkerDefinition>()),
+                board, new MarkerAttachmentRegister(), board, board, board,
+                obstacles: board);
+            EffectResolutionContext Context() => new EffectResolutionContext(
+                skill.EffectRoot, catalog, Participants(), null, 1, 1,
+                RuleModificationSet.Empty,
+                EffectCardState.Of(new[] { card }, Array.Empty<CardInstance>()),
+                ActionKind.Skill, components: components);
+            Assert.That(board.TryPlaceOrRepositionObstacle(turret, new HexCoordinate(0, 1)), Is.True);
+
+            var step = EffectResolutionSession.Start(
+                new EffectResolutionId("barrier-w10"), new CardInstanceId("barrier-source"),
+                card.Reference, skill.Id, Trinkets, Trinkets,
+                ActionInvocationContext.PrintedPrimary, Context());
+            step = EffectResolutionSession.Answer(
+                step.Frame, step.Frame.PendingChoice.ConfirmInvocation, Context());
+            step = Select(step, new HexCoordinate(1, 1), Context());
+            Assert.That(board.PlacedTokens, Has.Count.EqualTo(1));
+            Assert.That(step.Frame.PendingChoice.NodeId.Value, Is.EqualTo("trinkets-barrier-optional-1"));
+
+            step = EffectResolutionSession.Answer(
+                step.Frame, step.Frame.PendingChoice.DeclineInvocation, Context());
+
+            Assert.That(step.Accepted, Is.True, step.RejectionReason.ToString());
+            Assert.That(step.IsComplete, Is.True, "W10: the decline closes the count; no third Barrier is asked.");
+            Assert.That(step.Frame?.PendingChoice, Is.Null);
+            Assert.That(board.PlacedTokens, Has.Count.EqualTo(1), "the first Barrier stands.");
+        }
+
         [TestCase(0, 2)]
         [TestCase(1, 3)]
         public void FirstBarrierMustAdjoinTurret_ThenUpToPrintedMaximumMayBePlaced(

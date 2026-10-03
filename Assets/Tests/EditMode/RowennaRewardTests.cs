@@ -723,13 +723,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheContentRevision_IsTheRealOneMintedWhenHerSetBecameWhole()
         {
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-1-rev-1"));
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-9-39-rev-1"));
             Assert.That(RowennaCardContent.ContentRevision, Does.Contain("-rev-"),
                 "Every dealt hero's revision ends in '-rev-<n>', and hers now reads as one.");
             Assert.That(
                 RowennaCardContent.AllDefinitions.Select(definition => definition.ContentRevision)
                     .Distinct(),
-                Is.EqualTo(new[] { "rowenna-9-1-rev-1" }),
+                Is.EqualTo(new[] { "rowenna-9-39-rev-1" }),
                 "and one string covers the set, so no face can be left on the placeholder.");
         }
 

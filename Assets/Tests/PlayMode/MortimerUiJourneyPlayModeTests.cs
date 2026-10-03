@@ -279,7 +279,7 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             yield return AwakenZombies(root, SouthZombie, NorthZombie);
             Assert.That(DrawnZombies(), Is.EqualTo(2), "Both Zombies are drawn on the board.");
-            Assert.That(runtime.PendingEffectChoice, Is.Null, "The third and fourth placements were declined.");
+            Assert.That(runtime.PendingEffectChoice, Is.Null, "The third placement was declined, and W10 (9.39) closed the count: no fourth was asked.");
             Healthy(runtime);
         }
 

@@ -197,5 +197,22 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(round.ActionEnded, Is.True);
             Assert.That(round.SpaceOf(Wuk), Is.EqualTo(H(0, 2)));
         }
+
+        /// <summary>
+        /// Milestone 9.39, ruling W10: "Choose up to two times" is one count, so declining the FIRST
+        /// pass asks no second. Before it the second "up to" was still opened.
+        /// </summary>
+        [Test]
+        public void Treetop_DecliningTheFirstPass_AsksNoSecond()
+        {
+            var round = new WukRound(Treetop, treesAt: new[] { H(0, 2) });
+            round.StartPrimarySkill();
+            Assert.That(round.PendingNode, Is.EqualTo("swap-0-up-to"));
+            round.Decline();
+
+            Assert.That(round.PendingNode, Is.Null, "W10: no second pass after the first is declined.");
+            Assert.That(round.ActionEnded, Is.True);
+            Assert.That(round.SpaceOf(Wuk), Is.EqualTo(H(0, 0)), "nothing moved.");
+        }
     }
 }

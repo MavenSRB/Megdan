@@ -213,7 +213,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 }
 
                 nodes.Add(new EffectNodeDefinition(
-                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory, childNodeIds: wrappers));
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.UpTo, childNodeIds: wrappers));
             }
 
             return new EffectDefinition(
