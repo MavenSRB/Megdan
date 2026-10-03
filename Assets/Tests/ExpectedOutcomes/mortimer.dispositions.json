@@ -515,7 +515,7 @@
   "id": "mortimer-macabre-mayhem-zombie-pushes-friendly-never-actor",
   "kind": "not-executable",
   "ref": "W10 (user, 2026-10-03; milestone 9.39) answered OQ-9.13: a decline ends the remaining passes",
-  "note": "Executed under W10: the Zombie pushes the friendly minion, the decline closes the count. The reader's own note names what the table could not state: actor level 5 or higher; offer check: actor is not offered as the push target although adjacent to token-1 (the build offers him: the 9.8 dealing reads \"a unit or a token adjacent to it\" as including Mortimer, MortimerBlueFacesTests.CorpseSlam_TheZombieMayPushMortimerHimself; a reader difference for the user, not a W10 matter); setup: friendly-minion-1 stays in the Battle Zone after the push.",
+  "note": "Executed under W10: the Zombie pushes the friendly minion, the decline closes the count. The reader's own note names what the table could not state: actor level 5 or higher; offer check: actor is not offered as the push target although adjacent to token-1 (the build offers him: the 9.8 dealing reads \"a unit or a token adjacent to it\" as including Mortimer, MortimerBlueFacesTests.CorpseSlam_TheZombieMayPushMortimerHimself; settled by the user on 2026-10-03 as MO-Q5 in HERO_MORTIMER.md: \"He should be offered\", the dealing stands); setup: friendly-minion-1 stays in the Battle Zone after the push.",
   "execute": true
  }
 ]
