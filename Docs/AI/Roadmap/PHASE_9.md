@@ -52,9 +52,26 @@ Historical evidence: [9.13b completion index](../Archive/Phase-Handoffs/PHASE_9.
 
 Additional coverage backlog: `xargatha-stone-gaze-heroes-also-terrain` remains **parked, not executed**. Owner: expected-outcome executor; dependency: simultaneous object-type and turn-lifetime assertions; closing check: prove the enemy remains a hero and also counts as terrain only during the next turn, with before/after controls. Stone Gaze's Movement prohibition executes separately. The five boxed Handicap cases remain outside standard dealt play under p.6, not passing action coverage.
 
-### [ ] 9.13c Tables for Whisper, Tali, Swift, Cutter and Bain
+### [x] 9.13c Tables for Whisper, Tali, Swift, Cutter and Bain
 
 Queued as 9.13a. T2.
+
+Result: independent source-only readers authored 110 cases; one additional obstacle control brings the tables to 111, with 108 executable outcomes covering every ordinary dealt face and each Ultimate. Three boxed Handicap cases are explicitly not executed; Swift and Cutter record theirs separately. Dispositions preserve original readings and fixture adaptations. Generic executor additions cover typed color answers, final positions against original geometry, shared printed token names and real prerequisite Defense/standing plays. Two engine defects closed: obstacle-line queries now include generic occupancy while excluding off-map void, and Totem replaces the would-be Defeat before coins, bounties, Defeat facts and Lane-Push causes, preserving Brogan's removal-only prevention. Both Totem definitions advance to revision 2; obsolete token revisions reject. Card identities, snapshot schema and wire format remain unchanged.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.13c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-913c-third-five-outcome-tables-evidence).
+
+Additional source-reader coverage backlog (parked, not passing coverage; recording does not authorize expansion). Owner: expected-outcome corpus maintainer. Each ordinary face has a separate executable outcome; these are extra branches/boundaries:
+
+| Extra scenario | Dependency | Closing check |
+| --- | --- | --- |
+| Swift Mobile Scout fast travel | Exact zone staging and fast-travel answer/fact | Off-file end-turn placement followed by legal travel; enemy-presence blocked control. |
+| Swift Bullet Time targeting history | Grant-chain-scoped target observation | Same enemy rejected on the second grant-chain targeting, different enemy accepted; earlier ordinary targeting does not falsely exclude under SW-Q2. |
+| Swift Hunting Season bounty ceiling | Three next-turn minion Defeats and isolated bonus income | Exactly two bonus coins on the first two in-radius Defeats, none on the third or outside the next turn/radius. |
+| Cutter Walk the Plank push branch | Exact zone-border staging | Same-zone push causes no discard; crossing forces discard if able or Defeat with an empty hand under CU-13. |
+| Cutter A Fistful of Coins solo win | Match-outcome and solo-winner assertions | Ten coins plus three wins for Cutter alone, including loss for her teammates; nine plus three does not win under CU-D1. |
+| Cutter Legend of the Skies limit | Scoped primary-action/grant history | First primary grants the previous own-slot action once; borrowed primary cannot recurse; turn-one no-previous-slot control. |
 
 ### [ ] 9.13d Tables for Garrus, Widget, Rowenna, Min and Brynn
 

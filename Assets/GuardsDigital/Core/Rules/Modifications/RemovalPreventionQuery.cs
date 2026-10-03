@@ -148,13 +148,12 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// <para><b>Why it is a second reading and not a mode of <see cref="Offered"/>.</b> That one
         /// answers "who is offering to stop this, and what would it cost them" and its whole shape - a
         /// deciding hero, a list of payable cards, an option dropped when the price cannot be met - is
-        /// about a choice somebody makes. Tali's two Totem faces print no choice: "If a friendly minion
-        /// adjacent to a totem would be defeated, remove the totem instead" carries none of p.10's
-        /// three softeners, so p.10 makes it mandatory. There is no chooser, no price to weigh and no
-        /// decline, and the piece that pays is already named by the source.</para>
+        /// about a choice somebody makes. A mandatory removal prevention has no chooser or decline.
+        /// Would-be Defeat replacements are a separate pre-reward boundary, read by
+        /// <see cref="DefeatReplacementQuery"/>, not this query.</para>
         ///
-        /// <para><b>Order is the set's, and it decides which totem goes.</b> Two totems adjacent to one
-        /// minion both declare the same prevention, and only one removal happens; taking the first in
+        /// <para><b>Order is the set's.</b> If two sources both declare the same prevention,
+        /// only one removal happens; taking the first in
         /// the modification set's canonical order makes that deterministic rather than an accident of
         /// board iteration. The set orders token sources by the token instance's stable identity, which
         /// is what makes the same board answer the same way after a restore.</para>

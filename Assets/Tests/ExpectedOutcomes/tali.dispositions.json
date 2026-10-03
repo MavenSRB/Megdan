@@ -1,0 +1,545 @@
+[
+  {
+    "id": "tali-discarded-winter-dagger-has-no-bonus",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "First run lacked color answer support declaration and offered Winter Dagger when an unused decline was supplied. Generic color vocabulary now available; remove unsupported string and surplus decline. Attack2 stays frozen.",
+    "original-case": {
+      "id": "tali-discarded-winter-dagger-has-no-bonus",
+      "card": "Commune with Spirits",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali2__7392014__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.13",
+        "rulebook p.14",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali3__7392015__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "discard": [
+          "Winter Dagger"
+        ],
+        "pieces": [
+          {
+            "ref": "friendly-hero-1",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 2
+        }
+      },
+      "answers": [
+        "friendly-hero-1",
+        "color: Red",
+        "decline",
+        "card: Winter Dagger",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "card": "Winter Dagger",
+          "state": "discarded"
+        }
+      ],
+      "notes": "A friendly hero anywhere in play names Red. Decline optional discard, perform Winter Dagger already in discard; no +3. Defense2 equals Attack2. Performing its action does not retrieve it.",
+      "unsupported": "Reader grammar does not define the friendly hero's owned color-naming question. Intended answer: friendly-hero-1 names Red; remaining actions and Attack2 are explicit source-derived facts."
+    }
+  },
+  {
+    "id": "tali-reign-of-winter-minion-defeat-forces-gold-discard",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "All facts passed but obsolete missing-color declaration failed case. Remove unsupported declaration; frozen Gold choice and discarded Swift Justice retained.",
+    "original-case": {
+      "id": "tali-reign-of-winter-minion-defeat-forces-gold-discard",
+      "card": "Ice Blast",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali__7392023__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali18__7714972__front.png",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper__7387316__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8,
+          "ultimate": true,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 4 from actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Whisper",
+          "hand": [
+            "Swift Justice"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-minion-1",
+        "enemy-hero-1",
+        "color: Gold",
+        "enemy-hero-1: discard Swift Justice"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "card": "Swift Justice",
+          "state": "discarded"
+        }
+      ],
+      "notes": "Level8 Ultimate after basic Attack defeats a minion: selected enemy hero at Radius4 must discard Gold if able. Reserve minion prevents immediate lane push.",
+      "unsupported": "Reader grammar does not yet define color: Gold. Intended actor choice is Gold, and Whisper must discard Swift Justice."
+    }
+  },
+  {
+    "id": "tali-bear-both-distinct-targets",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "Answer the initial action target, then select both modal bullets before their execution and answer both actual Attack targets. Selecting only the adjacent bullet never attacks the initial ranged target. Both frozen distinct-target defeats remain required; original interleaved reader answers are preserved below.",
+    "original-case": {
+      "id": "tali-bear-both-distinct-targets",
+      "card": "Spirit Bear",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali7__7392007__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: If this card is not in the discard, target a unit in range.",
+        "enemy-hero-1",
+        "option: Target a hero adjacent to you.",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Select both bullets on different heroes. Both Attack3; no attack-count assertion because two modal attacks are one primary action."
+    }
+  },
+  {
+    "id": "tali-cold-snap-moves-enemy-not-friendly",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "Enemy1 moved0; default farther control occupied the destination on the same file. Stage outside-radius control off every straight line; all frozen moved expectations retained.",
+    "original-case": {
+      "id": "tali-cold-snap-moves-enemy-not-friendly",
+      "card": "Cold Snap",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali8__7392018__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-2",
+          "moved": 0
+        },
+        {
+          "ref": "friendly-hero-1",
+          "moved": 0
+        }
+      ],
+      "notes": "Choose the direction from actor toward enemy-hero-1; in-radius enemy moves one farther away through an empty space. Radius2 excludes enemy at 3; friendly hero unchanged. Played Blizzard has no end-turn repeat."
+    }
+  },
+  {
+    "id": "tali-snowstorm-moves-enemy-not-friendly",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "Enemy1 moved0; default farther control occupied the destination on the same file. Stage outside-radius control off every straight line; all frozen moved expectations retained.",
+    "original-case": {
+      "id": "tali-snowstorm-moves-enemy-not-friendly",
+      "card": "Snowstorm",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali9__7465498__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-2",
+          "moved": 0
+        },
+        {
+          "ref": "friendly-hero-1",
+          "moved": 0
+        }
+      ],
+      "notes": "Choose the direction from actor toward enemy-hero-1; in-radius enemy moves one farther away through an empty space. Radius3 excludes enemy at 4; friendly hero unchanged. Played Blizzard has no end-turn repeat."
+    }
+  },
+  {
+    "id": "tali-blizzard-moves-enemy-not-friendly",
+    "kind": "executor-gap",
+    "ref": "tmp/9-13c/9-13c-first-all.trx",
+    "note": "Enemy1 moved0; default farther control occupied the destination on the same file. Stage outside-radius control off every straight line; all frozen moved expectations retained.",
+    "original-case": {
+      "id": "tali-blizzard-moves-enemy-not-friendly",
+      "card": "Blizzard",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali11__7392005__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "friendly-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        },
+        {
+          "ref": "enemy-hero-2",
+          "moved": 0
+        },
+        {
+          "ref": "friendly-hero-1",
+          "moved": 0
+        }
+      ],
+      "notes": "Choose the direction from actor toward enemy-hero-1; in-radius enemy moves one farther away through an empty space. Radius3 excludes enemy at 4; friendly hero unchanged. Played Blizzard has no end-turn repeat."
+    }
+  },
+  {
+    "id": "tali-ancestral-totem-prevents-minion-defeat",
+    "kind": "engine-defect",
+    "ref": "tmp/9-13c/9-13c-third-all.trx; tmp/9-13c/9-13c-fourth-all.trx",
+    "note": "Closed production defect: third-all proved an incorrect Defeat and two attacker coins; fourth-all passed with frozen no-Defeat and attacker coins0 unchanged. Generic typed DefeatReplacement now spends the source before rewards, limited bounties, Defeat facts, and lane-push causes, while retaining ordinary Bolster removal prevention. Totem token definitions are revision2; no schema or card revision change. Focused tests cover attack and Skill, immune self-payment, plain Remove, cached consumed sources, restored boards, and bounty retention for the next real Defeat.",
+    "original-case": {
+      "id": "tali-ancestral-totem-prevents-minion-defeat",
+      "card": "Ancestral Totem",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali15__7645351__front.png",
+        "rulebook p.13",
+        "rulebook p.18",
+        "rulebook p.19",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper__7387316__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "friendly-minion-1",
+            "where": "adjacent to actor",
+            "type": "melee"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to friendly-minion-1"
+          },
+          {
+            "ref": "friendly-minion-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Whisper",
+          "coins": 0
+        }
+      },
+      "answers": [
+        "place: adjacent to friendly-minion-1 and adjacent to actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "friendly-minion-1",
+          "is": "not defeated"
+        },
+        {
+          "tokens": "Totem",
+          "on-board": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "coins": 0
+        }
+      ],
+      "notes": "Totem is adjacent to friendly melee minion. Its would-be defeat removes the Totem instead: no minion defeat, no reward. Ancestral applies melee only; Venerated includes ranged.",
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Swift Justice",
+        "action": "Attack",
+        "turn": "next",
+        "answers": [
+          "option: Target a unit adjacent to you.",
+          "friendly-minion-1"
+        ],
+        "offered": true
+      }
+    }
+  },
+  {
+    "id": "tali-venerated-totem-prevents-minion-defeat",
+    "kind": "engine-defect",
+    "ref": "tmp/9-13c/9-13c-third-all.trx; tmp/9-13c/9-13c-fourth-all.trx",
+    "note": "Closed production defect: third-all proved an incorrect Defeat and two attacker coins; fourth-all passed with frozen no-Defeat and attacker coins0 unchanged. Generic typed DefeatReplacement now spends the source before rewards, limited bounties, Defeat facts, and lane-push causes, while retaining ordinary Bolster removal prevention. Totem token definitions are revision2; no schema or card revision change. Focused tests cover attack and Skill, immune self-payment, plain Remove, cached consumed sources, restored boards, and bounty retention for the next real Defeat.",
+    "original-case": {
+      "id": "tali-venerated-totem-prevents-minion-defeat",
+      "card": "Venerated Totem",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali17__7645349__front.png",
+        "rulebook p.13",
+        "rulebook p.18",
+        "rulebook p.19",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper__7387316__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "friendly-minion-1",
+            "where": "adjacent to actor",
+            "type": "ranged"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to friendly-minion-1"
+          },
+          {
+            "ref": "friendly-minion-2",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Whisper",
+          "coins": 0
+        }
+      },
+      "answers": [
+        "place: adjacent to friendly-minion-1 and adjacent to actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "friendly-minion-1",
+          "is": "not defeated"
+        },
+        {
+          "tokens": "Totem",
+          "on-board": 0
+        },
+        {
+          "ref": "enemy-hero-1",
+          "coins": 0
+        }
+      ],
+      "notes": "Totem is adjacent to friendly ranged minion. Its would-be defeat removes the Totem instead: no minion defeat, no reward. Ancestral applies melee only; Venerated includes ranged.",
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Swift Justice",
+        "action": "Attack",
+        "turn": "next",
+        "answers": [
+          "option: Target a unit adjacent to you.",
+          "friendly-minion-1"
+        ],
+        "offered": true
+      }
+    }
+  },
+  {
+    "id": "tali-boxed-handicap",
+    "kind": "not-executable",
+    "ref": "rulebook p.6",
+    "note": "Official setup returns printed H face to box.",
+    "execute": false,
+    "original-case": {
+      "id": "tali-boxed-handicap",
+      "card": "Ice Shard",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tali/tali19__7392021__front.png",
+        "rulebook p.6"
+      ],
+      "setup": {
+        "handicap": true
+      },
+      "answers": [],
+      "expect": [],
+      "notes": "H basic attack targets adjacent hero, Attack2 Radius3; excluded from ordinary dealt set.",
+      "unsupported": "Boxed H face: p.6 returns Handicap cards to the box; unsupported handicap setup."
+    }
+  }
+]

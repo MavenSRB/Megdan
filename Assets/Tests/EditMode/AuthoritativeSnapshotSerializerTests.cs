@@ -23,6 +23,43 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class AuthoritativeSnapshotSerializerTests
     {
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void TotemDefinitionRevision_RoundTripsReplacementAndRejectsOldRemovalSemantics(bool venerated, bool legacy)
+        {
+            var fixture = CreateFixture();
+            var current = venerated
+                ? GuardsDigital.Core.Cards.Verified.TaliComponentContent.VeneratedTotemDefinition
+                : GuardsDigital.Core.Cards.Verified.TaliComponentContent.AncestralTotemDefinition;
+            Assert.That(current.Revision, Is.EqualTo(2), "Changed token meaning requires a new trusted revision.");
+            var definition = legacy
+                ? new TokenDefinition(current.Id, 1, current.DisplayName, current.SupplyCount,
+                    current.Properties, current.RemovalCondition, current.SupplyGroupId)
+                : current;
+            var card = fixture.Configuration.CardInstances.First();
+            var at = fixture.Board.BoardCoordinates.First(fixture.Board.IsEmptyPlayableSpace);
+            fixture.Board.CommitValidatedTokenPlacement(new PlacedToken(
+                new TokenInstanceId("totem-revision-probe"), definition, card.OwnerId, card.OwnerId, card.Id, at));
+            var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
+            if (legacy)
+            {
+                var error = Assert.Throws<SnapshotLoadException>(() => AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(), payload, fixture.Configuration.CardDefinitions,
+                    new[] { fixture.Board.MapDefinition }));
+                Assert.That(error.Reason, Is.EqualTo(SnapshotLoadRejectionReason.ComponentDefinitionRevisionMismatch));
+                return;
+            }
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(MatchContentCatalogs.ForThisBuild(),
+                payload, fixture.Configuration.CardDefinitions, new[] { fixture.Board.MapDefinition });
+            var token = restored.Board.PlacedTokens.Single();
+            Assert.That(token.Definition.Reference, Is.EqualTo(current.Reference));
+            Assert.That(token.Definition.Properties.Any(property => property.Modification != null &&
+                property.Modification.Kind == RuleModificationKind.DefeatReplacement), Is.True);
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board), Is.EqualTo(payload));
+        }
+
         [Test]
         public void RoundTrip_DynamicallyRepositionedObstacleRetainsIdentityAndCanMoveAgain()
         {

@@ -1760,25 +1760,30 @@ namespace GuardsDigital.Tests.EditMode
         // bytes plus six one-byte lengths and six four-byte revisions (30). The older registration lists
         // are strict subsets whose entries still resolve at the same revisions; no fixture deals
         // Takahide, and no persisted field changes. Schema v54 and wire /35 stand; the names keep -v54.
+        // 9.13c REJECT old Totem definition revisions: would-be Defeat replacement is not
+        // removal-only prevention. Both Totem registrations advance 1 -> 2; schema v54 and
+        // wire /35 stay unchanged. A temporary byte-level probe reversed exactly those two
+        // four-byte catalog revisions and reproduced every prior hash, with unchanged lengths.
+        // AuthoritativeSnapshotSerializerTests protects new-role round trips and old-role rejection.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v54", "9cc43eddf46f2049d20d63f754219587ad1d054b586f822faf3d2bc53cbdb20f"),
-            new CompatibilityFixture("active-turn-v54", "737b39708b37f8b8c01659ba26c7e7d4868cfa5f69064e24bd5981821d2af0fb"),
-            new CompatibilityFixture("pending-choice-v54", "4a632416a738fda70808cfdbf5f41300145dc7738562cd3ac03d8c816f5d794c"),
-            new CompatibilityFixture("end-of-round-v54", "fd340f6cb27677fea235b5cd0e5f65d8c6eda6972b469bc43ece60844b372264"),
-            new CompatibilityFixture("pending-minion-battle-v54", "57ebec8484b358ff3bcb741b2130a53810ea84c4bcde3108c74ed7029722e3eb"),
-            new CompatibilityFixture("placed-token-v54", "a222b42a1bf889a93b1dcccecdcf82313205f2b17a16469867ce197a115c2358"),
-            new CompatibilityFixture("attached-marker-v54", "f6959b88b179dc339ebff880d296a384ce92f21f3ca2b99e435b7375111474f0"),
-            new CompatibilityFixture("pending-correction-v54", "ef2c521e084dcfee52426234dea48e57e82b256748dcd727ca1be9cf43089462"),
-            new CompatibilityFixture("paused-level-up-v54", "9fcf5f71bcca47ab536828614dc932e2cf38f5b36f7c6bfe4bec6cab5ef107a5"),
-            new CompatibilityFixture("ended-match-v54", "7c575965181264887a908579b0fc9c8cf18a78084944f1b25a7265cebdb7898a"),
-            new CompatibilityFixture("verified-hand-setup-v54", "4b282c812c3aeed2ee7da9d53e34a17db950b088e543a3c4ae6dc48d720d224a"),
-            new CompatibilityFixture("paused-orbit-repeat-v54", "310e8a65cf66c2bd2917ff70221af7059ae5c3e4332aad6a53133bebe097081c"),
-            new CompatibilityFixture("paused-card-text-v54", "d7881f1109f815fa6a6510f832843bbe43d01e40d114794e051cb11d7f0da535"),
-            new CompatibilityFixture("paused-block-rider-v54", "cda01678bf0158bf30ddf3df7b35aac9af8d926b96d33f0b15c8d766ba2ee745"),
-            new CompatibilityFixture("paused-repeated-attack-v54", "6c3d122ea6ef110397fb46e1b42f7b2b39ed5585db98daf167060e4643c2777d"),
-            new CompatibilityFixture("parked-pre-action-v54", "53fe1f4fdaccf9f2fe235827dd2a943c26623acda1aeb5322b0bbdec5d25ce97"),
-            new CompatibilityFixture("spellbook-v54", "dcf95d0e7f4bc9e6738729a773e227a72af4646c56625afaa84994e1b52aaccf")
+            new CompatibilityFixture("setup-v54", "57494ef206e321bb0fd252ab87a498ce6b4694c9ec7339781b64ffa826ab8116"),
+            new CompatibilityFixture("active-turn-v54", "9a8ef1181f8c44e0e166c45400042ad0a03120671495b925dc7ce27e167ca317"),
+            new CompatibilityFixture("pending-choice-v54", "8aa7bbfc3729c5229276fdb7a7b4c22c43761e39d0c215512cb91c38be3dfa4a"),
+            new CompatibilityFixture("end-of-round-v54", "df7104dc66174b3efd80b9076c719f794021206630b6d11a93ff9d029e7c8c05"),
+            new CompatibilityFixture("pending-minion-battle-v54", "0e86a447ef6d07800fbc830d7a555b96566fc7a7d2e13d4d7c5cbbe07677570d"),
+            new CompatibilityFixture("placed-token-v54", "9e102400d4583f9f5fb6de02515152dc131fd1a04a7159e3bcb966521841d9fb"),
+            new CompatibilityFixture("attached-marker-v54", "b710d91c998388fc4c704ab72df86ce4579d4ef0f3742bc7ada73665199aac2e"),
+            new CompatibilityFixture("pending-correction-v54", "2c3384e622e978ff256c94dff8054fc51d841b86bdee040c1e600d8bf63ef35a"),
+            new CompatibilityFixture("paused-level-up-v54", "6bbde662fc4a2bbdfb440f123452b79d6609dfd2f0404f84cc0168db4d1104f7"),
+            new CompatibilityFixture("ended-match-v54", "2c340e329a2dfbdf82e3e77f894c2f3f8233c9c5cdd6d8cfdb66b02a8b2e3973"),
+            new CompatibilityFixture("verified-hand-setup-v54", "364a76d096ea4ac42b5c369080a56324b7c3c1084072be8ebe88809b0fba6b48"),
+            new CompatibilityFixture("paused-orbit-repeat-v54", "20c48bb19ea1adf3477b08f0a7eb59b75340ff57714da8cb2d592eb5b252cb5c"),
+            new CompatibilityFixture("paused-card-text-v54", "e7c2c7ad9e59890d80a23d1a3e6f717feb7f9da3c681977bce9a7589e5e049ac"),
+            new CompatibilityFixture("paused-block-rider-v54", "fdab332d45fa444e6604bab2004195ff6eea3c60e041a36017266ba8e73b0e2e"),
+            new CompatibilityFixture("paused-repeated-attack-v54", "cd75687dce7320c7a2a3f6d3ac4ef5dde56ed665d96bc6e64423e3cbccd872fd"),
+            new CompatibilityFixture("parked-pre-action-v54", "3091eef48486c820c2a5b40050035dfa53f7a7ba2b0174e4e1604ac645904191"),
+            new CompatibilityFixture("spellbook-v54", "5c405e4594636f5ed4a0a2521fe9bd3fdacb62f36bf11acec3ae8ac43b20e39d")
         };
 
         [Test]
@@ -1812,6 +1817,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(restored.CaptureSnapshot(), Is.EqualTo(snapshot), fixture.Name);
             }
         }
+
 
         /// <summary>
         /// Milestone 8.25e7. Schema v34 already writes the target excluded by a repeated Attack, but

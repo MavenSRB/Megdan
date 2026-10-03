@@ -1,0 +1,909 @@
+{
+  "hero": "Swift",
+  "cases": [
+    {
+      "id": "swift-reload-defeats-minion",
+      "card": "Reload!",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift__7578960__front.png",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        }
+      ]
+    },
+    {
+      "id": "swift-bounce-crosses-obstacle",
+      "card": "Bounce",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift2__7579012__front.png",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward obstacle-1",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "at-initial": "distance 2 from actor in a straight line through obstacle-1"
+        }
+      ]
+    },
+    {
+      "id": "swift-snipe-maximum-range",
+      "card": "Snipe",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift3__7572613__front.png",
+        "rulebook p.9",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ]
+    },
+    {
+      "id": "swift-prepared-shot-maximum-range",
+      "card": "Prepared Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift4__7572612__front.png",
+        "rulebook p.9",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ]
+    },
+    {
+      "id": "swift-killshot-maximum-range",
+      "card": "Killshot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift6__7572609__front.png",
+        "rulebook p.9",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 6
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ]
+    },
+    {
+      "id": "swift-snipe-inside-maximum-range-excluded",
+      "card": "Snipe",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift3__7572613__front.png",
+        "rulebook p.9",
+        "rulebook p.13",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-2",
+          "targetable": false
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "not defeated"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "swift-shotgun-splash-discard",
+      "card": "Shotgun",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift5__7505640__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "swift-super-shotgun-splash-discard",
+      "card": "Super-Shotgun",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift7__7505632__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 5
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "swift-steam-jump-place-and-push",
+      "card": "Steam Jump",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift8__7578961__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 3 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": "distance 2 from actor in a straight line"
+        }
+      ]
+    },
+    {
+      "id": "swift-assault-jump-place-and-push",
+      "card": "Assault Jump",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift9__7578113__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 4 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": "distance 3 from actor in a straight line"
+        }
+      ]
+    },
+    {
+      "id": "swift-drop-trooper-place-and-push",
+      "card": "Drop Trooper",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift11__7578114__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 4 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": "distance 3 from actor in a straight line"
+        }
+      ]
+    },
+    {
+      "id": "swift-delayed-jump-end-turn-placement",
+      "card": "Delayed Jump",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift10__7505638__front.png",
+        "rulebook p.17",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        }
+      },
+      "answers": [
+        "space: distance 2 from actor off every straight line",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ],
+      "checkpoint": "end-of-turn"
+    },
+    {
+      "id": "swift-mobile-scout-end-turn-placement",
+      "card": "Mobile Scout",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift12__7505635__front.png",
+        "rulebook p.17",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        }
+      },
+      "answers": [
+        "space: distance 2 from actor off every straight line",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        }
+      ],
+      "checkpoint": "end-of-turn"
+    },
+    {
+      "id": "swift-suppress-edge-discard",
+      "card": "Suppress",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift13__7572606__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "swift-pin-down-edge-discard",
+      "card": "Pin Down",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift14__7572605__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "swift-killing-ground-edge-discard",
+      "card": "Killing Ground",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift16__7572608__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "swift-killing-ground-defeat-choice",
+      "card": "Killing Ground",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift16__7572608__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-1: take defeat"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ]
+    },
+    {
+      "id": "swift-mark-for-death-move-and-next-turn-bounty",
+      "card": "Mark for Death",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift15__7579992__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 2 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "toward actor",
+        "distance 1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 3
+        }
+      ],
+      "follow-up": {
+        "hero": "actor",
+        "card": "Reload!",
+        "action": "Skill",
+        "turn": "next",
+        "offered": true,
+        "answers": [
+          "option: Defeat a minion adjacent to you.",
+          "enemy-minion-1"
+        ]
+      }
+    },
+    {
+      "id": "swift-hunting-season-move-and-next-turn-bounty",
+      "card": "Hunting Season",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift17__7579993__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 2 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "toward actor",
+        "distance 1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 3
+        }
+      ],
+      "follow-up": {
+        "hero": "actor",
+        "card": "Reload!",
+        "action": "Skill",
+        "turn": "next",
+        "offered": true,
+        "answers": [
+          "option: Defeat a minion adjacent to you.",
+          "enemy-minion-1"
+        ]
+      }
+    },
+    {
+      "id": "swift-bullet-time-second-basic-primary",
+      "card": "Reload!",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift__7578960__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift18__7702879__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-3",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1",
+        "card: Reload!",
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-minion-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 4
+        }
+      ]
+    }
+  ],
+  "unsupported": [
+    {
+      "card": "Backup",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift19__7505633__front.png",
+        "rulebook p.6"
+      ],
+      "reason": "Boxed H Handicap face is outside the ordinary dealt deck; handicap setup is unsupported by the neutral grammar."
+    },
+    {
+      "card": "Mobile Scout",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift12__7505635__front.png",
+        "rulebook p.11",
+        "rulebook p.17"
+      ],
+      "reason": "The end-turn placement is executable. Positive optional fast-travel coverage needs explicit zone staging and a fast-travel answer/outcome; these are absent from the supplied grammar."
+    },
+    {
+      "card": "Bullet Time",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift18__7702879__front.png",
+        "rulebook p.10",
+        "rulebook p.16"
+      ],
+      "reason": "Executable case proves an additional basic primary action after resolution. Separate targeting-history coverage should prove the same enemy hero cannot be targeted twice by this ability in one turn; the supplied grammar has no scoped targeting question/history expectation."
+    },
+    {
+      "card": "Hunting Season",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift17__7579993__front.png",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "reason": "Executable case proves the first next-turn bounty. The two-bounty ceiling and third-defeat exclusion require more next-turn actions than the supplied single follow-up supports."
+    }
+  ]
+}

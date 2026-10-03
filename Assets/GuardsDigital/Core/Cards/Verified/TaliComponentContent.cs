@@ -162,7 +162,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// One Totem role: the save its card prints, and - on Venerated Totem alone - the immunity.
         ///
-        /// <para><b>The save is a mandatory removal prevention, and its price is the totem.</b> p.10's
+        /// <para><b>The save replaces the would-be Defeat, and its price is the totem.</b> p.10's
         /// Mandatory and Optional Steps rule is the whole argument: "Steps which include 'you may',
         /// 'up to' and 'if able' are non-mandatory, all other steps are mandatory", and this sentence
         /// carries none of the three. So nobody is asked, nobody can decline, and what pays is the
@@ -191,9 +191,9 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 new TokenPropertyDefinition(
                     "minion-save",
-                    "removal-prevention",
+                    "defeat-replacement",
                     ApplicabilityKind,
-                    RuleModification.ForRemovalPrevention(
+                    RuleModification.ForDefeatReplacement(
                         RemovalPreventionCost.RemoveTheSourceToken),
                     savedMinions)
             };
@@ -210,7 +210,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
             return new TokenDefinition(
                 id,
-                1,
+                2,
                 "Totem",
                 SupplyCount,
                 properties,

@@ -222,8 +222,10 @@ namespace GuardsDigital.Tests.EditMode
             var result = AttackMinion(fixture, ShieldedMinionId,
                 "tali-save-attack", modifications);
 
-            Assert.That(result.MinionDefeat.RemovalResult.Kind,
-                Is.EqualTo(DefeatRemovalResultKind.RemovalPrevented));
+            Assert.That(result.MinionDefeat.IsReplaced, Is.True,
+                "Totem replaces the would-be Defeat; it does not merely prevent removal.");
+            Assert.That(result.MinionDefeat.Facts, Is.Empty);
+            Assert.That(fixture.Authority.CoinLedger.GetCoins(fixture.AttackerId), Is.Zero);
             Assert.That(fixture.Authority.PendingRemovalPrevention, Is.Null,
                 "Tali's printed mandatory save asks no player.");
             Assert.That(fixture.Board.Minions.Any(minion =>

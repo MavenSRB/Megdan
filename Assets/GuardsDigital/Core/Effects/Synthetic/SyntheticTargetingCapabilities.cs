@@ -1025,7 +1025,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static IReadOnlyList<GrappleOption> Options(EffectCapabilityContext context)
             {
                 var components = context.Components;
-                if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
+                if (components == null || !components.CanDisplace || components.Tokens == null || !context.CardState.IsAvailable)
                 {
                     return Array.Empty<GrappleOption>();
                 }
@@ -1076,19 +1076,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     for (var step = 1; step <= printed.Total; step++)
                     {
                         var at = StraightLineQuery.Step(actorAt, direction, step);
-                        if (!TryClassifySpace(board, at, out var isTerrain))
+                        if (!TryClassifySpace(board, at, out _))
                         {
                             // Off the map is the absence of a space rather than an obstacle, so the
                             // walk ends without offering anything further along this file.
                             break;
                         }
 
-                        // p.18 names the three kinds in one sentence: "Units, terrain (including
-                        // printed on the board), tokens". Stated here rather than borrowed from
-                        // ObstacleQuery, whose enterability reading folds "off the map" in with
-                        // terrain - a distinction this clause has to keep.
-                        if (!isTerrain && !board.TryGetObjectAt(at, out _) &&
-                            !context.Modifications.AnyOverlayMakesAnObstacleOf(at))
+                        // Off-map void was excluded above. Now use the shared occupancy query:
+                        // a generic obstacle blocks the ray too, although it is not displaceable.
+                        if (!ObstacleQuery.IsObstacle(components.Tokens, at, context.Modifications))
                         {
                             continue;
                         }

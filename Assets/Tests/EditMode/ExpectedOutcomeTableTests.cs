@@ -40,6 +40,11 @@ namespace GuardsDigital.Tests.EditMode
             yield return new TestCaseData("misa", MisaCardContent.DealtDefinitions).SetName("coverage/misa");
             yield return new TestCaseData("silverarrow", SilverarrowCardContent.DealtDefinitions).SetName("coverage/silverarrow");
             yield return new TestCaseData("ursafar", UrsafarCardContent.DealtDefinitions).SetName("coverage/ursafar");
+            yield return new TestCaseData("whisper", WhisperCardContent.DealtDefinitions).SetName("coverage/whisper");
+            yield return new TestCaseData("tali", TaliCardContent.DealtDefinitions).SetName("coverage/tali");
+            yield return new TestCaseData("swift", SwiftCardContent.DealtDefinitions).SetName("coverage/swift");
+            yield return new TestCaseData("cutter", CutterCardContent.DealtDefinitions).SetName("coverage/cutter");
+            yield return new TestCaseData("bain", BainCardContent.DealtDefinitions).SetName("coverage/bain");
         }
 
         [TestCaseSource(nameof(CompletedBatchHeroes))]

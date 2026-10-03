@@ -40,6 +40,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// </summary>
     public sealed class MinionDefeatResolution
     {
+        private MinionDefeatResolution()
+        {
+            IsReplaced = true;
+            Facts = Array.Empty<MinionDefeatFactKind>();
+            LanePush = LanePushQualification.None;
+        }
+
+        /// <summary>No Defeat or reward exists when the would-be outcome was replaced.</summary>
+        public bool IsReplaced { get; }
+
+        public static MinionDefeatResolution Replaced() => new MinionDefeatResolution();
+
         private MinionDefeatResolution(
             DefeatOutcome defeat,
             DefeatRewardResult reward,

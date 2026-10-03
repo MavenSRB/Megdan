@@ -23,7 +23,7 @@ namespace GuardsDigital.Tests.EditMode
     ///
     /// <para>Four claims are measured here, each of which is a printed sentence or a user ruling:
     /// <b>one supply of three shared across roles</b> (RULING 44), the <b>Ice initiative aura</b> with
-    /// no floor (RULING 25), the <b>totem save</b> as a mandatory removal prevention, and <b>token
+    /// no floor (RULING 25), the <b>totem save</b> as a mandatory Defeat replacement, and <b>token
     /// immunity</b> (RULING 26) - the first immunity in the game addressed to something p.19 says is
     /// not a unit.</para>
     ///
@@ -407,7 +407,7 @@ namespace GuardsDigital.Tests.EditMode
                 "legal answer, and the payable-cards test would then drop it for having no CARDS to " +
                 "pay with, which would let a printed sentence silently never fire.");
 
-            var automatic = RemovalPreventionQuery.Automatic(minion, set);
+            var automatic = DefeatReplacementQuery.Sources(minion, set);
             Assert.That(automatic.Count, Is.EqualTo(1),
                 "\"If a friendly minion adjacent to a totem would be defeated, remove the totem " +
                 "instead\" carries none of p.10's three softeners, so it is mandatory.");
@@ -418,14 +418,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.37. The wiring this milestone owed: a mandatory prevention now
-        /// resolves the removal directly, through the exact type
-        /// <c>AttackDefenseCardActionStrategyBackend.ResolveRemovalStage</c> asks -
-        /// <see cref="RemovalStageDecision.IsAutomaticallyPrevented"/> - rather than only being
-        /// readable off <see cref="RemovalPreventionQuery.Automatic"/> in isolation.
+        /// The mandatory replacement consumes its source before a Defeat or reward exists.
+        /// It is distinct from the removal-stage options for an already-recorded Defeat.
         /// </summary>
         [Test]
-        public void TheMandatoryTotemSaveIsReadByRemovalStageDecisionItself_NotOnlyByTheBareQuery()
+        public void TheMandatoryTotemSaveReplacesDefeatBeforeRewardsWithoutARemovalStageChoice()
         {
             var board = CreateBoard();
             Place(board, TaliComponentContent.VeneratedTotemDefinition, TokenAt, "totem-1");
@@ -439,9 +436,8 @@ namespace GuardsDigital.Tests.EditMode
                 Build(board),
                 LanePushCauseKind.Defeat);
 
-            Assert.That(stage.IsAutomaticallyPrevented(minion), Is.True,
-                "The exact call ResolveRemovalStage now makes before ever offering a card-priced " +
-                "pause must see the totem's mandatory save.");
+            Assert.That(DefeatReplacementQuery.Sources(minion.AsRuleObject(), Build(board)), Has.Count.EqualTo(1),
+                "The pre-Defeat boundary sees the source before rewards or removal options.");
             Assert.That(stage.OfferedPreventions(
                     minion, Array.Empty<CardDefinition>(), Array.Empty<CardInstance>()),
                 Is.Empty,
@@ -450,7 +446,7 @@ namespace GuardsDigital.Tests.EditMode
                 "needed no change of its own.");
             Assert.That(board.PlacedTokens, Has.Count.EqualTo(1),
                 "Reading the available prevention must not spend the source token.");
-            Assert.That(stage.ApplyAutomaticPrevention(minion), Is.True,
+            Assert.That(ReplaceDefeat(board, minion), Is.True,
                 "A mandatory save is applied without asking anyone.");
             Assert.That(board.PlacedTokens, Is.Empty,
                 "The Totem that saved the minion is removed as the printed cost.");
@@ -479,7 +475,7 @@ namespace GuardsDigital.Tests.EditMode
                 LanePushCauseKind.Defeat);
 
             Assert.That(stage.IsAutomaticallyPrevented(minion), Is.False);
-            Assert.That(stage.ApplyAutomaticPrevention(minion), Is.False);
+            Assert.That(ReplaceDefeat(board, minion), Is.False);
             Assert.That(board.PlacedTokens, Has.Count.EqualTo(1),
                 "An inapplicable Totem cannot be consumed.");
         }
@@ -492,13 +488,7 @@ namespace GuardsDigital.Tests.EditMode
                 new HexCoordinate(-1, 1), "totem-z");
             Place(board, TaliComponentContent.AncestralTotemDefinition,
                 TokenAt, "totem-a");
-            var stage = new RemovalStageDecision(
-                RuleActivity.Attack,
-                RuleObject.ForHero(Tali),
-                board, board, StagedBoardParticipants.Create(), Build(board),
-                LanePushCauseKind.Defeat);
-
-            Assert.That(stage.ApplyAutomaticPrevention(
+            Assert.That(ReplaceDefeat(board,
                 BoardObjectReference.ForMinion(new MinionId(MinionIdValue))), Is.True);
             Assert.That(board.PlacedTokens.Select(token => token.Id.Value),
                 Is.EquivalentTo(new[] { "totem-z" }),
@@ -512,7 +502,7 @@ namespace GuardsDigital.Tests.EditMode
             Place(board, TaliComponentContent.AncestralTotemDefinition, TokenAt, "totem-1");
 
             Assert.That(
-                RemovalPreventionQuery.Automatic(
+                DefeatReplacementQuery.Sources(
                     RuleObject.ForMinion(new MinionId(MinionIdValue)), Build(board)),
                 Is.Empty,
                 "Ancestral Totem's printed \"melee\" is the whole difference between the two faces.");
@@ -525,7 +515,7 @@ namespace GuardsDigital.Tests.EditMode
             Place(board, TaliComponentContent.VeneratedTotemDefinition, TokenAt, "totem-1");
 
             Assert.That(
-                RemovalPreventionQuery.Automatic(
+                DefeatReplacementQuery.Sources(
                     RuleObject.ForMinion(new MinionId(MinionIdValue)), Build(board)).Count,
                 Is.EqualTo(1),
                 "The pair differ in exactly the one printed word, and the pair of tests is the proof.");
@@ -538,7 +528,7 @@ namespace GuardsDigital.Tests.EditMode
             Place(board, TaliComponentContent.VeneratedTotemDefinition, FarSpace, "totem-1");
 
             Assert.That(
-                RemovalPreventionQuery.Automatic(
+                DefeatReplacementQuery.Sources(
                     RuleObject.ForMinion(new MinionId(MinionIdValue)), Build(board)),
                 Is.Empty,
                 "The adjacency is measured from the TOKEN's space, which is where p.19 puts a placed " +
@@ -552,7 +542,7 @@ namespace GuardsDigital.Tests.EditMode
             Place(board, TaliComponentContent.VeneratedTotemDefinition, TokenAt, "totem-1");
 
             Assert.That(
-                RemovalPreventionQuery.Automatic(
+                DefeatReplacementQuery.Sources(
                     RuleObject.ForMinion(new MinionId(MinionIdValue)), Build(board)),
                 Is.Empty,
                 "p.17's Friendly is \"another unit on your team\", read from the token's controller.");
@@ -589,8 +579,12 @@ namespace GuardsDigital.Tests.EditMode
             definition.Properties
                 .Single(property =>
                     property.Modification != null &&
-                    property.Modification.Kind == RuleModificationKind.RemovalPrevention)
+                    property.Modification.Kind == RuleModificationKind.DefeatReplacement)
                 .AffectedObject;
+
+        private static bool ReplaceDefeat(AdjacentMoveAuthority board, BoardObjectReference minion) =>
+            DefeatReplacementQuery.TryApply(minion, RuleActivity.Attack, RuleObject.ForHero(Enemy),
+                board, StagedBoardParticipants.Create(), Build(board));
 
         private static PlacedToken Place(
             AdjacentMoveAuthority board,

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.13c Third-five outcome tables evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.13c | Independent Whisper, Tali, Swift, Cutter and Bain tables, exact disagreement dispositions and executor assertions, source-correct generic obstacle targeting and pre-Defeat Totem replacement with versioned token compatibility. [Definition](../../Roadmap/PHASE_9.md#x-913c-tables-for-whisper-tali-swift-cutter-and-bain). | `milestone/9.13c` |
+
 ## Milestone 9.13b Second-five outcome tables evidence
 
 | Milestone | Outcome and definition | Commit |

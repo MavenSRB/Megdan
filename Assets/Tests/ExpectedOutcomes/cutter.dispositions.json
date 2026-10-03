@@ -1,0 +1,334 @@
+[
+  {
+    "id": "cutter-grappling-bolt-five-range",
+    "kind": "engine-defect",
+    "ref": "Assets/GuardsDigital/Core/Effects/Synthetic/SyntheticTargetingCapabilities.cs, RangeObstacleTargetHandler.Options; rulebook p.18 Obstacle; tmp/9-13c/9-13c-obstacle-red.trx -> tmp/9-13c/9-13c-obstacle-green.trx",
+    "note": "The blind generic-obstacle scenario is preserved without weakened expectations. The selection ray omitted generic ObstacleOccupancy because its duplicated terrain/unit/token classification queried only displaceable objects. The correction keeps the declared-map boundary check, then uses canonical ObstacleQuery.IsObstacle through the real placement port; generic obstacles become Cutter targets and still block Bain's narrowed unit/token selection. New regression fixture recorded two failures and one off-map control pass before the fix, then all three passed within the 89-test green run. The original corpus case remains executable; final milestone evidence is recorded once in the commit body."
+  },
+  {
+    "id": "cutter-brace-for-impact-charge-through-obstacle",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind through placement meant between actor and distant hero, whereas supplied through grammar continues beyond its named point. Stage the obstacle first, then the hero beyond it. Direct card-text movement uses exact initial-relative endpoint plus moved distance instead of Movement-action-only history. Discard and route-crossing outcomes preserved.",
+    "original": {
+      "id": "cutter-brace-for-impact-charge-through-obstacle",
+      "card": "Brace for Impact",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter13__7718211__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 1 from actor in a straight line through enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 3",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "moved-through": "obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-ramming-speed-charge-through-obstacle",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind through placement meant between actor and distant hero, whereas supplied through grammar continues beyond its named point. Stage the obstacle first, then the hero beyond it. Direct card-text movement uses exact initial-relative endpoint plus moved distance instead of Movement-action-only history. Discard and route-crossing outcomes preserved.",
+    "original": {
+      "id": "cutter-ramming-speed-charge-through-obstacle",
+      "card": "Ramming Speed",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter14__7718210__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 1 from actor in a straight line through enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 4",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "actor",
+          "moved-through": "obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-crashland-charge-through-obstacle",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind through placement meant between actor and distant hero, whereas supplied through grammar continues beyond its named point. Stage the obstacle first, then the hero beyond it. Direct card-text movement uses exact initial-relative endpoint plus moved distance instead of Movement-action-only history. Discard and route-crossing outcomes preserved.",
+    "original": {
+      "id": "cutter-crashland-charge-through-obstacle",
+      "card": "Crashland",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter16__7718208__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 6 from actor in a straight line"
+          },
+          {
+            "ref": "obstacle-1",
+            "where": "distance 1 from actor in a straight line through enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 5",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 5
+        },
+        {
+          "ref": "actor",
+          "moved-through": "obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-outmaneuver-swap-at-radius-edge",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Move battle-zone constraint from unsupported setup root onto actor, the documented fixture location. Exact two-way swap remains required; this keeps the swapped minion inside the Battle Zone. Second-run fixture correction: answer the optional post-swap movement with distance 0, the coordinate decision that stops without moving; bare decline did not answer that question. The exact swap assertion stays unchanged.",
+    "original": {
+      "id": "cutter-outmaneuver-swap-at-radius-edge",
+      "card": "Outmaneuver",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter15__7718209__front.png",
+        "rulebook p.9",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "battle-zone": true,
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-minion-1"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-outsmart-swap-at-radius-edge",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Move battle-zone constraint from unsupported setup root onto actor, the documented fixture location. Exact two-way swap remains required; this keeps the swapped minion inside the Battle Zone. Second-run fixture correction: answer the optional post-swap movement with distance 0, the coordinate decision that stops without moving; bare decline did not answer that question. The exact swap assertion stays unchanged.",
+    "original": {
+      "id": "cutter-outsmart-swap-at-radius-edge",
+      "card": "Outsmart",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter17__7718207__front.png",
+        "rulebook p.9",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "battle-zone": true,
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-minion-1"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-legend-of-skies-previous-primary",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Wrap the unchanged previous-turn Hold history in the grammar array. Ultimate must still perform the previous-slot primary and defeat the second minion.",
+    "original": {
+      "id": "cutter-legend-of-skies-previous-primary",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter18__7624846__front.png",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter3__7624850__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "standing": "actor played Daring Strike last turn using Hold",
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-3",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1",
+        "card: Daring Strike",
+        "option: Target a unit adjacent to you.",
+        "enemy-minion-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-minion-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "cutter-grappling-bolt-unit-obstacle-control",
+    "kind": "executor-gap",
+    "ref": "rulebook p.18 Obstacle; Docs/AI/Rules/HERO_CUTTER.md CU-Q2",
+    "note": "Additional positive control uses a hero as the printed obstacle. The original synthetic-obstacle failure remains executable as cutter-grappling-bolt-five-range; this control does not replace or waive it."
+  }
+]

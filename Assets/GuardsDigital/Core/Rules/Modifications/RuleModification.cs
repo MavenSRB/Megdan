@@ -458,7 +458,10 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// earlier declaration names moves nothing, while a property would move every hero's content
         /// digest.</para>
         /// </summary>
-        MovementActionOnlyInAStraightLine = 19
+        MovementActionOnlyInAStraightLine = 19,
+
+        /// <summary>Replace a would-be minion Defeat by consuming its declared source token.</summary>
+        DefeatReplacement = 20
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -1303,6 +1306,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RestrictedActorScope.AnyActor,
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
+
+        public static RuleModification ForDefeatReplacement(RemovalPreventionCost cost)
+        {
+            if (cost.Kind != RemovalPreventionCostKind.RemoveTheSourceToken)
+                throw new ArgumentException("A Defeat replacement must pay with its source token.", nameof(cost));
+            return new RuleModification(
+                RuleModificationKind.DefeatReplacement, Array.Empty<RuleActivity>(),
+                RulePermissionKind.None, PrintedValueChannel.None, 0, EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor, RuleValueApplicability.Always, SourceValueQueryKind.None, cost);
+        }
 
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {

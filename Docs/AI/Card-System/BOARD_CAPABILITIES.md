@@ -140,6 +140,8 @@ Milestone 6.6 implements this as the registered `synthetic-replace-token` capabi
 
 ## Removal, defeat, prevention, and battle consequences
 
+A printed would-be-Defeat replacement precedes the [ordinary Defeat stages](RESOLUTION_AND_EFFECTS.md#deterministic-resumable-resolution). `DefeatReplacementQuery` consumes a declared mandatory source-token price before reward accounting, limited Defeat bounties, Defeat facts or Lane-Push qualification. `MinionDefeatResolution.IsReplaced` distinguishes that transient result: no Defeat/reward facts and no Lane-Push cause. Tali's Totem declares this rule; Brogan's removal-only prevention still retains the Defeat and reward. The replacement is definition-bound and synchronous, adding no pending-choice or snapshot field. The implemented declaration is `RuleModificationKind.DefeatReplacement` for minions, applied by Attack and effect-invoked Defeat; plain Remove never consults it.
+
 ### Remove
 
 `RemoveEffect` takes a game piece off the board without defeat rewards. It records the destination (supply, pool, or other defined location) and runs applicable removal/prevention triggers. Removing the last enemy minion in the Battle Zone can trigger an immediate Lane Push; moving, pushing, or swapping it cannot.

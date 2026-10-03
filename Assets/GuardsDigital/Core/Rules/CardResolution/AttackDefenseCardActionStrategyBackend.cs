@@ -1618,6 +1618,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 coins,
                 0);
             if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            if (DefeatReplacementQuery.TryApply(
+                BoardObjectReference.ForMinion(targetMinionId), RuleActivity.Attack,
+                RuleObject.ForHero(resolution.ActorId), adjacentMoveAuthority, participants, modifications))
+            {
+                var replacedSteps = precedingSteps ?? new List<ResolutionStep>();
+                replacedSteps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution)));
+                replacedSteps.AddRange(StepsAfterMinionDefeat(resolution, definitions));
+                pendingAttackResolution = null;
+                pendingAttackTargetChoice = null;
+                pendingDefenseChoice = null;
+                ClearSpentSequenceChain();
+                return AttackActionResolutionResult.Accept(
+                    null, null, null, replacedSteps, AttackResolutionOutcome.AttackSuccessful,
+                    MinionDefeatResolution.Replaced());
+            }
+
             var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)
             {
@@ -1723,7 +1739,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 LanePushCauseKind.Defeat);
 
-            // Milestone 8.37. A mandatory prevention - Tali's totem save is the first -
+            // A mandatory removal prevention (not a would-be Defeat replacement)
             // has nobody to ask and nothing to decide, so it is asked and applied before the offered,
             // card-priced family ever gets a chance to open a pause. Asked unconditionally: unlike the
             // offered family below, it needs no identity to rebuild a remainder from, because nobody is
@@ -2032,6 +2048,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new InvalidOperationException(
                     "Card text asked to defeat a friendly minion; the rulebook forbids defeating a " +
                     "friendly unit with no exceptions (ruling W4).");
+
+            if (DefeatReplacementQuery.TryApply(
+                BoardObjectReference.ForMinion(targetMinionId), RuleActivity.Skill,
+                RuleObject.ForHero(actorId), adjacentMoveAuthority, participants, modifications))
+                return MinionDefeatResolution.Replaced();
 
             var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)

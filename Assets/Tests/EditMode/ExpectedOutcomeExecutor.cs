@@ -1829,8 +1829,13 @@ namespace GuardsDigital.Tests.EditMode
                     }
                     else if (startedCreator.IsDefined && projection.DecisionContract != null)
                     {
-                        // A standing effect is raised the way the game raises it, every answer the doing way.
-                        next = projection.DecisionContract.Commands.OrderBy(OfferOutcomeTests.Doing).First();
+                        // Explicit staged Defense applies to the prerequisite play too. Other
+                        // prerequisite questions retain the documented doing-way default.
+                        var defender = projection.PendingDefenseChoice;
+                        next = defender != null && refSetups.TryGetValue(RefOfHero(defender.ChooserId), out var spec) &&
+                            spec.Has("defends-with")
+                            ? AnswerDefense(projection, projection.DecisionContract, null)
+                            : projection.DecisionContract.Commands.OrderBy(OfferOutcomeTests.Doing).First();
                     }
 
                     if (next == null)
@@ -1852,7 +1857,11 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var owner = asked.HeroId;
                 CardInstanceId chosen = default;
-                if (owner.Equals(actor) && isDefend)
+                if (owner.Equals(actor) && hasLastTurn && turn == 0)
+                {
+                    chosen = standing.First(value => value.LastTurn).Card;
+                }
+                else if (owner.Equals(actor) && isDefend)
                 {
                     chosen = fillers[actor].Count > turn ? fillers[actor][turn] : default;
                 }
@@ -2167,7 +2176,7 @@ namespace GuardsDigital.Tests.EditMode
                 return answer;
             }
 
-            private enum AnswerShape { None, Reference, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline }
+            private enum AnswerShape { None, Reference, Decline, Distance, Toward, Away, Option, Card, Defense, Space, RefDiscard, RefDefeat, RefDecline, Color }
 
             private AnswerShape ShapeOf(string answer, out string value, out string who)
             {
@@ -2175,6 +2184,14 @@ namespace GuardsDigital.Tests.EditMode
                 who = null;
                 if (answer == null) return AnswerShape.None;
                 var text = Normalize(answer);
+                if (text.StartsWith("color:", StringComparison.Ordinal))
+                {
+                    value = text.Substring(6).Trim();
+                    if (!Regex.IsMatch(value, "^[a-z]+$") || !Enum.TryParse(value, true, out CardColor color) ||
+                        color == CardColor.None || !Enum.IsDefined(typeof(CardColor), color))
+                        throw Unsupported("printed color", value);
+                    return AnswerShape.Color;
+                }
                 var ownedDecline = Regex.Match(text, "^" + RefPattern + @":\s*decline$");
                 if (ownedDecline.Success)
                 {
@@ -2531,7 +2548,7 @@ namespace GuardsDigital.Tests.EditMode
 
                     var offers = choice.LegalDefenseOffers.Where(offer =>
                     {
-                        var definition = before.Definitions.Single(value => value.Reference.Equals(offer.SourceDefinitionReference));
+                        var definition = projection.Definitions.Single(value => value.Reference.Equals(offer.SourceDefinitionReference));
                         return wanted is string cardName
                             ? CardKey(definition.DisplayName) == CardKey(cardName)
                             : DefenseValueOf(definition, offer.ActionDefinitionId) == IntOf(wanted, phrase);
@@ -2724,6 +2741,14 @@ namespace GuardsDigital.Tests.EditMode
                     !choice.SelectedCandidates.Contains(candidate)).ToList();
                 switch (shape)
                 {
+                    case AnswerShape.Color:
+                    {
+                        if (choice.ValueVocabulary != EffectChoiceValueVocabulary.CardColor) return null;
+                        var color = (CardColor)Enum.Parse(typeof(CardColor), value, true);
+                        return open.Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
+                                candidate.Value.Kind == EffectValueKind.Integer && candidate.Value.IntegerValue == (int)color)
+                            .Select(candidate => (EffectChoiceCandidate?)candidate).FirstOrDefault();
+                    }
                     case AnswerShape.Option:
                         return choice.Candidates.Any(candidate => candidate.Kind == EffectChoiceCandidateKind.Option)
                             ? OptionFor(projection, choice, open, value)
@@ -3073,7 +3098,7 @@ namespace GuardsDigital.Tests.EditMode
             private static readonly HashSet<string> ExpectationKeys = new HashSet<string>(StringComparer.Ordinal)
             {
                 "ref", "is", "at", "moved", "pushed", "coins", "hand", "attack", "level", "targetable", "chose",
-                "attack-count", "movement-offered-max"
+                "attack-count", "movement-offered-max", "at-initial"
             };
 
             private void Evaluate(JsonObject expectation)
@@ -3206,14 +3231,17 @@ namespace GuardsDigital.Tests.EditMode
 
                         break;
                     case "at":
+                    case "at-initial":
                     case "pushed":
                     {
                         var placement = ParsePlacement(fact.Value as string) ?? throw Unsupported("placement", Describe(fact.Value));
-                        var positions = Positions(after, byRef.Keys.Concat(placement.Refs()).Concat(new[] { reference }));
+                        var basis = fact.Key == "at-initial" ? before : after;
+                        var positions = Positions(basis, byRef.Keys.Concat(placement.Refs()).Concat(new[] { reference }));
                         if (!now.HasValue) { Mismatch(expectation, "it is not on the board"); break; }
                         var missing = placement.Refs().FirstOrDefault(value => !positions.ContainsKey(value));
                         if (missing != null) { Mismatch(expectation, $"{missing} is not on the board"); break; }
-                        if (!Satisfies(placement, now.Value, positions))
+                        if (!Satisfies(placement, now.Value, positions,
+                            fact.Key == "at-initial" ? space => !Occupied(before, space) : (Func<HexCoordinate, bool>)null))
                         {
                             Mismatch(expectation, $"it is at {now.Value}; " + string.Join(", ",
                                 placement.Refs().Select(value => $"{value} at {positions[value]} (distance {Dist(now.Value, positions[value])})")));
@@ -3373,7 +3401,8 @@ namespace GuardsDigital.Tests.EditMode
             private void EvaluateTokens(JsonObject expectation)
             {
                 var kind = expectation.Get("tokens") as string ?? throw Unsupported("expectation", Describe(expectation));
-                var definition = TokenKind(kind);
+                if (!AllTokens().Any(token => TokenKey(token.DisplayName) == TokenKey(kind) || TokenKey(token.Id.Value) == TokenKey(kind)))
+                    throw Unsupported("token kind", kind);
                 if (expectation.Count != 2) throw Unsupported("expectation", Describe(expectation));
                 var fact = expectation.First(pair => pair.Key != "tokens");
                 var expected = IntOf(fact.Value, fact.Key);
@@ -3393,6 +3422,7 @@ namespace GuardsDigital.Tests.EditMode
                     }
                     case "supply":
                     {
+                        var definition = TokenKind(kind);
                         var placed = after.PlacedTokens.Count(token => token.OwnerHeroId.Equals(actor) &&
                             (token.Definition.Id.Equals(definition.Id) ||
                                 definition.SharesASupply && token.Definition.SupplyGroupId == definition.SupplyGroupId));

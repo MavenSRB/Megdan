@@ -1,0 +1,978 @@
+{
+  "hero": "Cutter",
+  "cases": [
+    {
+      "id": "cutter-walk-plank-minion",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png",
+        "rulebook p.10",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        }
+      ]
+    },
+    {
+      "id": "cutter-grappling-bolt-five-range",
+      "card": "Grappling Bolt",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter2__7632642__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "obstacle-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "actor",
+          "at": "adjacent to obstacle-1"
+        }
+      ]
+    },
+    {
+      "id": "cutter-daring-strike-forward-attack-bonus",
+      "card": "Daring Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter3__7624850__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Before the attack:",
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "attack": 6
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-bold-thrust-forward-attack-bonus",
+      "card": "Bold Thrust",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter4__7624851__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Before the attack:",
+        "toward enemy-hero-1",
+        "distance 2",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "attack": 7
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-fearless-lunge-forward-attack-bonus",
+      "card": "Fearless Lunge",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter6__7624852__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        }
+      },
+      "answers": [
+        "option: Before the attack:",
+        "toward enemy-hero-1",
+        "distance 3",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "attack": 7
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-daring-strike-adjacent-no-bonus",
+      "card": "Daring Strike",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter3__7624850__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.14"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 4
+        }
+      },
+      "answers": [
+        "option: Target a unit adjacent to you.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-evasive-shot-retreat-after-attack",
+      "card": "Evasive Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter5__7624973__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 4
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "at": "distance 4 from enemy-hero-1 in a straight line"
+        }
+      ]
+    },
+    {
+      "id": "cutter-tumble-shot-retreat-after-attack",
+      "card": "Tumble Shot",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter7__7624974__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.14",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": 4
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "at": "distance 5 from enemy-hero-1 in a straight line"
+        }
+      ]
+    },
+    {
+      "id": "cutter-bombardment-cluster-discard",
+      "card": "Bombardment",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter8__7718212__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-barrage-cluster-discard",
+      "card": "Barrage",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter9__7718593__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-broadside-cluster-discard",
+      "card": "Broadside",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter11__7718204__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ]
+    },
+    {
+      "id": "cutter-broadside-repeat-different-target",
+      "card": "Broadside",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter11__7718204__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to enemy-hero-1 and distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        },
+        {
+          "ref": "enemy-hero-2",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "cutter-x-marks-the-spot-enemy-chooses-coins",
+      "card": "X Marks the Spot",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter10__7718592__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: You gain 2 coins."
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "coins": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 0
+        }
+      ]
+    },
+    {
+      "id": "cutter-a-fistful-of-coins-enemy-chooses-coins",
+      "card": "A Fistful of Coins",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter12__7718206__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: You gain 3 coins."
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "coins": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 0
+        }
+      ]
+    },
+    {
+      "id": "cutter-brace-for-impact-charge-through-obstacle",
+      "card": "Brace for Impact",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter13__7718211__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 beyond obstacle-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 3",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "at-initial": "distance 3 from actor in a straight line through obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "cutter-ramming-speed-charge-through-obstacle",
+      "card": "Ramming Speed",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter14__7718210__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 beyond obstacle-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 4",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "actor",
+          "at-initial": "distance 4 from actor in a straight line through obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "cutter-crashland-charge-through-obstacle",
+      "card": "Crashland",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter16__7718208__front.png",
+        "rulebook p.10",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 beyond obstacle-1 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 5",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 5
+        },
+        {
+          "ref": "actor",
+          "at-initial": "distance 5 from actor in a straight line through obstacle-1"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "hand": -1
+        }
+      ]
+    },
+    {
+      "id": "cutter-outmaneuver-swap-at-radius-edge",
+      "card": "Outmaneuver",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter15__7718209__front.png",
+        "rulebook p.9",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2,
+          "battle-zone": true
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-minion-1"
+        }
+      ]
+    },
+    {
+      "id": "cutter-outsmart-swap-at-radius-edge",
+      "card": "Outsmart",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter17__7718207__front.png",
+        "rulebook p.9",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "battle-zone": true
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "distance 3 from actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-minion-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-minion-1"
+        }
+      ]
+    },
+    {
+      "id": "cutter-legend-of-skies-previous-primary",
+      "card": "Walk the Plank",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter18__7624846__front.png",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter3__7624850__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "standing": [
+          "actor played Daring Strike last turn using Hold"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-3",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1",
+        "card: Daring Strike",
+        "option: Target a unit adjacent to you.",
+        "enemy-minion-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-minion-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 4
+        }
+      ]
+    },
+    {
+      "id": "cutter-grappling-bolt-unit-obstacle-control",
+      "card": "Grappling Bolt",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter2__7632642__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "actor",
+          "at": "adjacent to enemy-hero-1"
+        }
+      ]
+    }
+  ],
+  "unsupported": [
+    {
+      "card": "Few More Steps",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter19__7624853__front.png",
+        "rulebook p.6"
+      ],
+      "reason": "Boxed H Handicap face is outside the ordinary dealt deck; handicap setup is unsupported by the neutral grammar."
+    },
+    {
+      "card": "Walk the Plank",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter__7624856__front.png",
+        "rulebook p.10",
+        "rulebook p.18"
+      ],
+      "reason": "Executable primary coverage uses minion defeat. The push branch needs a staged adjacent hero, four unobstructed push spaces, and a verified zone boundary crossing; supplied grammar has no exact zone placements. After crossing, that hero must discard or be defeated, not merely move."
+    },
+    {
+      "card": "A Fistful of Coins",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter12__7718206__front.png",
+        "rulebook p.10"
+      ],
+      "reason": "Coin choice is executable below the threshold. At 10 coins before its +3 choice, Cutter alone wins when reaching 13; supplied grammar has no solo-winner/game-ended expectation, so that decisive boundary remains unsupported."
+    },
+    {
+      "card": "Legend of the Skies",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Cutter/cutter18__7624846__front.png",
+        "rulebook p.10",
+        "rulebook p.16"
+      ],
+      "reason": "Executable case proves a previous-slot primary after the first primary. A separate once-per-turn recursion-exclusion assertion needs a completed-primary-action counter/history absent from the neutral grammar."
+    }
+  ]
+}

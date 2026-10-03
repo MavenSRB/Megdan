@@ -1,0 +1,271 @@
+[
+  {
+    "id": "swift-bounce-crosses-obstacle",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind moved-through expected a Movement-action history record, but Bounce prints direct movement. Use the exact endpoint relative to initial geometry plus moved 2; the compulsory straight path crosses the original adjacent obstacle. Original route intent is preserved, not waived.",
+    "original": {
+      "id": "swift-bounce-crosses-obstacle",
+      "card": "Bounce",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift2__7579012__front.png",
+        "rulebook p.11",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "pieces": [
+          {
+            "ref": "obstacle-1",
+            "where": "adjacent to actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward obstacle-1",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "moved-through": "obstacle-1"
+        }
+      ]
+    }
+  },
+  {
+    "id": "swift-steam-jump-place-and-push",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind numeric pushed quantity is translated to the same post-push distance from the placed actor. The target begins adjacent after placement; one/two pushed spaces therefore ends two/three away. Original numeric assertion retained here.",
+    "original": {
+      "id": "swift-steam-jump-place-and-push",
+      "card": "Steam Jump",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift8__7578961__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 3 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 1",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "swift-assault-jump-place-and-push",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind numeric pushed quantity is translated to the same post-push distance from the placed actor. The target begins adjacent after placement; one/two pushed spaces therefore ends two/three away. Original numeric assertion retained here.",
+    "original": {
+      "id": "swift-assault-jump-place-and-push",
+      "card": "Assault Jump",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift9__7578113__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 4 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "swift-drop-trooper-place-and-push",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Blind numeric pushed quantity is translated to the same post-push distance from the placed actor. The target begins adjacent after placement; one/two pushed spaces therefore ends two/three away. Original numeric assertion retained here.",
+    "original": {
+      "id": "swift-drop-trooper-place-and-push",
+      "card": "Drop Trooper",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift11__7578114__front.png",
+        "rulebook p.10",
+        "rulebook p.18",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 5 from actor in a straight line"
+          }
+        ]
+      },
+      "answers": [
+        "space: distance 4 from actor in a straight line toward enemy-hero-1",
+        "enemy-hero-1",
+        "distance 2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "pushed": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "swift-bullet-time-second-basic-primary",
+    "kind": "executor-gap",
+    "ref": "Docs/AI/Testing/EXPECTED_OUTCOME_TABLES.md; printed source in case",
+    "note": "Name the resolved basic card at the Ultimate card-selection question before answering its borrowed modal action. Both Defeats and four coins remain unchanged.",
+    "original": {
+      "id": "swift-bullet-time-second-basic-primary",
+      "card": "Reload!",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift__7578960__front.png",
+        "rulebook p.10",
+        "rulebook p.13",
+        "rulebook p.16",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Swift/swift18__7702879__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8
+        },
+        "pieces": [
+          {
+            "ref": "enemy-minion-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-minion-3",
+            "where": "distance 5 from actor"
+          }
+        ]
+      },
+      "answers": [
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-1",
+        "option: Defeat a minion adjacent to you.",
+        "enemy-minion-2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-minion-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-minion-2",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 4
+        }
+      ]
+    }
+  },
+  {
+    "id": "swift-killing-ground-defeat-choice",
+    "kind": "ruling",
+    "ref": "Docs/AI/Rules/RULE_SYSTEMS.md, Ordered mandatory/optional execution and failure, settled ledger question 13; Docs/AI/Rules/HERO_CUTTER.md CU-13",
+    "note": "Blind reader interpreted or is defeated as a freely chosen alternative despite cards in hand. Settled reading requires discard while able; defeat occurs only when unable. Preserve the populated-hand source case and original defeat expectation, evaluate forced discard and survival instead.",
+    "answers-override": [
+      "enemy-hero-1"
+    ],
+    "expect-override": [
+      {
+        "offered": true
+      },
+      {
+        "ref": "enemy-hero-1",
+        "hand": -1
+      },
+      {
+        "ref": "enemy-hero-1",
+        "is": "not defeated"
+      },
+      {
+        "ref": "actor",
+        "coins": 0
+      }
+    ]
+  }
+]

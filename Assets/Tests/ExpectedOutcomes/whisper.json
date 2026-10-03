@@ -1,0 +1,867 @@
+{
+  "hero": "Whisper",
+  "notes": "Blind source reading of every front and reverse plus complete official rulebook printed pp.6,9-19. No runtime, tests, or previous expected tables inspected. Card reverses contain hero artwork only. Primary readouts: Swift Justice Attack2 Range3 choose empty-discard hero followed by that hero's full straight Movement on its defense card, or adjacent unit. Death Seeker Radius3 requires enemy discard; choose turn immunity or retrieve. Crimson Trail Attack3 Radius2 optional move1 with empty battle-zone spawn; Sanguine Path Attack3 Radius2 one move per empty spawn max2; Blood Pilgrimage Attack4 Radius2 max3. Blood Fury Attack6 Radius5 repeat once on different target if enemy discard; Blood Frenzy Attack7 Radius5 repeat up to five times on different targets. Seeds/Sprouts/Blooming Radius2/3/3 move an enemy unit occupying spawn 1/up to2/up to3. Lesser Evil Range3 enemy chooses discard if able or allow optional adjacent minion defeat; either option legal even ineffective. Greater Good Range3 enemy chooses discard-or-defeat or up to3 adjacent minion defeats. Shadow Step/Walk Range3/4 place self empty battle-zone minion spawn; Creeping Shadow Range4 also adjacent space. Cruel Twist/Sealed Fate Range4 swap adjacent unit or enemy hero with discard, then move up to2/3. Grim Reaper permits both basic-action bullets. Boxed Vile Accusation Attack1 Range2 is excluded by p.6.",
+  "cases": [
+    {
+      "id": "whisper-adjacent-branch-defeats-hero",
+      "card": "Swift Justice",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper__7387316__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none",
+          "discard": []
+        }
+      },
+      "answers": [
+        "option: Target a unit adjacent to you.",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ],
+      "notes": "Adjacent branch does not require an empty discard."
+    },
+    {
+      "id": "whisper-retrieves-when-enemy-discard-in-radius",
+      "card": "Death Seeker",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper2__7387265__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "discard": [
+          "Swift Justice"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "option: You may retrieve a discarded card.",
+        "card: Swift Justice"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "card": "Swift Justice",
+          "state": "hand"
+        }
+      ],
+      "notes": "Radius3 boundary qualifies; retrieve is from own discard."
+    },
+    {
+      "id": "whisper-crimson-trail-spawn-movement",
+      "card": "Crimson Trail",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper3__7387267__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 2 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "empty-minion-spawns": [
+          {
+            "count": 1,
+            "within": 2,
+            "of": "actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 1",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 1
+        },
+        {
+          "ref": "actor",
+          "attack": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Exactly 1 empty minion spawns in Radius2 permit the printed cap; movement is before the adjacent attack."
+    },
+    {
+      "id": "whisper-sanguine-path-spawn-movement",
+      "card": "Sanguine Path",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper4__7387290__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "empty-minion-spawns": [
+          {
+            "count": 2,
+            "within": 2,
+            "of": "actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 2",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 2
+        },
+        {
+          "ref": "actor",
+          "attack": 3
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Exactly 2 empty minion spawns in Radius2 permit the printed cap; movement is before the adjacent attack."
+    },
+    {
+      "id": "whisper-blood-pilgrimage-spawn-movement",
+      "card": "Blood Pilgrimage",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper6__7387275__front.png",
+        "rulebook p.11",
+        "rulebook p.13",
+        "rulebook p.17"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor in a straight line"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "empty-minion-spawns": [
+          {
+            "count": 3,
+            "within": 2,
+            "of": "actor"
+          }
+        ]
+      },
+      "answers": [
+        "toward enemy-hero-1",
+        "distance 3",
+        "enemy-hero-1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "moved": 3
+        },
+        {
+          "ref": "actor",
+          "attack": 4
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        }
+      ],
+      "notes": "Exactly 3 empty minion spawns in Radius2 permit the printed cap; movement is before the adjacent attack."
+    },
+    {
+      "id": "whisper-blood-fury-repeats-on-different-target",
+      "card": "Blood Fury",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper5__7387289__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-3",
+            "where": "distance 5 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        },
+        "enemy-hero-3": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 6
+        },
+        {
+          "ref": "actor",
+          "attack-count": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ],
+      "notes": "A surviving third hero with a discard at Radius5 enables the repeat; targets differ."
+    },
+    {
+      "id": "whisper-blood-frenzy-repeats-on-different-target",
+      "card": "Blood Frenzy",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper7__7387272__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-2",
+            "where": "adjacent to actor"
+          },
+          {
+            "ref": "enemy-hero-3",
+            "where": "distance 5 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "defends-with": "none"
+        },
+        "enemy-hero-2": {
+          "defends-with": "none"
+        },
+        "enemy-hero-3": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "enemy-hero-2",
+        "decline"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "attack": 7
+        },
+        {
+          "ref": "actor",
+          "attack-count": 2
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "enemy-hero-2",
+          "is": "defeated"
+        }
+      ],
+      "notes": "A surviving third hero with a discard at Radius5 enables the repeat; targets differ."
+    },
+    {
+      "id": "whisper-seeds-of-fear-moves-spawn-occupant",
+      "card": "Seeds of Fear",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper8__7387278__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "empty spawn point within distance 2 of actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 1"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 1
+        }
+      ],
+      "notes": "Staged hero occupies the initially empty minion spawn; move 1 spaces through open spaces."
+    },
+    {
+      "id": "whisper-sprouts-of-panic-moves-spawn-occupant",
+      "card": "Sprouts of Panic",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper9__7387281__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "empty spawn point within distance 3 of actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 2"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 2
+        }
+      ],
+      "notes": "Staged hero occupies the initially empty minion spawn; move 2 spaces through open spaces."
+    },
+    {
+      "id": "whisper-blooming-nightmare-moves-spawn-occupant",
+      "card": "Blooming Nightmare",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper11__7387280__front.png",
+        "rulebook p.9",
+        "rulebook p.11",
+        "rulebook p.12",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "empty spawn point within distance 3 of actor"
+          }
+        ]
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 3"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "moved": 3
+        }
+      ],
+      "notes": "Staged hero occupies the initially empty minion spawn; move 3 spaces through open spaces."
+    },
+    {
+      "id": "whisper-enemy-chooses-discard",
+      "card": "Lesser Evil",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper10__7387282__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Tali",
+          "hand": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "option: That hero discards a card, if able.",
+        "enemy-hero-1: discard Ice Blast"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "card": "Ice Blast",
+          "state": "discarded"
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "not defeated"
+        }
+      ],
+      "notes": "Enemy chooses the bullet and the card to discard; the other bullet need not resolve."
+    },
+    {
+      "id": "whisper-enemy-with-empty-hand-takes-defeat",
+      "card": "Greater Good",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper12__7387283__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.13"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "coins": 0
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 3 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hand": []
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+      "option: That hero discards a card, or is defeated."
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "enemy-hero-1",
+          "is": "defeated"
+        },
+        {
+          "ref": "actor",
+          "coins": 1
+        }
+      ],
+      "notes": "First bullet defeats the selected hero when it cannot discard."
+    },
+    {
+      "id": "whisper-shadow-step-places-on-spawn",
+      "card": "Shadow Step",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper13__7387273__front.png",
+        "rulebook p.9",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 1,
+          "battle-zone": true
+        }
+      },
+      "answers": [
+        "place: empty spawn point within distance 3 of actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "at-initial": "empty spawn point within distance 3 of actor"
+        }
+      ],
+      "notes": "Place into an empty minion spawn in the battle zone. Place is not Movement."
+    },
+    {
+      "id": "whisper-shadow-walk-places-on-spawn",
+      "card": "Shadow Walk",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper14__7387268__front.png",
+        "rulebook p.9",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2,
+          "battle-zone": true
+        }
+      },
+      "answers": [
+        "place: empty spawn point within distance 4 of actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "at-initial": "empty spawn point within distance 4 of actor"
+        }
+      ],
+      "notes": "Place into an empty minion spawn in the battle zone. Place is not Movement."
+    },
+    {
+      "id": "whisper-creeping-shadow-places-on-spawn",
+      "card": "Creeping Shadow",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper16__7387269__front.png",
+        "rulebook p.9",
+        "rulebook p.12",
+        "rulebook p.17",
+        "rulebook p.18"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5,
+          "battle-zone": true
+        }
+      },
+      "answers": [
+        "place: empty spawn point within distance 4 of actor"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "at-initial": "empty spawn point within distance 4 of actor"
+        }
+      ],
+      "notes": "Place into an empty minion spawn in the battle zone. Place is not Movement."
+    },
+    {
+      "id": "whisper-cruel-twist-ranged-swap",
+      "card": "Cruel Twist",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper15__7387277__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 2
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-hero-1"
+        }
+      ],
+      "notes": "Range4 enemy hero has a discarded card. Optional post-swap move declined to preserve exact exchanged coordinates."
+    },
+    {
+      "id": "whisper-sealed-fate-ranged-swap",
+      "card": "Sealed Fate",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper17__7387274__front.png",
+        "rulebook p.9",
+        "rulebook p.10",
+        "rulebook p.12",
+        "rulebook p.19"
+      ],
+      "setup": {
+        "actor": {
+          "level": 5
+        },
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "distance 4 from actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ]
+        }
+      },
+      "answers": [
+        "enemy-hero-1",
+        "distance 0"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "ref": "actor",
+          "swapped-with": "enemy-hero-1"
+        }
+      ],
+      "notes": "Range4 enemy hero has a discarded card. Optional post-swap move declined to preserve exact exchanged coordinates."
+    },
+    {
+      "id": "whisper-grim-reaper-both-basic-skill-options",
+      "card": "Death Seeker",
+      "action": "Skill",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper2__7387265__front.png",
+        "rulebook p.10",
+        "rulebook p.16",
+        "rulebook p.18",
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper18__7571129__front.png"
+      ],
+      "setup": {
+        "actor": {
+          "level": 8,
+          "ultimate": true
+        },
+        "discard": [
+          "Swift Justice"
+        ],
+        "pieces": [
+          {
+            "ref": "enemy-hero-1",
+            "where": "adjacent to actor"
+          }
+        ],
+        "enemy-hero-1": {
+          "hero": "Tali",
+          "discard": [
+            "Ice Blast"
+          ],
+          "hand": [
+            "Winter Dagger"
+          ]
+        }
+      },
+      "answers": [
+        "option: This turn: You are immune to enemy actions.",
+        "option: You may retrieve a discarded card.",
+        "card: Swift Justice"
+      ],
+      "expect": [
+        {
+          "offered": true
+        },
+        {
+          "card": "Swift Justice",
+          "state": "hand"
+        },
+        {
+          "ref": "actor",
+          "is": "not defeated"
+        }
+      ],
+      "notes": "Grim Reaper at Level8 permits both basic-skill bullets: retrieve and immunity. The enemy's later ordinary adjacent Winter Dagger cannot target Whisper.",
+      "follow-up": {
+        "hero": "enemy-hero-1",
+        "card": "Winter Dagger",
+        "action": "Attack",
+        "answers": [],
+        "offered": false
+      }
+    },
+    {
+      "id": "whisper-boxed-handicap",
+      "card": "Vile Accusation",
+      "action": "Attack",
+      "source": [
+        "Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Whisper/whisper19__7387279__front.png",
+        "rulebook p.6"
+      ],
+      "setup": {
+        "handicap": true
+      },
+      "answers": [],
+      "expect": [],
+      "notes": "Printed H basic attack replaces ordinary basic only in unsupported handicap setup.",
+      "unsupported": "Boxed H face: official p.6 returns Handicap cards to the box; not an ordinary dealt face."
+    }
+  ]
+}

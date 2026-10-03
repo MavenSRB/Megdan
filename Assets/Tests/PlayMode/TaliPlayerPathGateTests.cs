@@ -415,7 +415,7 @@ namespace GuardsDigital.Tests.PlayMode
                     new[]
                     {
                         "TaliTokenSystemTests" +
-                            ".TheMandatoryTotemSaveIsReadByRemovalStageDecisionItself_NotOnlyByTheBareQuery",
+                            ".TheMandatoryTotemSaveReplacesDefeatBeforeRewardsWithoutARemovalStageChoice",
                         "TaliTokenSystemTests.ANonAdjacentMinionIsNotAutomaticallyPrevented",
                         "TaliTokenSystemTests.AnEnemysClearIsRefusedAgainstAVeneratedTotemAndAllowedAgainstAnAncestralOne"
                     }),
