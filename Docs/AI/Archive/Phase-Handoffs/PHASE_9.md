@@ -2,6 +2,11 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.44 Hero-hover Defense contributors evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.44 | Hovering a legal hero Attack target now preserves the hero highlight, tints only the authority-projected contributing minions green or blood red with no minion numbers, and draws the projected net minion modifier alone in a tiny centered shield at that hero body's lower token edge. Board and linked rail hover share the immutable preview; exit clears the token tints and shield without submitting a command. [Definition](../../Roadmap/PHASE_9.md#x-944-implement-hero-hover-defense-contributors). | `milestone/9.44` |
 ## Milestone 9.43 Attack-before-after-attack presentation evidence
 
 | Milestone | Outcome and definition | Commit |

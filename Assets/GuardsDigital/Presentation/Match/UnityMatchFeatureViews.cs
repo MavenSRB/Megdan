@@ -587,24 +587,13 @@ namespace GuardsDigital.Presentation.Match
             attackCoordinates.UnionWith(model.Minions
                 .Where(value => attackMinionIds.Contains(value.MinionId))
                 .Select(value => value.Coordinate));
-            var activeDefenseCues = model.MinionDefenseCues;
-            if (activeDefenseCues.Count == 0 && hoveredCoordinate.HasValue)
-            {
-                var hoveredHero = model.Heroes.FirstOrDefault(value =>
-                    value.Coordinate.Equals(hoveredCoordinate.Value));
-                // Milestone 9.21i. The preview of the BODY under the pointer (RZ-Q3).
-                var targetPreview = !hoveredHero.HeroId.IsDefined
-                    ? null
-                    : model.AttackTargetDefensePreviews.FirstOrDefault(value =>
-                        value.HeroId.Equals(hoveredHero.HeroId) && value.HeroBody == hoveredHero.Body);
-                if (targetPreview != null)
-                {
-                    activeDefenseCues = Array.AsReadOnly(targetPreview.MinionContributions
-                        .Select(value => new MinionDefenseCueViewModel(
-                            value.SourceMinionId, value.Amount))
-                        .ToArray());
-                }
-            }
+            // Milestone 9.44. Hover chooses among immutable, authority-computed previews. The board
+            // does not calculate adjacency, teams, or Defense; it only paints the projected sources.
+            var hoveredDefenseCues = HoveredDefenseCues(model);
+            RenderHoveredDefenseContributors(model, hoveredDefenseCues);
+            var activeDefenseCues = model.MinionDefenseCues.Count > 0
+                ? model.MinionDefenseCues
+                : hoveredDefenseCues;
             var minionCoordinates = model.Minions.ToDictionary(
                 value => value.MinionId, value => value.Coordinate);
             var defenseCoordinates = activeDefenseCues.ToDictionary(
@@ -1013,9 +1002,89 @@ namespace GuardsDigital.Presentation.Match
             if (Model != null)
             {
                 RenderMinions(Model);
+                RenderHoveredDefenseContributors(Model, HoveredDefenseCues(Model));
             }
         }
 
+        private (HeroId HeroId, int Body) HoveredDefenseTarget(BoardInteractionViewModel model)
+        {
+            if (interfaceHoveredHeroId.IsDefined)
+            {
+                return (interfaceHoveredHeroId, 0);
+            }
+
+            if (!hoveredCoordinate.HasValue)
+            {
+                return (default, 0);
+            }
+
+            var occupancy = model.Heroes.FirstOrDefault(value =>
+                value.Coordinate.Equals(hoveredCoordinate.Value));
+            return occupancy.HeroId.IsDefined
+                ? (occupancy.HeroId, occupancy.Body)
+                : (default, 0);
+        }
+        private IReadOnlyList<MinionDefenseCueViewModel> HoveredDefenseCues(
+            BoardInteractionViewModel model)
+        {
+            var hoveredTarget = HoveredDefenseTarget(model);
+            var previewHeroId = hoveredTarget.HeroId;
+            var previewBody = hoveredTarget.Body;
+            if (!previewHeroId.IsDefined)
+            {
+                return Array.Empty<MinionDefenseCueViewModel>();
+            }
+
+            var contributions = model.AttackTargetDefensePreviews
+                .Where(value => value.HeroId.Equals(previewHeroId) &&
+                    (previewBody < HeroOccupancy.FirstBody || value.HeroBody == previewBody))
+                .SelectMany(value => value.MinionContributions)
+                .GroupBy(value => value.SourceMinionId)
+                .Select(group =>
+                {
+                    var amounts = group.Select(value => value.Amount).Distinct().ToArray();
+                    if (amounts.Length != 1)
+                    {
+                        throw new InvalidOperationException(
+                            $"Defense previews disagree about minion '{group.Key}'.");
+                    }
+
+                    return new MinionDefenseCueViewModel(group.Key, amounts[0]);
+                })
+                .ToArray();
+            return Array.AsReadOnly(contributions);
+        }
+
+        private void RenderHoveredDefenseContributors(
+            BoardInteractionViewModel model,
+            IReadOnlyList<MinionDefenseCueViewModel> hoveredDefenseCues)
+        {
+            var contributionByMinion = hoveredDefenseCues.ToDictionary(
+                value => value.MinionId, value => value.Amount);
+            foreach (var minion in minions)
+            {
+                minion.SetDefenseContributionHighlight(
+                    contributionByMinion.TryGetValue(minion.BoundMinionId, out var amount)
+                        ? amount
+                        : 0);
+            }
+
+            var hoveredTarget = HoveredDefenseTarget(model);
+            var previewHeroId = hoveredTarget.HeroId;
+            var previewBody = hoveredTarget.Body;
+            foreach (var hero in heroes)
+            {
+                var preview = !previewHeroId.IsDefined || !hero.gameObject.activeSelf ||
+                    !hero.Occupancy.HeroId.Equals(previewHeroId) ||
+                    (previewBody >= HeroOccupancy.FirstBody && hero.Body != previewBody)
+                        ? null
+                        : model.AttackTargetDefensePreviews.FirstOrDefault(value =>
+                            value.HeroId.Equals(previewHeroId) && value.HeroBody == hero.Body);
+                hero.SetDefenseModifierShield(preview == null
+                    ? (int?)null
+                    : preview.MinionContributions.Sum(value => value.Amount));
+            }
+        }
         private void RenderMinions(BoardInteractionViewModel model)
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);

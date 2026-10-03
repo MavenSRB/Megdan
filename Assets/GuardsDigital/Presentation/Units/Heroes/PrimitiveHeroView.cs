@@ -80,6 +80,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private BoardTargetRing targetRing;
         private ActiveEffectHeroMarker activeEffectMarker;
         private HeroBodyMark bodyMark;
+        private HeroDefenseModifierShield defenseModifierShield;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Body, Coordinate);
 
@@ -88,6 +89,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         /// <summary>Milestone 9.21i. The per-body mark, or null before one has been needed.</summary>
         public HeroBodyMark BodyMark => bodyMark;
+
+        /// <summary>The number-only hover shield, or null before a Defense preview needs it.</summary>
+        public HeroDefenseModifierShield DefenseModifierShield => defenseModifierShield;
 
         public TeamSide TeamSide => teamSide;
 
@@ -242,6 +246,27 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 : baseRadius * 0.62f;
             var surface = HasTokenVisual ? BoardPieceDepth.Standard : height;
             bodyMark.SetVisible(pips, ringRadius, surface);
+        }
+
+        /// <summary>
+        /// Milestone 9.44. Draws the authoritative net minion Defense modifier at this token's
+        /// bottom edge, or clears it. This accepts a projected value and owns no Defense rules.
+        /// </summary>
+        public void SetDefenseModifierShield(int? modifier)
+        {
+            if (!modifier.HasValue)
+            {
+                if (defenseModifierShield != null) defenseModifierShield.SetHidden();
+                return;
+            }
+
+            if (defenseModifierShield == null)
+            {
+                defenseModifierShield = HeroDefenseModifierShield.GetOrCreate(transform);
+            }
+
+            var surface = HasTokenVisual ? BoardPieceDepth.Standard : height;
+            defenseModifierShield.SetVisible(modifier.Value, SelectionRadius, surface);
         }
 
         public bool PlaceAtConfiguredSpawnPoint(BoardMapDefinition definition)
@@ -760,6 +785,10 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 bodyMark.ReleaseOwnedResources();
             }
 
+            if (!ReferenceEquals(defenseModifierShield, null))
+            {
+                defenseModifierShield.ReleaseOwnedResources();
+            }
             DestroyOwnedResource(ownedMesh);
             DestroyOwnedResource(ownedMaterial);
             DestroyOwnedResource(ownedRimMaterial);

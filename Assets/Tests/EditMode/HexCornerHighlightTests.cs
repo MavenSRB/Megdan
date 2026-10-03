@@ -367,6 +367,35 @@ namespace GuardsDigital.Tests.EditMode
                 "inside its blood-red halo; a white-biased core disappears at gameplay scale.");
             Assert.That(negativeTile.CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
+            Assert.That(positiveView.DefenseContributionAmount, Is.EqualTo(1));
+            Assert.That(positiveView.GetComponent<SpriteRenderer>().color,
+                Is.EqualTo(HexCornerHighlightTemplate.DefensePositiveColor));
+            Assert.That(negativeView.DefenseContributionAmount, Is.EqualTo(-1));
+            Assert.That(negativeView.GetComponent<SpriteRenderer>().color,
+                Is.EqualTo(HexCornerHighlightTemplate.DefenseNegativeColor));
+            Assert.That(positiveView.GetComponentsInChildren<TextMesh>(true), Is.Empty);
+            Assert.That(negativeView.GetComponentsInChildren<TextMesh>(true), Is.Empty);
+            Assert.That(heroView.DefenseModifierShield, Is.Not.Null);
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
+            Assert.That(heroView.DefenseModifierShield.Modifier, Is.EqualTo(0));
+            Assert.That(heroView.DefenseModifierShield.ValueText.text, Is.EqualTo("0"));
+            Assert.That(heroView.DefenseModifierShield.ValueText.text, Does.Not.Contain("DEF"));
+            var shieldBounds = heroView.DefenseModifierShield.GetComponent<MeshRenderer>().bounds;
+            var valueBounds = heroView.DefenseModifierShield.ValueText
+                .GetComponent<MeshRenderer>().bounds;
+            Assert.That(new Vector2(valueBounds.center.x - shieldBounds.center.x,
+                    valueBounds.center.z - shieldBounds.center.z).magnitude,
+                Is.LessThan(0.001f), "The signed value is centered inside the shield face.");
+            Assert.That(new Vector2(
+                    heroView.DefenseModifierShield.transform.localPosition.x,
+                    heroView.DefenseModifierShield.transform.localPosition.z).magnitude,
+                Is.EqualTo(heroView.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor)
+                    .Within(0.001f),
+                "The tiny shield sits at the token's bottom edge, rather than over its centre.");
+            Assert.That(heroView.DefenseModifierShield.GetComponent<MeshFilter>()
+                    .sharedMesh.bounds.size.magnitude,
+                Is.LessThan(heroView.SelectionRadius * 0.75f),
+                "The shield stays materially smaller than the hero token.");
 
             view.SetHoveredCoordinate(null);
 
@@ -374,6 +403,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(positiveTile.CornerHighlight.ContributionKind,
                 Is.EqualTo(HexCornerHighlightKind.None));
             Assert.That(negativeTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.None));
+            Assert.That(positiveView.GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
+            Assert.That(negativeView.GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.False);
+
+            view.SetHoveredHero(targetId);
+            Assert.That(positiveView.DefenseContributionAmount, Is.EqualTo(1),
+                "A linked rail/interface hover consumes the same authoritative contribution facts.");
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
+            view.SetHoveredHero(default);
+            Assert.That(positiveView.DefenseContributionAmount, Is.Zero);
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.False);
         }
 
         [Test]

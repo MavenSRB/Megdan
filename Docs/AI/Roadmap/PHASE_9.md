@@ -58,9 +58,13 @@ Completed 2026-10-03.
 
 Historical evidence: [9.43 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-943-attack-before-after-attack-presentation-evidence).
 
-### [~] 9.44 Implement hero-hover Defense contributors
+### [x] 9.44 Implement hero-hover Defense contributors
 
-Mockup approved for implementation 2026-10-03: "Implement this, and all the other stuff previous agent was working on as well." Preserve the hovered hero highlight and highlight only minions contributing to that hero's Defense: green positive and blood-red negative, without numeric labels on the minions. The user's latest correction requires a very small shield near the hero token's bottom edge containing only the centered signed modifier (illustratively "-1"), with no "DEF" text. Mockup uses an illustrative net minion modifier, not an invented complete Defense total before a card is chosen. Implementation must consume authoritative contribution facts, not reimplement rules in UI. Closing checks: exact contributing identities/signs, clearing on hover exit, no unrelated-minion highlight, and non-mutating hover/visual evidence. Root's interactive mockup is outside tracked source; no game implementation yet.
+Mockup approved for implementation 2026-10-03: "Implement this, and all the other stuff previous agent was working on as well." Preserve the hovered hero highlight and highlight only minions contributing to that hero's Defense: green positive and blood-red negative, without numeric labels on the minions. The user's latest correction requires a very small shield near the hero token's bottom edge containing only the centered signed modifier (illustratively "-1"), with no "DEF" text. Mockup uses an illustrative net minion modifier, not an invented complete Defense total before a card is chosen. Implementation consumes the immutable attack-target contribution previews: board and linked rail hover tint only their stable minion identities, each hovered hero body carries the summed projected minion modifier in the number-only shield, and hover exit clears every added treatment without a command. No Defense rule is recalculated in presentation.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.44 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-944-hero-hover-defense-contributors-evidence).
 
 ## Queued by 9.13, not authorized
 

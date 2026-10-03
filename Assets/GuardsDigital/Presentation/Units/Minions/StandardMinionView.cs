@@ -27,6 +27,7 @@ namespace GuardsDigital.Presentation.Units.Minions
         private MinionOccupancy occupancy;
         private BoardTargetRing targetRing;
         private MinionBattlePickBadges pickBadges;
+        private int defenseContributionAmount;
 
         public MinionOccupancy Occupancy => occupancy;
         public MinionId BoundMinionId => occupancy != null
@@ -42,6 +43,28 @@ namespace GuardsDigital.Presentation.Units.Minions
         public BoardTargetConsequenceIntent TargetConsequenceIntent => targetRing == null
             ? BoardTargetConsequenceIntent.None
             : targetRing.ConsequenceIntent;
+
+        /// <summary>Milestone 9.44. Signed hover contribution, or zero when this minion is unrelated.</summary>
+        public int DefenseContributionAmount => defenseContributionAmount;
+
+        /// <summary>
+        /// Tints only a projected contributor green or blood red. No value text is created here;
+        /// the net signed modifier belongs to the hovered hero's shield.
+        /// </summary>
+        public void SetDefenseContributionHighlight(int amount)
+        {
+            if (amount != -1 && amount != 0 && amount != 1)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            defenseContributionAmount = amount;
+            GetComponent<SpriteRenderer>().color = amount > 0
+                ? HexCornerHighlightTemplate.DefensePositiveColor
+                : amount < 0
+                    ? HexCornerHighlightTemplate.DefenseNegativeColor
+                    : Color.white;
+        }
 
         public void Configure(MinionOccupancy state, float outerRadius)
         {
@@ -64,6 +87,7 @@ namespace GuardsDigital.Presentation.Units.Minions
             renderer.sortingOrder = 10;
             if (identityChanged)
             {
+                SetDefenseContributionHighlight(0);
                 SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
             }
             else

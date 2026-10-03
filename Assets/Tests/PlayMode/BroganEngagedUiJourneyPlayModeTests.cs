@@ -201,9 +201,47 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.EqualTo(contribution.Amount > 0
                         ? HexCornerHighlightKind.DefensePositive
                         : HexCornerHighlightKind.DefenseNegative));
+                var contributingView = Object.FindObjectsByType<StandardMinionView>()
+                    .Single(value => value.BoundMinionId.Equals(contribution.SourceMinionId));
+                Assert.That(contributingView.GetComponent<SpriteRenderer>().color,
+                    Is.EqualTo(contribution.Amount > 0
+                        ? HexCornerHighlightTemplate.DefensePositiveColor
+                        : HexCornerHighlightTemplate.DefenseNegativeColor),
+                    "The contributing miniature itself uses its authoritative signed colour.");
+                Assert.That(contributingView.GetComponentsInChildren<TextMesh>(true), Is.Empty,
+                    "A contributing minion carries no number; the signed net belongs on the hero.");
             }
+            var unrelatedMinion = Object.FindObjectsByType<StandardMinionView>()
+                .FirstOrDefault(value => value.Occupancy != null &&
+                    heroPreview.MinionContributions.All(contribution =>
+                        !contribution.SourceMinionId.Equals(value.BoundMinionId)));
+            Assert.That(unrelatedMinion, Is.Not.Null,
+                "The staging needs an unrelated minion to prove hover does not paint the roster.");
+            Assert.That(unrelatedMinion.GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
+            var modifierShield = hero.transform.Find("Hero Defense Modifier Shield");
+            Assert.That(modifierShield, Is.Not.Null,
+                "The hovered hero wears the tiny Defense modifier shield at the token edge.");
+            var modifierText = modifierShield.GetComponentInChildren<TextMesh>(true);
+            var netMinionModifier = heroPreview.MinionContributions.Sum(value => value.Amount);
+            Assert.That(modifierText, Is.Not.Null);
+            Assert.That(modifierText.text,
+                Is.EqualTo(netMinionModifier.ToString("+0;-0;0")),
+                "The shield contains only the authoritative signed net minion modifier.");
+            Assert.That(modifierText.text, Does.Not.Contain("DEF"));
+
+            yield return UiPlayer.CaptureScreen(
+                "tmp/944-captures/hero-hover-defense-contributors.png");
             runtime.BoardView.SetHoveredCoordinate(null);
             yield return null;
+            foreach (var minionViewAfterExit in Object.FindObjectsByType<StandardMinionView>())
+            {
+                Assert.That(minionViewAfterExit.GetComponent<SpriteRenderer>().color,
+                    Is.EqualTo(Color.white), "Hover exit clears every miniature tint.");
+            }
+            Assert.That(modifierShield.gameObject.activeSelf, Is.False,
+                "Hover exit clears the number-only shield with the contribution highlights.");
+            yield return UiPlayer.CaptureScreen(
+                "tmp/944-captures/hero-hover-defense-cleared.png");
             var minion = Object.FindObjectsByType<StandardMinionView>()
                 .FirstOrDefault(view => view.Occupancy != null &&
                     candidates.Any(candidate => candidate.Space.Equals(view.Occupancy.Coordinate)));
@@ -403,6 +441,21 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single())),
                 Is.True);
             yield return DrainEffectPausesHeadlessly(runtime, 10);
+            for (var frame = 0;
+                 frame < 600 && runtime.SpotlightPresenter.Stage.Phase != AttackSpotlightPhase.None;
+                 frame++)
+            {
+                runtime.SpotlightPresenter.Tick(1f / 60f);
+                runtime.KineticView.Tick(1f / 60f);
+                if (runtime.SpotlightPresenter.Stage.IsContinueArmed)
+                {
+                    Assert.That(runtime.SpotlightPresenter.Continue(), Is.True,
+                        "The headless Shock setup advances the presentation it created.");
+                }
+            }
+            Assert.That(runtime.SpotlightPresenter.Stage.Phase,
+                Is.EqualTo(AttackSpotlightPhase.None),
+                "The setup attack's presentation is closed before the retrieval journey starts.");
             var discarded = DiscardOf(runtime, broganId);
             Assert.That(discarded, Has.Length.EqualTo(1),
                 "The enemy's rider must have taken exactly one card out of Brogan's hand.");
