@@ -579,6 +579,54 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void LevelUpWindowSurvivesJoinedSeatConnectionPause()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(
+                out var levellingHeroId);
+            var host = new MatchHost(session);
+            var ownerSeat = host.Seats.Seats.Single(seat => seat.Owns(levellingHeroId));
+            var otherSeat = host.Seats.Seats.Single(seat => !seat.Owns(levellingHeroId));
+            var ownerProjection = host.ProjectionForSeat(ownerSeat.Id);
+            Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                NetworkSeatProjectionCodec.Encode(ownerProjection), out var record), Is.True);
+
+            var active = new NetworkMatchReadModel(
+                host.Projection, MatchContentCatalogs.ForThisBuild(), record, true);
+            var paused = new NetworkMatchReadModel(
+                host.Projection, MatchContentCatalogs.ForThisBuild(), WithoutPrivateDetail(record), false);
+            Assert.That(paused.Version, Is.EqualTo(active.Version));
+            Assert.That(paused.DecisionOwner, Is.EqualTo(active.DecisionOwner),
+                "The public owner remains known while this joined client is temporarily non-actionable.");
+            Assert.That(paused.PendingSystemTransitionStep, Is.Null);
+            Assert.That(paused.DecisionContract, Is.Null,
+                "Private answer detail and commands are deliberately stripped during the pause.");
+
+            var client = new SwitchingMatchClient(active);
+            var view = new CapturingDecisionWindowView();
+            var presenter = new DecisionWindowPresenter(client, view, ownerSeat.HeroId);
+            presenter.Refresh();
+            var beforePause = view.Model;
+            Assert.That(beforePause?.Family, Is.EqualTo(DecisionWindowFamily.LevelUp));
+            Assert.That(DecisionWindowPresenter.CreateViewModel(
+                    host.ProjectionForSeat(otherSeat.Id), otherSeat.HeroId),
+                Is.Null,
+                "Only the levelling hero's seat receives the window, which is why the symptom is " +
+                "selective rather than table-wide.");
+
+            client.Projection = paused;
+            presenter.Refresh();
+
+            Assert.That(view.Model, Is.SameAs(beforePause),
+                "A same-version connection pause must not erase the owning seat's standing Level Up; " +
+                "the interaction wall makes it temporarily unanswerable until the private detail returns.");
+
+            client.Projection = active;
+            presenter.Refresh();
+            Assert.That(view.Model?.Family, Is.EqualTo(DecisionWindowFamily.LevelUp),
+                "Resynchronization restores answerability without requiring a full reconnect.");
+        }
+
+        [Test]
         public void AMinionBattleRemoval_IsTheDockedBarWithItsCount_AndOneVerbOnlyWhenTheCountIsMet()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());

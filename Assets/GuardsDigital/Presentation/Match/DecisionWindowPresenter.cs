@@ -207,13 +207,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 lastProjection = projection;
                 var next = CreateViewModel(projection, homeHeroId);
-                if (next == null && RetainsTiedInitiativeAcrossConnectionPause(projection))
+                if (next == null && RetainsStandingDecisionAcrossConnectionPause(projection))
                 {
-                    // A teammate going away pauses the session and strips this seat's private detail
-                    // and commands, but the public owner and authority version still say the SAME
-                    // tied-Initiative question stands. Keep its already-drawn reading until either the
-                    // detail returns or authority advances; the session interaction wall owns the
-                    // temporary inability to press it.
+                    // A transient joined-client pause strips this seat's private detail and commands,
+                    // but the public owner and authority version still say the SAME decision stands.
+                    // Keep its already-drawn reading until either the detail returns or authority
+                    // advances; the session interaction wall owns the temporary inability to press it.
                     return lastViewModel;
                 }
 
@@ -223,8 +222,10 @@ namespace GuardsDigital.Presentation.Match
             return lastViewModel;
         }
 
-        private bool RetainsTiedInitiativeAcrossConnectionPause(IMatchReadModel projection) =>
-            lastViewModel?.Family == DecisionWindowFamily.TiedInitiative &&
+        private bool RetainsStandingDecisionAcrossConnectionPause(IMatchReadModel projection) =>
+            (lastViewModel?.Family == DecisionWindowFamily.TiedInitiative ||
+                lastViewModel?.Family == DecisionWindowFamily.LevelUp) &&
+            !projection.IsInputEnabled &&
             lastViewModel.Version == projection.Version &&
             projection.Phase != RoundResolutionPhase.GameEnded &&
             DecisionOwnerNamesViewer(projection, homeHeroId);

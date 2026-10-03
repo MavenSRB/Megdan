@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.42 Standing joined-seat level-up window evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.42 | An owning joined seat keeps its already-drawn Level Up visible but non-interactive through a same-version connection/input pause; non-owners still receive no window, authority advancement clears it, and resynchronization restores answerability. The initially suspected attack-spotlight overlap was rejected by the real round path. [Definition](../../Roadmap/PHASE_9.md#x-942-preserve-the-standing-joined-seat-level-up-window). | `milestone/9.42` |
+
 ## Milestone 9.41 Readable faded-card hover evidence
 
 | Milestone | Outcome and definition | Commit |

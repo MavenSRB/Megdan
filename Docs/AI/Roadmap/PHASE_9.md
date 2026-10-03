@@ -36,11 +36,17 @@ Completed 2026-10-03.
 
 Historical evidence: [9.41 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-941-readable-faded-card-hover-evidence).
 
-### [~] 9.42 Preserve the standing level-up window across spotlight completion
+### [x] 9.42 Preserve the standing joined-seat level-up window
 
-Authorized 2026-10-03: "Yes, reproduce and fix it." Joining players report the level-up window briefly appears then disappears without input on current and older builds; reconnect restores it. Source finding, not yet a reproduced player incident: AttackSpotlightUnityView captures HUD-child display values in ApplyChrome and restores them verbatim in RestoreChrome; a DecisionWindowUnityView opened meanwhile can be hidden again, and its same-model Render short-circuit leaves it hidden. Reproduce that overlap before correction; preserve closed panels, current prompt ownership, input authorization and reconnect. Closing check: LevelUpWindowSurvivesSpotlightRestoration failing then passing, directly affected spotlight/decision-window regressions, focused Play Mode and visual evidence. T2. No rules, wire or network authority change.
+Authorized 2026-10-03: "Yes, reproduce and fix it." Joining players reported that the level-up window briefly appeared and then disappeared without input on current and older builds; reconnect restored it. The initial spotlight/display hypothesis was rejected after the user's timing objection: a strengthened real minion-defeat journey confirmed that the bounded local attack shot and the later round-end Level Up do not naturally overlap. The reproduced cause is joined-client state instead. A same-version temporary network/input pause deliberately strips private answer detail and commands; `DecisionWindowPresenter` retained Tied Initiative across that state but rebuilt an owning seat's already-drawn Level Up as `null`. It now retains that Level Up only while the public owner and authority version still name the same decision and the joined read model is non-actionable; the existing interaction wall keeps it unanswerable until private detail returns. Other seats still receive no window, authority advancement still clears it, and resynchronization restores controls without requiring reconnect. No rules, wire or network-authority change.
 
-### [ ] 9.43 Show the attack before its after-attack presentation
+Closing evidence: `LevelUpWindowSurvivesJoinedSeatConnectionPause` failed pre-fix with the real owner-scoped Level Up replaced by `null`, then passed; the complete `DecisionWindowPresenterTests` fixture passed 24/24. The real Unity Level Up journey `InitiativeBadgeShowsEarnedBonusAndKeepsItsFootprint` passed 1/1 and produced its three expanded-window captures at 1280x720, 1920x1080 and 2560x1440. T2.
+
+Completed 2026-10-03.
+
+Historical evidence: [9.42 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-942-standing-joined-seat-level-up-window-evidence).
+
+### [~] 9.43 Show the attack before its after-attack presentation
 
 Authorized 2026-10-03: attack animations should happen before "after the attack" text happens. Inspect the presenter/conductor ordering; show the attack before its consequent prompts and visual effects, without delaying authoritative rules/network progression or changing printed timing. Cover a choice-bearing after-Attack branch, an automatic consequence, interruption/reconnect and queued attacks. T2; ordered presentation regression and focused rendered player-path/visual evidence. Keep distinct from 9.42's stale visibility correction.
 

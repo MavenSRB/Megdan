@@ -84,7 +84,7 @@ p.11's Defense response is a choice among cards in the defender's hand. Each leg
 
 ## Online match flow
 
-Milestone 8.35b reuses this HUD after the primitive lobby: it binds the admitted seat's owner-scoped projection, removes Director tools, keeps that hero's hand as home, and clears stale selection on Leave or reattachment. Any input or recovery wait removes controls while the public board, agreement and history stay readable, and a fresh receipt redraws even at an unchanged gameplay version. The bounded status vocabulary and the exact correlation, compatibility and recovery contracts live in [PRIVATE_ONLINE_ARCHITECTURE.md](PRIVATE_ONLINE_ARCHITECTURE.md).
+Milestone 8.35b reuses this HUD after the primitive lobby: it binds the admitted seat's owner-scoped projection, removes Director tools, keeps that hero's hand as home, and clears stale selection on Leave or reattachment. Any input or recovery wait removes controls while the public board, agreement and history stay readable, and a fresh receipt redraws even at an unchanged gameplay version. If that same-version wait temporarily strips the private detail of an already-drawn Level Up (or Tied Initiative), the owning seat retains the reading behind the interaction wall until detail returns or authority advances; non-owners never gain it. The bounded status vocabulary and the exact correlation, compatibility and recovery contracts live in [PRIVATE_ONLINE_ARCHITECTURE.md](PRIVATE_ONLINE_ARCHITECTURE.md).
 
 ## Maintenance rule
 

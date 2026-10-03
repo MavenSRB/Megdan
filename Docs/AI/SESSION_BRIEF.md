@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.41**.
-- Active authorized milestone: **9.42**.
+- Current completed milestone: **9.42**.
+- Active authorized milestone: **9.43**.
 - Approved sequence: **9.41 -> 9.42 -> 9.43 -> 9.44**, authorized 2026-10-03: readable faded-card hover without duplicate text, persistent level-up visibility, attack-before-after-attack presentation ordering, then authoritative hero-hover Defense contributors using the approved number-only shield design. Separate validation and commits.
 - Delegation remains allowed from the earlier user direction, but the current sequence is executing serially in one implementation agent.
-- Next proposed milestone: **9.42**.
+- Next proposed milestone: **9.43**.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 
