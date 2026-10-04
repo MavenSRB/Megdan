@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.46 Emmitt turn history evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.46 | Authoritative turn-start unit positions, continuous prior-turn immobility, and current-turn resolved-card predicates; snapshot v55, restore and replay preserve the facts. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-946-emmitts-turn-and-position-history). | `milestone/9.46` |
+
 ## Milestone 9.45 Final-two-hero inventory evidence
 
 | Milestone | Outcome and definition | Commit |

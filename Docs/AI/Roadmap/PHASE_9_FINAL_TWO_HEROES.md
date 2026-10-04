@@ -14,9 +14,13 @@ Completed 2026-10-04. Both nineteen-front inventories, the profiles, dashboards,
 
 Historical evidence: [9.45 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-945-final-two-hero-inventory-evidence).
 
-### [ ] 9.46 Emmitt's turn and position history
+### [x] 9.46 Emmitt's turn and position history
 
 Outcome: authoritative turn-start position and prior-turn immobility queries, plus current-turn resolved-card predicates, available to card effects and preserved through snapshot, replay and Undo. Tests distinguish moves away and back, placement, swap, removal/respawn, and a card resolved earlier this turn. T2.
+
+Completed 2026-10-04. The board captures both turn-start positions and continuous unit movement revisions; the round records heroes whose cards resolved this turn. Typed effect-facing interfaces, snapshot v55, restore and replay preserve those facts. Focused tests cover move-away-and-back, swap, removal/respawn, absent-at-start placement, and a resolved card before the next reveal.
+
+Historical evidence: [9.46 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-946-emmitt-turn-history-evidence).
 
 ### [ ] 9.47 Emmitt's Glitch and altered Initiative
 

@@ -41,6 +41,11 @@ namespace GuardsDigital.Core.Effects
         bool TrySwapUnresolvedCard(HeroId owner, CardInstanceId unresolvedCard, CardInstanceId partnerCard);
     }
 
+    public interface ICurrentTurnCardHistory
+    {
+        bool HasResolvedCardThisTurn(HeroId heroId);
+    }
+
     /// <summary>
     /// The round-owned rules state roster capabilities may read or mutate, or its named absence.
     ///
@@ -63,6 +68,7 @@ namespace GuardsDigital.Core.Effects
         private readonly TeamLifeState teamLives;
         private readonly IDeckCardSwap deckCardSwap;
         private readonly IUnresolvedCardSwap unresolvedCardSwap;
+        private readonly ICurrentTurnCardHistory currentTurnCardHistory;
 
         private EffectRosterState()
         {
@@ -78,7 +84,8 @@ namespace GuardsDigital.Core.Effects
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory,
             TeamLifeState teamLives,
             IDeckCardSwap deckCardSwap,
-            IUnresolvedCardSwap unresolvedCardSwap)
+            IUnresolvedCardSwap unresolvedCardSwap,
+            ICurrentTurnCardHistory currentTurnCardHistory)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
@@ -90,6 +97,7 @@ namespace GuardsDigital.Core.Effects
             this.teamLives = teamLives;
             this.deckCardSwap = deckCardSwap;
             this.unresolvedCardSwap = unresolvedCardSwap;
+            this.currentTurnCardHistory = currentTurnCardHistory;
         }
 
         /// <summary>
@@ -116,17 +124,20 @@ namespace GuardsDigital.Core.Effects
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally teamVictory = null,
             TeamLifeState teamLives = null,
             IDeckCardSwap deckCardSwap = null,
-            IUnresolvedCardSwap unresolvedCardSwap = null) =>
+            IUnresolvedCardSwap unresolvedCardSwap = null,
+            ICurrentTurnCardHistory currentTurnCardHistory = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
                 soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives, deckCardSwap,
-                unresolvedCardSwap);
+                unresolvedCardSwap, currentTurnCardHistory);
 
         public bool IsAvailable => turnSlots != null;
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => Available(turnSlots);
+        public ICurrentTurnCardHistory CurrentTurnCardHistory =>
+            IsAvailable ? currentTurnCardHistory : null;
 
         public RoundHeroDefeatHistory HeroDefeats => Available(heroDefeats);
 

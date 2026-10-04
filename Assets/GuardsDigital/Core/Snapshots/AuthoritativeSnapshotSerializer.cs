@@ -441,7 +441,10 @@ namespace GuardsDigital.Core.Snapshots
         // ever facedown. The slot is the one place the fact can live. v53 is rejected: a v53 reader
         // would take the flag for the next assignment's hero id. Every slot-bearing fixture grows by
         // one byte per assignment.
-        public const int CurrentSchemaVersion = 54;
+        // v55 (milestone 9.46): board unit movement revisions and two turn-start checkpoints,
+        // plus the round's resolved-card heroes, cannot be reconstructed from current occupancy or
+        // card location. v54 is rejected rather than silently restoring false immobility/history.
+        public const int CurrentSchemaVersion = 55;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

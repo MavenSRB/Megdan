@@ -19,7 +19,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
     public sealed class AdjacentMoveAuthority :
         ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority,
         IBoardObjectExchangeAuthority, ILaneAdvanceAuthority, IObstaclePlacementAuthority,
-        IMinionBattleExclusionAuthority, ICompletedMovementWalkRecord
+        IMinionBattleExclusionAuthority, ICompletedMovementWalkRecord, IUnitTurnHistory
     {
         // Milestone 8.114b1, schema v47. See IMinionBattleExclusionAuthority and CompletedMovementWalk.
         private readonly HashSet<MinionId> minionBattleExclusions = new HashSet<MinionId>();
@@ -104,6 +104,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly List<MoveThroughCrossing> moveThroughCrossings = new List<MoveThroughCrossing>();
 
         private readonly BoardOccupancyIndex occupancyIndex;
+        private readonly List<UnitTurnPosition> currentTurnStart = new List<UnitTurnPosition>();
+        private readonly List<UnitTurnPosition> previousTurnStart = new List<UnitTurnPosition>();
         private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
         private readonly IReadOnlyList<ObstacleOccupancy> obstacleOccupanciesView;
         private readonly IReadOnlyList<MinionOccupancy> minionsView;
@@ -420,6 +422,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             actingBodies = new Dictionary<HeroId, int>(source.actingBodies);
             lastCompletedMovementWalk = source.lastCompletedMovementWalk;
             occupancyIndex = source.occupancyIndex.Clone();
+            currentTurnStart.AddRange(source.currentTurnStart);
+            previousTurnStart.AddRange(source.previousTurnStart);
             occupanciesView = occupancies.AsReadOnly();
             obstacleOccupanciesView = obstacleOccupancies.AsReadOnly();
             minionsView = minions.AsReadOnly();
@@ -734,6 +738,61 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
         public IReadOnlyList<HexCoordinate> BoardCoordinates => boardCoordinatesView;
 
+        /// <summary>Capture the board at the reveal checkpoint, before turn actions resolve.</summary>
+        public void RecordTurnStart()
+        {
+            previousTurnStart.Clear();
+            previousTurnStart.AddRange(currentTurnStart);
+            currentTurnStart.Clear();
+            foreach (var hero in occupancies)
+                currentTurnStart.Add(new UnitTurnPosition(
+                    BoardObjectReference.ForHeroBody(hero.HeroId, hero.Body), hero.Coordinate,
+                    occupancyIndex.MutationCount(BoardOccupant.ForHero(hero.HeroId))));
+            foreach (var minion in minions)
+                currentTurnStart.Add(new UnitTurnPosition(
+                    BoardObjectReference.ForMinion(minion.MinionId), minion.Coordinate,
+                    occupancyIndex.MutationCount(BoardOccupant.ForMinion(minion.MinionId))));
+        }
+
+        private int SubjectBody(BoardObjectReference unit) => unit.Kind == BoardObjectKind.Hero
+            ? (unit.HeroBody > 0 ? unit.HeroBody :
+                actingBodies.TryGetValue(unit.HeroId, out var acting) ? acting : HeroOccupancy.FirstBody)
+            : 0;
+
+        private static bool SameUnit(UnitTurnPosition position, BoardObjectReference unit, int body) =>
+            position.Unit.Equals(unit) &&
+            (unit.Kind != BoardObjectKind.Hero || position.Unit.HeroBody == body);
+
+        public bool TryGetTurnStartPosition(BoardObjectReference unit, out HexCoordinate coordinate)
+        {
+            var body = SubjectBody(unit);
+            foreach (var position in currentTurnStart)
+                if (SameUnit(position, unit, body))
+                {
+                    coordinate = position.Coordinate;
+                    return true;
+                }
+            coordinate = default;
+            return false;
+        }
+
+        /// <summary>True only if this unit has never changed board position since the prior turn began.</summary>
+        public bool RemainedSincePreviousTurn(BoardObjectReference unit)
+        {
+            var body = SubjectBody(unit);
+            foreach (var position in previousTurnStart)
+                if (SameUnit(position, unit, body))
+                {
+                    if (!TryGetObjectCoordinate(unit, out var current) ||
+                        !current.Equals(position.Coordinate)) return false;
+                    var occupant = unit.Kind == BoardObjectKind.Hero
+                        ? BoardOccupant.ForHero(unit.HeroId)
+                        : BoardOccupant.ForMinion(unit.MinionId);
+                    return occupancyIndex.MutationCount(occupant) == position.Mutation;
+                }
+            return false;
+        }
+
         internal bool IsOccupied(HexCoordinate coordinate) => occupancyIndex.IsOccupied(coordinate);
 
         /// <summary>
@@ -770,7 +829,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 minionBattleExclusions,
                 lastCompletedMovementWalk,
                 HeroBodySupplies,
-                ActingBodies);
+                ActingBodies,
+                currentTurnStart,
+                previousTurnStart,
+                occupancyIndex.UnitMutations);
 
         public static AdjacentMoveAuthority Restore(
             BoardRestoreState state,
@@ -874,6 +936,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             // Milestone 8.114b1, schema v47.
             restored.ExcludeFromMinionBattle(state.MinionBattleExclusions);
             restored.lastCompletedMovementWalk = state.LastCompletedMovementWalk;
+            restored.currentTurnStart.AddRange(state.CurrentTurnStart);
+            restored.previousTurnStart.AddRange(state.PreviousTurnStart);
+            if (state.UnitMutations.Count > 0)
+                restored.occupancyIndex.RestoreUnitMutations(state.UnitMutations);
             return restored;
         }
 

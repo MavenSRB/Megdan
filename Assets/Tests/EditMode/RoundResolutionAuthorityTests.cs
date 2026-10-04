@@ -16,6 +16,33 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RoundResolutionAuthorityTests
     {
         [Test]
+        public void ResolvedCardThisTurn_IsRecordedAfterFirstHeroActs_AndResetsAtNextReveal()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var authority = CreateAuthority(configuration);
+            var red = configuration.RedHand.Instances[0];
+            var blue = configuration.BlueHand.Instances[0];
+            Assert.That(authority.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
+            Assert.That(authority.HasResolvedCardThisTurn(red.OwnerId), Is.False);
+            Assert.That(authority.HasResolvedCardThisTurn(blue.OwnerId), Is.False);
+
+            var selected = authority.CurrentTurnAuthority.SelectedActor;
+            Assert.That(authority.TryPerformHold(selected.CardInstanceId).Accepted, Is.True);
+            Assert.That(authority.HasResolvedCardThisTurn(selected.ActorId), Is.True);
+            var other = selected.ActorId.Equals(red.OwnerId) ? blue.OwnerId : red.OwnerId;
+            Assert.That(authority.HasResolvedCardThisTurn(other), Is.False);
+
+            ResolveCurrentTurnWithHold(authority);
+            Assert.That(authority.TryCommitCard(configuration.RedHand.Instances[1].OwnerId,
+                configuration.RedHand.Instances[1].Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(configuration.BlueHand.Instances[1].OwnerId,
+                configuration.BlueHand.Instances[1].Id).Accepted, Is.True);
+            Assert.That(authority.HasResolvedCardThisTurn(red.OwnerId), Is.False);
+            Assert.That(authority.HasResolvedCardThisTurn(blue.OwnerId), Is.False);
+        }
+
+        [Test]
         public void FourTurns_RecordResolvedCardsInSlotsAndEnterEndOfRound()
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);

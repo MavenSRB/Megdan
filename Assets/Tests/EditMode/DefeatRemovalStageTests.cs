@@ -507,7 +507,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(54),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(55),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
                 "own. The version has since moved twenty-seven times, none of them for it: " +
                 "milestone 8.53 for the victory screen's accumulated per-hero scoreboard, and before " +

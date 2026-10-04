@@ -44,7 +44,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
             CompletedMovementWalk lastCompletedMovementWalk,
             IEnumerable<HeroBodySupply> heroBodySupplies,
-            IEnumerable<HeroActingBody> actingBodies)
+            IEnumerable<HeroActingBody> actingBodies,
+            IEnumerable<UnitTurnPosition> currentTurnStart = null,
+            IEnumerable<UnitTurnPosition> previousTurnStart = null,
+            IEnumerable<KeyValuePair<string, int>> unitMutations = null)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
@@ -60,6 +63,14 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 throw new ArgumentNullException(nameof(heroBodySupplies))).ToArray();
             ActingBodies = (actingBodies ??
                 throw new ArgumentNullException(nameof(actingBodies))).ToArray();
+            CurrentTurnStart = (currentTurnStart ?? Enumerable.Empty<UnitTurnPosition>()).ToArray();
+            PreviousTurnStart = (previousTurnStart ?? Enumerable.Empty<UnitTurnPosition>()).ToArray();
+            UnitMutations = (unitMutations ?? Enumerable.Empty<KeyValuePair<string, int>>()).ToArray();
+            if (UnitMutations.Any(value => value.Value < 0 ||
+                !(value.Key.StartsWith("hero:", StringComparison.Ordinal) ||
+                  value.Key.StartsWith("minion:", StringComparison.Ordinal))) ||
+                UnitMutations.Select(value => value.Key).Distinct(StringComparer.Ordinal).Count() != UnitMutations.Count)
+                throw new ArgumentException("Restored unit movement counters must be unique and nonnegative.", nameof(unitMutations));
             ObstacleOccupancies = obstacleOccupancies.ToArray();
             RemainingMinions = remainingMinions.ToArray();
             PlacedTokens = placedTokens.ToArray();
@@ -119,6 +130,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// </summary>
         public IReadOnlyList<HeroActingBody> ActingBodies { get; }
 
+        public IReadOnlyList<UnitTurnPosition> CurrentTurnStart { get; }
+        public IReadOnlyList<UnitTurnPosition> PreviousTurnStart { get; }
+        public IReadOnlyList<KeyValuePair<string, int>> UnitMutations { get; }
+
         public void Deconstruct(
             out IReadOnlyList<HeroOccupancy> heroOccupancies,
             out IReadOnlyList<ObstacleOccupancy> obstacleOccupancies,
@@ -128,7 +143,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             out IReadOnlyList<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
             out CompletedMovementWalk lastCompletedMovementWalk,
             out IReadOnlyList<HeroBodySupply> heroBodySupplies,
-            out IReadOnlyList<HeroActingBody> actingBodies)
+            out IReadOnlyList<HeroActingBody> actingBodies,
+            out IReadOnlyList<UnitTurnPosition> currentTurnStart,
+            out IReadOnlyList<UnitTurnPosition> previousTurnStart,
+            out IReadOnlyList<KeyValuePair<string, int>> unitMutations)
         {
             heroOccupancies = HeroOccupancies;
             obstacleOccupancies = ObstacleOccupancies;
@@ -139,6 +157,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             lastCompletedMovementWalk = LastCompletedMovementWalk;
             heroBodySupplies = HeroBodySupplies;
             actingBodies = ActingBodies;
+            currentTurnStart = CurrentTurnStart;
+            previousTurnStart = PreviousTurnStart;
+            unitMutations = UnitMutations;
         }
     }
 }

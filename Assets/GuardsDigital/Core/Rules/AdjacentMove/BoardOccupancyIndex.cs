@@ -65,15 +65,46 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
     internal sealed class BoardOccupancyIndex
     {
         private readonly Dictionary<HexCoordinate, BoardOccupant> occupants;
+        private readonly Dictionary<string, int> unitMutations;
 
         internal BoardOccupancyIndex()
         {
             occupants = new Dictionary<HexCoordinate, BoardOccupant>();
+            unitMutations = new Dictionary<string, int>(StringComparer.Ordinal);
         }
 
-        private BoardOccupancyIndex(Dictionary<HexCoordinate, BoardOccupant> occupants)
+        private BoardOccupancyIndex(Dictionary<HexCoordinate, BoardOccupant> occupants,
+            Dictionary<string, int> unitMutations)
         {
             this.occupants = occupants;
+            this.unitMutations = unitMutations;
+        }
+
+        private static string UnitKey(BoardOccupant occupant) =>
+            occupant.Kind == BoardOccupantKind.Hero ? "hero:" + occupant.HeroId.Value :
+            occupant.Kind == BoardOccupantKind.StandardMinion ? "minion:" + occupant.MinionId.Value : null;
+
+        private void RecordMutation(BoardOccupant occupant)
+        {
+            var key = UnitKey(occupant);
+            if (key == null) return;
+            unitMutations.TryGetValue(key, out var count);
+            unitMutations[key] = checked(count + 1);
+        }
+
+        internal int MutationCount(BoardOccupant occupant)
+        {
+            var key = UnitKey(occupant);
+            return key != null && unitMutations.TryGetValue(key, out var count) ? count : 0;
+        }
+
+        internal IReadOnlyDictionary<string, int> UnitMutations => unitMutations;
+
+        internal void RestoreUnitMutations(IEnumerable<KeyValuePair<string, int>> values)
+        {
+            unitMutations.Clear();
+            foreach (var value in values)
+                unitMutations.Add(value.Key, value.Value);
         }
 
         internal IReadOnlyCollection<HexCoordinate> OccupiedCoordinates => occupants.Keys;
@@ -96,6 +127,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             }
 
             occupants.Add(coordinate, occupant);
+            RecordMutation(occupant);
         }
 
         internal void Move(HexCoordinate origin, HexCoordinate destination)
@@ -112,14 +144,16 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             occupants.Remove(origin);
             occupants.Add(destination, occupant);
+            RecordMutation(occupant);
         }
 
         internal void Remove(HexCoordinate coordinate)
         {
-            if (!occupants.Remove(coordinate))
+            if (!occupants.TryGetValue(coordinate, out var occupant) || !occupants.Remove(coordinate))
             {
                 throw new InvalidOperationException("No board occupant exists at the removal coordinate.");
             }
+            RecordMutation(occupant);
         }
 
         // Milestone 6.6's Swap (p.19): "Two objects on the board swap places with each other." Written
@@ -136,21 +170,26 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             occupants[first] = secondOccupant;
             occupants[second] = firstOccupant;
+            RecordMutation(firstOccupant);
+            RecordMutation(secondOccupant);
         }
 
         // Milestone 6.6's Replace (p.19): one object stands where another stood. The space stays
         // occupied throughout, which is what separates a substitution from a removal and a placement.
         internal void Substitute(HexCoordinate coordinate, BoardOccupant occupant)
         {
-            if (!occupants.ContainsKey(coordinate))
+            if (!occupants.TryGetValue(coordinate, out var replaced))
             {
                 throw new InvalidOperationException("No board occupant exists at the substitution coordinate.");
             }
 
             occupants[coordinate] = occupant;
+            RecordMutation(replaced);
+            RecordMutation(occupant);
         }
 
         internal BoardOccupancyIndex Clone() =>
-            new BoardOccupancyIndex(new Dictionary<HexCoordinate, BoardOccupant>(occupants));
+            new BoardOccupancyIndex(new Dictionary<HexCoordinate, BoardOccupant>(occupants),
+                new Dictionary<string, int>(unitMutations, StringComparer.Ordinal));
     }
 }

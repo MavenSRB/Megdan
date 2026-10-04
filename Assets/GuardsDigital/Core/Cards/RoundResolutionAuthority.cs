@@ -27,7 +27,8 @@ namespace GuardsDigital.Core.Cards
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
-            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap
+            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap,
+            ICurrentTurnCardHistory
     {
         public const int TurnsPerRound = 4;
 
@@ -49,6 +50,7 @@ namespace GuardsDigital.Core.Cards
         private readonly MatchParticipants participants;
         private readonly CardActionResolutionAuthority cardActions;
         private readonly List<RoundTurnSlot> turnSlots = new List<RoundTurnSlot>();
+        private readonly HashSet<HeroId> resolvedCurrentTurn = new HashSet<HeroId>();
         private readonly List<CompletedRoundRecord> completedRounds = new List<CompletedRoundRecord>();
         private readonly List<EndOfRoundStageOutcome> endOfRoundOutcomes =
             new List<EndOfRoundStageOutcome>();
@@ -246,7 +248,7 @@ namespace GuardsDigital.Core.Cards
             // the resolved-slot swap is: it edits the turn slot and the selected card together.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
-                TeamLives, this, this));
+                TeamLives, this, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -312,6 +314,16 @@ namespace GuardsDigital.Core.Cards
         }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
+
+        public bool HasResolvedCardThisTurn(HeroId heroId) =>
+            heroId.IsDefined && resolvedCurrentTurn.Contains(heroId);
+
+        private void RecordResolvedCards(IEnumerable<TurnResolutionEvent> events)
+        {
+            foreach (var value in events)
+                if (value.Kind == TurnResolutionEventKind.CardResolved)
+                    resolvedCurrentTurn.Add(value.ActorId);
+        }
 
         /// <summary>
         /// A printed card exchange changes both card lifecycle and the numbered slot's identity.
@@ -1103,6 +1115,7 @@ namespace GuardsDigital.Core.Cards
                     "A finished mid-turn Lane Push could not hand the turn back to Initiative order.");
             }
 
+            RecordResolvedCards(continued.Events);
             events.AddRange(continued.Events.Select(value =>
                 RoundResolutionEvent.FromTurn(RoundIndex, TurnIndex, value)));
             if (CurrentTurnAuthority.IsEnded)
@@ -1168,7 +1181,8 @@ namespace GuardsDigital.Core.Cards
                 new RoundHistoryRestoreState(
                     TurnSlots,
                     HeroDefeatHistory.CaptureRestoreState(),
-                    CompletedRounds),
+                    CompletedRounds,
+                    resolvedCurrentTurn),
                 new EndOfRoundRestoreState(
                     CurrentEndOfRoundStage,
                     EndOfRoundOutcomes,
@@ -1300,6 +1314,8 @@ namespace GuardsDigital.Core.Cards
             authority.tieBreakerState = tieBreakerState;
             authority.turnSlots.Clear();
             authority.turnSlots.AddRange(state.History.TurnSlots);
+            authority.resolvedCurrentTurn.Clear();
+            authority.resolvedCurrentTurn.UnionWith(state.History.ResolvedCurrentTurn);
             cardActions?.BindRosterState(EffectRosterState.Of(
                 authority.turnSlots.AsReadOnly(),
                 authority.HeroDefeatHistory,
@@ -1312,7 +1328,7 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 9.32a. The p.10 swap with the deck, as the composed round binds it.
                 authority,
                 // Milestone 9.32b. And the swap of an unresolved card.
-                authority));
+                authority, authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:
@@ -2642,6 +2658,8 @@ namespace GuardsDigital.Core.Cards
                     cardActionReason: result.CardActionRejectionReason);
             }
 
+            RecordResolvedCards(result.Events);
+
             var events = result.Events
                 .Select(ruleEvent => RoundResolutionEvent.FromTurn(
                     RoundIndex,
@@ -2684,6 +2702,8 @@ namespace GuardsDigital.Core.Cards
 
         private void StartCurrentTurn(ICollection<RoundResolutionEvent> events)
         {
+            resolvedCurrentTurn.Clear();
+            board?.RecordTurnStart();
             var slot = new RoundTurnSlot(
                 RoundIndex,
                 TurnIndex,
@@ -2723,6 +2743,8 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new InvalidOperationException("A validated round turn could not start.");
             }
+
+            RecordResolvedCards(start.Events);
 
             foreach (var turnEvent in start.Events)
             {

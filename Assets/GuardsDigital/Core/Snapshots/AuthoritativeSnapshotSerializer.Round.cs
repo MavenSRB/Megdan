@@ -61,6 +61,9 @@ namespace GuardsDigital.Core.Snapshots
 
             WriteSlots(writer, state.History.TurnSlots);
             WriteHeroDefeatHistory(writer, state.History.HeroDefeats);
+            writer.Write(state.History.ResolvedCurrentTurn.Count);
+            foreach (var heroId in state.History.ResolvedCurrentTurn.OrderBy(value => value.Value, StringComparer.Ordinal))
+                writer.Write(heroId.Value);
         }
 
         /// <summary>
@@ -165,6 +168,11 @@ namespace GuardsDigital.Core.Snapshots
             });
             var slots = ReadSlots(reader, cards, participants);
             var heroDefeats = ReadHeroDefeatHistory(reader);
+            var resolvedCurrentTurn = ReadMany(reader, "current-turn resolved heroes", () =>
+                new HeroId(reader.ReadString()));
+            if (resolvedCurrentTurn.Distinct().Count() != resolvedCurrentTurn.Length ||
+                resolvedCurrentTurn.Any(value => !participants.Heroes.Any(hero => hero.Id.Equals(value))))
+                throw Malformed("Snapshot current-turn resolved heroes must be distinct configured heroes.");
             var completed = ReadMany(reader, "completed rounds", () =>
             {
                 var completedIndex = reader.ReadInt32();
@@ -321,7 +329,7 @@ namespace GuardsDigital.Core.Snapshots
                     new RoundCursorRestoreState(
                         roundIndex, turnIndex, phase, tieBreaker, soloVictoryHeroId,
                         teamVictoryTeamId, teamVictoryTallies),
-                    new RoundHistoryRestoreState(slots, heroDefeats, completed),
+                    new RoundHistoryRestoreState(slots, heroDefeats, completed, resolvedCurrentTurn),
                     new EndOfRoundRestoreState(
                         stage,
                         outcomes,

@@ -288,7 +288,8 @@ namespace GuardsDigital.Core.Snapshots
         {
             var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
                 currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk,
-                heroBodySupplies, actingBodies) = board.CaptureRestoreState();
+                heroBodySupplies, actingBodies, currentTurnStart, previousTurnStart,
+                unitMutations) = board.CaptureRestoreState();
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
 
@@ -370,6 +371,51 @@ namespace GuardsDigital.Core.Snapshots
                 var acting = actingBodies.Where(value => value.HeroId.Equals(supply.HeroId)).ToArray();
                 writer.Write(acting.Length == 0 ? 0 : acting[0].Body);
             }
+
+            // v55: movement revisions survive restore, including removal and a move away and back.
+            writer.Write(unitMutations.Count);
+            foreach (var entry in unitMutations.OrderBy(value => value.Key, StringComparer.Ordinal))
+            {
+                writer.Write(entry.Key);
+                writer.Write(entry.Value);
+            }
+            WriteTurnPositions(writer, currentTurnStart);
+            WriteTurnPositions(writer, previousTurnStart);
+        }
+
+        private static void WriteTurnPositions(BinaryWriter writer, IReadOnlyList<UnitTurnPosition> positions)
+        {
+            writer.Write(positions.Count);
+            foreach (var position in positions.OrderBy(value => (int)value.Unit.Kind)
+                .ThenBy(value => value.Unit.Kind == BoardObjectKind.Hero
+                    ? value.Unit.HeroId.Value : value.Unit.MinionId.Value, StringComparer.Ordinal)
+                .ThenBy(value => value.Unit.HeroBody))
+            {
+                writer.Write((int)position.Unit.Kind);
+                writer.Write(position.Unit.Kind == BoardObjectKind.Hero
+                    ? position.Unit.HeroId.Value : position.Unit.MinionId.Value);
+                writer.Write(position.Unit.HeroBody);
+                WriteCoordinate(writer, position.Coordinate);
+                writer.Write(position.Mutation);
+            }
+        }
+
+        private static UnitTurnPosition[] ReadTurnPositions(BinaryReader reader, string label)
+        {
+            return ReadMany(reader, label, () =>
+            {
+                var kind = SnapshotEnumReader.Read<BoardObjectKind>(reader, "turn position unit kind");
+                var id = reader.ReadString();
+                var body = reader.ReadInt32();
+                if ((kind != BoardObjectKind.Hero && kind != BoardObjectKind.Minion) ||
+                    (kind == BoardObjectKind.Hero && body < 1) ||
+                    (kind == BoardObjectKind.Minion && body != 0))
+                    throw Malformed("Snapshot turn position does not name a unit body.");
+                var unit = kind == BoardObjectKind.Hero
+                    ? BoardObjectReference.ForHeroBody(new HeroId(id), body)
+                    : BoardObjectReference.ForMinion(new MinionId(id));
+                return new UnitTurnPosition(unit, ReadCoordinate(reader), reader.ReadInt32());
+            });
         }
 
         private static AdjacentMoveAuthority ReadBoard(
@@ -498,10 +544,15 @@ namespace GuardsDigital.Core.Snapshots
                 return new HeroBodySupply(heroId, bodies);
             });
 
+            var mutations = ReadMany(reader, "unit movement counters", () =>
+                new KeyValuePair<string, int>(reader.ReadString(), reader.ReadInt32()));
+            var currentStart = ReadTurnPositions(reader, "current turn-start positions");
+            var previousStart = ReadTurnPositions(reader, "previous turn-start positions");
             return AdjacentMoveAuthority.Restore(
                 new BoardRestoreState(
                     heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId,
-                    exclusions, lastWalk, bodySupplies, actingBodies),
+                    exclusions, lastWalk, bodySupplies, actingBodies,
+                    currentStart, previousStart, mutations),
                 mapDefinition,
                 availableMinions);
         }

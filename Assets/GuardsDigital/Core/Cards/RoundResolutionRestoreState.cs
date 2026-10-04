@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -82,18 +83,22 @@ namespace GuardsDigital.Core.Cards
         public RoundHistoryRestoreState(
             IEnumerable<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistoryRestoreState heroDefeats,
-            IEnumerable<CompletedRoundRecord> completedRounds)
+            IEnumerable<CompletedRoundRecord> completedRounds,
+            IEnumerable<HeroId> resolvedCurrentTurn = null)
         {
             TurnSlots = Array.AsReadOnly(
                 (turnSlots ?? throw new ArgumentNullException(nameof(turnSlots))).ToArray());
             HeroDefeats = heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats));
             CompletedRounds = Array.AsReadOnly(
                 (completedRounds ?? throw new ArgumentNullException(nameof(completedRounds))).ToArray());
+            ResolvedCurrentTurn = Array.AsReadOnly(
+                (resolvedCurrentTurn ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
         }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots { get; }
         public RoundHeroDefeatHistoryRestoreState HeroDefeats { get; }
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds { get; }
+        public IReadOnlyList<HeroId> ResolvedCurrentTurn { get; }
 
         public void Deconstruct(
             out IReadOnlyList<RoundTurnSlot> turnSlots,
