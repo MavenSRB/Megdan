@@ -70,7 +70,10 @@ namespace GuardsDigital.Core.Cards
         /// facts: <see cref="MinionBattleMinionRemoved"/> says a miniature left the board, and this
         /// says one did not. A reader counting removals must not have to know which flag meant "no".
         /// </summary>
-        MinionBattlePushLost = 23
+        MinionBattlePushLost = 23,
+
+        /// <summary>A printed turn-end cleanup returned a token to supply.</summary>
+        TokenRemovedAtEndOfTurn = 24
     }
 
     public readonly struct RoundResolutionEvent
@@ -578,6 +581,17 @@ namespace GuardsDigital.Core.Cards
                 0,
                 endOfRoundStage: Cards.EndOfRoundStage.RemoveTokensAndReturnMarkers,
                 removedToken: token);
+        }
+
+        /// <summary>One token returned by its printed end-of-turn removal clause.</summary>
+        public static RoundResolutionEvent TokenRemovedAtEndOfTurn(
+            int roundIndex, int turnIndex,
+            GuardsDigital.Core.Components.PlacedToken token)
+        {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.TokenRemovedAtEndOfTurn,
+                roundIndex, turnIndex, removedToken: token);
         }
 
         /// <summary>

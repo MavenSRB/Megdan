@@ -2243,7 +2243,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     participants,
                     adjacentMoveAuthority,
                     modifications,
-                    heroItems)
+                    heroItems,
+                    pendingAttackResolution.SourceCardInstanceId,
+                    defenseCard)
                 : null;
             var resumedWithDefense = CreateOutcomeComparisonResolution(
                 defenseOffer, defenseValue, blockResult);
@@ -3933,7 +3935,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 participants,
                 board,
                 modifications,
-                heroItems);
+                heroItems,
+                resolution.SourceCardInstanceId,
+                instance);
             return PrintedValuesMatch(resolution.DefenseValue, expectedDefenseValue);
         }
     }

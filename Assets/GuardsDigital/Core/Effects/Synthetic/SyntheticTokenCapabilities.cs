@@ -100,9 +100,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             TokenDefinition definition,
             PrintedValueChannel reachChannel,
             string instanceIdentityLabel = null,
-            string adjacentToObstacleKind = null) =>
+            string adjacentToObstacleKind = null,
+            int minimumSameKindHexDistance = 0) =>
             new PlaceHeroTokenHandler(reference, definition, reachChannel,
-                instanceIdentityLabel, adjacentToObstacleKind);
+                instanceIdentityLabel, adjacentToObstacleKind, minimumSameKindHexDistance);
 
         /// <summary>
         /// One p.18 short-supply handler for one token definition. It offers back every token in that
@@ -271,13 +272,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly PrintedValueChannel reachChannel;
             private readonly string instanceIdentityLabel;
             private readonly string adjacentToObstacleKind;
+            private readonly int minimumSameKindHexDistance;
 
             public PlaceHeroTokenHandler(
                 EffectCapabilityReference reference,
                 TokenDefinition definition,
                 PrintedValueChannel reachChannel,
                 string instanceIdentityLabel = null,
-                string adjacentToObstacleKind = null)
+                string adjacentToObstacleKind = null,
+                int minimumSameKindHexDistance = 0)
             {
                 if (reachChannel != PrintedValueChannel.Radius && reachChannel != PrintedValueChannel.Range)
                 {
@@ -301,6 +304,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (adjacentToObstacleKind != null && string.IsNullOrWhiteSpace(adjacentToObstacleKind))
                     throw new ArgumentException("Obstacle kind is named or absent.", nameof(adjacentToObstacleKind));
                 this.adjacentToObstacleKind = adjacentToObstacleKind;
+                if (minimumSameKindHexDistance < 0)
+                    throw new ArgumentOutOfRangeException(nameof(minimumSameKindHexDistance));
+                this.minimumSameKindHexDistance = minimumSameKindHexDistance;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -370,6 +376,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 if (!AdjacentToLiveObstacle(context, components, coordinate))
+                    return EffectExecutionResult.ImpossibleMandatory();
+
+                if (!TokenPlacementSeparationQuery.Admits(
+                        coordinate, definition.Reference, components.Tokens.PlacedTokens,
+                        minimumSameKindHexDistance))
                     return EffectExecutionResult.ImpossibleMandatory();
 
                 // The operation re-derives the admitted spaces and re-asks the supply rather than
@@ -491,6 +502,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         Array.Empty<HexCoordinate>(), context.Modifications)
                     .Where(clauses.Admit)
                     .Where(space => AdjacentToLiveObstacle(context, components, space))
+                    .Where(space => TokenPlacementSeparationQuery.Admits(
+                        space, definition.Reference, components.Tokens.PlacedTokens,
+                        minimumSameKindHexDistance))
                     .ToArray();
             }
 

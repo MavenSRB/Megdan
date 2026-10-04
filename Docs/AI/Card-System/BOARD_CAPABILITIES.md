@@ -103,7 +103,7 @@ Milestone 6.4 implements this as the registered `synthetic-object-push` capabili
 
 `PlaceEffect` takes a game piece from the board or supply and puts it into a different empty space. It does not count as movement. The contract declares source container, eligible piece type, destination query, chooser, and what happens when no legal empty destination exists.
 
-Placing tokens additionally uses the limited-supply rules in the token section. Placing a board object must not silently use Spawn semantics.
+Placing tokens additionally uses the limited-supply rules in the token section. A placement may declare a minimum same-kind hex separation, checked both for the offered spaces and after a paused answer; Emmitt's Glitches require two empty intervening spaces (distance at least 3). A token definition may declare turn-end removal, resolved after turn-end effects and before the next commitment; round-end cleanup remains the fallback if a token somehow persists. Placing a board object must not silently use Spawn semantics.
 
 Milestone 6.4a implements the minimum correction-owned Place path: the displaced-minion fallback carries typed policy/outcome data - correction kind, candidate destinations from `NearestQuery` over empty Battle-Zone spaces, and a left-in-place outcome for a full zone - and emits Place rather than Movement facts, with no route because Place is not movement. It is an internal authority operation rather than a registered effect capability, because no card text drives Place yet and a registration without a definition binding would be a dead contract; milestone 6.5 migrates this path to, or proves it conformant with, the general `PlaceEffect`.
 

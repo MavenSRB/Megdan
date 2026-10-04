@@ -445,6 +445,62 @@ namespace GuardsDigital.Tests.EditMode
         // ----- The phase-wide durability rule -----
 
         [Test]
+        public void TemporalPunch_UsesDefendingCardInitiativeAndItems_OnlyForItsOwnAttack()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attacker = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defender = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
+            var board = new AdjacentMoveAuthority(
+                RadiusThreeCoordinates(),
+                new[]
+                {
+                    new HeroOccupancy(attacker, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(defender, new HexCoordinate(1, 0))
+                },
+                Array.Empty<ObstacleOccupancy>(),
+                Array.Empty<QuickGameMinionSetupState>());
+            var offer = ActionOfferQuery.GetAvailableOffers(
+                    configuration.CardDefinitions, configuration.CardInstances,
+                    defender, ActionOfferWindow.Reaction)
+                .First(value => configuration.CardDefinitions
+                    .Single(definition => definition.Reference.Equals(value.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(value.ActionDefinitionId))
+                    .DefenseResolution == PrintedDefenseResolution.Value);
+            var card = configuration.CardInstances.Single(value =>
+                value.Id.Equals(offer.SourceCardInstanceId));
+            var printedInitiative = PrintedValueQuery.CalculatePrintedInitiative(
+                card, configuration.CardDefinitions);
+            var items = ItemsHolding(configuration.Participants, defender,
+                PrintedValueChannel.Initiative, PrintedValueChannel.Defense);
+            var attackCardId = new CardInstanceId("temporal-punch-source");
+            var rules = new RuleModificationSet(new[]
+            {
+                AppliedRuleModification.FromActiveEffect(
+                    RuleModification.ForDefendingCardUsesInitiative(),
+                    RuleObject.ForHero(attacker), new GuardsDigital.Core.Timing.ActiveEffectId("temporal-punch"),
+                    attacker, TeamSide.Red, 1, sourceCardInstanceId: attackCardId)
+            }, Array.Empty<AppliedObstacleOverlay>(), configuration.TieBreakerState);
+
+            var substituted = DefenseValueQuery.Calculate(
+                offer, configuration.CardDefinitions, defender, configuration.Participants,
+                board, rules, items, attackCardId, card);
+            var ordinary = DefenseValueQuery.Calculate(
+                offer, configuration.CardDefinitions, defender, configuration.Participants,
+                board, rules, items, new CardInstanceId("another-attack"), card);
+
+            Assert.That(substituted.Total, Is.EqualTo(printedInitiative.Total + 1));
+            Assert.That(substituted.Channel, Is.EqualTo(PrintedValueChannel.Defense));
+            Assert.That(substituted.Contributions.Count(value =>
+                value.Kind == ValueContributionKind.ItemModifier), Is.EqualTo(1));
+            Assert.That(substituted.Contributions.Single(value =>
+                value.Kind == ValueContributionKind.ItemModifier).Channel,
+                Is.EqualTo(PrintedValueChannel.Initiative));
+            Assert.That(ordinary.Contributions.Single(value =>
+                value.Kind == ValueContributionKind.ItemModifier).Channel,
+                Is.EqualTo(PrintedValueChannel.Defense));
+        }
+
+        [Test]
         public void TheItemState_RefusesAnIncoherentRestore()
         {
             var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;

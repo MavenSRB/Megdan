@@ -244,6 +244,15 @@ namespace GuardsDigital.Core.Diagnostics
                     return;
                 }
 
+                case RoundResolutionEventKind.TokenRemovedAtEndOfTurn:
+                case RoundResolutionEventKind.TokenRemovedAtEndOfRound:
+                    Add($"Round.{ruleEvent.Kind}",
+                        JoinReferences(roundReference,
+                            $"token={ruleEvent.RemovedToken.Id.Value}"),
+                        $"kind={ruleEvent.RemovedToken.Definition.Reference};" +
+                        $"at={ruleEvent.RemovedToken.Coordinate}");
+                    return;
+
                 default:
                     Add($"Round.{ruleEvent.Kind}", roundReference, "accepted boundary");
                     return;

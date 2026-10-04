@@ -36,9 +36,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             AdjacentMoveAuthority board,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            CardInstanceId incomingAttackCardId = default,
+            CardInstance defendingCard = null) =>
             Calculate(defenseOffer, definitions, defenderId, OnlyBody, participants, board,
-                modifications, heroItems);
+                modifications, heroItems, incomingAttackCardId, defendingCard);
 
         /// <summary>
         /// Milestone 9.21a (RZ-Q3, RZ-Q4). The same value for the named DEFENDING body: the Attack
@@ -52,7 +54,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             AdjacentMoveAuthority board,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            CardInstanceId incomingAttackCardId = default,
+            CardInstance defendingCard = null)
         {
             if (!defenderId.IsDefined)
             {
@@ -69,10 +73,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(board));
             }
 
-            var printed = PrintedValueQuery.CalculatePrintedValue(
-                defenseOffer,
-                definitions,
-                PrintedValueChannel.Defense);
+            // Temporal Punch substitutes the defending CARD's Initiative and matching items, not
+            // the attacker's Initiative or a generic Defense modifier. The declaration is sourced
+            // by the attack card, so another attack in the same timing window cannot inherit it.
+            var substituted = incomingAttackCardId.IsDefined && modifications != null &&
+                modifications.Modifications.Any(value =>
+                    value.Modification.Kind == RuleModificationKind.DefendingCardUsesInitiative &&
+                    value.SourceCardInstanceId.Equals(incomingAttackCardId));
+            if (substituted && (defendingCard == null ||
+                !defendingCard.Id.Equals(defenseOffer.SourceCardInstanceId) ||
+                !defendingCard.OwnerId.Equals(defenderId)))
+            {
+                throw new ArgumentException(
+                    "Initiative substitution requires the defending card instance.", nameof(defendingCard));
+            }
+
+            var printed = substituted
+                ? PrintedValueQuery.CalculatePrintedInitiative(defendingCard, definitions)
+                : PrintedValueQuery.CalculatePrintedValue(
+                    defenseOffer, definitions, PrintedValueChannel.Defense);
             var contributions = new List<ValueContribution>(printed.Contributions);
 
             // p.16's item bonus is asked of the printed result rather than of the total, because the
@@ -110,9 +129,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // It is asked of the whole action rather than of the printed result, because unlike p.16's
             // item this is the card's own sentence rather than a rule about what the card prints -
             // which is the same separation the Attack channel has had since milestone 8.19c.
-            contributions.AddRange(RosterDynamicValueQuery.DefenseContributions(
-                action, defenseOffer, definitions.ToArray(), board, heroItems,
-                participants, modifications, defenderBody));
+            if (!substituted)
+            {
+                contributions.AddRange(RosterDynamicValueQuery.DefenseContributions(
+                    action, defenseOffer, definitions.ToArray(), board, heroItems,
+                    participants, modifications, defenderBody));
+            }
 
             if (modifications != null)
             {

@@ -2759,6 +2759,18 @@ namespace GuardsDigital.Core.Cards
 
         private void CompleteCurrentTurn(ICollection<RoundResolutionEvent> events)
         {
+            // Printed end-of-turn token clauses resolve after end-of-turn effects and before the
+            // next commitment window. The board owns the mutation; this round owns the boundary.
+            if (board != null)
+            {
+                foreach (var token in GuardsDigital.Core.Components.ComponentCleanupRules
+                             .TokensRemovedAtEndOfTurn(board.PlacedTokens))
+                {
+                    events.Add(RoundResolutionEvent.TokenRemovedAtEndOfTurn(
+                        RoundIndex, TurnIndex, board.CommitValidatedTokenReclamation(token.Id)));
+                }
+            }
+
             tieBreakerState = CurrentTurnAuthority.TieBreakerState;
             if (TurnIndex == TurnsPerRound)
             {

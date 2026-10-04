@@ -22,6 +22,16 @@ namespace GuardsDigital.Core.Components
     /// </summary>
     public static class ComponentCleanupRules
     {
+        /// <summary>Tokens whose printed text returns all copies at the end of each turn.</summary>
+        public static IReadOnlyList<PlacedToken> TokensRemovedAtEndOfTurn(
+            IEnumerable<PlacedToken> placedTokens)
+        {
+            if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
+            return placedTokens
+                .Where(token => token.Definition.RemovalCondition == TokenRemovalCondition.EndOfTurnCleanup)
+                .ToArray();
+        }
+
         /// <summary>
         /// The tokens rulebook p.8's "Remove all tokens from the board" takes, which is every placed
         /// token whose definition has not declared an override under p.19's "unless the card text says
@@ -33,7 +43,8 @@ namespace GuardsDigital.Core.Components
         {
             if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
             return placedTokens
-                .Where(token => token.Definition.RemovalCondition == TokenRemovalCondition.EndOfRoundCleanup)
+                .Where(token => token.Definition.RemovalCondition == TokenRemovalCondition.EndOfRoundCleanup ||
+                    token.Definition.RemovalCondition == TokenRemovalCondition.EndOfTurnCleanup)
                 .ToArray();
         }
 

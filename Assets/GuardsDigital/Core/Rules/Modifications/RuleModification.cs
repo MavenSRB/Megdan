@@ -461,7 +461,13 @@ namespace GuardsDigital.Core.Rules.Modifications
         MovementActionOnlyInAStraightLine = 19,
 
         /// <summary>Replace a would-be minion Defeat by consuming its declared source token.</summary>
-        DefeatReplacement = 20
+        DefeatReplacement = 20,
+
+        /// <summary>Next turn, lower effective Initiative acts first; ties still use p.7.</summary>
+        AscendingInitiativeOrder = 21,
+
+        /// <summary>For an attack by this source card, use the defender's card Initiative and Initiative items as numeric Defense.</summary>
+        DefendingCardUsesInitiative = 22
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -1307,6 +1313,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
 
+        /// <summary>Reverse Time's global ordering rule, sourced by its active next-turn effect.</summary>
+        public static RuleModification ForAscendingInitiativeOrder() =>
+            new RuleModification(
+                RuleModificationKind.AscendingInitiativeOrder,
+                Array.Empty<RuleActivity>(), RulePermissionKind.None,
+                PrintedValueChannel.None, 0, EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor, RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
+        /// <summary>Temporal Punch's attack-local substitution; the source card binds its scope.</summary>
+        public static RuleModification ForDefendingCardUsesInitiative() =>
+            new RuleModification(
+                RuleModificationKind.DefendingCardUsesInitiative,
+                Array.Empty<RuleActivity>(), RulePermissionKind.None,
+                PrintedValueChannel.None, 0, EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor, RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
         public static RuleModification ForDefeatReplacement(RemovalPreventionCost cost)
         {
             if (cost.Kind != RemovalPreventionCostKind.RemoveTheSourceToken)
@@ -1540,6 +1564,10 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return $"Item bonuses multiplied by {Amount}";
                 case RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles:
                     return "Counts as adjacent to 3 or more obstacles";
+                case RuleModificationKind.AscendingInitiativeOrder:
+                    return "Lower Initiative acts before higher Initiative";
+                case RuleModificationKind.DefendingCardUsesInitiative:
+                    return "Defending card uses Initiative and Initiative items";
                 default:
                     return "Undeclared modification";
             }

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -15,6 +17,68 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class RoundResolutionAuthorityTests
     {
+        [Test]
+        public void PrintedTurnEndTokenCleanup_RemovesAllCopiesBeforeNextCommitment()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var red = configuration.RedHand.Instances[0];
+            var blue = configuration.BlueHand.Instances[0];
+            var board = new AdjacentMoveAuthority(
+                new[]
+                {
+                    new HexCoordinate(-1, 0), new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0), new HexCoordinate(2, 0),
+                    new HexCoordinate(3, 0)
+                },
+                new[]
+                {
+                    new HeroOccupancy(red.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blue.OwnerId, new HexCoordinate(-1, 0))
+                });
+            var definition = new TokenDefinition(new TokenDefinitionId("turn-end-token"), 1,
+                "Turn end", 3, Array.Empty<TokenPropertyDefinition>(),
+                TokenRemovalCondition.EndOfTurnCleanup);
+            foreach (var coordinate in new[] { new HexCoordinate(2, 0), new HexCoordinate(3, 0) })
+            {
+                board.CommitValidatedTokenPlacement(new PlacedToken(
+                    new TokenInstanceId($"turn-end-{coordinate.Q}"), definition,
+                    red.OwnerId, red.OwnerId, red.Id, coordinate));
+            }
+
+            var authority = new RoundResolutionAuthority(
+                configuration.CardDefinitions, configuration.CardInstances,
+                configuration.Participants, configuration.TieBreakerState, 1,
+                new RoundResolutionComposition(null, board, null, null, null, null,
+                    null, null, null, null));
+            Assert.That(authority.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
+            Assert.That(authority.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
+            var endingEvents = new List<RoundResolutionEvent>();
+            while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
+            {
+                var result = authority.CurrentTurnAuthority.PendingTurnRelease != null
+                    ? authority.TryReleaseTurn()
+                    : authority.TryPerformHold(
+                        authority.CurrentTurnAuthority.SelectedActor.CardInstanceId);
+                Assert.That(result.Accepted, Is.True);
+                endingEvents.AddRange(result.Events);
+            }
+
+            Assert.That(authority.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            Assert.That(board.PlacedTokens, Is.Empty);
+            Assert.That(endingEvents.Count(value =>
+                value.Kind == RoundResolutionEventKind.TokenRemovedAtEndOfTurn), Is.EqualTo(2));
+            Assert.That(endingEvents.Where(value =>
+                value.Kind == RoundResolutionEventKind.TokenRemovedAtEndOfTurn)
+                .Select(value => value.RemovedToken.Id.Value),
+                Is.EquivalentTo(new[] { "turn-end-2", "turn-end-3" }));
+            var log = new RuleEventLogProjection();
+            log.Append(endingEvents);
+            Assert.That(log.Entries.Where(value =>
+                    value.EventType == "Round.TokenRemovedAtEndOfTurn")
+                .Select(value => value.StableReferences),
+                Has.Some.Contains("token=turn-end-2"));
+        }
+
         [Test]
         public void ResolvedCardThisTurn_IsRecordedAfterFirstHeroActs_AndResetsAtNextReveal()
         {

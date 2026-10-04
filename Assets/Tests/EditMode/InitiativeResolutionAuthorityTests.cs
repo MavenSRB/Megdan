@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -11,6 +14,97 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class InitiativeResolutionAuthorityTests
     {
+        [Test]
+        public void AscendingInitiative_SelectsLowestEffectiveTotal_AndRequeriesAfterResolution()
+        {
+            var participants = CreateParticipants(2, 1);
+            var lowDefinition = CreateDefinition("low", 2);
+            var middleDefinition = CreateDefinition("middle", 5);
+            var highDefinition = CreateDefinition("high", 8);
+            var low = CreateRevealedCard("low-card", lowDefinition, "red-hero-1");
+            var middle = CreateRevealedCard("middle-card", middleDefinition, "red-hero-2");
+            var high = CreateRevealedCard("high-card", highDefinition, "blue-hero-1");
+            var cards = new[] { high, middle, low };
+            var definitions = new[] { highDefinition, middleDefinition, lowDefinition };
+            var authority = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Red));
+            var rules = AscendingRules();
+
+            Assert.That(authority.TrySelectNextActor(definitions, cards, participants, null, rules).Accepted, Is.True);
+            Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(low.Id));
+            ResolveAndAcknowledge(authority, low, cards);
+            Assert.That(authority.TrySelectNextActor(definitions, cards, participants, null, rules).Accepted, Is.True);
+            Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(middle.Id));
+        }
+
+        [Test]
+        public void ReverseTime_IsDormantUntilNextTurn_ThenExpiresWithoutChangingTieMethod()
+        {
+            var participants = CreateParticipants(1, 1);
+            var lowDefinition = CreateDefinition("reverse-low", 2);
+            var highDefinition = CreateDefinition("reverse-high", 8);
+            var low = CreateRevealedCard("reverse-low-card", lowDefinition, "red-hero-1");
+            var high = CreateRevealedCard("reverse-high-card", highDefinition, "blue-hero-1");
+            var cards = new[] { low, high };
+            var definitions = new[] { lowDefinition, highDefinition };
+            var lifecycle = new ActiveEffectLifecycle();
+            var source = new CardInstanceId("reverse-time-source");
+            lifecycle.Create(new ActiveEffectId("reverse-time-next-turn"),
+                EmmittActiveEffectContent.ReverseTimeDefinition,
+                low.OwnerId, TeamSide.Red, default, source,
+                new ActionDefinitionId("reverse-time-attack"), 1, 1);
+
+            RuleModificationSet Live() => RuleModificationQuery.Build(
+                lifecycle, null, participants, new TieBreakerState(TeamSide.Red),
+                GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None,
+                RuleObject.None, null, null);
+            CardInstanceId First(RuleModificationSet rules)
+            {
+                var order = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Red));
+                Assert.That(order.TrySelectNextActor(definitions, cards, participants, null, rules).Accepted, Is.True);
+                return order.SelectedActor.CardInstanceId;
+            }
+
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Dormant));
+            Assert.That(First(Live()), Is.EqualTo(high.Id));
+            lifecycle.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                TimingCheckpoint.TurnStarted, 1, 2), new TieBreakerState(TeamSide.Red));
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active));
+            Assert.That(First(Live()), Is.EqualTo(low.Id));
+            lifecycle.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded, 1, 2),
+                new TieBreakerState(TeamSide.Red));
+            Assert.That(First(Live()), Is.EqualTo(high.Id));
+        }
+
+        [Test]
+        public void AscendingInitiative_StillUsesTieBreakerForLowestCrossTeamTie()
+        {
+            var participants = CreateParticipants(1, 1);
+            var redDefinition = CreateDefinition("red-low", 2);
+            var blueDefinition = CreateDefinition("blue-low", 2);
+            var red = CreateRevealedCard("red-low-card", redDefinition, "red-hero-1");
+            var blue = CreateRevealedCard("blue-low-card", blueDefinition, "blue-hero-1");
+            var cards = new[] { blue, red };
+            var authority = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Blue));
+
+            Assert.That(authority.TrySelectNextActor(new[] { redDefinition, blueDefinition }, cards,
+                participants, null, AscendingRules()).Accepted, Is.True);
+            Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id));
+            Assert.That(authority.SelectedActor.FlipTieBreakerAfterResolution, Is.True);
+            ResolveAndAcknowledge(authority, blue, cards);
+            Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
+        }
+
+        private static RuleModificationSet AscendingRules() =>
+            new RuleModificationSet(new[]
+            {
+                AppliedRuleModification.FromActiveEffect(
+                    RuleModification.ForAscendingInitiativeOrder(),
+                    RuleObject.ForHero(new HeroId("red-hero-1")),
+                    new ActiveEffectId("reverse-time"),
+                    new HeroId("red-hero-1"), TeamSide.Red, 1)
+            }, Array.Empty<AppliedObstacleOverlay>(), new TieBreakerState(TeamSide.Red));
+
         [Test]
         public void PrintedInitiativeQuery_ReturnsCardWideTypedContribution()
         {

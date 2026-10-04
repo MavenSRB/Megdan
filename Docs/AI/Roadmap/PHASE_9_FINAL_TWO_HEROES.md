@@ -22,11 +22,15 @@ Completed 2026-10-04. The board captures both turn-start positions and continuou
 
 Historical evidence: [9.46 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-946-emmitt-turn-history-evidence).
 
-### [ ] 9.47 Emmitt's Glitch and altered Initiative
+### [x] 9.47 Emmitt's Glitch and altered Initiative
 
 Outcome: typed Glitch token placement, short supply, swap and turn-end cleanup; Reverse Time changes next-turn Initiative ordering while retaining the printed ordinary tie method; Temporal Punch's Defense substitution reads the defending card's Initiative and items. Focused tests cover token ownership, swap, tie order, effective Defense, persistence and replay. T2.
 
-### [ ] 9.48 Emmitt's two-card Ultimate
+Completed 2026-10-04. EM-Q3 fixes Glitch spacing at hex distance 3. The three-copy definition, placement/reclaim handlers, live spacing revalidation and turn-end removal are typed; a board swap preserves token identity and ownership. Reverse Time's dormant/active next-turn source selects lower effective Initiative with p.7 ties unchanged. Temporal Punch substitutes the defending card's Initiative icon and matching items, consistently in resolution, replay verification and preview. Scoped snapshot/restore and deterministic continuation cover the new token and effect state. Emmitt's definitions and handlers remain unregistered until 9.49's full card composition. T2 focused and directly affected offline checks are green; no Unity run is needed for this Core-only milestone.
+
+Historical evidence: [9.47 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-947-emmitt-glitch-and-altered-initiative-evidence).
+
+### [~] 9.48 Emmitt's two-card Ultimate
 
 Outcome: one owning seat may commit two cards on its turn, reveals both, then retrieves one unresolved card at the printed reveal checkpoint; the other card alone takes an ordinary action. Commitment privacy, selection, Initiative, card states, owner authorization, bot choices, restore and wire projection are proved. T2. Requires the Emmitt Ultimate ruling.
 

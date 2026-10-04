@@ -57,6 +57,8 @@ Upgrade lines: Temporal Punch to Temporal Slam or Flashback to Temporal Judgemen
 
 The user saw the relevant fronts and confirmed all proposed readings. **EM-Q1:** Alternative Timelines' two cards are committed and revealed together; immediately after reveal, Emmitt may retrieve either newly played unresolved card, leaving the other as the only card whose Initiative and action are resolved that turn. **EM-Q2:** "Remained in the same space since the last turn" is a continuous position-history condition from the start of the previous turn through this action. Moving away and back fails it. These answers govern 9.46 and 9.48; the printed text and p.7 still govern all other timing.
 
+**EM-Q3 (settled, user 2026-10-04):** The Glitch faces require "at least two spaces between each token." The user spelled out `Token no token no token token`: two empty intervening hexes, so placed Glitches must have hex distance at least 3 from every standing Glitch.
+
 ## Contract map
 
 Existing mechanisms: card-text straight-line Move and Place; typed token supply/short-supply, cleanup and Swap; `EffectRosterState` turn slots and card history; the p.14 Defense calculation; Active-effect `NextTurn` and `ThisTurn` windows; source-owned, seat-authorized choices; snapshot and replay. New contracts: a query over continuous unit position history, a turn-scoped resolved-card predicate for each hero, a next-turn ascending Initiative order while ordinary ties remain, substitution of the defending card's effective Initiative for its Defense value, and a second commitment that resolves to one chosen unresolved card after reveal. The card definitions consume those contracts; no card-name branch belongs in them.

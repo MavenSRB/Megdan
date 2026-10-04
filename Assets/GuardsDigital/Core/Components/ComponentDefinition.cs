@@ -238,7 +238,10 @@ namespace GuardsDigital.Core.Components
         EndOfRoundCleanup = 1,
 
         /// <summary>Printed override: retained at round end, but still removable by ordinary token operations.</summary>
-        RetainedAtEndOfRound = 2
+        RetainedAtEndOfRound = 2,
+
+        /// <summary>Printed override: all copies are removed at the end of the current turn.</summary>
+        EndOfTurnCleanup = 3
     }
 
     /// <summary>
@@ -317,7 +320,8 @@ namespace GuardsDigital.Core.Components
             }
 
             if (removalCondition != TokenRemovalCondition.EndOfRoundCleanup &&
-                removalCondition != TokenRemovalCondition.RetainedAtEndOfRound)
+                removalCondition != TokenRemovalCondition.RetainedAtEndOfRound &&
+                removalCondition != TokenRemovalCondition.EndOfTurnCleanup)
             {
                 throw new ArgumentException(
                     "A token definition requires a supported explicit removal condition; retaining " +

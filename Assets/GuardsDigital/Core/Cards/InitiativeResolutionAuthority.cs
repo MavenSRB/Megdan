@@ -513,9 +513,17 @@ namespace GuardsDigital.Core.Cards
                 return SelectionQueryResult.Empty;
             }
 
-            var highest = candidates.Max(candidate => candidate.InitiativeTotal);
+            // A standing Reverse Time declaration reverses only the ranking, not p.7's tie method.
+            // Its source is actor-owned and global: no enemy action targets a hero here, so printed
+            // immunity cannot cancel the order (the card explicitly says it ignores immunity).
+            var ascending = modifications.Modifications.Any(value =>
+                value.Modification.Kind ==
+                GuardsDigital.Core.Rules.Modifications.RuleModificationKind.AscendingInitiativeOrder);
+            var selectedTotal = ascending
+                ? candidates.Min(candidate => candidate.InitiativeTotal)
+                : candidates.Max(candidate => candidate.InitiativeTotal);
             var highestCandidates = candidates
-                .Where(candidate => candidate.InitiativeTotal == highest)
+                .Where(candidate => candidate.InitiativeTotal == selectedTotal)
                 .ToArray();
             var tiedSides = highestCandidates.Select(candidate => candidate.Side).Distinct().ToArray();
             var crossTeamTie = tiedSides.Length > 1;
@@ -526,7 +534,7 @@ namespace GuardsDigital.Core.Cards
                     .OrderBy(candidate => candidate.Card.Id.Value, StringComparer.Ordinal)
                     .ToArray(),
                 selectedSide,
-                highest,
+                selectedTotal,
                 crossTeamTie);
         }
 

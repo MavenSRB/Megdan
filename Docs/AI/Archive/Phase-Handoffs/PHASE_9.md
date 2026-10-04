@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.47 Emmitt Glitch and altered Initiative evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.47 | Emmitt's three Glitches have p.18 short supply, EM-Q3's distance-3 placement, source-preserving Swap and end-turn cleanup. Reverse Time reverses next-turn Initiative rank while retaining ties; Temporal Punch uses defending-card Initiative and Initiative items across resolution, preview and restore. Content registration awaits 9.49. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-947-emmitts-glitch-and-altered-initiative). | `milestone/9.47` |
+
 ## Milestone 9.46 Emmitt turn history evidence
 
 | Milestone | Outcome and definition | Commit |

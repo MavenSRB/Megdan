@@ -1238,7 +1238,10 @@ namespace GuardsDigital.Application
                     configuration.Participants,
                     board,
                     modifications,
-                    heroItems);
+                    heroItems,
+                    attack.SourceCardInstanceId,
+                    configuration.CardInstances.Single(value =>
+                        value.Id.Equals(offer.SourceCardInstanceId)));
                 var comparison = AttackOutcomeComparison.Create(
                     attack.AttackTotal,
                     defense.Total,
