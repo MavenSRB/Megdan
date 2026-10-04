@@ -512,8 +512,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(parameter => parameter.ParameterType.Name)
                 .ToArray();
 
-            // Milestone 9.21b: twelve - "which of you acts" joins through the same contract argument.
-            Assert.That(DecisionFamilyInventory.ChoiceProjectionMembers, Has.Length.EqualTo(12),
+            // Milestone 9.48: reveal retrieval joins through the same contract argument.
+            Assert.That(DecisionFamilyInventory.ChoiceProjectionMembers, Has.Length.EqualTo(13),
                 "The declared inventory is the list this rule is about; a shrunk one is a broken " +
                 "rule rather than a pass.");
             Assert.That(carried, Has.Length.EqualTo(DecisionFamilyInventory.ChoiceProjectionMembers.Length),

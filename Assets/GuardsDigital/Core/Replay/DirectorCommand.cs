@@ -93,7 +93,9 @@ namespace GuardsDigital.Core.Replay
         /// other question p.7 asks as a card resolves - so it gets a command kind rather than riding
         /// another family's.
         /// </summary>
-        ChooseActingBody = 25
+        ChooseActingBody = 25,
+        CommitTwoCards = 26,
+        RetrieveOneAfterReveal = 27
     }
 
 
@@ -116,7 +118,8 @@ namespace GuardsDigital.Core.Replay
             IEnumerable<TokenInstanceId> tokenInstanceIds = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId systemTransitionDefinitionId = default,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand systemTransitionChoice = default,
-            int heroBody = 0)
+            int heroBody = 0,
+            CardInstanceId secondCardInstanceId = default)
         {
             if (heroBody < 0)
             {
@@ -135,6 +138,7 @@ namespace GuardsDigital.Core.Replay
             Kind = kind;
             HeroId = heroId;
             CardInstanceId = cardInstanceId;
+            SecondCardInstanceId = secondCardInstanceId;
             TeamSide = teamSide;
             ActionDefinitionId = actionDefinitionId;
             Coordinate = coordinate;
@@ -156,6 +160,7 @@ namespace GuardsDigital.Core.Replay
         public DirectorCommandKind Kind { get; }
         public HeroId HeroId { get; }
         public CardInstanceId CardInstanceId { get; }
+        public CardInstanceId SecondCardInstanceId { get; }
         public TeamSide TeamSide { get; }
         public ActionDefinitionId ActionDefinitionId { get; }
         public HexCoordinate Coordinate { get; }
@@ -263,6 +268,24 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
             new DirectorCommand(DirectorCommandKind.CommitCard, heroId, cardInstanceId);
+
+        public static DirectorCommand CommitTwoCards(
+            HeroId heroId, CardInstanceId firstCardId, CardInstanceId secondCardId)
+        {
+            // The hand may be clicked in either order; one unordered pair is one authorized offer.
+            if (StringComparer.Ordinal.Compare(firstCardId.Value, secondCardId.Value) > 0)
+            {
+                var swap = firstCardId;
+                firstCardId = secondCardId;
+                secondCardId = swap;
+            }
+
+            return new DirectorCommand(DirectorCommandKind.CommitTwoCards, heroId, firstCardId,
+                secondCardInstanceId: secondCardId);
+        }
+
+        public static DirectorCommand RetrieveOneAfterReveal(HeroId heroId, CardInstanceId cardId) =>
+            new DirectorCommand(DirectorCommandKind.RetrieveOneAfterReveal, heroId, cardId);
 
         public static DirectorCommand Pass(HeroId heroId) =>
             new DirectorCommand(DirectorCommandKind.Pass, heroId);
@@ -565,7 +588,8 @@ namespace GuardsDigital.Core.Replay
         public bool Equals(DirectorCommand other)
         {
             return other != null && Kind == other.Kind && HeroId.Equals(other.HeroId) &&
-                CardInstanceId.Equals(other.CardInstanceId) && TeamSide == other.TeamSide &&
+                CardInstanceId.Equals(other.CardInstanceId) &&
+                SecondCardInstanceId.Equals(other.SecondCardInstanceId) && TeamSide == other.TeamSide &&
                 ActionDefinitionId.Equals(other.ActionDefinitionId) && Coordinate.Equals(other.Coordinate) &&
                 ResolutionId.Equals(other.ResolutionId) && ChoiceId.Equals(other.ChoiceId) &&
                 MinionId.Equals(other.MinionId) && HeroBody == other.HeroBody &&
@@ -587,6 +611,7 @@ namespace GuardsDigital.Core.Replay
                 var hash = (int)Kind;
                 hash = (hash * 397) ^ HeroId.GetHashCode();
                 hash = (hash * 397) ^ CardInstanceId.GetHashCode();
+                hash = (hash * 397) ^ SecondCardInstanceId.GetHashCode();
                 hash = (hash * 397) ^ (int)TeamSide;
                 hash = (hash * 397) ^ ActionDefinitionId.GetHashCode();
                 hash = (hash * 397) ^ Coordinate.GetHashCode();

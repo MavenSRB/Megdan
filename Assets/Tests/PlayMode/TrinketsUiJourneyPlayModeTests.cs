@@ -240,6 +240,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return May(root, true);
                 Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                     face.Value + " must ask for a different unit after accepting repeat.");
+                yield return UiPlayer.WaitForControl(root.Hud, "DIRECTOR");
                 yield return Pick(root, runtime.PendingEffectChoice.Candidates.Single(candidate =>
                     candidate.Value.Kind == GuardsDigital.Core.Effects.EffectValueKind.Minion &&
                     candidate.Value.MinionId.Equals(minion)));
@@ -436,6 +437,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return YieldUntilTheNamedSeatActs(runtime, actor);
             yield return PointTrayAt(root, actor);
             yield return StartActionThroughControl(root, ActionKind.Skill);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             UiPlayer.Click(UiPlayer.Button(root.Hud,
                 BulletLabelFor(runtime, "retrieve-arm")));
             yield return null;

@@ -1,6 +1,14 @@
 # Resolved Technical-Risk History
 
-Lossless resolved-risk records are appended here when retired from [the active register](../TECHNICAL_RISKS.md).
+Lossless resolved-risk records are recorded here when retired from [the active register](../TECHNICAL_RISKS.md).
+
+## RISK-PLAYMODE-001
+
+| ID | Concrete failure mode and impact | Evidence / confidence | Trigger or detection | Earliest affected milestone | Retirement or reassessment | Approved mitigation or explicit acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| `RISK-PLAYMODE-001` | The unfiltered Play Mode gate is red, so a focused hero path cannot stand in for complete existing-hero player-path coverage or the local online-match check. This blocks 9.48 handoff until correction. | The 9.48 unfiltered run recorded 58 failures: 56 older-hero decision/control journeys, one journey-matrix row and one local online-match completion. An isolated Bain rerun confirms its effect contract exists but its rendered decision window is deferred behind the attack spotlight; that deferral entered in 9.43, not 9.48. The other 57 cases still need their own causal closure. Evidence: `tmp/milestone-9-48-full-play-results.xml` and `tmp/milestone-9-48-play-journey-isolation-results.xml`. | Any unfiltered Play Mode gate or targeted rerun of a failed case. | 9.43 (confirmed deferral); other failures first observed at 9.48. | Reassess at 9.48 after each named case and the complete Play Mode gate rerun green. | User directed repair within 9.48 on 2026-10-04, then continuation of the hero sequence. No quarantine is approved; every red case remains blocking until corrected and rerun. |
+
+Resolution note (2026-10-04): The failing-to-passing sequence is `tmp/milestone-9-48-full-play-results.xml` (1038 passed, 58 failed), focused correction results under `tmp/milestone-9-48-*repair*.xml`, `tmp/milestone-9-48-full-play-repair-pass1-results.xml` (1060 passed, 36 failed), `tmp/milestone-9-48-full-play-repair-pass2-results.xml` (1095 passed, one failed), and `tmp/milestone-9-48-full-play-final-results.xml` (1096 passed, zero failed/skipped/inconclusive). The 56 older-hero failures were predominantly test clicks made before 9.43's spotlight released the rendered decision window; the repair waits for actual controls and clicks typed window elements where duplicated labels appear. The Mortimer matrix gained its omitted journey. The local TCP case passed in isolation and both later full gates, so no network behavior was changed. No quarantine was used. The 9.48 commit body owns the exact validation and review evidence.
 
 ## RISK-ACTION-001
 

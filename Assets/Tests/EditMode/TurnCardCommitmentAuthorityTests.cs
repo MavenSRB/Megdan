@@ -194,6 +194,101 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(second.EventCardIds, Is.EqualTo(first.EventCardIds));
         }
 
+        [Test]
+        public void TwoCardsRevealTogether_ThenEitherOneReturnsFreshAndOnlyOtherRemains()
+        {
+            foreach (var retrieveFirst in new[] { true, false })
+            {
+                var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+                var authority = CreateAuthority(configuration);
+                var first = configuration.RedHand.Instances[0];
+                var second = configuration.RedHand.Instances[1];
+                var enemy = configuration.BlueHand.Instances[0];
+
+                var committed = authority.TryCommitTwoCards(first.OwnerId, first.Id, second.Id);
+                Assert.That(committed.Accepted, Is.True);
+                Assert.That(authority.IsRevealed, Is.False);
+                Assert.That(authority.GetRevealedCards(first.OwnerId), Is.Empty);
+                Assert.That(first.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+                Assert.That(second.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceDown));
+                AssertRejected(authority.TryRetrieveOneAfterReveal(first.OwnerId, first.Id),
+                    TurnCardCommitmentRejectionReason.NoTwoCardCommitment);
+
+                var reveal = authority.TryCommitCard(enemy.OwnerId, enemy.Id);
+                Assert.That(reveal.Accepted, Is.True);
+                Assert.That(reveal.Events.Where(value =>
+                        value.Kind == TurnCardCommitmentEventKind.CardRevealed)
+                    .Select(value => value.CardInstanceId),
+                    Is.EqualTo(new[] { enemy.Id, first.Id, second.Id }.OrderBy(id =>
+                        id.Equals(enemy.Id) ? enemy.OwnerId.Value : first.OwnerId.Value)));
+                Assert.That(authority.GetRevealedCards(first.OwnerId),
+                    Is.EqualTo(new[] { first.Id, second.Id }));
+                Assert.That(authority.PendingRetrievalHero, Is.EqualTo(first.OwnerId));
+                AssertRejected(authority.TryRetrieveOneAfterReveal(first.OwnerId, enemy.Id),
+                    TurnCardCommitmentRejectionReason.CardNotInTwoCardCommitment);
+
+                var taken = retrieveFirst ? first : second;
+                var acting = retrieveFirst ? second : first;
+                var retrieved = authority.TryRetrieveOneAfterReveal(first.OwnerId, taken.Id);
+                Assert.That(retrieved.Accepted, Is.True);
+                Assert.That(retrieved.Events.Single().Kind,
+                    Is.EqualTo(TurnCardCommitmentEventKind.CardRetrievedAfterReveal));
+                Assert.That(taken.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+                Assert.That(CardLifecycleAuthority.IsResolvingCardInTurnArea(acting), Is.True);
+                Assert.That(authority.GetRevealedCardInstanceId(first.OwnerId), Is.EqualTo(acting.Id));
+                Assert.That(authority.PendingRetrievalHero, Is.Null);
+            }
+        }
+
+        [Test]
+        public void TwoCardCommitmentRejectsDuplicateCrossOwnerAndStaleWithoutMutation()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var authority = CreateAuthority(configuration);
+            var first = configuration.RedHand.Instances[0];
+            var second = configuration.RedHand.Instances[1];
+            var enemy = configuration.BlueHand.Instances[0];
+            AssertRejected(authority.TryCommitTwoCards(first.OwnerId, first.Id, first.Id),
+                TurnCardCommitmentRejectionReason.DuplicateCard);
+            AssertRejected(authority.TryCommitTwoCards(first.OwnerId, first.Id, enemy.Id),
+                TurnCardCommitmentRejectionReason.CardNotOwnedByHero);
+            Assert.That(first.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(second.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(authority.TryCommitTwoCards(first.OwnerId, first.Id, second.Id).Accepted, Is.True);
+            AssertRejected(authority.TryCommitCard(first.OwnerId, configuration.RedHand.Instances[2].Id),
+                TurnCardCommitmentRejectionReason.HeroAlreadyResponded);
+        }
+
+        [Test]
+        public void MirroredTwoCardCommitments_AskEachOwnerBeforeStartingInitiative()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var authority = CreateAuthority(configuration);
+            var red = configuration.RedHand.Instances.Take(2).ToArray();
+            var blue = configuration.BlueHand.Instances.Take(2).ToArray();
+            Assert.That(authority.TryCommitTwoCards(red[0].OwnerId, red[0].Id, red[1].Id).Accepted,
+                Is.True);
+            Assert.That(authority.TryCommitTwoCards(blue[0].OwnerId, blue[0].Id, blue[1].Id).Accepted,
+                Is.True);
+            Assert.That(authority.IsRevealed, Is.True);
+
+            var firstHero = authority.PendingRetrievalHero.Value;
+            var later = firstHero.Equals(red[0].OwnerId) ? blue : red;
+            var first = firstHero.Equals(red[0].OwnerId) ? red : blue;
+            AssertRejected(authority.TryRetrieveOneAfterReveal(later[0].OwnerId, later[0].Id),
+                TurnCardCommitmentRejectionReason.NotCurrentRetrievalHero);
+            Assert.That(authority.TryRetrieveOneAfterReveal(firstHero, first[0].Id).Accepted,
+                Is.True);
+            Assert.That(authority.PendingRetrievalHero, Is.EqualTo(later[0].OwnerId));
+            Assert.That(authority.TryRetrieveOneAfterReveal(later[0].OwnerId, later[0].Id).Accepted,
+                Is.True);
+            Assert.That(authority.PendingRetrievalHero, Is.Null);
+            Assert.That(first[0].State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(later[0].State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(CardLifecycleAuthority.IsResolvingCardInTurnArea(first[1]), Is.True);
+            Assert.That(CardLifecycleAuthority.IsResolvingCardInTurnArea(later[1]), Is.True);
+        }
+
         private static TurnCardCommitmentAuthority CreateAuthority(
             MatchConfiguration configuration)
         {

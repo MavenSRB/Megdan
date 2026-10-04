@@ -482,17 +482,20 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkCommitmentRow
     {
-        public NetworkCommitmentRow(string heroId, int status, bool canPass, string revealedCardInstanceId)
+        public NetworkCommitmentRow(string heroId, int status, bool canPass,
+            string revealedCardInstanceId, bool canCommitTwoCards = false)
         {
             HeroId = heroId;
             Status = status;
             CanPass = canPass;
             RevealedCardInstanceId = revealedCardInstanceId;
+            CanCommitTwoCards = canCommitTwoCards;
         }
 
         public string HeroId { get; }
         public int Status { get; }
         public bool CanPass { get; }
+        public bool CanCommitTwoCards { get; }
 
         /// <summary>
         /// Null until the authority reveals it. A facedown commitment's identity has no field to
@@ -814,6 +817,7 @@ namespace GuardsDigital.Application
                     writer.Write(commitment.HeroId.Value);
                     writer.Write((int)commitment.Status);
                     writer.Write(commitment.CanPass);
+                    writer.Write(commitment.CanCommitTwoCards);
                     WriteOptional(writer, commitment.RevealedCardInstanceId.HasValue,
                         commitment.RevealedCardInstanceId.HasValue
                             ? commitment.RevealedCardInstanceId.Value.Value
@@ -1218,12 +1222,14 @@ namespace GuardsDigital.Application
                         var id = reader.ReadString();
                         var status = reader.ReadInt32();
                         var canPass = reader.ReadBoolean();
+                        var canCommitTwoCards = reader.ReadBoolean();
                         if (string.IsNullOrWhiteSpace(id) || !TryReadOptional(reader, out var revealed))
                         {
                             return false;
                         }
 
-                        commitments.Add(new NetworkCommitmentRow(id, status, canPass, revealed));
+                        commitments.Add(new NetworkCommitmentRow(
+                            id, status, canPass, revealed, canCommitTwoCards));
                     }
 
                     if (!TryReadCount(reader, out var summaryCount))

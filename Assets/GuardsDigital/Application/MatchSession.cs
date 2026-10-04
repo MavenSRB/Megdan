@@ -317,6 +317,12 @@ namespace GuardsDigital.Application
             {
                 case DirectorCommandKind.CommitCard:
                     return DispatchResult.From(round.TryCommitCard(command.HeroId, command.CardInstanceId));
+                case DirectorCommandKind.CommitTwoCards:
+                    return DispatchResult.From(round.TryCommitTwoCards(
+                        command.HeroId, command.CardInstanceId, command.SecondCardInstanceId));
+                case DirectorCommandKind.RetrieveOneAfterReveal:
+                    return DispatchResult.From(round.TryRetrieveOneAfterReveal(
+                        command.HeroId, command.CardInstanceId));
                 case DirectorCommandKind.Pass:
                     return DispatchResult.From(round.TryPass(command.HeroId));
                 case DirectorCommandKind.ChooseTiedActor:
@@ -826,7 +832,8 @@ namespace GuardsDigital.Application
                     hero.Id,
                     commitment?.GetStatus(hero.Id) ?? TurnCardCommitmentStatus.AwaitingResponse,
                     commitment != null && commitment.CanPass(hero.Id),
-                    commitment?.GetRevealedCardInstanceId(hero.Id)))
+                    commitment?.GetRevealedCardInstanceId(hero.Id),
+                    round.CanCommitTwoCards(hero.Id)))
                 .ToArray();
             // Milestone 6.5af: the turn authority's judged offer set rather than the card query's raw
             // one, so an action the rules can prove would do nothing arrives already marked. It is the
@@ -1059,7 +1066,11 @@ namespace GuardsDigital.Application
                 board.ActingBodies,
                 // Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish),
                 // read off the round authority that records it.
-                round.TeamVictoryTallies);
+                round.TeamVictoryTallies,
+                commitment?.PendingRetrievalHero is HeroId retrievalHero
+                    ? commitment.GetRevealedCards(retrievalHero).Select(cardId =>
+                        DirectorCommand.RetrieveOneAfterReveal(retrievalHero, cardId))
+                    : null);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

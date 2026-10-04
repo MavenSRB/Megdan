@@ -18,6 +18,116 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RoundResolutionAuthorityTests
     {
         [Test]
+        public void TwoCardUltimate_PausesAfterBothRevealsUntilOwnerRetrievesOne()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var red = configuration.RedHand.Instances[0];
+            var redOther = configuration.RedHand.Instances[1];
+            var blue = configuration.BlueHand.Instances[0];
+            var ability = new CardDefinition(
+                new CardDefinitionId("two-card-ultimate-test"), "rev-1", "Two-card Ultimate",
+                default, CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.UltimateCard(), Array.Empty<ActionDefinition>(),
+                UltimateRuleDefinition.PermanentDeclaration(
+                    "two-card-ultimate-rule", TwoCardTurnRule.RuleKind),
+                CardSourceContent.NotSourced);
+            var ultimate = CardInstance.CreateInDeck(
+                new CardInstanceId("two-card-ultimate-instance"), ability.Reference, red.OwnerId);
+            Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
+                new[]
+                {
+                    new HeroOccupancy(red.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blue.OwnerId, new HexCoordinate(1, 0))
+                });
+            var round = new RoundResolutionAuthority(
+                configuration.CardDefinitions.Concat(new[] { ability }),
+                configuration.CardInstances.Concat(new[] { ultimate }),
+                configuration.Participants, configuration.TieBreakerState, 1,
+                new RoundResolutionComposition(null, board, null, null, null, null,
+                    null, null, null, null));
+
+            Assert.That(round.CanCommitTwoCards(red.OwnerId), Is.True);
+            Assert.That(round.CanCommitTwoCards(blue.OwnerId), Is.False);
+            Assert.That(round.TryCommitTwoCards(blue.OwnerId, blue.Id,
+                configuration.BlueHand.Instances[1].Id).RejectionReason,
+                Is.EqualTo(RoundResolutionRejectionReason.DoubleCommitNotAllowed));
+            Assert.That(round.TryCommitTwoCards(red.OwnerId, red.Id, redOther.Id).Accepted, Is.True);
+            var revealed = round.TryCommitCard(blue.OwnerId, blue.Id);
+            Assert.That(revealed.Accepted, Is.True);
+            Assert.That(revealed.Events.Count(value => value.Kind ==
+                RoundResolutionEventKind.CommitmentProgressed &&
+                value.CommitmentEvent.Kind == TurnCardCommitmentEventKind.CardRevealed),
+                Is.EqualTo(3));
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            Assert.That(round.CurrentTurnAuthority, Is.Null);
+            Assert.That(round.TurnSlots, Is.Empty);
+            Assert.That(round.CurrentCommitmentAuthority.PendingRetrievalHero, Is.EqualTo(red.OwnerId));
+
+            var retrieved = round.TryRetrieveOneAfterReveal(red.OwnerId, red.Id);
+            Assert.That(retrieved.Accepted, Is.True);
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn));
+            Assert.That(round.TurnSlots, Has.Count.EqualTo(1));
+            Assert.That(round.TurnSlots[0].Assignments.Single(value =>
+                value.HeroId.Equals(red.OwnerId)).CardInstanceId, Is.EqualTo(redOther.Id));
+            Assert.That(red.State, Is.EqualTo(CardStateFacts.InitialInHand()));
+            Assert.That(CardLifecycleAuthority.IsResolvingCardInTurnArea(redOther), Is.True);
+        }
+
+        [Test]
+        public void MirroredTwoCardUltimates_WaitForBothRetrievalsBeforeInitiative()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var red = configuration.RedHand.Instances.Take(2).ToArray();
+            var blue = configuration.BlueHand.Instances.Take(2).ToArray();
+            var ability = new CardDefinition(
+                new CardDefinitionId("mirrored-two-card-ultimate-test"), "rev-1", "Two-card Ultimate",
+                default, CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.UltimateCard(), Array.Empty<ActionDefinition>(),
+                UltimateRuleDefinition.PermanentDeclaration(
+                    "mirrored-two-card-ultimate-rule", TwoCardTurnRule.RuleKind),
+                CardSourceContent.NotSourced);
+            var ultimates = new[] { red[0].OwnerId, blue[0].OwnerId }.Select((hero, index) =>
+                CardInstance.CreateInDeck(new CardInstanceId("mirrored-ultimate-" + index),
+                    ability.Reference, hero)).ToArray();
+            foreach (var ultimate in ultimates)
+                Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
+                new[]
+                {
+                    new HeroOccupancy(red[0].OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blue[0].OwnerId, new HexCoordinate(1, 0))
+                });
+            var round = new RoundResolutionAuthority(
+                configuration.CardDefinitions.Concat(new[] { ability }),
+                configuration.CardInstances.Concat(ultimates), configuration.Participants,
+                configuration.TieBreakerState, 1,
+                new RoundResolutionComposition(null, board, null, null, null, null,
+                    null, null, null, null));
+
+            Assert.That(round.TryCommitTwoCards(red[0].OwnerId, red[0].Id, red[1].Id).Accepted,
+                Is.True);
+            Assert.That(round.TryCommitTwoCards(blue[0].OwnerId, blue[0].Id, blue[1].Id).Accepted,
+                Is.True);
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
+            Assert.That(round.CurrentTurnAuthority, Is.Null);
+            var firstHero = round.CurrentCommitmentAuthority.PendingRetrievalHero.Value;
+            var first = firstHero.Equals(red[0].OwnerId) ? red : blue;
+            var second = firstHero.Equals(red[0].OwnerId) ? blue : red;
+            Assert.That(round.TryRetrieveOneAfterReveal(firstHero, first[0].Id).Accepted,
+                Is.True);
+            Assert.That(round.CurrentTurnAuthority, Is.Null);
+            Assert.That(round.TryRetrieveOneAfterReveal(second[0].OwnerId, second[0].Id).Accepted,
+                Is.True);
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn));
+            Assert.That(round.TurnSlots, Has.Count.EqualTo(1));
+            Assert.That(round.TurnSlots[0].Assignments.Select(value => value.CardInstanceId),
+                Is.EquivalentTo(new[] { red[1].Id, blue[1].Id }));
+        }
+
+        [Test]
         public void PrintedTurnEndTokenCleanup_RemovesAllCopiesBeforeNextCommitment()
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);

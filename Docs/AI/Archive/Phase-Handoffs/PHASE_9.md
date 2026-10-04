@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.48 Emmitt two-card Ultimate and PlayMode repair evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.48 | Atomic, private two-card commitment, shared reveal, owner-chosen unresolved-card retrieval, then ordinary Initiative for the remaining face; typed bot, seat, wire `/36`, snapshot v56, restore and replay support. User-directed `RISK-PLAYMODE-001` correction closed 58 failing PlayMode cases; the final unfiltered gate passed 1096/1096. Emmitt registration awaits 9.49. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-948-emmitts-two-card-ultimate). | `milestone/9.48` |
+
 ## Milestone 9.47 Emmitt Glitch and altered Initiative evidence
 
 | Milestone | Outcome and definition | Commit |

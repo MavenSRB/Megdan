@@ -209,6 +209,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "\"a hero in range with a bounty marker\" names the hero wearing it, so this bullet " +
                 "is offered rather than greyed. " + Remaining(runtime));
 
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             yield return PressEffectControl(root, BulletLabelFor(runtime, "crossbow-marker-bullet"));
 
             var targets = runtime.PendingAttackTargetChoice;
@@ -286,6 +287,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // BOTH bullets, selected one at a time and closed by the electing seat's own confirm -
             // selecting is not taking.
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             UiPlayer.Click(UiPlayer.Button(hud, BulletLabelFor(runtime, "crossbow-marker-bullet")));
             yield return null;
             yield return null;
@@ -1036,6 +1038,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
             var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
             yield return null;

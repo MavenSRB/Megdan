@@ -12,7 +12,7 @@ The schema is map-scoped so future maps can coexist:
 - A match selects one immutable definition by `(mapId, revision)`. Coordinate-based rules and queries then operate locally within that selected definition instead of qualifying every internal coordinate individually.
 - Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
 
-Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v55, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
+Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v56, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
 
 ## Source of truth and the generated runtime resource
 

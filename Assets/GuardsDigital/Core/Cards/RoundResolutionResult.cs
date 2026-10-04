@@ -102,7 +102,8 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="UnknownSystemTransition"/>, which says this build has no such definition: these
         /// two exist, and are exactly the ones a command must not name.
         /// </summary>
-        SystemTransitionNotBegunByCommand = 24
+        SystemTransitionNotBegunByCommand = 24,
+        DoubleCommitNotAllowed = 25
     }
 
     public readonly struct RoundResolutionResult

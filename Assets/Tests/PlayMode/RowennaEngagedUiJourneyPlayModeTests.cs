@@ -299,6 +299,7 @@ namespace GuardsDigital.Tests.PlayMode
                     var theirs = runtime.PendingEffectChoice;
                     Assert.That(theirs.NodeId.Value, Is.EqualTo("reward-retrieve"));
                     Assert.That(theirs.ChooserId, Is.EqualTo(ally));
+                    yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
                     UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Decline);
                     yield return null;
                     yield return null;

@@ -293,6 +293,28 @@ namespace GuardsDigital.Tests.PlayMode
             var standee = Object.FindObjectsByType<PrimitiveHeroView>()
                 .FirstOrDefault(view => view.gameObject.activeInHierarchy && view.Coordinate.Equals(space));
             var at = standee != null ? standee.transform.position : Tile(space).transform.position;
+            if (standee != null)
+            {
+                var camera = Pointer().EventCamera;
+                foreach (var offset in new[]
+                {
+                    Vector3.zero,
+                    Vector3.right * (standee.SelectionRadius * 0.7f),
+                    Vector3.left * (standee.SelectionRadius * 0.7f),
+                    Vector3.forward * (standee.SelectionRadius * 0.7f),
+                    Vector3.back * (standee.SelectionRadius * 0.7f)
+                })
+                {
+                    var candidate = standee.transform.position + offset;
+                    var screen = camera.WorldToScreenPoint(candidate);
+                    if (screen.z <= 0f || screen.x < 0f || screen.x > Screen.width ||
+                        screen.y < 0f || screen.y > Screen.height ||
+                        root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y)))
+                        continue;
+                    at = candidate;
+                    break;
+                }
+            }
             Assert.That(UiPlayer.ClickBoard(Pointer(), root.Hud, at), Is.True, UiPlayer.DescribeBoardRay(Pointer(), at));
             yield return null;
         }
@@ -370,6 +392,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator ConfirmIfAsked(MatchSceneCompositionRoot root)
         {
             if (root.Runtime.PendingEffectChoice?.ConfirmInvocation == null) yield break;
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             UiPlayer.ClickEffectControl(root.Runtime, root.Hud, EffectChoiceCommandKind.Confirm);
             yield return null;
         }
@@ -381,6 +404,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator May(MatchSceneCompositionRoot root, bool accept)
         {
             Assert.That(root.Runtime.PendingEffectChoice, Is.Not.Null, Remaining(root.Runtime));
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             UiPlayer.ClickEffectControl(root.Runtime, root.Hud,
                 accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline);
             yield return null;
@@ -784,6 +808,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice?.Candidates.Select(value => value.Value.Coordinate),
                 Is.EqualTo(new[] { West }),
                 "After the basic attack action a different him may repeat it: body 2 is offered. " + Remaining(runtime));
+            if (UiPlayer.HasButton(root.Hud, "MINIMISE"))
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, "MINIMISE"));
+                yield return null;
+            }
             yield return PickSpace(root, West, "Body 2 performs the repeat.");
             Assert.That(runtime.BoardView.Model.FocusedHeroBody, Is.EqualTo(2), "The acting cue moves to body 2.");
             Assert.That(runtime.PendingAttackTargetChoice?.LegalTargetMinionIds, Is.EqualTo(new[] { RedRanged }),

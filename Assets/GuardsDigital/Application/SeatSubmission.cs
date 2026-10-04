@@ -390,6 +390,8 @@ namespace GuardsDigital.Application
             Array.AsReadOnly(new[]
             {
                 DirectorCommandKind.CommitCard,
+                DirectorCommandKind.CommitTwoCards,
+                DirectorCommandKind.RetrieveOneAfterReveal,
                 DirectorCommandKind.Pass,
                 DirectorCommandKind.RespawnHero,
                 DirectorCommandKind.ResolveCardWithoutRespawn

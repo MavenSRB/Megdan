@@ -125,6 +125,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         internal static IEnumerator PlaceRunes(MatchSceneCompositionRoot root, int[] slotForRune)
         {
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             var hud = root.Hud.RootElement;
             for (var rune = 1; rune <= 4; rune++)
             {
@@ -236,6 +237,7 @@ namespace GuardsDigital.Tests.PlayMode
         internal static IEnumerator TakeTheHit(MatchSceneCompositionRoot root)
         {
             Assert.That(root.Runtime.PendingDefenseChoice, Is.Not.Null, Remaining(root.Runtime));
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             UiPlayer.ClickDefenseDecline(root.Runtime, root.Hud);
             yield return null;
         }

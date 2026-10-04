@@ -766,7 +766,8 @@ namespace GuardsDigital.Presentation.Match
             bool endTurnCancelsOpenAttack = false,
             string endTurnUnavailableReason = null,
             IEnumerable<TrayCardViewModel> levelUpHandPreview = null,
-            TypedInvocationViewModel finishMovementInvocation = null)
+            TypedInvocationViewModel finishMovementInvocation = null,
+            IEnumerable<TypedInvocationViewModel> revealRetrievalChoices = null)
         {
             LevelUpHandPreview = Array.AsReadOnly((levelUpHandPreview ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
@@ -790,6 +791,8 @@ namespace GuardsDigital.Presentation.Match
             ContinueEndOfRoundInvocation = continueEndOfRoundInvocation;
             InitiativeChoices = Array.AsReadOnly((initiativeChoices ??
                 throw new ArgumentNullException(nameof(initiativeChoices))).ToArray());
+            RevealRetrievalChoices = Array.AsReadOnly((revealRetrievalChoices ??
+                Enumerable.Empty<TypedInvocationViewModel>()).ToArray());
             DefenseChoices = Array.AsReadOnly((defenseChoices ??
                 throw new ArgumentNullException(nameof(defenseChoices))).ToArray());
             FastTravelOffers = Array.AsReadOnly((fastTravelOffers ??
@@ -923,6 +926,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool SeatUndoAvailable { get; }
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
+        public IReadOnlyList<TypedInvocationViewModel> RevealRetrievalChoices { get; }
 
         public TeamAgreementHudViewModel TeamAgreement { get; }
         public IReadOnlyList<TypedInvocationViewModel> DefenseChoices { get; }

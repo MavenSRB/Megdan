@@ -444,7 +444,7 @@ namespace GuardsDigital.Core.Snapshots
         // v55 (milestone 9.46): board unit movement revisions and two turn-start checkpoints,
         // plus the round's resolved-card heroes, cannot be reconstructed from current occupancy or
         // card location. v54 is rejected rather than silently restoring false immobility/history.
-        public const int CurrentSchemaVersion = 55;
+        public const int CurrentSchemaVersion = 56;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

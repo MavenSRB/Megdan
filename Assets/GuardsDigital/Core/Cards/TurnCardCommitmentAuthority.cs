@@ -17,7 +17,11 @@ namespace GuardsDigital.Core.Cards
         PassNotAllowed = 6,
         CommittedCardStateChanged = 7,
         HeroNotFound = 8,
-        InvalidInHandCardState = 9
+        InvalidInHandCardState = 9,
+        DuplicateCard = 10,
+        NoTwoCardCommitment = 11,
+        CardNotInTwoCardCommitment = 12,
+        NotCurrentRetrievalHero = 13
     }
 
     public enum TurnCardCommitmentEventKind
@@ -26,7 +30,8 @@ namespace GuardsDigital.Core.Cards
         CardCommittedFacedown = 1,
         HeroPassed = 2,
         CardRevealed = 3,
-        RevealCompleted = 4
+        RevealCompleted = 4,
+        CardRetrievedAfterReveal = 5
     }
 
     public enum TurnCardCommitmentStatus
@@ -57,12 +62,14 @@ namespace GuardsDigital.Core.Cards
                     nameof(heroId));
             }
 
-            if (kind == TurnCardCommitmentEventKind.CardRevealed && !cardInstanceId.IsDefined)
+            if ((kind == TurnCardCommitmentEventKind.CardRevealed ||
+                kind == TurnCardCommitmentEventKind.CardRetrievedAfterReveal) && !cardInstanceId.IsDefined)
             {
                 throw new ArgumentException("A revealed-card event requires a card instance ID.", nameof(cardInstanceId));
             }
 
-            if (kind != TurnCardCommitmentEventKind.CardRevealed && cardInstanceId.IsDefined)
+            if (kind != TurnCardCommitmentEventKind.CardRevealed &&
+                kind != TurnCardCommitmentEventKind.CardRetrievedAfterReveal && cardInstanceId.IsDefined)
             {
                 throw new ArgumentException("Only revealed-card events disclose a card instance ID.", nameof(cardInstanceId));
             }
@@ -129,6 +136,8 @@ namespace GuardsDigital.Core.Cards
         private readonly IReadOnlyList<HeroId> expectedHeroIds;
         private readonly Dictionary<HeroId, CardInstanceId> committedCards =
             new Dictionary<HeroId, CardInstanceId>();
+        private readonly Dictionary<HeroId, CardInstanceId> secondCommittedCards =
+            new Dictionary<HeroId, CardInstanceId>();
         private readonly HashSet<HeroId> passedHeroes = new HashSet<HeroId>();
 
         public TurnCardCommitmentAuthority(
@@ -172,13 +181,30 @@ namespace GuardsDigital.Core.Cards
 
         internal IReadOnlyDictionary<HeroId, CardInstanceId> CommittedCards => committedCards;
 
+        internal IReadOnlyDictionary<HeroId, CardInstanceId> SecondCommittedCards => secondCommittedCards;
+
+        public IReadOnlyList<CardInstanceId> GetRevealedCards(HeroId heroId)
+        {
+            if (!IsExpectedHero(heroId)) throw new KeyNotFoundException($"Unknown turn-card hero ID '{heroId}'.");
+            if (!IsRevealed || !committedCards.TryGetValue(heroId, out var first))
+                return Array.Empty<CardInstanceId>();
+            return secondCommittedCards.TryGetValue(heroId, out var second)
+                ? Array.AsReadOnly(new[] { first, second })
+                : Array.AsReadOnly(new[] { first });
+        }
+
+        public HeroId? PendingRetrievalHero => IsRevealed && secondCommittedCards.Count > 0
+            ? secondCommittedCards.Keys.OrderBy(hero => hero.Value, StringComparer.Ordinal).First()
+            : (HeroId?)null;
+
         internal IReadOnlyCollection<HeroId> PassedHeroes => passedHeroes;
 
         internal TurnCardCommitmentRestoreState CaptureRestoreState() =>
             new TurnCardCommitmentRestoreState(
                 committedCards.OrderBy(pair => pair.Key.Value, StringComparer.Ordinal).ToArray(),
                 passedHeroes.OrderBy(heroId => heroId.Value, StringComparer.Ordinal).ToArray(),
-                IsRevealed);
+                IsRevealed,
+                secondCommittedCards.OrderBy(pair => pair.Key.Value, StringComparer.Ordinal).ToArray());
 
         internal static TurnCardCommitmentAuthority Restore(
             IEnumerable<CardInstance> instances,
@@ -207,6 +233,29 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
+            foreach (var pair in state.SecondCommitments)
+            {
+                if (!authority.committedCards.TryGetValue(pair.Key, out var first) ||
+                    !pair.Value.IsDefined || pair.Value.Equals(first) ||
+                    !authority.secondCommittedCards.TryAdd(pair.Key, pair.Value))
+                    throw new ArgumentException("Restored second commitments contain invalid or duplicate identities.", nameof(state));
+            }
+
+            foreach (var pair in authority.secondCommittedCards)
+            {
+                var first = authority.instances.SingleOrDefault(card =>
+                    card.Id.Equals(authority.committedCards[pair.Key]));
+                var second = authority.instances.SingleOrDefault(card => card.Id.Equals(pair.Value));
+                if (first == null || second == null ||
+                    !first.OwnerId.Equals(pair.Key) || !second.OwnerId.Equals(pair.Key) ||
+                    (state.IsRevealed
+                        ? !CardLifecycleAuthority.IsResolvingCardInTurnArea(first) ||
+                          !CardLifecycleAuthority.IsResolvingCardInTurnArea(second)
+                        : !IsFacedownCommitted(first) || !IsFacedownCommitted(second)))
+                    throw new ArgumentException(
+                        "Restored two-card commitments disagree with card ownership or reveal state.", nameof(state));
+            }
+
             if (state.IsRevealed && authority.expectedHeroIds.Any(heroId => !authority.HasResponded(heroId)))
             {
                 throw new ArgumentException("A revealed restored commitment requires every hero response.", nameof(state));
@@ -214,6 +263,59 @@ namespace GuardsDigital.Core.Cards
 
             authority.IsRevealed = state.IsRevealed;
             return authority;
+        }
+
+        /// <summary>One atomic response: both eligible cards enter the turn area before the shared reveal.</summary>
+        public TurnCardCommitmentResult TryCommitTwoCards(
+            HeroId heroId, CardInstanceId firstId, CardInstanceId secondId)
+        {
+            var rejection = GetCommonRejection(heroId);
+            if (rejection != TurnCardCommitmentRejectionReason.None)
+                return TurnCardCommitmentResult.Reject(rejection);
+            if (firstId.Equals(secondId))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.DuplicateCard);
+            if (GetOwnedHandState(heroId) == OwnedHandState.Invalid)
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.InvalidInHandCardState);
+            var first = instances.SingleOrDefault(card => card.Id.Equals(firstId));
+            var second = instances.SingleOrDefault(card => card.Id.Equals(secondId));
+            if (first == null || second == null)
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotFound);
+            if (!first.OwnerId.Equals(heroId) || !second.OwnerId.Equals(heroId))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotOwnedByHero);
+            if (!IsEligible(first) || !IsEligible(second))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotEligible);
+            if (!CardLifecycleAuthority.TryPlayFacedown(first) ||
+                !CardLifecycleAuthority.TryPlayFacedown(second))
+                throw new InvalidOperationException("Validated double commitment could not enter the turn area.");
+            committedCards.Add(heroId, firstId);
+            secondCommittedCards.Add(heroId, secondId);
+            var events = new List<TurnCardCommitmentEvent>
+            {
+                new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.CardCommittedFacedown, heroId)
+            };
+            CompleteRevealIfReady(events);
+            return TurnCardCommitmentResult.Accept(events);
+        }
+
+        public TurnCardCommitmentResult TryRetrieveOneAfterReveal(HeroId heroId, CardInstanceId cardId)
+        {
+            if (!IsRevealed || !secondCommittedCards.TryGetValue(heroId, out var second) ||
+                !committedCards.TryGetValue(heroId, out var first))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.NoTwoCardCommitment);
+            if (!PendingRetrievalHero.Value.Equals(heroId))
+                return TurnCardCommitmentResult.Reject(
+                    TurnCardCommitmentRejectionReason.NotCurrentRetrievalHero);
+            if (!cardId.Equals(first) && !cardId.Equals(second))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CardNotInTwoCardCommitment);
+            var card = instances.Single(value => value.Id.Equals(cardId));
+            if (!CardLifecycleAuthority.TryRetrieveUnresolvedAtReveal(card))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CommittedCardStateChanged);
+            committedCards[heroId] = cardId.Equals(first) ? second : first;
+            secondCommittedCards.Remove(heroId);
+            return TurnCardCommitmentResult.Accept(new[]
+            {
+                new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.CardRetrievedAfterReveal, heroId, cardId)
+            });
         }
 
         public TurnCardCommitmentStatus GetStatus(HeroId heroId)
@@ -382,6 +484,13 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
+            foreach (var committedCardId in secondCommittedCards.Values)
+            {
+                var committedCard = instances.Single(card => card.Id.Equals(committedCardId));
+                if (!IsFacedownCommitted(committedCard))
+                    return TurnCardCommitmentRejectionReason.CommittedCardStateChanged;
+            }
+
             return TurnCardCommitmentRejectionReason.None;
         }
 
@@ -409,6 +518,14 @@ namespace GuardsDigital.Core.Cards
                     TurnCardCommitmentEventKind.CardRevealed,
                     heroId,
                     cardId));
+                if (secondCommittedCards.TryGetValue(heroId, out var secondId))
+                {
+                    var second = instances.Single(candidate => candidate.Id.Equals(secondId));
+                    if (!CardLifecycleAuthority.TryReveal(second))
+                        throw new InvalidOperationException("A validated second commitment could not be revealed.");
+                    events.Add(new TurnCardCommitmentEvent(
+                        TurnCardCommitmentEventKind.CardRevealed, heroId, secondId));
+                }
             }
 
             IsRevealed = true;

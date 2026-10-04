@@ -182,6 +182,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"After the attack: If the target was at maximum range\" was true at targeting " +
                 "time, so its `may` opens. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             // Milestone 8.46e: the printed may is declined on the decision window, read off its model.
             var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
             Assert.That(decline, Is.Not.Null,
@@ -1047,6 +1048,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The present-tense condition read the LIVE board at p.14's step 7 and found the " +
                 "target still not adjacent, so its `may` opens. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             // Milestone 8.46e: the decline is the decision window control, read off its model.
             Assert.That(UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline), Is.Not.Null,
                 "A printed `you may` is answerable both ways. " + Remaining(runtime));

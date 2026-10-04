@@ -270,6 +270,7 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The borrowed Gold's before-attack movement must be offered. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
             yield return null; yield return null;
             var contact = LitDestinations(runtime).First(space =>

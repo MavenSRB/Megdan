@@ -187,11 +187,15 @@ namespace GuardsDigital.Tests.PlayMode
                 var card = runtime.RoundView.Model.EffectChoices.Single(row =>
                     row.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
                     row.Command.EffectChoice.Candidate.Equals(stale.Candidate));
-                UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card",
-                    card.Card.DisplayName.ToUpperInvariant()));
+                yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
+                var control = UiPlayer.DecisionControl(runtime, command =>
+                    command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    ReferenceEquals(command.EffectChoice, stale));
+                Assert.That(control, Is.Not.Null, why + " " + Remaining(runtime));
+                Assert.That(control.Card?.DisplayName, Is.EqualTo(card.Card.DisplayName));
+                UiPlayer.EnsureVisible(runtime.DecisionWindowView.ElementFor(control));
                 yield return null;
-                UiPlayer.Click(UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card",
-                    card.Card.DisplayName.ToUpperInvariant()));
+                UiPlayer.ClickDecisionControl(runtime, root.Hud, control);
                 yield return null;
             }
             else
@@ -383,6 +387,7 @@ namespace GuardsDigital.Tests.PlayMode
 
                 yield return HitWasp(root);
                 Assert.That(OnBoard(runtime, waspId), Is.False, face.Value + " defeats Wasp. " + Remaining(runtime));
+                yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
                 AssertTheGoldSwapWindow(runtime, face.Value);
                 yield return PickCard(root, swappedIn, face.Value + " offers the gold in his deck.");
                 Assert.That(Card(runtime, takahide, face).State.Location, Is.EqualTo(CardLocation.Deck), face.Value + " goes into his deck.");
@@ -483,6 +488,7 @@ namespace GuardsDigital.Tests.PlayMode
 
                 Assert.That(runtime.PendingEffectChoice?.ChooserId ?? default, Is.EqualTo(arien),
                     face.Value + ": the swap is asked on Arien's own seat. " + Remaining(runtime));
+                yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
                 Assert.That(runtime.DecisionWindowView.Model?.Title,
                     Does.StartWith("SWAP YOUR UNRESOLVED CARD?").And.EndWith("ARIEN"),
                     face.Value + ": the window names the seat it asks.");

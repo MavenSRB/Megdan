@@ -127,11 +127,16 @@ namespace GuardsDigital.Tests.EditMode
             var opponent = seats.First(seat => seat.TeamSide != attacker.Seat.TeamSide);
             var victimsCard = host.Projection.Cards.First(card =>
                 card.OwnerId.Equals(victim.HeroId) && card.State.Location == CardLocation.Hand);
+            var victimsOtherCard = host.Projection.Cards.First(card =>
+                card.OwnerId.Equals(victim.HeroId) && card.State.Location == CardLocation.Hand &&
+                !card.Id.Equals(victimsCard.Id));
             var version = attacker.Projection.Version;
 
             var forged = new[]
             {
                 DirectorCommand.CommitCard(victim.HeroId, victimsCard.Id),
+                DirectorCommand.CommitTwoCards(victim.HeroId, victimsCard.Id, victimsOtherCard.Id),
+                DirectorCommand.RetrieveOneAfterReveal(victim.HeroId, victimsCard.Id),
                 DirectorCommand.Pass(victim.HeroId),
                 DirectorCommand.ChooseTiedActor(opponent.TeamSide, victimsCard.Id),
                 DirectorCommand.RespawnHero(new HeroRespawnCommand(
@@ -233,10 +238,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(heroClaiming, Is.EquivalentTo(new[]
             {
                 DirectorCommandKind.CommitCard,
+                DirectorCommandKind.CommitTwoCards,
+                DirectorCommandKind.RetrieveOneAfterReveal,
                 DirectorCommandKind.Pass,
                 DirectorCommandKind.RespawnHero,
                 DirectorCommandKind.ResolveCardWithoutRespawn
-            }), "These four are the answers a hero gives about itself.");
+            }), "These six are the answers a hero gives about itself.");
             Assert.That(teamClaiming,
                 Is.EquivalentTo(new[] { DirectorCommandKind.ChooseTiedActor }));
 

@@ -279,6 +279,7 @@ namespace GuardsDigital.Tests.PlayMode
         internal static IEnumerator PickSpellFace(MatchSceneCompositionRoot root, CardDefinitionId spell)
         {
             var runtime = root.Runtime;
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             var option = SpellOption(runtime, spell);
             Assert.That(option, Is.Not.Null, spell.Value + " is drawn as a face in the decision window. " +
                 UiPlayer.Describe(root.Hud) + " " + Remaining(runtime));
@@ -888,6 +889,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Has.Member(gydion),
                 "Shield covers basic attacks only. " + Remaining(runtime));
             yield return TargetHero(root, gydion);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             Assert.That(runtime.DecisionWindowView.Model?.Family, Is.EqualTo(DecisionWindowFamily.Defense), Remaining(runtime));
             var blueLives = root.Hud.Header.BlueLifeLabel;
             UiPlayer.ClickDefenseDecline(runtime, root.Hud);
@@ -930,6 +932,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return WaspStartsHerAttack(root);
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Has.Member(gydion), Remaining(runtime));
             yield return TargetHero(root, gydion);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             UiPlayer.ClickDefenseDecline(runtime, root.Hud);
             yield return null;
             yield return null;

@@ -16,6 +16,38 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class BotPrivateTacticsTests
     {
         [Test]
+        public void TwoCardUltimate_BotCommitsPairAndAnswersRevealRetrieval()
+        {
+            var session = PendingDecisionTransportContractTests.CreateSessionWithTwoCardUltimate();
+            var host = new MatchHost(session);
+            var redSeat = host.Seats.Seats.First(seat =>
+                session.Projection.Participants.GetTeamForHero(seat.HeroId).Side == TeamSide.Red);
+            var blue = session.Projection.Cards.First(card =>
+                card.State.Location == CardLocation.Hand &&
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue);
+            var redView = host.ProjectionForSeat(redSeat.Id);
+            var commitments = redView.AuthorizedCommands.Where(command =>
+                command.Kind == DirectorCommandKind.CommitCard ||
+                command.Kind == DirectorCommandKind.CommitTwoCards).ToArray();
+            var chosen = BotPolicy.SelectPrivateSessionTactics(
+                commitments, redView, redSeat.HeroId, new DeterministicBotRandom(48));
+            Assert.That(chosen, Is.Not.Null);
+            Assert.That(chosen.Kind, Is.EqualTo(DirectorCommandKind.CommitTwoCards));
+            Assert.That(session.Execute(chosen).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted,
+                Is.True);
+
+            redView = host.ProjectionForSeat(redSeat.Id);
+            var retrievals = redView.AuthorizedCommands.Where(command =>
+                command.Kind == DirectorCommandKind.RetrieveOneAfterReveal).ToArray();
+            Assert.That(retrievals, Has.Length.EqualTo(2));
+            var retrieved = BotPolicy.SelectPrivateSessionTactics(
+                retrievals, redView, redSeat.HeroId, new DeterministicBotRandom(48));
+            Assert.That(retrieved, Is.Not.Null);
+            Assert.That(session.Execute(retrieved).Accepted, Is.True);
+        }
+
+        [Test]
         public void CandidateCrossesTheOneHexGapThatTheStaticControlAvoids()
         {
             var session = BotSelfPlay.CreateSymmetricBench(BotTierTwoBench.LifeCountersPerTeam);

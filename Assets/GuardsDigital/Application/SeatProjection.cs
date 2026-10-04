@@ -1399,7 +1399,8 @@ namespace GuardsDigital.Application
                 PendingDecisionFamilies.HeroRespawn,
                 PendingDecisionFamilies.SystemTransition,
                 PendingDecisionFamilies.RemovalPrevention,
-                PendingDecisionFamilies.TurnRelease
+                PendingDecisionFamilies.TurnRelease,
+                PendingDecisionFamilies.RevealRetrieval
             });
 
         /// <summary>
@@ -1538,6 +1539,11 @@ namespace GuardsDigital.Application
                 // the reason p.15's upgrade became one at milestone 8.35d: a teammate pressing it
                 // takes a choice that was not theirs, and here it would end another player's turn.
                 return PendingDecisionOwner.ForHero(family, source.PendingTurnRelease.ActorId);
+            }
+
+            if (family.Equals(PendingDecisionFamilies.RevealRetrieval))
+            {
+                return PendingDecisionOwner.ForHero(family, source.PendingRevealRetrieval[0].HeroId);
             }
 
             throw new InvalidOperationException(
@@ -1749,6 +1755,16 @@ namespace GuardsDigital.Application
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .Select(card => DirectorCommand.CommitCard(asked.HeroId, card.Id))
                 .ToList();
+            if (asked.CanCommitTwoCards)
+            {
+                var handCards = source.Cards.Where(card => card.OwnerId.Equals(asked.HeroId) &&
+                    card.State.Location == CardLocation.Hand)
+                    .OrderBy(card => card.Id.Value, StringComparer.Ordinal).ToArray();
+                for (var first = 0; first < handCards.Length; first++)
+                    for (var second = first + 1; second < handCards.Length; second++)
+                        commands.Add(DirectorCommand.CommitTwoCards(
+                            asked.HeroId, handCards[first].Id, handCards[second].Id));
+            }
             if (asked.CanPass)
             {
                 commands.Add(DirectorCommand.Pass(asked.HeroId));

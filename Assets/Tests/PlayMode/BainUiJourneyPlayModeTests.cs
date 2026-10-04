@@ -554,6 +554,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
             yield return null;
@@ -568,6 +569,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "\"an enemy hero in radius\" names the one enemy hero inside the printed Radius 4. " +
                 Remaining(runtime));
 
+            var commandsBeforeGive = runtime.AcceptedCommands.Count;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, HeroView(enemyId).transform.position), Is.True,
                 "The recipient is named by clicking the piece where they stand.");
@@ -576,6 +578,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(BountyHolders(runtime), Is.EqualTo(new[] { enemyId.Value }).AsCollection,
                 "The give put his one bounty on the hero he chose. " + Remaining(runtime));
+            Assert.That(runtime.AcceptedCommands.Count, Is.EqualTo(commandsBeforeGive + 1),
+                "The one board click accepts one give before any cinematic release.");
+            yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
             HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Red, "the answered give", "BOUNTY");
             HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "the answered give");
 
@@ -588,13 +593,21 @@ namespace GuardsDigital.Tests.PlayMode
             // skipped, because each says what an Undo retracts.
             OpenDirectorDrawer(hud);
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
-            yield return null;
+            for (var undo = 0; undo < 8 && runtime.AcceptedCommands.Count > commandsBeforeGive; undo++)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+                yield return null;
+                yield return null;
+            }
+            Assert.That(runtime.AcceptedCommands.Count, Is.EqualTo(commandsBeforeGive),
+                "Undo returns to the exact retained prefix before the give.");
 
             Assert.That(BountyHolders(runtime), Is.Empty,
-                "The first UNDO takes the give back, because a retained-prefix Undo drops accepted " +
-                "commands from the end. " + Remaining(runtime));
+                "The retained-prefix Undo takes the give back after any cinematic release commands. " +
+                "commands from the end. Before give=" + commandsBeforeGive +
+                "; now=" + runtime.AcceptedCommands.Count +
+                "; tail=" + string.Join(",", runtime.AcceptedCommands.TakeLast(8).Select(command => command.Kind)) +
+                "; " + Remaining(runtime));
             HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Red, "the undone give");
             HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "the undone give");
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,

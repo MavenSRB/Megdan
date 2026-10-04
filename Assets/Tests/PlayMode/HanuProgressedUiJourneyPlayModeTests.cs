@@ -1110,6 +1110,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "state change. " + Remaining(lastRuntime));
             SeatsAgree(lastRuntime, "the delegation lapsed by defeat");
 
+            yield return UiPlayer.WaitForDecisionWindow(lastRuntime, lastRoot.Hud);
             UiPlayer.ClickEffectControl(
                 lastRuntime, lastRoot.Hud, EffectChoiceCommandKind.Decline);
             yield return null;

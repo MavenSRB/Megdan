@@ -128,6 +128,37 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RoundTrip_TwoRevealedCardsPreservePendingRetrievalAndResumeIdentically()
+        {
+            var fixture = CreateFixture();
+            var first = fixture.Configuration.RedHand.Instances[0];
+            var second = fixture.Configuration.RedHand.Instances[1];
+            var enemy = fixture.Configuration.BlueHand.Instances[0];
+            Assert.That(fixture.Round.CurrentCommitmentAuthority.TryCommitTwoCards(
+                first.OwnerId, first.Id, second.Id).Accepted, Is.True);
+            Assert.That(fixture.Round.TryCommitCard(enemy.OwnerId, enemy.Id).Accepted, Is.True);
+            Assert.That(fixture.Round.CurrentTurnAuthority, Is.Null);
+
+            var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(), payload,
+                fixture.Configuration.CardDefinitions, new[] { fixture.Board.MapDefinition });
+            Assert.That(restored.Round.CurrentCommitmentAuthority.GetRevealedCards(first.OwnerId),
+                Is.EqualTo(new[] { first.Id, second.Id }));
+            Assert.That(restored.Round.CurrentCommitmentAuthority.PendingRetrievalHero,
+                Is.EqualTo(first.OwnerId));
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(payload));
+
+            var original = fixture.Round.TryRetrieveOneAfterReveal(first.OwnerId, second.Id);
+            var resumed = restored.Round.TryRetrieveOneAfterReveal(first.OwnerId, second.Id);
+            Assert.That(original.Accepted && resumed.Accepted, Is.True);
+            Assert.That(EventFacts(resumed.Events), Is.EqualTo(EventFacts(original.Events)));
+            Assert.That(restored.Round.TurnSlots[0].Assignments.Single(value =>
+                value.HeroId.Equals(first.OwnerId)).CardInstanceId, Is.EqualTo(first.Id));
+        }
+
+        [Test]
         public void RoundTrip_PendingAttackTargetAndDefenseResumeWithSameOrderedEvents()
         {
             var fixture = CreateFixture();

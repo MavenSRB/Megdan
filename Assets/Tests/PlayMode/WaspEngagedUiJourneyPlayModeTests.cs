@@ -225,6 +225,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Does.Not.Contain("choose an action, or end your turn"),
                 "which is the line this discard chooser used to arrive under.");
 
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             // Milestone 8.46e: the window's own eyebrow names the family; the STRIP is what must not
             // print the heading a second time over faces that already say what they are.
             var heading = UiPlayer.Descendants(hud.RootElement)
@@ -261,6 +262,7 @@ namespace GuardsDigital.Tests.PlayMode
             // The press is also this journey's replay evidence rather than a separate claim: Undo is
             // implemented as a reconstruction of the retained prefix into a fresh aggregate, so what
             // comes back on screen after a press is what replaying those commands produces.
+            yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
             UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));

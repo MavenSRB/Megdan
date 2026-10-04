@@ -489,6 +489,19 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
+        /// A printed post-reveal choice returns one face-up unresolved turn card before
+        /// Initiative selects an actor. It shares the lifecycle shape of a resolving card,
+        /// but not that card's action checkpoint or completion semantics.
+        /// </summary>
+        public static bool TryRetrieveUnresolvedAtReveal(CardInstance card)
+        {
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            if (!IsResolvingCardInTurnArea(card)) return false;
+            card.ApplyState(CardStateFacts.InitialInHand());
+            return true;
+        }
+
+        /// <summary>
         /// Milestone 8.69b. Whether a card the turn is completing an action for is sitting in its
         /// owner's hand as a fresh, uncommitted card - the state
         /// <see cref="TryRetrieveResolvingCard"/> leaves it in and the state no card an action started

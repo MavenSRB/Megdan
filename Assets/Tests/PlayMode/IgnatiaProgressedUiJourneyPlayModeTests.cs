@@ -1018,6 +1018,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(flip.ChooserId, Is.EqualTo(hers),
                 "\"you MAY flip\" - p.10 gives an unassigned decision to the card's controller. " +
                 Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             AssertDeclaredLabels(
                 root,
                 IgnatiaEffectContent.ChaosIncarnateFlipNode,

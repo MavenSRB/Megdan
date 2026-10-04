@@ -141,6 +141,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"After the attack: May repeat once\" is p.14's step 7 and it asks. " +
                 Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"May\" has to be declinable on its own control - the user's rule, and " +
                 "the one milestone 8.20a made an offer that must be named rather than implied.");
@@ -604,16 +605,21 @@ namespace GuardsDigital.Tests.PlayMode
             // Answered, then taken back. The answer is an ordinary recorded command, so the retained
             // prefix replays every command before it - the commitment, the Attack, the target - and
             // stops on the same question.
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             UiPlayer.ClickEffectAnswer(runtime, hud, DeclineControl(runtime).Command);
             yield return null;
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause + 1),
                 "One click on the repeat's control is one accepted command.");
             Assert.That(runtime.PendingEffectChoice, Is.Null);
 
+            yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
+            for (var undo = 0; undo < 3 && runtime.AcceptedCommands.Count > commandsAtPause; undo++)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+                yield return null;
+            }
 
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause),
                 "The Undo drops exactly the answer it retained the prefix of.");

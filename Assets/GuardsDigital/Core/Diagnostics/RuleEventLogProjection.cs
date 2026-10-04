@@ -291,6 +291,8 @@ namespace GuardsDigital.Core.Diagnostics
                     ? "empty-hand Pass accepted"
                     : ruleEvent.Kind == TurnCardCommitmentEventKind.CardRevealed
                         ? $"card={ruleEvent.CardInstanceId.Value}"
+                        : ruleEvent.Kind == TurnCardCommitmentEventKind.CardRetrievedAfterReveal
+                            ? $"card={ruleEvent.CardInstanceId.Value};retrieved after reveal"
                         : "joint reveal completed";
 
             if (ruleEvent.HasCardInstanceId)

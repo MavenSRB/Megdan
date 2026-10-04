@@ -23,6 +23,7 @@ namespace GuardsDigital.Tests.PlayMode
         private const string Dead = nameof(MortimerUiJourneyPlayModeTests.DeadFacesHitTheMinionThenWaspBesideAZombieDiscards);
         private const string Brains = nameof(MortimerUiJourneyPlayModeTests.BrainsFacesRetrieveACardBeforeTheAttack);
         private const string Slam = nameof(MortimerUiJourneyPlayModeTests.SlamFacesPushWaspAwayFromAZombie);
+        private const string SlamWindows = nameof(MortimerUiJourneyPlayModeTests.SlamWindows_SayWhatTheirControlsDo_AndTheModalIsPhotographed);
         private const string Rob = nameof(MortimerUiJourneyPlayModeTests.RobbingFacesMoveAZombieAndGainACoin);
         private const string Dive = nameof(MortimerUiJourneyPlayModeTests.DiveFacesSwapMortimerWithAZombie);
         private const string Horde = nameof(MortimerUiJourneyPlayModeTests.HordeFacesReplaceAnEnemyMinionBesideTwoZombiesWithAZombie);
@@ -96,10 +97,12 @@ namespace GuardsDigital.Tests.PlayMode
                     Attack(Brains, before: true, upTo: true)),
                 Row(MortimerBlueFaces.CorpseSlam, "Corpse Slam",
                     "MortimerBlueFacesTests.CorpseSlam_AZombieThatStaysPut_PushesAUnitBesideItDirectlyAway",
-                    Skill(Slam, upTo: true, push: true)),
+                    Skill(Slam, upTo: true, push: true)
+                        .Concat(new[] { Prove(ModalBulletChoice, SlamWindows) }).ToArray()),
                 Row(MortimerBlueFaces.MorbidMosh, "Morbid Mosh",
                     "MortimerBlueFacesTests.MorbidMosh_APausedPushRestoresAndReplays",
-                    Skill(Slam, upTo: true, push: true)),
+                    Skill(Slam, upTo: true, push: true)
+                        .Concat(new[] { Prove(ConfirmOrDecline, SlamWindows) }).ToArray()),
                 Row(MortimerBlueFaces.RobbingZombies, "Robbing Zombies",
                     "MortimerBlueFacesTests.RobbingZombies_EachZombieMoveGainsOneCoin_EvenStandingStill",
                     Skill(Rob, upTo: true)),

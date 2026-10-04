@@ -80,7 +80,9 @@ namespace GuardsDigital.Tests.EditMode
                 // rebuild the rest of the suite leans on most heavily.
                 PendingDecisionFamilies.TurnRelease,
                 // Milestone 9.21b. The twelfth, on 9.21a's staged two-body board.
-                PendingDecisionFamilies.ActingBody
+                PendingDecisionFamilies.ActingBody,
+                // Milestone 9.48. Both revealed cards stand before Initiative until one is returned.
+                PendingDecisionFamilies.RevealRetrieval
             }), "Replay, Undo, restore, restart, and rebuild are witnessed for every family.");
 
             AssertDeliberateViolationsAreObserved(firstObservation);
@@ -261,6 +263,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private static DirectorCommand ForgedCommand(MatchSessionProjection projection)
         {
+            if (projection.PendingRevealRetrieval.Count > 0)
+                return DirectorCommand.RetrieveOneAfterReveal(
+                    projection.PendingRevealRetrieval[0].HeroId,
+                    new CardInstanceId("forged-retrieval-card"));
             if (projection.PendingInitiativeChoice != null)
                 return DirectorCommand.ChooseTiedActor(projection.PendingInitiativeChoice.OwningSide,
                     new CardInstanceId("forged-initiative-card"));
@@ -355,6 +361,14 @@ namespace GuardsDigital.Tests.EditMode
             DirectorCommand command,
             MatchSessionProjection after)
         {
+            if (pauseCase.FamilyId.Equals(PendingDecisionFamilies.RevealRetrieval))
+            {
+                Assert.That(after.PendingRevealRetrieval, Is.Empty);
+                Assert.That(after.Cards.Single(card => card.Id.Equals(command.CardInstanceId)).State,
+                    Is.EqualTo(CardStateFacts.InitialInHand()));
+                Assert.That(after.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn));
+                return;
+            }
             if (pauseCase.FamilyId.Equals(PendingDecisionFamilies.Initiative))
             {
                 Assert.That(after.SelectedActor.CardInstanceId, Is.EqualTo(command.CardInstanceId));
@@ -578,6 +592,8 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(value => value.Command).ToArray();
 
             var round = RoundActionPresenter.CreateViewModel(projection);
+            if (contract.FamilyId.Equals(PendingDecisionFamilies.RevealRetrieval))
+                return round.RevealRetrievalChoices.Select(value => value.Command).ToArray();
             if (contract.FamilyId.Equals(PendingDecisionFamilies.Initiative))
                 return round.InitiativeChoices.Select(value => value.Command).ToArray();
             if (contract.FamilyId.Equals(PendingDecisionFamilies.Defense))
@@ -652,8 +668,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(familyIds, Is.EqualTo(new[]
             {
                 "acting-body", "attack-target", "correction", "defense", "effect", "hero-respawn",
-                "initiative", "minion-battle", "movement", "removal-prevention", "system-transition",
-                "turn-release"
+                "initiative", "minion-battle", "movement", "removal-prevention", "reveal-retrieval",
+                "system-transition", "turn-release"
             }));
             Assert.That(DecisionFamilyInventory.AuditProductionInventory(), Is.Empty);
             // Milestone 8.35u adds the tenth: the per-open-item transition descriptions p.15's
@@ -661,11 +677,11 @@ namespace GuardsDigital.Tests.EditMode
             // twelfth family for the same reason the singular description is one - it describes the
             // pause the system-transition family already stands on and adds no decision of its own.
             Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(10));
-            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(12));
+            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(13));
             // Milestone 8.35g: thirty until the turn release, which adds exactly one answer row
             // because pressing the release is the whole of what that family admits. Milestone 9.21b's
             // acting-body pick adds one more: naming a standing body is all it admits.
-            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(32));
+            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(33));
         }
 
         private static void AssertNonPendingOffersStayOutsideTheContract()
@@ -808,7 +824,10 @@ namespace GuardsDigital.Tests.EditMode
             // card resolves first, with two bodies standing.
             Case("acting body pick", PendingDecisionFamilies.ActingBody, "Acting body",
                 () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _), true,
-                Row("Acting body", "Acting body", "Pick a standing body"))
+                Row("Acting body", "Acting body", "Pick a standing body")),
+            Case("reveal retrieval", PendingDecisionFamilies.RevealRetrieval, "Reveal retrieval",
+                PendingDecisionTransportContractTests.CreateSessionAwaitingRevealRetrieval, true,
+                Row("Reveal retrieval", "Reveal retrieval", "Retrieve either revealed card"))
         };
 
         private static PauseCase Case(string name, PendingDecisionFamilyId familyId,

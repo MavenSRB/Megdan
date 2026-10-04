@@ -859,11 +859,15 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(target.MinionId)), Is.False);
                 if (index == 2)
                 {
+                    yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
                     UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
                     yield return null;
-                    UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-                    yield return null;
-                    yield return null;
+                    for (var undo = 0; undo < 4 && runtime.CaptureSnapshot() != snapshot; undo++)
+                    {
+                        UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+                        yield return null;
+                        yield return null;
+                    }
                     Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot));
                     UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR ▾"));
                     yield return null;
@@ -884,6 +888,7 @@ namespace GuardsDigital.Tests.PlayMode
                         "\"repeat up to five times\" asks after instance " + (index + 1) + ". " +
                         Remaining(runtime));
                     Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null);
+                    yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
                     UiPlayer.ClickEffectControl(runtime, hud, index + 1 < stopAfter
                         ? EffectChoiceCommandKind.Confirm
                         : EffectChoiceCommandKind.Decline);

@@ -648,6 +648,9 @@ namespace GuardsDigital.Tests.EditMode
                     default: throw Unsupported("action", actionName ?? "(none)");
                 }
 
+                if (isDefend && followup != null)
+                    throw Refuse("follow-up on a Defense case is unsupported by format v1");
+
                 if (entry.Has("checkpoint") && (isDefend || !(entry.Get("checkpoint") is string checkpoint) ||
                     checkpoint != "before-minion-battle" && checkpoint != "end-of-turn"))
                     throw Refuse("checkpoint must be before-minion-battle or end-of-turn on a non-Defense case");

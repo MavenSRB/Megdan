@@ -27,6 +27,20 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class NetworkSubmissionCodecTests
     {
+        [Test]
+        public void TwoCardCommitment_IsTheSameAuthorizedCommandInEitherSelectionOrder()
+        {
+            var hero = new HeroId("hero-emmitt");
+            var lower = new CardInstanceId("emmitt-card-01");
+            var upper = new CardInstanceId("emmitt-card-02");
+            var forward = DirectorCommand.CommitTwoCards(hero, lower, upper);
+            var reversed = DirectorCommand.CommitTwoCards(hero, upper, lower);
+
+            Assert.That(reversed, Is.EqualTo(forward));
+            Assert.That(reversed.CardInstanceId, Is.EqualTo(lower));
+            Assert.That(reversed.SecondCardInstanceId, Is.EqualTo(upper));
+        }
+
         /// <summary>
         /// One hand-built specimen per command kind, so total coverage of the vocabulary is a fact
         /// this fixture states rather than a hope about what a walk happened to reach. A kind with
@@ -35,6 +49,10 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly IReadOnlyList<DirectorCommand> Specimens = new[]
         {
             DirectorCommand.CommitCard(new HeroId("hero-wasp"), new CardInstanceId("wasp-card-01")),
+            DirectorCommand.CommitTwoCards(new HeroId("hero-emmitt"),
+                new CardInstanceId("emmitt-card-01"), new CardInstanceId("emmitt-card-02")),
+            DirectorCommand.RetrieveOneAfterReveal(new HeroId("hero-emmitt"),
+                new CardInstanceId("emmitt-card-01")),
             DirectorCommand.Pass(new HeroId("hero-wasp")),
             DirectorCommand.ChooseTiedActor(TeamSide.Red, new CardInstanceId("wasp-card-01")),
             DirectorCommand.PerformHold(new CardInstanceId("wasp-card-01")),

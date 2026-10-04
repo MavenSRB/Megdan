@@ -289,6 +289,7 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var choice = runtime.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, "No distance is standing to press.");
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             var node = choice.NodeId;
             var control = UiPlayer.DecisionControl(runtime, command =>
                 command.Kind == DirectorCommandKind.AnswerEffectChoice &&

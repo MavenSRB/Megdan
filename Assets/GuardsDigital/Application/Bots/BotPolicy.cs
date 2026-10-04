@@ -403,6 +403,16 @@ namespace GuardsDigital.Application.Bots
                 case DirectorCommandKind.CommitCard:
                     return Enabled(families, BotPolicyFamilies.Commitment)
                         ? CommitDelta(candidate, readModel, ownHeroId, families, policy) : 0;
+                case DirectorCommandKind.CommitTwoCards:
+                    return Enabled(families, BotPolicyFamilies.Commitment)
+                        ? Math.Max(
+                            CommitDelta(candidate, readModel, ownHeroId, families, policy),
+                            CommitDelta(DirectorCommand.CommitCard(
+                                candidate.HeroId, candidate.SecondCardInstanceId),
+                                readModel, ownHeroId, families, policy)) + 1 : 0;
+                case DirectorCommandKind.RetrieveOneAfterReveal:
+                    return Enabled(families, BotPolicyFamilies.Commitment)
+                        ? -CommitDelta(candidate, readModel, ownHeroId, families, policy) : 0;
                 case DirectorCommandKind.AnswerEffectChoice:
                     return Enabled(families, BotPolicyFamilies.EffectChoice)
                         ? EffectChoiceDelta(candidate, readModel, ownHeroId, families, weights, policy) : 0;

@@ -589,6 +589,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "The performed basic action is what the Ultimate watches, so the game stops on its " +
                 "printed offer. " + Remaining(runtime));
             var repeat = StandingNode(runtime);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             // Milestone 8.46e: both answers to the printed `may` are the decision window's controls
             // now, so they are read off its model by command kind - what is SHOWN is the window's
             // pair, labelled for their consequences, not the strip's `ACCEPT` and `DECLINE`.

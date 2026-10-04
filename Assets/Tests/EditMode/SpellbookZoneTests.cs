@@ -329,7 +329,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(removed.DefinitionReference.DefinitionId, Is.EqualTo(SyntheticSpellbook.TierOneSpellId));
             Assert.That(removed.State.FaceOrientation, Is.EqualTo(CardFaceOrientation.FaceUp));
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(55));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(56));
             Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(snapshot, out var envelope), Is.True);
             var v50 = RewriteSchemaVersion(envelope.AuthoritativePayload, 50);
             var exception = Assert.Throws<SnapshotLoadException>(() =>
@@ -368,7 +368,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.True, "Every seat holds the removed spell.");
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(35));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(36));
         }
 
         // -------------------------------------------------------------------------------------------

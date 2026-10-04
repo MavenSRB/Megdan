@@ -38,7 +38,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<CardInstance> cards,
             IEnumerable<CardDefinition> definitions,
             CardInstanceId? selectedCardInstanceId,
-            IEnumerable<TrayCardViewModel> trayCards = null)
+            IEnumerable<TrayCardViewModel> trayCards = null,
+            CardInstanceId? selectedSecondCardInstanceId = null,
+            bool canCommitTwoCards = false)
         {
             TrayCards = Array.AsReadOnly((trayCards ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
@@ -58,6 +60,8 @@ namespace GuardsDigital.Presentation.Match
             Cards = Array.AsReadOnly((cards ?? throw new ArgumentNullException(nameof(cards))).ToArray());
             Definitions = Array.AsReadOnly((definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
             SelectedCardInstanceId = selectedCardInstanceId;
+            SelectedSecondCardInstanceId = selectedSecondCardInstanceId;
+            CanCommitTwoCards = canCommitTwoCards;
             HeaderLabel = teamSide == TeamSide.Red
                 ? $"[R] RED {HeroDisplayName.ToUpperInvariant()}"
                 : $"[B] BLUE {HeroDisplayName.ToUpperInvariant()}";
@@ -82,6 +86,8 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<CardInstance> Cards { get; }
         public IReadOnlyList<CardDefinition> Definitions { get; }
         public CardInstanceId? SelectedCardInstanceId { get; }
+        public CardInstanceId? SelectedSecondCardInstanceId { get; }
+        public bool CanCommitTwoCards { get; }
         public string HeaderLabel { get; }
         public string CommitmentLabel { get; }
         public IReadOnlyDictionary<CardInstanceId, string> CardButtonLabels { get; }
@@ -201,8 +207,10 @@ namespace GuardsDigital.Presentation.Match
         private readonly IDirectorHandsView view;
         private HeroId homeHeroId;
         private CardInstanceId? selectedCardInstanceId;
+        private CardInstanceId? selectedSecondCardInstanceId;
         private IMatchReadModel lastProjection;
         private CardInstanceId? lastSelectedCardInstanceId;
+        private CardInstanceId? lastSelectedSecondCardInstanceId;
         private DirectorHandsViewModel lastViewModel;
         private HeroId pinnedHeroId;
         private HeroId pinnedAgainstAwaitedHeroId;
@@ -300,6 +308,7 @@ namespace GuardsDigital.Presentation.Match
             pinnedHeroId = default;
             pinnedAgainstAwaitedHeroId = default;
             selectedCardInstanceId = null;
+            selectedSecondCardInstanceId = null;
             lastProjection = null;
             Refresh();
             return true;
@@ -363,11 +372,18 @@ namespace GuardsDigital.Presentation.Match
                 card.Id.Equals(selectedCardInstanceId.Value) && card.State.Location == CardLocation.Hand))
             {
                 selectedCardInstanceId = null;
+                selectedSecondCardInstanceId = null;
             }
+
+            if (selectedSecondCardInstanceId.HasValue && !projection.Cards.Any(card =>
+                    card.Id.Equals(selectedSecondCardInstanceId.Value) &&
+                    card.State.Location == CardLocation.Hand))
+                selectedSecondCardInstanceId = null;
 
             var viewedHeroId = Resolve(projection);
             if (!ReferenceEquals(projection, lastProjection) ||
                 !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId) ||
+                !Nullable.Equals(selectedSecondCardInstanceId, lastSelectedSecondCardInstanceId) ||
                 !viewedHeroId.Equals(lastViewedHeroId) ||
                 lastViewModel == null)
             {
@@ -400,10 +416,14 @@ namespace GuardsDigital.Presentation.Match
                                 card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
                             projection.Definitions,
                             selectedCardInstanceId,
-                            BuildTray(projection, hero.HeroId, selectedCardInstanceId));
+                            BuildTray(projection, hero.HeroId, selectedCardInstanceId,
+                                selectedSecondCardInstanceId: selectedSecondCardInstanceId),
+                            selectedSecondCardInstanceId,
+                            commitment.CanCommitTwoCards);
                     });
                 lastProjection = projection;
                 lastSelectedCardInstanceId = selectedCardInstanceId;
+                lastSelectedSecondCardInstanceId = selectedSecondCardInstanceId;
                 lastViewedHeroId = viewedHeroId;
                 lastViewModel = new DirectorHandsViewModel(
                     projection.Version,
@@ -502,7 +522,8 @@ namespace GuardsDigital.Presentation.Match
             IMatchReadModel projection,
             HeroId heroId,
             CardInstanceId? selectedCardInstanceId,
-            bool? resolvingCardIsAnsweredHere = null)
+            bool? resolvingCardIsAnsweredHere = null,
+            CardInstanceId? selectedSecondCardInstanceId = null)
         {
             var commitment = projection.GetCommitment(heroId);
             var canSelect = projection.IsInputEnabled &&
@@ -545,10 +566,14 @@ namespace GuardsDigital.Presentation.Match
                 var playedTurnIndex = CurrentRoundCards.PlayedTurnIndex(projection, heroId, card.Id);
                 if (group == TrayCardGroup.Played && playedTurnIndex == 0)
                 {
-                    // A card in the turn area that this round's history does not name is the facedown
-                    // commitment of a turn that has not been revealed yet. It is the hero's own card and
-                    // is no longer choosable, so it reads as spent rather than as available.
-                    group = TrayCardGroup.Discarded;
+                    // Before Initiative creates its slot, both face-up unresolved cards still belong
+                    // to this numbered turn and remain visible in the played group for retrieval.
+                    if (projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+                        commitment.Status == TurnCardCommitmentStatus.Revealed &&
+                        card.State.FaceOrientation == CardFaceOrientation.FaceUp)
+                        playedTurnIndex = projection.TurnIndex;
+                    else
+                        group = TrayCardGroup.Discarded;
                 }
 
                 var isAvailableForCommitment = group == TrayCardGroup.Available && canSelect;
@@ -586,7 +611,9 @@ namespace GuardsDigital.Presentation.Match
                     group,
                     group == TrayCardGroup.Played ? playedTurnIndex : 0,
                     isAvailableForCommitment,
-                    selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id),
+                    (selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id)) ||
+                        (selectedSecondCardInstanceId.HasValue &&
+                            selectedSecondCardInstanceId.Value.Equals(card.Id)),
                     isResolvingThisCard,
                     // Milestone 8.35m, the SEVENTH amendment's card scope and resolution focus, both
                     // read off facts this method already computed rather than derived a second time:
@@ -619,7 +646,19 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            selectedCardInstanceId = cardInstanceId;
+            if (!selectedCardInstanceId.HasValue ||
+                !projection.GetCommitment(FindCommittableCard(projection, cardInstanceId).OwnerId)
+                    .CanCommitTwoCards)
+            {
+                selectedCardInstanceId = cardInstanceId;
+                selectedSecondCardInstanceId = null;
+            }
+            else if (selectedCardInstanceId.Value.Equals(cardInstanceId))
+                selectedSecondCardInstanceId = null;
+            else
+                selectedSecondCardInstanceId = selectedSecondCardInstanceId.HasValue &&
+                    selectedSecondCardInstanceId.Value.Equals(cardInstanceId)
+                    ? (CardInstanceId?)null : cardInstanceId;
             Refresh();
             return true;
         }
@@ -637,10 +676,14 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var result = session.Submit(DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            var result = session.Submit(selectedSecondCardInstanceId.HasValue
+                ? DirectorCommand.CommitTwoCards(
+                    card.OwnerId, card.Id, selectedSecondCardInstanceId.Value)
+                : DirectorCommand.CommitCard(card.OwnerId, card.Id));
             if (result.Accepted)
             {
                 selectedCardInstanceId = null;
+                selectedSecondCardInstanceId = null;
                 SessionProjectionChanged?.Invoke(result.Projection);
             }
 

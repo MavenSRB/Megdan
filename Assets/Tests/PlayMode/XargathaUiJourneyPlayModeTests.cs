@@ -364,6 +364,7 @@ namespace GuardsDigital.Tests.PlayMode
             MatchSceneCompositionRoot root, string printedName)
         {
             var hud = root.Hud;
+            yield return UiPlayer.WaitForNamedElement(hud, "gd-card-choice", printedName);
             UiPlayer.EnsureVisible(
                 UiPlayer.NamedElementWithText(hud, "gd-card-choice", printedName));
             yield return null;

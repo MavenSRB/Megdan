@@ -335,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(55),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(56),
                 "Milestone 8.71a moved it to v44 for Hanu's rewritten printed Initiative - a " +
                 "sparse card-keyed list this block owns and nothing here writes.");
             Assert.That(restoredChoice.ChooserId, Is.EqualTo(Blue));

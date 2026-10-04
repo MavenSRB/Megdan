@@ -546,7 +546,8 @@ namespace GuardsDigital.Application
                 (TurnCardCommitmentStatus)row.Status,
                 row.CanPass,
                 row.RevealedCardInstanceId == null ? (CardInstanceId?)null :
-                    new CardInstanceId(row.RevealedCardInstanceId))).ToArray());
+                    new CardInstanceId(row.RevealedCardInstanceId),
+                row.CanCommitTwoCards)).ToArray());
 
         public MatchCommitmentProjection GetCommitment(HeroId heroId) =>
             Commitments.FirstOrDefault(value => value.HeroId.Equals(heroId));

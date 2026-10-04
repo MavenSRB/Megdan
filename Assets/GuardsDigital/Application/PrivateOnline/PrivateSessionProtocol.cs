@@ -432,7 +432,11 @@ namespace GuardsDigital.Application
         // check would refuse. A v34 reader would take the colour for the next row's hero id, so v34
         // peers are refused from the header. The snapshot schema does not move: withheld rows exist
         // only in projections, and the log is derived from the rule-event log.
-        public const int Version = 35;
+        // v36 (milestone 9.48): atomic two-card commitment and owner-scoped post-reveal
+        // retrieval add two command kinds and each commitment row gains its two-card
+        // permission flag; snapshot schema advances to v56 for the second commitment
+        // identity. Older peers are refused at admission.
+        public const int Version = 36;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

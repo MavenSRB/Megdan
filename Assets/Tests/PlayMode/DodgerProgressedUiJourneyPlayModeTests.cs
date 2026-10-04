@@ -818,6 +818,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "RULING 48: a granted point names no type, and p.19 admits two here, so p.10's " +
                 "default hands the actor the choice. " + Remaining(runtime));
 
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             var typeControls = TypeControls(runtime);
             Assert.That(typeControls, Has.Length.GreaterThanOrEqualTo(2),
                 "The second question offers the eligible types as its own controls - miniatures in " +
@@ -879,8 +880,9 @@ namespace GuardsDigital.Tests.PlayMode
             // empty and UNDO has nothing to drop - so an Undo attempted after a restore is testing
             // nothing. Milestone 8.35z34's Play Mode iteration measured that too, having tried the
             // other order first to isolate the two operations.
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             var chosen = TypeControls(runtime).First();
-            UiPlayer.Click(UiPlayer.Button(hud, chosen.Label));
+            UiPlayer.ClickDecisionControl(runtime, hud, chosen);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null);
 
@@ -899,6 +901,7 @@ namespace GuardsDigital.Tests.PlayMode
             // question draws Select controls, and the destination question is answered on the board
             // and draws none. So the journey undoes one command at a time and stops on that
             // difference rather than counting presses.
+            yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
             for (var press = 0; press < 4 && runtime.AcceptedCommands.Count > commandsAtPause; press++)
@@ -926,7 +929,7 @@ namespace GuardsDigital.Tests.PlayMode
             var payload = runtime.CaptureSnapshot();
             Assert.That(payload, Is.Not.Null.And.Not.Empty);
 
-            UiPlayer.Click(UiPlayer.Button(hud, TypeControls(runtime).First().Label));
+            UiPlayer.ClickDecisionControl(runtime, hud, TypeControls(runtime).First());
             yield return null;
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null,

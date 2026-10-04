@@ -38,7 +38,8 @@ namespace GuardsDigital.Presentation.Match
                 [PendingDecisionFamilies.TurnRelease] = "TURN COMPLETE, AWAITING RELEASE",
 
                 // Milestone 9.21b. The public words only; the pick itself is drawn by 9.21i.
-                [PendingDecisionFamilies.ActingBody] = "CHOOSING WHICH OF THEM ACTS"
+                [PendingDecisionFamilies.ActingBody] = "CHOOSING WHICH OF THEM ACTS",
+                [PendingDecisionFamilies.RevealRetrieval] = "CHOOSING WHICH REVEALED CARD TO RETRIEVE"
             };
 
         /// <summary>The public family only: never another seat's candidates, selected card or bounds.</summary>

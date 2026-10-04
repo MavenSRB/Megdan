@@ -95,18 +95,12 @@ namespace GuardsDigital.Tests.EditMode
             var errors = DecisionFamilyInventory.AuditProductionInventory();
             Assert.That(errors, Is.Empty, string.Join(Environment.NewLine, errors));
 
-            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(12),
-                "The bounded current claim is twelve pending decision families, not all possible " +
-                "states; milestone 8.35g's turn release is the eleventh and 9.21b's acting-body pick " +
-                "the twelfth.");
+            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(13),
+                "The reveal retrieval choice is the thirteenth pending family.");
             Assert.That(DecisionFamilyInventory.Families.Select(value => value.Family).Distinct().Count(),
-                Is.EqualTo(12), "Every pending family has one distinct semantic identity.");
+                Is.EqualTo(13), "Every pending family has one distinct semantic identity.");
             Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count),
-                Is.EqualTo(32),
-                "Every current legal answer shape has one inventory row. Thirty until milestone " +
-                "8.35g, whose turn release adds exactly one: the release itself is the whole of " +
-                "that family's contract, so the pause can be answered one way and no other. " +
-                "Milestone 9.21b's acting-body pick adds one more: naming a standing body.");
+                Is.EqualTo(33), "Every current legal answer shape has one inventory row.");
 
             AssertEnumKindsCovered<EffectChoiceCommandKind>("Effect/Skill", "Effect/Attack or Block");
             AssertEnumKindsCovered<DisplacedMinionCorrectionCommandKind>("Displaced minion correction");
@@ -524,7 +518,8 @@ namespace GuardsDigital.Tests.EditMode
             nameof(MatchSessionProjection.PendingSystemTransitionStep),
             nameof(MatchSessionProjection.PendingRemovalPrevention),
             nameof(MatchSessionProjection.PendingTurnRelease),
-            nameof(MatchSessionProjection.PendingActingBodyChoice)
+            nameof(MatchSessionProjection.PendingActingBodyChoice),
+            nameof(MatchSessionProjection.PendingRevealRetrieval)
         };
 
         internal static readonly string[] CompanionProjectionMembers =
@@ -671,14 +666,21 @@ namespace GuardsDigital.Tests.EditMode
                 Row("Acting body", "Pick a standing body",
                     "PendingActingBodyChoice.Invocations[*]",
                     "Standee pick (owed by 9.21i)", DirectorCommandKind.ChooseActingBody,
-                    "The named body performs the card's action"))
+                    "The named body performs the card's action")),
+            Family("Reveal retrieval", nameof(MatchSessionProjection.PendingRevealRetrieval),
+                projection => projection.PendingRevealRetrieval.Count > 0,
+                Row("Reveal retrieval", "Retrieve either revealed card",
+                    "PendingRevealRetrieval[*]",
+                    "Reveal retrieval card controls", DirectorCommandKind.RetrieveOneAfterReveal,
+                    "The chosen unresolved card returns to hand; the other takes the turn"))
         };
 
         internal static readonly NonPendingOfferDefinition[] NonPendingOffers =
         {
             new NonPendingOfferDefinition(
                 "Commitments", "Commitments[*] + Cards in Hand", "Commitment card faces / pass",
-                new[] { DirectorCommandKind.CommitCard, DirectorCommandKind.Pass },
+                new[] { DirectorCommandKind.CommitCard, DirectorCommandKind.CommitTwoCards,
+                    DirectorCommandKind.Pass },
                 "One awaiting seat commits a card or passes"),
             new NonPendingOfferDefinition(
                 "Ordinary action selection", "AvailableTurnActions[*]", "Turn action controls",
@@ -940,6 +942,12 @@ namespace GuardsDigital.Tests.EditMode
             if (acting != null)
             {
                 commands.AddRange(acting.Invocations.Select(DirectorCommand.ChooseActingBody));
+                return commands;
+            }
+
+            if (projection.PendingRevealRetrieval.Count > 0)
+            {
+                commands.AddRange(projection.PendingRevealRetrieval);
                 return commands;
             }
 

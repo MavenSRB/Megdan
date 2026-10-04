@@ -28,6 +28,39 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class DirectorHandPresentationTests
     {
         [Test]
+        public void TwoCardUltimate_HandControlConfirmsEitherSelectionOrder()
+        {
+            var session = PendingDecisionTransportContractTests.CreateSessionWithTwoCardUltimate();
+            var view = new CapturingHandsView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.Refresh();
+            var red = RedHand(view);
+            Assert.That(red.CanCommitTwoCards, Is.True);
+            var pair = red.Cards.OrderBy(card => card.Id.Value, StringComparer.Ordinal).Take(2).ToArray();
+            Assert.That(presenter.SelectCommitmentCard(pair[1].Id), Is.True);
+            Assert.That(presenter.SelectCommitmentCard(pair[0].Id), Is.True);
+            Assert.That(RedHand(view).SelectedCardInstanceId, Is.EqualTo(pair[1].Id));
+            Assert.That(RedHand(view).SelectedSecondCardInstanceId, Is.EqualTo(pair[0].Id));
+            Assert.That(presenter.ConfirmSelectedCard(), Is.True);
+            Assert.That(session.Projection.GetCommitment(pair[0].OwnerId).Status,
+                Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+            Assert.That(session.Projection.Cards.Where(card =>
+                card.Id.Equals(pair[0].Id) || card.Id.Equals(pair[1].Id))
+                .Select(card => card.State.FaceOrientation),
+                Has.All.EqualTo(CardFaceOrientation.FaceDown));
+            var blue = session.Projection.Cards.First(card =>
+                card.State.Location == CardLocation.Hand &&
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted,
+                Is.True);
+            presenter.Refresh();
+            Assert.That(RedHand(view).TrayCards.Where(card =>
+                card.CardInstanceId.Equals(pair[0].Id) ||
+                card.CardInstanceId.Equals(pair[1].Id)).Select(card => card.Group),
+                Has.All.EqualTo(TrayCardGroup.Played));
+        }
+
+        [Test]
         public void ConfiguredDirectorHands_ProjectEveryAuthoritativeHandWithTeamHeaderLabels()
         {
             var session = CreateSession();

@@ -1501,6 +1501,47 @@ namespace GuardsDigital.Core.Cards
                 cardInstanceId));
         }
 
+        /// <summary>Alternative Timelines' standing rule: one atomic two-card response, not two turns.</summary>
+        public RoundResolutionResult TryCommitTwoCards(
+            HeroId heroId, CardInstanceId firstCardId, CardInstanceId secondCardId)
+        {
+            if (Phase == RoundResolutionPhase.GameEnded)
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            if (Phase == RoundResolutionPhase.EndOfRound)
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.RoundAlreadyEnded);
+            if (Phase != RoundResolutionPhase.AwaitingCommitments)
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.NotAwaitingCommitments);
+            if (!CanCommitTwoCards(heroId))
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.DoubleCommitNotAllowed);
+            return ExecuteCommitment(() => CurrentCommitmentAuthority.TryCommitTwoCards(
+                heroId, firstCardId, secondCardId));
+        }
+
+        public bool CanCommitTwoCards(HeroId heroId) =>
+            Phase == RoundResolutionPhase.AwaitingCommitments &&
+            board != null && board.IsHeroOnBoard(heroId) &&
+            CurrentCommitmentAuthority.GetStatus(heroId) == TurnCardCommitmentStatus.AwaitingResponse &&
+            CurrentUltimates().Ultimates.Any(ultimate =>
+                ultimate.OwnerId.Equals(heroId) &&
+                ultimate.Rule.RuleKind == TwoCardTurnRule.RuleKind);
+
+        public RoundResolutionResult TryRetrieveOneAfterReveal(HeroId heroId, CardInstanceId cardId)
+        {
+            if (Phase != RoundResolutionPhase.AwaitingCommitments ||
+                !CurrentCommitmentAuthority.PendingRetrievalHero.HasValue)
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.NotAwaitingCommitments);
+            var result = CurrentCommitmentAuthority.TryRetrieveOneAfterReveal(heroId, cardId);
+            if (!result.Accepted)
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.CommitmentCommandRejected,
+                    result.RejectionReason);
+            var events = result.Events.Select(ruleEvent => RoundResolutionEvent.FromCommitment(
+                RoundIndex, TurnIndex, ruleEvent)).ToList();
+            if (!CurrentCommitmentAuthority.PendingRetrievalHero.HasValue)
+                StartCurrentTurn(events);
+            return RoundResolutionResult.Accept(events);
+        }
+
         public RoundResolutionResult TryPass(HeroId heroId)
         {
             return ExecuteCommitment(() => CurrentCommitmentAuthority.TryPass(heroId));
@@ -2623,7 +2664,8 @@ namespace GuardsDigital.Core.Cards
                     TurnIndex,
                     ruleEvent))
                 .ToList();
-            if (CurrentCommitmentAuthority.IsRevealed)
+            if (CurrentCommitmentAuthority.IsRevealed &&
+                !CurrentCommitmentAuthority.PendingRetrievalHero.HasValue)
             {
                 StartCurrentTurn(events);
             }

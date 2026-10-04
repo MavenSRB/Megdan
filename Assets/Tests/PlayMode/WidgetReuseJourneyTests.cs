@@ -75,6 +75,12 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Pick(root,runtime.PendingEffectChoice.Candidates.Single(value => value.Value.CardInstanceId.Equals(source.Id)));
             yield return Option(root,"place-pyro");
             var tokenBefore = Pyro(runtime);
+            yield return UiPlayer.WaitForControl(root.Hud, "DIRECTOR");
+            if (UiPlayer.HasButton(root.Hud, "MINIMISE"))
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, "MINIMISE"));
+                yield return null;
+            }
             yield return Space(root);
             Assert.That(Pyro(runtime), Is.Not.EqualTo(tokenBefore));
             Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State, Is.EqualTo(state));

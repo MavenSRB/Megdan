@@ -173,6 +173,7 @@ namespace GuardsDigital.Presentation.Match
 
             var legal = current.Actions
                 .Concat(current.InitiativeChoices)
+                .Concat(current.RevealRetrievalChoices)
                 .Concat(current.DefenseChoices)
                 .Concat(current.EffectChoices)
                 // Milestone 6.5c: a destination carries no control, but it is still a projected
@@ -825,6 +826,13 @@ namespace GuardsDigital.Presentation.Match
                                 command.TeamSide == projection.PendingInitiativeChoice.OwningSide &&
                                 command.CardInstanceId.Equals(cardId))))
                     .ToArray();
+            var revealRetrievalChoices = projection.DecisionContract?.FamilyId.Equals(
+                    PendingDecisionFamilies.RevealRetrieval) == true
+                ? projection.DecisionContract.Commands.Select(command =>
+                    new TypedInvocationViewModel(
+                        "RETRIEVE " + GetCardDisplayName(projection, command.CardInstanceId),
+                        command)).ToArray()
+                : Array.Empty<TypedInvocationViewModel>();
             var defenseChoices = CreateDefenseChoices(projection);
             var fastTravelOffers = hasPendingResolution
                 ? Array.Empty<FastTravelOfferViewModel>()
@@ -973,7 +981,8 @@ namespace GuardsDigital.Presentation.Match
                 levelUpHandPreview,
                 endTurnInvocation?.Command.Kind == DirectorCommandKind.StopMovement
                     ? new TypedInvocationViewModel("FINISH MOVEMENT",endTurnInvocation.Command)
-                    : null);
+                    : null,
+                revealRetrievalChoices);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
@@ -2332,6 +2341,11 @@ namespace GuardsDigital.Presentation.Match
 
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
+                if ((projection is MatchSessionProjection director &&
+                        director.PendingRevealRetrieval.Count > 0) ||
+                    projection.DecisionContract?.FamilyId.Equals(
+                        PendingDecisionFamilies.RevealRetrieval) == true)
+                    return NarrationLabels.Own("REVEALED CARDS", "CHOOSE ONE TO RETRIEVE");
                 var stillOwed = CommitmentsStillOwed(projection);
                 var viewerOwes = viewerHeroId.IsDefined
                     ? stillOwed.Contains(viewerHeroId)

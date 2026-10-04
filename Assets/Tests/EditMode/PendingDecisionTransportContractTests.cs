@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Progression;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -64,9 +69,8 @@ namespace GuardsDigital.Tests.EditMode
         public void TheOwnershipRuleReadsEveryDeclaredFamilysOwnProjectionMember()
         {
             var declared = DeclaredFamilies();
-            Assert.That(declared.Count, Is.EqualTo(12),
-                "The twelve families are the declared set this milestone authorizes against; " +
-                "milestone 8.35g's turn release is the eleventh and 9.21b's acting-body pick the twelfth.");
+            Assert.That(declared.Count, Is.EqualTo(13),
+                "Reveal retrieval is the thirteenth declared pending family.");
             Assert.That(declared.Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(declared.Count));
 
             var rule = new[] { typeof(SeatProjectionFactory) };
@@ -409,6 +413,11 @@ namespace GuardsDigital.Tests.EditMode
                 return (new[] { projection.PendingTurnRelease.ActorId }, TeamSide.None);
             }
 
+            if (family.Equals(PendingDecisionFamilies.RevealRetrieval))
+            {
+                return (new[] { projection.PendingRevealRetrieval[0].HeroId }, TeamSide.None);
+            }
+
             Assert.Fail("This fixture has no independent chooser for family " + family.Value + ".");
             return (Array.Empty<HeroId>(), TeamSide.None);
         }
@@ -428,8 +437,57 @@ namespace GuardsDigital.Tests.EditMode
                 // from 9.21a's staged two-body board.
                 new KeyValuePair<string, Func<MatchSession>>(
                     "acting-body",
-                    () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _))
+                    () => HeroBodiesBoard.CreateSessionAtTheActingBodyPick(out _, out _)),
+                new KeyValuePair<string, Func<MatchSession>>(
+                    "reveal-retrieval", CreateSessionAwaitingRevealRetrieval)
             };
+
+        internal static MatchSession CreateSessionAwaitingRevealRetrieval()
+        {
+            var session = CreateSessionWithTwoCardUltimate();
+            var red = session.Projection.Cards.Where(card =>
+                card.State.Location == CardLocation.Hand &&
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Red)
+                .Take(2).ToArray();
+            var blue = session.Projection.Cards.First(card =>
+                card.State.Location == CardLocation.Hand &&
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue);
+            Assert.That(session.Execute(DirectorCommand.CommitTwoCards(
+                red[0].OwnerId, red[0].Id, red[1].Id)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted,
+                Is.True);
+            return session;
+        }
+
+        internal static MatchSession CreateSessionWithTwoCardUltimate()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var red = configuration.RedHand.Instances[0];
+            var ability = new CardDefinition(
+                new CardDefinitionId("transport-two-card-ultimate"), "rev-1", "Two-card Ultimate",
+                default, CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.UltimateCard(), Array.Empty<ActionDefinition>(),
+                UltimateRuleDefinition.PermanentDeclaration(
+                    "transport-two-card-rule", TwoCardTurnRule.RuleKind),
+                CardSourceContent.NotSourced);
+            var ultimate = CardInstance.CreateInDeck(
+                new CardInstanceId("transport-two-card-instance"), ability.Reference, red.OwnerId);
+            Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants, map, configuration.TieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions.Concat(new[] { ability }),
+                configuration.CardInstances.Concat(new[] { ultimate }),
+                configuration.TieBreakerState, map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            var session = new MatchSession(new MatchSessionInitialState(scenario, setup,
+                new[] { map }));
+            return session;
+        }
 
         private static IReadOnlyList<string> DeclaredFamilies() =>
             typeof(PendingDecisionFamilies)

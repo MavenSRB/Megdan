@@ -180,6 +180,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(may.DeclineInvocation, Is.Not.Null);
 
                 var stood = Position(runtime, her);
+                yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
                 if (!steps)
                 {
                     UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Decline);
@@ -889,6 +890,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield break;
             }
 
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             UiPlayer.ClickEffectControl(
                 runtime, root.Hud,
                 accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline);

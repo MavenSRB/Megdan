@@ -477,6 +477,7 @@ namespace GuardsDigital.Presentation.Match
              Model.RemovalPreventionPrompt != null ||
              Model.DefenseChoices.Count > 0 ||
              Model.InitiativeChoices.Count > 0 ||
+             Model.RevealRetrievalChoices.Count > 0 ||
              Model.TeamAgreement != null ||
              Model.EffectChoices.Count > 0 ||
              Model.EffectChoiceTargets.Count > 0 ||
@@ -1798,6 +1799,8 @@ namespace GuardsDigital.Presentation.Match
                     AddActionInvocation(section, choice);
                 }
             }
+            foreach (var choice in Model.RevealRetrievalChoices)
+                AddActionInvocation(section, choice);
 
             // Printed starts and the Clear/Fast Travel replacements attached to them are drawn on the
             // fully exposed resolving card. This dock retains only controls with no printed region.

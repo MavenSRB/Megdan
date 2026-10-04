@@ -92,6 +92,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"If the target was adjacent to you\" is true of a miniature this Attack has " +
                 "already removed, so the removal clause is reached. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"up to\" must be refusable by name before anybody is named. " +
                 Remaining(runtime));
@@ -164,11 +165,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The past-tense condition holds, so the removal clause is reached. " +
                 Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             var decline = DeclineControl(runtime);
             Assert.That(decline, Is.Not.Null,
                 "\"Remove up to two\" must be refusable by name. " + Remaining(runtime));
             var commandsBefore = runtime.AcceptedCommands.Count;
-            UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
+            UiPlayer.ClickDecisionControl(runtime, hud, decline);
             yield return null;
             yield return null;
 
@@ -227,12 +229,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The printed condition holds, so the card stops and offers its retrieve. " +
                 Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"may\" must be refusable by name. " + Remaining(runtime));
             var faceName = NameOf(runtime, discarded[0]);
-            UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
+            var cardControl = runtime.DecisionWindowView.Model.Controls.Single(control =>
+                control.Card != null && control.Card.DefinitionReference.DefinitionId.Equals(discarded[0]) &&
+                control.Command != null);
+            Assert.That(cardControl.Label, Is.EqualTo(faceName));
+            UiPlayer.EnsureVisible(runtime.DecisionWindowView.ElementFor(cardControl));
             yield return null;
-            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
+            UiPlayer.ClickDecisionControl(runtime, hud, cardControl);
             yield return null;
 
             Assert.That(runtime.Cards.Any(card =>

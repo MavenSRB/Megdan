@@ -90,6 +90,15 @@ namespace GuardsDigital.Application
                     writer.Write(command.HeroId.Value);
                     writer.Write(command.CardInstanceId.Value);
                     return;
+                case DirectorCommandKind.CommitTwoCards:
+                    writer.Write(command.HeroId.Value);
+                    writer.Write(command.CardInstanceId.Value);
+                    writer.Write(command.SecondCardInstanceId.Value);
+                    return;
+                case DirectorCommandKind.RetrieveOneAfterReveal:
+                    writer.Write(command.HeroId.Value);
+                    writer.Write(command.CardInstanceId.Value);
+                    return;
                 case DirectorCommandKind.Pass:
                     writer.Write(command.HeroId.Value);
                     return;
@@ -226,6 +235,23 @@ namespace GuardsDigital.Application
                         }
 
                         command = DirectorCommand.CommitCard(new HeroId(hero), new CardInstanceId(card));
+                        return true;
+                    }
+
+                    case DirectorCommandKind.CommitTwoCards:
+                    {
+                        if (!TryReadId(reader, out var hero) || !TryReadId(reader, out var first) ||
+                            !TryReadId(reader, out var second)) return false;
+                        command = DirectorCommand.CommitTwoCards(
+                            new HeroId(hero), new CardInstanceId(first), new CardInstanceId(second));
+                        return true;
+                    }
+
+                    case DirectorCommandKind.RetrieveOneAfterReveal:
+                    {
+                        if (!TryReadId(reader, out var hero) || !TryReadId(reader, out var card)) return false;
+                        command = DirectorCommand.RetrieveOneAfterReveal(
+                            new HeroId(hero), new CardInstanceId(card));
                         return true;
                     }
 

@@ -141,13 +141,16 @@ namespace GuardsDigital.Tests.EditMode
             // card", which rulebook p.14 applies at step 7 with the action still resolving, and no
             // card at rest is ever in that state. So the set is enumerated rather than counted: the
             // audit's own entry point, the printed-card-text transition beside it, and the shape
-            // predicate that names what the second one leaves behind. A fourth name still fails here,
+            // predicate that names what the second one leaves behind. Milestone 9.48 adds a distinct
+            // post-reveal transition before Initiative, while both cards are still unresolved.
+            // A fifth name still fails here,
             // and widening the FIRST one - which is what the audit actually forbids - would have to
             // change TryRetrieveEligibleCard itself.
             Assert.That(retrieval, Is.EqualTo(new[]
             {
                 nameof(CardLifecycleAuthority.TryRetrieveEligibleCard),
                 nameof(CardLifecycleAuthority.TryRetrieveResolvingCard),
+                nameof(CardLifecycleAuthority.TryRetrieveUnresolvedAtReveal),
                 nameof(CardLifecycleAuthority.WasRetrievedDuringItsOwnAction)
             }),
                 "The audit forbids a second eligibility query for p.8's end-of-round stage, so any " +

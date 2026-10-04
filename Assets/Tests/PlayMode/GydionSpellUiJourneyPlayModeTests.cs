@@ -41,6 +41,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator May(MatchSceneCompositionRoot root, bool accept)
         {
             Assert.That(root.Runtime.PendingEffectChoice, Is.Not.Null, Remaining(root.Runtime));
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             UiPlayer.ClickEffectControl(root.Runtime, root.Hud,
                 accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline);
             yield return null;
@@ -50,6 +51,8 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator Cast(MatchSceneCompositionRoot root, CardDefinitionId front, CardDefinitionId spell)
         {
             yield return Begin(root, front);
+            if (root.Runtime.PendingEffectChoice != null)
+                yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             if (SpellOption(root.Runtime, spell) != null)
             {
                 yield return PickSpellFace(root, spell);

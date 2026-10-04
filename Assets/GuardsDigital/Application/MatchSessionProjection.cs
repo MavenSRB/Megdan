@@ -533,18 +533,21 @@ namespace GuardsDigital.Application
             HeroId heroId,
             TurnCardCommitmentStatus status,
             bool canPass,
-            CardInstanceId? revealedCardInstanceId)
+            CardInstanceId? revealedCardInstanceId,
+            bool canCommitTwoCards = false)
         {
             HeroId = heroId;
             Status = status;
             CanPass = canPass;
             RevealedCardInstanceId = revealedCardInstanceId;
+            CanCommitTwoCards = canCommitTwoCards;
         }
 
         public HeroId HeroId { get; }
         public TurnCardCommitmentStatus Status { get; }
         public bool CanPass { get; }
         public CardInstanceId? RevealedCardInstanceId { get; }
+        public bool CanCommitTwoCards { get; }
     }
 
     /// <summary>
@@ -617,6 +620,9 @@ namespace GuardsDigital.Application
         /// </summary>
         public static readonly PendingDecisionFamilyId ActingBody =
             new PendingDecisionFamilyId("acting-body");
+
+        public static readonly PendingDecisionFamilyId RevealRetrieval =
+            new PendingDecisionFamilyId("reveal-retrieval");
     }
 
     /// <summary>
@@ -673,9 +679,24 @@ namespace GuardsDigital.Application
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransition,
             RemovalPreventionPrompt removalPrevention,
             GuardsDigital.Core.Cards.PendingTurnRelease turnRelease,
-            PendingActingBodyChoice actingBody = null)
+            PendingActingBodyChoice actingBody = null,
+            IEnumerable<DirectorCommand> revealRetrieval = null)
         {
             var standing = new List<PendingDecisionContract>();
+            var retrievalCommands = (revealRetrieval ?? Enumerable.Empty<DirectorCommand>()).ToArray();
+            if (retrievalCommands.Length > 0)
+            {
+                if (retrievalCommands.Length != 2 ||
+                    retrievalCommands.Any(command => command == null ||
+                        command.Kind != DirectorCommandKind.RetrieveOneAfterReveal ||
+                        !command.HeroId.Equals(retrievalCommands[0].HeroId)) ||
+                    retrievalCommands.Select(command => command.CardInstanceId).Distinct().Count() != 2)
+                    throw new ArgumentException(
+                        "A post-reveal retrieval publishes exactly its owner's two distinct card answers.",
+                        nameof(revealRetrieval));
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.RevealRetrieval, retrievalCommands));
+            }
             if (initiative != null)
             {
                 standing.Add(new PendingDecisionContract(
@@ -1016,7 +1037,8 @@ namespace GuardsDigital.Application
             IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null,
             PendingActingBodyChoice pendingActingBodyChoice = null,
             IEnumerable<HeroActingBody> actingBodies = null,
-            IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null)
+            IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null,
+            IEnumerable<DirectorCommand> pendingRevealRetrieval = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1108,6 +1130,8 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingActingBodyChoice = pendingActingBodyChoice;
+            PendingRevealRetrieval = Array.AsReadOnly((pendingRevealRetrieval ??
+                Enumerable.Empty<DirectorCommand>()).ToArray());
             ActingBodies = Array.AsReadOnly((actingBodies ?? Enumerable.Empty<HeroActingBody>())
                 .OrderBy(value => value.HeroId.Value, StringComparer.Ordinal)
                 .ToArray());
@@ -1232,7 +1256,8 @@ namespace GuardsDigital.Application
                 PendingSystemTransitionStep,
                 PendingRemovalPrevention,
                 PendingTurnRelease,
-                PendingActingBodyChoice);
+                PendingActingBodyChoice,
+                pendingRevealRetrieval);
 
             if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
             {
@@ -1383,6 +1408,7 @@ namespace GuardsDigital.Application
         /// resolution envelopes and non-pending offers remain outside this algebra.
         /// </summary>
         public PendingDecisionContract DecisionContract { get; }
+        public IReadOnlyList<DirectorCommand> PendingRevealRetrieval { get; }
 
         /// <summary>
         /// The Skill effect currently resolving, and the decision it is waiting on. Presentation reads

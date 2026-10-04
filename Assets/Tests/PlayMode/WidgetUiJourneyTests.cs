@@ -81,6 +81,7 @@ namespace GuardsDigital.Tests.PlayMode
         internal static IEnumerator Option(MatchSceneCompositionRoot root, string node)
         {
             var old = root.Runtime.PendingEffectChoice.NodeId;
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             // Milestone 8.46e: the bullet is the decision window's own control - the strip no longer
             // draws a family the window has taken - so it is found there by the branch node it stands
             // for, and its label is read off the model rather than typed.

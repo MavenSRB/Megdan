@@ -634,8 +634,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             // The drawer relabels its own toggle when open - "DIRECTOR" becomes "DIRECTOR" plus a
             // chevron - so the label that opened it finds nothing when closing it.
-            UiPlayer.Click(DrawerToggle(hud));
-            yield return null;
+            if (UiPlayer.HasButton(hud, "DIRECTOR ▾"))
+            {
+                UiPlayer.Click(DrawerToggle(hud));
+                yield return null;
+            }
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The Undo gives a standing question back rather than the turn. " + Remaining(runtime));
@@ -661,6 +664,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "The restored match is still standing on the same question. " + Remaining(runtime));
             Assert.That(StandingNode(runtime).Value, Is.EqualTo("theft-take"));
             var again = StandingNode(runtime);
+            yield return UiPlayer.WaitForControl(hud, "1");
             UiPlayer.Click(UiPlayer.Button(hud, "1"));
             yield return null;
             yield return ConfirmIfStillStanding(root, again);

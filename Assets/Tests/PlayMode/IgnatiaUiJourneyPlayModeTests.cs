@@ -550,6 +550,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(choice, Is.Not.Null, "No coin-face choice stands. " + Remaining(runtime));
             Assert.That(choice.NodeId.Value, Is.EqualTo(IgnatiaEffectContent.CoinGateNode),
                 "The pause Equilibrium frees is the coin predicate's own. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             var control = UiPlayer.DecisionControl(runtime, command =>
                 command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&

@@ -538,9 +538,11 @@ namespace GuardsDigital.Presentation.Match
                     CornerBannerFontSize, "gd-confirm-banner-label")
                 {
                     name = "gd-confirm-control",
-                    text = "CONFIRM FACEDOWN"
+                    text = hand.SelectedSecondCardInstanceId.HasValue
+                        ? "CONFIRM TWO FACEDOWN"
+                        : "CONFIRM FACEDOWN"
                 };
-                confirm.SetVisibleLabel("CONFIRM FACEDOWN");
+                confirm.SetVisibleLabel(confirm.text);
                 confirm.style.minHeight = CornerBannerHeight;
                 confirmAction.Add(confirm);
             }
@@ -1956,15 +1958,14 @@ namespace GuardsDigital.Presentation.Match
             }
 
             highlightedPeekCard = card;
-            // A faded resting card returns to full strength while it is being inspected. The
-            // underlying anchor retains its unavailable/temporarily-dimmed state and is restored
-            // unchanged when the pointer or keyboard focus leaves.
+            // The full-face preview keeps the unavailable veil while the resting anchor is hidden;
+            // otherwise hovering a committed card briefly presents it as selectable again.
             PopulatePeekPreview(
                 hoverPreview,
                 card,
                 anchor,
                 isUnavailableGroup,
-                dimUnavailable: false);
+                dimUnavailable: true);
         }
 
         /// <summary>

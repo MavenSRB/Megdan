@@ -1035,6 +1035,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         private static IEnumerator ClickEffectDecline(MatchSceneCompositionRoot root)
         {
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             UiPlayer.ClickEffectControl(root.Runtime, root.Hud, EffectChoiceCommandKind.Decline);
             yield return null;
         }

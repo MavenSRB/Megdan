@@ -424,6 +424,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingLanePushRequest", "Director-only: an automatic step with no decision for any seat (6.9)" },
                 { "PendingImmediateLanePush", "Director-only: an automatic step with no decision for any seat (6.9)" },
                 { "PendingSystemTransitionDescriptions", "owner-scoped: every hero's description; a seat carries its own as PendingSystemTransitionDescription (8.35u)" },
+                { "PendingRevealRetrieval", "owner-scoped: the answering seat receives these commands through its narrowed DecisionContract, not as a separate list" },
             };
 
         /// <summary>
@@ -866,7 +867,8 @@ namespace GuardsDigital.Tests.EditMode
                     index % RoundResolutionAuthority.TurnsPerRound + 1,
                     true)).ToArray(),
                 ["commitments"] = source.Commitments.Select(commitment => new MatchCommitmentProjection(
-                    commitment.HeroId, commitment.Status, true, commitment.RevealedCardInstanceId)).ToArray(),
+                    commitment.HeroId, commitment.Status, true,
+                    commitment.RevealedCardInstanceId, true)).ToArray(),
                 ["scoreboard"] = heroes.Select(hero => new GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry(
                     hero, populator.NextInt(), populator.NextInt(), populator.NextInt(),
                     populator.NextInt(), populator.NextInt(), populator.NextInt())).ToArray(),
@@ -898,6 +900,41 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             return checkedViews;
+        }
+
+        [Test]
+        public void RevealRetrievalDecision_OffersOnlyOwningSeatAndSurvivesWire()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var source = host.Projection;
+            var owner = host.Seats.Seats[0];
+            var cards = source.Cards.Where(card => card.OwnerId.Equals(owner.HeroId))
+                .Take(2).Select(card => card.Id).ToArray();
+            Assert.That(cards, Has.Length.EqualTo(2));
+            var commands = cards.Select(cardId =>
+                DirectorCommand.RetrieveOneAfterReveal(owner.HeroId, cardId)).ToArray();
+            var overlaid = Rebuild(source, new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                ["pendingRevealRetrieval"] = commands
+            });
+            Assert.That(overlaid.DecisionContract.FamilyId,
+                Is.EqualTo(PendingDecisionFamilies.RevealRetrieval));
+
+            foreach (var seat in host.Seats.Seats)
+            {
+                var view = SeatProjectionFactory.ForSeat(overlaid, seat,
+                    host.ProjectionForSeat(seat.Id).TeamAgreement);
+                var isOwner = seat.HeroId.Equals(owner.HeroId);
+                Assert.That(view.DecisionContract != null, Is.EqualTo(isOwner));
+                Assert.That(view.AuthorizedCommands, isOwner ? Is.EqualTo(commands) : Is.Empty);
+                Assert.That(view.DecisionOwner.HeroIds, Is.EqualTo(new[] { owner.HeroId }));
+                Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                    NetworkSeatProjectionCodec.Encode(view), out var record), Is.True);
+                var client = new NetworkMatchReadModel(overlaid,
+                    MatchContentCatalogs.ForThisBuild(), record, true);
+                Assert.That(client.AuthorizedCommands, isOwner ? Is.EqualTo(commands) : Is.Empty);
+                Assert.That(client.DecisionContract != null, Is.EqualTo(isOwner));
+            }
         }
 
         /// <summary>Milestone 9.32h. The first gold card in a hand, the overlay's facedown discard.</summary>
@@ -1108,9 +1145,9 @@ namespace GuardsDigital.Tests.EditMode
                 // Covered instead by a populated check in this fixture.
                 { "MatchLogEntry.BlockingCardInstanceId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.BlockingHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
-                { "MatchLogEntry.Outcome", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.TargetHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "DirectorCommand.SystemTransitionDefinitionId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
+                { "DirectorCommand.SecondCardInstanceId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "MinionBattleChoiceCommand.HeroId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 // Never non-default on a SEAT by construction.
                 { "BoardObjectReference.HeroBody", "9.21c: a projection names board objects at hero grain - a candidate's own space says which body of a many-bodied hero it is - so a preview's occupant is normalized before it is projected" },

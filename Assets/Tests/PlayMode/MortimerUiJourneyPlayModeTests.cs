@@ -163,6 +163,7 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var choice = runtime.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, "A modal stands. " + Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             var control = UiPlayer.DecisionControl(runtime, command =>
                 command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&

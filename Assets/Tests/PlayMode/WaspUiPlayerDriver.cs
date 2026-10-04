@@ -31,6 +31,26 @@ namespace GuardsDigital.Tests.PlayMode
     internal static class UiPlayer
     {
         /// <summary>
+        /// Waits for the attack spotlight to release a standing decision to the real window and
+        /// gives UI Toolkit one frame to lay out its newly drawn controls. Rules can reach the
+        /// question before this presentation beat ends; a player cannot click it until then.
+        /// </summary>
+        public static IEnumerator WaitForDecisionWindow(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud,
+            float timeoutSeconds = 12f)
+        {
+            var deadline = Time.realtimeSinceStartup + timeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline &&
+                runtime.DecisionWindowView.Model == null)
+                yield return null;
+            Assert.That(runtime.DecisionWindowView.Model, Is.Not.Null,
+                "The standing decision never reached its window: " + Describe(hud) +
+                "; family=" + runtime.ReadModel.DecisionContract?.FamilyId.Value +
+                "; spotlight=" + runtime.SpotlightPresenter.Stage.Phase);
+            yield return null;
+        }
+
+        /// <summary>
         /// Milestone 9.21j landing. Waits until the control named <paramref name="label"/> is shown,
         /// taking CONTINUE (once the spotlight arms it) or END TURN when one of them is the only way
         /// forward, at most <paramref name="pressBudget"/> presses and <paramref name="frameBudget"/>
@@ -416,7 +436,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(control, Is.Not.Null,
                 $"The decision window offers no {kind} control. The shown controls are: " +
                 Describe(hud));
-            Click(Button(hud, control.Label));
+            ClickDecisionControl(runtime, hud, control);
         }
 
         /// <summary>
@@ -446,8 +466,15 @@ namespace GuardsDigital.Tests.PlayMode
                 ReferenceEquals(command.EffectChoice, answer.EffectChoice));
             Assert.That(control, Is.Not.Null,
                 "The decision window draws no control for this answer. The shown controls are: " +
-                Describe(hud));
-            Click(Button(hud, control.Label));
+                Describe(hud) + "; contract=" + runtime.ReadModel.DecisionContract?.FamilyId.Value +
+                "; owner=" + runtime.ReadModel.DecisionOwner +
+                "; cached=" + runtime.DecisionWindowPresenter.Model?.Family +
+                "; spotlight=" + runtime.SpotlightPresenter.Stage.Phase +
+                "; defers=" + runtime.SpotlightPresenter.DefersCues +
+                "; lunge=" + (runtime.SpotlightPresenter.Stage.Current == null ? "none" :
+                    runtime.KineticView.Playback.LungeTargetFor(
+                        runtime.SpotlightPresenter.Stage.Current.Attacker).ToString()));
+            ClickDecisionControl(runtime, hud, control);
         }
 
         /// <summary>Presses the window's option control for the named branch node.</summary>
@@ -545,6 +572,29 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(matches, Has.Length.EqualTo(1),
                 $"Expected exactly one shown '{name}' element carrying the text '{text}'.");
             return matches[0];
+        }
+
+        public static IEnumerator WaitForNamedElement(
+            ConfiguredMatchHudRenderer hud, string name, string label,
+            float timeoutSeconds = 12f)
+        {
+            var deadline = Time.realtimeSinceStartup + timeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline &&
+                !Descendants(hud.RootElement).Any(element =>
+                    element.name == name && IsShown(element) && CarriesText(element, label)))
+            {
+                if (HasButton(hud, "CONTINUE"))
+                {
+                    var next = Button(hud, "CONTINUE");
+                    if (next.enabledInHierarchy && next.worldBound.width > 0f)
+                        Click(next);
+                }
+                yield return null;
+            }
+            Assert.That(Descendants(hud.RootElement).Any(element =>
+                element.name == name && IsShown(element) && CarriesText(element, label)), Is.True,
+                "The card control did not appear after the spotlight: " + Describe(hud));
+            yield return null;
         }
 
         /// <summary>

@@ -169,6 +169,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The condition holds, so the card stops and offers its retrieve. " +
                 Remaining(runtime));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
             var decline = DeclineControl(runtime);
             Assert.That(decline, Is.Not.Null,
                 "A printed \"may\" must be refusable by name. " + Remaining(runtime));
@@ -176,7 +177,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(confirm, Is.Not.Null,
                 "and it must be takeable on its own control beside the refusal. " +
                 Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            UiPlayer.ClickDecisionControl(runtime, hud, confirm);
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,

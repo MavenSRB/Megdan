@@ -30,11 +30,17 @@ Completed 2026-10-04. EM-Q3 fixes Glitch spacing at hex distance 3. The three-co
 
 Historical evidence: [9.47 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-947-emmitt-glitch-and-altered-initiative-evidence).
 
-### [~] 9.48 Emmitt's two-card Ultimate
+### [x] 9.48 Emmitt's two-card Ultimate
 
 Outcome: one owning seat may commit two cards on its turn, reveals both, then retrieves one unresolved card at the printed reveal checkpoint; the other card alone takes an ordinary action. Commitment privacy, selection, Initiative, card states, owner authorization, bot choices, restore and wire projection are proved. T2. Requires the Emmitt Ultimate ruling.
 
-### [ ] 9.49 Compose and deal Emmitt
+User-directed corrective scope (2026-10-04): repair `RISK-PLAYMODE-001` within 9.48 before continuing the approved sequence; no quarantine is approved. Reproduce and close the 56 existing-hero UI journeys, the journey-matrix failure, and the local online-match failure with failing-then-passing checks. Closing gate: those named cases green, unfiltered Play Mode green, directly affected Edit Mode and offline regressions green, documentation validation and `git diff --check` green, then review and locally commit 9.48. Do not start 9.49 before that commit.
+
+Completed 2026-10-04. The two-card response is atomic and owner-scoped; both faces reveal together, the owning hero retrieves either unresolved face at the reveal checkpoint, and the remaining face alone enters Initiative. The typed rule is not registered to Emmitt until 9.49. Bot, UI, network seat, replay and snapshot v56/wire `/36` carry the same command and privacy contract. The corrective Play Mode work closed the 58-case red gate with real-window waits, typed control clicks, cinematic release/Undo handling, the Mortimer matrix row, and a full 1096/1096 unfiltered Play Mode pass; the local TCP match passed in the full gate. The T2 offline and Edit Mode checks remained green at unchanged production source revision. The completion evidence is in the local milestone commit.
+
+Historical evidence: [9.48 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-948-emmitt-two-card-ultimate-and-playmode-repair-evidence).
+
+### [~] 9.49 Compose and deal Emmitt
 
 Outcome: all eighteen playable fronts composed at their exact printed values and clauses; Tear in Time boxed; roster selection, standee/profile and card art, decision labels, bots, wording and offer/outcome checks. The configured match and network seat use the same authority. T3.
 

@@ -1044,6 +1044,12 @@ namespace GuardsDigital.Core.Snapshots
             {
                 writer.Write(hero.Value);
             }
+            writer.Write(state.SecondCommitments.Count);
+            foreach (var pair in state.SecondCommitments)
+            {
+                writer.Write(pair.Key.Value);
+                writer.Write(pair.Value.Value);
+            }
         }
 
         private static TurnCardCommitmentRestoreState ReadCommitment(BinaryReader reader)
@@ -1053,7 +1059,10 @@ namespace GuardsDigital.Core.Snapshots
                 new HeroId(reader.ReadString()),
                 new CardInstanceId(reader.ReadString())));
             var passes = ReadMany(reader, "passes", () => new HeroId(reader.ReadString()));
-            return new TurnCardCommitmentRestoreState(commitments, passes, revealed);
+            var second = ReadMany(reader, "second commitments", () =>
+                new KeyValuePair<HeroId, CardInstanceId>(
+                    new HeroId(reader.ReadString()), new CardInstanceId(reader.ReadString())));
+            return new TurnCardCommitmentRestoreState(commitments, passes, revealed, second);
         }
 
     }

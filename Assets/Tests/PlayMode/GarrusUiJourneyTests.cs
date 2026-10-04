@@ -163,6 +163,7 @@ namespace GuardsDigital.Tests.PlayMode
         {
             var choice = root.Runtime.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, Remaining(root.Runtime));
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             var kind = accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline;
             // Milestone 8.46e: a printed `may` is answered on the decision window's own pair, whose
             // labels name the consequence rather than ACCEPT/DECLINE, so the control is found by its
