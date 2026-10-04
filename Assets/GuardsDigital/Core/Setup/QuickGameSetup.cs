@@ -440,6 +440,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.32h. Takahide the Warlord, the THIRTIETH hero.</summary>
         public const string TakahideHeroIdValue = "hero-takahide";
 
+        /// <summary>Milestone 9.49. Emmitt the Traveller, the THIRTY-FIRST hero.</summary>
+        public const string EmmittHeroIdValue = "hero-emmitt";
+
         /// <summary>
         /// Milestone 9.21j. How many bodies of Razzle can stand on the board at once: RZ-Q1 (a), settled
         /// by the user on 2026-09-30 - four in all, the hero plus the three "Spawn up to 3 more of you"
@@ -643,7 +646,13 @@ namespace GuardsDigital.Core.Setup
                 (TakahideHeroIdValue, "takahide", "Takahide the Warlord",
                     HeroComplexity.Wizard,
                     HeroRole.Durable | HeroRole.Sniper | HeroRole.Tactician |
-                    HeroRole.Damager | HeroRole.Farming)
+                    HeroRole.Damager | HeroRole.Farming),
+                // His selection front prints four stars and Melee, Tactician, Durable,
+                // Disabler and Tokens (Emmitt inventory, 9.45).
+                (EmmittHeroIdValue, "emmitt", "Emmitt the Traveller",
+                    HeroComplexity.Wizard,
+                    HeroRole.Melee | HeroRole.Tactician | HeroRole.Durable |
+                    HeroRole.Disabler | HeroRole.Tokens)
             };
 
         /// <summary>
@@ -1024,6 +1033,10 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.32h. Wasp on Red against Takahide on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusTakahideOneVsOne() =>
             CreateOneVsOne(new HeroContentId("takahide"), "Takahide");
+
+        /// <summary>Milestone 9.49. Wasp on Red against Emmitt on Blue.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusEmmittOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("emmitt"), "Emmitt");
 
         /// <summary>
         /// Milestone 9.32i. Takahide with Arien as his Blue ally, on Wuk's ally board: his Red swaps,

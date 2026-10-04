@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -212,6 +213,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 ExcludedMinionParameterName,
                 AdmittedMinionClassParameterName,
                 HasCardInDiscardParameterName,
+                ResolvedCardThisTurnParameterName,
+                DiscardedCardThisTurnParameterName,
+                RemainedSincePreviousTurnParameterName,
                 HoldsAnUnresolvedCardParameterName,
                 MinimumCardsInHandParameterName,
                 RequiresEmptyHandParameterName,
@@ -298,6 +302,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private static readonly string[] HeroCardPredicates =
         {
             HasCardInDiscardParameterName,
+            ResolvedCardThisTurnParameterName,
+            DiscardedCardThisTurnParameterName,
+            RemainedSincePreviousTurnParameterName,
             HoldsAnUnresolvedCardParameterName,
             MinimumCardsInHandParameterName,
             RequiresEmptyHandParameterName,
@@ -661,6 +668,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly PrintedIconSpaceClauses space;
 
             private readonly bool requiresACardInDiscard;
+            private readonly bool requiresResolvedCardThisTurn;
+            private readonly bool requiresDiscardedCardThisTurn;
+            private readonly bool requiresRemainedSincePreviousTurn;
             private readonly bool requiresAnUnresolvedCard;
             private readonly int minimumCardsInHand;
             private readonly bool requiresEmptyHand;
@@ -704,6 +714,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 space = new PrintedIconSpaceClauses(context, board, origin, total);
 
                 requiresACardInDiscard = context.Input(HasCardInDiscardParameterName).BooleanValue;
+                requiresResolvedCardThisTurn = context.Input(ResolvedCardThisTurnParameterName).BooleanValue;
+                requiresDiscardedCardThisTurn = context.Input(DiscardedCardThisTurnParameterName).BooleanValue;
+                requiresRemainedSincePreviousTurn = context.Input(RemainedSincePreviousTurnParameterName).BooleanValue;
                 requiresAnUnresolvedCard = context.Input(HoldsAnUnresolvedCardParameterName).BooleanValue;
                 minimumCardsInHand = context.Input(MinimumCardsInHandParameterName).IntegerValue;
                 requiresEmptyHand = context.Input(RequiresEmptyHandParameterName).BooleanValue;
@@ -852,6 +865,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private bool AdmitsByTheCandidatesCards(BoardObjectReference target)
             {
                 var anyRequired = requiresACardInDiscard || requiresAnUnresolvedCard ||
+                    requiresResolvedCardThisTurn || requiresDiscardedCardThisTurn ||
+                    requiresRemainedSincePreviousTurn ||
                     minimumCardsInHand > 0 || requiresEmptyHand || requiresBothDiscardsEmpty ||
                     requiresThreeObstaclesBeside;
                 if (!anyRequired)
@@ -866,6 +881,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var instances = context.CardState.Instances;
                 if (requiresACardInDiscard && !HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId))
+                {
+                    return false;
+                }
+
+                if (requiresResolvedCardThisTurn &&
+                    context.RosterState.CurrentTurnCardHistory?.HasResolvedCardThisTurn(target.HeroId) != true)
+                {
+                    return false;
+                }
+
+                if (requiresDiscardedCardThisTurn &&
+                    !instances.Any(card => card.OwnerId.Equals(target.HeroId) &&
+                        CardLifecycleAuthority.IsDiscardedRestingCard(card) &&
+                        context.RosterState.CurrentTurnCardHistory?.WasDiscardedThisTurn(card.Id) == true))
+                {
+                    return false;
+                }
+
+                if (requiresRemainedSincePreviousTurn &&
+                    (!(board is IUnitTurnHistory history) || !history.RemainedSincePreviousTurn(target)))
                 {
                     return false;
                 }

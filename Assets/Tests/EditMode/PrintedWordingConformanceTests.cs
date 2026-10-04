@@ -123,7 +123,8 @@ namespace GuardsDigital.Tests.EditMode
                 ["mortimer | mortimer-master-of-puppets"] = "\"you may choose up to five times instead\" is carried by the seven \"up to three times\" faces: passes 4-5 behind the unlock gate, each its own UpTo Optional (MortimerRepeatedChoice).",
                 // Milestone 9.30i. Mortimer's precedent: the Ultimate is a p.16 standing declaration and
                 // the face that "would" do the replaced thing carries the choice.
-                ["gydion | gydion-the-archwizard"] = "\"you may cast the Wish spell in the spellbook instead\" is carried by Prepare Spells, the one face that adds cards to the book: behind the unlock gate it is a Choose between the refill and casting Wish (GydionWishTests, 9.30g)."
+                ["gydion | gydion-the-archwizard"] = "\"you may cast the Wish spell in the spellbook instead\" is carried by Prepare Spells, the one face that adds cards to the book: behind the unlock gate it is a Choose between the refill and casting Wish (GydionWishTests, 9.30g).",
+                ["emmitt | emmitt-alternative-timelines"] = "The may-retrieve choice is the Ultimate's owner-seat post-reveal round decision, not a card-action node (9.48, EM-Q1)."
             };
 
         // -------------------------------------------------------------------------------------------
@@ -357,7 +358,8 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly IReadOnlyDictionary<string, string> RelationWordingExceptions =
             new Dictionary<string, string>
             {
-                ["rowenna | rowenna-glorious-triumph"] = "\"your friendly heroes gain triple assist coins\" is the Defeat's assist multiplier, not a selection."
+                ["rowenna | rowenna-glorious-triumph"] = "\"your friendly heroes gain triple assist coins\" is the Defeat's assist multiplier, not a selection.",
+                ["emmitt | emmitt-future-proof"] = "The friendly heroes are the declared Radius target selection; enemy Attack immunity is an Active effect's rule predicate, not an enemy target selection."
             };
 
         /// <summary>
@@ -504,7 +506,9 @@ namespace GuardsDigital.Tests.EditMode
                 ["tigerclaw | tigerclaw-master-thief"] = "\"Move up to 2 spaces.\" is its own sentence; \"if you do\" follows the mandatory theft.",
                 ["bain | bain-another-one"] = "\"End of turn: May repeat once\" is its own sentence; the arm does not depend on the retrieval.",
                 ["garrus | garrus-blunt-force"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28).",
-                ["garrus | garrus-send-flying"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28)."
+                ["garrus | garrus-send-flying"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28).",
+                ["emmitt | emmitt-flashback"] = "The skippable reclaim is p.18 short-supply preparation, not the printed may-place choice; placing proceeds when supply was already available. The entire placement-and-swap sequence sits inside one May node, so declining it prevents the swap.",
+                ["emmitt | emmitt-deja-vu"] = "As on Flashback, each IfAble reclaim is p.18 short-supply preparation, independent of the following mandatory Place. The printed if-you-do is governed by the parent May node around the whole placement-and-swap sequence."
             };
 
         /// <summary>

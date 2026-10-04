@@ -353,7 +353,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DoesNotMoveForAHiddenAnswer()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(56),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(57),
                 "The version has since moved once, at milestone 8.53, for the match scoreboard - " +
                 "accumulated per-hero totals that have no source to be re-derived from, which is the " +
                 "opposite of this case rather than a change to it. " +

@@ -39,11 +39,14 @@ namespace GuardsDigital.Core.Effects
     public interface IUnresolvedCardSwap
     {
         bool TrySwapUnresolvedCard(HeroId owner, CardInstanceId unresolvedCard, CardInstanceId partnerCard);
+        bool TrySwapUnresolvedWithResolvedCard(
+            HeroId owner, CardInstanceId unresolvedCard, CardInstanceId resolvedCard);
     }
 
     public interface ICurrentTurnCardHistory
     {
         bool HasResolvedCardThisTurn(HeroId heroId);
+        bool WasDiscardedThisTurn(CardInstanceId cardId);
     }
 
     /// <summary>

@@ -415,6 +415,21 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var action = runtime.RoundView.Model.Actions.Single(value =>
                 KindOf(runtime, value.Command.ActionDefinitionId) == kind);
+            var continues = 0;
+            for (var frame = 0; frame < 600 && !UiPlayer.HasButton(root.Hud, action.Label); frame++)
+            {
+                if (UiPlayer.HasButton(root.Hud, "CONTINUE"))
+                {
+                    var release = UiPlayer.Button(root.Hud, "CONTINUE");
+                    if (release.enabledInHierarchy && release.worldBound.width > 0f)
+                    {
+                        Assert.That(continues++, Is.LessThan(4),
+                            "The action did not appear after the preceding cinematic releases.");
+                        UiPlayer.Click(release);
+                    }
+                }
+                yield return null;
+            }
             UiPlayer.Click(UiPlayer.Button(root.Hud, action.Label));
             yield return null;
         }

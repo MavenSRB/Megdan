@@ -469,7 +469,8 @@ namespace GuardsDigital.Tests.EditMode
             // Takahide's dealing adds three at 9.32h: the swap with a deck card (9.32a), the swap of a
             // teammate's unresolved card (9.32b) and the choice of a card in a teammate's discard
             // (9.32e). His two obstacle effects reuse ActiveEffectCreationHandler.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(146),
+            // Milestone 9.49: Emmitt registers five new hero-specific handler types.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(151),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

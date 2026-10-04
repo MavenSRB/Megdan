@@ -144,6 +144,7 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(new[]
                 {
+                    "emmitt-back-to-the-future", "emmitt-fast-forward", "emmitt-time-walk",
                     "gydion-suggestion", "hanu-fight-and-flight", "ignatia-scorching-blaze",
                     "ignatia-searing-heat", "silverarrow-wild-hunt-effect", "swift-bounce"
                 }),

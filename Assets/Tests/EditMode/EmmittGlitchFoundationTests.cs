@@ -1,16 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
@@ -21,6 +25,103 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class EmmittGlitchFoundationTests
     {
+        [Test]
+        public void CurrentTurnDiscardHistory_RecordsEntriesAndSurvivesSnapshotRestore()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redPlayed = configuration.RedHand.Instances[0];
+            var bluePlayed = configuration.BlueHand.Instances[0];
+            var oldDiscard = configuration.RedHand.Instances[1];
+            var newDiscard = configuration.RedHand.Instances[2];
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(oldDiscard), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(-1, 0), new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0) },
+                new[]
+                {
+                    new HeroOccupancy(redPlayed.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(bluePlayed.OwnerId, new HexCoordinate(-1, 0))
+                });
+            var catalogs = MatchContentCatalogs.ForThisBuild();
+            var round = new RoundResolutionAuthority(
+                configuration.CardDefinitions, configuration.CardInstances,
+                configuration.Participants, configuration.TieBreakerState, 1,
+                new RoundResolutionComposition(
+                    new CardActionResolutionAuthority(catalogs, board), board,
+                    new ActiveEffectLifecycle(), new MarkerAttachmentRegister(),
+                    null, null, null, null, null, null));
+            Assert.That(round.TryCommitCard(redPlayed.OwnerId, redPlayed.Id).Accepted, Is.True);
+            Assert.That(round.TryCommitCard(bluePlayed.OwnerId, bluePlayed.Id).Accepted, Is.True);
+            Assert.That(round.Phase, Is.EqualTo(RoundResolutionPhase.ResolvingTurn));
+            Assert.That(round.WasDiscardedThisTurn(oldDiscard.Id), Is.False,
+                "a discard that predates the turn is not eligible");
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(newDiscard), Is.True);
+            Assert.That(round.WasDiscardedThisTurn(newDiscard.Id), Is.True);
+
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(catalogs, payload,
+                configuration.CardDefinitions, new[] { board.MapDefinition });
+            Assert.That(restored.Round.WasDiscardedThisTurn(oldDiscard.Id), Is.False);
+            Assert.That(restored.Round.WasDiscardedThisTurn(newDiscard.Id), Is.True);
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(payload));
+        }
+
+        [Test]
+        public void TimeCapsule_RetrievesOnlyTheOwnersCurrentTurnDiscards()
+        {
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redPlayed = configuration.RedHand.Instances[0];
+            var bluePlayed = configuration.BlueHand.Instances[0];
+            var oldDiscard = configuration.RedHand.Instances[1];
+            var newDiscard = configuration.RedHand.Instances[2];
+            var enemyDiscard = configuration.BlueHand.Instances[1];
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(oldDiscard), Is.True);
+            var board = new AdjacentMoveAuthority(
+                new[] { new HexCoordinate(-1, 0), new HexCoordinate(0, 0), new HexCoordinate(1, 0) },
+                new[]
+                {
+                    new HeroOccupancy(redPlayed.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(bluePlayed.OwnerId, new HexCoordinate(-1, 0))
+                });
+            var catalog = MatchContentCatalogs.ForThisBuild();
+            var round = new RoundResolutionAuthority(
+                configuration.CardDefinitions, configuration.CardInstances,
+                configuration.Participants, configuration.TieBreakerState, 1,
+                new RoundResolutionComposition(
+                    new CardActionResolutionAuthority(catalog, board), board,
+                    new ActiveEffectLifecycle(), new MarkerAttachmentRegister(),
+                    null, null, null, null, null, null));
+            Assert.That(round.TryCommitCard(redPlayed.OwnerId, redPlayed.Id).Accepted, Is.True);
+            Assert.That(round.TryCommitCard(bluePlayed.OwnerId, bluePlayed.Id).Accepted, Is.True);
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(newDiscard), Is.True);
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(enemyDiscard), Is.True);
+
+            var handler = catalog.Capabilities.Load(EmmittTimeCapsuleContent.RetrieveCurrentTurnDiscardsV1);
+            var context = new EffectCapabilityContext(
+                new EffectNodeId("time-capsule-outcome"), EffectFailurePolicy.Mandatory,
+                redPlayed.OwnerId, redPlayed.OwnerId, redPlayed.Id,
+                redPlayed.DefinitionReference, EmmittCardContent.PrimarySkill,
+                new Dictionary<string, EffectValue>
+                {
+                    [EmmittTimeCapsuleContent.OwnerParameter] = EffectValue.Hero(redPlayed.OwnerId)
+                },
+                1, 1, configuration.Participants, round.Timing, RuleModificationSet.Empty,
+                EffectCardState.Of(configuration.CardDefinitions, configuration.CardInstances),
+                ActionKind.Skill,
+                rosterState: EffectRosterState.Of(round.TurnSlots,
+                    new RoundHeroDefeatHistory(configuration.Participants),
+                    new HeroCoinLedger(configuration.Participants),
+                    currentTurnCardHistory: round));
+            Assert.That(handler.Anticipate(context), Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(handler.Execute(context).Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(newDiscard.State.Location, Is.EqualTo(CardLocation.Hand));
+            Assert.That(oldDiscard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(enemyDiscard.State.Location, Is.EqualTo(CardLocation.DiscardPile));
+            Assert.That(handler.Anticipate(context),
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+        }
+
         [Test]
         public void GlitchAndDormantReverseTime_RoundTripThroughSnapshot()
         {
@@ -141,6 +242,61 @@ namespace GuardsDigital.Tests.EditMode
             board.CommitValidatedTokenReclamation(moved.Id);
             Assert.That(catalog.CountAvailableTokens(
                 EmmittComponentContent.Glitch.Reference, board.PlacedTokens), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void EnemyHeroChoosesOnlyTheActorsStandingGlitches_AndAReclaimedChoiceIsStale()
+        {
+            var match = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var actorCard = match.RedHand.Instances[0];
+            var actor = actorCard.OwnerId;
+            var enemy = match.BlueHand.Instances[0].OwnerId;
+            var board = new AdjacentMoveAuthority(
+                Enumerable.Range(-1, 9).Select(q => new HexCoordinate(q, 0)).ToArray(),
+                new[]
+                {
+                    new HeroOccupancy(actor, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(enemy, new HexCoordinate(-1, 0))
+                });
+            board.CommitValidatedTokenPlacement(new PlacedToken(new TokenInstanceId("owned-glitch"),
+                EmmittComponentContent.Glitch, actor, actor, actorCard.Id, new HexCoordinate(2, 0)));
+            board.CommitValidatedTokenPlacement(new PlacedToken(new TokenInstanceId("other-glitch"),
+                EmmittComponentContent.Glitch, enemy, enemy, actorCard.Id, new HexCoordinate(5, 0)));
+
+            var definition = match.CardDefinitions.Single(card =>
+                card.Reference.Equals(actorCard.DefinitionReference));
+            var components = new MatchComponents(
+                new ComponentDefinitionCatalog(new[] { EmmittComponentContent.Glitch },
+                    Array.Empty<MarkerDefinition>()),
+                board, new MarkerAttachmentRegister(), board, board, board);
+            EffectCapabilityContext Context(IReadOnlyDictionary<string, EffectValue> inputs) =>
+                new EffectCapabilityContext(new EffectNodeId("emmitt-glitch-probe"),
+                    EffectFailurePolicy.Mandatory, actor, actor, actorCard.Id,
+                    actorCard.DefinitionReference, definition.ActionDefinitions[0].Id, inputs,
+                    1, 1, match.Participants, null,
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                    EffectCardState.Of(match.CardDefinitions, match.CardInstances),
+                    ActionKind.Skill, components);
+
+            var enemyHandler = EmmittGlitchChoiceContent.Handlers().Single(handler =>
+                handler.Reference.Equals(EmmittGlitchChoiceContent.EnemyHeroInPlayV1));
+            var enemyChoice = enemyHandler.Execute(Context(new Dictionary<string, EffectValue>()));
+            Assert.That(enemyChoice.Choice.Candidates, Does.Contain(EffectValue.Hero(enemy)));
+
+            var tokenHandler = EmmittGlitchChoiceContent.Handlers().Single(handler =>
+                handler.Reference.Equals(EmmittGlitchChoiceContent.ChooseGlitchByHeroV1));
+            var tokenContext = Context(new Dictionary<string, EffectValue>
+            {
+                [EmmittGlitchChoiceContent.ChooserParameter] = EffectValue.Hero(enemy)
+            });
+            var tokenChoice = tokenHandler.Execute(tokenContext);
+            Assert.That(tokenChoice.Choice.ChooserHeroId, Is.EqualTo(enemy));
+            Assert.That(tokenChoice.Choice.Candidates,
+                Is.EqualTo(new[] { EffectValue.Space(new HexCoordinate(2, 0)) }));
+            board.CommitValidatedTokenReclamation(new TokenInstanceId("owned-glitch"));
+            Assert.That(tokenHandler.Resume(tokenContext,
+                new[] { EffectValue.Space(new HexCoordinate(2, 0)) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
         }
     }
 }

@@ -572,7 +572,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "and it is drawn as the printed number rather than as an anonymous option.");
             var takenFrom = CoinsOf(runtime, enemyId);
             var take = StandingNode(runtime);
-            UiPlayer.Click(UiPlayer.Button(hud, "1"));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
+            UiPlayer.ClickEffectAnswer(runtime, hud, amounts.Single(value => value.Label == "1").Command);
             yield return null;
             yield return ConfirmIfStillStanding(root, take);
             yield return null;
@@ -616,7 +617,9 @@ namespace GuardsDigital.Tests.PlayMode
             // are exactly one is TWO accepted commands - the select, and the confirm the presenter
             // submits behind it - which is why giving the question back takes two presses of UNDO.
             var take = StandingNode(runtime);
-            UiPlayer.Click(UiPlayer.Button(hud, "1"));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
+            UiPlayer.ClickEffectAnswer(runtime, hud, runtime.RoundView.Model.EffectChoices.Single(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select && value.Label == "1").Command);
             yield return null;
             yield return ConfirmIfStillStanding(root, take);
             yield return null;
@@ -625,13 +628,18 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The Undo half first: a restore clears the accepted history, so there would be nothing
             // to undo afterwards.
+            yield return UiPlayer.WaitForControl(hud, "DIRECTOR");
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
             Assert.That(hud.IsDirectorDrawerOpen, Is.True);
-            // Milestone 8.46b: the amount is a choice of exactly one, answered in ONE press - the
-            // select carries its own confirm - so one Undo, not two, is what gives the question back.
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
+            // The answer can open a printed follow-up move and reaching Director may take a
+            // separate CONTINUE. Undo each accepted suffix until the amount itself stands again.
+            for (var press = 0; press < 4 &&
+                runtime.PendingEffectChoice?.NodeId.Value != "theft-take"; press++)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+                yield return null;
+            }
             // The drawer relabels its own toggle when open - "DIRECTOR" becomes "DIRECTOR" plus a
             // chevron - so the label that opened it finds nothing when closing it.
             if (UiPlayer.HasButton(hud, "DIRECTOR ▾"))
@@ -664,8 +672,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "The restored match is still standing on the same question. " + Remaining(runtime));
             Assert.That(StandingNode(runtime).Value, Is.EqualTo("theft-take"));
             var again = StandingNode(runtime);
-            yield return UiPlayer.WaitForControl(hud, "1");
-            UiPlayer.Click(UiPlayer.Button(hud, "1"));
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
+            UiPlayer.ClickEffectAnswer(runtime, hud, runtime.RoundView.Model.EffectChoices.Single(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select && value.Label == "1").Command);
             yield return null;
             yield return ConfirmIfStillStanding(root, again);
             yield return null;

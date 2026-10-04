@@ -40,11 +40,15 @@ Completed 2026-10-04. The two-card response is atomic and owner-scoped; both fac
 
 Historical evidence: [9.48 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-948-emmitt-two-card-ultimate-and-playmode-repair-evidence).
 
-### [~] 9.49 Compose and deal Emmitt
+### [x] 9.49 Compose and deal Emmitt
 
 Outcome: all eighteen playable fronts composed at their exact printed values and clauses; Tear in Time boxed; roster selection, standee/profile and card art, decision labels, bots, wording and offer/outcome checks. The configured match and network seat use the same authority. T3.
 
-### [ ] 9.50 Gate Emmitt on the player path
+Completed 2026-10-05. All eighteen playable fronts are composed, registered and dealt; Tear in Time is boxed. Emmitt's verified profile, three-Glitch supply and typed effects work in configured matches. Private card, selection, standee and shine art is prepared locally, not published. Time Warp's target-owner exchange, Time Capsule's v57 discard history, Back to the Future's body-preserving historical Place and Future Proof's printed choice have direct outcome tests. Snapshot compatibility explicitly rejects v56. The T3 gates passed: focused Emmitt Edit 28/28, offline 6,670/6,670, unfiltered Unity Edit 7,770 passed plus 37 explicit diagnostic skips, unfiltered Unity Play 1,097/1,097, and Windows player-build smoke. A real picker journey verified all five printed roles and the selection face; the permanent per-card journey matrix is 9.50. Observed UI regressions were corrected and green-rerun, not quarantined. The local milestone commit holds exact evidence.
+
+Historical evidence: [9.49 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-949-emmitt-dealing-evidence).
+
+### [~] 9.50 Gate Emmitt on the player path
 
 Outcome: permanent face-to-journey matrix with real controls and asserted outcomes, plus the highest applicable roster validation tier. T3.
 

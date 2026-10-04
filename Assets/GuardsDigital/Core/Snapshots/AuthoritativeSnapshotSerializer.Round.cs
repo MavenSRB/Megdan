@@ -64,6 +64,9 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(state.History.ResolvedCurrentTurn.Count);
             foreach (var heroId in state.History.ResolvedCurrentTurn.OrderBy(value => value.Value, StringComparer.Ordinal))
                 writer.Write(heroId.Value);
+            writer.Write(state.History.DiscardedCurrentTurn.Count);
+            foreach (var cardId in state.History.DiscardedCurrentTurn.OrderBy(value => value.Value, StringComparer.Ordinal))
+                writer.Write(cardId.Value);
         }
 
         /// <summary>
@@ -173,6 +176,11 @@ namespace GuardsDigital.Core.Snapshots
             if (resolvedCurrentTurn.Distinct().Count() != resolvedCurrentTurn.Length ||
                 resolvedCurrentTurn.Any(value => !participants.Heroes.Any(hero => hero.Id.Equals(value))))
                 throw Malformed("Snapshot current-turn resolved heroes must be distinct configured heroes.");
+            var discardedCurrentTurn = ReadMany(reader, "current-turn discarded cards", () =>
+                new CardInstanceId(reader.ReadString()));
+            if (discardedCurrentTurn.Distinct().Count() != discardedCurrentTurn.Length ||
+                discardedCurrentTurn.Any(value => !cards.Any(card => card.Id.Equals(value))))
+                throw Malformed("Snapshot current-turn discarded cards must be distinct configured cards.");
             var completed = ReadMany(reader, "completed rounds", () =>
             {
                 var completedIndex = reader.ReadInt32();
@@ -329,7 +337,8 @@ namespace GuardsDigital.Core.Snapshots
                     new RoundCursorRestoreState(
                         roundIndex, turnIndex, phase, tieBreaker, soloVictoryHeroId,
                         teamVictoryTeamId, teamVictoryTallies),
-                    new RoundHistoryRestoreState(slots, heroDefeats, completed, resolvedCurrentTurn),
+                    new RoundHistoryRestoreState(slots, heroDefeats, completed,
+                        resolvedCurrentTurn, discardedCurrentTurn),
                     new EndOfRoundRestoreState(
                         stage,
                         outcomes,

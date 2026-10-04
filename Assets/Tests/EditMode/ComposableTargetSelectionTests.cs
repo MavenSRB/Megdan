@@ -11,6 +11,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
@@ -134,6 +135,9 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
                     SyntheticTargetingCapabilities.ExcludedHeroParameterName,
                     SyntheticTargetingCapabilities.HasCardInDiscardParameterName,
+                    SyntheticTargetingCapabilities.ResolvedCardThisTurnParameterName,
+                    SyntheticTargetingCapabilities.DiscardedCardThisTurnParameterName,
+                    SyntheticTargetingCapabilities.RemainedSincePreviousTurnParameterName,
                     SyntheticTargetingCapabilities.HoldsAnUnresolvedCardParameterName,
                     SyntheticTargetingCapabilities.MinimumCardsInHandParameterName,
                     SyntheticTargetingCapabilities.RequiresEmptyHandParameterName,
@@ -744,6 +748,58 @@ namespace GuardsDigital.Tests.EditMode
                 "Gydion's \"with no cards in hand\": the hero holding a card is not offered.");
         }
 
+        [Test]
+        public void EmmittTemporalClauses_OfferOnlyHeroesWhoseLiveHistoriesQualify()
+        {
+            var board = Board(Heroes(enemyAt: new HexCoordinate(2, 0),
+                secondEnemyAt: new HexCoordinate(0, 2)));
+            board.RecordTurnStart();
+            board.RecordTurnStart();
+            var participants = StagedBoardParticipants.CreateWithBlueAlly();
+            var roster = EffectRosterState.Of(Array.Empty<RoundTurnSlot>(),
+                new RoundHeroDefeatHistory(participants), new HeroCoinLedger(participants),
+                currentTurnCardHistory: new ResolvedOnly(Enemy));
+
+            EffectInputBinding[] Bind(string clause) => new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName,
+                    SourceTeamRelation.OpposingSource),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
+                    EffectValue.Boolean(false)),
+                EffectInputBinding.FromLiteral(clause, EffectValue.Boolean(true))
+            };
+
+            Assert.That(Offered(SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                Bind(SyntheticTargetingCapabilities.ResolvedCardThisTurnParameterName), board,
+                range: 3, rosterState: roster),
+                Is.EqualTo(new[] { EffectValue.Hero(Enemy) }));
+            Assert.That(Offered(SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                Bind(SyntheticTargetingCapabilities.RemainedSincePreviousTurnParameterName), board,
+                range: 3),
+                Is.EquivalentTo(new[] { EffectValue.Hero(Enemy), EffectValue.Hero(SecondEnemy) }));
+
+            Assert.That(board.TryCommit(new AdjacentMoveCommand(Enemy,
+                new HexCoordinate(2, 0), new HexCoordinate(2, -1))).Accepted, Is.True);
+            Assert.That(board.TryCommit(new AdjacentMoveCommand(Enemy,
+                new HexCoordinate(2, -1), new HexCoordinate(2, 0))).Accepted, Is.True);
+            Assert.That(Offered(SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                Bind(SyntheticTargetingCapabilities.RemainedSincePreviousTurnParameterName), board,
+                range: 3),
+                Is.EqualTo(new[] { EffectValue.Hero(SecondEnemy) }),
+                "moving away and back cannot satisfy Time Walk's continuous-history clause");
+        }
+
+        private sealed class ResolvedOnly : ICurrentTurnCardHistory
+        {
+            private readonly HeroId resolved;
+            public ResolvedOnly(HeroId resolved) => this.resolved = resolved;
+            public bool HasResolvedCardThisTurn(HeroId heroId) => heroId.Equals(resolved);
+            public bool WasDiscardedThisTurn(CardInstanceId cardId) => false;
+        }
+
         // -------------------------------------------------------------------------------------------
         // Staging
         // -------------------------------------------------------------------------------------------
@@ -830,7 +886,8 @@ namespace GuardsDigital.Tests.EditMode
             int radius = 0,
             int range = 0,
             RuleModificationSet modifications = null,
-            IEnumerable<CardInstance> extraCards = null)
+            IEnumerable<CardInstance> extraCards = null,
+            EffectRosterState rosterState = null)
         {
             var probe = Probe(
                 arm,
@@ -838,7 +895,7 @@ namespace GuardsDigital.Tests.EditMode
                 radius > 0 ? PrintedValueChannel.Radius : PrintedValueChannel.Range,
                 radius > 0 ? radius : range,
                 extraCards);
-            var result = Handler(arm).Execute(probe.Context(board, modifications));
+            var result = Handler(arm).Execute(probe.Context(board, modifications, rosterState));
             return result.Kind == EffectExecutionResultKind.NeedsChoice
                 ? result.Choice.Candidates.ToArray()
                 : Array.Empty<EffectValue>();
@@ -908,7 +965,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             public EffectCapabilityContext Context(
-                AdjacentMoveAuthority board, RuleModificationSet modifications = null)
+                AdjacentMoveAuthority board, RuleModificationSet modifications = null,
+                EffectRosterState rosterState = null)
             {
                 var participants = StagedBoardParticipants.CreateWithBlueAlly();
                 return new EffectCapabilityContext(
@@ -935,7 +993,7 @@ namespace GuardsDigital.Tests.EditMode
                         board,
                         board,
                         board),
-                    new HeroItemState(participants));
+                    new HeroItemState(participants), rosterState: rosterState);
             }
         }
 

@@ -129,7 +129,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // Milestone 9.8f. Mortimer the Awakener's Zombie, four in supply (MO-Q1).
                     .Concat(GuardsDigital.Core.Cards.Verified.MortimerComponentContent.Tokens())
                     // Milestone 9.30i. Gydion the Archwizard's Familiar, one in supply (GY-Q5).
-                    .Concat(GuardsDigital.Core.Cards.Verified.GydionComponentContent.Tokens()),
+                    .Concat(GuardsDigital.Core.Cards.Verified.GydionComponentContent.Tokens())
+                    .Concat(new[] { GuardsDigital.Core.Cards.Verified.EmmittComponentContent.Glitch }),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

@@ -538,6 +538,14 @@ namespace GuardsDigital.Core.Cards
                 // Spinning Blade's and Blade Helix's enemy-obstacle creations (9.32c, 9.32d), ordinary
                 // `ActiveEffectCreationHandler`s over 9.32c's unit overlay.
                 .Concat(TakahideCardContent.Handlers())
+                // Milestone 9.49. Emmitt's typed Glitch, turn-history and card effects join only
+                // with his fully composed dealt set.
+                .Concat(EmmittActiveEffectContent.Handlers())
+                .Concat(EmmittComponentContent.Handlers())
+                .Concat(EmmittGlitchChoiceContent.Handlers())
+                .Concat(EmmittTimeWarpContent.Handlers())
+                .Concat(EmmittTimeCapsuleContent.Handlers())
+                .Concat(EmmittBackToFutureContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

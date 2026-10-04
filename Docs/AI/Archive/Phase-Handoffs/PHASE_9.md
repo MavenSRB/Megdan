@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.49 Emmitt dealing evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.49 | Emmitt's eighteen playable fronts, boxed Handicap, profile, three-Glitch supply, typed effects, snapshot v57 and private local art are configured. Real picker, full offline/Edit/Play gates and disposable Windows player smoke passed; the permanent face-to-journey matrix follows at 9.50. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-949-compose-and-deal-emmitt). | `milestone/9.49` |
+
 ## Milestone 9.48 Emmitt two-card Ultimate and PlayMode repair evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -84,7 +84,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistoryRestoreState heroDefeats,
             IEnumerable<CompletedRoundRecord> completedRounds,
-            IEnumerable<HeroId> resolvedCurrentTurn = null)
+            IEnumerable<HeroId> resolvedCurrentTurn = null,
+            IEnumerable<CardInstanceId> discardedCurrentTurn = null)
         {
             TurnSlots = Array.AsReadOnly(
                 (turnSlots ?? throw new ArgumentNullException(nameof(turnSlots))).ToArray());
@@ -93,12 +94,15 @@ namespace GuardsDigital.Core.Cards
                 (completedRounds ?? throw new ArgumentNullException(nameof(completedRounds))).ToArray());
             ResolvedCurrentTurn = Array.AsReadOnly(
                 (resolvedCurrentTurn ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
+            DiscardedCurrentTurn = Array.AsReadOnly(
+                (discardedCurrentTurn ?? Enumerable.Empty<CardInstanceId>()).Distinct().ToArray());
         }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots { get; }
         public RoundHeroDefeatHistoryRestoreState HeroDefeats { get; }
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds { get; }
         public IReadOnlyList<HeroId> ResolvedCurrentTurn { get; }
+        public IReadOnlyList<CardInstanceId> DiscardedCurrentTurn { get; }
 
         public void Deconstruct(
             out IReadOnlyList<RoundTurnSlot> turnSlots,

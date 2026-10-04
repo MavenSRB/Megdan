@@ -40,7 +40,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedGydion_DealsEighteenFrontsAndPutsAllTwentyTwoSpellsInHisBook(int perTeam)
         {
             var gydion = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "gydion");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(30));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(31));
             Assert.That(gydion.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.GydionHeroIdValue));
             Assert.That(gydion.DisplayName, Is.EqualTo("Gydion the Archwizard"), "GY-02: the dashboard's title.");
             Assert.That(gydion.Complexity, Is.EqualTo(HeroComplexity.Wizard), "GY-01: four stars.");

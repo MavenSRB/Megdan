@@ -1536,6 +1536,59 @@ namespace GuardsDigital.Tests.PlayMode
                 "Zero matches is explicit rather than a stale highlighted hero or a blank unexplained row.");
         }
 
+        [UnityTest]
+        public IEnumerator EmmittIsPickableByHisFourStarsAndFivePrintedRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var stars = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().Single(button => button.userData is HeroComplexity value &&
+                    value == HeroComplexity.Wizard);
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+            bool Visible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-emmitt");
+
+            Assert.That(Visible(), Is.True, "Emmitt must be offered before filtering.");
+            UiPlayer.Click(stars);
+            yield return null;
+            Assert.That(Visible(), Is.True, "the selection front prints four stars");
+            foreach (var role in new[] { HeroRole.Melee, HeroRole.Tactician, HeroRole.Durable,
+                         HeroRole.Disabler, HeroRole.Tokens })
+            {
+                UiPlayer.Click(Role(role));
+                yield return null;
+                Assert.That(Visible(), Is.True, $"Emmitt prints {role} and survives AND filtering.");
+            }
+
+            var option = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-emmitt");
+            UiPlayer.Click(option);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-emmitt"));
+            if (option.parent != null) UiPlayer.PointAt(option.parent);
+            UiPlayer.PointAt(option);
+            yield return null;
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)),
+                Is.True, "hovering Emmitt shows his prepared selection front");
+            yield return UiPlayer.CaptureScreen("tmp/949-emmitt-picker-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(Visible(), Is.False, "a role Emmitt does not print hides him");
+            UiPlayer.Click(Element(driver, PrivateLobbyUnityView.HeroFilterClearName));
+            yield return null;
+            Assert.That(Visible(), Is.True, "clearing filters restores his button");
+        }
+
         /// <summary>
         /// Milestone 8.69g, and THE USER'S ONE NAMED REQUIREMENT FOR THE TWENTIETH HERO: "keep in mind
         /// he needs to be correctly implemented in new hero pick screen". Brynn the Seeker's roster
@@ -2031,9 +2084,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Select(button =>
                     ((PrivateLobbyHeroOption)button.userData).Complexity),
                 Is.All.EqualTo(HeroComplexity.Wizard));
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(5),
-                "and she, Snorri (8.93f), Razzle (9.21j), Gydion (9.30i) and Takahide (9.32h), the other " +
-                "four-star heroes, are the five behind it.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(6),
+                "she, Snorri, Razzle, Gydion, Takahide and Emmitt print four stars.");
 
             UiPlayer.Click(Role(HeroRole.Sniper));
             yield return null;
@@ -2146,9 +2198,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             UiPlayer.Click(Role(HeroRole.Tokens));
             yield return null;
-            Assert.That(HeroOptions(driver).Count, Is.EqualTo(2),
-                "FOUR STARS and TOKENS narrows the roster to her and Gydion (9.30i), whose selection " +
-                "front prints all five of her roles and Farming besides.");
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(3),
+                "FOUR STARS and TOKENS narrows the roster to her, Gydion and Emmitt.");
             Assert.That(IgnatiaIsVisible(), Is.True);
 
             UiPlayer.Click(Role(HeroRole.Healer));

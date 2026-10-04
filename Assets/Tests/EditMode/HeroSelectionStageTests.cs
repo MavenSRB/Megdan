@@ -179,7 +179,10 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 9.32h. Takahide's selection front: four stars; Durable, Sniper, Tactician,
                 // Damager and Farming (inventory 9.32).
                 ["hero-takahide"] = (HeroComplexity.Wizard, HeroRole.Durable | HeroRole.Sniper |
-                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming)
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming),
+                // Milestone 9.49. Emmitt's verified profile: four stars and five printed roles.
+                ["hero-emmitt"] = (HeroComplexity.Wizard, HeroRole.Melee | HeroRole.Tactician |
+                    HeroRole.Durable | HeroRole.Disabler | HeroRole.Tokens)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

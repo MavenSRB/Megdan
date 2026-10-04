@@ -461,8 +461,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(() => SpellArtworkCatalog.ParseAndValidate(
                     json.Replace("{ \"back\": 4,", "{ \"back\": 3,"), ConfiguredSpellArtwork.ConfiguredReferences),
                 Throws.InvalidOperationException.With.Message.Contains("appears twice"));
-            Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(542),
-                "the action-card rows are untouched by the spell arrays beside them");
+            Assert.That(ConfiguredCardArtworkCatalog.Catalog.Entries.Count, Is.EqualTo(560),
+                "Emmitt adds eighteen action-card rows; the spell arrays beside them remain separate");
         }
 
         // -------------------------------------------------------------------------------------------

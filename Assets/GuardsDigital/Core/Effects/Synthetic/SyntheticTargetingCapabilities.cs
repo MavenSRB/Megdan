@@ -470,6 +470,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string HasCardInDiscardParameterName = "hasCardInDiscard";
 
+        /// <summary>Emmitt: candidate hero has already resolved a card in this turn.</summary>
+        public const string ResolvedCardThisTurnParameterName = "resolvedCardThisTurn";
+
+        /// <summary>Candidate hero holds an eligible card that entered discard this turn.</summary>
+        public const string DiscardedCardThisTurnParameterName = "discardedCardThisTurn";
+
+        /// <summary>Emmitt: candidate hero has continuously occupied one space since the last turn.</summary>
+        public const string RemainedSincePreviousTurnParameterName = "remainedSincePreviousTurn";
+
         /// <summary>
         /// Milestone 8.71a. Whether a printed-Range hero selection admits only heroes who currently
         /// hold rulebook p.10's UNRESOLVED card - Hanu the Trickster's Hurry up!, "Set the printed

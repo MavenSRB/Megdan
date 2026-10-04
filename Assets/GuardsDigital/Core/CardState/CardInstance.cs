@@ -42,6 +42,9 @@ namespace GuardsDigital.Core.Cards
 
         public CardStateFacts State { get; private set; }
 
+        /// <summary>Authoritative observers can record a transition without parsing an effect's text or events.</summary>
+        public event Action<CardInstance, CardStateFacts, CardStateFacts> StateChanged;
+
         /// <summary>
         /// Milestone 8.71a. The printed Initiative some card text has rewritten on THIS card, or
         /// <see cref="PrintedInitiativeOverride.None"/> - which is every card until a sentence writes
@@ -126,12 +129,15 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         internal void ApplyState(CardStateFacts state)
         {
+            var previous = State;
             if (InitiativeOverride.IsDefined && !state.Equals(State))
             {
                 InitiativeOverride = PrintedInitiativeOverride.None;
             }
 
             State = state;
+            if (!state.Equals(previous))
+                StateChanged?.Invoke(this, previous, state);
         }
 
         /// <summary>

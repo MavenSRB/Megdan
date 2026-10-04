@@ -444,7 +444,11 @@ namespace GuardsDigital.Core.Snapshots
         // v55 (milestone 9.46): board unit movement revisions and two turn-start checkpoints,
         // plus the round's resolved-card heroes, cannot be reconstructed from current occupancy or
         // card location. v54 is rejected rather than silently restoring false immobility/history.
-        public const int CurrentSchemaVersion = 56;
+        // v56 (milestone 9.48): private two-card commitments and the post-reveal retrieval choice
+        // cannot be inferred from the remaining card alone; v55 is rejected.
+        // v57 (milestone 9.49): a card's current location cannot reveal whether it was discarded
+        // earlier this turn and then retrieved. Persist that history; reject v56.
+        public const int CurrentSchemaVersion = 57;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

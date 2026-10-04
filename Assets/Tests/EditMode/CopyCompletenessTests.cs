@@ -1198,7 +1198,6 @@ namespace GuardsDigital.Tests.EditMode
                 { "DirectorCommand.TokenInstanceIds", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
                 { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
-                { "BoardObjectReference.TokenInstanceId", NotReached("a Clear with an adjacent token") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
                 { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },

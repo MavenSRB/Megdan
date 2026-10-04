@@ -51,6 +51,7 @@ namespace GuardsDigital.Core.Cards
         private readonly CardActionResolutionAuthority cardActions;
         private readonly List<RoundTurnSlot> turnSlots = new List<RoundTurnSlot>();
         private readonly HashSet<HeroId> resolvedCurrentTurn = new HashSet<HeroId>();
+        private readonly HashSet<CardInstanceId> discardedCurrentTurn = new HashSet<CardInstanceId>();
         private readonly List<CompletedRoundRecord> completedRounds = new List<CompletedRoundRecord>();
         private readonly List<EndOfRoundStageOutcome> endOfRoundOutcomes =
             new List<EndOfRoundStageOutcome>();
@@ -109,6 +110,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             this.instances = Array.AsReadOnly(cards);
+            foreach (var card in cards)
+                card.StateChanged += RecordCardTransition;
             this.participants = participants ?? throw new ArgumentNullException(nameof(participants));
             foreach (var card in cards)
             {
@@ -318,6 +321,17 @@ namespace GuardsDigital.Core.Cards
         public bool HasResolvedCardThisTurn(HeroId heroId) =>
             heroId.IsDefined && resolvedCurrentTurn.Contains(heroId);
 
+        public bool WasDiscardedThisTurn(CardInstanceId cardId) =>
+            cardId.IsDefined && discardedCurrentTurn.Contains(cardId);
+
+        private void RecordCardTransition(CardInstance card, CardStateFacts before, CardStateFacts after)
+        {
+            if (Phase == RoundResolutionPhase.ResolvingTurn &&
+                before.Location != CardLocation.DiscardPile &&
+                after.Location == CardLocation.DiscardPile)
+                discardedCurrentTurn.Add(card.Id);
+        }
+
         private void RecordResolvedCards(IEnumerable<TurnResolutionEvent> events)
         {
             foreach (var value in events)
@@ -498,6 +512,60 @@ namespace GuardsDigital.Core.Cards
                 return false;
             turnSlots[index] = replacement;
             CurrentCommitmentAuthority?.TryReplaceRevealedCard(owner, unresolvedCard, partnerCard);
+            return true;
+        }
+
+        /// <summary>Time Warp exchanges one waiting card with an already resolved card of its owner.</summary>
+        public bool TrySwapUnresolvedWithResolvedCard(
+            HeroId owner, CardInstanceId unresolvedCard, CardInstanceId resolvedCard)
+        {
+            if (!owner.IsDefined || !unresolvedCard.IsDefined || !resolvedCard.IsDefined ||
+                unresolvedCard.Equals(resolvedCard) ||
+                Phase != RoundResolutionPhase.ResolvingTurn || CurrentTurnAuthority == null)
+                return false;
+
+            var selected = CurrentTurnAuthority.SelectedActor;
+            if (selected.IsDefined && selected.ActorId.Equals(owner))
+                return false;
+
+            var unresolved = instances.SingleOrDefault(card => card.Id.Equals(unresolvedCard));
+            var resolved = instances.SingleOrDefault(card => card.Id.Equals(resolvedCard));
+            if (unresolved == null || resolved == null ||
+                !unresolved.OwnerId.Equals(owner) || !resolved.OwnerId.Equals(owner) ||
+                !CardLifecycleAuthority.IsResolvingCardInTurnArea(unresolved) ||
+                !CardLifecycleAuthority.IsResolvedCardInTurnArea(resolved))
+                return false;
+
+            var currentIndex = turnSlots.FindIndex(slot =>
+                slot.RoundIndex == RoundIndex && slot.TurnIndex == TurnIndex &&
+                slot.Assignments.Any(assignment => assignment.HeroId.Equals(owner) &&
+                    assignment.CardInstanceId.HasValue &&
+                    assignment.CardInstanceId.Value.Equals(unresolvedCard)));
+            var resolvedSlots = turnSlots.Select((slot, index) => new { slot, index })
+                .Where(entry => entry.slot.RoundIndex == RoundIndex &&
+                    entry.slot.TurnIndex < TurnIndex &&
+                    entry.slot.Assignments.Any(assignment => assignment.HeroId.Equals(owner) &&
+                        assignment.CardInstanceId.HasValue &&
+                        assignment.CardInstanceId.Value.Equals(resolvedCard)))
+                .ToArray();
+            if (currentIndex < 0 || resolvedSlots.Length != 1)
+                return false;
+
+            var current = turnSlots[currentIndex];
+            var previous = resolvedSlots[0].slot;
+            var replacedCurrent = new RoundTurnSlot(current.RoundIndex, current.TurnIndex,
+                current.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
+                    ? new TurnCardAssignment(owner, resolvedCard, false)
+                    : assignment), instances, participants);
+            var replacedPrevious = new RoundTurnSlot(previous.RoundIndex, previous.TurnIndex,
+                previous.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
+                    ? new TurnCardAssignment(owner, unresolvedCard, false)
+                    : assignment), instances, participants);
+            if (!CardLifecycleAuthority.TrySwapUnresolvedWithResolvedCard(unresolved, resolved))
+                return false;
+            turnSlots[currentIndex] = replacedCurrent;
+            turnSlots[resolvedSlots[0].index] = replacedPrevious;
+            CurrentCommitmentAuthority?.TryReplaceRevealedCard(owner, unresolvedCard, resolvedCard);
             return true;
         }
 
@@ -1182,7 +1250,7 @@ namespace GuardsDigital.Core.Cards
                     TurnSlots,
                     HeroDefeatHistory.CaptureRestoreState(),
                     CompletedRounds,
-                    resolvedCurrentTurn),
+                    resolvedCurrentTurn, discardedCurrentTurn),
                 new EndOfRoundRestoreState(
                     CurrentEndOfRoundStage,
                     EndOfRoundOutcomes,
@@ -1316,6 +1384,8 @@ namespace GuardsDigital.Core.Cards
             authority.turnSlots.AddRange(state.History.TurnSlots);
             authority.resolvedCurrentTurn.Clear();
             authority.resolvedCurrentTurn.UnionWith(state.History.ResolvedCurrentTurn);
+            authority.discardedCurrentTurn.Clear();
+            authority.discardedCurrentTurn.UnionWith(state.History.DiscardedCurrentTurn);
             cardActions?.BindRosterState(EffectRosterState.Of(
                 authority.turnSlots.AsReadOnly(),
                 authority.HeroDefeatHistory,
@@ -2745,6 +2815,7 @@ namespace GuardsDigital.Core.Cards
         private void StartCurrentTurn(ICollection<RoundResolutionEvent> events)
         {
             resolvedCurrentTurn.Clear();
+            discardedCurrentTurn.Clear();
             board?.RecordTurnStart();
             var slot = new RoundTurnSlot(
                 RoundIndex,

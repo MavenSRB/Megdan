@@ -177,15 +177,16 @@ namespace GuardsDigital.Tests.EditMode
             // are the catalog's separate "spells" rows, which this action-card reader ignores).
             // Milestone 9.32h: 522 -> 542, Takahide's TWENTY dealt fronts (his three gold cards are all
             // dealt; Shameful Display boxed).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(542));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(542));
+            // Milestone 9.49: 542 -> 560, Emmitt's eighteen playable fronts (Tear in Time boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(560));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(560));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(542),
+                Is.EqualTo(560),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -194,7 +195,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("brynn", 18), ("cutter", 18),
-                    ("dodger", 18),
+                    ("dodger", 18), ("emmitt", 18),
                     ("garrus", 18), ("gydion", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
                     ("mortimer", 18), ("mrak", 18),
                     ("razzle", 18), ("rowenna", 18),

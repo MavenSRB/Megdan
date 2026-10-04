@@ -288,6 +288,24 @@ namespace GuardsDigital.Core.Cards
             return true;
         }
 
+        /// <summary>Emmitt's Time Warp exchanges the live unresolved and already resolved cards.</summary>
+        public static bool TrySwapUnresolvedWithResolvedCard(CardInstance unresolved, CardInstance resolved)
+        {
+            if (unresolved == null) throw new ArgumentNullException(nameof(unresolved));
+            if (resolved == null) throw new ArgumentNullException(nameof(resolved));
+            if (!unresolved.OwnerId.Equals(resolved.OwnerId) ||
+                unresolved.Id.Equals(resolved.Id) ||
+                !IsResolvingCardInTurnArea(unresolved) ||
+                !IsResolvedCardInTurnArea(resolved))
+                return false;
+
+            var unresolvedState = unresolved.State;
+            var resolvedState = resolved.State;
+            unresolved.ApplyState(resolvedState);
+            resolved.ApplyState(unresolvedState);
+            return true;
+        }
+
         /// <summary>The two legal discarded shapes; an unresolved played discard is not supported.</summary>
         public static bool IsDiscardedRestingCard(CardInstance card) =>
             card != null && card.State.Location == CardLocation.DiscardPile &&

@@ -643,6 +643,9 @@ namespace GuardsDigital.Core.Participants
                 // his set's own ReturnedToBoxAtSetup, and two of his three gold cards start in his deck.
                 case Setup.QuickGameSetupConfiguration.TakahideHeroIdValue:
                     return Cards.Verified.TakahideCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 9.49. Tear in Time is boxed by Emmitt's own dealt set.
+                case Setup.QuickGameSetupConfiguration.EmmittHeroIdValue:
+                    return Cards.Verified.EmmittCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2306,6 +2309,14 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.TakahideCardContent.CreateHand(ownerId, "blue"));
+
+        /// <summary>Milestone 9.49. Wasp against Emmitt with his printed starting hand.</summary>
+        public static MatchConfiguration CreateStagedEmmittForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.EmmittCardContent.CreateHand(ownerId, "blue"));
 
         /// <summary>
         /// Milestone 9.32i. Wasp against Takahide with Arien as his Blue ally: the friendly hero his

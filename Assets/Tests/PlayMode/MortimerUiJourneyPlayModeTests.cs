@@ -794,7 +794,7 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 else if (runtime.SystemTransitionPrompt?.Kind == SystemTransitionPromptKind.LevelUpUpgrade)
                 {
-                    yield return null;
+                    yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
                     var shown = UiPlayer.Descendants(root.Hud.RootElement)
                         .OfType<UnityEngine.UIElements.Button>()
                         .Where(element => element.name == "gd-upgrade-option" && UiPlayer.IsShown(element))

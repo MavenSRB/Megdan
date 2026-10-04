@@ -290,6 +290,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>Clicks a space on the board: the standee standing on it if one does, else the tile.</summary>
         private static IEnumerator ClickSpace(MatchSceneCompositionRoot root, HexCoordinate space)
         {
+            yield return UiPlayer.WaitForDecisionWindow(root.Runtime, root.Hud);
             var standee = Object.FindObjectsByType<PrimitiveHeroView>()
                 .FirstOrDefault(view => view.gameObject.activeInHierarchy && view.Coordinate.Equals(space));
             var at = standee != null ? standee.transform.position : Tile(space).transform.position;
@@ -315,8 +316,22 @@ namespace GuardsDigital.Tests.PlayMode
                     break;
                 }
             }
+            var screenPoint = Pointer().EventCamera.WorldToScreenPoint(at);
+            var minimised = false;
+            if (root.Hud.BlocksPointerAt(new Vector2(screenPoint.x, screenPoint.y)) &&
+                UiPlayer.HasButton(root.Hud, "MINIMISE"))
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, "MINIMISE"));
+                minimised = true;
+                yield return null;
+            }
             Assert.That(UiPlayer.ClickBoard(Pointer(), root.Hud, at), Is.True, UiPlayer.DescribeBoardRay(Pointer(), at));
             yield return null;
+            if (minimised && UiPlayer.HasButton(root.Hud, "EXPAND"))
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, "EXPAND"));
+                yield return null;
+            }
         }
 
         /// <summary>
@@ -334,6 +349,7 @@ namespace GuardsDigital.Tests.PlayMode
             var node = choice.NodeId;
             var oldVersion = runtime.Projection.Version;
             var value = stale.Candidate.Value;
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
             if (value.Kind == EffectValueKind.CardInstance)
             {
                 var card = runtime.RoundView.Model.EffectChoices.Single(row =>
@@ -373,16 +389,27 @@ namespace GuardsDigital.Tests.PlayMode
         /// The first space the standing choice offers whose tile a camera ray reaches past every
         /// standee (<c>FirstClickableSpace</c>), optionally narrowed.
         /// </summary>
-        private static HexCoordinate ClickableCandidateSpace(ConfiguredMatchSceneRuntime runtime,
+        private static HexCoordinate ClickableCandidateSpace(MatchSceneCompositionRoot root,
             Func<HexCoordinate, bool> which = null)
         {
+            var runtime = root.Runtime;
             var spaces = runtime.PendingEffectChoice.Candidates
                 .Where(value => value.Value.Kind == EffectValueKind.Coordinate)
                 .Select(value => value.Value.Coordinate)
                 .Where(space => which == null || which(space))
                 .ToArray();
             Assert.That(spaces, Is.Not.Empty, Remaining(runtime));
-            return FirstClickableSpace(Pointer(), spaces);
+            var camera = Pointer().EventCamera;
+            var exposed = spaces.Where(space =>
+            {
+                var screen = camera.WorldToScreenPoint(Tile(space).transform.position);
+                return screen.z > 0f && screen.x >= 0f && screen.x <= Screen.width &&
+                    screen.y >= 0f && screen.y <= Screen.height &&
+                    !root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y));
+            }).ToArray();
+            Assert.That(exposed, Is.Not.Empty,
+                "Every offered tile centre is covered by the HUD. " + Remaining(runtime));
+            return FirstClickableSpace(Pointer(), exposed);
         }
 
         private static IEnumerator PickSpace(MatchSceneCompositionRoot root, HexCoordinate space, string why) =>
@@ -482,9 +509,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice?.Candidates.Select(value => value.Value.Coordinate),
                 Is.EquivalentTo(new[] { West, North, new HexCoordinate(-2, 0), WaspSpace }),
                 "After the attack each spawn offers the empty spaces in Radius 1. " + Remaining(runtime));
-            var first = ClickableCandidateSpace(runtime);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
+            var first = ClickableCandidateSpace(root);
             yield return PickSpace(root, first, "The first body.");
-            var second = ClickableCandidateSpace(runtime);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
+            var second = ClickableCandidateSpace(root);
             yield return PickSpace(root, second, "The second body.");
             yield return May(root, false);
             Assert.That(runtime.PendingEffectChoice, Is.Null, "The third spawn was declined. " + Remaining(runtime));
@@ -649,7 +678,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(SpaceOf(runtime, arien), Is.EqualTo(RazzleSpace), face.Value + ": Arien takes the acting body's space.");
                 Assert.That(Bodies(runtime).First().Space, Is.EqualTo(ArienSpace), face.Value);
                 yield return PickSpace(root, West, "Another body of his.");
-                var destination = ClickableCandidateSpace(runtime, space => HexDistanceQuery.Calculate(space, West) == 1);
+                var destination = ClickableCandidateSpace(root, space => HexDistanceQuery.Calculate(space, West) == 1);
                 yield return PickSpace(root, destination, "One space on.");
                 Assert.That(Bodies(runtime).Single(value => value.Body == 2).Space, Is.EqualTo(destination),
                     face.Value + " moves the other body. " + Remaining(runtime));
@@ -726,7 +755,7 @@ namespace GuardsDigital.Tests.PlayMode
                 else
                 {
                     yield return PickSpace(root, West, "Another body of his.");
-                    var destination = ClickableCandidateSpace(runtime, space =>
+                    var destination = ClickableCandidateSpace(root, space =>
                         HexDistanceQuery.Calculate(space, West) == 1 && !space.Equals(RazzleSpace));
                     yield return PickSpace(root, destination, "One space on.");
                     Assert.That(BodySpaces(runtime), Is.EqualTo(new[] { step, destination, North }), face.Value);
@@ -928,9 +957,28 @@ namespace GuardsDigital.Tests.PlayMode
             yield return TakeTheHit(root);
             var first = runtime.PendingEffectChoice.NodeId;
             var pause = runtime.CaptureSnapshot();
-            var spawnAt = ClickableCandidateSpace(runtime);
+            yield return UiPlayer.WaitForDecisionWindow(runtime, root.Hud);
+            var spawnAt = ClickableCandidateSpace(root);
             yield return PickSpace(root, spawnAt, "The first body.");
             Assert.That(BodySpaces(runtime), Is.EqualTo(new[] { RazzleSpace, spawnAt }));
+            if (UiPlayer.HasButton(root.Hud, "EXPAND"))
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, "EXPAND"));
+                yield return null;
+            }
+            bool DirectorReady() => UiPlayer.HasButton(root.Hud, "DIRECTOR") &&
+                UiPlayer.Button(root.Hud, "DIRECTOR").worldBound.width > 0f &&
+                UiPlayer.Button(root.Hud, "DIRECTOR").worldBound.height > 0f;
+            for (var frame = 0; frame < 600 && !DirectorReady(); frame++)
+            {
+                if (UiPlayer.HasButton(root.Hud, "CONTINUE"))
+                {
+                    var release = UiPlayer.Button(root.Hud, "CONTINUE");
+                    if (release.enabledInHierarchy && release.worldBound.width > 0f)
+                        UiPlayer.Click(release);
+                }
+                yield return null;
+            }
             OpenDirectorDrawer(root.Hud);
             yield return null;
             for (var press = 0; press < 3 && !(runtime.PendingEffectChoice != null &&

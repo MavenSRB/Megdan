@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion', 'takahide')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion', 'takahide', 'emmitt')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -280,6 +280,9 @@ $declaredHeroes = @{
     # Milestone 9.32h. Takahide's standee is the VerticalTokens element 8596254 named `Taka`
     # (publicElementId 5917489, inventory 9.32, TK-02). The crop decides, never the name.
     takahide = @{ ElementId = 8596254; ElementName = 'Taka'; DisplayName = 'Takahide' }
+    # The VerticalTokens element TT has two 302x302 faces (element 8629713, public 4635323).
+    # Its crop must be visually confirmed against the named Emmitt dashboard before acceptance.
+    emmitt = @{ ElementId = 8629713; ElementName = 'TT'; DisplayName = 'Emmitt' }
 }
 
 $declared = $declaredHeroes[$Hero]

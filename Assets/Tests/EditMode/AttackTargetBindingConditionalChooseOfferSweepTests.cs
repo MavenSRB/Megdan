@@ -253,6 +253,9 @@ namespace GuardsDigital.Tests.EditMode
             // printed policy (Sting like a Bee at maximum range, every other one adjacent) and his
             // after-attack swaps and obstacles bind none, so he adds no at-risk gate.
             foreach (var card in VerifiedContentCorpus.AllDefinitionsOf(typeof(TakahideCardContent))) foreach (var d in EffectRoots(card)) yield return ("takahide", d);
+            // Milestone 9.49. Emmitt's nineteen verified fronts, including the boxed Handicap,
+            // participate in the same structural Attack-target sweep.
+            foreach (var card in EmmittCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("emmitt", d);
         }
 
         /// <summary>

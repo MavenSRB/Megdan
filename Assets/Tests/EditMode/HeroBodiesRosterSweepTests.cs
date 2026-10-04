@@ -102,6 +102,14 @@ namespace GuardsDigital.Tests.EditMode
             // Brynn's swap subjects name the hero once and read the first of his bodies in radius
             // adjacent to three obstacles, not the one the player would pick.
             ["BrynnComponentContent+TrackingSwapSubjectHandler"] = Reading.OpenBodyNotChosen,
+            // Emmitt's historical Place receives the selector's chosen-unit coordinate and looks up
+            // its board object, preserving a named Razzle body. His Glitch chooser names the hero
+            // once; the presence check sees any standing body; card edits act at hero grain.
+            ["EmmittBackToFutureContent+PlaceHandler"] = Reading.SpaceNamesBody,
+            ["EmmittGlitchChoiceContent+ChooseGlitchByHeroHandler"] = Reading.HeroOnce,
+            ["EmmittGlitchChoiceContent+EnemyHeroInPlayHandler"] = Reading.PresenceEveryBody,
+            ["EmmittTimeCapsuleContent+RetrieveHandler"] = Reading.HeroLevelResult,
+            ["EmmittTimeWarpContent+SwapHandler"] = Reading.HeroLevelResult,
             ["HanuComponentContent+FriendlyUnitPairHandler"] = Reading.BodyAsSpace,
             ["HanuComponentContent+HurryUpInitiativeHandler"] = Reading.HeroLevelResult,
             // The journey partner is the hero an Active effect records; his space is re-read at his

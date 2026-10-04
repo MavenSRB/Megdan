@@ -22,6 +22,9 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityReference TemporalPunchV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("emmitt-temporal-punch"), 1);
 
+        public static EffectCapabilityReference FutureProofImmunityV1 { get; } =
+            new EffectCapabilityReference(new EffectCapabilityId("emmitt-future-proof-immunity"), 1);
+
         public static ActiveEffectDefinition ReverseTimeDefinition { get; } =
             new ActiveEffectDefinition(
                 "emmitt-reverse-time-order", ActiveEffectAffectedScopeKind.ControllerHero,
@@ -42,13 +45,33 @@ namespace GuardsDigital.Core.Cards.Verified
                 Array.Empty<TimingCheckpoint>(),
                 new[] { RuleModification.ForDefendingCardUsesInitiative() });
 
+        public static ActiveEffectDefinition FutureProofImmunityDefinition { get; } =
+            new ActiveEffectDefinition(
+                "emmitt-future-proof-immunity-effect", ActiveEffectAffectedScopeKind.HeroesInRadius,
+                ActiveEffectDurationKind.ThisTurn, TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                Cancellations, false, "EmmittFutureProofImmunity", "emmitt-future-proof-immunity",
+                Array.Empty<TimingCheckpoint>(),
+                new[]
+                {
+                    RuleModification.ForImmunity(
+                        new[] { RuleActivity.All },
+                        RestrictedActorScope.Of(RestrictedActorRelation.HeroesOpposingSource))
+                },
+                null, DeclaredRadius.PrintedIcon(4), SourceTeamRelation.AlliedWithSource);
+
         public static IReadOnlyList<ActiveEffectDefinition> Definitions { get; } =
-            Array.AsReadOnly(new[] { ReverseTimeDefinition, TemporalPunchDefinition });
+            Array.AsReadOnly(new[]
+            {
+                ReverseTimeDefinition, TemporalPunchDefinition, FutureProofImmunityDefinition
+            });
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() => new IEffectCapabilityHandler[]
         {
             new ActiveEffectCreationHandler(ReverseTimeV1, ReverseTimeDefinition),
-            new ActiveEffectCreationHandler(TemporalPunchV1, TemporalPunchDefinition)
+            new ActiveEffectCreationHandler(TemporalPunchV1, TemporalPunchDefinition),
+            new ActiveEffectCreationHandler(FutureProofImmunityV1, FutureProofImmunityDefinition)
         };
     }
 }

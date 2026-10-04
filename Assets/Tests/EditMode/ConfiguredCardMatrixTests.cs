@@ -730,6 +730,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(GydionCardContent.SpellDefinitions.SelectMany(NamedCapabilities))
                 // Milestone 9.32h. Takahide's twenty dealt fronts.
                 .Concat(TakahideCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(EmmittCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -772,6 +773,7 @@ namespace GuardsDigital.Tests.EditMode
                     "CastSpellHandler",
                     "ChooseDiscardedCardHandler",
                     "ChooseFriendlyUnitAndTreeHandler",
+                    "ChooseGlitchByHeroHandler",
                     "ChooseOtherActorBody",
                     "ChooseOwnedItemHandler",
                     "ChooseResolvedCardHandler",
@@ -782,6 +784,7 @@ namespace GuardsDigital.Tests.EditMode
                     "ContinuedLineEnd",
                     "CountOtherRemovedSpellsHandler",
                     "DefeatMinionHandler",
+                    "EnemyHeroInPlayHandler",
                     "ExcludeAdjacentEnemyMinionsHandler",
                     "HeroAdjacentToMinionHandler",
                     "InscribeRunesHandler",
@@ -789,6 +792,7 @@ namespace GuardsDigital.Tests.EditMode
                     "PlaceAdjacentObstacleHandler",
                     "PlaceAlongLineHandler",
                     "PlaceFarthestAdjacentHandler",
+                    "PlaceHandler",
                     "PlaceInSpaceHandler",
                     "ReclaimHandler",
                     "RefillSpellbookHandler",
@@ -798,17 +802,22 @@ namespace GuardsDigital.Tests.EditMode
                     "RemoveSpellFaceupHandler",
                     "ReplaceMinionWithTokenHandler",
                     "RetrieveAllDiscardedHandler",
+                    "RetrieveHandler",
                     "RuneTargetHandler",
                     "SelectRuneHandler",
                     "SpawnActorBodyInRadiusHandler",
                     "SpellInBook",
                     "SpellInBookPresent",
+                    "SwapHandler",
                     "SwapItemWithCardHandler",
                     "SwapResolvedWithHandHandler",
                     "SwapUnresolvedCardHandler",
                     "SwapWithDeckCardHandler",
                     "TrampledEnemyHeroesHandler"
                 }),
+                "Emmitt's five hero-only choice, presence, historical Place, current-turn retrieval " +
+                "and unresolved/resolved swap handlers (9.46-9.49) are registered for Emmitt's " +
+                "verified faces; their focused temporal and staged-round outcome gates govern acceptance. " +
                 "Takahide's three swap and choice handlers - the swap with a deck card, the swap of a " +
                 "teammate's unresolved card and the choice of a card in a teammate's discard (9.32h; the " +
                 "9.32a, 9.32b and 9.32e fixtures prove each on synthetic hands and staged rounds), " +

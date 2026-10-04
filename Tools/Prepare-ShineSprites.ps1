@@ -2245,7 +2245,15 @@ namespace GuardsDigital.Tools
 }
 '@
 
-Add-Type -TypeDefinition $tracerSource -ReferencedAssemblies @('System.Drawing')
+$tracerReferences = @('System.Drawing')
+if ($PSVersionTable.PSEdition -eq 'Core') {
+    # On the current .NET runtime Add-Type's explicit references replace its implicit set.
+    # Bitmap forwards through these Windows assemblies; Desktop PowerShell resolves them itself.
+    $tracerReferences += @(
+        'System.Drawing.Common', 'System.Drawing.Primitives', 'System.Collections',
+        'System.Console', 'System.Private.Windows.GdiPlus', 'System.Private.Windows.Core')
+}
+Add-Type -TypeDefinition $tracerSource -ReferencedAssemblies $tracerReferences
 
 # Typed manifest: which slots each card owns.
 $manifest = @{}

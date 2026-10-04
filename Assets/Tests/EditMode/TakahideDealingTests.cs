@@ -40,7 +40,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedTakahide_DealsTwentyFronts_WithTwoGoldsInHisDeck(int perTeam)
         {
             var takahide = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "takahide");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(30));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(31));
             Assert.That(takahide.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.TakahideHeroIdValue));
             Assert.That(takahide.DisplayName, Is.EqualTo("Takahide the Warlord"));
             Assert.That(takahide.Complexity, Is.EqualTo(HeroComplexity.Wizard), "four stars");
