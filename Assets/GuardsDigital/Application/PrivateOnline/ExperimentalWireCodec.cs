@@ -85,6 +85,28 @@ namespace GuardsDigital.Application
     }
     public static partial class NetworkMessageCodec
     {
+        public static byte[] ClockUpdateFrame(NetworkEnvelope envelope, long version, MatchClockState state)
+        {
+            using(var stream=new MemoryStream()) using(var writer=new BinaryWriter(stream))
+            {
+                WriteEnvelope(writer,envelope); writer.Write(version); ExperimentalWireCodec.WriteClock(writer,state);
+                writer.Flush(); return PrivateSessionFrameCodec.EncodeFrame(SessionMessageKind.ClockUpdate,stream.ToArray());
+            }
+        }
+        public static bool TryDecodeClockUpdate(byte[] payload,out NetworkEnvelope envelope,out long version,out MatchClockState state)
+        {
+            envelope=default; version=0; state=null;
+            try
+            {
+                using(var stream=new MemoryStream(payload??Array.Empty<byte>(),false)) using(var reader=new BinaryReader(stream))
+                {
+                    if(!TryReadEnvelope(reader,out envelope)) return false;
+                    version=reader.ReadInt64(); state=ExperimentalWireCodec.ReadClock(reader);
+                    return version>=0 && stream.Position==stream.Length;
+                }
+            }
+            catch(IOException) { return false; } catch(FormatException) { return false; } catch(ArgumentException) { return false; }
+        }
         public static byte[] BoardVoteFrame(NetworkEnvelope envelope,long version,GuardsDigital.Core.Replay.DirectorCommand command)
         {
             using(var s=new MemoryStream()) using(var w=new BinaryWriter(s))
@@ -103,7 +125,7 @@ namespace GuardsDigital.Application
                 using(var s=new MemoryStream(payload??Array.Empty<byte>(),false)) using(var r=new BinaryReader(s))
                 { if(!TryReadEnvelope(r,out envelope)) return false; version=r.ReadInt64(); ready=r.ReadBoolean(); return version>=0 && s.Position==s.Length; }
             }
-            catch(IOException) { return false; } catch(ArgumentException) { return false; }
+            catch(IOException) { return false; } catch(FormatException) { return false; } catch(ArgumentException) { return false; }
         }
         public static byte[] SubmitCoordinationFrame(NetworkEnvelope envelope, CoordinationCommand command)
         {

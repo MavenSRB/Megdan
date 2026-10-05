@@ -49,15 +49,19 @@
 .PARAMETER Check
     Read-only verification: proves every declared resource exists at its declared size.
 
+.PARAMETER SourceCorpusRoot
+    Optional read-only extracted text-assets root for single-face token preparation in an isolated worktree.
+
 .PARAMETER Force
     Rewrite every prepared face even when all of them already match.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer', 'gydion')]
+    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer', 'gydion', 'emmitt')]
     [string] $Hero = 'tali',
     [switch] $Check,
-    [switch] $Force
+    [switch] $Force,
+    [string] $SourceCorpusRoot
 )
 
 Set-StrictMode -Version Latest
@@ -864,10 +868,11 @@ if ($Hero -eq 'mortimer') {
 # 2026-10-01 (GY-03). The rule is one token definition (GydionComponentContent), so one face is
 # prepared, with no caption over it. Nothing about the rule is read from the picture.
 # -------------------------------------------------------------------------------------------------
-if ($Hero -eq 'gydion') {
+if ($Hero -eq 'gydion' -or $Hero -eq 'emmitt') {
     $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $corpusRoot = [System.IO.Path]::Combine(
         $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    if (-not [string]::IsNullOrWhiteSpace($SourceCorpusRoot)) { $corpusRoot = [System.IO.Path]::GetFullPath($SourceCorpusRoot) }
     $targetRoot = [System.IO.Path]::Combine(
         $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
 
@@ -883,16 +888,20 @@ if ($Hero -eq 'gydion') {
 
     $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
 
-    $gydionTokens = @(
-        @{ Element = 5831117; Sprite = 0; X = 2058; Y = 2526; TokenId = 'gydion-familiar'; Label = 'Familiar' }
-    )
+    # Emmitt's Glitch is the manifest's legacy 'clone' token: inspected against his
+    # robot portrait with the hourglass hat. The two faces share this exact rectangle.
+    $singleFaceTokens = if ($Hero -eq 'emmitt') {
+        @(@{ Element = 5366754; Sprite = 0; X = 0; Y = 1043; TokenId = 'emmitt-glitch'; Label = 'Glitch' })
+    } else {
+        @(@{ Element = 5831117; Sprite = 0; X = 2058; Y = 2526; TokenId = 'gydion-familiar'; Label = 'Familiar' })
+    }
 
     Add-Type -AssemblyName System.Drawing
     if (-not $Check) { New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null }
 
     $written = 0
     $matched = 0
-    foreach ($token in $gydionTokens) {
+    foreach ($token in $singleFaceTokens) {
         $found = @($manifest | Where-Object { $_.elementId -eq $token.Element })
         if ($found.Count -ne 1) {
             throw "The manifest holds $($found.Count) elements with id $($token.Element); one was expected."
@@ -911,7 +920,7 @@ if ($Hero -eq 'gydion') {
         }
 
         # Both faces are the one rectangle; the front is prepared. See the note above.
-        if ([int] $sprites[1].x -ne 2058 -or [int] $sprites[1].y -ne 2526) {
+        if ([int] $sprites[1].x -ne $token.X -or [int] $sprites[1].y -ne $token.Y) {
             throw ("Element $($token.Element) no longer declares its back face where it was inspected. " +
                 'Nothing was written.')
         }

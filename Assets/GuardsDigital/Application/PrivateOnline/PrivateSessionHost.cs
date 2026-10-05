@@ -240,6 +240,7 @@ namespace GuardsDigital.Application
 
             /// <summary>Milestone 8.32. The last gameplay-envelope sequence sent to this connection.</summary>
             public long GameplaySendSequence { get; set; }
+            public long ClockSendSequence { get; set; }
 
             /// <summary>
             /// Milestone 8.34. The epoch this connection speaks under - its seat's epoch at the
@@ -1987,6 +1988,21 @@ namespace GuardsDigital.Application
         /// wherever state moved, not only where a wire submission moved it.
         /// </summary>
         public void RepublishProjections() => PublishProjections();
+
+        /// <summary>Display-only time never consumes a gameplay sequence or republishes a seat view.</summary>
+        public void PublishClockUpdate()
+        {
+            if(!matchStarted || !(matchHost is MatchHost timedHost) || !timedHost.Experiments.TurnTimer) return;
+            var state=timedHost.ClockState;
+            foreach(var record in new List<ConnectionRecord>(connections.Values))
+            {
+                if(record.Phase!=ConnectionPhase.Seated) continue;
+                var frame=NetworkMessageCodec.ClockUpdateFrame(new NetworkEnvelope(
+                    SessionCorrelation,record.Epoch,record.ClockSendSequence+1,0),timedHost.Version,state);
+                record.ClockSendSequence++; Deliver(record,frame);
+            }
+        }
+
 
         /// <summary>
         /// Milestone 8.35z61. Attaches the on-disk gameplay narration, writing its header

@@ -15,7 +15,7 @@ namespace GuardsDigital.Tests.EditMode
                 experiments:new ExperimentalMatchOptions(turnTimer:true,cardCommitmentSeconds:allowance,
                     cardResolutionSeconds:allowance,responseSeconds:allowance,cardUpgradeSeconds:allowance,teamBankSeconds:bank)));
         }
-        private static MatchHost WithTimer(MatchSession source)
+        internal static MatchHost WithTimer(MatchSession source)
         {
             var initial=(MatchSessionInitialState)typeof(MatchSession).GetField("initialState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(source);
             var copy=new MatchSession(new MatchSessionInitialState(initial.Scenario,initial.Setup,initial.AvailableMaps,
@@ -213,16 +213,51 @@ namespace GuardsDigital.Tests.EditMode
         }
         private static void Ready(MatchHost host)
         { host.SetTimerStarted(true); foreach(var seat in host.Seats.Seats) host.SetClockReadiness(seat.Id,host.Version,true); }
-        [Test] public void JoinedReadinessAndClockProjectionUseTheRealWire()
+        [TestCase("")] [TestCase("timer-test")]
+        public void ClockOnlyWireUpdatesPreserveGameplayProjectionAndLogIdentity(string key)
         {
-            var h=Create(10,20); var wire=PrivateOnlineWireHarness.Compose(h,"timer-test"); wire.SeatAll(); wire.ReadyAndPickEverySeat();
-            h.SetTimerStarted(true); wire.Client(1).ReportTimerReadiness(true); wire.Pump();
-            h.AdvanceClock(TimeSpan.FromSeconds(2).Ticks); wire.Session.RepublishProjections(); wire.Pump();
-            var view=wire.Client(1).LatestProjection;
-            Assert.That(view.Clock.Enabled,Is.True); Assert.That(view.Clock.Entries.Count(e=>e.RemainingTicks==TimeSpan.FromSeconds(8).Ticks),Is.EqualTo(1));
-            Assert.That(view.Clock.Entries.Count(e=>e.RemainingTicks==TimeSpan.FromSeconds(10).Ticks),Is.EqualTo(h.Seats.Seats.Count-1));
-            wire.DisconnectClient(1); var before=h.ClockState; h.AdvanceClock(TimeSpan.FromSeconds(7).Ticks,wire.Session.IsPaused);
+            var h=Create(10,20); var wire=PrivateOnlineWireHarness.Compose(h,key); wire.SeatAll(); wire.ReadyAndPickEverySeat();
+            var machine=wire.Client(1);
+            var adapter=new NetworkMatchClient(machine,h.Projection,MatchContentCatalogs.ForThisBuild());
+            var record=machine.LatestProjection; var projected=adapter.Projection;
+            var projectionRevision=machine.ProjectionRevision; var logRevision=machine.MatchLogRevision;
+            h.SetTimerStarted(true); machine.ReportTimerReadiness(true); wire.Pump();
+            h.AdvanceClock(TimeSpan.FromSeconds(2).Ticks); wire.Session.PublishClockUpdate(); wire.Pump();
+            Assert.That(machine.LatestProjection,Is.SameAs(record));
+            Assert.That(adapter.Projection,Is.SameAs(projected),"A clock tick cannot rebuild any gameplay read model.");
+            Assert.That(machine.ProjectionRevision,Is.EqualTo(projectionRevision));
+            Assert.That(machine.MatchLogRevision,Is.EqualTo(logRevision));
+            Assert.That(machine.LatestClock.Entries.Count(e=>e.RemainingTicks==TimeSpan.FromSeconds(8).Ticks),Is.EqualTo(1));
+            Assert.That(machine.IsWaitingForHost,Is.False);
+            Assert.That(machine.RecoveredProjectionGapCount,Is.Zero);
+            wire.DisconnectClient(1); var before=h.ClockState;
+            h.AdvanceClock(TimeSpan.FromSeconds(7).Ticks,wire.Session.IsPaused);
             Assert.That(h.ClockState.Entries.Select(e=>e.RemainingTicks),Is.EqualTo(before.Entries.Select(e=>e.RemainingTicks)));
+        }
+        [Test] public void ClockFramesNeverAcknowledgeCommandsOrApplyToAnotherGameVersion()
+        {
+            var h=Create(10,20);var wire=PrivateOnlineWireHarness.Compose(h);wire.SeatAll();wire.ReadyAndPickEverySeat();
+            var machine=wire.Client(1);var original=machine.LatestProjection;
+            Assert.That(machine.TrySubmitCommand(original.AuthorizedCommands[0],out _),Is.True);
+            Assert.That(machine.IsWaitingForHost,Is.True);
+            void Deliver(long sequence,long version)
+            {
+                var bytes=NetworkMessageCodec.ClockUpdateFrame(new NetworkEnvelope(machine.SessionCorrelation,
+                    machine.ConnectionEpoch,sequence,0),version,h.ClockState);
+                machine.OnFrame(new SessionFrame(SessionMessageKind.ClockUpdate,bytes.Skip(PrivateSessionProtocol.FrameHeaderBytes).ToArray()));
+            }
+            var revision=machine.ClockDisplayRevision;
+            Deliver(1,original.Version+1);
+            Assert.That(machine.ClockDisplayRevision,Is.EqualTo(revision));
+            Deliver(2,original.Version);
+            Assert.That(machine.ClockDisplayRevision,Is.EqualTo(revision+1));
+            Deliver(2,original.Version);
+            Assert.That(machine.ClockDisplayRevision,Is.EqualTo(revision+1),"Duplicate ticks are discarded.");
+            Assert.That(machine.IsWaitingForHost,Is.True,"Only a gameplay acknowledgement can release the pending command.");
+            Assert.That(machine.LatestProjection,Is.SameAs(original));
+            wire.Pump();
+            Assert.That(machine.IsWaitingForHost,Is.False);
+            Assert.That(machine.RecoveredProjectionGapCount,Is.Zero,"Clock sequences must not consume gameplay sequences.");
         }
         [Test] public void ReclaimedSeatMustReportReadinessAgainBeforeItsClockResumes()
         {
@@ -235,6 +270,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(h.ClockState.Entries.Select(e=>e.RemainingTicks),Is.EqualTo(before),"A new connection has not yet completed its visual resynchronization.");
             wire.Client(replacement).ReportTimerReadiness(true);wire.Pump();h.AdvanceClock(TimeSpan.TicksPerSecond,wire.Session.IsPaused);
             Assert.That(h.ClockState.Entries.Count(e=>e.RemainingTicks==TimeSpan.FromSeconds(8).Ticks),Is.EqualTo(1));
+            var reconnected=wire.Client(replacement); var projection=reconnected.LatestProjection;
+            var projectionRevision=reconnected.ProjectionRevision; var displayRevision=reconnected.ClockDisplayRevision;
+            wire.Session.PublishClockUpdate(); wire.Pump();
+            Assert.That(reconnected.ClockDisplayRevision,Is.EqualTo(displayRevision+1));
+            Assert.That(reconnected.LatestProjection,Is.SameAs(projection));
+            Assert.That(reconnected.ProjectionRevision,Is.EqualTo(projectionRevision));
+            Assert.That(reconnected.LatestClock.Entries.Select(e=>e.RemainingTicks),Is.EqualTo(h.ClockState.Entries.Select(e=>e.RemainingTicks)));
+            Assert.That(reconnected.RecoveredProjectionGapCount,Is.Zero);
         }
         [Test] public void StaleBusyReportsCannotFreezeAnExpiredMatch()
         {

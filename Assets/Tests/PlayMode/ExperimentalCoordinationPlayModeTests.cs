@@ -49,10 +49,23 @@ namespace GuardsDigital.Tests.PlayMode
             var host = (MatchHost)runtime.Host;
             Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single().Card, Is.EqualTo(cardId));
             Assert.That(runtime.HandsView.Root.Q("teammate-card-signal"), Is.Not.Null);
+            cardButton = runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList().Last();
+            UiPlayer.PointAt(cardButton); yield return null; yield return null;
+            var popped = runtime.HandsView.HoverPreviewRoot;
+            Assert.That(popped.Q("teammate-card-signal"), Is.Not.Null, "The enlarged card keeps its white outline.");
+            Assert.That(popped.Q("teammate-card-owners"), Is.Not.Null, "The marker owner follows the enlarged card.");
+            Assert.That(popped.Q("teammate-card-signal").worldBound.width,
+                Is.GreaterThan(cardButton.worldBound.width), "The suggestion must use the enlarged card footprint.");
+            var face=popped.Q("gd-card-preview");var signal=popped.Q("teammate-card-signal");
+            runtime.RefreshClockDisplay();yield return null;
+            Assert.That(runtime.HandsView.HoverPreviewRoot.Q("gd-card-preview"),Is.SameAs(face));
+            Assert.That(popped.Q("teammate-card-signal"),Is.SameAs(signal),"A clock-only draw must leave hover and its highlight untouched.");
+            yield return UiPlayer.CaptureScreen("tmp/964a-hover-card.png");
             Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
             UiPlayer.Click(root.Hud.RootElement.Q<Button>("my-cards"));
             yield return null;
             Assert.That(runtime.ViewedHeroId, Is.EqualTo(seat.HeroId));
+            for(var frame=0;frame<20 && root.Hud.RootElement.Q("allied-hand-inspection")!=null;frame++) yield return null;
             Assert.That(root.Hud.RootElement.Q("allied-hand-inspection"), Is.Null);
             var tile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
                 .Where(t => t.IsPlayable).OrderBy(t => t.Coordinate.Q * t.Coordinate.Q + t.Coordinate.R * t.Coordinate.R).First();
@@ -86,7 +99,7 @@ namespace GuardsDigital.Tests.PlayMode
                 var identity = root.Hud.RootElement.Q("allied-hand-inspection").Q<Label>();
                 Assert.That(identity.worldBound.Overlaps(cardBadge.worldBound), Is.False, "The suggestion portrait cannot cover the ally identity. Label=" + identity.worldBound + "; badge=" + cardBadge.worldBound);
                 Assert.That(identity.resolvedStyle.color.r, Is.GreaterThan(0.7f), "Ally identity must contrast against the dark HUD.");
-                yield return UiPlayer.CaptureScreen("tmp/958-coordination-" + viewport.Item1 + ".png");
+                yield return UiPlayer.CaptureScreen("tmp/964a-coordination-" + viewport.Item1 + ".png");
             }
             screen = pointer.EventCamera.WorldToScreenPoint(tile.transform.position);
             Assert.That(pointer.TrySuggestAtScreen(screen), Is.True);

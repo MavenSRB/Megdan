@@ -143,7 +143,8 @@ namespace GuardsDigital.Application
 
         SubmitCoordination = 22,
         TimerReadiness = 23,
-        BoardVote = 24
+        BoardVote = 24,
+        ClockUpdate = 25
 
         // Milestone 8.35r deliberately added NO kind here. The seat-public match log rides inside
         // SeatProjection's own message instead, and the reason is a measurement rather than a

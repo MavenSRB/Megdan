@@ -288,7 +288,8 @@ namespace GuardsDigital.Presentation.Interaction
             for(int i=0;i<durationLabels.Length;i++)
             {
                 var index=i; var field=new IntegerField(durationLabels[i]+" (seconds)") {name="experimental-duration-"+i,value=timerDefaults[i]};
-                field.style.fontSize=18; field.style.color=Color.white;
+                field.style.fontSize=18; field.style.color=Color.black;
+                field.labelElement.style.color=Color.white;
                 field.RegisterValueChangedCallback(change=>
                 {
                     if(change.newValue<(index==4?0:1) || change.newValue>86400)
@@ -1523,6 +1524,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private readonly System.Diagnostics.Stopwatch clockStopwatch=System.Diagnostics.Stopwatch.StartNew();
         private long lastClockTick, lastClockPublish;
+        private long displayedClockRevision=-1;
         private void TickExperimentalClock()
         {
             var now=clockStopwatch.Elapsed.Ticks; var elapsed=now-lastClockTick; lastClockTick=now;
@@ -1530,8 +1532,10 @@ namespace GuardsDigital.Presentation.Interaction
             host.SetTimerStarted(true);
             foreach(var seat in botFleet?.Seats ?? Array.Empty<SeatId>()) host.SetClockReadiness(seat,host.Version,true);
             var version=host.Version; host.AdvanceClock(elapsed,session.IsPaused);
-            if (host.Version!=version || now-lastClockPublish>=TimeSpan.TicksPerSecond)
+            if (host.Version!=version)
             { lastClockPublish=now; session.RepublishProjections(); }
+            else if(now-lastClockPublish>=TimeSpan.TicksPerSecond)
+            { lastClockPublish=now; session.PublishClockUpdate(); }
         }
         private void Update()
         {
@@ -2814,6 +2818,11 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (machine?.HasMatchStarted==true && onlineHudAttached && compositionRoot?.Runtime!=null)
                 machine.ReportTimerReadiness(compositionRoot.Runtime.IsClockInputReady);
+            if(machine!=null && onlineHudAttached && compositionRoot?.Runtime!=null && displayedClockRevision!=machine.ClockDisplayRevision)
+            {
+                displayedClockRevision=machine.ClockDisplayRevision;
+                compositionRoot.Runtime.RefreshClockDisplay();
+            }
             if (panelSettings == null || presenter?.Model == null) return;
             // The menu can scroll, so short windows must not shrink it to the game's full-board
             // footprint. Restore the shared HUD coordinates for in-match connection notices.

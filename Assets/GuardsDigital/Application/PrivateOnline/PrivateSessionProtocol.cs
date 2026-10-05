@@ -437,7 +437,8 @@ namespace GuardsDigital.Application
         // permission flag; snapshot schema advances to v56 for the second commitment
         // identity. Older peers are refused at admission.
         // v37: experimental settings, private allied hands and independent teammate signals.
-        public const int Version = 37;
+        // v39: isolated, independently sequenced clock display updates; gameplay views stay stable.
+        public const int Version = 39;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

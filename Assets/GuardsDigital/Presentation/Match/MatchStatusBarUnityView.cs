@@ -87,6 +87,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement narrationLane;
         private Rect lastBar, lastNarration;
         private readonly VisualElement clockLayer;
+        private readonly VisualElement lifeLayer;
+        private MatchClockState displayedClock;
 
         public MatchStatusBarUnityView()
         {
@@ -136,6 +138,9 @@ namespace GuardsDigital.Presentation.Match
             narrationLane.style.paddingRight = 10f;
             HudElements.Border(narrationLane, MatchHudTheme.PanelBorder, BorderWidth, CornerRadius);
             Root.Add(narrationLane);
+            lifeLayer=new VisualElement {name="gd-life-layer",pickingMode=PickingMode.Ignore};
+            lifeLayer.style.position=Position.Absolute; lifeLayer.style.left=0; lifeLayer.style.top=0;
+            lifeLayer.style.right=0; lifeLayer.style.bottom=0; Root.Add(lifeLayer);
             clockLayer=new VisualElement {name="gd-clock-layer",pickingMode=PickingMode.Ignore};
             clockLayer.style.position=Position.Absolute; clockLayer.style.left=0; clockLayer.style.top=0;
             clockLayer.style.right=0; clockLayer.style.bottom=0; Root.Add(clockLayer);
@@ -204,7 +209,7 @@ namespace GuardsDigital.Presentation.Match
             narrationLane.style.width = narrationBar.width;
             narrationLane.style.height = narrationBar.height;
             lastBar=bar; lastNarration=narrationBar;
-            if(Model!=null) RenderClocks(Model);
+            if(Model!=null) RenderClocks(Model,displayedClock);
         }
 
         public void Render(MatchHudHeaderViewModel model)
@@ -237,31 +242,41 @@ namespace GuardsDigital.Presentation.Match
 
             content.Clear();
             content.style.flexDirection=FlexDirection.Column; content.style.position=Position.Absolute;
-            content.style.left=14; content.style.top=0; content.style.width=380; content.style.height=56;
+            content.style.left=14; content.style.top=0; content.style.width=380; content.style.height=ConfiguredMatchHudRenderer.StatusBarHeight;
+            content.style.justifyContent=Justify.Center; content.style.alignItems=Align.FlexStart; content.style.flexWrap=Wrap.NoWrap;
             var roundLabel=HudElements.Text(model.RoundTurnLabel,26f,MatchHudTheme.PrimaryText,FontStyle.Bold);
             var waveLabel=HudElements.Text(model.WaveLabel,23f,MatchHudTheme.PrimaryText,FontStyle.Bold);
             roundLabel.name="gd-round-turn"; waveLabel.name="gd-waves-remaining";
             foreach(var label in new[]{roundLabel,waveLabel})
             { label.style.whiteSpace=WhiteSpace.NoWrap; label.style.height=27; label.style.minHeight=27; label.style.flexShrink=0; label.style.marginTop=0; label.style.marginBottom=0; content.Add(label); }
-            RenderClocks(model);
+            displayedClock=model.Clock; RenderClocks(model,displayedClock);
         }
 
-        private void RenderClocks(MatchHudHeaderViewModel model)
+        public void RenderClock(MatchClockState clock)
+        {
+            displayedClock=clock;
+            if(Model!=null) RenderClocks(Model,clock,true);
+        }
+        private void RenderClocks(MatchHudHeaderViewModel model,MatchClockState clock,bool clocksOnly=false)
         {
             clockLayer.Clear();
-            var current=model.Clock.Entries.Where(e=>e.IsCurrent).ToArray();
+            var current=clock.Entries.Where(e=>e.IsCurrent).ToArray();
             var banks=current.Where(e=>e.UsesBank).Select(e=>e.Team).Distinct().ToArray();
             float left=lastNarration.x-lastBar.x, right=left+lastNarration.width;
             float baseline=lastNarration.y-lastBar.y;
+            if(!clocksOnly)
+            {
+            lifeLayer.Clear();
             var redHeart=TeamChip(TeamSide.Red,model.RedLifeLabel); var blueHeart=TeamChip(TeamSide.Blue,model.BlueLifeLabel);
-            PlaceClock(redHeart,Mathf.Max(306,left-172),baseline-2,44,44);
-            PlaceClock(blueHeart,Mathf.Min(lastBar.width-56,right+126),baseline-2,44,44);
-            clockLayer.Add(redHeart); clockLayer.Add(blueHeart);
-            if(!model.Clock.Enabled) return;
+            PlaceClock(redHeart,Mathf.Max(298,left-180),baseline-8,52,52);
+            PlaceClock(blueHeart,Mathf.Min(lastBar.width-64,right+126),baseline-8,52,52);
+            lifeLayer.Add(redHeart); lifeLayer.Add(blueHeart);
+            }
+            if(!clock.Enabled) return;
             if(!banks.Contains(TeamSide.Red))
-            { var preview=ClockWindow(model.Clock.RedBankTicks,ClockColor(TeamSide.Red),"Red team time bank",26); preview.name="gd-red-bank-preview"; PlaceClock(preview,left-122,baseline+2,114,34); clockLayer.Add(preview); }
+            { var preview=ClockWindow(clock.RedBankTicks,ClockColor(TeamSide.Red),"Red team time bank",26); preview.name="gd-red-bank-preview"; PlaceClock(preview,left-122,baseline+2,114,34); clockLayer.Add(preview); }
             if(!banks.Contains(TeamSide.Blue))
-            { var preview=ClockWindow(model.Clock.BlueBankTicks,ClockColor(TeamSide.Blue),"Blue team time bank",26); preview.name="gd-blue-bank-preview"; PlaceClock(preview,right+8,baseline+2,114,34); clockLayer.Add(preview); }
+            { var preview=ClockWindow(clock.BlueBankTicks,ClockColor(TeamSide.Blue),"Blue team time bank",26); preview.name="gd-blue-bank-preview"; PlaceClock(preview,right+8,baseline+2,114,34); clockLayer.Add(preview); }
             var displays=new List<(long Ticks,Color Color,string Description)>();
             var normal=current.Where(e=>!e.UsesBank).ToArray();
             foreach(var group in normal.GroupBy(e=>(long)Math.Ceiling(TimeSpan.FromTicks(e.RemainingTicks).TotalSeconds)))
@@ -270,7 +285,7 @@ namespace GuardsDigital.Presentation.Match
                 var color=sides.Length>1 ? MatchHudTheme.ShineGlow : ClockColor(sides[0]);
                 displays.Add((group.Key*TimeSpan.TicksPerSecond,color,string.Join(", ",group.Select(e=>e.Owner.Value+" "+e.Kind))));
             }
-            foreach(var side in banks) displays.Add((model.Clock.Bank(side),ClockColor(side),side+" team time bank"));
+            foreach(var side in banks) displays.Add((clock.Bank(side),ClockColor(side),side+" team time bank"));
             float width=displays.Count<=2?164:Mathf.Min(150,520f/Mathf.Max(1,displays.Count));
             float start=lastBar.width/2-(displays.Count*(width+6)-6)/2;
             for(int i=0;i<displays.Count;i++)
@@ -287,10 +302,15 @@ namespace GuardsDigital.Presentation.Match
             var box=new VisualElement {tooltip=description,pickingMode=PickingMode.Ignore};
             box.style.flexDirection=FlexDirection.Row; box.style.alignItems=Align.Center; box.style.justifyContent=Justify.Center;
             box.style.backgroundColor=new Color(.025f,.04f,.045f,.96f); HudElements.Border(box,color,2,9);
-            var icon=new VisualElement {name="gd-clock-icon",pickingMode=PickingMode.Ignore}; icon.style.width=22; icon.style.height=22; icon.style.marginRight=5;
-            icon.generateVisualContent+=ctx=>{var p=ctx.painter2D;p.strokeColor=color;p.lineWidth=2;p.BeginPath();p.Arc(new Vector2(11,12),8,0,360);p.Stroke();p.BeginPath();p.MoveTo(new Vector2(11,5));p.LineTo(new Vector2(11,12));p.LineTo(new Vector2(15,15));p.Stroke();};
+            var icon=new VisualElement {name="gd-clock-icon",pickingMode=PickingMode.Ignore}; icon.style.width=22; icon.style.height=22; icon.style.marginRight=5; icon.style.flexShrink=0;
+            icon.generateVisualContent+=ctx=>{var p=ctx.painter2D;p.strokeColor=color;p.lineWidth=2;p.BeginPath();p.Arc(new Vector2(11,11),8,0,360);p.Stroke();p.BeginPath();p.MoveTo(new Vector2(11,5));p.LineTo(new Vector2(11,11));p.LineTo(new Vector2(15,14));p.Stroke();};
             box.Add(icon); var seconds=(long)Math.Ceiling(TimeSpan.FromTicks(ticks).TotalSeconds);
-            var digits=HudElements.Text((seconds/60).ToString("00")+":"+(seconds%60).ToString("00"),seconds>=3600?size*.7f:size,color,FontStyle.Bold); digits.style.whiteSpace=WhiteSpace.NoWrap; box.Add(digits);
+            var digits=HudElements.Text((seconds/60).ToString("00")+":"+(seconds%60).ToString("00"),seconds>=3600?size*.7f:size,color,FontStyle.Bold); digits.name="gd-clock-digits";
+            digits.style.whiteSpace=WhiteSpace.NoWrap;
+            digits.style.height=Length.Percent(100); digits.style.unityTextAlign=TextAnchor.MiddleCenter;
+            digits.style.marginTop=0; digits.style.marginBottom=0;
+            digits.style.paddingTop=0; digits.style.paddingBottom=0;
+            box.Add(digits);
             return box;
         }
 
@@ -356,13 +376,13 @@ namespace GuardsDigital.Presentation.Match
         /// counter is one of the three facts this strip exists to carry, and the dot it replaces was
         /// ten units tall and drifting above the words beside it.
         /// </summary>
-        public const float LifeCounterSize = 44f;
+        public const float LifeCounterSize = 52f;
 
         /// <summary>
         /// The number inside the heart. It is a third of the glyph rather than a half, because a heart's
         /// ink does not fill its em box and a digit sized to the box would spill over the lobes.
         /// </summary>
-        public const float LifeCounterDigitSize = 20f;
+        public const float LifeCounterDigitSize = 24f;
 
         /// <summary>
         /// How far the heart GLYPH sits below its own em box's centre, as a fraction of the box. The

@@ -22,6 +22,7 @@ namespace GuardsDigital.Presentation.Match
             new List<(VisualElement, VisualElement)>();
         private long renderedRevision = -1;
         private long renderedVersion = -1;
+        private string renderedVotes;
         private readonly List<Signal> signals = new List<Signal>();
         private sealed class Signal
         {
@@ -62,11 +63,13 @@ namespace GuardsDigital.Presentation.Match
             layer.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             cardLayer.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             if (!enabled) return;
-            if (renderedRevision != experimental.CoordinationRevision + experimental.Clock.Revision + experimental.Clock.BoardVotes.Count || renderedVersion != read.Version)
+            var votes=runtime.DisplayClock.BoardVotes;
+            var voteIdentity=string.Join(";",votes.Select(v=>v.Voter.Value+":"+v.Position.Q+":"+v.Position.R));
+            if (renderedRevision != experimental.CoordinationRevision || renderedVersion != read.Version || renderedVotes!=voteIdentity)
             {
-                renderedRevision = experimental.CoordinationRevision + experimental.Clock.Revision + experimental.Clock.BoardVotes.Count; renderedVersion = read.Version;
+                renderedRevision = experimental.CoordinationRevision; renderedVersion = read.Version; renderedVotes=voteIdentity;
                 layer.Clear(); signals.Clear();
-                foreach (var group in experimental.TeammateMarkers.Concat(experimental.Clock.BoardVotes.Select(v=>new TeammateMarker(v.Voter,0,v.Position,default,default))).Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
+                foreach (var group in experimental.TeammateMarkers.Concat(votes.Select(v=>new TeammateMarker(v.Voter,0,v.Position,default,default))).Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
                 {
                     var tile = tiles.FirstOrDefault(t => t != null && t.Coordinate.Equals(group.Key));
                     if (tile == null) continue;
@@ -127,6 +130,9 @@ namespace GuardsDigital.Presentation.Match
             }
             foreach (var entry in cardBadges)
             {
+                // The full hover face owns its own signal; hide the badge of its transparent anchor.
+                entry.Badges.style.display = entry.Anchor.parent?.resolvedStyle.opacity == 0f
+                    ? DisplayStyle.None : DisplayStyle.Flex;
                 var point = cardLayer.WorldToLocal(entry.Anchor.worldBound.position);
                 entry.Badges.style.left = point.x + 8;
                 entry.Badges.style.top = point.y - 18;

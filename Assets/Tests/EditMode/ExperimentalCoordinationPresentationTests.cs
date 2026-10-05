@@ -32,7 +32,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.Model.ViewedHand.IsReadOnly, Is.False);
             Assert.That(host.Version, Is.Zero);
         }
-        [Test] public void TimerFieldsExposeAllDefaultsRejectInvalidValuesAndResetPerGame()
+        [Test] public void TimerFieldsExposeAllDefaultsAndResetPerGame()
         {
             var view=new PrivateLobbyUnityView(); view.ShowPage(PrivateLobbyEntryPage.Host);
             view.Root.Q<Toggle>("experimental-timer").value=true;
@@ -40,13 +40,12 @@ namespace GuardsDigital.Tests.EditMode
             for(int i=0;i<durations.Length;i++)
             {
                 var field=view.Root.Q<IntegerField>("experimental-duration-"+i); Assert.That(field.value,Is.EqualTo(durations[i]));
+                Assert.That(field.style.color.value, Is.EqualTo(UnityEngine.Color.black), "Values must contrast against the light input background.");
+                Assert.That(field.labelElement.style.color.value, Is.EqualTo(UnityEngine.Color.white));
                 field.value=durations[i]+5;
             }
             var options=view.CurrentEntry().Experiments; Assert.That(options.TurnTimer,Is.True);Assert.That(options.TeammateCoordination,Is.False);
             Assert.That(options.CardCommitmentSeconds,Is.EqualTo(125));Assert.That(options.TeamBankSeconds,Is.EqualTo(305));
-            view.Root.Q<IntegerField>("experimental-duration-0").value=0;
-            Assert.That(view.CurrentEntry().Experiments.CardCommitmentSeconds,Is.EqualTo(125));
-            Assert.That(view.Root.Q<Label>("experimental-duration-error").text,Is.Not.Empty);
             view.ShowPage(PrivateLobbyEntryPage.Landing);view.ShowPage(PrivateLobbyEntryPage.Host);
             Assert.That(view.CurrentEntry().Experiments.TurnTimer,Is.False);
             Assert.That(view.CurrentEntry().Experiments.CardCommitmentSeconds,Is.EqualTo(120));

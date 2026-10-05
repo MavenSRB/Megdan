@@ -2007,6 +2007,30 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void PreparedFastTravelSurvivesClockOnlyProjectionButClearsOnGameStateChange()
+        {
+            var source=CreateSession(); StartTiedTurn(source,ActionKind.Movement);
+            var host=ExperimentalTimerHostTests.WithTimer(source);
+            var wire=PrivateOnlineWireHarness.Compose(host);wire.SeatAll();wire.ReadyAndPickEverySeat();
+            var seat=host.Seats.FindByHero(host.Projection.SelectedActor.ActorId);
+            var machine=wire.Client(wire.OrdinalOf(seat.Id.Value));
+            var client=new NetworkMatchClient(machine,host.Projection,MatchContentCatalogs.ForThisBuild());
+            var view=new CapturingBoardView();var presenter=new BoardInteractionPresenter(client,view);
+            var option=client.Projection.AvailableFastTravelOptions.Single();
+            Assert.That(presenter.ActivateFastTravel(option.ReplacedMovementActionDefinitionId),Is.True);
+            presenter.Refresh();var before=client.Projection;
+            host.SetTimerStarted(true); machine.ReportTimerReadiness(true);wire.Pump();
+            host.AdvanceClock(TimeSpan.FromMilliseconds(100).Ticks);wire.Session.PublishClockUpdate();wire.Pump();
+            Assert.That(client.Projection,Is.SameAs(before));
+            presenter.Refresh();
+            Assert.That(view.Model.FastTravelDestinations,Is.EquivalentTo(option.LegalDestinations));
+            Assert.That(host.Submit(MatchSubmission.ForCommand(DirectorCommand.PerformFastTravel(
+                option.ReplacedMovementActionDefinitionId,option.LegalDestinations[0]))).Accepted,Is.True);
+            wire.Session.RepublishProjections();wire.Pump();presenter.Refresh();
+            Assert.That(view.Model.FastTravelDestinations,Is.Empty);
+        }
+
+        [Test]
         public void ConfiguredPresenters_RequireExplicitFastTravelSelectionBeforeDestinationSubmission()
         {
             var session = CreateSession();

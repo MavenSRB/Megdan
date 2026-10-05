@@ -826,7 +826,13 @@ namespace GuardsDigital.Presentation.Match
                         slot,
                         isUnavailableGroup));
             }
-            var suggestions = SuggestedBy?.Invoke(card.CardInstanceId);
+            AddTeammateSignal(slot, SuggestedBy?.Invoke(card.CardInstanceId));
+            return slot;
+        }
+
+        private static void AddTeammateSignal(VisualElement anchor,
+            System.Collections.Generic.IReadOnlyList<HeroOverviewViewModel> suggestions)
+        {
             if (suggestions != null && suggestions.Count > 0)
             {
                 var signal = new VisualElement { name = "teammate-card-signal", pickingMode = PickingMode.Ignore };
@@ -843,9 +849,8 @@ namespace GuardsDigital.Presentation.Match
                     foreach (var child in badge.Children()) child.pickingMode = PickingMode.Ignore;
                     badges.Add(badge);
                 }
-                signal.Add(badges); slot.Add(signal);
+                signal.Add(badges); IgnorePickingRecursively(signal); anchor.Add(signal);
             }
-            return slot;
         }
 
         private void BindCardDrag(Button button, VisualElement slot, TrayCardViewModel card)
@@ -2020,6 +2025,7 @@ namespace GuardsDigital.Presentation.Match
                 anchor,
                 isUnavailableGroup,
                 dimUnavailable: true);
+            AddTeammateSignal(hoverPreview[0], SuggestedBy?.Invoke(card.CardInstanceId));
         }
 
         /// <summary>

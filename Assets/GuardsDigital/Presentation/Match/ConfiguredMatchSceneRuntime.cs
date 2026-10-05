@@ -26,6 +26,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchHost host;
         private readonly IMatchSession session;
         private readonly SwitchableMatchClient client;
+        private PrivateSessionClient clockSession;
         private readonly IMatchReadModel trustedContent;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
@@ -660,6 +661,7 @@ namespace GuardsDigital.Presentation.Match
             Seat = host.Seats.Find(online.TargetSeat) ??
                 throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
             client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
+            clockSession=online;
             BindHomeHero(Seat.HeroId);
             hud.SetDirectorToolsVisible(exposeHostDirectorTools);
             if (exposeHostDirectorTools && republishAfterHostDebugChange != null &&
@@ -728,6 +730,9 @@ namespace GuardsDigital.Presentation.Match
         /// one seat's authorized one when this runtime was composed for a seat.
         /// </summary>
         public IMatchReadModel ReadModel => client.Projection;
+        public MatchClockState DisplayClock => clockSession?.LatestClock ??
+            (client.Projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState ?? MatchClockState.Disabled;
+        public void RefreshClockDisplay() => hud.RenderClock(DisplayClock);
         public QuickGameSetupState Setup => client.Projection.Setup;
         public IReadOnlyList<CardDefinition> Definitions => client.Projection.Definitions;
         public IReadOnlyList<CardInstance> Cards => client.Projection.Cards;
@@ -990,7 +995,7 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.RoundIndex,
                 client.Projection.TurnIndex,
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
-                client.Projection.RemainingWaveCounters, (client.Projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState));
+                client.Projection.RemainingWaveCounters, DisplayClock));
             coordinator.RefreshAll();
             FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();

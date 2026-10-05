@@ -644,6 +644,8 @@ namespace GuardsDigital.Presentation.Match
             Build();
         }
 
+        public void RenderClock(GuardsDigital.Application.MatchClockState state) => statusBar?.RenderClock(state);
+
         public void RenderHeader(MatchHudHeaderViewModel model)
         {
             header = model ?? throw new ArgumentNullException(nameof(model));

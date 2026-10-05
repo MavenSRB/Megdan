@@ -40,6 +40,14 @@ namespace GuardsDigital.Tests.PlayMode
                 {Assert.That(bar.worldBound.Contains(clock.worldBound.min),Is.True);Assert.That(bar.worldBound.Contains(clock.worldBound.max),Is.True);}
                 var statusLabels=bar.Q("gd-topbar-identity").Query<Label>().ToList();
                 Assert.That(statusLabels.Count,Is.EqualTo(2));
+                Assert.That((statusLabels[0].worldBound.yMin + statusLabels[1].worldBound.yMax) / 2f,
+                    Is.EqualTo(bar.worldBound.center.y).Within(2f), "Status block must be vertically centred.");
+                foreach(var window in main.Concat(new[]{bar.Q("gd-red-bank-preview"),bar.Q("gd-blue-bank-preview")}))
+                {
+                    Assert.That(window.Q<Label>("gd-clock-digits").resolvedStyle.unityTextAlign,Is.EqualTo(TextAnchor.MiddleCenter));
+                    Assert.That(window.Q("gd-clock-icon").worldBound.center.y,
+                        Is.EqualTo(window.Q("gd-clock-digits").worldBound.center.y).Within(2f));
+                }
                 foreach(var label in statusLabels)
                     Assert.That(label.worldBound.yMax,Is.LessThanOrEqualTo(bar.worldBound.yMax),"Both status lines must fit inside the existing bar: "+label.text);
                 Assert.That(statusLabels[0].worldBound.height,Is.LessThanOrEqualTo(30),"Round/turn must occupy exactly one line.");
@@ -47,12 +55,21 @@ namespace GuardsDigital.Tests.PlayMode
                 var narration=bar.Q("gd-narration-lane");
                 foreach(var heart in bar.Query<VisualElement>("gd-life-counter").ToList())
                     Assert.That(heart.worldBound.Overlaps(narration.worldBound),Is.False,"Hearts must stay beside the narration.");
-                yield return UiPlayer.CaptureScreen("tmp/956-normal-"+viewport.Item1+".png");
+                var handCard=root.Runtime.HandsView.Root.Q<Button>("gd-card-choice");
+                var roundText=bar.Q<Label>("gd-round-turn");var life=bar.Q("gd-life-counter");
+                var narrationText=narration.Q<Label>();
+                host.AdvanceClock(TimeSpan.FromMilliseconds(100).Ticks);
+                root.Runtime.RefreshClockDisplay(); yield return null;
+                Assert.That(root.Runtime.HandsView.Root.Q<Button>("gd-card-choice"),Is.SameAs(handCard));
+                Assert.That(bar.Q<Label>("gd-round-turn"),Is.SameAs(roundText));
+                Assert.That(bar.Q("gd-life-counter"),Is.SameAs(life));
+                Assert.That(narration.Q<Label>(),Is.SameAs(narrationText));
+                yield return UiPlayer.CaptureScreen("tmp/964a-normal-"+viewport.Item1+".png");
             }
             host.AdvanceClock(TimeSpan.FromSeconds(3).Ticks);root.Runtime.RefreshAll();yield return null;yield return null;
             var top=root.Hud.RootElement.Q("gd-topbar");Assert.That(top.Query<VisualElement>("gd-main-clock").ToList().Count,Is.EqualTo(2));
             Assert.That(top.Q("gd-red-bank-preview"),Is.Null);Assert.That(top.Q("gd-blue-bank-preview"),Is.Null);
-            yield return UiPlayer.CaptureScreen("tmp/956-banks-1920.png");
+            yield return UiPlayer.CaptureScreen("tmp/964a-banks-1920.png");
             // Mixed bank/allowance and independently started response clocks keep their ownership.
             var model=root.Runtime.ReadModel;
             var clocks=new MatchClockState(true,1,3,TimeSpan.FromSeconds(18).Ticks,TimeSpan.FromSeconds(20).Ticks,
@@ -64,7 +81,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(top.Q("gd-red-bank-preview"),Is.Null);Assert.That(top.Q("gd-blue-bank-preview"),Is.Not.Null);
             foreach(var label in top.Query<VisualElement>("gd-main-clock").ToList().SelectMany(w=>w.Query<Label>().ToList()))
                 Assert.That(label.text.All(c=>char.IsDigit(c)||c==':'),Is.True,"Clock windows contain digits only.");
-            yield return UiPlayer.CaptureScreen("tmp/956-mixed-1920.png");
+            yield return UiPlayer.CaptureScreen("tmp/964a-mixed-1920.png");
             root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
             var menu=new PrivateLobbyUnityView();menu.ShowPage(PrivateLobbyEntryPage.Host);
             root.Hud.RootElement.Add(menu.Root);
@@ -76,7 +93,13 @@ namespace GuardsDigital.Tests.PlayMode
             menu.Root.Q<Toggle>("experimental-coordination").value=true;
             yield return null;yield return null;
             Assert.That(menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")).Count(),Is.EqualTo(5));
-            yield return UiPlayer.CaptureScreen("tmp/956-host-menu-1920.png");
+            var commitment=menu.Root.Q<IntegerField>("experimental-duration-0");
+            commitment.value=125; commitment.value=0;
+            Assert.That(menu.CurrentEntry().Experiments.CardCommitmentSeconds,Is.EqualTo(125));
+            Assert.That(menu.Root.Q<Label>("experimental-duration-error").text,Is.Not.Empty);
+            foreach(var field in menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")))
+                Assert.That(field.resolvedStyle.color,Is.EqualTo(Color.black));
+            yield return UiPlayer.CaptureScreen("tmp/964a-host-menu-1920.png");
             menu.Root.RemoveFromHierarchy();
         }
     }
