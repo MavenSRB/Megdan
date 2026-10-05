@@ -1225,6 +1225,7 @@ namespace GuardsDigital.Presentation.Match
             host.style.marginRight = SpellbookFaceGap;
             host.style.marginBottom = SpellbookFaceGap;
             host.Add(SpellCardFaceView.Build(spell, SpellCardFootprint.DrawerScale));
+            HudElements.ApplyButtonMotion(host);
             return host;
         }
 

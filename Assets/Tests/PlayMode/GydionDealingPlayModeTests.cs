@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -26,33 +27,58 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class GydionDealingPlayModeTests
     {
         [UnityTest]
-        public IEnumerator SpellbookCardsStayInPlaceWithoutAHoverPopup()
+        public IEnumerator SpellbookCardsUseTheSharedHoverBumpWithoutAHoverPopup()
         {
-            var oldWidth=(uint)Screen.width; var oldHeight=(uint)Screen.height;
+            var oldWidth = (uint)Screen.width;
+            var oldHeight = (uint)Screen.height;
             try
             {
-                UiPlayer.SetPlayerViewport(1920,1080,"9.64b spellbook");
-                MatchSceneCompositionRoot.NextComposedSeat=null;
-                yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
-                var root=Root(); var view=root.Runtime.HeroOverviewsView;
-                Assert.That(view.OpenSpellbook(Gydion(root.Runtime)),Is.True);
-                root.Hud.Layout(); yield return null; yield return null;
-                var cards=UiPlayer.Descendants(view.SpellbookDrawer).Where(e=>e.name=="gd-spellbook-spell").ToArray();
-                Assert.That(cards.Length,Is.EqualTo(22));
-                foreach(var card in cards.Take(3))
+                foreach (var width in new[] { 1280u, 1920u })
                 {
-                    var bounds=card.worldBound;
-                    UiPlayer.PointAt(card); yield return null;
-                    Assert.That(view.HoverPreviewRoot.resolvedStyle.display,Is.EqualTo(DisplayStyle.None),
-                        "A readable spellbook card must not spawn a redundant hover face.");
-                    Assert.That(card.worldBound,Is.EqualTo(bounds));
-                    UiPlayer.PointAway(card);
+                    UiPlayer.SetPlayerViewport(width, width * 9 / 16, "9.64d spellbook");
+                    MatchSceneCompositionRoot.NextComposedSeat = null;
+                    yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
+                    var root = Root();
+                    var view = root.Runtime.HeroOverviewsView;
+                    Assert.That(view.OpenSpellbook(Gydion(root.Runtime)), Is.True);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var cards = UiPlayer.Descendants(view.SpellbookDrawer)
+                        .Where(e => e.name == "gd-spellbook-spell").ToArray();
+                    Assert.That(cards.Length, Is.EqualTo(22));
+                    var version = root.Runtime.Host.Version;
+                    foreach (var card in cards.Take(3))
+                    {
+                        var layout = card.layout;
+                        var bounds = card.worldBound;
+                        var neighbor = cards.First(other => other != card);
+                        var neighborBounds = neighbor.worldBound;
+                        UiPlayer.PointAt(card);
+                        yield return new WaitForSecondsRealtime(0.25f);
+                        Assert.That(view.HoverPreviewRoot.resolvedStyle.display,
+                            Is.EqualTo(DisplayStyle.None), "No detached duplicate face.");
+                        Assert.That(card.layout, Is.EqualTo(layout), "Hover must not reflow the book.");
+                        Assert.That(card.worldBound.width,
+                            Is.EqualTo(bounds.width * MatchHudTheme.ButtonHoverScale).Within(0.5f));
+                        Assert.That(card.worldBound.height,
+                            Is.EqualTo(bounds.height * MatchHudTheme.ButtonHoverScale).Within(0.5f));
+                        Assert.That(neighbor.worldBound, Is.EqualTo(neighborBounds));
+                        if (card == cards[1])
+                            yield return UiPlayer.CaptureScreen("tmp/964d-spellbook-hover-" + width + ".png");
+                        UiPlayer.PointAway(card);
+                        yield return new WaitForSecondsRealtime(0.25f);
+                        Assert.That(card.worldBound.width, Is.EqualTo(bounds.width).Within(0.5f));
+                        Assert.That(card.worldBound.height, Is.EqualTo(bounds.height).Within(0.5f));
+                        Assert.That(root.Runtime.Host.Version, Is.EqualTo(version),
+                            "Inspecting a spell must not submit gameplay.");
+                    }
+                    UiPlayer.Click(view.SpellbookDrawer.Q<Button>("gd-spellbook-close"));
+                    yield return null;
+                    Assert.That(view.IsSpellbookOpen, Is.False);
                 }
-                yield return UiPlayer.CaptureScreen("tmp/964b-spellbook-no-popup.png");
-                UiPlayer.Click(view.SpellbookDrawer.Q<Button>("gd-spellbook-close")); yield return null;
-                Assert.That(view.IsSpellbookOpen,Is.False);
             }
-            finally { UiPlayer.SetPlayerViewport(oldWidth,oldHeight,"9.64b restore viewport"); }
+            finally { UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "9.64d restore viewport"); }
         }
 
         [UnityTest]
