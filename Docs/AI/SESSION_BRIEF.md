@@ -24,6 +24,8 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 - 9.50 gated all Emmitt fronts on the permanent real-control matrix. T3 passed: offline 6,670/6,670, Unity Edit 7,770 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127; focused, boundary and visual checks passed. The p.14 Defense-total defect was corrected. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
+Discussion-only **9.55**: [timer/header design](Project/EXPERIMENTAL_FEATURES.md), including Director Undo, final NebKher coverage and timeout-progress gates. Implementation **9.56** remains queued, not authorized; hero route unchanged.
+
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 
 **[8.111](Roadmap/PHASE_8.md)** is complete: Windows package `Builds/Playtest-8.110-lobby`. **8.110** boxed the setup choices. **8.108** (lobby player names, wire /24), **8.107** (HOST/JOIN menus) and **8.93g** are complete. 8.35z87 stays parked; 8.35z71/8.35z72 closed unimplemented (2026-09-27).

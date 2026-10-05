@@ -54,6 +54,10 @@ The final private pitch uses the standard six-player Quick Game setup in both di
 
 Milestone 8.25 made that setup the configuration a player loads. Earlier synthetic, mirrored-Wasp and one-hero-per-team configurations remain staged development fixtures asked for by name, not the final pitch setup. Do not rebalance Life, Waves, minions, card values, economy, or any hero. Any later balance adjustment requires explicit approval and a new deviation entry.
 
+## Opt-in digital variants, not implemented
+
+The user approved the [experimental turn-timer design](Project/EXPERIMENTAL_FEATURES.md) on 2026-10-05: configured decision allowances and team banks, legal timeout End Turn/Undo, automatic answers and voting fallbacks. This is a proposed opt-in digital rules variant, not an official board-game interpretation or shipped deviation. Experiments reset off for each new hosted game. Only documentation is authorized by 9.55; 9.56 queues implementation and its exact validation gate. Standard rules and existing Undo limits remain unchanged.
+
 ## Approved deviations
 
 | ID | Deviation | Reason | Impact | Removal or review trigger |

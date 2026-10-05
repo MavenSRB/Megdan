@@ -2,6 +2,20 @@
 
 Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historical completion evidence: [PHASE_9 handoffs](../Archive/Phase-Handoffs/PHASE_9.md).
 
+## Experimental timer design, documentation only
+
+### [x] 9.55 Record the experimental timer and header design
+
+Authorized 2026-10-05 by the user's instruction to write the agreed discussion into docs, include the in-progress hero's choices, and ensure timeout cannot strand a match; amended to restore clocks on Director Undo. Scope: record the per-match Experimental menu, timer/settings/timeout and header decisions, NebKher coverage prerequisite, and progress acceptance checks. No runtime implementation, Unity launch, publication, or change to the existing hero sequence. T0 closing checks: review against the conversation and current choice inventory, living-documentation validator, and `git diff --check`; local documentation commit and archive index.
+
+Completed 2026-10-05: the [canonical design](../Project/EXPERIMENTAL_FEATURES.md) records the user decisions and unexecuted acceptance obligations.
+
+Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
+
+### [ ] 9.56 Implement and gate the experimental timer and header
+
+Queued only; implementation is not authorized. Owner: future timer implementation milestone. Outcome: the opt-in per-match timer and associated header follow [the design](../Project/EXPERIMENTAL_FEATURES.md), including icon-only clocks and Director Undo restoration. Dependencies: explicit implementation approval, completed NebKher content/player-path gates through 9.54, and re-audit of his final choices against the timer matrix. Closing checks: the design's complete choice/timing matrix, timeout-progress and restoration/network checks, timer-off standard-game regression, and fixed-size header visual checks, at the highest tier selected by [testing policy](../Testing/POLICY.md). No new experiments or expanded player Undo rights.
+
 ## Phase 9 - Rules fidelity and hero intake hardening
 
 On 2026-09-28 the user closed Phase 8 and started Phase 9 with this work ("Stop with phas 8. Lets start phase 9 from this point forward"), replacing the earlier presentation-and-pitch plan, which is retired to [the archive](../Archive/PHASE_9_PRESENTATION_PLAN_RETIRED.md) and authorizes nothing.

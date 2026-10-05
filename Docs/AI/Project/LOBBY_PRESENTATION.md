@@ -2,6 +2,10 @@
 
 Canonical current lobby/picker contract. Return to [project context](../PROJECT_CONTEXT.md).
 
+## Queued Experimental menu
+
+The agreed, unimplemented [Experimental menu and timer settings](EXPERIMENTAL_FEATURES.md#experimental-menu) are recorded separately. They are per-match opt-ins, reset off for a new hosted game; this design does not change the shipped lobby or authorize implementation.
+
 ## Setup and selection
 
 The entry presenter retains its known match-format label when a return/error call omits it; explicit empty still denotes a setup that offers no format controls. Host/Join, Leave, failed joins and retries therefore preserve the applicable 2v2/3v3 and Short/Long setup controls without restarting. Authoritative session state continues to decide which actions are offered.
