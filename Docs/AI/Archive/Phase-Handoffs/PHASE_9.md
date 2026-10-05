@@ -642,3 +642,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.58 | Added the per-match Experimental menu, read-only allied hands, right-click hex/card suggestions and reused tray portraits, with team-scoped wire 37 and immutable snapshot options. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination). | `milestone/9.58` |
+
+## Milestone 9.64 Untested experimental package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64 | Built and privately packaged the experimental candidate with one Host/Join launcher and explicit untested status, under the user's instruction to skip remaining tests and player smoke. Timer gate 9.56 remains incomplete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964-build-the-experimental-playtest-player). | `milestone/9.64` |
