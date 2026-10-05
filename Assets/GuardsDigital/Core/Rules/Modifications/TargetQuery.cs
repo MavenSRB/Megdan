@@ -33,11 +33,52 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsPrevented(RuleObject target, RuleActivity activity, RuleObject actingUnit,
             IBoardDisplacementAuthority board, MatchParticipants participants, RuleModificationSet modifications,
             IReadOnlyList<ImmunityOverrideDeclaration> overrides = null, RuleActivity overrideActivity = RuleActivity.None) =>
+            IsPreventedAt(target, activity, actingUnit, board, participants, modifications,
+                overrides, overrideActivity, null);
+
+        private static bool IsPreventedAt(
+            RuleObject target, RuleActivity activity, RuleObject actingUnit,
+            IBoardDisplacementAuthority board, MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<ImmunityOverrideDeclaration> overrides,
+            RuleActivity overrideActivity,
+            HexCoordinate? targetCoordinate) =>
             modifications.ExcludesTarget(target, actingUnit) ||
+            IsSeparatedByBoardPartition(target, actingUnit, board, modifications, targetCoordinate) ||
             IsScreened(target, actingUnit, board, participants, modifications) ||
             ImmunityQuery.IsImmuneTo(target, activity, actingUnit,
                 board, participants, modifications, overrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
                 overrideActivity == RuleActivity.None ? activity : overrideActivity);
+
+        private static bool IsSeparatedByBoardPartition(
+            RuleObject target,
+            RuleObject actingUnit,
+            IBoardDisplacementAuthority board,
+            RuleModificationSet modifications,
+            HexCoordinate? targetCoordinate = null)
+        {
+            if (modifications.BoardPartitions.Count == 0 ||
+                (actingUnit.Kind != RuleObjectKind.Hero &&
+                 actingUnit.Kind != RuleObjectKind.Minion))
+                return false;
+            if (board == null)
+                throw new ArgumentNullException(nameof(board),
+                    "A live board partition requires the board to decide target sides.");
+            var hasActorAt = modifications.ActingSpace.HasValue &&
+                modifications.ActingObject.Equals(actingUnit);
+            var actorAt = hasActorAt ? modifications.ActingSpace.Value : default;
+            if (!hasActorAt && !TryFindSpaceOf(actingUnit, board, out actorAt))
+                return false;
+            var hasTargetAt = targetCoordinate.HasValue;
+            var targetAt = hasTargetAt ? targetCoordinate.Value : default;
+            if (!hasTargetAt && !TryFindSpaceOf(target, board, out targetAt))
+                return false;
+            for (var index = 0; index < modifications.BoardPartitions.Count; index++)
+                if (modifications.BoardPartitions[index].BlocksInteraction(
+                    actingUnit, actorAt, target, targetAt))
+                    return true;
+            return false;
+        }
 
         /// <summary>
         /// Milestone 8.61a. Whether a token standing between the two of them stops this hero targeting
@@ -137,6 +178,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 case RuleObjectKind.Minion:
                     return board.TryGetObjectCoordinate(
                         BoardObjectReference.ForMinion(unit.MinionId), out coordinate);
+                case RuleObjectKind.Token:
+                    return board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForToken(unit.TokenInstanceId), out coordinate);
                 default:
                     coordinate = default;
                     return false;
@@ -207,7 +251,14 @@ namespace GuardsDigital.Core.Rules.Modifications
                     }
 
                     var asRuleObject = occupant.AsRuleObject();
-                    if (asRuleObject.IsDefined && TargetQuery.IsPrevented(
+                    if (occupant.Kind == BoardObjectKind.Token &&
+                        IsSeparatedByBoardPartition(
+                            RuleObject.ForToken(occupant.TokenInstanceId), targetingUnit,
+                            board, modifications, coordinate))
+                    {
+                        continue;
+                    }
+                    if (asRuleObject.IsDefined && IsPreventedAt(
                             asRuleObject,
                             activity,
                             targetingUnit,
@@ -215,7 +266,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                             participants,
                             modifications,
                             immunityOverrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
-                            overrideActivity == RuleActivity.None ? activity : overrideActivity))
+                            overrideActivity == RuleActivity.None ? activity : overrideActivity,
+                            coordinate))
                     {
                         continue;
                     }

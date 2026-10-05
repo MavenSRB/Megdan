@@ -86,7 +86,8 @@ namespace GuardsDigital.Core.Timing
             ActionDefinitionId sourceActionId,
             int roundIndex,
             int turnIndex,
-            HeroId boundActorHeroId = default)
+            HeroId boundActorHeroId = default,
+            GuardsDigital.Core.Board.BoardPartitionLine boardPartitionLine = default)
         {
             if (effects.Any(effect => effect.Id.Equals(id)))
                 throw new ArgumentException("Active-effect instance IDs must be unique.", nameof(id));
@@ -102,7 +103,8 @@ namespace GuardsDigital.Core.Timing
 
             var effect = new ActiveEffectInstance(id, definition, controllerHeroId, controllerTeamSide,
                 affectedHeroId, sourceCardId, sourceActionId, roundIndex, turnIndex, nextCreationSequence++,
-                boundActorHeroId: boundActorHeroId);
+                boundActorHeroId: boundActorHeroId,
+                boardPartitionLine: boardPartitionLine);
             effects.Add(effect);
             if (definition.ActivationCheckpoint == definition.CreationCheckpoint &&
                 definition.DurationKind != ActiveEffectDurationKind.NextTurn &&
@@ -296,7 +298,8 @@ namespace GuardsDigital.Core.Timing
                 effect.ActivatedRoundIndex,
                 effect.ActivatedTurnIndex,
                 effect.EndedAt,
-                effect.BoundActorHeroId));
+                effect.BoundActorHeroId,
+                effect.BoardPartitionLine));
             return Restore(new ActiveEffectLifecycleRestoreState(
                 clonedEffects,
                 continuousSources.Select(source => new ContinuousRuleSource(

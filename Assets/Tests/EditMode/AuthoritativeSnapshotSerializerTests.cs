@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -23,6 +24,55 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class AuthoritativeSnapshotSerializerTests
     {
+        [Test]
+        public void RoundTrip_PreservesChosenBoardPartitionLineAndRejectsPriorSchema()
+        {
+            var fixture = CreateFixture();
+            var source = fixture.Configuration.CardInstances.First();
+            var chosen = new BoardPartitionLine(
+                new HexCoordinate(0, 0), BoardPartitionAxis.NorthEastSouthWest);
+            var build = MatchContentCatalogs.ForThisBuild();
+            var capabilities = new EffectCapabilityCatalog(build.Capabilities.Registered
+                .Select(reference => build.Capabilities.Load(reference))
+                .Concat(new IEffectCapabilityHandler[]
+                {
+                    new BoardPartitionCreationHandler(
+                        NebKherComponentContent.CrackRealityV1,
+                        NebKherComponentContent.CrackReality)
+                }));
+            var catalogs = new MatchContentCatalogs(capabilities, build.Components);
+            var cardActions = new CardActionResolutionAuthority(catalogs, fixture.Board);
+            var round = new RoundResolutionAuthority(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                fixture.Configuration.TieBreakerState,
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(cardActions));
+            round.Timing.Create(
+                new ActiveEffectId("snapshot-partition"),
+                NebKherComponentContent.CrackReality,
+                source.OwnerId, TeamSide.Red, default, source.Id,
+                new ActionDefinitionId("snapshot-partition-action"), 1, 1,
+                boardPartitionLine: chosen);
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                catalogs, payload, fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
+
+            Assert.That(restored.Round.Timing.Effects.Single().BoardPartitionLine,
+                Is.EqualTo(chosen));
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(payload));
+            var prior = RewriteSchemaVersion(
+                payload, AuthoritativeSnapshotSerializer.CurrentSchemaVersion - 1);
+            Assert.That(Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    catalogs, prior, fixture.Configuration.CardDefinitions,
+                    new[] { fixture.Board.MapDefinition })).Reason,
+                Is.EqualTo(SnapshotLoadRejectionReason.UnsupportedSchemaVersion));
+        }
+
         [TestCase(false, false)]
         [TestCase(true, false)]
         [TestCase(false, true)]

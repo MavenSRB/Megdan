@@ -4264,7 +4264,8 @@ namespace GuardsDigital.Core.Cards
                             step.CompletedInvocationContext,
                             step.CompletedAttackTarget,
                             step.CompletedPlacedSelf,
-                            step.CompletedDefeatedMinionWithBasicAttack);
+                            step.CompletedDefeatedMinionWithBasicAttack,
+                            step.CompletedLaughedDiabolically);
                         continue;
                     }
 
@@ -4386,7 +4387,8 @@ namespace GuardsDigital.Core.Cards
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
             bool placedSelf = false,
-            bool defeatedMinionWithBasicAttack = false)
+            bool defeatedMinionWithBasicAttack = false,
+            bool laughedDiabolically = false)
         {
             var basicAction = BasicActionQuery.ForCompletedAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances,
@@ -4395,7 +4397,8 @@ namespace GuardsDigital.Core.Cards
                 defeatedMinionWithBasicAttack,
                 // Milestone 8.38c2. Which of p.10's two things just happened: the hero RESOLVED their
                 // card, or performed a second action off a card already resolved.
-                BasicActionQuery.IsCardResolution(invocationContext));
+                BasicActionQuery.IsCardResolution(invocationContext),
+                laughedDiabolically);
             if (basicAction.IsDefined)
             {
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));

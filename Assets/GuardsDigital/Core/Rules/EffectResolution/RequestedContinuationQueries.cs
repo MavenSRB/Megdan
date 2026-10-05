@@ -157,6 +157,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
     }
 
+    /// <summary>Whether the optional laugh leaf actually applied in this action.</summary>
+    public static class LaughterOutcomeQuery
+    {
+        public static bool Laughed(
+            EffectDefinition definition, IReadOnlyList<EffectNodeOutcome> outcomes)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (outcomes == null) return false;
+            foreach (var outcome in outcomes)
+                if (outcome.ResultKind == EffectExecutionResultKind.Applied &&
+                    definition.TryGetNode(outcome.NodeId, out var node) &&
+                    node.Kind == EffectNodeKind.Capability &&
+                    node.Capability.Equals(LaughterCapabilities.LaughV1))
+                    return true;
+            return false;
+        }
+    }
+
     public static class AroundActionPlacementQuery
     {
         public static PreActionPlacement Placed(

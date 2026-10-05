@@ -57,8 +57,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution cardTextRemainderResolution = null,
             AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None,
             bool completedDefeatedMinionWithBasicAttack = false,
-            bool beforeDefenseChoice = false)
+            bool beforeDefenseChoice = false,
+            bool completedLaughedDiabolically = false)
         {
+            CompletedLaughedDiabolically = completedLaughedDiabolically;
             CardTextRemainderResolution = cardTextRemainderResolution;
             CardTextRemainderOutcome = cardTextRemainderOutcome;
             Kind = kind;
@@ -155,7 +157,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
             AttackTarget completedAttackTarget = default,
             bool placedSelf = false,
-            bool defeatedMinionWithBasicAttack = false)
+            bool defeatedMinionWithBasicAttack = false,
+            bool laughedDiabolically = false)
         {
             if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
             {
@@ -182,7 +185,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 completedInvocationContext: invocationContext,
                 completedAttackTarget: completedAttackTarget,
                 completedPlacedSelf: placedSelf,
-                completedDefeatedMinionWithBasicAttack: defeatedMinionWithBasicAttack);
+                completedDefeatedMinionWithBasicAttack: defeatedMinionWithBasicAttack,
+                completedLaughedDiabolically: laughedDiabolically);
         }
 
         /// <summary>
@@ -296,6 +300,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// whose outcomes prove it is gone.</para>
         /// </summary>
         public bool CompletedPlacedSelf { get; }
+        public bool CompletedLaughedDiabolically { get; }
 
         /// <summary>
         /// Milestone 8.37. Whether an Attack that just ended defeated a minion target -

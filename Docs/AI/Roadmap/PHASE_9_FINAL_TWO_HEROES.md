@@ -64,11 +64,15 @@ Completed 2026-10-05. The three-copy Illusion definition and typed handlers plac
 
 Historical evidence: [9.51 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-951-nebkher-illusion-and-borrow-evidence).
 
-### [~] 9.52 NebKher's laughter and divided board
+### [x] 9.52 NebKher's laughter and divided board
 
 Outcome: Diabolical Laughter's optional repeated choices and the Ultimate's trigger; a selected straight line through NebKher's space enforces the two printed cross-side interaction restrictions for Crack in Reality and Shift Reality, across every target, space, movement, placement and area query. Board geometry, timing, snapshot, replay and wire checks. T2. Requires the laughter and line rulings.
 
-### [ ] 9.53 Compose and deal NebKher
+Completed 2026-10-05 as an unregistered foundation. A real optional laugh leaf creates an immediate, per-occurrence Ultimate interruption before later action nodes; decline creates none, and ActionEnded cannot fire it again. The three fixed line axes and neutral line spaces feed shared target, area, roster, Movement, Place and Fast Travel restrictions; Shift also hides its controller from side units. The chosen line persists through controller movement, snapshot v59, restore and replay; v58 is rejected. Focused laughter 6/6, full offline 6,707/6,707 before the final test-only optional-choice case, unfiltered Unity Edit 7,808 passed with 37 explicit diagnostic skips before that same test-only case, final focused Unity Edit 6/6, and unfiltered Unity Play 1,127/1,127. The local commit owns exact evidence and limitations. Printed three-choice composition and registration follow in 9.53.
+
+Historical evidence: [9.52 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-952-nebkher-laughter-and-divided-board-evidence).
+
+### [~] 9.53 Compose and deal NebKher
 
 Outcome: all eighteen playable fronts composed at their exact printed values and clauses; Mind Probe boxed; roster selection, standee/profile and card art, decision labels, bots, wording and offer/outcome checks. T3.
 

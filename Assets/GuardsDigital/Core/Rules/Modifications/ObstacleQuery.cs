@@ -150,6 +150,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 throw new ArgumentNullException(nameof(modifications));
             }
 
+            if (PartitionBlocks(board, coordinate, mover, modifications))
+                return true;
+
             if (!board.IsPlayable(coordinate))
             {
                 if (!board.IsTerrain(coordinate))
@@ -265,6 +268,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool BlocksTransitAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
             RuleObject mover, RuleModificationSet modifications, bool ignoresObstacles,
             RuleActivity activity, IReadOnlyCollection<BoardObjectReference> vacating) =>
+            PartitionBlocks(board, coordinate, mover, modifications) ||
             BlocksTransit(board, coordinate, mover, modifications, ignoresObstacles, activity) &&
             !IsOnlyVacatingOccupancy(board, coordinate, modifications, vacating);
 
@@ -275,6 +279,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// <summary>Milestone 9.32c: <see cref="BlocksEndAfterVacating(AdjacentMoveAuthority, HexCoordinate, RuleModificationSet, IReadOnlyCollection{BoardObjectReference})"/> asked of the piece that would end there.</summary>
         public static bool BlocksEndAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
             RuleModificationSet modifications, IReadOnlyCollection<BoardObjectReference> vacating, RuleObject mover) =>
+            PartitionBlocks(board, coordinate, mover, modifications) ||
             BlocksEndOfMovement(board, coordinate, modifications, mover) &&
             !IsOnlyVacatingOccupancy(board, coordinate, modifications, vacating);
 
@@ -301,8 +306,24 @@ namespace GuardsDigital.Core.Rules.Modifications
             AdjacentMoveAuthority board, HexCoordinate coordinate, RuleModificationSet modifications,
             RuleObject mover) =>
             IsObstacle(board, coordinate, modifications) ||
+            PartitionBlocks(board, coordinate, mover, modifications) ||
             (mover.IsDefined && board.IsPlayable(coordinate) && !board.IsOccupied(coordinate) &&
                 modifications.AnyOverlayMakesAnObstacleFor(coordinate, mover));
+
+        private static bool PartitionBlocks(
+            AdjacentMoveAuthority board, HexCoordinate coordinate,
+            RuleObject mover, RuleModificationSet modifications)
+        {
+            if (modifications.BoardPartitions.Count == 0 ||
+                (mover.Kind != RuleObjectKind.Hero &&
+                 mover.Kind != RuleObjectKind.Minion))
+                return false;
+            var reference = mover.Kind == RuleObjectKind.Hero
+                ? BoardObjectReference.ForHero(mover.HeroId)
+                : BoardObjectReference.ForMinion(mover.MinionId);
+            return board.TryGetObjectCoordinate(reference, out var origin) &&
+                modifications.BlocksSpaceInteraction(mover, origin, coordinate);
+        }
 
         /// <summary>
         /// Whether <paramref name="coordinate"/> may receive a placed piece.

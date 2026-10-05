@@ -758,6 +758,12 @@ namespace GuardsDigital.Tests.EditMode
                     .Where(property => property.Name != "AffectedTokenKind" ||
                         !(value is ActiveEffectDefinition active) ||
                         active.AffectedTokenKind.IsDefined)
+                    // 9.52 adds a divided-board declaration. Its undefined value belongs to no
+                    // earlier face; only a non-None declaration changes a hero's content identity.
+                    .Where(property => property.Name != "BoardPartitionMode" ||
+                        !(value is ActiveEffectDefinition partitioned) ||
+                        partitioned.BoardPartitionMode !=
+                            GuardsDigital.Core.Rules.Modifications.BoardPartitionMode.None)
                     .OrderBy(property => property.Name, StringComparer.Ordinal)
                     .ToArray();
                 if (properties.Length == 0)

@@ -492,6 +492,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             origin, value.Coordinate) <= distance)
                         .Select(value => BoardObjectReference.ForToken(value.Id))
                     : Enumerable.Empty<BoardObjectReference>())
+                .Where(value => modifications.BoardPartitions.Count == 0 ||
+                    !board.TryGetObjectCoordinate(value, out var at) ||
+                    !modifications.BlocksCurrentActorInteraction(
+                        value.Kind == BoardObjectKind.Token
+                            ? RuleObject.ForToken(value.TokenInstanceId)
+                            : value.AsRuleObject(), at))
                 .Where(value => AdmitsKind(value, unitKind, modifications))
                 .Where(value => TargetQuery.StandsInRelationTo(
                     relation, value, sourceHero, participants, board, modifications))

@@ -457,7 +457,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(definition.Properties, Is.Empty,
                 "The action-scoped minion reading belongs to the live action, not an always-on token property.");
             var handlers = NebKherComponentContent.Handlers().ToArray();
-            Assert.That(handlers.Select(handler => handler.Reference), Is.EquivalentTo(new[]
+            Assert.That(handlers.Select(handler => handler.Reference), Is.SupersetOf(new[]
             {
                 NebKherComponentContent.PlaceIllusionV1,
                 NebKherComponentContent.ReclaimIllusionV1,

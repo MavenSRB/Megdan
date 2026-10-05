@@ -263,7 +263,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restored.Round.Outcome, Is.EqualTo(MatchOutcome.Won(
                 MatchVictoryCause.WishesCast, live.CasterTeam, live.EnemyTeam)),
                 "and wins once its inner spell has resolved, as the live one does");
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(58));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59));
             Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(36));
         }
 

@@ -50,11 +50,15 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             var heroes = board.Occupancies
                 .Where(occupancy => HexDistanceQuery.Calculate(origin, occupancy.Coordinate) <= distance)
+                .Where(occupancy => !modifications.BlocksCurrentActorInteraction(
+                    RuleObject.ForHero(occupancy.HeroId), occupancy.Coordinate))
                 .Select(occupancy => RuleObject.ForHero(occupancy.HeroId))
                 // Milestone 9.21a (RZ-Q2): presence is read per body, and a hero is one unit.
                 .Distinct();
             var minions = board.Minions
                 .Where(minion => HexDistanceQuery.Calculate(origin, minion.Coordinate) <= distance)
+                .Where(minion => !modifications.BlocksCurrentActorInteraction(
+                    RuleObject.ForMinion(minion.MinionId), minion.Coordinate))
                 .Select(minion => RuleObject.ForMinion(minion.MinionId));
 
             return Array.AsReadOnly(heroes.Concat(minions)
@@ -103,13 +107,17 @@ namespace GuardsDigital.Core.Rules.Modifications
             var heroes = board.Occupancies
                 .Where(occupancy =>
                     playableByCoordinate.TryGetValue(occupancy.Coordinate, out var spaceId) &&
-                    board.MapDefinition.GetZoneForSpace(spaceId).Id.Equals(zoneId))
+                    board.MapDefinition.GetZoneForSpace(spaceId).Id.Equals(zoneId) &&
+                    !modifications.BlocksCurrentActorInteraction(
+                        RuleObject.ForHero(occupancy.HeroId), occupancy.Coordinate))
                 .Select(occupancy => RuleObject.ForHero(occupancy.HeroId))
                 // Milestone 9.21a (RZ-Q2): presence is read per body, and a hero is one unit.
                 .Distinct();
             var minions = board.Minions
                 .Where(minion =>
-                    board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(zoneId))
+                    board.MapDefinition.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(zoneId) &&
+                    !modifications.BlocksCurrentActorInteraction(
+                        RuleObject.ForMinion(minion.MinionId), minion.Coordinate))
                 .Select(minion => RuleObject.ForMinion(minion.MinionId));
 
             return Array.AsReadOnly(heroes.Concat(minions)

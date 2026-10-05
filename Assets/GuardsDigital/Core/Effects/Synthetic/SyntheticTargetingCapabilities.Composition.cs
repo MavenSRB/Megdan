@@ -1061,6 +1061,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public bool Admit(HexCoordinate at)
             {
+                if (context.Modifications.BlocksCurrentActorSpaceInteraction(at))
+                    return false;
                 var distance = HexDistanceQuery.Calculate(origin, at);
 
                 // p.9's disk without its innermost ring, stated as the exact distance the word means.

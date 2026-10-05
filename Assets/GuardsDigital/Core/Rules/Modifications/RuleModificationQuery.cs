@@ -105,7 +105,32 @@ namespace GuardsDigital.Core.Rules.Modifications
             var overlays = timing == null || board == null
                 ? (IEnumerable<AppliedObstacleOverlay>)Array.Empty<AppliedObstacleOverlay>()
                 : FromDeclaredOverlays(timing, board, participants, actingObject, heroItems);
-            return new RuleModificationSet(applied, overlays, tieBreaker);
+            var boardPartitions = timing == null
+                ? Array.Empty<BoardPartitionRestriction>()
+                : timing.Effects
+                    .Where(effect => effect.Phase == ActiveEffectPhase.Active &&
+                        effect.Definition.BoardPartitionMode != BoardPartitionMode.None)
+                    .Select(effect => new BoardPartitionRestriction(
+                        effect.BoardPartitionLine, effect.ControllerHeroId,
+                        effect.Definition.BoardPartitionMode ==
+                            BoardPartitionMode.OppositeSidesAndController))
+                    .ToArray();
+            HexCoordinate? actingSpace = null;
+            if (board != null && actingObject.IsDefined)
+            {
+                var reference = actingObject.Kind == RuleObjectKind.Hero
+                    ? BoardObjectReference.ForHero(actingObject.HeroId)
+                    : actingObject.Kind == RuleObjectKind.Minion
+                        ? BoardObjectReference.ForMinion(actingObject.MinionId)
+                        : default;
+                if (reference.IsDefined &&
+                    board.TryGetObjectCoordinate(reference, out var at))
+                    actingSpace = at;
+            }
+            return new RuleModificationSet(applied, overlays, tieBreaker,
+                targetExclusions: Array.Empty<ActionTargetExclusion>(),
+                boardPartitions: boardPartitions, actingObject: actingObject,
+                actingSpace: actingSpace);
         }
 
         /// <summary>

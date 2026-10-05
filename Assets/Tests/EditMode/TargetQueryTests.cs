@@ -72,6 +72,54 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void FixedPartitionFiltersHeroesAndTokensAcrossSidesButNotLineTiles()
+        {
+            var board = CreateBoard(otherAt: new HexCoordinate(3, 0));
+            PlaceToken(board, new HexCoordinate(2, 0));
+            var partition = new BoardPartitionRestriction(
+                new BoardPartitionLine(new HexCoordinate(1, 0),
+                    BoardPartitionAxis.NorthWestSouthEast),
+                Actor, separatesController: false);
+            var rules = new RuleModificationSet(
+                Array.Empty<AppliedRuleModification>(), Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed,
+                targetExclusions: Array.Empty<ActionTargetExclusion>(),
+                boardPartitions: new[] { partition },
+                actingObject: RuleObject.ForHero(Actor), actingSpace: Origin);
+            Assert.That(TargetQuery.IsPrevented(
+                RuleObject.ForHero(Other), RuleActivity.Skill, RuleObject.ForHero(Actor),
+                board, StagedBoardParticipants.Create(), rules), Is.True);
+            var targets = TargetQuery.FindTargetsWithin(
+                Origin, 3, false, RuleObject.ForHero(Actor), RuleActivity.Skill,
+                board, StagedBoardParticipants.Create(), rules);
+            Assert.That(targets.Any(target => target.Kind == BoardObjectKind.Token), Is.False);
+            Assert.That(targets.Any(target => target.HeroId.Equals(Other)), Is.False);
+
+            var lineBoard = CreateBoard(otherAt: new HexCoordinate(1, 0));
+            Assert.That(TargetQuery.IsPrevented(
+                RuleObject.ForHero(Other), RuleActivity.Skill, RuleObject.ForHero(Actor),
+                lineBoard, StagedBoardParticipants.Create(), rules), Is.False);
+        }
+
+        [Test]
+        public void StrongPartitionScreensItsControllerEvenOnTheActorsSide()
+        {
+            var board = CreateBoard(otherAt: new HexCoordinate(-1, 0));
+            var rules = new RuleModificationSet(
+                Array.Empty<AppliedRuleModification>(), Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed,
+                targetExclusions: Array.Empty<ActionTargetExclusion>(),
+                boardPartitions: new[] { new BoardPartitionRestriction(
+                    new BoardPartitionLine(new HexCoordinate(1, 0),
+                        BoardPartitionAxis.NorthWestSouthEast),
+                    Other, separatesController: true) },
+                actingObject: RuleObject.ForHero(Actor), actingSpace: Origin);
+            Assert.That(TargetQuery.IsPrevented(
+                RuleObject.ForHero(Other), RuleActivity.Skill, RuleObject.ForHero(Actor),
+                board, StagedBoardParticipants.Create(), rules), Is.True);
+        }
+
+        [Test]
         public void AnImmunityNamingAnotherActivity_DoesNotFilterThisOne()
         {
             // p.18: immunity to a specific action type leaves the unit affected by everything else.

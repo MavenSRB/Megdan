@@ -153,7 +153,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 board,
                 participants,
                 minions,
-                FastTravelZoneScope.SameOrAdjacentZone);
+                FastTravelZoneScope.SameOrAdjacentZone,
+                modifications);
         }
 
         /// <summary>
@@ -181,17 +182,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ITokenPlacementAuthority spaces,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            FastTravelZoneScope zoneScope)
+            FastTravelZoneScope zoneScope,
+            RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
             var materializedMinions = minions?.ToArray() ?? throw new ArgumentNullException(nameof(minions));
 
             // Milestone 9.21a: the acting body travels (RZ-Q4); a hero standing nowhere cannot.
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var origin))
             {
                 return CardActionResolutionRejectionReason.ActorUnavailable;
+            }
+
+            if (modifications.BlocksSpaceInteraction(
+                    RuleObject.ForHero(actorId), origin, destination))
+            {
+                return CardActionResolutionRejectionReason.FastTravelDestinationUnavailable;
             }
 
             if (!spaces.IsEmptyPlayableSpace(destination))
@@ -243,13 +252,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ITokenPlacementAuthority spaces,
             MatchParticipants participants,
             IEnumerable<MinionOccupancy> minions,
-            FastTravelZoneScope zoneScope)
+            FastTravelZoneScope zoneScope,
+            RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
             var materializedMinions = minions?.ToArray() ?? throw new ArgumentNullException(nameof(minions));
             return Array.AsReadOnly(board.MapDefinition.PlayableCoordinates
                 .Where(destination => EvaluateDestinationForActor(
-                    actorId, destination, board, spaces, participants, materializedMinions, zoneScope) ==
+                    actorId, destination, board, spaces, participants, materializedMinions,
+                    zoneScope, modifications) ==
                     CardActionResolutionRejectionReason.None)
                 .OrderBy(destination => destination.Q)
                 .ThenBy(destination => destination.R)

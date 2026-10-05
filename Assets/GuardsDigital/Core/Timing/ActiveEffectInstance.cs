@@ -1,6 +1,8 @@
 using System;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Timing
@@ -29,7 +31,8 @@ namespace GuardsDigital.Core.Timing
             int? activatedRoundIndex = null,
             int? activatedTurnIndex = null,
             TimingCheckpoint? endedAt = null,
-            HeroId boundActorHeroId = default)
+            HeroId boundActorHeroId = default,
+            BoardPartitionLine boardPartitionLine = default)
         {
             if (!id.IsDefined) throw new ArgumentException("An Active-effect instance requires an ID.", nameof(id));
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
@@ -63,9 +66,15 @@ namespace GuardsDigital.Core.Timing
                     "An Active effect whose definition binds no actor cannot be given one.",
                     nameof(boundActorHeroId));
             }
+            if (boardPartitionLine.IsDefined !=
+                (definition.BoardPartitionMode != BoardPartitionMode.None))
+                throw new ArgumentException(
+                    "A line binding is required exactly when its definition declares a board partition.",
+                    nameof(boardPartitionLine));
 
             Id = id;
             BoundActorHeroId = boundActorHeroId;
+            BoardPartitionLine = boardPartitionLine;
             ControllerHeroId = controllerHeroId;
             ControllerTeamSide = controllerTeamSide;
             AffectedHeroId = affectedHeroId;
@@ -113,6 +122,7 @@ namespace GuardsDigital.Core.Timing
         /// the one printed.</para>
         /// </summary>
         public HeroId BoundActorHeroId { get; }
+        public BoardPartitionLine BoardPartitionLine { get; }
 
         public CardInstanceId SourceCardInstanceId { get; }
         public ActionDefinitionId SourceActionDefinitionId { get; }

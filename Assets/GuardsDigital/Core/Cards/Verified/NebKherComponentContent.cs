@@ -30,6 +30,40 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(
                 new EffectCapabilityId("nebkher-illusions-count-as-minions"), 1);
 
+        public static EffectCapabilityReference CrackRealityV1 { get; } =
+            new EffectCapabilityReference(new EffectCapabilityId("nebkher-crack-reality"), 1);
+        public static EffectCapabilityReference ShiftRealityV1 { get; } =
+            new EffectCapabilityReference(new EffectCapabilityId("nebkher-shift-reality"), 1);
+
+        private static readonly ActiveEffectCancellationCondition[] LineCancellations =
+        {
+            ActiveEffectCancellationCondition.ControllerHeroDefeated,
+            ActiveEffectCancellationCondition.CardsRetrieved,
+            ActiveEffectCancellationCondition.SourceCardStateChanged
+        };
+
+        public static ActiveEffectDefinition CrackReality { get; } =
+            new ActiveEffectDefinition(
+                "nebkher-crack-reality-effect",
+                ActiveEffectAffectedScopeKind.Global,
+                ActiveEffectDurationKind.ThisTurn,
+                TimingCheckpoint.ActionStarted, TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                LineCancellations, false, "BoardPartition", "nebkher-crack-reality",
+                Array.Empty<TimingCheckpoint>(),
+                boardPartitionMode: BoardPartitionMode.OppositeSides);
+
+        public static ActiveEffectDefinition ShiftReality { get; } =
+            new ActiveEffectDefinition(
+                "nebkher-shift-reality-effect",
+                ActiveEffectAffectedScopeKind.Global,
+                ActiveEffectDurationKind.ThisTurn,
+                TimingCheckpoint.ActionStarted, TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                LineCancellations, false, "BoardPartition", "nebkher-shift-reality",
+                Array.Empty<TimingCheckpoint>(),
+                boardPartitionMode: BoardPartitionMode.OppositeSidesAndController);
+
         public static ActiveEffectDefinition IllusionsCountAsMinions { get; } =
             new ActiveEffectDefinition(
                 "nebkher-illusions-count-as-minions-effect",
@@ -63,7 +97,10 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceIllusionV1, Illusion, PrintedValueChannel.Radius),
                 new ActiveEffectCreationHandler(
-                    IllusionsCountAsMinionsV1, IllusionsCountAsMinions)
+                    IllusionsCountAsMinionsV1, IllusionsCountAsMinions),
+                new BoardPartitionCreationHandler(CrackRealityV1, CrackReality),
+                new BoardPartitionCreationHandler(ShiftRealityV1, ShiftReality),
+                LaughterCapabilities.Handler
             };
     }
 }

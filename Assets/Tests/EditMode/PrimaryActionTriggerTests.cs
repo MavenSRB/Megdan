@@ -320,10 +320,11 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(
-                conditions.Length, Is.EqualTo(12),
+                conditions.Length, Is.EqualTo(13),
                 "Min adds the distinct Attack-action condition beside Widget's Movement one; Wuk " +
                 "(8.114e) adds the any-card resolution beside Swift's basic-card one; Razzle (9.21h) " +
-                "adds the basic-Attack condition beside Wasp's basic-Skill one.");
+                "adds the basic-Attack condition beside Wasp's basic-Skill one; NebKher (9.52) " +
+                "adds the actual-laugh condition proved by NebKherLaughterFoundationTests.");
             Assert.That(
                 conditions,
                 Does.Contain(UltimateTriggerCondition.AfterControllerPerformsPrimaryAction));

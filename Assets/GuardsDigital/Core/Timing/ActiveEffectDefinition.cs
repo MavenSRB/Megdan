@@ -250,8 +250,12 @@ namespace GuardsDigital.Core.Timing
             EffectDefinitionReference? triggeredEffect = null,
             ActiveEffectBoundActorSource boundActorSource = ActiveEffectBoundActorSource.None,
             string ownedObstacleRadiusAnchorKind = null,
-            GuardsDigital.Core.Components.TokenDefinitionId affectedTokenKind = default)
+            GuardsDigital.Core.Components.TokenDefinitionId affectedTokenKind = default,
+            BoardPartitionMode boardPartitionMode = BoardPartitionMode.None)
         {
+            if (!Enum.IsDefined(typeof(BoardPartitionMode), boardPartitionMode))
+                throw new ArgumentOutOfRangeException(nameof(boardPartitionMode));
+            BoardPartitionMode = boardPartitionMode;
             if (affectedScope == ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs
                 ? !affectedTokenKind.IsDefined
                 : affectedTokenKind.IsDefined)
@@ -334,6 +338,11 @@ namespace GuardsDigital.Core.Timing
         /// every other scope; public so verified-content identity sees this semantic declaration.
         /// </summary>
         public GuardsDigital.Core.Components.TokenDefinitionId AffectedTokenKind { get; }
+        /// <summary>
+        /// Trusted meaning of a chosen fixed-line restriction. The selected origin and
+        /// axis are occurrence facts, stored on <see cref="ActiveEffectInstance"/>.
+        /// </summary>
+        public BoardPartitionMode BoardPartitionMode { get; }
         public ActiveEffectDurationKind DurationKind { get; }
         public TimingCheckpoint CreationCheckpoint { get; }
         public TimingCheckpoint ActivationCheckpoint { get; }

@@ -158,6 +158,14 @@ namespace GuardsDigital.Presentation.Match
                         ? ((Core.Board.HexDirection)value).ToString()
                         : null;
                     break;
+                case EffectChoiceValueVocabulary.BoardPartitionAxis:
+                    name = value == (int)Core.Board.BoardPartitionAxis.EastWest
+                        ? "East–West line"
+                        : value == (int)Core.Board.BoardPartitionAxis.NorthEastSouthWest
+                            ? "North East–South West line"
+                            : value == (int)Core.Board.BoardPartitionAxis.NorthWestSouthEast
+                                ? "North West–South East line" : null;
+                    break;
                 case EffectChoiceValueVocabulary.PrintedTextFace:
                     // Milestone 8.75b. The one vocabulary whose controls NAME THE CONSEQUENCE rather
                     // than wearing the member's own word, which is the decision window's own rule since
@@ -333,6 +341,8 @@ namespace GuardsDigital.Presentation.Match
                 case EffectChoiceValueVocabulary.CardColor:
                     return EffectChoiceSubject.Colour;
                 case EffectChoiceValueVocabulary.HexDirection:
+                    return EffectChoiceSubject.Direction;
+                case EffectChoiceValueVocabulary.BoardPartitionAxis:
                     return EffectChoiceSubject.Direction;
                 case EffectChoiceValueVocabulary.PrintedTextFace:
                     return EffectChoiceSubject.TextFace;

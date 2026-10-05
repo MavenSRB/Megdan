@@ -56,8 +56,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // consumer. It is also the one narrowing here that applies where no consumer can be read.
             var candidates = WithoutWhatTheProducingRepeatRefuses(
                 selectionNode,
-                WithoutTheExcludedSubject(
-                    selectionNode, offered ?? Array.Empty<EffectValue>(), frame, context),
+                WithoutPartitionedSpaces(
+                    WithoutTheExcludedSubject(
+                        selectionNode, offered ?? Array.Empty<EffectValue>(), frame, context),
+                    context),
                 context);
             if (candidates.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
@@ -229,6 +231,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return false;
             }
 
+            if (chosen.Count > 0 &&
+                WithoutPartitionedSpaces(chosen, context).Count != chosen.Count)
+            {
+                return false;
+            }
+
             if (chosen.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
             {
@@ -240,6 +248,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // together - so checking them one at a time would either refuse a legal pair or admit an
             // illegal one depending on which half was asked about.
             return consumer.Accepts(chosen);
+        }
+
+        private static IReadOnlyList<EffectValue> WithoutPartitionedSpaces(
+            IReadOnlyList<EffectValue> candidates,
+            EffectResolutionContext context)
+        {
+            if (candidates.Count == 0 || context.Modifications.BoardPartitions.Count == 0)
+            {
+                return candidates;
+            }
+
+            return candidates
+                .Where(candidate => candidate.Kind != EffectValueKind.Coordinate ||
+                    !context.Modifications.BlocksCurrentActorSpaceInteraction(candidate.Coordinate))
+                .ToArray();
         }
 
 

@@ -141,8 +141,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId markerGivenTo = default,
             CardInstanceId resolvedCardDiscarded = default,
             bool tieBreakerFlipRequested = false,
-            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null)
+            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null,
+            bool laughedDiabolically = false,
+            bool laughMoment = false)
         {
+            LaughedDiabolically = laughedDiabolically;
+            LaughMoment = laughMoment;
             PlacedTokens = new ReadOnlyCollection<GuardsDigital.Core.Components.PlacedToken>(
                 (placedTokens ?? Array.Empty<GuardsDigital.Core.Components.PlacedToken>()).ToArray());
             TieBreakerFlipRequested = tieBreakerFlipRequested;
@@ -328,6 +332,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// that needs the board, and the authority that runs the trigger asks it.</para>
         /// </summary>
         public bool PlacedActingHero { get; }
+        public bool LaughedDiabolically { get; }
+        /// <summary>A laugh leaf just applied; its listener runs before the next node.</summary>
+        public bool LaughMoment { get; }
 
         /// <summary>
         /// Milestone 8.112f. The tokens the node this walk stopped after placed, nonempty exactly when
@@ -355,7 +362,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     RepeatRequested, LanePushCause, RequestedHeroDefeats, RequestedMinionDefeats,
                     BoundAttackTarget, AroundActionPlacement, AppliedPushes,
                     RequestedAttackSequences, PlacedActingHero, BorrowRequested, MarkerGivenTo,
-                    ResolvedCardDiscarded, TieBreakerFlipRequested, PlacedTokens);
+                    ResolvedCardDiscarded, TieBreakerFlipRequested, PlacedTokens,
+                    LaughedDiabolically, LaughMoment);
 
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
@@ -377,13 +385,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId markerGivenTo = default,
             CardInstanceId resolvedCardDiscarded = default,
             bool tieBreakerFlipRequested = false,
-            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null) =>
+            IReadOnlyList<GuardsDigital.Core.Components.PlacedToken> placedTokens = null,
+            bool laughedDiabolically = false,
+            bool laughMoment = false) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
                 placedActingHero, borrowRequested, markerGivenTo, resolvedCardDiscarded,
-                tieBreakerFlipRequested, placedTokens);
+                tieBreakerFlipRequested, placedTokens, laughedDiabolically, laughMoment);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -434,6 +444,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectRosterState rosterState = null,
             bool watchesAppliedPushes = false,
             bool watchesMarkerGives = false,
+            bool watchesLaughter = false,
             bool repeatIsUnavailable = false,
             RepeatFeasibility repeatCanBePerformed = null,
             bool stagesMinionDefeats = false,
@@ -457,6 +468,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             TriggeredCardId = triggeredCardId;
             WatchesAppliedPushes = watchesAppliedPushes;
             WatchesMarkerGives = watchesMarkerGives;
+            WatchesLaughter = watchesLaughter;
             StagesMinionDefeats = stagesMinionDefeats;
             StagesBorrowedActions = stagesBorrowedActions;
             RepeatIsUnavailable = repeatIsUnavailable;
@@ -592,6 +604,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// milestone, which is what keeps every Tigerclaw Poison give in this build byte-identical.</para>
         /// </summary>
         public bool WatchesMarkerGives { get; }
+        public bool WatchesLaughter { get; }
 
         /// <summary>
         /// Milestone 8.112f. Whether any live rule source runs after its controller places tokens -
@@ -960,6 +973,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
                         placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+                        laughedDiabolically: LaughterOutcomeQuery.Laughed(context.Definition, outcomes),
 
                         // Milestone 8.35z50. The borrow reads the same completed outcomes every other
 
@@ -1161,6 +1175,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
                         placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+                        laughedDiabolically: LaughterOutcomeQuery.Laughed(context.Definition, outcomes),
 
                         // Milestone 8.35z50. The borrow reads the same completed outcomes every other
 
@@ -1668,6 +1683,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             markerGivenTo: result.MarkerGivenTo);
                     }
 
+                    if (context.WatchesLaughter &&
+                        node.Capability.Equals(LaughterCapabilities.LaughV1))
+                    {
+                        return EffectResolutionStepResult.Accept(
+                            Rebuild(frame, continuation, outcomes, choices), false, events,
+                            laughMoment: true);
+                    }
+
                     // Milestone 8.112f. The same stop after a Place, for Mrak's Rock and a Hard Place:
                     // "after you place one or more Rock tokens" is the moment this node finished.
                     if (context.WatchesTokenPlacements && result.PlacedTokens.Count > 0)
@@ -1791,6 +1814,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
                         placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+                        laughedDiabolically: LaughterOutcomeQuery.Laughed(context.Definition, outcomes),
 
                         // Milestone 8.35z50. The borrow reads the same completed outcomes every other
 

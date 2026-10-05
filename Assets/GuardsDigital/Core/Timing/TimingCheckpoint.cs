@@ -94,6 +94,9 @@ namespace GuardsDigital.Core.Timing
         /// </summary>
         MarkerGivenToHero = 19,
 
-        ResolvedCardDiscarded = 20
+        ResolvedCardDiscarded = 20,
+
+        /// <summary>The optional laugh leaf just applied, before the next effect node.</summary>
+        LaughedDiabolically = 21
     }
 }

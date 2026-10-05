@@ -52,8 +52,25 @@ namespace GuardsDigital.Core.Rules.Modifications
             IEnumerable<AppliedObstacleOverlay> obstacleOverlays,
             TieBreakerState tieBreaker,
             IEnumerable<ActionTargetExclusion> targetExclusions = null)
+            : this(modifications, obstacleOverlays, tieBreaker, targetExclusions,
+                Array.Empty<BoardPartitionRestriction>(), RuleObject.None, null)
         {
+        }
+
+        public RuleModificationSet(
+            IEnumerable<AppliedRuleModification> modifications,
+            IEnumerable<AppliedObstacleOverlay> obstacleOverlays,
+            TieBreakerState tieBreaker,
+            IEnumerable<ActionTargetExclusion> targetExclusions,
+            IEnumerable<BoardPartitionRestriction> boardPartitions,
+            RuleObject actingObject,
+            HexCoordinate? actingSpace)
+        {
+            ActingObject = actingObject;
+            ActingSpace = actingSpace;
             TargetExclusions = Array.AsReadOnly((targetExclusions ?? Array.Empty<ActionTargetExclusion>()).ToArray());
+            BoardPartitions = Array.AsReadOnly((boardPartitions ??
+                Array.Empty<BoardPartitionRestriction>()).ToArray());
             var materialized = (modifications ?? throw new ArgumentNullException(nameof(modifications)))
                 .ToArray();
             if (materialized.Any(modification => modification == null))
@@ -108,6 +125,34 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// obstacle question.
         /// </summary>
         public IReadOnlyList<AppliedObstacleOverlay> ObstacleOverlays { get; }
+        public IReadOnlyList<BoardPartitionRestriction> BoardPartitions { get; }
+        public RuleObject ActingObject { get; }
+        public HexCoordinate? ActingSpace { get; }
+
+        public bool BlocksCurrentActorSpaceInteraction(HexCoordinate space) =>
+            ActingSpace.HasValue &&
+            BlocksSpaceInteraction(ActingObject, ActingSpace.Value, space);
+
+        public bool BlocksCurrentActorInteraction(RuleObject target, HexCoordinate targetAt)
+        {
+            if (!ActingSpace.HasValue)
+                return false;
+            for (var index = 0; index < BoardPartitions.Count; index++)
+                if (BoardPartitions[index].BlocksInteraction(
+                    ActingObject, ActingSpace.Value, target, targetAt))
+                    return true;
+            return false;
+        }
+
+        public bool BlocksSpaceInteraction(
+            RuleObject actingUnit, HexCoordinate actorAt, HexCoordinate space)
+        {
+            for (var index = 0; index < BoardPartitions.Count; index++)
+                if (BoardPartitions[index].BlocksSpaceInteraction(
+                    actingUnit, actorAt, space))
+                    return true;
+            return false;
+        }
 
         /// <summary>
         /// Milestone 8.61a. The placed tokens whose properties screen p.19's targeting along a
@@ -127,8 +172,10 @@ namespace GuardsDigital.Core.Rules.Modifications
             TargetExclusions.Any(e => e.ActorId.Equals(actor.HeroId) && e.Target.Equals(target));
         public RuleModificationSet WithTargetExclusions(IReadOnlyList<ActionTargetExclusion> exclusions) =>
             (exclusions == null || exclusions.Count == 0) && TargetExclusions.Count == 0 ? this :
-                new RuleModificationSet(Modifications, ObstacleOverlays, TieBreaker, exclusions);
-        public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0 && TargetExclusions.Count == 0;
+                new RuleModificationSet(Modifications, ObstacleOverlays, TieBreaker, exclusions,
+                    BoardPartitions, ActingObject, ActingSpace);
+        public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0 &&
+            TargetExclusions.Count == 0 && BoardPartitions.Count == 0;
 
         /// <summary>
         /// Whether any overlay in effect makes <paramref name="space"/> count as an obstacle right

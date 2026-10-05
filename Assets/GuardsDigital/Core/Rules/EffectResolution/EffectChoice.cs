@@ -69,7 +69,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// 1-16 encodes (glyph ordinal - 1) * 4 + slot; the authoritative choice still validates
         /// a complete permutation before attaching anything. Presentation draws this as drag/drop.
         /// </summary>
-        RuneTurnSlot = 4
+        RuneTurnSlot = 4,
+
+        /// <summary>One of the three unoriented straight-line axes through a hex.</summary>
+        BoardPartitionAxis = 5
     }
 
     public enum EffectChoiceCandidateKind

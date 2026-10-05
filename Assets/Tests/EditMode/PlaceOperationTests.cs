@@ -133,6 +133,30 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ABoardPartitionRemovesOppositeSidePlacementSpacesBeforeTheyAreOffered()
+        {
+            var board = CreateBoard(otherAt: new HexCoordinate(1, 0));
+            var rules = new RuleModificationSet(
+                Array.Empty<AppliedRuleModification>(), Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed,
+                targetExclusions: Array.Empty<ActionTargetExclusion>(),
+                boardPartitions: new[] { new BoardPartitionRestriction(
+                    new BoardPartitionLine(new HexCoordinate(1, 0),
+                        BoardPartitionAxis.NorthWestSouthEast),
+                    Actor, separatesController: false) },
+                actingObject: RuleObject.ForHero(Actor), actingSpace: ActorAt);
+
+            var destinations = PlaceDestinationQuery.FindDestinations(
+                BoardRadius(2), board, ActorAt, Array.Empty<HexCoordinate>(), rules);
+
+            Assert.That(destinations, Has.No.Member(new HexCoordinate(2, 0)),
+                "The other side is absent even though it is empty and in radius.");
+            Assert.That(destinations, Has.Member(new HexCoordinate(1, -1)),
+                "A line space belongs to neither side and remains placeable.");
+            Assert.That(destinations, Has.Member(new HexCoordinate(-1, 0)));
+        }
+
+        [Test]
         public void TheNearestInScopeQuery_ReturnsOnlyTheEquallyNearestEmptySpacesOfTheDeclaredSet()
         {
             var board = CreateBoard(otherAt: new HexCoordinate(1, 0));

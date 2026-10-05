@@ -169,6 +169,19 @@ namespace GuardsDigital.Core.Rules.Movement
                     "A straight-line crossing was asked of a walk that is not one straight line.");
             }
 
+            // A segmented Movement action keeps the side it started on. Entering a
+            // neutral line tile must not make the absent opposite side appear for a
+            // later step of this same action.
+            if (routeSpaces.Any(space => modifications.BlocksSpaceInteraction(
+                    RuleObject.ForHero(heroId), route[0], space)))
+            {
+                return MovementSessionStepResult.Reject(
+                    MovementSessionStepRejectionReason.AdjacentMoveRejected,
+                    AdjacentMoveRejectionReason.DestinationOffBoard,
+                    RemainingAllowance,
+                    stepEvents);
+            }
+
             var routeResult = adjacentMoveAuthority.TryCommitRoute(
                 CurrentOccupancy.HeroId, routeSpaces, modifications, crossesInAStraightLine);
             if (!routeResult.Accepted)

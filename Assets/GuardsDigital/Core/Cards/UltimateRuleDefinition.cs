@@ -220,7 +220,10 @@ namespace GuardsDigital.Core.Cards
         /// would have changed Min's Flurry of Blows. It is unbounded, as the sentence is: p.10's "You
         /// cannot repeat a repeated action!" ends the chain, on the subject the authority holds.</para>
         /// </summary>
-        AfterControllerPerformsBasicAttack = 12
+        AfterControllerPerformsBasicAttack = 12,
+
+        /// <summary>Every actual optional laugh chosen while performing an action.</summary>
+        AfterControllerLaughsDiabolically = 13
     }
 
     /// <summary>
@@ -497,6 +500,8 @@ namespace GuardsDigital.Core.Cards
         private static TimingCheckpoint WatchedMomentOf(UltimateTriggerCondition condition) =>
             condition == UltimateTriggerCondition.AfterControllerGivesMarker
                 ? TimingCheckpoint.MarkerGivenToHero
+                : condition == UltimateTriggerCondition.AfterControllerLaughsDiabolically
+                    ? TimingCheckpoint.LaughedDiabolically
                 : condition == UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
                     ? TimingCheckpoint.ResolvedCardDiscarded
                 : TimingCheckpoint.ActionEnded;

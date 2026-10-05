@@ -72,7 +72,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// after-Movement-action Ultimate (Widget's Dragon Knight) is running right after the move,
         /// before the rest of the attacker's page. Subject is the moved hero.
         /// </summary>
-        AfterForcedMovementTrigger = 6
+        AfterForcedMovementTrigger = 6,
+
+        /// <summary>An optional laugh applied; its Ultimate runs before the next effect node.</summary>
+        AfterLaughTrigger = 7
     }
 
     /// <summary>

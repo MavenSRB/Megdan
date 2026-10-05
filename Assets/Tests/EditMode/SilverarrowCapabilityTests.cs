@@ -464,16 +464,44 @@ namespace GuardsDigital.Tests.EditMode
 
             var wide = FastTravelActionQuery.FindDestinationsForActor(
                 Silverarrow, board, board, participants, board.Minions,
-                FastTravelZoneScope.SameOrAdjacentZone);
+                FastTravelZoneScope.SameOrAdjacentZone, RuleModificationSet.Empty);
             var narrow = FastTravelActionQuery.FindDestinationsForActor(
                 Silverarrow, board, board, participants, board.Minions,
-                FastTravelZoneScope.AdjacentZoneOnly);
+                FastTravelZoneScope.AdjacentZoneOnly, RuleModificationSet.Empty);
 
             Assert.That(wide, Is.Not.Empty,
                 "p.11 admits the hero's own Zone, and this map is one Zone.");
             Assert.That(narrow, Is.Empty,
                 "So a card that says \"to an adjacent zone\" has nowhere to go here - which is the " +
                 "\"if able\" both faces print, rather than an error.");
+        }
+
+        [Test]
+        public void ABoardPartitionBlocksBothCardTextAndReplacementFastTravelAcrossSides()
+        {
+            var board = CreateBoard(new[] { (Silverarrow, Origin) });
+            var participants = CreateParticipants();
+            var rules = new RuleModificationSet(
+                Array.Empty<AppliedRuleModification>(), Array.Empty<AppliedObstacleOverlay>(),
+                TieBreakerState.Unrevealed,
+                Array.Empty<ActionTargetExclusion>(),
+                new[] { new BoardPartitionRestriction(
+                    new BoardPartitionLine(At(1), BoardPartitionAxis.NorthWestSouthEast),
+                    Silverarrow, separatesController: false) },
+                RuleObject.ForHero(Silverarrow), Origin);
+
+            var destinations = FastTravelActionQuery.FindDestinationsForActor(
+                Silverarrow, board, board, participants, board.Minions,
+                FastTravelZoneScope.SameOrAdjacentZone, rules);
+            Assert.That(destinations, Has.Member(At(1)),
+                "The neutral line is available.");
+            Assert.That(destinations, Has.No.Member(At(2)),
+                "The opposite side is absent from a card-text destination offer.");
+            Assert.That(FastTravelActionQuery.EvaluateDestinationForActor(
+                Silverarrow, At(2), board, board, participants, board.Minions,
+                FastTravelZoneScope.SameOrAdjacentZone, rules),
+                Is.EqualTo(CardActionResolutionRejectionReason.FastTravelDestinationUnavailable),
+                "The direct replacement-action authority refuses that same destination.");
         }
 
         /// <summary>
@@ -488,7 +516,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 FastTravelActionQuery.FindDestinationsForActor(
                     Silverarrow, board, board, CreateParticipants(), board.Minions,
-                    FastTravelZoneScope.SameOrAdjacentZone),
+                    FastTravelZoneScope.SameOrAdjacentZone, RuleModificationSet.Empty),
                 Is.Empty);
         }
 

@@ -38,7 +38,8 @@ namespace GuardsDigital.Core.Cards
             bool wasRepeatedInstance,
             bool placedSelf,
             bool defeatedMinionWithBasicAttack,
-            bool wasCardResolution)
+            bool wasCardResolution,
+            bool laughedDiabolically)
         {
             ActorId = actorId;
             SourceCardInstanceId = sourceCardInstanceId;
@@ -48,6 +49,7 @@ namespace GuardsDigital.Core.Cards
             PlacedSelf = placedSelf;
             DefeatedMinionWithBasicAttack = defeatedMinionWithBasicAttack;
             WasCardResolution = wasCardResolution;
+            LaughedDiabolically = laughedDiabolically;
         }
 
         /// <summary>
@@ -65,7 +67,8 @@ namespace GuardsDigital.Core.Cards
             bool wasRepeatedInstance = false,
             bool placedSelf = false,
             bool defeatedMinionWithBasicAttack = false,
-            bool wasCardResolution = false)
+            bool wasCardResolution = false,
+            bool laughedDiabolically = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined)
             {
@@ -85,7 +88,8 @@ namespace GuardsDigital.Core.Cards
 
             return new PerformedBasicAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance,
-                placedSelf, defeatedMinionWithBasicAttack, wasCardResolution);
+                placedSelf, defeatedMinionWithBasicAttack, wasCardResolution,
+                laughedDiabolically);
         }
 
         public HeroId ActorId { get; }
@@ -128,6 +132,7 @@ namespace GuardsDigital.Core.Cards
         /// would need the immediate interrupt <c>after-push-trigger@1</c> already has.</para>
         /// </summary>
         public bool PlacedSelf { get; }
+        public bool LaughedDiabolically { get; }
 
         /// <summary>
         /// Milestone 8.37. Whether this basic Attack's own resolution actually REMOVED a
@@ -347,7 +352,8 @@ namespace GuardsDigital.Core.Cards
             bool wasRepeatedInstance = false,
             bool placedSelf = false,
             bool defeatedMinionWithBasicAttack = false,
-            bool wasCardResolution = false)
+            bool wasCardResolution = false,
+            bool laughedDiabolically = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined ||
                 kind == ActionKind.None || definitions == null || instances == null)
@@ -378,7 +384,7 @@ namespace GuardsDigital.Core.Cards
                         ? PerformedBasicAction.Of(
                             actorId, sourceCardInstanceId, actionDefinitionId, kind,
                             wasRepeatedInstance, placedSelf, defeatedMinionWithBasicAttack,
-                            wasCardResolution)
+                            wasCardResolution, laughedDiabolically)
                         : PerformedBasicAction.None;
                 }
             }

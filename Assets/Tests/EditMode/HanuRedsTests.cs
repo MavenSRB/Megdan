@@ -215,7 +215,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // MERGE NOTE (8.71 wave): v44 is 8.71a's bump (the card-instance Initiative override),
             // landed before this block; 8.71c itself moved nothing.
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(58),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59),
                 "Milestone 8.71c moves no schema (v44 is 8.71a's). A persisted bullet already writes both of these as " +
                 "plain integers read back through SnapshotEnumReader, so a member added at the end of " +
                 "either vocabulary costs no byte and no version - which is the property " +

@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.52 NebKher laughter and divided-board evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.52 | Optional laughter fires its unlocked Ultimate at each applied leaf before later action choices, never on decline or again at ActionEnded. Crack/Shift bind one of three fixed hex axes, with neutral line spaces, shared cross-side restrictions and Shift's controller absence. Snapshot v59 rejects v58. Full T3 offline/Edit/Play and final focused optional-choice checks passed; definitions remain unregistered until 9.53. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-952-nebkhers-laughter-and-divided-board). | `milestone/9.52` |
+
 ## Milestone 9.51 NebKher Illusion and borrow evidence
 
 | Milestone | Outcome and definition | Commit |

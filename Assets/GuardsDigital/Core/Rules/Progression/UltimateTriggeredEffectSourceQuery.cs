@@ -214,6 +214,11 @@ namespace GuardsDigital.Core.Rules.Progression
                 case UltimateTriggerCondition.AfterControllerPlacesSelf:
                     return performed.PlacedSelf;
 
+                case UltimateTriggerCondition.AfterControllerLaughsDiabolically:
+                    // This is a mid-effect moment. The completed action still records the fact for
+                    // diagnostics, but must not fire the same Ultimate again at ActionEnded.
+                    return false;
+
                 // Milestone 8.37. Tali's Reign of Winter: a second condition reading a
                 // CONSEQUENCE of the completed action, exactly as AfterControllerPlacesSelf does - here
                 // an Attack that actually removed a minion, not merely one that was performed.

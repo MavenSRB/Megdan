@@ -588,7 +588,8 @@ namespace GuardsDigital.Tests.EditMode
             CardActionResolutionRejectionReason Travel(AdjacentMoveAuthority board) =>
                 FastTravelActionQuery.EvaluateDestinationForActor(
                     red.HeroId, inNeighbour[1], board, board, configuration.Participants,
-                    Array.Empty<Core.Units.Minions.MinionOccupancy>(), FastTravelZoneScope.AdjacentZoneOnly);
+                    Array.Empty<Core.Units.Minions.MinionOccupancy>(), FastTravelZoneScope.AdjacentZoneOnly,
+                    RuleModificationSet.Empty);
 
             Assert.That(Travel(Staged(false)), Is.EqualTo(CardActionResolutionRejectionReason.None),
                 "Fixture precondition: with no body in the Zone the Fast Travel is open.");

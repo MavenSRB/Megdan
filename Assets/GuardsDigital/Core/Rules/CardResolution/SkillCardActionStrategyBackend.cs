@@ -235,6 +235,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Defeats, and both of them describe the one node the frame is standing after.</para>
         /// </summary>
         internal HeroId StagedMarkerGive { get; private set; }
+        internal bool StagedLaugh { get; private set; }
 
         /// <summary>
         /// Milestone 8.112f. The tokens this call's walk placed and stopped after, or empty whenever it
@@ -275,6 +276,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IEnumerable<CardInstance> instances) =>
             GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.AnyWatching(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, instances));
+
+        private static bool WatchesLaughter(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.AfterLaughTriggerQuery.AnyWatching(
                 GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
                     definitions, instances));
 
@@ -359,6 +367,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesLaughter: WatchesLaughter(materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, offer.SourceCardInstanceId, offer.SourceDefinitionReference, offer.ActionDefinitionId, offer.ActorId, offer.ActorId),
@@ -459,6 +468,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesLaughter: WatchesLaughter(materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 tieBreakerRevealedSide: LiveTieBreakerSide,
                 enclosingBorrow: CurrentBorrow);
@@ -629,6 +639,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesLaughter: WatchesLaughter(materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
@@ -726,6 +737,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
+                watchesLaughter: WatchesLaughter(materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
@@ -848,6 +860,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // completed step has none by construction; saying so keeps the stale report of a previous
             // call from being read as this one's.
             StagedMarkerGive = step.IsComplete ? default : step.MarkerGivenTo;
+            StagedLaugh = !step.IsComplete && step.LaughMoment;
             StagedTokenPlacements = step.IsComplete
                 ? Array.Empty<GuardsDigital.Core.Components.PlacedToken>() : step.PlacedTokens;
             StagedResolvedDiscard = step.IsComplete ? default : step.ResolvedCardDiscarded;
@@ -901,7 +914,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     // Milestone 8.35z29. Whether this Skill's own effect placed the hero
                     // performing it, which is what Misa's Power Overwhelming watches. The resolution
                     // answered it from its trusted definition; nothing is inferred here.
-                    placedSelf: step.PlacedActingHero));
+                    placedSelf: step.PlacedActingHero,
+                    laughedDiabolically: step.LaughedDiabolically));
             }
             else if (step.Frame.PendingChoice != null)
             {

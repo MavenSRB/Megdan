@@ -1935,7 +1935,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         components.Tokens,
                         context.Participants,
                         components.Board.Minions,
-                        scope);
+                        scope,
+                        context.Modifications);
             }
         }
 

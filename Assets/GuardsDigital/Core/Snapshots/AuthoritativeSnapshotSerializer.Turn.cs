@@ -159,6 +159,13 @@ namespace GuardsDigital.Core.Snapshots
                 // silently be a stronger card than the one printed.
                 writer.Write(effect.BoundActorHeroId.IsDefined);
                 if (effect.BoundActorHeroId.IsDefined) writer.Write(effect.BoundActorHeroId.Value);
+                writer.Write(effect.BoardPartitionLine.IsDefined);
+                if (effect.BoardPartitionLine.IsDefined)
+                {
+                    writer.Write(effect.BoardPartitionLine.Origin.Q);
+                    writer.Write(effect.BoardPartitionLine.Origin.R);
+                    writer.Write((int)effect.BoardPartitionLine.Axis);
+                }
                 writer.Write(effect.SourceCardInstanceId.Value);
                 writer.Write(effect.SourceActionDefinitionId.Value);
                 writer.Write(effect.CreatedRoundIndex);
@@ -198,6 +205,12 @@ namespace GuardsDigital.Core.Snapshots
                 var side = SnapshotEnumReader.Read<TeamSide>(reader, "Active-effect controlling side");
                 var affectedHero = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
                 var boundActor = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
+                var hasBoardPartitionLine = reader.ReadBoolean();
+                var boardPartitionLine = hasBoardPartitionLine
+                    ? new BoardPartitionLine(
+                        new HexCoordinate(reader.ReadInt32(), reader.ReadInt32()),
+                        SnapshotEnumReader.Read<BoardPartitionAxis>(reader, "board-partition axis"))
+                    : default;
 
                 // The one line acceptance check 5 turns on: semantics are looked up, never rebuilt.
                 if (!capabilities.TryGetActiveEffectDefinition(definitionId, out var definition))
@@ -218,7 +231,8 @@ namespace GuardsDigital.Core.Snapshots
                 var endedAt = SnapshotEnumReader.ReadNullable<TimingCheckpoint>(reader, "Active-effect ended-at checkpoint");
                 return new ActiveEffectInstance(id, definition, controller, side, affectedHero,
                     sourceCard, sourceAction, createdRound,
-                    createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt, boundActor);
+                    createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt, boundActor,
+                    boardPartitionLine);
             });
             var continuous = ReadMany(reader, "continuous rule sources", () =>
             {

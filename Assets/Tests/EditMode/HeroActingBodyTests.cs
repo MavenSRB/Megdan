@@ -235,7 +235,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(atPick));
             Assert.That(session.Projection.PendingActingBodyChoice, Is.Not.Null);
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(58));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59));
         }
 
         [Test]

@@ -91,7 +91,9 @@ namespace GuardsDigital.Core.Rules.Placement
             {
                 case PlaceDestinationScope.EmptySpacesWithinRadius:
                     return ExcludingSpawnPoints(
-                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
+                        VisibleToActingUnit(
+                            WithinRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
+                            modifications),
                         policy.SpawnPointExclusion,
                         spaces,
                         spawnPoints,
@@ -99,7 +101,9 @@ namespace GuardsDigital.Core.Rules.Placement
 
                 case PlaceDestinationScope.EmptySpacesAtExactlyRadius:
                     return ExcludingSpawnPoints(
-                        AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
+                        VisibleToActingUnit(
+                            AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece),
+                            modifications),
                         policy.SpawnPointExclusion,
                         spaces,
                         spawnPoints,
@@ -117,6 +121,7 @@ namespace GuardsDigital.Core.Rules.Placement
                     return ExcludingSpawnPoints(
                         WithinRadius(policy.DestinationRadius, spaces, origin, modifications, placedPiece)
                             .Where(candidate => scopedCoordinates.Contains(candidate))
+                            .Where(candidate => !modifications.BlocksCurrentActorSpaceInteraction(candidate))
                             .ToArray(),
                         policy.SpawnPointExclusion,
                         spaces,
@@ -131,7 +136,9 @@ namespace GuardsDigital.Core.Rules.Placement
                             "A nearest-in-scope Place is measured over a declared coordinate set.");
                     }
 
-                    return NearestEmptyInScope(spaces, origin, scopedCoordinates, modifications, placedPiece);
+                    return NearestEmptyInScope(spaces, origin,
+                        VisibleToActingUnit(scopedCoordinates, modifications),
+                        modifications, placedPiece);
 
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -140,6 +147,13 @@ namespace GuardsDigital.Core.Rules.Placement
                         "A Place destination scope must be one this query answers.");
             }
         }
+
+        private static IReadOnlyList<HexCoordinate> VisibleToActingUnit(
+            IEnumerable<HexCoordinate> candidates, RuleModificationSet modifications) =>
+            modifications.BoardPartitions.Count == 0
+                ? candidates.ToArray()
+                : candidates.Where(candidate =>
+                    !modifications.BlocksCurrentActorSpaceInteraction(candidate)).ToArray();
 
         /// <summary>
         /// Every empty playable space at an inclusive rulebook distance of the origin, minus the origin

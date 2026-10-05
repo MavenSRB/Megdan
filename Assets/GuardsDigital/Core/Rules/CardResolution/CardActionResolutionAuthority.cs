@@ -4958,7 +4958,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!result.Accepted || board == null ||
                 ((appliedPushes == null || appliedPushes.Count == 0) &&
                     skillBackend.StagedMinionDefeats.Count == 0 &&
-                    !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined &&
+                    !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedLaugh &&
+                    !skillBackend.StagedResolvedDiscard.IsDefined &&
                     skillBackend.StagedTokenPlacements.Count == 0 &&
                     !skillBackend.StagedHeroDefeat &&
                     // Milestone 8.61e. A displacement this effect made may have walked a hero over
@@ -4986,7 +4987,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
             while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
-                skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedResolvedDiscard.IsDefined ||
+                skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedLaugh ||
+                skillBackend.StagedResolvedDiscard.IsDefined ||
                 skillBackend.StagedTokenPlacements.Count > 0 ||
                 skillBackend.StagedHeroDefeat)
             {
@@ -5032,6 +5034,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         !TryStartMarkerGivenTrigger(
                             interrupted.ActorId, interrupted.ResolutionId, markerGivenTo, boundary,
                             steps) &&
+                        !TryStartLaughTrigger(interrupted, boundary, steps) &&
                         !TryStartAfterTokensPlacedTrigger(
                             interrupted.ActorId, interrupted.ResolutionId,
                             skillBackend.StagedTokenPlacements, boundary, steps) &&
@@ -5558,6 +5561,59 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
+            return false;
+        }
+
+        /// <summary>Run the Ultimate at the laugh leaf, before any later choice changes radius.</summary>
+        private bool TryStartLaughTrigger(
+            PendingResolution interrupted, ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!skillBackend.StagedLaugh || board == null) return false;
+            var sources = GuardsDigital.Core.Rules.Progression.AfterLaughTriggerQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    boundary.Definitions, boundary.Instances),
+                board, interrupted.ActorId);
+            foreach (var source in sources)
+            {
+                if (!ContentCatalogs.TriggeredEffects.TryGet(
+                        source.Rule.TriggeredEffect.Value, out var effect))
+                    throw new InvalidOperationException(
+                        "The laugh trigger's effect is not configured.");
+                var resolutionId = new EffectResolutionId(
+                    interrupted.ResolutionId.Value + ":laugh:" +
+                    interrupted.CompletedOutcomes.Count + ":" + source.Source.SourceId);
+                var step = EffectResolutionSession.Start(
+                    resolutionId, source.SourceCardInstanceId,
+                    source.SourceDefinitionReference, source.Rule.EffectSourceId,
+                    source.OwnerId, source.OwnerId,
+                    ActionInvocationContext.PrintedPrimary,
+                    new EffectResolutionContext(
+                        effect, ContentCatalogs.Capabilities, boundary.Participants,
+                        boundary.Timing, boundary.RoundIndex, boundary.TurnIndex,
+                        CurrentModificationsFor(boundary, source.OwnerId),
+                        EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                        ActionKind.Skill, components: components,
+                        heroItems: skillBackend.HeroItems, rosterState: rosterState,
+                        tieBreakerRevealedSide: LiveTieBreakerSide));
+                if (!step.Accepted)
+                    throw new InvalidOperationException("A configured laugh trigger was refused.");
+                steps.AddRange(PreActionFacts(
+                    step, source.SourceCardInstanceId, source.Rule.EffectSourceId,
+                    source.OwnerId, CardTextTiming.None));
+                if (step.Frame?.PendingChoice == null)
+                {
+                    AppendSkillRequestedHeroDefeats(
+                        step.RequestedHeroDefeats, new ActionResolutionId(resolutionId.Value),
+                        source.SourceCardInstanceId, source.Rule.EffectSourceId,
+                        source.OwnerId, boundary, steps);
+                    continue;
+                }
+                pendingEffectInterrupt = new PendingEffectInterrupt(
+                    step.Frame, EffectInterruptKind.AfterLaughTrigger,
+                    RuleObject.ForHero(source.OwnerId), interrupted.ResolutionId);
+                return true;
+            }
             return false;
         }
 
