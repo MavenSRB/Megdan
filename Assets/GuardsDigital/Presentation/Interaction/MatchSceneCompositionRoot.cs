@@ -2082,7 +2082,7 @@ namespace GuardsDigital.Presentation.Interaction
                 cornerHighlightTemplate,
                 // TWELFTH amendment: the staged initial state, or null for the dealt match the
                 // runtime composes for itself exactly as it always has.
-                stagedInitialState);
+                stagedInitialState, experiments);
 
             // Milestone 8.35y. The configured match scene has never had a frame loop - every
             // surface redraws on a projection change - so the kinetic pass brings its own, on this
@@ -2114,6 +2114,8 @@ namespace GuardsDigital.Presentation.Interaction
             }
             var minionSelectors = ConfigureMinionSelectors(minions);
 
+            Match.TeammateSignalsUnityView.Attach(gameObject, runtime, hud, eventCamera, tiles);
+            pointerInput.SuggestHex = runtime.SuggestHex;
             pointerInput.Configure(
                 eventCamera,
                 pointerSelectors,
@@ -2305,6 +2307,13 @@ namespace GuardsDigital.Presentation.Interaction
         /// begins (see <c>PrivateLobbyDriver</c>'s format control, which is offered on the entry form
         /// and nowhere else), and only the line-up crosses this seam.
         /// </remarks>
+        private ExperimentalMatchOptions experiments = ExperimentalMatchOptions.Disabled;
+        public void ConfigureExperiments(ExperimentalMatchOptions options)
+        {
+            experiments = options ?? ExperimentalMatchOptions.Disabled;
+            if (ComposedPlan != null) Recompose(ComposedPlan);
+        }
+
         public IMatchHost ComposeForLineup(HeroLineup lineup)
         {
             if (lineup == null) throw new ArgumentNullException(nameof(lineup));

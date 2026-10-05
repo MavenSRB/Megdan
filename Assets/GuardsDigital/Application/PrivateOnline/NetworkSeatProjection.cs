@@ -69,10 +69,17 @@ namespace GuardsDigital.Application
             IReadOnlyList<DirectorCommand> decisionContractCommands,
             IReadOnlyList<DirectorCommand> authorizedCommands,
             NetworkProjectionDetailRecord detail,
-            IReadOnlyList<NetworkTeamVictoryTallyRow> teamVictoryTallies = null)
+            IReadOnlyList<NetworkTeamVictoryTallyRow> teamVictoryTallies = null,
+            ExperimentalMatchOptions experiments = null, IReadOnlyList<NetworkCardRow> alliedHandCards = null,
+            IReadOnlyList<TeammateMarker> teammateMarkers = null, long coordinationRevision = 0, int coordinationGeneration = 0)
         {
             Version = version;
             TeamVictoryTallies = teamVictoryTallies ?? Array.Empty<NetworkTeamVictoryTallyRow>();
+            Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
+            AlliedHandCards = alliedHandCards ?? Array.Empty<NetworkCardRow>();
+            TeammateMarkers = teammateMarkers ?? Array.Empty<TeammateMarker>();
+            CoordinationRevision = coordinationRevision;
+            CoordinationGeneration = coordinationGeneration;
             SeatId = seatId;
             PlayerId = playerId;
             HeroId = heroId;
@@ -108,6 +115,11 @@ namespace GuardsDigital.Application
             Detail = detail;
         }
 
+        public ExperimentalMatchOptions Experiments { get; }
+        public IReadOnlyList<NetworkCardRow> AlliedHandCards { get; }
+        public IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
+        public long CoordinationRevision { get; }
+        public int CoordinationGeneration { get; }
         public long Version { get; }
         public string SeatId { get; }
         public string PlayerId { get; }
@@ -914,6 +926,11 @@ namespace GuardsDigital.Application
 
                 WriteCommands(writer, projection.AuthorizedCommands);
                 NetworkProjectionDetailCodec.Write(writer, projection);
+                ExperimentalWireCodec.WriteOptions(writer, projection.Experiments);
+                WriteCards(writer, projection.AlliedHandCards);
+                writer.Write(projection.CoordinationRevision);
+                writer.Write(projection.CoordinationGeneration);
+                ExperimentalWireCodec.WriteMarkers(writer, projection.TeammateMarkers);
 
                 writer.Flush();
                 return stream.ToArray();
@@ -1433,6 +1450,13 @@ namespace GuardsDigital.Application
                         return false;
                     }
 
+                    var experiments = ExperimentalWireCodec.ReadOptions(reader);
+                    if (!TryReadCards(reader, out var alliedHandCards)) return false;
+                    var coordinationRevision = reader.ReadInt64();
+                    var coordinationGeneration = reader.ReadInt32();
+                    if (coordinationGeneration < 0) return false;
+                    var teammateMarkers = ExperimentalWireCodec.ReadMarkers(reader);
+                    if (coordinationRevision < 0 || (!experiments.TeammateCoordination && (alliedHandCards.Count > 0 || teammateMarkers.Count > 0))) return false;
                     if (stream.Position != stream.Length)
                     {
                         return false;
@@ -1462,7 +1486,7 @@ namespace GuardsDigital.Application
                         contractCommands,
                         authorizedCommands,
                         detail,
-                        Array.AsReadOnly(tallies.ToArray()));
+                        Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration);
                     return true;
                 }
             }
@@ -1470,6 +1494,7 @@ namespace GuardsDigital.Application
             {
                 return false;
             }
+            catch (ArgumentException) { return false; }
         }
 
         private static void WriteCards(BinaryWriter writer, IReadOnlyList<Core.Cards.CardInstance> cards)

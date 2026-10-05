@@ -332,7 +332,7 @@ namespace GuardsDigital.Application
     /// session does not: the order submissions execute in, the ordered stream of what they did, and
     /// the refusal that keeps that order true.</para>
     /// </remarks>
-    public sealed class MatchHost : IMatchHost
+    public sealed partial class MatchHost : IMatchHost
     {
         /// <summary>
         /// How many records the ordered stream retains. A consumer whose cursor falls behind this is
@@ -472,6 +472,7 @@ namespace GuardsDigital.Application
         public MatchHost(IMatchSession session)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
+            Experiments = (session as MatchSession)?.Experiments ?? ExperimentalMatchOptions.Disabled;
         }
 
         /// <summary>
@@ -584,7 +585,7 @@ namespace GuardsDigital.Application
             }
         }
 
-        public string CaptureSnapshot() => session.CaptureSnapshot();
+        public string CaptureSnapshot() => CaptureExperimentalSnapshot();
 
         /// <summary>
         /// Milestone 8.30a. The seats, rebuilt whenever the authority publishes a different
@@ -957,7 +958,8 @@ namespace GuardsDigital.Application
             var source = session.Projection;
             var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
             return SeatProjectionFactory.ForSeat(
-                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker());
+                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
+                CoordinationFor(seat), coordination.Revision, coordination.Generation);
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -1081,9 +1083,11 @@ namespace GuardsDigital.Application
                 case MatchSubmissionKind.Undo:
                     return FromOperation(submission, session.Undo());
                 case MatchSubmissionKind.Restart:
-                    return FromOperation(submission, session.Restart());
+                    var restart = session.Restart();
+                    if (restart.Accepted) coordination.Clear();
+                    return FromOperation(submission, restart);
                 case MatchSubmissionKind.RestoreSnapshot:
-                    return FromOperation(submission, session.RestoreSnapshot(submission.SnapshotPayload));
+                    return FromOperation(submission, session.RestoreSnapshot(UnwrapExperimentalSnapshot(submission.SnapshotPayload)));
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(submission),

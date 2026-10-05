@@ -1049,6 +1049,16 @@ namespace GuardsDigital.Application
         /// wire's own submission identity, the version the statement was decided against, and a
         /// refusal to act at all while the view is known stale.
         /// </summary>
+        public bool TrySubmitCoordination(CoordinationCommand command)
+        {
+            if (command == null || State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                !LatestProjection.Experiments.TeammateCoordination) return false;
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitCoordinationFrame(new NetworkEnvelope(
+                SessionCorrelation, ConnectionEpoch, gameplaySendSequence, gameplaySendSequence), command));
+            return true;
+        }
+
         public bool TrySubmitAgreement(TeamAgreementCommand statement, out string submissionId)
         {
             submissionId = null;

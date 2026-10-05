@@ -64,7 +64,9 @@ Completed 2026-10-05. The three-copy Illusion definition and typed handlers plac
 
 Historical evidence: [9.51 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-951-nebkher-illusion-and-borrow-evidence).
 
-### [~] 9.52 NebKher's laughter and divided board
+### [ ] 9.52 NebKher's laughter and divided board
+
+Worktree routing note: active in the main checkout; this isolated experimental branch does not implement or alter 9.52. Retain the main checkout's authoritative hero status when merging.
 
 Outcome: Diabolical Laughter's optional repeated choices and the Ultimate's trigger; a selected straight line through NebKher's space enforces the two printed cross-side interaction restrictions for Crack in Reality and Shift Reality, across every target, space, movement, placement and area query. Board geometry, timing, snapshot, replay and wire checks. T2. Requires the laughter and line rulings.
 

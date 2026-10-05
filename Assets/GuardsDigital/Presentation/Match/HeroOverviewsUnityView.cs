@@ -1475,18 +1475,26 @@ namespace GuardsDigital.Presentation.Match
 
         private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {
+            var medallion = BuildSharedHeroPortrait(hero, accent);
+            revealAnchors.Add(hero, medallion);
+            HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
+            return medallion;
+        }
+
+        internal static VisualElement BuildSharedHeroPortrait(HeroOverviewViewModel hero, Color accent, float scale = 1f)
+        {
             var medallion = new VisualElement { name = "gd-hero-medallion" };
-            medallion.style.width = HeroMedallionSize;
-            medallion.style.height = HeroMedallionSize;
+            medallion.style.width = (HeroMedallionSize * scale);
+            medallion.style.height = (HeroMedallionSize * scale);
             medallion.style.flexShrink = 0f;
             medallion.style.alignItems = Align.Center;
             medallion.style.justifyContent = Justify.Center;
             medallion.style.backgroundColor = Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.30f);
-            HudElements.Border(medallion, accent, 2f, HeroMedallionSize / 2f);
+            HudElements.Border(medallion, accent, 2f, (HeroMedallionSize * scale) / 2f);
 
             var icon = new VisualElement { name = "gd-hero-icon" };
-            icon.style.width = HeroPortraitSize;
-            icon.style.height = HeroPortraitSize;
+            icon.style.width = (HeroPortraitSize * scale);
+            icon.style.height = (HeroPortraitSize * scale);
             icon.style.flexShrink = 0f;
             icon.style.justifyContent = Justify.Center;
             icon.style.backgroundColor = accent;
@@ -1499,7 +1507,7 @@ namespace GuardsDigital.Presentation.Match
                     MatchHudTheme.PrimaryText.b,
                     0.72f),
                 1f,
-                HeroPortraitSize / 2f);
+                (HeroPortraitSize * scale) / 2f);
 
             if (hero.ContentId.IsDefined)
             {
@@ -1507,7 +1515,7 @@ namespace GuardsDigital.Presentation.Match
                 if (portrait != null)
                 {
                     // Match the board's baked-first/neutral-second decision and wider neutral rim.
-                    var faceSize = HeroPortraitSize * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
+                    var faceSize = (HeroPortraitSize * scale) * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
                     icon.style.width = faceSize;
                     icon.style.height = faceSize;
                     // Contained rather than covered, and centred: the source is a circular token
@@ -1534,8 +1542,6 @@ namespace GuardsDigital.Presentation.Match
             icon.tooltip = hero.PortraitAssistiveLabel;
             medallion.tooltip = hero.PortraitAssistiveLabel;
             medallion.Add(icon);
-            revealAnchors.Add(hero, medallion);
-            HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
             return medallion;
         }
 

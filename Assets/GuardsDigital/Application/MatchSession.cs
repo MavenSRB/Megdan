@@ -19,6 +19,7 @@ namespace GuardsDigital.Application
     public sealed class MatchSession : IMatchSession
     {
         private readonly MatchSessionInitialState initialState;
+        public ExperimentalMatchOptions Experiments => initialState.Experiments;
 
         /// <summary>
         /// Internal rather than private so a fixture can assert what a live session's aggregate

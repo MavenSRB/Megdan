@@ -635,3 +635,10 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.63a | Added 22 missing terrain border cells around the two spawn zones; all playable cells now have six mapped neighbours. Preserved playable/spawn data and original art, updated candidate counts and private overlays. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). | `milestone/9.63a` |
+
+
+## Milestone 9.58 Teammate coordination evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.58 | Added the per-match Experimental menu, read-only allied hands, right-click hex/card suggestions and reused tray portraits, with team-scoped wire 37 and immutable snapshot options. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination). | `milestone/9.58` |

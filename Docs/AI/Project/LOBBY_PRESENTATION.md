@@ -2,9 +2,9 @@
 
 Canonical current lobby/picker contract. Return to [project context](../PROJECT_CONTEXT.md).
 
-## Queued Experimental menu
+## Experimental menu
 
-The agreed, unimplemented [Experimental menu, timer settings and teammate coordination toggle](EXPERIMENTAL_FEATURES.md#experimental-menu) are recorded separately. They are per-match opt-ins, reset off for a new hosted game; this design does not change the shipped lobby or authorize implementation.
+The host screen now exposes an **Experimental** button with a per-match teammate coordination toggle, reset off for a new hosted game. [The owning milestone](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination) records its gate status. The [accepted timer settings](EXPERIMENTAL_FEATURES.md#experimental-menu) follow separately at 9.56; the normal map selector remains outside Experimental.
 
 ## Setup and selection
 

@@ -27,7 +27,7 @@ namespace GuardsDigital.Application
     /// already uses. Presentation forwards only host-published commands; this object adds the
     /// wire identity/version envelope through <see cref="PrivateSessionClient"/>.
     /// </summary>
-    public sealed class NetworkMatchClient : IMatchClient
+    public sealed class NetworkMatchClient : IMatchClient, ICoordinationClient
     {
         private sealed class PendingEffectAutoConfirm
         {
@@ -90,6 +90,7 @@ namespace GuardsDigital.Application
 
         /// <summary>An admitted seat of a served match, never the Director.</summary>
         public bool IsDirector => false;
+        public bool SubmitCoordination(CoordinationCommand command) => session.TrySubmitCoordination(command);
 
         public MatchClientResult Submit(DirectorCommand command)
         {
@@ -339,7 +340,7 @@ namespace GuardsDigital.Application
     /// record. While the session is not actionable the retained view is deliberately stripped of
     /// every offer and pending answer.
     /// </summary>
-    public sealed class NetworkMatchReadModel : IMatchReadModel
+    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel
     {
         private readonly IMatchReadModel trusted;
         private readonly MatchContentCatalogs catalogs;
@@ -405,6 +406,11 @@ namespace GuardsDigital.Application
             decisionContract = null;
         }
 
+        public ExperimentalMatchOptions Experiments => wire?.Experiments ?? ExperimentalMatchOptions.Disabled;
+        public IReadOnlyList<CardInstance> AlliedHandCards => wire == null ? Array.Empty<CardInstance>() : Array.AsReadOnly(wire.AlliedHandCards.Select(ToCard).ToArray());
+        public IReadOnlyList<TeammateMarker> TeammateMarkers => wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();
+        public long CoordinationRevision => wire?.CoordinationRevision ?? 0;
+        public int CoordinationGeneration => wire?.CoordinationGeneration ?? 0;
         public long Version => wire?.Version ?? trusted.Version;
         public bool IsInputEnabled => actionable;
 

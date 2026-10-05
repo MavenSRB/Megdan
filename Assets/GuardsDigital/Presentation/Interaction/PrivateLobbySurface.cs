@@ -20,8 +20,9 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed class PrivateLobbyEntry
     {
         public PrivateLobbyEntry(
-            string address, string port, string sessionKey, SeatId seat, string playerName = "")
+            string address, string port, string sessionKey, SeatId seat, string playerName = "", ExperimentalMatchOptions experiments = null)
         {
+            Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
             Address = PrivateLobbyEntryText.CleanEndpointPart(address);
             Port = PrivateLobbyEntryText.CleanEndpointPart(port);
             SessionKey = PrivateLobbyEntryText.CleanSessionId(sessionKey);
@@ -32,6 +33,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// <summary>Milestone 8.108. The name this player typed, cleaned; empty when none.</summary>
         public string PlayerName { get; }
 
+        public ExperimentalMatchOptions Experiments { get; }
         public string Address { get; }
         public string Port { get; }
         public string SessionKey { get; }

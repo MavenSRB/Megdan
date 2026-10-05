@@ -20,6 +20,7 @@ namespace GuardsDigital.Presentation.Interaction
         private StandardMinionPointerSelector[] minionSelectors;
         private HexTileView[] tiles;
         private System.Func<Vector2, bool> blocksPointer;
+        public System.Func<GuardsDigital.Core.Board.HexCoordinate, bool> SuggestHex { get; set; }
 
         private readonly InputAction pointerPress = new InputAction(
             "Select Hero",
@@ -98,12 +99,23 @@ namespace GuardsDigital.Presentation.Interaction
         private void Update()
         {
             RefreshHoverAtCurrentPointer();
+            if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame && eventCamera != null)
+            {
+                TrySuggestAtScreen(Mouse.current.position.ReadValue());
+            }
             if (!pointerPress.WasPressedThisFrame())
             {
                 return;
             }
 
             TrySelectAtCurrentPointer();
+        }
+
+        public bool TrySuggestAtScreen(Vector2 screenPosition)
+        {
+            if (eventCamera == null || (blocksPointer != null && blocksPointer(screenPosition))) return false;
+            var tile = FindTileUnderPointer(eventCamera.ScreenPointToRay(screenPosition));
+            return tile != null && SuggestHex?.Invoke(tile.Coordinate) == true;
         }
 
         private void RefreshHoverAtCurrentPointer()

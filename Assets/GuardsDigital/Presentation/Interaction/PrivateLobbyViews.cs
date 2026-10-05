@@ -128,6 +128,8 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label invitationAddress;
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
         private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
+        private Toggle coordinationToggle;
+        private VisualElement experimentalPanel;
         private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
         private PrivateLobbyModel renderedModel;
         private readonly Label selectionStatus;
@@ -257,6 +259,24 @@ namespace GuardsDigital.Presentation.Interaction
             formatChoices.style.flexWrap = Wrap.NoWrap;
             formatChoices.style.marginBottom = 4f;
             hostMenu.Add(formatChoices);
+            experimentalPanel = new VisualElement { name = "experimental-menu" };
+            experimentalPanel.style.display = DisplayStyle.None;
+            experimentalPanel.style.marginTop = 6;
+            var experimentalButton = new Button(() => experimentalPanel.style.display =
+                experimentalPanel.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None)
+                { text = "EXPERIMENTAL", name = "experimental-button" };
+            experimentalButton.style.height = 36;
+            experimentalButton.style.fontSize = 18;
+            ApplyButtonChrome(experimentalButton);
+            hostMenu.Add(experimentalButton);
+            coordinationToggle = new Toggle("Teammate coordination") { name = "experimental-coordination" };
+            coordinationToggle.style.fontSize = 18;
+            coordinationToggle.style.color = Color.white;
+            experimentalPanel.Add(coordinationToggle);
+            var coordinationHelp = Caption("Inspect allied hands. Right-click cards or hexes to suggest them to teammates.", 15, "experimental-coordination-help");
+            coordinationHelp.style.whiteSpace = WhiteSpace.Normal;
+            experimentalPanel.Add(coordinationHelp);
+            hostMenu.Add(experimentalPanel);
             entry.Add(hostMenu);
 
             joinMenu = new VisualElement { name = JoinMenuName };
@@ -399,7 +419,8 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
-                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value)
+                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
+                    new ExperimentalMatchOptions(teammateCoordination: coordinationToggle.value))
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -414,6 +435,11 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public void ShowPage(PrivateLobbyEntryPage value)
         {
+            if (value == PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Host)
+            {
+                coordinationToggle.SetValueWithoutNotify(false);
+                experimentalPanel.style.display = DisplayStyle.None;
+            }
             page = value;
             if (renderedModel != null)
             {
@@ -2166,6 +2192,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            compositionRoot.ConfigureExperiments(entry.Experiments);
             sessionKey = entry.SessionKey;
             var draftSeed = BitConverter.ToInt32(new CryptoNonceSource().NextNonce(), 0);
             botFleet = new GuardsDigital.Application.Bots.PrivateSessionBotFleet(

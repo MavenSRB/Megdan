@@ -139,7 +139,9 @@ namespace GuardsDigital.Application
         /// is the whole downstream cost of hero selection, and it was measured before this kind was
         /// added rather than discovered afterwards.</para>
         /// </remarks>
-        ChooseHero = 21
+        ChooseHero = 21,
+
+        SubmitCoordination = 22
 
         // Milestone 8.35r deliberately added NO kind here. The seat-public match log rides inside
         // SeatProjection's own message instead, and the reason is a measurement rather than a

@@ -436,7 +436,8 @@ namespace GuardsDigital.Application
         // retrieval add two command kinds and each commitment row gains its two-card
         // permission flag; snapshot schema advances to v56 for the second commitment
         // identity. Older peers are refused at admission.
-        public const int Version = 36;
+        // v37: experimental settings, private allied hands and independent teammate signals.
+        public const int Version = 37;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

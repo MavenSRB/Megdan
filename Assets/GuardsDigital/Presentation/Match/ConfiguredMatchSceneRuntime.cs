@@ -50,7 +50,7 @@ namespace GuardsDigital.Presentation.Match
             // TWELFTH amendment. Optional and appended, so every existing composition and fixture
             // keeps its exact call - the same reason 8.20a's heroOverviews and 8.35y's kinetics
             // were appended rather than inserted.
-            MatchSessionInitialState stagedInitialState = null)
+            MatchSessionInitialState stagedInitialState = null, ExperimentalMatchOptions experiments = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -102,7 +102,7 @@ namespace GuardsDigital.Presentation.Match
                     scenario,
                     setup,
                     maps,
-                    configuration);
+                    configuration, experiments: experiments);
             host = MatchHost.Compose(InitialState);
             session = new LocalDirectorMatchClient(host);
             IsSandbox = stagedInitialState != null;
@@ -340,6 +340,16 @@ namespace GuardsDigital.Presentation.Match
                     BoardPresenter.SubmitHeroBody(heroId, body) ||
                     MinionChoicePresenter.SubmitUnit(
                         GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)));
+            HandsView.SuggestedBy = id =>
+            {
+                if (!(client.Projection is IExperimentalReadModel experimental) || HeroOverviewsView?.Model == null)
+                    return Array.Empty<HeroOverviewViewModel>();
+                return experimental.TeammateMarkers.Where(m => m.Card.Equals(id))
+                    .Select(m => HeroOverviewsView.Model.Heroes.FirstOrDefault(h => h.HeroId.Equals(m.Sender)))
+                    .Where(h => h != null).ToArray();
+            };
+            HandsView.MyCardsRequested += () => SelectViewedHero(HandsPresenter.HomeHeroId);
+            HandsView.CardSuggested += SuggestCard;
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.CardDroppedOnMap += cardId => HandsPresenter.CommitCardImmediately(cardId);
@@ -547,6 +557,28 @@ namespace GuardsDigital.Presentation.Match
         /// Points the tray at one hero (milestone 7.8a). Local presentation state: no command is
         /// submitted, nothing authoritative moves, and nothing about it is serialized.
         /// </summary>
+        public bool SuggestHex(HexCoordinate hex)
+        {
+            var projection = client.Projection;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination ||
+                !(client is ICoordinationClient communication)) return false;
+            var own = experimental.TeammateMarkers.FirstOrDefault(m => m.Sender.Equals(HandsPresenter.HomeHeroId));
+            return communication.SubmitCoordination(new CoordinationCommand(own?.Revision ?? 0, CoordinationTargetKind.Hex,
+                own?.Hex.HasValue == true && own.Hex.Value.Equals(hex), projection.SelectedMap.Reference, hex, generation: experimental.CoordinationGeneration));
+        }
+        private void SuggestCard(CardInstanceId id)
+        {
+            var projection = client.Projection;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination ||
+                !(client is ICoordinationClient communication)) return;
+            var card = experimental.AlliedHandCards.FirstOrDefault(c => c.Id.Equals(id));
+            if (card == null) return;
+            var own = experimental.TeammateMarkers.FirstOrDefault(m => m.Sender.Equals(HandsPresenter.HomeHeroId));
+            communication.SubmitCoordination(new CoordinationCommand(own?.Revision ?? 0, CoordinationTargetKind.Card,
+                own != null && own.Card.Equals(id), projection.SelectedMap.Reference, cardOwner: card.OwnerId, card: id, generation: experimental.CoordinationGeneration));
+            RefreshAll();
+        }
+
         public bool SelectViewedHero(HeroId heroId)
         {
             if (!HandsPresenter.SelectViewedHero(heroId))
@@ -950,6 +982,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void RefreshAll()
         {
+            HandsView.CoordinationEnabled = (client.Projection as IExperimentalReadModel)?.Experiments.TeammateCoordination == true;
             hud.RenderHeader(new MatchHudHeaderViewModel(
                 client.Projection.TieBreakerState,
                 client.Projection.Setup,

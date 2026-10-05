@@ -24,9 +24,9 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-957-record-the-experim
 
 Historical evidence: [9.57 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-957-teammate-coordination-design-evidence).
 
-### [ ] 9.58 Implement and gate experimental teammate coordination
+### 9.58 Implement and gate experimental teammate coordination
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#958-implement-and-gate-experimental-teammate-coordination).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination).
 
 ### [x] 9.59 Prepare the experimental features for implementation
 

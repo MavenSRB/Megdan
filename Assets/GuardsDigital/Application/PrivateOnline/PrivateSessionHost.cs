@@ -707,6 +707,20 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if (frame.Kind == SessionMessageKind.SubmitCoordination)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeSubmitCoordination(frame.Payload, out var coordinationEnvelope, out var coordinationCommand))
+                        {
+                            RejectAndClose(record, SessionRejectionReason.MalformedFrame, "The teammate signal did not decode.");
+                            return;
+                        }
+                        if (!AcceptGameplayEnvelope(record, coordinationEnvelope)) return;
+                        if (matchHost is MatchHost coordinationHost && coordinationHost.SubmitCoordinationForSeat(record.Seat, coordinationCommand))
+                            PublishProjections(record, coordinationEnvelope.Correlation);
+                        else SendProjectionTo(record, coordinationEnvelope.Correlation);
+                        return;
+                    }
+
                     if (frame.Kind == SessionMessageKind.SubmitAgreement)
                     {
                         HandleAgreementSubmission(record, frame.Payload);
@@ -1036,8 +1050,11 @@ namespace GuardsDigital.Application
             }
 
             hold.IsReady = readiness.IsReady;
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(record.Seat);
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(PrivateSessionEventKind.SeatReadinessChanged, record.Ordinal, record.Seat,
                 seat == null ? default : seat.HeroId,
                 seat == null ? TeamSide.None : seat.TeamSide,
@@ -2151,8 +2168,11 @@ namespace GuardsDigital.Application
                 hold.IsReady = false;
             }
 
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(record.Seat);
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(
                 forfeited
                     ? PrivateSessionEventKind.SeatReleased
@@ -2201,8 +2221,11 @@ namespace GuardsDigital.Application
                 hold.IsReady = false;
             }
 
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(seat);
             var released = matchHost.Seats.Find(seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(PrivateSessionEventKind.SeatReleased, 0, seat,
                 released == null ? default : released.HeroId,
                 released == null ? TeamSide.None : released.TeamSide,

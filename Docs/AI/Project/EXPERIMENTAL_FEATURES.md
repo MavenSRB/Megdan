@@ -1,12 +1,12 @@
 # Experimental features: turn timer and teammate coordination
 
-Canonical designs for the user-approved discussion; **not implemented**. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is authorized after the final hero gate, in the sequence recorded by the session brief. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
+Canonical designs and acceptance requirements; implementation status belongs to the owning roadmap. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is authorized now in an isolated worktree, in the sequence recorded by the session brief; reconcile final hero changes before merging. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
 
 The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these decisions to existing source, proposed contracts, concrete acceptance cases and the post-hero handoff; it does not authorize runtime work.
 
 ## Experimental menu
 
-The host-game screen gains an **Experimental** button opening per-match feature toggles. Map selection is a standard host-screen setting, outside this menu; it remains available with every experiment off. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
+The host-game screen gains an **Experimental** button opening per-match feature toggles. Map selection is a standard host-screen setting, outside this menu; it remains available with every experiment off. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. User-selected defaults (2026-10-05): card commitment **120s**, card resolution **30s**, response **30s**, card upgrade **120s**, team bank per wave **300s**. Each is editable per game in whole seconds; accept 1–86400 for allowances and 0–86400 for the bank, with invalid input refused. Mockup life counts remain illustrative.
 
 | Setting | What it times |
 | --- | --- |
@@ -115,7 +115,7 @@ Related prospective risk: [RISK-TIMER-001](../TECHNICAL_RISKS.md). Validation ev
 
 ## Teammate coordination
 
-Approved after mockup review; documentation outcome [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design), with implementation queued separately as [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination). This is the second independent option in the host-game **Experimental** menu. It applies to that match only, resets off for each new hosted game, and does not require Turn timer. The current shipped [hero-rail selection/privacy contract](HERO_RAIL_INTERACTION.md#identity-and-selection) remains in force until this opt-in feature is implemented.
+Approved after mockup review; documentation outcome [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design), with implementation completed at [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination). This is the second independent option in the host-game **Experimental** menu. It applies to that match only, resets off for each new hosted game, and does not require Turn timer. The current shipped [hero-rail selection/privacy contract](HERO_RAIL_INTERACTION.md#identity-and-selection) governs option-off play; the enabled exception follows the contract below.
 
 ### Allied cards and right-click suggestions
 
@@ -136,7 +136,7 @@ If an effect, legal-target cue or selection already highlights the hex, preserve
 
 ### Future implementation closing checks
 
-These are acceptance obligations for 9.58, not passing runtime evidence:
+These acceptance obligations were checked at 9.58; its completion commit owns the evidence:
 
 1. Host and joined seats in 2v2/3v3 see the same per-match option; it is independent of the timer and resets off on a new host game. Option-off preserves ordinary hand privacy, input and selection behavior.
 2. Both allied board-token and tray clicks reach the intended hand and return to the player's own cards. Team eligibility is checked before projection/transmission, including hostile or stale requests; enemy private cards never reach an unauthorized client.
@@ -145,3 +145,8 @@ These are acceptance obligations for 9.58, not passing runtime evidence:
 5. Use stable player/card identities across tray rebuilds and hand changes, not visual slot indexes. Remove a card suggestion when its target leaves the inspectable hand rather than transferring it to a replacement card. Seat loss, reconnect, match exit and Director restoration must not leave ghost markers, stale hand visibility or a suggestion attached to the wrong target. These presentation messages cannot block authoritative resolution or alter gameplay outcomes.
 
 The reviewed mockups illustrate layout, not exact new artwork. The written right-click and existing-token amendments supersede their earlier hover/invented-badge versions. No gameplay implementation, assets or private reference images are added by this documentation milestone.
+
+
+## Implemented communication contract
+
+**9.58 compatibility:** wire 37 adds immutable experimental settings, a separately filtered allied-hand collection, and typed teammate signals. Signals derive their sender from the admitted seat, check map identity and current hand ownership, and use per-sender revisions plus a restart generation. They never enter gameplay commands, Undo history or gameplay versioning. Reconnect receives current team-only signals; departure republishes their removal. Experimental host snapshots wrap the unchanged Core schema-58 payload with validated immutable settings and reject mismatched settings atomically. The [owning milestone](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination) records validation status; timer implementation and the final hero merge remain separate gates.
