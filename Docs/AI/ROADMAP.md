@@ -104,6 +104,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Tenth shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_10.md)
 - [Phase 8 - Eleventh shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_11.md)
 - [Phase 9 - Rules fidelity and hero intake hardening](Roadmap/PHASE_9.md)
+- [Phase 9 - Experimental features and alternate maps](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md)
 - [Phase 9 - First shard of completed milestone definitions](Roadmap/PHASE_9_COMPLETED.md)
 - [Phase 9 - Completed expected-outcome milestone definitions](Roadmap/PHASE_9_EXPECTED_OUTCOMES_COMPLETED.md)
 - [Phase 9 - Twenty-seventh-hero dealing: Mortimer the Awakener](Roadmap/PHASE_9_TWENTY_SEVENTH_HERO.md)

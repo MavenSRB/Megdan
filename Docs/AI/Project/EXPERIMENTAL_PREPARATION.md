@@ -6,7 +6,7 @@ Preparation outcome [9.59](../Roadmap/PHASE_9.md#x-959-prepare-the-experimental-
 
 Inspected committed baseline: `65f86183` (the 9.57 documentation commit, with committed hero behavior through 9.51). The shared checkout also contains unfinished 9.52 code, including snapshot v59 and the `BoardPartitionAxis` choice vocabulary. Those observations are provisional, not a completed hero gate. No runtime file or test was edited for this packet.
 
-Recommended future order is **9.58 teammate coordination with the shared Experimental menu, then 9.56 timer/header**, after NebKher completes 9.54 and implementation is authorized. These remain two outcomes with separate validation and commits. The timer is not a dependency of coordination. Build settings once and extend them for the timer; do not create a second host-options path. No additional milestone per mechanical step is proposed.
+Approved 2026-10-05 order is **9.58 teammate coordination with the shared Experimental menu, then 9.56 timer/header**, after NebKher completes 9.54, followed by 9.61 small-map/host-selector implementation. These remain two outcomes with separate validation and commits. The timer is not a dependency of coordination. Build settings once and extend them for the timer; do not create a second host-options path. No additional milestone per mechanical step is proposed.
 
 Immediately after the hero lands: verify the brief and final hero evidence; compare the source locations below with this baseline; audit new pending families, effect vocabularies, controllers and restore fields; select schema/wire versions from the landed source, not this packet. Do not transplant an old snapshot reader or reserve version numbers now.
 

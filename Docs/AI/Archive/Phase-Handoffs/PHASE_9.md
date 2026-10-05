@@ -623,3 +623,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.60c | Aligned all ten glyphs with hex centres and original lane markers, corrected green-map orientations, and preserved cleaned backups and reproducible private recipes. [Definition](../../Roadmap/PHASE_9.md#x-960c-align-replacement-glyphs-with-their-lanes). | `milestone/9.60c` |
+
+## Milestone 9.63 Small map preparation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.63 | Prepared the 236-cell, five-zone, 40-spawn alternate small-map candidate, artwork registration and private annotated reviews, with a perimeter promotion check and source-grounded host selector/setup/network/restore plan. Recorded the approved post-hero 9.58 -> 9.56 -> 9.61 sequence. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map). | `milestone/9.63` |

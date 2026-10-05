@@ -1,0 +1,80 @@
+{
+  "mapId": "alternate-small-single-lane",
+  "revision": 1,
+  "status": "preparation-only",
+  "initialMinionSpawns": [
+    {
+      "spawnPointId": "blue-melee-minion-05",
+      "spaceId": "q2_r-2",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-06",
+      "spaceId": "q3_r-2",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-07",
+      "spaceId": "q-2_r-1",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-08",
+      "spaceId": "q-4_r2",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-02",
+      "spaceId": "q-1_r-1",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-02",
+      "spaceId": "q-3_r2",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-04",
+      "spaceId": "q3_r-1",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-05",
+      "spaceId": "q1_r2",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-06",
+      "spaceId": "q-4_r3",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-07",
+      "spaceId": "q-3_r3",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-02",
+      "spaceId": "q0_r2",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-02",
+      "spaceId": "q2_r-1",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    }
+  ],
+  "heroSpawnPolicy": "3v3 uses all three same-team throne spawns; 2v2 uses a stable two-of-three subset, checked with current setup policy at integration. No scene-coordinate literals."
+}

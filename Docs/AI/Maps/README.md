@@ -14,13 +14,17 @@ The schema is map-scoped so future maps can coexist:
 
 Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v58, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
 
+## Alternate small-map preparation
+
+[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. It is not loaded by runtime.
+
 ## Future map references
 
-Three distinct maps are preserved for future implementation at [9.60](../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). The later uploads are preferred references; earlier copies remain preserved. These are private visual references, not reviewed runtime coordinate/zone/spawn specifications. All files stay in the existing Git-ignored `Docs/Guards of Atlantis II - Map References/` directory; only descriptions/planning are tracked. Saving does not grant publication or distribution rights. The visual descriptors below are filing aids, not official map names.
+Three distinct maps are preserved for future implementation at [9.60](../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). The later uploads are preferred references; earlier copies remain preserved. These are private visual references, not reviewed runtime coordinate/zone/spawn specifications. All files stay in the existing Git-ignored `Docs/Guards of Atlantis II - Map References/` directory; tracked preparation data and planning are linked above. Saving does not grant publication or distribution rights. The visual descriptors below are filing aids, not official map names.
 
 ### Future alternate map for 2v2 and 3v3
 
-The first pictured map is an additional future option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9.md#961-implement-the-alternate-map-for-2v2-and-3v3) is queued, not authorized; the existing map remains available.
+The first pictured map is an additional future option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9.md#961-implement-the-alternate-map-for-2v2-and-3v3) is authorized after 9.54 -> 9.58 -> 9.56, including a host-screen map selector; the existing map remains available. Immediate 9.63 prepares its mapping without changing runtime.
 
 - Preferred file: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-preferred-reference-2026-10-05.png`, copied from `codex-clipboard-ea422bb2-e14e-4d02-aeca-4e270f2057f4.png`.
 - Earlier original: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-user-reference-2026-10-05.png`, copied from `codex-clipboard-278a5c29-8648-4cd4-a57c-667b4321932e.png`.

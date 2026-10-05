@@ -1,0 +1,443 @@
+{
+  "mapId": "alternate-small-single-lane",
+  "revision": 1,
+  "status": "preparation-only",
+  "image": "Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-ranged-spawns-2026-10-05.png",
+  "imageSha256": "f7a57391af1723fb73c4a82d9da8e573e46cb14670d8a52da76e73fae6cf88bd",
+  "imageWidth": 900,
+  "imageHeight": 900,
+  "pixelOrigin": "top-left; x right, y down",
+  "axialOriginPixel": [
+    453.4,
+    424.4
+  ],
+  "qBasisPixel": [
+    42.04,
+    -9.78
+  ],
+  "rBasisPixel": [
+    29.49,
+    31.52
+  ],
+  "formula": "pixel = origin + q*qBasis + r*rBasis",
+  "calibrationMethod": "Repeated artwork texture translations measured in upper/lower/full regions and at four/eight spacings, then coordinate overlay inspected on every playable row. Basis is a rounded similarity (equal lengths and 60 degrees), not a per-cell distortion.",
+  "outerRadiusPixels": 24.91993846969397,
+  "halfTurnSymmetry": {
+    "q": "-q-1",
+    "r": "1-r"
+  },
+  "terrainAppearance": [
+    {
+      "spaceId": "q-9_r2",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r3",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r4",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r5",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r6",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-9_r8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-8_r1",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-8_r2",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r3",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r4",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r5",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r7",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-8_r8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-7_r0",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-7_r1",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r2",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r3",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r4",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r5",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r7",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-7_r8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-6_r0",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-6_r3",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-6_r4",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-6_r5",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-6_r6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-6_r7",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-6_r8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r-5",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r-4",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r-3",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r-2",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r-1",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-5_r9",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q-1_r-2",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q-1_r1",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q0_r0",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q0_r3",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q4_r-8",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r-7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r2",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r3",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r4",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r5",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r6",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q5_r-7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q5_r-6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q5_r-5",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q5_r-4",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q5_r-3",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q5_r-2",
+      "appearance": "rock",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q5_r1",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q6_r-7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q6_r-6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r-5",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r-4",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r-3",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r-2",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r-1",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r0",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q6_r1",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q7_r-7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q7_r-6",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r-5",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r-4",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r-3",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r-2",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r-1",
+      "appearance": "water",
+      "boundaryReview": false
+    },
+    {
+      "spaceId": "q7_r0",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-7",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-6",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-5",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-4",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-3",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-2",
+      "appearance": "rock",
+      "boundaryReview": true
+    },
+    {
+      "spaceId": "q8_r-1",
+      "appearance": "rock",
+      "boundaryReview": true
+    }
+  ],
+  "knownArtworkEdits": [
+    {
+      "spaceId": "q0_r-6",
+      "unitType": "ranged-minion",
+      "teamId": "blue"
+    },
+    {
+      "spaceId": "q-1_r7",
+      "unitType": "ranged-minion",
+      "teamId": "red"
+    }
+  ]
+}
