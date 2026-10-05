@@ -617,3 +617,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.60b | Re-centred the ten replacement glyphs and removed old tower/donor scenery residue, preserving originals, first edits and reproducible private recipes. [Definition](../../Roadmap/PHASE_9.md#x-960b-clean-and-centre-the-replacement-map-glyphs). | `milestone/9.60b` |
+
+## Milestone 9.60c Map glyph alignment evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.60c | Aligned all ten glyphs with hex centres and original lane markers, corrected green-map orientations, and preserved cleaned backups and reproducible private recipes. [Definition](../../Roadmap/PHASE_9.md#x-960c-align-replacement-glyphs-with-their-lanes). | `milestone/9.60c` |
