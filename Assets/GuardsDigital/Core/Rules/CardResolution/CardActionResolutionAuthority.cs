@@ -2812,6 +2812,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         instances, step.CardTextActorId)));
             }
 
+            if (step.CardTextTiming == CardTextTiming.DefenseAction && !IsCardTextPageStopped)
+            {
+                // p.14 step 5 follows this text, so a move made by the Defense card changes
+                // the adjacent-minion contributions before the total is announced.
+                var comparison = attackDefenseBackend.RecalculateDefenseAfterText(
+                    materializedDefinitions, instances, participants,
+                    ModificationsAfterTheText(
+                        modifications, timing, participants, tieBreaker, materializedDefinitions,
+                        instances, step.CardTextRemainderResolution.ActorId));
+                steps.AddRange(AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
+                    CardTextTiming.DefenseAction, comparison, AttackResolutionOutcome.None));
+            }
+
             return Array.AsReadOnly(steps.ToArray());
         }
 
@@ -4178,6 +4191,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Milestone 8.19a. Step 1's remainder is the rest of rulebook p.14 rather than a list of
             // facts, so it is produced against live state - including the unit this text named, if it
             // named one. Steps 4 and 7 keep the static generator they have had since 8.10.
+            var remainderResolution = paused.Attack;
+            if (paused.Moment == CardTextTiming.DefenseAction)
+            {
+                remainderResolution = attackDefenseBackend.RecalculateDefenseAfterText(
+                    materializedDefinitions, instances, participants,
+                    ModificationsAfterTheText(
+                        modifications, timing, participants, tieBreaker, materializedDefinitions,
+                        instances, paused.Attack.ActorId));
+            }
             facts.AddRange(paused.Moment == CardTextTiming.BeforeTheAttack
                 ? ResumeAttackAfterBeforeText(
                     step.BoundAttackTarget, step.RequestedAttackSequences, materializedDefinitions,
@@ -4186,8 +4208,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         modifications, timing, participants, tieBreaker, materializedDefinitions,
                         instances, paused.Frame.ActorId))
                 : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                    paused.Moment, paused.Attack, paused.Outcome,
-                    theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(paused.Attack)));
+                    paused.Moment, remainderResolution, paused.Outcome,
+                    theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(remainderResolution)));
             return CardActionResolutionResult.Accept(true, null, null, facts);
         }
 
@@ -6039,15 +6061,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             pendingCardTextAwaitingInterrupt = null;
+            var completedAttack = owedRemainder.Moment == CardTextTiming.DefenseAction
+                ? attackDefenseBackend.RecalculateDefenseAfterText(
+                    boundary.Definitions, boundary.Instances, boundary.Participants,
+                    CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
+                : owedRemainder.Attack;
             return (owedRemainder.Moment == CardTextTiming.BeforeTheAttack
                     ? ResumeAttackAfterBeforeText(
                         default, null, boundary.Definitions, boundary.Instances,
                         boundary.Participants,
                         CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
                     : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                        owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome,
+                        owedRemainder.Moment, completedAttack, owedRemainder.Outcome,
                         theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(
-                            owedRemainder.Attack)))
+                            completedAttack)))
                 .ToArray();
         }
 

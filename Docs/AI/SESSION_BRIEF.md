@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. Thirty heroes pass permanent player-path gates; Emmitt is the thirty-first playable hero and his gate is active at 9.50. The default six-player Quick Game and 2v2/3v3 Quick/Long formats are selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v57 persists current-turn discard history (9.49); v56's two-card reveal choice and v55's movement/turn history remain. Wire protocol is `guards-private-online/36`. No dealt hero carries an engine deferral; only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) retain earlier detail. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5. Thirty-one heroes, including Emmitt, pass permanent player-path gates; NebKher's foundations are next at 9.51. The default six-player Quick Game and 2v2/3v3 Quick/Long formats are selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v57 persists current-turn discard history (9.49); v56's two-card reveal choice and v55's movement/turn history remain. Wire protocol is `guards-private-online/36`. No dealt hero carries an engine deferral; only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) retain earlier detail. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.49**.
-- Active authorized milestone: **9.50**.
+- Current completed milestone: **9.50**.
+- Active authorized milestone: **9.51**.
 - Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E3 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. EM-Q3 specifies two empty hexes between Glitches, a minimum hex distance of 3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
-- Next proposed milestone: **9.50**.
-- Next route: **9.50** prove all Emmitt fronts on the permanent real-control player path, then continue the approved NebKher sequence; stop after 9.54 or at a genuinely new decision outside scope.
-- 9.49 dealt all eighteen Emmitt fronts, boxed Tear in Time, and prepared private card, selection, standee and shine art. Schema v57 persists current-turn discard history. T3 passed: offline 6,670/6,670; Unity Edit 7,770 passed with 37 explicit diagnostic skips; Unity Play 1,097/1,097; Windows player-build smoke green. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) and local milestone commit own detail. Preserve untracked user files.
+- Next proposed milestone: **9.51**.
+- Next route: **9.51** implement NebKher's Illusions and borrowed actions, then continue the approved sequence; stop after 9.54 or at a genuinely new decision outside scope.
+- 9.50 gated Emmitt's eighteen playable fronts and boxed Handicap through the permanent content-derived real-control matrix. T3 passed: offline 6,670/6,670; Unity Edit 7,770 passed with 37 explicit diagnostic skips; Unity Play 1,127/1,127; the focused 30-case Emmitt gate, assembly boundary guard and non-batch Game View inspection passed. A p.14 Defense-total timing defect found by Unstable Timeline was corrected and green-rerun. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) and local milestone commit own exact evidence. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.

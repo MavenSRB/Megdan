@@ -1097,7 +1097,16 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedTierThreeEngagedStagedTakahide = 145,
 
         /// <summary>Wasp versus Takahide with Arien as his Blue ally (9.32i).</summary>
-        VerifiedStagedTakahideWithAlly = 146
+        VerifiedStagedTakahideWithAlly = 146,
+
+        /// <summary>Wasp versus Emmitt with his p.6 starting hand (9.50).</summary>
+        VerifiedEngagedStagedEmmitt = 147,
+
+        /// <summary>Emmitt's legal Tier III branch with Alternative Timelines faceup (9.50).</summary>
+        VerifiedTierThreeEngagedStagedEmmitt = 148,
+
+        /// <summary>Emmitt with Arien as a friendly Blue hero (9.50).</summary>
+        VerifiedStagedEmmittWithAlly = 149
     }
 
     [ExecuteAlways]
@@ -1843,6 +1852,12 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedTakahideTierThreeForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedStagedTakahideWithAlly =>
                     MatchConfiguration.CreateStagedTakahideWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedEmmitt =>
+                    MatchConfiguration.CreateStagedEmmittForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedEmmitt =>
+                    MatchConfiguration.CreateStagedEmmittTierThreeForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedStagedEmmittWithAlly =>
+                    MatchConfiguration.CreateStagedEmmittWithAllyForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1941,7 +1956,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedGydion ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedGydion ||
                 content == SceneCardContent.VerifiedEngagedStagedTakahide ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide ||
+                content == SceneCardContent.VerifiedEngagedStagedEmmitt ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedEmmitt)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2607,6 +2624,17 @@ namespace GuardsDigital.Presentation.Interaction
                     if (content == SceneCardContent.VerifiedStagedTakahideWithAlly)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusTakahideWithAllyOneVsTwo();
+                    }
+
+                    if (content == SceneCardContent.VerifiedEngagedStagedEmmitt ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedEmmitt)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusEmmittOneVsOne();
+                    }
+
+                    if (content == SceneCardContent.VerifiedStagedEmmittWithAlly)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusEmmittWithAllyOneVsTwo();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

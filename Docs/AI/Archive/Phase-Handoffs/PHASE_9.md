@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.50 Emmitt player-path evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.50 | All Emmitt fronts have a permanent content-derived real-control journey matrix; the boxed Handicap is explicitly unreachable. A step-4 Defense-text/step-5 total timing defect was corrected. Focused and full T3 offline, Edit and Play gates, boundary checks and non-batch visual inspection passed. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-950-gate-emmitt-on-the-player-path). | `milestone/9.50` |
+
 ## Milestone 9.49 Emmitt dealing evidence
 
 | Milestone | Outcome and definition | Commit |

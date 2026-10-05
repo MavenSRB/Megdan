@@ -2274,18 +2274,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // discard and step 5's Defense total, which is why it is emitted here and not beside the
             // attacker's own text: the defender's card is chosen by then, and p.10 gives the choices
             // inside it to the defending hero rather than to the attacker.
-            defenseSteps.AddRange(CardTextAt(
+            var text = CardTextAt(
                 CardTextTiming.DefenseAction,
                 pendingAttackResolution,
                 pendingAttackResolution.TargetHeroId,
                 materializedDefinitions,
                 defenseOffer.SourceDefinitionReference,
                 defenseOffer.ActionDefinitionId,
-                defenseCard.Id));
-            defenseSteps.AddRange(StepsAfterCardText(
-                CardTextTiming.DefenseAction,
-                pendingAttackResolution,
-                AttackResolutionOutcome.None));
+                defenseCard.Id).ToArray();
+            defenseSteps.AddRange(text);
+            // A printed step-4 text produces step 5 only after it has finished, because it may
+            // move the defender and change the Defense value. With no text there is no such
+            // interval, so the already validated response emits the remainder directly.
+            if (text.Length == 0)
+                defenseSteps.AddRange(StepsAfterCardText(
+                    CardTextTiming.DefenseAction,
+                    pendingAttackResolution,
+                    AttackResolutionOutcome.None));
 
             return AttackActionResolutionResult.Accept(
                 pendingAttackResolution,
@@ -3013,6 +3018,41 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.TargetSpaceBeforeConsequences,
                 actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart,
                 excludedTargets: pendingAttackResolution.ExcludedTargets);
+        }
+
+        /// <summary>
+        /// Rulebook p.14 calculates the Defense total at step 5, after the defender's step-4
+        /// card text. A Defense that moves its hero can change adjacent-minion contributions;
+        /// the value sampled when the card was discarded is only provisional until text ends.
+        /// </summary>
+        public PendingAttackResolution RecalculateDefenseAfterText(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var resolution = pendingAttackResolution;
+            if (resolution == null || resolution.Phase != AttackResolutionPhase.CompareOutcome ||
+                !resolution.DefenseOffer.HasValue)
+            {
+                throw new InvalidOperationException(
+                    "Defense card text can only finish a pending Defense comparison.");
+            }
+
+            var offer = resolution.DefenseOffer.Value;
+            var definitionArray = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var card = (instances ?? throw new ArgumentNullException(nameof(instances)))
+                .Single(instance => instance.Id.Equals(offer.SourceCardInstanceId));
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitionArray);
+            var value = action.DefenseResolution == PrintedDefenseResolution.Block
+                ? null
+                : DefenseValueQuery.Calculate(
+                    offer, definitionArray, resolution.TargetHeroId, resolution.Target.HeroBody,
+                    participants, adjacentMoveAuthority, modifications, heroItems,
+                    resolution.SourceCardInstanceId, card);
+            pendingAttackResolution = CreateOutcomeComparisonResolution(
+                offer, value, resolution.BlockResult);
+            return pendingAttackResolution;
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(

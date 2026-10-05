@@ -1038,6 +1038,26 @@ namespace GuardsDigital.Core.Setup
         public static QuickGameSetupConfiguration CreateStagedWaspVersusEmmittOneVsOne() =>
             CreateOneVsOne(new HeroContentId("emmitt"), "Emmitt");
 
+        /// <summary>Test-only three-seat board for Emmitt's friendly Green effects.</summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusEmmittWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("emmitt"), "Emmitt");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"), "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
         /// <summary>
         /// Milestone 9.32i. Takahide with Arien as his Blue ally, on Wuk's ally board: his Red swaps,
         /// Blue discards and Green aid all name "a friendly hero", which has a candidate only here

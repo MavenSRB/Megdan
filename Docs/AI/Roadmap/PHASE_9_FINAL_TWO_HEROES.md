@@ -48,11 +48,15 @@ Completed 2026-10-05. All eighteen playable fronts are composed, registered and 
 
 Historical evidence: [9.49 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-949-emmitt-dealing-evidence).
 
-### [~] 9.50 Gate Emmitt on the player path
+### [x] 9.50 Gate Emmitt on the player path
 
 Outcome: permanent face-to-journey matrix with real controls and asserted outcomes, plus the highest applicable roster validation tier. T3.
 
-### [ ] 9.51 NebKher's Illusions and borrowed actions
+Completed 2026-10-05. The permanent matrix covers all nineteen fronts (eighteen playable, one boxed), their printed action shapes and Emmitt's piece, items, footprint, progression, lifecycle, restore, Undo, replay and restart. Real-control journeys assert board, HUD and authoritative outcomes. Unstable Timeline exposed a shared p.14 step-5 Defense-total timing defect after step-4 text; it is corrected and green-rerun. Focused Emmitt 30/30, offline 6,670/6,670, unfiltered Unity Edit 7,770 passed with 37 explicit diagnostic skips, unfiltered Unity Play 1,127/1,127, boundary guard and non-batch visual inspection passed. The local milestone commit holds exact evidence.
+
+Historical evidence: [9.50 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-950-emmitt-player-path-evidence).
+
+### [~] 9.51 NebKher's Illusions and borrowed actions
 
 Outcome: typed Illusion token placement, swap, short supply and cleanup; Mind Grip performs an allowed action on the chosen enemy's previous-slot card with token substitution and no markers; the special friendly-melee-minion count applies at its printed action scope. Focused rules, snapshot, replay, owner-seat and token tests. T2. Requires the Mind Grip and Illusion rulings.
 

@@ -204,6 +204,10 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>p.16's unlocked Ultimate, drawn where a player can see it.</summary>
         UltimateRailVisibility,
 
+        /// <summary>Emmitt's standing Ultimate lets its owner select two hand faces for one
+        /// simultaneous reveal, then choose which unresolved face to retrieve.</summary>
+        TwoCardCommitAndRevealRetrieval,
+
         /// <summary>An Ultimate whose printed trigger stops the game and asks the controller something.</summary>
         UltimateTriggerPause,
 
@@ -1588,7 +1592,19 @@ namespace GuardsDigital.Tests.PlayMode
                 ["swap-this-card-with-deck-card"] = new[] { PlayerInteractionShape.HandCardSelection },
                 ["swap-owned-color-card-with-deck-card"] = new[] { PlayerInteractionShape.HandCardSelection },
                 ["swap-unresolved-card"] = new[] { PlayerInteractionShape.HandCardSelection },
-                ["choose-discarded-card"] = new[] { PlayerInteractionShape.HandCardSelection }
+                ["choose-discarded-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                // Milestone 9.50. Emmitt's Glitch placement/reclaim and enemy choice are board
+                // clicks; the two historical card-state writes ask nothing beyond their enclosing
+                // hero/card choices. Active-effect creations are derived above from their typed
+                // definitions rather than listed as inert capabilities here.
+                ["emmitt-place-glitch"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["emmitt-reclaim-glitch"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["emmitt-enemy-hero-in-play"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["emmitt-choose-glitch-by-hero"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["emmitt-place-at-turn-start"] = Array.Empty<PlayerInteractionShape>(),
+                ["emmitt-swap-unresolved-with-resolved"] =
+                    new[] { PlayerInteractionShape.HandCardSelection },
+                ["emmitt-retrieve-turn-discards"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1653,6 +1669,10 @@ namespace GuardsDigital.Tests.PlayMode
                 // p.16 puts the unlocked Ultimate faceup in the hero's area, which is a thing a player
                 // must be able to see before it is a thing they can use.
                 shapes.Add(PlayerInteractionShape.UltimateRailVisibility);
+                if (definition.UltimateRule != null &&
+                    string.Equals(definition.UltimateRule.RuleKind,
+                        TwoCardTurnRule.RuleKind, StringComparison.Ordinal))
+                    shapes.Add(PlayerInteractionShape.TwoCardCommitAndRevealRetrieval);
 
                 // Milestone 8.57h. An Ultimate whose permanent ability REPLACES p.13's reach for every
                 // Attack its controller performs introduces the ranged targeting shape itself, and

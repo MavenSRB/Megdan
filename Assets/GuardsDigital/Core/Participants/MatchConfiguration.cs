@@ -2318,6 +2318,37 @@ namespace GuardsDigital.Core.Participants
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.EmmittCardContent.CreateHand(ownerId, "blue"));
 
+        /// <summary>Test-only Tier III Emmitt with Alternative Timelines unlocked faceup.</summary>
+        public static MatchConfiguration CreateStagedEmmittTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.EmmittProgressedHands.CreateTierThreeHand(ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(Cards.Verified.EmmittCardContent.AlternativeTimelines)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
+        /// <summary>Test-only Emmitt with Arien as a Blue ally for the friendly Green effects.</summary>
+        public static MatchConfiguration CreateStagedEmmittWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                Cards.Verified.EmmittCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue), "blue"),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue), "blue-ally"));
+
         /// <summary>
         /// Milestone 9.32i. Wasp against Takahide with Arien as his Blue ally: the friendly hero his
         /// Red swaps, Blue discards and Green aid name.
