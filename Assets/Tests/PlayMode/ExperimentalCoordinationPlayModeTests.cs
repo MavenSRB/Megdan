@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
@@ -107,6 +108,49 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single().Hex, Is.Null);
             root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
         }
+        [UnityTest] public IEnumerator BoardSignalsStayBelowTheSpellbookAndEveryHudWindow()
+        {
+            var oldWidth=(uint)Screen.width;var oldHeight=(uint)Screen.height;
+            try
+            {
+                MatchSceneCompositionRoot.NextComposedSeat=null;
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                var root=ArienUiJourneyPlayModeTests.Root();
+                root.ConfigureExperiments(new ExperimentalMatchOptions(teammateCoordination:true));
+                var printed=RegisteredHeroRoster.PrintedLineup(3);
+                var gydion=RegisteredHeroRoster.ForThisBuild.Single(h=>h.ContentId.Value=="gydion");
+                MatchSceneCompositionRoot.NextComposedSeat=new SeatId("red-player-01");
+                root.ComposeForLineup(new HeroLineup(new[]{gydion}.Concat(printed.Red.Skip(1)),printed.Blue));
+                yield return null;yield return null;
+                var hero=GydionUiJourneyPlayModeTests.Gydion(root.Runtime);
+                var pointer=Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                var tile=Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None).Where(t=>t.IsPlayable)
+                    .OrderBy(t=>t.Coordinate.Q*t.Coordinate.Q+t.Coordinate.R*t.Coordinate.R).First();
+                Assert.That(pointer.TrySuggestAtScreen(pointer.EventCamera.WorldToScreenPoint(tile.transform.position)),Is.True);
+                yield return null;yield return null;
+                var view=root.Runtime.HeroOverviewsView;
+                Assert.That(view.OpenSpellbook(hero),Is.True);
+                foreach(var viewport in new[]{(1280u,720u),(1920u,1080u)})
+                {
+                    UiPlayer.SetPlayerViewport(viewport.Item1,viewport.Item2,"board signal occlusion");
+                    root.Hud.Layout();yield return null;yield return null;
+                    var layer=root.Hud.RootElement.Q("teammate-board-signals");
+                    var badge=layer.Q("teammate-hex-owners");
+                    Assert.That(badge,Is.Not.Null);
+                    Assert.That(view.SpellbookDrawer.worldBound.Overlaps(badge.worldBound),Is.True,
+                        "The scenario must put the marker behind the actual window.");
+                    Assert.That(root.Hud.RootElement.IndexOf(layer),Is.Zero,
+                        "Board highlights and their owner tokens must paint below every HUD window.");
+                    yield return UiPlayer.CaptureScreen("tmp/956-signals-under-spellbook-"+viewport.Item1+".png");
+                }
+                UiPlayer.Click(view.SpellbookDrawer.Q<Button>("gd-spellbook-close"));yield return null;
+                Assert.That(root.Hud.RootElement.Q("teammate-hex-owners"),Is.Not.Null,
+                    "Closing the window restores the unchanged board suggestion.");
+                root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
+            }
+            finally {UiPlayer.SetPlayerViewport(oldWidth,oldHeight,"restore board signal viewport");}
+        }
+
         private static void RightClick(VisualElement element)
         {
             Assert.That(element.panel, Is.Not.Null);

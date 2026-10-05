@@ -37,7 +37,10 @@ namespace GuardsDigital.Application
                 throw new ArgumentException("Clock identities must be unique.");
             Enabled = enabled; Revision = revision; Wave = wave; RedBankTicks = redBankTicks; BlueBankTicks = blueBankTicks;
             Entries = Array.AsReadOnly(values);
-            BoardVotes=Array.AsReadOnly((boardVotes??Enumerable.Empty<BoardChoiceVote>()).ToArray());
+            var votes=(boardVotes??Enumerable.Empty<BoardChoiceVote>()).ToArray();
+            if(votes.Any(v=>v==null) || votes.Select(v=>v.Voter).Distinct().Count()!=votes.Length)
+                throw new ArgumentException("Board voters must be unique.");
+            BoardVotes=Array.AsReadOnly(votes);
         }
         public bool Enabled { get; }
         public long Revision { get; }

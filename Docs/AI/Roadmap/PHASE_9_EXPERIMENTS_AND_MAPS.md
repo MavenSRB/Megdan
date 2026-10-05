@@ -20,6 +20,10 @@ Implementation checkpointed at `b51c2114`: host-authoritative allowances/banks, 
 
 ## Teammate coordination design, documentation only
 
+User gate amendment: board highlights and their owner tokens must never paint over game windows, as shown by the spellbook screenshot. Correct the shared signal layer, with an overlapping-window regression at both supported sizes; include this reported acceptance defect in 9.56 before broad validation.
+
+Gate review findings, 2026-10-05: real Parry Defense text returning its discard choice to the attacker used Resolution instead of Response; a duplicated board voter in an experimental snapshot threw during post-Core restore. Closing checks are `DefenseTextReturningToTheAttackerUsesAResponseClock` (including preserved parent budgets, snapshot and timeout completion) and `SnapshotWithDuplicateBoardVotersIsRejectedWithoutChangingTheMatch` (atomic refusal). Both reproduced before correction and passed their focused rerun. The overlapping spellbook-marker regression also failed on the previous layer order and passed after moving board signals beneath the HUD. Full-suite validation is now running.
+
 ### [x] 9.57 Record the experimental teammate coordination design
 
 Authorized 2026-10-05 after the user reviewed the mockups and directed the feature to be written up as a host Experimental toggle. Scope: allied hand inspection, right-click hex/card suggestions in every phase, reuse of hero-tray identity tokens, and coexistence with existing effect highlights. This is documentation only; it does not authorize runtime implementation or change the active hero sequence. T0 closing checks: conversation/design review, living-documentation validator, `git diff --check`, and a local documentation commit with archive index.

@@ -45,7 +45,9 @@ namespace GuardsDigital.Presentation.Match
             view.layer = new VisualElement { name = "teammate-board-signals", pickingMode = PickingMode.Ignore };
             view.layer.style.position = Position.Absolute;
             view.layer.style.left = 0; view.layer.style.right = 0; view.layer.style.top = 0; view.layer.style.bottom = 0;
-            hud.RootElement.Add(view.layer);
+            // Board decorations belong behind every HUD surface, including nested drawers.
+            // Appending here paints them over windows already composed by the HUD.
+            hud.RootElement.Insert(0, view.layer);
             view.cardLayer = new VisualElement { name = "teammate-card-badges", pickingMode = PickingMode.Ignore };
             view.cardLayer.style.position = Position.Absolute;
             view.cardLayer.style.left = 0; view.cardLayer.style.right = 0;

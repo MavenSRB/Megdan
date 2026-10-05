@@ -112,6 +112,65 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(response.Owner,Is.EqualTo(staged.Decider));
             Assert.That(response.RemainingTicks,Is.EqualTo(TimeSpan.FromMilliseconds(750).Ticks));
         }
+        [Test] public void DefenseTextReturningToTheAttackerUsesAResponseClock()
+        {
+            var staged=TigerclawBoard.Create(tier:2,
+                branch:GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling,
+                heroPlacements:StagedHeroBoard.At("blue-test-hero",StagedHeroBoard.FirstAdjacent));
+            staged.TakeTheEnemysAttack(GuardsDigital.Core.Cards.Verified.WaspCardContent.Electrocute,
+                GuardsDigital.Core.Cards.Verified.TigerclawCardContent.BlendIntoShadows);
+            var h=WithTimer(staged.Session); Ready(h); h.AdvanceClock(TimeSpan.FromMilliseconds(200).Ticks);
+            var root=h.ClockState.Entries.Single(e=>e.Kind==MatchClockKind.Resolution);
+            var defense=h.ClockState.Entries.Single(e=>e.Kind==MatchClockKind.Response && e.IsCurrent);
+            var parry=h.Projection.Cards.Single(c=>c.OwnerId.Equals(staged.Hero) &&
+                c.DefinitionReference.DefinitionId.Equals(GuardsDigital.Core.Cards.Verified.TigerclawCardContent.Parry));
+            Assert.That(h.Submit(MatchSubmission.ForCommand(DirectorCommand.ChooseDefenseCard(parry.Id))).Accepted,Is.True);
+            Assert.That(h.Projection.PendingEffectChoice.ChooserId,Is.EqualTo(staged.Enemy));
+            Ready(h); h.AdvanceClock(TimeSpan.FromMilliseconds(250).Ticks);
+            var active=h.ClockState.Entries.Single(e=>e.IsCurrent);
+            Assert.That(active.Kind,Is.EqualTo(MatchClockKind.Response),"The attacker's answer to Defense text is a nested response, not resuming card resolution.");
+            Assert.That(active.Owner,Is.EqualTo(staged.Enemy));
+            Assert.That(active.RemainingTicks,Is.EqualTo(TimeSpan.FromMilliseconds(750).Ticks));
+            Assert.That(h.ClockState.Entries.Single(e=>e.Id==root.Id).RemainingTicks,Is.EqualTo(root.RemainingTicks));
+            Assert.That(h.ClockState.Entries.Single(e=>e.Id==defense.Id).RemainingTicks,Is.EqualTo(defense.RemainingTicks));
+            var snapshot=h.CaptureSnapshot(); var copy=WithTimer(staged.Session);
+            Assert.That(copy.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted,Is.True);
+            Ready(copy); copy.AdvanceClock(TimeSpan.FromMilliseconds(100).Ticks);
+            Assert.That(copy.ClockState.Entries.Single(e=>e.IsCurrent).RemainingTicks,Is.EqualTo(TimeSpan.FromMilliseconds(650).Ticks));
+            for(int step=0;step<8 && h.Projection.PendingEffectChoice!=null;step++)
+            { Ready(h); h.AdvanceClock(TimeSpan.FromSeconds(2).Ticks); }
+            Assert.That(h.Projection.PendingEffectChoice,Is.Null,"The mandatory discard must finish when its response expires.");
+            Assert.That(h.TimeoutFailure,Is.Empty);
+        }
+        [Test] public void SnapshotWithDuplicateBoardVotersIsRejectedWithoutChangingTheMatch()
+        {
+            var h=WithTimer(LanePushTransitionTests.CreatePausedLanePushPlaceSession(sixPlayers:true));
+            var owner=SeatProjectionFactory.OwnerOfStandingDecision(h.Projection);
+            var seat=h.Seats.Seats.First(owner.IsOwnedBy);
+            Assert.That(h.SubmitBoardVoteForSeat(seat.Id,h.Version,h.Projection.DecisionContract.Commands.First()),Is.True);
+            var original=h.CaptureSnapshot(); var separator=original.IndexOf(':');
+            byte[] malformed;
+            using(var input=new System.IO.MemoryStream(Convert.FromBase64String(original.Substring(separator+1))))
+            using(var reader=new System.IO.BinaryReader(input))
+            using(var output=new System.IO.MemoryStream())
+            using(var writer=new System.IO.BinaryWriter(output))
+            {
+                var options=ExperimentalWireCodec.ReadOptions(reader); var clock=ExperimentalWireCodec.ReadClock(reader);
+                ExperimentalWireCodec.WriteOptions(writer,options);
+                // Write the clock fields and duplicated votes directly: this is deliberately invalid wire data.
+                writer.Write(clock.Enabled);writer.Write(clock.Revision);writer.Write(clock.Wave);
+                writer.Write(clock.RedBankTicks);writer.Write(clock.BlueBankTicks);writer.Write(clock.Entries.Count);
+                foreach(var e in clock.Entries)
+                { writer.Write(e.Id);writer.Write((int)e.Kind);writer.Write(e.Owner.Value??string.Empty);writer.Write((int)e.Team);writer.Write(e.RemainingTicks);writer.Write(e.Running);writer.Write(e.IsCurrent); }
+                writer.Write(2);
+                for(int i=0;i<2;i++)
+                { var vote=clock.BoardVotes[0];writer.Write(vote.Voter.Value);writer.Write(vote.Position.Q);writer.Write(vote.Position.R);var bytes=NetworkCommandCodec.Encode(vote.Command);writer.Write(bytes.Length);writer.Write(bytes); }
+                writer.Write(reader.ReadBytes((int)(input.Length-input.Position)));writer.Flush();malformed=output.ToArray();
+            }
+            var bad=original.Substring(0,separator+1)+Convert.ToBase64String(malformed);
+            Assert.That(h.Submit(MatchSubmission.ForSnapshotRestore(bad)).Accepted,Is.False);
+            Assert.That(h.CaptureSnapshot(),Is.EqualTo(original),"Rejected experimental state must leave both authority and clocks unchanged.");
+        }
         [Test] public void DefenseResponsePreservesParentBudgetAndDirectorUndoRestoresIt()
         {
             var source=HeroBodiesBoard.CreateSessionAtTheAttackTargetChoice(out _,out _,out _);

@@ -221,7 +221,10 @@ namespace GuardsDigital.Application
                 }
                 else if (turn.Length>0 && actorSeat!=null && !owner.IsTeamOwned)
                 {
-                    if (seat.Owns(actor)) { id=turn; kind=MatchClockKind.Resolution; responseStack.Clear(); }
+                    // Returning to the attacker during the defender's text is another response;
+                    // the original resolution stays paused until that Defense continuation ends.
+                    var inDefenseText = session is MatchSession live && live.IsResolvingDefenseText;
+                    if (seat.Owns(actor) && !inDefenseText) { id=turn; kind=MatchClockKind.Resolution; responseStack.Clear(); }
                     else
                     {
                         var states=clock.Capture().Entries;
