@@ -148,7 +148,8 @@ namespace GuardsDigital.Core.Rules.Placement
             HexCoordinate destination,
             IReadOnlyList<HexCoordinate> scopedCoordinates,
             RuleModificationSet modifications,
-            IUnitSpawnAuthority spawnPoints = null)
+            IUnitSpawnAuthority spawnPoints = null,
+            bool allowEffectiveMinion = false)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -160,7 +161,7 @@ namespace GuardsDigital.Core.Rules.Placement
                     policy.SourceContainer, PlaceRejectionReason.SourceContainerMismatch);
             }
 
-            if (!IsEligible(policy.EligiblePiece, subject.Kind))
+            if (!IsEligible(policy.EligiblePiece, subject, modifications, allowEffectiveMinion))
             {
                 return PlaceOutcome.Reject(PlaceSourceContainer.Board, PlaceRejectionReason.IneligiblePiece);
             }
@@ -288,5 +289,17 @@ namespace GuardsDigital.Core.Rules.Placement
                     return false;
             }
         }
+
+        private static bool IsEligible(
+            PlaceEligiblePieceKind eligible,
+            BoardObjectReference piece,
+            RuleModificationSet modifications,
+            bool allowEffectiveMinion) =>
+            IsEligible(eligible, piece.Kind) ||
+            (allowEffectiveMinion && eligible == PlaceEligiblePieceKind.MinionMiniature &&
+             piece.Kind == BoardObjectKind.Token &&
+             EffectiveUnitKindQuery.Is(
+                 RuleObject.ForToken(piece.TokenInstanceId),
+                 EffectiveUnitKind.Minion, modifications));
     }
 }

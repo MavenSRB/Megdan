@@ -10,6 +10,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Timing;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -751,6 +752,12 @@ namespace GuardsDigital.Tests.EditMode
                     .Where(property => property.GetIndexParameters().Length == 0)
                     .Where(property => property.Name != "ContentRevision" &&
                         property.Name != "Reference" && property.Name != "Root")
+                    // The qualifier exists only for the new token-kind scope. Omitting its
+                    // undefined value preserves earlier pinned content identities while a
+                    // concrete kind becomes part of the new definition's fingerprint.
+                    .Where(property => property.Name != "AffectedTokenKind" ||
+                        !(value is ActiveEffectDefinition active) ||
+                        active.AffectedTokenKind.IsDefined)
                     .OrderBy(property => property.Name, StringComparer.Ordinal)
                     .ToArray();
                 if (properties.Length == 0)

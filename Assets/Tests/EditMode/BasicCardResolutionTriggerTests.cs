@@ -32,7 +32,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Cast<ActionInvocationContext>()
                 .ToArray();
 
-            Assert.That(contexts.Length, Is.EqualTo(8),
+            Assert.That(contexts.Length, Is.EqualTo(9),
                 "If a context has been added, classify it in BasicActionQuery.IsCardResolution.");
 
             var resolutions = contexts
@@ -68,6 +68,9 @@ namespace GuardsDigital.Tests.EditMode
                 "So is a borrowed or granted primary - which is what stops Bullet Time's own grant " +
                 "from re-triggering it.");
             Assert.That(
+                BasicActionQuery.IsCardResolution(ActionInvocationContext.TextGrantedSecondary), Is.False,
+                "A borrowed printed secondary also does not resolve its source card again.");
+            Assert.That(
                 BasicActionQuery.IsCardResolution(ActionInvocationContext.Reaction), Is.False,
                 "A p.14 Defense is spent on somebody else's turn and resolves nobody's card.");
         }
@@ -99,13 +102,17 @@ namespace GuardsDigital.Tests.EditMode
                 .Cast<ActionInvocationContext>()
                 .ToArray();
 
-            Assert.That(contexts.Length, Is.EqualTo(8),
+            Assert.That(contexts.Length, Is.EqualTo(9),
                 "If a context has been added, classify it in " +
                 "BasicActionQuery.IsPerformedOffACardAlreadyResolved as well.");
 
             Assert.That(
                 contexts.Where(BasicActionQuery.IsPerformedOffACardAlreadyResolved),
-                Is.EquivalentTo(new[] { ActionInvocationContext.TextGranted }),
+                Is.EquivalentTo(new[]
+                {
+                    ActionInvocationContext.TextGranted,
+                    ActionInvocationContext.TextGrantedSecondary
+                }),
                 "Every printed borrow and every printed grant names a card whose resolution has " +
                 "already happened - Reload!'s rightmost RESOLVED card, Ursafar's already-active " +
                 "cards, and Bullet Time's \"after you RESOLVE a basic card\".");

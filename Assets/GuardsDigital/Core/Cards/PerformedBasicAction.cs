@@ -273,6 +273,7 @@ namespace GuardsDigital.Core.Cards
                     return true;
                 case ActionInvocationContext.Repeated:
                 case ActionInvocationContext.TextGranted:
+                case ActionInvocationContext.TextGrantedSecondary:
                 case ActionInvocationContext.Reaction:
                 case ActionInvocationContext.None:
                     return false;
@@ -318,6 +319,7 @@ namespace GuardsDigital.Core.Cards
             switch (invocationContext)
             {
                 case ActionInvocationContext.TextGranted:
+                case ActionInvocationContext.TextGrantedSecondary:
                     return true;
                 case ActionInvocationContext.PrintedPrimary:
                 case ActionInvocationContext.PrintedSecondary:

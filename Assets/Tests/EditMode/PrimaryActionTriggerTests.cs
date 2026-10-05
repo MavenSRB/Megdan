@@ -66,7 +66,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Cast<ActionInvocationContext>()
                 .ToArray();
 
-            Assert.That(contexts.Length, Is.EqualTo(8),
+            Assert.That(contexts.Length, Is.EqualTo(9),
                 "If a context has been added, classify it in PrimaryActionQuery.");
 
             Assert.That(

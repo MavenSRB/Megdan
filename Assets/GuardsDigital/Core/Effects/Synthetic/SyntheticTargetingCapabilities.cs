@@ -1372,6 +1372,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         return null;
                     }
 
+                    if (TryNameOfferedTokenMinion(context, selected[0], out var tokenSpace))
+                        return TokenMinionSpaceOutcome(context, tokenSpace);
+
                     // Milestone 9.21c. A body of a many-bodied hero, answered as its space (RZ-Q2).
                     if (TryNameOfferedBody(context, selected[0], out var unitBody))
                     {
@@ -1453,6 +1456,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (subject == PrintedIconSelectionSubject.Minion)
                 {
+                    if (selected != null && selected.Count == 1 &&
+                        TryNameOfferedTokenMinion(context, selected[0], out var tokenSpace))
+                        return TokenMinionSpaceOutcome(context, tokenSpace);
                     if (selected == null || selected.Count != 1 ||
                         selected[0].Kind != EffectValueKind.Minion ||
                         !MinionCandidates(context).Contains(selected[0].MinionId))
@@ -1519,13 +1525,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 subject == PrintedIconSelectionSubject.Hero
                     ? HeroOffer(context).ToArray()
                     : subject == PrintedIconSelectionSubject.Minion
-                        ? MinionCandidates(context).Select(EffectValue.Minion).ToArray()
+                        ? MinionCandidates(context).Select(EffectValue.Minion)
+                            .Concat(TokenMinionOffer(context)).ToArray()
                     : subject == PrintedIconSelectionSubject.Unit
                         // p.19's two unit kinds in one offer, heroes first and each kind in its own
                         // stable order, because a card that says "a unit" says both and says nothing
                         // about which it prefers.
                         ? HeroOffer(context)
                             .Concat(MinionCandidates(context).Select(EffectValue.Minion))
+                            .Concat(TokenMinionOffer(context))
                             .ToArray()
                     : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
 
@@ -1608,6 +1616,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     .Where(target => target.Kind == BoardObjectKind.Minion)
                     .Select(target => target.MinionId)
                     .ToArray();
+
+            private IEnumerable<EffectValue> TokenMinionOffer(EffectCapabilityContext context)
+            {
+                // A token has no MinionId. A consumer that reads the selected piece's space can
+                // perform its printed board operation through that typed coordinate; a consumer
+                // requiring a miniature identity must not be offered an answer it cannot receive.
+                if (context.DeclaredOutputs.Count > 0 &&
+                    !context.Publishes(ChosenMinionSpaceOutputName))
+                    return Enumerable.Empty<EffectValue>();
+                return Offered(context)
+                    .Where(target => target.Kind == BoardObjectKind.Token &&
+                        EffectiveUnitKindQuery.Is(
+                            RuleObject.ForToken(target.TokenInstanceId),
+                            EffectiveUnitKind.Minion, context.Modifications))
+                    .Select(target => context.Components.Board.TryGetObjectCoordinate(
+                        target, out var at) ? EffectValue.Space(at) : default)
+                    .Where(value => value.Kind == EffectValueKind.Coordinate)
+                    .ToArray();
+            }
+
+            private bool TryNameOfferedTokenMinion(
+                EffectCapabilityContext context, EffectValue answer,
+                out HexCoordinate at)
+            {
+                at = default;
+                if (answer.Kind != EffectValueKind.Coordinate ||
+                    !TokenMinionOffer(context).Contains(answer))
+                    return false;
+                at = answer.Coordinate;
+                return true;
+            }
+
+            private static IReadOnlyList<EffectOutcomeFact> TokenMinionSpaceOutcome(
+                EffectCapabilityContext context, HexCoordinate at) =>
+                context.Publishes(ChosenMinionSpaceOutputName)
+                    ? new[]
+                    {
+                        new EffectOutcomeFact(
+                            ChosenMinionSpaceOutputName, EffectValue.Space(at))
+                    }
+                    : Array.Empty<EffectOutcomeFact>();
 
             /// <summary>
             /// Milestone 8.88. The heroes this arm offers, from the family's one pipeline. The acting
@@ -1804,7 +1853,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         HexDistanceQuery.Calculate(origin, occupancy.Coordinate) == 1 &&
                         TargetQuery.StandsInRelationTo(
                             relation, BoardObjectReference.ForHero(occupancy.HeroId),
-                            context.ActorId, context.Participants, board) &&
+                            context.ActorId, context.Participants, board,
+                            context.Modifications) &&
                         (activity == RuleActivity.None || !TargetQuery.IsPrevented(
                             RuleObject.ForHero(occupancy.HeroId),
                             activity,
@@ -2063,7 +2113,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     if (relation != SourceTeamRelation.None &&
                         !TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
+                            relation, target, context.ActorId, context.Participants, board,
+                            context.Modifications))
                     {
                         continue;
                     }

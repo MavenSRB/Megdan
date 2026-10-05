@@ -116,7 +116,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (action.MinionDefenseContributions == MinionDefenseContributionPolicy.IncludeAll)
             {
                 contributions.AddRange(CalculateMinionContributions(
-                    defenderId, defenderBody, participants, board));
+                    defenderId, defenderBody, participants, board, modifications));
             }
 
             // Milestone 8.35z28. p.14's printed `+` on a Defense value, which that page illustrates on
@@ -155,7 +155,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId defenderId,
             MatchParticipants participants,
             AdjacentMoveAuthority board) =>
-            CalculateMinionContributions(defenderId, OnlyBody, participants, board);
+            CalculateMinionContributions(
+                defenderId, OnlyBody, participants, board, RuleModificationSet.Empty);
+
+        public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
+            HeroId defenderId,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications) =>
+            CalculateMinionContributions(
+                defenderId, OnlyBody, participants, board, modifications);
 
         /// <summary>
         /// Milestone 9.21a. The body a caller that names only the hero means: the hero's only body.
@@ -171,7 +180,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId defenderId,
             int defenderBody,
             MatchParticipants participants,
-            AdjacentMoveAuthority board)
+            AdjacentMoveAuthority board) =>
+            CalculateMinionContributions(
+                defenderId, defenderBody, participants, board, RuleModificationSet.Empty);
+
+        public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
+            HeroId defenderId,
+            int defenderBody,
+            MatchParticipants participants,
+            AdjacentMoveAuthority board,
+            RuleModificationSet modifications)
         {
             if (!defenderId.IsDefined)
             {
@@ -216,6 +234,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         minion.MinionId,
                         PrintedValueChannel.Defense,
                         amount));
+                }
+            }
+
+            // An action-scoped counts-as token is still a token in the board register. Its
+            // effective minion type contributes from the ordinary melee profile, but only while
+            // the live modification set actually overlays that type.
+            if (modifications != null)
+            {
+                foreach (var token in board.PlacedTokens.OrderBy(value =>
+                    value.Id.Value, StringComparer.Ordinal))
+                {
+                    var type = EffectiveUnitKindQuery.TokenMinionType(
+                        RuleObject.ForToken(token.Id), modifications);
+                    if (type == StandardMinionType.None)
+                        continue;
+                    var effectiveController = EffectiveUnitKindQuery.TokenMinionController(
+                        RuleObject.ForToken(token.Id), modifications);
+                    if (!effectiveController.IsDefined)
+                        continue;
+                    var controllerTeam = participants.GetTeamForHero(
+                        effectiveController).Side;
+                    var distance = HexDistanceQuery.Calculate(
+                        defenderCoordinate, token.Coordinate);
+                    var amount = GetMinionDefenseModifier(
+                        defenderTeam, controllerTeam, type, distance);
+                    if (amount != 0)
+                        contributions.Add(ValueContribution.FromContinuousSource(
+                            "effective-minion-token:" + token.Id.Value,
+                            PrintedValueChannel.Defense, amount));
                 }
             }
 

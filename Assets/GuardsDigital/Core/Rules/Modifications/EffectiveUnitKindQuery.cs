@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Modifications
 {
@@ -35,9 +38,13 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             var declared = modifications?.DeclaredEffectiveUnitKinds(rulesObject);
+            // A token is intrinsically no unit, yet a card may make it count as one for a bounded
+            // action. Keep its ordinary type empty and add only the explicitly live overlay.
             var standing = declared != null && declared.Count > 0
                 ? declared
-                : new[] { IntrinsicKindQuery.IntrinsicUnitKind(rulesObject) };
+                : rulesObject.Kind == RuleObjectKind.Token
+                    ? (IReadOnlyList<EffectiveUnitKind>)Array.Empty<EffectiveUnitKind>()
+                    : new[] { IntrinsicKindQuery.IntrinsicUnitKind(rulesObject) };
             var overlaid = modifications?.OverlaidEffectiveUnitKinds(rulesObject);
             if (overlaid == null || overlaid.Count == 0)
             {
@@ -77,6 +84,48 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// The standard class explicitly declared for a token made to count as a minion.
+        /// An untyped Minion overlay has no p.14 melee/ranged/heavy modifier.
+        /// </summary>
+        public static StandardMinionType TokenMinionType(
+            RuleObject token, RuleModificationSet modifications)
+        {
+            if (token.Kind != RuleObjectKind.Token)
+                throw new ArgumentException("The effective token class requires a token.", nameof(token));
+            var declared = modifications?.Modifications
+                .Where(applied =>
+                    applied.AffectedObject.Equals(token) &&
+                    applied.Modification.Kind == RuleModificationKind.EffectiveTypeOverlay &&
+                    applied.Modification.EffectiveUnitKind == EffectiveUnitKind.Minion &&
+                    Enum.IsDefined(typeof(StandardMinionType),
+                        applied.Modification.Amount) &&
+                    applied.Modification.Amount != (int)StandardMinionType.None)
+                .Select(applied => (StandardMinionType)applied.Modification.Amount)
+                .ToArray();
+            return declared == null || declared.Length == 0
+                ? StandardMinionType.None
+                : declared[declared.Length - 1];
+        }
+
+        /// <summary>
+        /// A token made friendly by a counts-as effect belongs to that effect's controller for
+        /// action-scoped minion queries, not necessarily to the hero who originally placed it.
+        /// </summary>
+        public static HeroId TokenMinionController(
+            RuleObject token, RuleModificationSet modifications)
+        {
+            if (token.Kind != RuleObjectKind.Token)
+                throw new ArgumentException("The effective token controller requires a token.", nameof(token));
+            return modifications?.Modifications
+                .Where(applied =>
+                    applied.AffectedObject.Equals(token) &&
+                    applied.Modification.Kind == RuleModificationKind.EffectiveTypeOverlay &&
+                    applied.Modification.EffectiveUnitKind == EffectiveUnitKind.Minion)
+                .Select(applied => applied.ControllerHeroId)
+                .LastOrDefault() ?? default;
         }
     }
 }

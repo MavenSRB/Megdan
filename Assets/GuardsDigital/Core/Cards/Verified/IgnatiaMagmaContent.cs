@@ -184,6 +184,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
+                if (SyntheticTokenCapabilities.EffectiveDefinition(context, definition) == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
 
                 var originInput = context.Input(WakeOriginParameterName);
                 var destinationInput = context.Input(WakeDestinationParameterName);
@@ -204,7 +206,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 // is placed, so the tokens this wake is about to lay are never candidates. When every
                 // standing magma token must come back there is nothing to choose; otherwise the
                 // actor names which ones.
-                var standing = StandingMagma(components);
+                var standing = StandingMagma(context, components);
                 var take = Math.Min(Shortfall(context, components, origin, destination), standing.Length);
                 if (take > 0 && take < standing.Length)
                 {
@@ -231,6 +233,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
+                if (SyntheticTokenCapabilities.EffectiveDefinition(context, definition) == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
 
                 var originInput = context.Input(WakeOriginParameterName);
                 var destinationInput = context.Input(WakeDestinationParameterName);
@@ -245,7 +249,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
                 // The answer is re-derived against the live board rather than trusted: the same
                 // count the question asked for, each naming a distinct standing magma token.
-                var standing = StandingMagma(components);
+                var standing = StandingMagma(context, components);
                 var take = Math.Min(Shortfall(context, components, origin, destination), standing.Length);
                 var chosen = selected
                     .Where(value => value.Kind == EffectValueKind.Coordinate)
@@ -309,15 +313,19 @@ namespace GuardsDigital.Core.Cards.Verified
                     Array.Empty<HexCoordinate>(),
                     context.Modifications);
                 var needed = WakeSpaces(origin, destination).Count(space => admitted.Contains(space));
+                var tokenDefinition = SyntheticTokenCapabilities.EffectiveDefinition(context, definition);
                 var available = components.Catalog.CountAvailableTokens(
-                    definition.Reference, components.Tokens.PlacedTokens);
+                    tokenDefinition.Reference, components.Tokens.PlacedTokens);
                 return needed - available;
             }
 
             /// <summary>p.18's "tokens of the same type", in a stable board order.</summary>
-            private PlacedToken[] StandingMagma(MatchComponents components) =>
+            private PlacedToken[] StandingMagma(
+                EffectCapabilityContext context, MatchComponents components) =>
                 components.Catalog
-                    .ReclaimableForPlacement(definition.Reference, components.Tokens.PlacedTokens)
+                    .ReclaimableForPlacement(
+                        SyntheticTokenCapabilities.EffectiveDefinition(context, definition).Reference,
+                        components.Tokens.PlacedTokens)
                     .OrderBy(token => token.Coordinate.Q)
                     .ThenBy(token => token.Coordinate.R)
                     .ToArray();
@@ -400,6 +408,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 }
 
                 var policy = WakePolicy(reach);
+                var tokenDefinition = SyntheticTokenCapabilities.EffectiveDefinition(context, definition);
 
                 var token = new PlacedToken(
                     // Deterministic under replay and unique across the several tokens this one node
@@ -410,7 +419,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         $":{definition.Id.Value}" +
                         $":r{context.RoundIndex}t{context.TurnIndex}" +
                         $":{space.Q}:{space.R}"),
-                    definition,
+                    tokenDefinition,
                     context.ActorId,
                     context.ControllerId,
                     context.SourceCardInstanceId,

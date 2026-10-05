@@ -486,9 +486,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Concat(board.Minions
                     .Where(value => HexDistanceQuery.Calculate(origin, value.Coordinate) <= distance)
                     .Select(value => BoardObjectReference.ForMinion(value.MinionId)))
+                .Concat(board is ITokenPlacementAuthority tokens
+                    ? tokens.PlacedTokens
+                        .Where(value => HexDistanceQuery.Calculate(
+                            origin, value.Coordinate) <= distance)
+                        .Select(value => BoardObjectReference.ForToken(value.Id))
+                    : Enumerable.Empty<BoardObjectReference>())
                 .Where(value => AdmitsKind(value, unitKind, modifications))
                 .Where(value => TargetQuery.StandsInRelationTo(
-                    relation, value, sourceHero, participants, board))
+                    relation, value, sourceHero, participants, board, modifications))
                 .Where(value => !excludedFirst.IsDefined || !value.Equals(excludedFirst))
                 .Where(value => !excludedSecond.IsDefined || !value.Equals(excludedSecond))
                 .OrderBy(value => value.Kind)
@@ -511,7 +517,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var offered = new List<Effects.EffectValue>();
             foreach (var unit in units)
             {
-                var value = readsSpace && board != null && unit.Kind == BoardObjectKind.Hero &&
+                var value = unit.Kind == BoardObjectKind.Token &&
+                    board != null && board.TryGetObjectCoordinate(unit, out var tokenAt)
+                        ? Effects.EffectValue.Space(tokenAt)
+                    : readsSpace && board != null && unit.Kind == BoardObjectKind.Hero &&
                     unit.HeroBody > 0 && board.TryGetObjectCoordinate(unit, out var at)
                         ? Effects.EffectValue.Space(at)
                         : unit.Kind == BoardObjectKind.Hero
@@ -545,7 +554,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             switch (answer.Kind)
             {
                 case Effects.EffectValueKind.Coordinate:
-                    return units.FirstOrDefault(unit => unit.Kind == BoardObjectKind.Hero &&
+                    return units.FirstOrDefault(unit =>
+                        (unit.Kind == BoardObjectKind.Hero ||
+                         unit.Kind == BoardObjectKind.Token) &&
                         board != null && board.TryGetObjectCoordinate(unit, out var at) &&
                         at.Equals(answer.Coordinate));
                 case Effects.EffectValueKind.Hero:
@@ -578,11 +589,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RosterUnitKind kind,
             RuleModificationSet modifications)
         {
-            if (kind == RosterUnitKind.Unit) return value.AsRuleObject().IsDefined;
+            var rulesObject = value.Kind == BoardObjectKind.Token
+                ? RuleObject.ForToken(value.TokenInstanceId)
+                : value.AsRuleObject();
+            if (kind == RosterUnitKind.Unit)
+                return EffectiveUnitKindQuery.Is(
+                        rulesObject, EffectiveUnitKind.Hero, modifications) ||
+                    EffectiveUnitKindQuery.Is(
+                        rulesObject, EffectiveUnitKind.Minion, modifications);
             var effective = kind == RosterUnitKind.Hero
                 ? EffectiveUnitKind.Hero
                 : EffectiveUnitKind.Minion;
-            return EffectiveUnitKindQuery.Is(value.AsRuleObject(), effective, modifications);
+            return EffectiveUnitKindQuery.Is(rulesObject, effective, modifications);
         }
 
         internal static string Identity(BoardObjectReference value)

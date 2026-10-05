@@ -229,7 +229,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var swapped = SwapOperation.Swap(SwapEligiblePieceKind.GamePiece,
                 board, board, BoardObjectReference.ForHero(emmitt),
-                BoardObjectReference.ForToken(new TokenInstanceId("glitch-5")));
+                BoardObjectReference.ForToken(new TokenInstanceId("glitch-5")),
+                RuleModificationSet.Empty);
             Assert.That(swapped.Accepted, Is.True);
             Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(emmitt)).Coordinate,
                 Is.EqualTo(new HexCoordinate(5, 0)));

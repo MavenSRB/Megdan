@@ -40,6 +40,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
     public static class SyntheticTokenCapabilities
     {
         /// <summary>
+        /// The physical token this action would place. A trusted enclosing borrow may replace
+        /// every token kind it would have placed; supply and placement must read this same answer.
+        /// </summary>
+        public static TokenDefinition EffectiveDefinition(
+            EffectCapabilityContext context, TokenDefinition printed)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (printed == null) throw new ArgumentNullException(nameof(printed));
+            var kind = context.EnclosingBorrow.SubstituteTokenKind;
+            if (!kind.IsDefined)
+                return printed;
+            var catalog = context.Components?.Catalog;
+            if (catalog == null)
+                return null;
+            var reference = catalog.RegisteredTokens.SingleOrDefault(candidate =>
+                candidate.DefinitionId.Equals(kind));
+            return reference.IsDefined ? catalog.LoadToken(reference) : null;
+        }
+
+        /// <summary>
         /// The space a placement put its token on, published so a following node can read it - the
         /// same output name milestone 6.2's synthetic placement publishes, because it is the same fact.
         /// </summary>
@@ -168,6 +188,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var components = context.Components;
+                var placedDefinition = EffectiveDefinition(context, definition);
+                if (placedDefinition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
                 var outcome = Rules.BoardObjects.ReplaceOperation.ReplaceMinion(
                     Policy,
                     components.Exchange,
@@ -178,8 +201,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new PlacedToken(
                         new TokenInstanceId(
                             $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
-                            $":{definition.Id.Value}:r{context.RoundIndex}t{context.TurnIndex}:{at.Q}:{at.R}"),
-                        definition,
+                            $":{placedDefinition.Id.Value}:r{context.RoundIndex}t{context.TurnIndex}:{at.Q}:{at.R}"),
+                        placedDefinition,
                         context.ActorId,
                         context.ControllerId,
                         context.SourceCardInstanceId,
@@ -209,15 +232,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// short-supply step ("take one from the board") is composed before every such Replace,
             /// so asked before that step, an empty pile beside a placed token is not a refusal.
             /// </summary>
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                TryResolve(context, out var minion, out _) &&
-                (context.Components.Catalog.CountAvailableTokens(
-                        definition.Reference, context.Components.Tokens.PlacedTokens) > 0 ||
-                    context.Components.Tokens.PlacedTokens.Any(token =>
-                        token.Definition.Reference.Equals(definition.Reference))) &&
-                !Stage(context).IsPrevented(BoardObjectReference.ForMinion(minion))
-                    ? EffectExecutionResultKind.Applied
-                    : EffectExecutionResultKind.ImpossibleMandatory;
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var placedDefinition = EffectiveDefinition(context, definition);
+                return placedDefinition != null &&
+                    TryResolve(context, out var minion, out _) &&
+                    (context.Components.Catalog.CountAvailableTokens(
+                            placedDefinition.Reference, context.Components.Tokens.PlacedTokens) > 0 ||
+                        context.Components.Tokens.PlacedTokens.Any(token =>
+                            token.Definition.Reference.Equals(placedDefinition.Reference))) &&
+                    !Stage(context).IsPrevented(BoardObjectReference.ForMinion(minion))
+                        ? EffectExecutionResultKind.Applied
+                        : EffectExecutionResultKind.ImpossibleMandatory;
+            }
 
             private static bool TryResolve(
                 EffectCapabilityContext context, out Setup.MinionId minion, out HexCoordinate at)
@@ -329,6 +356,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             public TokenDefinition PlacedToken => definition;
 
+            private TokenDefinition PlacedDefinition(EffectCapabilityContext context)
+                => EffectiveDefinition(context, definition);
+
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var components = context.Components;
@@ -337,8 +367,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                if (components.Catalog.CountAvailableTokens(
-                        definition.Reference, components.Tokens.PlacedTokens) < 1)
+                var placedDefinition = PlacedDefinition(context);
+                if (placedDefinition == null ||
+                    components.Catalog.CountAvailableTokens(
+                        placedDefinition.Reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -378,8 +410,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (!AdjacentToLiveObstacle(context, components, coordinate))
                     return EffectExecutionResult.ImpossibleMandatory();
 
-                if (!TokenPlacementSeparationQuery.Admits(
-                        coordinate, definition.Reference, components.Tokens.PlacedTokens,
+                var placedDefinition = PlacedDefinition(context);
+                if (placedDefinition == null || !TokenPlacementSeparationQuery.Admits(
+                        coordinate, placedDefinition.Reference, components.Tokens.PlacedTokens,
                         minimumSameKindHexDistance))
                     return EffectExecutionResult.ImpossibleMandatory();
 
@@ -400,10 +433,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // facedown token whose kind the instance ID must not carry to another seat.
                         new TokenInstanceId(
                             $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
-                            $":{instanceIdentityLabel ?? definition.Id.Value}" +
+                            $":{instanceIdentityLabel ?? placedDefinition.Id.Value}" +
                             $":r{context.RoundIndex}t{context.TurnIndex}" +
                             $":{coordinate.Q}:{coordinate.R}"),
-                        definition,
+                        placedDefinition,
                         context.ActorId,
                         context.ControllerId,
                         context.SourceCardInstanceId,
@@ -430,8 +463,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                if (components.Catalog.CountAvailableTokens(
-                        definition.Reference, components.Tokens.PlacedTokens) < 1)
+                var placedDefinition = PlacedDefinition(context);
+                if (placedDefinition == null ||
+                    components.Catalog.CountAvailableTokens(
+                        placedDefinition.Reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
@@ -489,6 +524,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private IEnumerable<HexCoordinate> LegalSpaces(
                 EffectCapabilityContext context, MatchComponents components)
             {
+                var placedDefinition = PlacedDefinition(context);
+                if (placedDefinition == null)
+                    return Array.Empty<HexCoordinate>();
                 if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var actorAt))
                 {
                     return Array.Empty<HexCoordinate>();
@@ -503,7 +541,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     .Where(clauses.Admit)
                     .Where(space => AdjacentToLiveObstacle(context, components, space))
                     .Where(space => TokenPlacementSeparationQuery.Admits(
-                        space, definition.Reference, components.Tokens.PlacedTokens,
+                        space, placedDefinition.Reference, components.Tokens.PlacedTokens,
                         minimumSameKindHexDistance))
                     .ToArray();
             }
@@ -542,6 +580,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             private readonly TokenDefinition definition;
 
+            private TokenDefinition ReclaimedDefinition(EffectCapabilityContext context)
+                => EffectiveDefinition(context, definition);
+
             public ReclaimHeroTokenHandler(EffectCapabilityReference reference, TokenDefinition definition)
             {
                 Reference = reference;
@@ -564,13 +605,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                var reclaimedDefinition = ReclaimedDefinition(context);
+                if (reclaimedDefinition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
                 if (components.Catalog.CountAvailableTokens(
-                        definition.Reference, components.Tokens.PlacedTokens) > 0)
+                        reclaimedDefinition.Reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResult.DeclinedOptional();
                 }
 
-                var candidates = SameTypeTokens(components)
+                var candidates = SameTypeTokens(components, reclaimedDefinition)
                     .Select(token => EffectValue.Space(token.Coordinate))
                     .ToArray();
                 return candidates.Length == 0
@@ -589,7 +633,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var coordinate = selected[0].Coordinate;
-                var token = SameTypeTokens(components)
+                var reclaimedDefinition = ReclaimedDefinition(context);
+                if (reclaimedDefinition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var token = SameTypeTokens(components, reclaimedDefinition)
                     .FirstOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
                 if (token == null)
                 {
@@ -611,13 +658,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
+                var reclaimedDefinition = ReclaimedDefinition(context);
+                if (reclaimedDefinition == null)
+                    return EffectExecutionResultKind.ImpossibleMandatory;
                 if (components.Catalog.CountAvailableTokens(
-                        definition.Reference, components.Tokens.PlacedTokens) > 0)
+                        reclaimedDefinition.Reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResultKind.DeclinedOptional;
                 }
 
-                return SameTypeTokens(components).Any()
+                return SameTypeTokens(components, reclaimedDefinition).Any()
                     ? EffectExecutionResultKind.NeedsChoice
                     : EffectExecutionResultKind.ImpossibleMandatory;
             }
@@ -626,9 +676,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// p.18's "tokens of the same type", in a stable board order so the offer a player sees is
             /// a fact rather than an accident of collection order.
             /// </summary>
-            private IEnumerable<PlacedToken> SameTypeTokens(MatchComponents components) =>
+            private IEnumerable<PlacedToken> SameTypeTokens(
+                MatchComponents components, TokenDefinition reclaimedDefinition) =>
                 components.Catalog
-                    .ReclaimableForPlacement(definition.Reference, components.Tokens.PlacedTokens)
+                    .ReclaimableForPlacement(
+                        reclaimedDefinition.Reference, components.Tokens.PlacedTokens)
                     .OrderBy(token => token.Coordinate.Q)
                     .ThenBy(token => token.Coordinate.R);
         }

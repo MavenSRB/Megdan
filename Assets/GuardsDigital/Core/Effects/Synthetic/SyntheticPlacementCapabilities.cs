@@ -856,7 +856,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     selected[0].Coordinate,
                     QualifyingSpaces(context, policy, measuredFrom),
                     context.Modifications,
-                    context.Components.Units);
+                    context.Components.Units,
+                    allowEffectiveMinion: true);
                 return outcome.Accepted
                     ? EffectExecutionResult.Applied(new[]
                     {

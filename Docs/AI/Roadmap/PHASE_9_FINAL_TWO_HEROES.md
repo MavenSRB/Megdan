@@ -56,11 +56,15 @@ Completed 2026-10-05. The permanent matrix covers all nineteen fronts (eighteen 
 
 Historical evidence: [9.50 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-950-emmitt-player-path-evidence).
 
-### [~] 9.51 NebKher's Illusions and borrowed actions
+### [x] 9.51 NebKher's Illusions and borrowed actions
 
 Outcome: typed Illusion token placement, swap, short supply and cleanup; Mind Grip performs an allowed action on the chosen enemy's previous-slot card with token substitution and no markers; the special friendly-melee-minion count applies at its printed action scope. Focused rules, snapshot, replay, owner-seat and token tests. T2. Requires the Mind Grip and Illusion rulings.
 
-### [ ] 9.52 NebKher's laughter and divided board
+Completed 2026-10-05. The three-copy Illusion definition and typed handlers place, reclaim, swap and clean up tokens; a controller-action-only overlay makes each count as a friendly melee minion for coordinate-backed targets, Swap/Place and Defense contributions, never the round-end Minion Battle. Mind Grip selects an enemy's previous-slot printed action and performs it as NebKher, including secondary Movement, Defense text and Attack, without moving the borrowed card, attaching its markers, or placing its original tokens. Its parent frame supplies the substitution and marker policy after restore; seat, replay and every command-prefix snapshot are tested. The closed borrowed-secondary invocation advances snapshot schema v57 to v58 with prior-version rejection and measured compatibility re-pins; wire /36 remains guarded by the schema admission tuple. The demonstrated shared Swap modification-seam failure was corrected and green-rerun; the schema-only aggregate digest failure was measured, re-pinned and green-rerun. Snapshot migration promoted acceptance from T2 to T3: full offline 6,686/6,686, unfiltered Unity Edit 7,786 passed plus 37 explicit diagnostics, and unfiltered Unity Play 1,127/1,127. The local milestone commit holds exact evidence. NebKher's definitions remain unregistered until 9.53.
+
+Historical evidence: [9.51 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-951-nebkher-illusion-and-borrow-evidence).
+
+### [~] 9.52 NebKher's laughter and divided board
 
 Outcome: Diabolical Laughter's optional repeated choices and the Ultimate's trigger; a selected straight line through NebKher's space enforces the two printed cross-side interaction restrictions for Crack in Reality and Shift Reality, across every target, space, movement, placement and area query. Board geometry, timing, snapshot, replay and wire checks. T2. Requires the laughter and line rulings.
 

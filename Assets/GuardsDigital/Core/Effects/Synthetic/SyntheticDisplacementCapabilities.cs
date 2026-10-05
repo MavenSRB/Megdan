@@ -2048,7 +2048,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             return TargetQuery.StandsInRelationTo(
-                relation, occupant, context.ActorId, context.Participants, context.Components.Board);
+                relation, occupant, context.ActorId, context.Participants, context.Components.Board,
+                context.Modifications);
         }
 
         /// <summary>

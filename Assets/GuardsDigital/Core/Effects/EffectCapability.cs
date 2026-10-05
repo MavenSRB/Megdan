@@ -261,8 +261,10 @@ namespace GuardsDigital.Core.Effects
             ActionInvocationContext invocationContext = ActionInvocationContext.None,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
             BorrowedPrimaryJudgement borrowedPrimaryCanAct = null,
-            IReadOnlyList<IReadOnlyList<EffectValue>> answersGivenAcrossTheGroup = null)
+            IReadOnlyList<IReadOnlyList<EffectValue>> answersGivenAcrossTheGroup = null,
+            GuardsDigital.Core.Rules.EffectResolution.BorrowRequest enclosingBorrow = default)
         {
+            EnclosingBorrow = enclosingBorrow;
             BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
             AnswersGivenAcrossTheGroup =
                 answersGivenAcrossTheGroup ?? Array.Empty<IReadOnlyList<EffectValue>>();
@@ -560,6 +562,7 @@ namespace GuardsDigital.Core.Effects
         /// <c>null</c> everywhere else, where a borrow is judged as able.
         /// </summary>
         public BorrowedPrimaryJudgement BorrowedPrimaryCanAct { get; }
+        public GuardsDigital.Core.Rules.EffectResolution.BorrowRequest EnclosingBorrow { get; }
 
         /// <summary>
         /// This same context, asked as if the acting hero already stood on <paramref name="space"/>.
@@ -597,7 +600,8 @@ namespace GuardsDigital.Core.Effects
                 space,
                 InvocationContext,
                 borrowedPrimaryCanAct: BorrowedPrimaryCanAct,
-                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup);
+                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup,
+                enclosingBorrow: EnclosingBorrow);
 
         /// <summary>
         /// Milestone 8.88. This same context with <paramref name="clauses"/> added to its inputs, each
@@ -652,7 +656,8 @@ namespace GuardsDigital.Core.Effects
                 InvocationContext,
                 TieBreakerRevealedSide,
                 BorrowedPrimaryCanAct,
-                AnswersGivenAcrossTheGroup);
+                AnswersGivenAcrossTheGroup,
+                EnclosingBorrow);
         }
 
         public EffectValue Input(string parameterName) =>

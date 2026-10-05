@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.51 NebKher Illusion and borrow evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.51 | Three-Illusion supply/cleanup, controller-action-only friendly melee count, previous-slot printed-action borrow with token substitution and no markers, snapshot v58 and deterministic seat/restore/replay are implemented but not registered to NebKher until 9.53. The schema move promoted the gate to T3: full offline/Edit/Play passed after the Swap seam and compatibility digest failures were corrected and green-rerun. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-951-nebkhers-illusions-and-borrowed-actions). | `milestone/9.51` |
+
 ## Milestone 9.50 Emmitt player-path evidence
 
 | Milestone | Outcome and definition | Commit |

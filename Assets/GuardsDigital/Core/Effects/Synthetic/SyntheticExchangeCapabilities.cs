@@ -315,7 +315,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             var outcome = SwapOperation.Swap(
                 DeclaredEligiblePiece(context), context.Components.Exchange,
-                context.Components.Board, first, second);
+                context.Components.Board, first, second, context.Modifications);
             if (!outcome.Accepted)
             {
                 return EffectExecutionResult.ImpossibleMandatory();
@@ -368,8 +368,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 !components.Board.TryGetObjectAt(firstSpace.Coordinate, out first) ||
                 !components.Board.TryGetObjectAt(secondSpace.Coordinate, out second) ||
                 first.Equals(second) ||
-                !SwapOperation.Admits(eligible, first.Kind) ||
-                !SwapOperation.Admits(eligible, second.Kind))
+                !SwapOperation.Admits(eligible, first, context.Modifications) ||
+                !SwapOperation.Admits(eligible, second, context.Modifications))
             {
                 return false;
             }
@@ -587,8 +587,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                var incoming = SyntheticComponentDefinitions.WardV1;
-                if (components.Catalog.CountAvailableTokens(incoming, components.Tokens.PlacedTokens) < 1)
+                var incoming = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.WardDefinition);
+                if (incoming == null ||
+                    components.Catalog.CountAvailableTokens(
+                        incoming.Reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return false;
                 }
@@ -603,7 +606,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context, HexCoordinate coordinate) =>
                 new PlacedToken(
                     SubstituteId(context, coordinate),
-                    context.Components.Catalog.LoadToken(SyntheticComponentDefinitions.WardV1),
+                    SyntheticTokenCapabilities.EffectiveDefinition(
+                        context, SyntheticComponentDefinitions.WardDefinition),
                     context.ActorId,
                     context.ControllerId,
                     context.SourceCardInstanceId,

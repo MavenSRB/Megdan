@@ -274,7 +274,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 var heroes = Trampled(context)
                     .Where(unit => unit.Kind == BoardObjectKind.Hero && TargetQuery.StandsInRelationTo(
                         SourceTeamRelation.OpposingSource, unit, context.ActorId, context.Participants,
-                        context.Components.Board))
+                        context.Components.Board, context.Modifications))
                     .Take(MostHeroesMovedThrough)
                     .ToArray();
                 var facts = new List<EffectOutcomeFact>();
@@ -375,7 +375,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 Trampled(context)
                     .Where(unit => unit.Kind == BoardObjectKind.Minion && TargetQuery.StandsInRelationTo(
                         SourceTeamRelation.OpposingSource, unit, context.ActorId, context.Participants,
-                        context.Components.Board))
+                        context.Components.Board, context.Modifications))
                     .Select(unit => unit.MinionId)
                     .ToArray();
         }

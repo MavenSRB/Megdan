@@ -577,7 +577,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             var found = new List<BoardObjectReference>(disk.Count);
             foreach (var target in disk)
             {
-                if (!Offers(kinds, target.Kind))
+                if (!Offers(kinds, target, context.Modifications))
                 {
                     continue;
                 }
@@ -594,7 +594,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (relation != SourceTeamRelation.None &&
                     !TargetQuery.StandsInRelationTo(
-                        relation, target, context.ActorId, context.Participants, board))
+                        relation, target, context.ActorId, context.Participants, board,
+                        context.Modifications))
                 {
                     continue;
                 }
@@ -603,6 +604,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     continue;
                 }
+                if (target.Kind == BoardObjectKind.Token &&
+                    EffectiveUnitKindQuery.Is(
+                        RuleObject.ForToken(target.TokenInstanceId),
+                        EffectiveUnitKind.Minion, context.Modifications) &&
+                    admittedClass != RosterMinionClass.AnyClass &&
+                    !SyntheticRosterCapabilities.AdmittedClassIncludes(
+                        admittedClass,
+                        EffectiveUnitKindQuery.TokenMinionType(
+                            RuleObject.ForToken(target.TokenInstanceId),
+                            context.Modifications)))
+                    continue;
 
                 if (!board.TryGetObjectCoordinate(target, out var at) || !clauses.Admit(target, at))
                 {
@@ -615,16 +627,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
             return found;
         }
 
-        private static bool Offers(PrintedIconKinds kinds, BoardObjectKind kind)
+        private static bool Offers(
+            PrintedIconKinds kinds, BoardObjectReference target,
+            RuleModificationSet modifications)
         {
-            switch (kind)
+            switch (target.Kind)
             {
                 case BoardObjectKind.Hero:
                     return (kinds & PrintedIconKinds.Heroes) != 0;
                 case BoardObjectKind.Minion:
                     return (kinds & PrintedIconKinds.Minions) != 0;
                 case BoardObjectKind.Token:
-                    return (kinds & PrintedIconKinds.Tokens) != 0;
+                    return (kinds & PrintedIconKinds.Tokens) != 0 ||
+                        ((kinds & PrintedIconKinds.Minions) != 0 &&
+                         EffectiveUnitKindQuery.Is(
+                             RuleObject.ForToken(target.TokenInstanceId),
+                             EffectiveUnitKind.Minion, modifications));
                 default:
                     return false;
             }
@@ -1138,7 +1156,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return kindMatches &&
                     (adjacentToUnitRelation == SourceTeamRelation.None ||
                         (context.Participants != null && TargetQuery.StandsInRelationTo(
-                            adjacentToUnitRelation, occupant, context.ActorId, context.Participants, board)));
+                            adjacentToUnitRelation, occupant, context.ActorId, context.Participants,
+                            board, context.Modifications)));
             }
 
             /// <summary>Milestone 8.91. Whether any token, of any kind and owner, stands on <paramref name="at"/>.</summary>

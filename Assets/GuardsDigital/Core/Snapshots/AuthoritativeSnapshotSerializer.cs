@@ -448,7 +448,10 @@ namespace GuardsDigital.Core.Snapshots
         // cannot be inferred from the remaining card alone; v55 is rejected.
         // v57 (milestone 9.49): a card's current location cannot reveal whether it was discarded
         // earlier this turn and then retrieved. Persist that history; reject v56.
-        public const int CurrentSchemaVersion = 57;
+        // v58 (milestone 9.51): a paused previous-slot borrowed secondary has a new
+        // ActionInvocationContext member on the wire. A v57 reader cannot interpret that
+        // closed enum; reject it at schema admission rather than deep in a paused action.
+        public const int CurrentSchemaVersion = 58;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

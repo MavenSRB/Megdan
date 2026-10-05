@@ -345,7 +345,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(after));
 
             // The prior schema is refused.
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(57));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(58));
         }
 
         [Test]

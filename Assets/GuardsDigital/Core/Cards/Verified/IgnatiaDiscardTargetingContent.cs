@@ -282,7 +282,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     if (target.Kind != BoardObjectKind.Hero ||
                         !TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
+                            relation, target, context.ActorId, context.Participants, board,
+                            context.Modifications))
                     {
                         continue;
                     }
@@ -463,7 +464,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     if (target.Kind != BoardObjectKind.Minion ||
                         !TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
+                            relation, target, context.ActorId, context.Participants, board,
+                            context.Modifications))
                     {
                         continue;
                     }
@@ -496,7 +498,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         BoardObjectReference.ForHero(occupancy.HeroId),
                         context.ActorId,
                         context.Participants,
-                        board));
+                        board,
+                        context.Modifications));
             }
         }
     }

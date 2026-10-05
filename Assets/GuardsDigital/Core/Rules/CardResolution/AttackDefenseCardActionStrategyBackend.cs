@@ -621,7 +621,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // clause's business and does not reset with it: it is the grant saying which enemy heroes
             // it has already reached this turn, and a repeat of a granted Attack is still that grant's
             // instance. It is carried first so both branches below keep it.
-            var granted = completed.InvocationContext == ActionInvocationContext.TextGranted
+            var granted = (completed.InvocationContext == ActionInvocationContext.TextGranted ||
+                completed.InvocationContext == ActionInvocationContext.TextGrantedSecondary)
                 ? completed.ExcludedTargets
                 : (IReadOnlyList<AttackTarget>)Array.Empty<AttackTarget>();
             if (!excludedTarget.IsDefined) return granted;
@@ -751,7 +752,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // printed-text seam below reads that card's own definition and nothing had to be copied.
             if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
                 offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
-                offer.InvocationContext != ActionInvocationContext.TextGranted)
+                offer.InvocationContext != ActionInvocationContext.TextGranted &&
+                offer.InvocationContext != ActionInvocationContext.TextGrantedSecondary)
             {
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedInvocationContext);
             }
@@ -3765,7 +3767,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // resolution, while still requiring the source instance, its definition, and its printed
             // primary to agree. No new TextGranted action can enter through here; this method only
             // continues or restores a pending Attack that StartAttackResolution already accepted.
-            if (resolution.InvocationContext == ActionInvocationContext.TextGranted &&
+            if ((resolution.InvocationContext == ActionInvocationContext.TextGranted ||
+                 resolution.InvocationContext == ActionInvocationContext.TextGrantedSecondary) &&
                 sourceCard != null &&
                 sourceCard.DefinitionReference.Equals(resolution.SourceDefinitionReference))
             {
@@ -3773,7 +3776,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     candidate.Reference.Equals(resolution.SourceDefinitionReference));
                 var action = definition?.ActionDefinitions.SingleOrDefault(candidate =>
                     candidate.Id.Equals(resolution.ActionDefinitionId));
-                if (action != null && action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                if (action != null &&
+                    (resolution.InvocationContext == ActionInvocationContext.TextGranted
+                        ? action.Origin == ActionDefinitionOrigin.PrintedPrimary
+                        : action.Origin == ActionDefinitionOrigin.PrintedSecondary) &&
                     action.Kind == ActionKind.Attack)
                 {
                     return new ActionOffer(
@@ -3781,7 +3787,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         definition.Reference,
                         action.Id,
                         resolution.ActorId,
-                        ActionInvocationContext.TextGranted,
+                        resolution.InvocationContext,
                         true,
                         action.AttackRange,
                         action.SourceCardStateTransition);

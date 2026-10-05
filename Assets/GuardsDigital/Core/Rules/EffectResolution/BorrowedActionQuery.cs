@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Modifications;
@@ -18,11 +20,17 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// </summary>
     public readonly struct BorrowRequest : IEquatable<BorrowRequest>
     {
-        private BorrowRequest(bool isRequested, CardInstanceId borrowedCardId, RuleObject excludedTarget)
+        private BorrowRequest(bool isRequested, CardInstanceId borrowedCardId, RuleObject excludedTarget,
+            bool selectsPrintedAction, int printedActionIndex,
+            TokenDefinitionId substituteTokenKind, bool suppressMarkers)
         {
             IsRequested = isRequested;
             BorrowedCardId = borrowedCardId;
             ExcludedTarget = excludedTarget;
+            SelectsPrintedAction = selectsPrintedAction;
+            PrintedActionIndex = printedActionIndex;
+            SubstituteTokenKind = substituteTokenKind;
+            SuppressMarkers = suppressMarkers;
         }
 
         /// <summary>No borrow was asked for - what every non-borrowing action reports.</summary>
@@ -33,20 +41,49 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <summary>The card whose printed primary is to be performed. Meaningful only when requested.</summary>
         public CardInstanceId BorrowedCardId { get; }
         public RuleObject ExcludedTarget { get; }
+        public bool SelectsPrintedAction { get; }
+        public int PrintedActionIndex { get; }
+        public TokenDefinitionId SubstituteTokenKind { get; }
+        public bool SuppressMarkers { get; }
 
         public static BorrowRequest For(CardInstanceId borrowedCardId, RuleObject excludedTarget = default) =>
-            new BorrowRequest(true, borrowedCardId, excludedTarget);
+            new BorrowRequest(true, borrowedCardId, excludedTarget, false, 0, default, false);
+
+        /// <summary>Mind Grip's selected printed action, with its two explicit this-way exceptions.</summary>
+        public static BorrowRequest ForPreviousSlotPrintedAction(
+            CardInstanceId borrowedCardId, int printedActionIndex,
+            TokenDefinitionId substituteTokenKind)
+        {
+            if (!borrowedCardId.IsDefined || printedActionIndex < 0 ||
+                !substituteTokenKind.IsDefined)
+                throw new ArgumentException(
+                    "A previous-slot borrow names a card, printed action and replacement token kind.");
+            return new BorrowRequest(true, borrowedCardId, RuleObject.None,
+                true, printedActionIndex, substituteTokenKind, true);
+        }
 
         public bool Equals(BorrowRequest other) =>
-            IsRequested == other.IsRequested && BorrowedCardId.Equals(other.BorrowedCardId) && ExcludedTarget.Equals(other.ExcludedTarget);
+            IsRequested == other.IsRequested && BorrowedCardId.Equals(other.BorrowedCardId) &&
+            ExcludedTarget.Equals(other.ExcludedTarget) &&
+            SelectsPrintedAction == other.SelectsPrintedAction &&
+            PrintedActionIndex == other.PrintedActionIndex &&
+            SubstituteTokenKind.Equals(other.SubstituteTokenKind) &&
+            SuppressMarkers == other.SuppressMarkers;
 
         public override bool Equals(object obj) => obj is BorrowRequest other && Equals(other);
 
         public override int GetHashCode() =>
-            (IsRequested ? 1 : 0) ^ (BorrowedCardId.GetHashCode() * 397) ^ ExcludedTarget.GetHashCode();
+            (IsRequested ? 1 : 0) ^ (BorrowedCardId.GetHashCode() * 397) ^
+            ExcludedTarget.GetHashCode() ^ (SelectsPrintedAction ? 17 : 0) ^
+            (PrintedActionIndex * 31) ^ SubstituteTokenKind.GetHashCode() ^
+            (SuppressMarkers ? 71 : 0);
 
         public override string ToString() =>
-            IsRequested ? BorrowedCardId.ToString() : "no borrow";
+            IsRequested
+                ? (SelectsPrintedAction
+                    ? BorrowedCardId + ":printed:" + PrintedActionIndex
+                    : BorrowedCardId.ToString())
+                : "no borrow";
     }
 
     /// <summary>
@@ -126,7 +163,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                      !node.Capability.Equals(SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1) &&
                      // Milestone 9.30c. A cast: the spell it removed faceup is the card whose printed
                      // primary the caster now performs (Prepare Spells, GY-Q3).
-                     !node.Capability.Equals(SyntheticSpellbookCapabilities.CastSpellV1)))
+                     !node.Capability.Equals(SyntheticSpellbookCapabilities.CastSpellV1) &&
+                     !node.Capability.Equals(
+                         SyntheticPreviousSlotBorrowCapabilities.BorrowPrintedActionV1)))
                 {
                     continue;
                 }
@@ -146,6 +185,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 excluded = RuleObject.ForHero(target.Value.HeroId);
                             if (target.OutputName == SyntheticBorrowedActionCapabilities.ExcludedMinionOutput && target.Value.Kind == EffectValueKind.Minion)
                                 excluded = RuleObject.ForMinion(target.Value.MinionId);
+                        }
+                        if (node.Capability.Equals(
+                                SyntheticPreviousSlotBorrowCapabilities.BorrowPrintedActionV1))
+                        {
+                            var printed = outcome.Outputs.SingleOrDefault(value =>
+                                value.OutputName ==
+                                    SyntheticPreviousSlotBorrowCapabilities.BorrowedActionIndexOutput);
+                            var tokenKind = node.Inputs.SingleOrDefault(input =>
+                                input.ParameterName ==
+                                    SyntheticPreviousSlotBorrowCapabilities.SubstituteTokenKindParameter);
+                            return printed.Value.Kind == EffectValueKind.Integer &&
+                                printed.Value.IntegerValue >= 0 &&
+                                tokenKind.SourceKind == EffectBindingSourceKind.Literal &&
+                                tokenKind.Literal.Kind == EffectValueKind.TokenKind
+                                    ? BorrowRequest.ForPreviousSlotPrintedAction(
+                                        fact.Value.CardInstanceId, printed.Value.IntegerValue,
+                                        tokenKind.Literal.TokenKindId)
+                                    : BorrowRequest.None;
                         }
                         return BorrowRequest.For(fact.Value.CardInstanceId, excluded);
                     }

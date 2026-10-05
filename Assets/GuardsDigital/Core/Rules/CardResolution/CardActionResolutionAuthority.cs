@@ -143,12 +143,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackResolution owedAttackRepeat;
         private AttackTarget owedAttackRepeatExclusion;
 
-        // Milestone 8.35z50. The card a completed card text asked to borrow a primary action from, and
+        // Milestone 8.35z50. The card a completed card text asked to borrow an action from, and
         // the hero who will perform it. Ephemeral by design and deliberately NOT persisted: a borrow is
         // owed only across the boundary between the frame that asked and the instance that answers,
         // which is the same window `owedAttackRepeat` above lives in.
-        private CardInstanceId owedBorrowedActionCardId;
+        private BorrowRequest owedBorrowedActionRequest;
         private HeroId owedBorrowedActionActorId;
+        private IReadOnlyList<CardDefinition> borrowDefinitionPool;
+
+        internal void BindBorrowDefinitionPool(IEnumerable<CardDefinition> definitions) =>
+            borrowDefinitionPool = (definitions ?? throw new ArgumentNullException(nameof(definitions)))
+                .ToArray();
+
+        private BorrowRequest CurrentBorrowRequest
+        {
+            get
+            {
+                if (borrowDefinitionPool == null)
+                    return default;
+                for (var index = borrowedSkillParents.Count - 1; index >= 0; index--)
+                {
+                    var parent = borrowedSkillParents[index];
+                    var root = SkillCardActionStrategyBackend.FindEffectRoot(
+                        borrowDefinitionPool, parent);
+                    var request = root == null
+                        ? default
+                        : BorrowedActionQuery.Requested(root, parent.CompletedOutcomes);
+                    if (request.SubstituteTokenKind.IsDefined || request.SuppressMarkers)
+                        return request;
+                }
+                return default;
+            }
+        }
 
         /// <summary>
         /// Milestone 8.38d. The rule id of the permanent ability whose trigger asked for the owed
@@ -160,7 +186,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// taken inside the command that answered for it, so nothing here crosses a snapshot.</para>
         /// </summary>
         private string owedBorrowedActionGrantSourceId;
-        private RuleObject owedBorrowedTargetExclusion;
         private IEnumerable<string> borrowedTargetScopeKeys;
 
         internal void BindBorrowedTargetScopeKeys(IEnumerable<string> keys) => borrowedTargetScopeKeys = keys;
@@ -236,6 +261,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // this board, whichever resolver requested it.
             this.skillBackend.BindRepeatPerformer(
                 this.board.SettleActingBodyAt, this.board.ProbeWithActingBody);
+            this.skillBackend.BindEnclosingBorrow(() => CurrentBorrowRequest);
             triggeredEffects = new TriggeredEffectResolutionAuthority(
                 catalogs.TriggeredEffects, catalogs.Capabilities, components);
         }
@@ -1259,14 +1285,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             TieBreakerState tieBreaker,
             int roundIndex,
-            int turnIndex)
+            int turnIndex) =>
+            StartEffectTextAction(resolutionId, offer, definitions, instances,
+                participants, timing, modifications, tieBreaker, roundIndex, turnIndex,
+                ActionKind.Skill);
+
+        internal CardActionResolutionResult StartBorrowedDefenseText(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex) =>
+            StartEffectTextAction(resolutionId, offer, definitions, instances,
+                participants, timing, modifications, tieBreaker, roundIndex, turnIndex,
+                ActionKind.Defense);
+
+        private CardActionResolutionResult StartEffectTextAction(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
+            ActionKind expectedKind)
         {
             var prepared = PrepareStart(
                 resolutionId,
                 offer,
                 definitions,
                 instances,
-                ActionKind.Skill,
+                expectedKind,
                 true);
             if (prepared.RejectionReason.HasValue)
             {
@@ -1283,7 +1340,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
                 timing, modifications, components, roundIndex, turnIndex, out var repeat,
                 out var lanePushCause, out var appliedPushes, out var requestedDefeats,
-                out var borrowRequested);
+                out var borrowRequested, allowBorrowedDefense: expectedKind == ActionKind.Defense);
             RecordOwedBorrowedAction(borrowRequested, offer.ActorId);
             result = WithSkillRequestedHeroDefeats(
                 result, requestedDefeats, resolutionId, offer.SourceCardInstanceId,
@@ -2680,7 +2737,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 tieBreakerRevealedSide: LiveTieBreakerSide,
                 // Milestone 9.38. A borrow printed in p.14's card text offers only a card whose primary
                 // can act with the unit this Attack took barred - see BindBorrowedPrimaryJudgement.
-                borrowedPrimaryCanAct: borrowedPrimaryJudgement);
+                borrowedPrimaryCanAct: borrowedPrimaryJudgement,
+                enclosingBorrow: CurrentBorrowRequest);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -3194,9 +3252,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return;
             }
 
-            owedBorrowedActionCardId = borrowRequested.BorrowedCardId;
+            owedBorrowedActionRequest = borrowRequested;
             owedBorrowedActionActorId = actorId;
-            owedBorrowedTargetExclusion = borrowRequested.ExcludedTarget;
         }
 
         /// <summary>
@@ -3225,8 +3282,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
         }
 
-        /// <summary>Whether a card text has asked for a borrowed primary that has not started.</summary>
-        public bool HasOwedBorrowedAction => owedBorrowedActionCardId.IsDefined;
+        /// <summary>Whether a card text has asked for a borrowed action that has not started.</summary>
+        public bool HasOwedBorrowedAction => owedBorrowedActionRequest.IsRequested;
 
         /// <summary>
         /// The unit a card-text repeat of this Attack may not take, read off the binding the asking
@@ -3562,8 +3619,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
-        /// Milestone 8.35z50. Starts the borrowed card's printed primary action once
-        /// <c>borrow-primary-action@1</c>'s card choice has been answered - the authority
+        /// Starts the borrowed card's selected printed action once its card/action choice is answered.
+        /// The earlier <c>borrow-primary-action@1</c> selects the primary by default; the
+        /// previous-slot form also selects a printed secondary or Defense. This is the authority
         /// <see cref="GuardsDigital.Core.Rules.EffectResolution.BorrowedActionQuery"/>'s doc comment
         /// names as the missing half, and the direct twin of
         /// <see cref="StartOwedAfterActionRepeat"/>.
@@ -3608,14 +3666,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal ActionOffer TakeOwedBorrowedAction(
             IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
             out ActionResolutionId resolutionId, out string grantSourceId, out RuleObject excludedTarget)
+            => TakeOwedBorrowedAction(definitions, instances, out resolutionId,
+                out grantSourceId, out excludedTarget, out _);
+
+        internal ActionOffer TakeOwedBorrowedAction(
+            IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
+            out ActionResolutionId resolutionId, out string grantSourceId,
+            out RuleObject excludedTarget, out BorrowRequest request)
         {
             if (!HasOwedBorrowedAction)
                 throw new InvalidOperationException("No borrowed primary is owed.");
             var actor = owedBorrowedActionActorId;
-            var card = instances.Single(value => value.Id.Equals(owedBorrowedActionCardId));
+            request = owedBorrowedActionRequest;
+            var borrowedCardId = request.BorrowedCardId;
+            var card = instances.Single(value => value.Id.Equals(borrowedCardId));
             var definition = definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
-            if (BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
+            if (!request.SelectsPrintedAction &&
+                BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
                 throw new InvalidOperationException("The selected card has no borrowable primary.");
+            if (CardLifecycleAuthority.IsFacedownRestingCard(card))
+                throw new InvalidOperationException("A facedown card has no borrowable action.");
+            var action = request.SelectsPrintedAction
+                ? definition.ActionDefinitions.ElementAtOrDefault(request.PrintedActionIndex)
+                : definition.ActionDefinitions.Single(value =>
+                    value.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            if (action == null || action.TextComposition.IsAwaited ||
+                (request.SelectsPrintedAction &&
+                 action.Origin != ActionDefinitionOrigin.PrintedPrimary &&
+                 action.Origin != ActionDefinitionOrigin.PrintedSecondary &&
+                 action.Origin != ActionDefinitionOrigin.Reaction))
+                throw new InvalidOperationException("The selected printed action is not borrowable.");
 
             // Milestone 8.38d. A card text asked from inside its own resolution, so that resolution is
             // suspended and resumed around the instance. An action-end ability normally has no
@@ -3629,26 +3709,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 borrowedSkillParents.Add(parent);
             }
 
-            owedBorrowedActionCardId = default;
+            owedBorrowedActionRequest = default;
             owedBorrowedActionActorId = default;
             owedBorrowedActionGrantSourceId = null;
             grantSourceId = granting;
-            excludedTarget = owedBorrowedTargetExclusion;
-            owedBorrowedTargetExclusion = default;
-            var primary = definition.ActionDefinitions.Single(value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            excludedTarget = request.ExcludedTarget;
             resolutionId = parent == null
                 ? BorrowedResolutionIdFor(card.Id, actor)
                 : new ActionResolutionId(parent.ResolutionId.Value + ":borrow:" +
-                    parent.CompletedOutcomes.Count + ":" + card.Id.Value);
-            var offer = new ActionOffer(card.Id, definition.Reference, primary.Id, actor,
-                ActionInvocationContext.TextGranted, true, primary.AttackRange, primary.SourceCardStateTransition);
+                    parent.CompletedOutcomes.Count + ":" + card.Id.Value + ":" + action.Id.Value);
+            var invocation = request.SelectsPrintedAction &&
+                action.Origin != ActionDefinitionOrigin.PrintedPrimary
+                    ? ActionInvocationContext.TextGrantedSecondary
+                    : ActionInvocationContext.TextGranted;
+            var offer = new ActionOffer(card.Id, definition.Reference, action.Id, actor,
+                invocation, true, action.AttackRange,
+                request.SelectsPrintedAction && action.Kind == ActionKind.Defense
+                    ? default : action.SourceCardStateTransition);
             authorizedParentlessBorrowOffer = parent == null || granting != null ? offer : (ActionOffer?)null;
             return offer;
         }
 
         private bool IsAuthorizedBorrowedOffer(ActionOffer offer, IReadOnlyList<CardDefinition> definitions)
         {
-            if (offer.InvocationContext != ActionInvocationContext.TextGranted)
+            if (offer.InvocationContext != ActionInvocationContext.TextGranted &&
+                offer.InvocationContext != ActionInvocationContext.TextGrantedSecondary)
                 return false;
 
             // Milestone 8.38d. An ability-granted instance has no parent frame to check the request
@@ -3668,9 +3753,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var parent = borrowedSkillParents[borrowedSkillParents.Count - 1];
             var root = SkillCardActionStrategyBackend.FindEffectRoot(definitions, parent);
             var request = root == null ? default : BorrowedActionQuery.Requested(root, parent.CompletedOutcomes);
-            return request.IsRequested && request.BorrowedCardId.Equals(offer.SourceCardInstanceId) &&
-                parent.ActorId.Equals(offer.ActorId) &&
-                ActionOfferQuery.FindActionDefinition(offer, definitions).Origin == ActionDefinitionOrigin.PrintedPrimary;
+            if (!request.IsRequested || !request.BorrowedCardId.Equals(offer.SourceCardInstanceId) ||
+                !parent.ActorId.Equals(offer.ActorId))
+                return false;
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
+            return request.SelectsPrintedAction
+                ? request.PrintedActionIndex >= 0 &&
+                  definitions.Single(definition =>
+                          definition.Reference.Equals(offer.SourceDefinitionReference))
+                      .ActionDefinitions.ElementAtOrDefault(request.PrintedActionIndex)?.Id
+                      .Equals(action.Id) == true
+                : action.Origin == ActionDefinitionOrigin.PrintedPrimary;
         }
 
         internal CardActionResolutionResult ResumeBorrowingSkill(ActionBoundaryContext boundary)
@@ -4066,7 +4159,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     turnIndex),
                 tieBreakerRevealedSide: LiveTieBreakerSide,
                 // Milestone 9.38, the resume half of the same supply.
-                borrowedPrimaryCanAct: borrowedPrimaryJudgement);
+                borrowedPrimaryCanAct: borrowedPrimaryJudgement,
+                enclosingBorrow: CurrentBorrowRequest);
             // Milestone 8.116. Whether this answer is the defender's forced Movement action (Whisper
             // Ruling 16b), and where that hero stood before it - read before the answer moves them.
             var forcedMove = ForcedMovementBeingAnswered(pendingCardText, effectRoot, materializedDefinitions);
@@ -6773,7 +6867,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // borrowed action the borrowed card's own in every respect (RULING 36).
             if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
                 offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
-                offer.InvocationContext != ActionInvocationContext.TextGranted)
+                offer.InvocationContext != ActionInvocationContext.TextGranted &&
+                offer.InvocationContext != ActionInvocationContext.TextGrantedSecondary)
             {
                 return PreparedStart.Reject(
                     CardActionResolutionRejectionReason.UnsupportedInvocationContext,

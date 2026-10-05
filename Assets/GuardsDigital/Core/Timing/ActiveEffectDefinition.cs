@@ -150,7 +150,10 @@ namespace GuardsDigital.Core.Timing
         /// behaviour Wasp's Static Barrier overlay has had since milestone 8.7 - reuse rather than
         /// invention, on a window one round long rather than one turn.</para>
         /// </summary>
-        ControllerAndHeroesInRadius = 9
+        ControllerAndHeroesInRadius = 9,
+
+        /// <summary>A named token kind counts differently only while this effect's controller acts.</summary>
+        TokensOfKindWhileControllerActs = 10
     }
 
     /// <summary>
@@ -246,8 +249,16 @@ namespace GuardsDigital.Core.Timing
             SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None,
             EffectDefinitionReference? triggeredEffect = null,
             ActiveEffectBoundActorSource boundActorSource = ActiveEffectBoundActorSource.None,
-            string ownedObstacleRadiusAnchorKind = null)
+            string ownedObstacleRadiusAnchorKind = null,
+            GuardsDigital.Core.Components.TokenDefinitionId affectedTokenKind = default)
         {
+            if (affectedScope == ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs
+                ? !affectedTokenKind.IsDefined
+                : affectedTokenKind.IsDefined)
+                throw new ArgumentException(
+                    "Only an action-scoped token effect names its affected token kind.",
+                    nameof(affectedTokenKind));
+            AffectedTokenKind = affectedTokenKind;
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
             if (affectedScope == ActiveEffectAffectedScopeKind.None)
@@ -318,6 +329,11 @@ namespace GuardsDigital.Core.Timing
 
         public string DefinitionId { get; }
         public ActiveEffectAffectedScopeKind AffectedScope { get; }
+        /// <summary>
+        /// The exact physical token kind selected by an action-scoped token effect. Undefined for
+        /// every other scope; public so verified-content identity sees this semantic declaration.
+        /// </summary>
+        public GuardsDigital.Core.Components.TokenDefinitionId AffectedTokenKind { get; }
         public ActiveEffectDurationKind DurationKind { get; }
         public TimingCheckpoint CreationCheckpoint { get; }
         public TimingCheckpoint ActivationCheckpoint { get; }

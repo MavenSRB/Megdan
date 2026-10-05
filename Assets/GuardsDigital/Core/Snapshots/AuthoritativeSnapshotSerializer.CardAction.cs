@@ -1012,7 +1012,9 @@ namespace GuardsDigital.Core.Snapshots
                             CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                             timing, modifications, heroItems, catalogs.TriggeredEffects,
                             roundIndex, turnIndex, rosterState,
-                            tieBreakerRevealedSide: tieBreaker.RevealedSide),
+                            tieBreakerRevealedSide: tieBreaker.RevealedSide,
+                            enclosingBorrow: BorrowPolicyFromParents(
+                                definitions, borrowedParents)),
                         coinLedger,
                         lanePush);
                     break;
@@ -1042,7 +1044,9 @@ namespace GuardsDigital.Core.Snapshots
                         opposingHeroFor: actor => selectedActorId.IsDefined && !actor.Equals(selectedActorId)
                             ? selectedActorId
                             : default,
-                        tieBreakerRevealedSide: tieBreaker.RevealedSide);
+                        tieBreakerRevealedSide: tieBreaker.RevealedSide,
+                        enclosingBorrow: BorrowPolicyFromParents(
+                            definitions, borrowedParents));
                     var pausedAttack = ReadAttackResolution(reader);
                     var frame = frameAwaitingItsAttack(
                         CardActionResolutionAuthority.EnclosingAttackOf(pausedAttack, definitions, board));
@@ -1264,6 +1268,24 @@ namespace GuardsDigital.Core.Snapshots
         /// card, and a payload that names a definition or node this build does not have is refused
         /// rather than reconstructed.
         /// </summary>
+        private static BorrowRequest BorrowPolicyFromParents(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<PendingResolution> parents)
+        {
+            for (var index = parents.Count - 1; index >= 0; index--)
+            {
+                var parent = parents[index];
+                var root = SkillCardActionStrategyBackend.FindEffectRoot(
+                    definitions, parent);
+                var request = root == null
+                    ? default
+                    : BorrowedActionQuery.Requested(root, parent.CompletedOutcomes);
+                if (request.SubstituteTokenKind.IsDefined || request.SuppressMarkers)
+                    return request;
+            }
+            return default;
+        }
+
         private static PendingResolution ReadSkillResolution(
             BinaryReader reader,
             IReadOnlyList<CardDefinition> definitions,
@@ -1281,12 +1303,14 @@ namespace GuardsDigital.Core.Snapshots
             HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
-            bool useChoiceChooserAsOpposing = false) =>
+            bool useChoiceChooserAsOpposing = false,
+            BorrowRequest enclosingBorrow = default) =>
             ReadSkillResolutionAwaitingItsAttack(
                 reader, definitions, cards, capabilities, participants, components, timing,
                 modifications, heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
                 opposingHeroId, opposingHeroFor,
-                tieBreakerRevealedSide, useChoiceChooserAsOpposing)(EnclosingAttackFacts.None);
+                tieBreakerRevealedSide, useChoiceChooserAsOpposing,
+                enclosingBorrow)(EnclosingAttackFacts.None);
 
         /// <summary>
         /// Milestone 8.35i. Reads every byte of a skill frame, and returns the frame as a function of
@@ -1319,7 +1343,8 @@ namespace GuardsDigital.Core.Snapshots
             HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null,
             TeamSide tieBreakerRevealedSide = TeamSide.None,
-            bool useChoiceChooserAsOpposing = false)
+            bool useChoiceChooserAsOpposing = false,
+            BorrowRequest enclosingBorrow = default)
         {
             var common = ReadCommonResolution(reader);
 
@@ -1440,7 +1465,7 @@ namespace GuardsDigital.Core.Snapshots
                 roundIndex, turnIndex,
                 useChoiceChooserAsOpposing ? chooserId : opposing, common,
                 choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected,
-                tieBreakerRevealedSide);
+                tieBreakerRevealedSide, enclosingBorrow);
         }
 
         /// <summary>
@@ -1479,7 +1504,8 @@ namespace GuardsDigital.Core.Snapshots
             int minimum,
             int maximum,
             IReadOnlyList<EffectChoiceCandidate> selected,
-            TeamSide tieBreakerRevealedSide)
+            TeamSide tieBreakerRevealedSide,
+            BorrowRequest enclosingBorrow)
         {
             var resolution = new EffectResolutionContext(
                 trusted, capabilities, participants, timing, roundIndex, turnIndex, modifications,
@@ -1502,7 +1528,8 @@ namespace GuardsDigital.Core.Snapshots
                 // pause the content "no longer" requested - milestone 8.35i's failure exactly, with
                 // the coin in place of the enclosing Attack. The face is the turn's own restored
                 // `TieBreakerState`, which is read before any pending action is decoded.
-                tieBreakerRevealedSide: tieBreakerRevealedSide);
+                tieBreakerRevealedSide: tieBreakerRevealedSide,
+                enclosingBorrow: enclosingBorrow);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
@@ -1667,7 +1694,8 @@ namespace GuardsDigital.Core.Snapshots
                 // group has not yet chosen, so the re-ask needs the group's accepted answers - which
                 // this payload has also just restored.
                 answersGivenAcrossTheGroup: EffectResolutionSession.AnswersGivenAcrossTheGroup(
-                    restored, node, resolution.Definition)));
+                    restored, node, resolution.Definition),
+                enclosingBorrow: resolution.EnclosingBorrow));
             if (offered.Choice == null)
             {
                 throw Malformed(

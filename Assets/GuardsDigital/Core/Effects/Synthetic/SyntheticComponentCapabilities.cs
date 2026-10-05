@@ -123,7 +123,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV4;
+                var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (definition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var reference = definition.Reference;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResult.DeclinedOptional();
@@ -148,7 +152,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var coordinate = selected[0].Coordinate;
-                var token = SameTypeTokens(components, SyntheticComponentDefinitions.HazardV4)
+                var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (definition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var token = SameTypeTokens(components, definition.Reference)
                     .FirstOrDefault(candidate => candidate.Coordinate.Equals(coordinate));
                 if (token == null)
                 {
@@ -175,7 +183,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV4;
+                var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (definition == null)
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                var reference = definition.Reference;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) > 0)
                 {
                     return EffectExecutionResultKind.DeclinedOptional;
@@ -247,7 +259,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV4;
+                var placedDefinition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (placedDefinition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var reference = placedDefinition.Reference;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -271,7 +287,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV4;
+                var placedDefinition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (placedDefinition == null)
+                    return EffectExecutionResult.ImpossibleMandatory();
                 var coordinate = selected[0].Coordinate;
                 if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin))
                 {
@@ -293,7 +312,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new TokenInstanceId(
                             $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
                             $":r{context.RoundIndex}t{context.TurnIndex}:{coordinate.Q}:{coordinate.R}"),
-                        components.Catalog.LoadToken(reference),
+                        placedDefinition,
                         context.ActorId,
                         context.ControllerId,
                         context.SourceCardInstanceId,
@@ -324,7 +343,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var reference = SyntheticComponentDefinitions.HazardV4;
+                var placedDefinition = SyntheticTokenCapabilities.EffectiveDefinition(
+                    context, SyntheticComponentDefinitions.HazardDefinition);
+                if (placedDefinition == null)
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                var reference = placedDefinition.Reference;
                 if (components.Catalog.CountAvailableTokens(reference, components.Tokens.PlacedTokens) < 1)
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
@@ -416,6 +439,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.DeclinedOptional();
                 var named = context.Input(HolderParameterName);
                 if (named.Kind == EffectValueKind.Hero && named.HeroId.IsDefined)
                 {
@@ -434,6 +459,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.DeclinedOptional();
                 var components = context.Components;
                 if (components == null || !components.IsLive || selected == null || selected.Count != 1)
                 {
@@ -504,6 +531,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context.EnclosingBorrow.SuppressMarkers
+                    ? EffectExecutionResultKind.DeclinedOptional
+                    :
                 CanGive(context, out _)
                     ? EffectExecutionResultKind.NeedsChoice
                     : EffectExecutionResultKind.ImpossibleMandatory;
@@ -622,6 +652,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.DeclinedOptional();
                 var named = context.Input(HolderParameterName);
                 if (named.Kind == EffectValueKind.Hero && named.HeroId.IsDefined)
                 {
@@ -640,6 +672,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.DeclinedOptional();
                 var components = context.Components;
                 if (components == null || !components.IsLive || selected == null || selected.Count != 1)
                 {
@@ -685,6 +719,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResultKind.DeclinedOptional;
                 if (!CanTransfer(context, out _))
                 {
                     return EffectExecutionResultKind.ImpossibleMandatory;
@@ -792,6 +828,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            PresentOutputName, EffectValue.Boolean(false))
+                    });
                 var markers = context.Components?.Markers;
                 if (markers == null)
                 {
@@ -820,7 +862,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 throw new InvalidOperationException("This capability never requests a choice.");
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                context.Components?.Markers == null
+                context.EnclosingBorrow.SuppressMarkers
+                    ? EffectExecutionResultKind.Applied
+                    : context.Components?.Markers == null
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.Applied;
         }
@@ -882,6 +926,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                if (context.EnclosingBorrow.SuppressMarkers)
+                    return EffectExecutionResult.DeclinedOptional();
                 var attachment = FindAttachment(context);
                 if (attachment == null)
                 {
@@ -905,7 +951,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// would return the very marker the question was about.
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                FindAttachment(context) == null
+                context.EnclosingBorrow.SuppressMarkers
+                    ? EffectExecutionResultKind.DeclinedOptional
+                    : FindAttachment(context) == null
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.Applied;
 

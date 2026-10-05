@@ -183,7 +183,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 board,
                 BoardObjectReference.ForHero(RedActor),
-                BoardObjectReference.ForHero(BlueActor)),
+                BoardObjectReference.ForHero(BlueActor), RuleModificationSet.Empty),
                 "The operation refuses to run without the declaration at all.");
         }
 

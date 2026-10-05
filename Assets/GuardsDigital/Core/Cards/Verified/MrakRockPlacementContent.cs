@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
 
@@ -154,17 +155,24 @@ namespace GuardsDigital.Core.Cards.Verified
                 .ToArray();
         }
 
-        private static int Available(EffectCapabilityContext context) =>
-            context.Components.Catalog.CountAvailableTokens(
-                MrakComponentContent.RockReference, context.Components.Tokens.PlacedTokens);
+        private static int Available(EffectCapabilityContext context)
+        {
+            var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                context, MrakComponentContent.Rock);
+            return definition == null ? 0 : context.Components.Catalog.CountAvailableTokens(
+                definition.Reference, context.Components.Tokens.PlacedTokens);
+        }
 
-        private static PlacedToken[] StandingRocks(EffectCapabilityContext context) =>
-            context.Components.Catalog
-                .ReclaimableForPlacement(
-                    MrakComponentContent.RockReference, context.Components.Tokens.PlacedTokens)
+        private static PlacedToken[] StandingRocks(EffectCapabilityContext context)
+        {
+            var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                context, MrakComponentContent.Rock);
+            return definition == null ? Array.Empty<PlacedToken>() : context.Components.Catalog
+                .ReclaimableForPlacement(definition.Reference, context.Components.Tokens.PlacedTokens)
                 .OrderBy(token => token.Coordinate.Q)
                 .ThenBy(token => token.Coordinate.R)
                 .ToArray();
+        }
 
         private static bool TryCoordinate(EffectCapabilityContext context, string name, out HexCoordinate at)
         {
@@ -191,17 +199,19 @@ namespace GuardsDigital.Core.Cards.Verified
         private static void PlaceRock(
             EffectCapabilityContext context, HexCoordinate space, List<PlacedToken> placed)
         {
+            var definition = SyntheticTokenCapabilities.EffectiveDefinition(
+                context, MrakComponentContent.Rock);
+            if (definition == null || Available(context) < 1) return;
             var index = placed.Count;
             var token = new PlacedToken(
                 new TokenInstanceId(
                     $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}:mrak-rock" +
                     $":r{context.RoundIndex}t{context.TurnIndex}:{space.Q}:{space.R}:{index}"),
-                MrakComponentContent.Rock,
+                definition,
                 context.ActorId,
                 context.ControllerId,
                 context.SourceCardInstanceId,
                 space);
-            if (Available(context) < 1) return;
             context.Components.Tokens.CommitValidatedTokenPlacement(token);
             placed.Add(token);
         }

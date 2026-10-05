@@ -649,6 +649,7 @@ namespace GuardsDigital.Core.Cards
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
             this.cardActions = cardActions;
             cardActions?.BindBorrowedTargetScopeKeys(consumedTurnScopedKeys);
+            cardActions?.BindBorrowDefinitionPool(definitions);
             cardActions?.BindTurnScopedKeys(consumedTurnScopedKeys);
             // Milestone 9.38. The judgement this turn makes of a borrowed primary (9.6), handed to the
             // Attack card-text seam that asks it with the attacked unit barred.
@@ -1546,7 +1547,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var offer = cardActions.TakeOwedBorrowedAction(
-                definitions, instances, out var resolution, out var grantSourceId, out var excludedTarget);
+                definitions, instances, out var resolution, out var grantSourceId,
+                out var excludedTarget, out var borrowRequest);
             if (initiative.SelectedActor.IsDefined && !offer.ActorId.Equals(initiative.SelectedActor.ActorId))
             {
                 consumedTurnScopedKeys.Add(OffTurnBorrowPrefix + offer.ActorId.Value);
@@ -1620,6 +1622,24 @@ namespace GuardsDigital.Core.Cards
                     return CompleteSkillStep(cardActions.StartTurnSkill(resolution, offer, definitions,
                         instances, participants, timing, CurrentModifications(), TieBreakerState,
                         roundIndex, turnIndex), events);
+                case ActionKind.Defense:
+                    // Mind Grip can name a printed Defense ribbon. Outside p.14's incoming-Attack
+                    // window there is no Attack value or target for its number to answer, but the
+                    // selected printed action is still performed. The borrowed card is not discarded.
+                    if (!borrowRequest.SelectsPrintedAction)
+                        throw new InvalidOperationException(
+                            "Only a selected previous-slot printed action may grant Defense.");
+                    if (ActionOfferQuery.FindActionDefinition(offer, definitions)
+                            .EffectRoot != null)
+                        return CompleteSkillStep(cardActions.StartBorrowedDefenseText(
+                            resolution, offer, definitions, instances, participants, timing,
+                            CurrentModifications(), TieBreakerState, roundIndex, turnIndex),
+                            events);
+                    AddTiming(events, TimingCheckpoint.ActionStarted);
+                    AddCompletedAction(events, offer.SourceCardInstanceId,
+                        offer.ActionDefinitionId, offer.ActorId, ActionKind.Defense,
+                        offer.InvocationContext);
+                    return CompleteGrantedActionThatReachedNobody(events);
                 default:
                     throw new InvalidOperationException("A borrowed card must declare a supported primary.");
             }
@@ -3517,7 +3537,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             if (answering == null ||
-                answering.InvocationContext != ActionInvocationContext.TextGranted)
+                answering.InvocationContext != ActionInvocationContext.TextGranted &&
+                answering.InvocationContext != ActionInvocationContext.TextGrantedSecondary)
             {
                 return;
             }
@@ -3810,11 +3831,15 @@ namespace GuardsDigital.Core.Cards
             initiative.SelectedActor.IsDefined &&
             ((actor.Equals(initiative.SelectedActor.ActorId) &&
                 (card.Equals(initiative.SelectedActor.CardInstanceId) ||
-                    ((invocation == ActionInvocationContext.TextGranted || invocation == ActionInvocationContext.Repeated) &&
+                    ((invocation == ActionInvocationContext.TextGranted ||
+                      invocation == ActionInvocationContext.TextGrantedSecondary ||
+                      invocation == ActionInvocationContext.Repeated) &&
                         (cardActions.HasBorrowedSkillParent || HasRunningGrant)))) ||
              // Milestone 8.116. The one action another hero performs inside this turn: the primary
              // their own Ultimate granted after a forced Movement action (Whisper Ruling 16c).
-             (invocation == ActionInvocationContext.TextGranted && IsOffTurnBorrowRunningFor(actor)));
+             ((invocation == ActionInvocationContext.TextGranted ||
+               invocation == ActionInvocationContext.TextGrantedSecondary) &&
+              IsOffTurnBorrowRunningFor(actor)));
 
         /// <summary>
         /// Milestone 8.116. The turn-scoped key naming the hero whose granted primary is running

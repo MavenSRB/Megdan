@@ -25,8 +25,9 @@ namespace GuardsDigital.Core.Rules.Placement
     /// rule - it applies to "minions represented by minion miniatures" and says outright that "objects
     /// that count as minions are unaffected".
     ///
-    /// This is an intrinsic-representation question, not an effective one: it asks which miniature is
-    /// being picked up, so no <c>Counts As</c> is consulted anywhere it is used.
+    /// The after-action correction asks for intrinsic representation: an object merely counting as
+    /// a minion is unaffected. Card text naming a minion may opt into the effective-kind reading
+    /// while its controller performs the action; the policy value alone does not grant that opt-in.
     /// </summary>
     public enum PlaceEligiblePieceKind
     {

@@ -1,6 +1,7 @@
 using System;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.BoardObjects
 {
@@ -9,9 +10,9 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     ///
     /// p.19's own answer is any object - "Two objects on the board swap places with each other" - and
     /// a narrower rule states its own narrower kind, which is the same division
-    /// <see cref="RemoveEligiblePieceKind"/> draws for a Remove. It is an intrinsic representation
-    /// question: it asks what is being picked up and put down, so no <c>Counts As</c> is consulted
-    /// anywhere it is used, and a hero counting as a minion is still a hero here.
+    /// <see cref="RemoveEligiblePieceKind"/> draws for a Remove. GamePiece asks for intrinsic
+    /// representation. Unit also admits a token temporarily counting as a minion during the
+    /// applicable action; outside that scope it is still only a token.
     ///
     /// Both objects are judged by it rather than only the one a definition happens to name second,
     /// for the reason the calling capability asks immunity about both: a Swap affects each object as
@@ -25,9 +26,8 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         GamePiece = 1,
 
         /// <summary>
-        /// A unit only - a hero or a minion miniature. p.19 states that tokens are not units, which
-        /// is the same sentence that leaves a token unnameable as a rules object, so this is the kind
-        /// card text means when it says unit rather than object.
+        /// A unit only - a hero or a minion, including a token made to count as a minion by an
+        /// applicable effect. An ordinary token is not a unit.
         /// </summary>
         Unit = 2
     }
@@ -134,7 +134,8 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             IBoardObjectExchangeAuthority exchange,
             IBoardDisplacementAuthority board,
             BoardObjectReference first,
-            BoardObjectReference second)
+            BoardObjectReference second,
+            RuleModificationSet modifications)
         {
             if (exchange == null) throw new ArgumentNullException(nameof(exchange));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -144,7 +145,8 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                     "A Swap declares which kind of piece it may exchange.", nameof(eligiblePiece));
             }
 
-            if (!Admits(eligiblePiece, first.Kind) || !Admits(eligiblePiece, second.Kind))
+            if (!Admits(eligiblePiece, first, modifications) ||
+                !Admits(eligiblePiece, second, modifications))
             {
                 return SwapOutcome.Reject(SwapRejectionReason.IneligiblePiece);
             }
@@ -186,5 +188,20 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                     return false;
             }
         }
+
+        /// <summary>
+        /// A token that temporarily counts as a minion is also a unit for an action saying
+        /// "unit". The intrinsic overload remains for representation-only callers.
+        /// </summary>
+        public static bool Admits(
+            SwapEligiblePieceKind eligiblePiece,
+            BoardObjectReference piece,
+            RuleModificationSet modifications) =>
+            Admits(eligiblePiece, piece.Kind) ||
+            (eligiblePiece == SwapEligiblePieceKind.Unit &&
+             piece.Kind == BoardObjectKind.Token &&
+             EffectiveUnitKindQuery.Is(
+                 RuleObject.ForToken(piece.TokenInstanceId),
+                 EffectiveUnitKind.Minion, modifications));
     }
 }

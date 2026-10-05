@@ -86,7 +86,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             var applied = new List<AppliedRuleModification>();
             if (timing != null)
             {
-                applied.AddRange(FromActiveEffects(timing, board, participants, heroItems));
+                applied.AddRange(FromActiveEffects(
+                    timing, board, participants, heroItems, actingObject));
             }
 
             if (board != null)
@@ -209,7 +210,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleObject actingObject)
         {
             foreach (var effect in timing.Effects)
             {
@@ -222,7 +224,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 }
 
                 foreach (var affectedObject in AffectedObjects(
-                    effect, board, participants, heroItems,
+                    effect, board, participants, heroItems, actingObject,
                     ItemBonusPerItemFor(effect.ControllerHeroId, timing)))
                 {
                     foreach (var modification in effect.Definition.Modifications)
@@ -255,6 +257,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleObject actingObject,
             int bonusPerItem)
         {
             switch (effect.Definition.AffectedScope)
@@ -285,6 +288,15 @@ namespace GuardsDigital.Core.Rules.Modifications
                         yield return RuleObject.ForHero(heroId);
                     }
 
+                    break;
+                case ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs:
+                    if (board != null && actingObject.Kind == RuleObjectKind.Hero &&
+                        actingObject.HeroId.Equals(effect.ControllerHeroId))
+                    {
+                        foreach (var token in board.PlacedTokens.Where(candidate =>
+                            candidate.Definition.Id.Equals(effect.Definition.AffectedTokenKind)))
+                            yield return RuleObject.ForToken(token.Id);
+                    }
                     break;
                 case ActiveEffectAffectedScopeKind.UnitsInRadius:
                 case ActiveEffectAffectedScopeKind.HeroesInRadius:
@@ -416,7 +428,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
                         anchors.Any(anchor => RadiusQuery.Contains(anchor, radius, occupancy.Coordinate)) &&
                         TargetQuery.StandsInRelationTo(
-                            relation, hero, effect.ControllerHeroId, participants, board) &&
+                            relation, hero, effect.ControllerHeroId, participants, board,
+                            RuleModificationSet.Empty) &&
                         affectedHeroes.Add(occupancy.HeroId))
                     {
                         yield return RuleObject.ForHero(occupancy.HeroId);
@@ -434,7 +447,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 var unit = BoardObjectReference.ForMinion(minion.MinionId);
                 if (anchors.Any(anchor => RadiusQuery.Contains(anchor, radius, minion.Coordinate)) &&
                     TargetQuery.StandsInRelationTo(
-                        relation, unit, effect.ControllerHeroId, participants, board))
+                        relation, unit, effect.ControllerHeroId, participants, board,
+                        RuleModificationSet.Empty))
                 {
                     yield return RuleObject.ForMinion(minion.MinionId);
                 }
@@ -569,7 +583,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     HexDistanceQuery.Calculate(anchor, occupancy.Coordinate) == 1 &&
                     TargetQuery.StandsInRelationTo(
                         SourceTeamRelation.OpposingSource, hero, sourceControllerHeroId, participants,
-                        board))
+                        board, RuleModificationSet.Empty))
                 {
                     counted.Add(occupancy.HeroId);
                 }
@@ -584,7 +598,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     HexDistanceQuery.Calculate(anchor, minion.Coordinate) == 1 &&
                     TargetQuery.StandsInRelationTo(
                         SourceTeamRelation.OpposingSource, unit, sourceControllerHeroId, participants,
-                        board))
+                        board, RuleModificationSet.Empty))
                 {
                     count++;
                 }

@@ -444,8 +444,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             TeamSide tieBreakerRevealedSide = TeamSide.None,
             bool watchesTieBreakerFlips = false,
             bool watchesTokenPlacements = false,
-            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null)
+            BorrowedPrimaryJudgement borrowedPrimaryCanAct = null,
+            BorrowRequest enclosingBorrow = default)
         {
+            EnclosingBorrow = enclosingBorrow;
             BorrowedPrimaryCanAct = borrowedPrimaryCanAct;
             WatchesTokenPlacements = watchesTokenPlacements;
             WatchesTieBreakerFlips = watchesTieBreakerFlips;
@@ -514,6 +516,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>Milestone 9.6, widened at 9.38. See <see cref="EffectCapabilityContext.BorrowedPrimaryCanAct"/>.</summary>
         public BorrowedPrimaryJudgement BorrowedPrimaryCanAct { get; }
+        public BorrowRequest EnclosingBorrow { get; }
 
         /// <summary>
         /// Milestone 8.75a. Whether an authority holding the match's coin is standing behind this
@@ -2007,7 +2010,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 // Breaker face here; it is TeamSide.None for every resolution that did not carry one.
                 tieBreakerRevealedSide: context.TieBreakerRevealedSide,
                 borrowedPrimaryCanAct: context.BorrowedPrimaryCanAct,
-                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup(frame, node, context.Definition));
+                answersGivenAcrossTheGroup: AnswersGivenAcrossTheGroup(frame, node, context.Definition),
+                enclosingBorrow: context.EnclosingBorrow);
         }
 
         /// <summary>

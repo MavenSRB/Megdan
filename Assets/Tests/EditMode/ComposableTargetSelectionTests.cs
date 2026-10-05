@@ -614,6 +614,99 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ActionScopedIllusion_IsASelectableFriendlyMinionEvenWhenEnemyPlacedIt()
+        {
+            var board = Board(Heroes(
+                new HexCoordinate(2, 0), new HexCoordinate(-4, 4)));
+            var illusion = new PlacedToken(
+                new TokenInstanceId("composable-illusion"),
+                NebKherComponentContent.Illusion, Enemy, Enemy,
+                new CardInstanceId("composable-illusion-source"),
+                new HexCoordinate(1, 0));
+            board.CommitValidatedTokenPlacement(illusion);
+            var effect = new ActiveEffectInstance(
+                new ActiveEffectId("composable-illusion-effect"),
+                NebKherComponentContent.IllusionsCountAsMinions,
+                Actor, TeamSide.Red, default,
+                new CardInstanceId("composable-illusion-source"),
+                new ActionDefinitionId("composable-illusion-action"),
+                1, 1, 0, ActiveEffectPhase.Active, 1, 1);
+            var timing = ActiveEffectLifecycle.Restore(new ActiveEffectLifecycleRestoreState(
+                new[] { effect }, Array.Empty<ContinuousRuleSource>()));
+            var modifications = RuleModificationQuery.Build(
+                timing, board, StagedBoardParticipants.CreateWithBlueAlly(),
+                TieBreakerState.Unrevealed, UnlockedUltimateSet.None,
+                RuleObject.ForHero(Actor), null, new MarkerAttachmentRegister());
+            var bindings = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName,
+                    SourceTeamRelation.AlliedWithSource)
+            };
+            Assert.That(EffectiveUnitKindQuery.Is(
+                RuleObject.ForToken(illusion.Id), EffectiveUnitKind.Minion,
+                modifications), Is.True);
+            Assert.That(TargetQuery.FindTargetsWithin(
+                Origin, 2, false, RuleObject.ForHero(Actor), RuleActivity.Skill,
+                board, StagedBoardParticipants.CreateWithBlueAlly(), modifications),
+                Has.Member(BoardObjectReference.ForToken(illusion.Id)));
+            Assert.That(TargetQuery.StandsInRelationTo(
+                SourceTeamRelation.AlliedWithSource,
+                BoardObjectReference.ForToken(illusion.Id), Actor,
+                StagedBoardParticipants.CreateWithBlueAlly(), board, modifications),
+                Is.True);
+            Assert.That(Offered(
+                SyntheticTargetingCapabilities.RangeMinionTargetV1,
+                bindings, board, range: 2, modifications: modifications),
+                Is.EqualTo(new[] { EffectValue.Space(illusion.Coordinate) }));
+            Assert.That(Offered(
+                SyntheticTargetingCapabilities.RangeMinionTargetV1,
+                bindings, board, range: 2),
+                Is.Empty, "Outside the controller's action it is only a token.");
+
+            var chosenSpace = new EffectOutputBinding(
+                SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
+                EffectValueKind.Coordinate);
+            var probe = Probe(
+                SyntheticTargetingCapabilities.RangeMinionTargetV1,
+                bindings, PrintedValueChannel.Range, 2,
+                outputs: new[] { chosenSpace });
+            var context = probe.Context(board, modifications);
+            var handler = Handler(SyntheticTargetingCapabilities.RangeMinionTargetV1);
+            var choice = handler.Execute(context);
+            Assert.That(choice.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice));
+            Assert.That(choice.Choice.Candidates,
+                Is.EqualTo(new[] { EffectValue.Space(illusion.Coordinate) }));
+            var selected = handler.Resume(context, new[] { EffectValue.Space(illusion.Coordinate) });
+            Assert.That(selected.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(selected.Outcomes.Single().Value,
+                Is.EqualTo(EffectValue.Space(illusion.Coordinate)));
+
+            // Verified friendly-minion cards may declare both names but consume only the space.
+            // An Illusion retains its token identity; no fabricated MinionId may leak from the choice.
+            var dualOutputProbe = Probe(
+                SyntheticTargetingCapabilities.RangeMinionTargetV1,
+                bindings, PrintedValueChannel.Range, 2,
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                        EffectValueKind.Minion),
+                    chosenSpace
+                });
+            var dualContext = dualOutputProbe.Context(board, modifications);
+            var dualChoice = handler.Execute(dualContext);
+            Assert.That(dualChoice.Choice.Candidates,
+                Is.EqualTo(new[] { EffectValue.Space(illusion.Coordinate) }));
+            var dualSelected = handler.Resume(
+                dualContext, new[] { EffectValue.Space(illusion.Coordinate) });
+            Assert.That(dualSelected.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(dualSelected.Outcomes.Select(fact => fact.OutputName),
+                Is.EqualTo(new[] { SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName }));
+        }
+
+        [Test]
         public void TheUnboundObjectSelection_IsExactlyTheWholeDisk()
         {
             Assert.That(
@@ -858,7 +951,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(LegalBinding)
                 .ToArray();
 
-        private static EffectDefinition OneNode(EffectCapabilityReference arm, IEnumerable<EffectInputBinding> bindings)
+        private static EffectDefinition OneNode(
+            EffectCapabilityReference arm, IEnumerable<EffectInputBinding> bindings,
+            IReadOnlyList<EffectOutputBinding> outputs = null)
         {
             var node = new EffectNodeId("composable-select");
             return new EffectDefinition(
@@ -869,7 +964,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     new EffectNodeDefinition(
                         node, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory, arm,
-                        inputs: bindings)
+                        inputs: bindings, outputs: outputs)
                 });
         }
 
@@ -909,9 +1004,10 @@ namespace GuardsDigital.Tests.EditMode
             EffectInputBinding[] bindings,
             PrintedValueChannel channel,
             int value,
-            IEnumerable<CardInstance> extraCards = null)
+            IEnumerable<CardInstance> extraCards = null,
+            IReadOnlyList<EffectOutputBinding> outputs = null)
         {
-            var definitionText = OneNode(arm, bindings);
+            var definitionText = OneNode(arm, bindings, outputs);
             Assert.That(
                 EffectDefinitionValidator.Validate(definitionText, MatchContentCatalogs.ForThisBuild().Capabilities),
                 Is.Empty,
@@ -942,7 +1038,7 @@ namespace GuardsDigital.Tests.EditMode
                 definition,
                 new[] { card }.Concat(extraCards ?? Array.Empty<CardInstance>()).ToArray(),
                 action,
-                inputs);
+                inputs, outputs);
         }
 
         private sealed class ProbeCard
@@ -951,17 +1047,20 @@ namespace GuardsDigital.Tests.EditMode
             private readonly CardInstance[] cards;
             private readonly ActionDefinition action;
             private readonly IReadOnlyDictionary<string, EffectValue> inputs;
+            private readonly IReadOnlyList<EffectOutputBinding> outputs;
 
             public ProbeCard(
                 CardDefinition definition,
                 CardInstance[] cards,
                 ActionDefinition action,
-                IReadOnlyDictionary<string, EffectValue> inputs)
+                IReadOnlyDictionary<string, EffectValue> inputs,
+                IReadOnlyList<EffectOutputBinding> outputs)
             {
                 this.definition = definition;
                 this.cards = cards;
                 this.action = action;
                 this.inputs = inputs;
+                this.outputs = outputs;
             }
 
             public EffectCapabilityContext Context(
@@ -993,7 +1092,8 @@ namespace GuardsDigital.Tests.EditMode
                         board,
                         board,
                         board),
-                    new HeroItemState(participants), rosterState: rosterState);
+                    new HeroItemState(participants), rosterState: rosterState,
+                    declaredOutputs: outputs);
             }
         }
 

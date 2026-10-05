@@ -313,7 +313,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!isRepeatedInstance &&
                 offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
                 offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
-                offer.InvocationContext != ActionInvocationContext.TextGranted)
+                offer.InvocationContext != ActionInvocationContext.TextGranted &&
+                offer.InvocationContext != ActionInvocationContext.TextGrantedSecondary)
             {
                 return CardActionResolutionResult.Reject(
                     CardActionResolutionRejectionReason.UnsupportedInvocationContext,

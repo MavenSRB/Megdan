@@ -129,6 +129,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         private GuardsDigital.Core.Setup.IMatchTieBreakerCoin tieBreakerCoin;
+        private Func<GuardsDigital.Core.Rules.EffectResolution.BorrowRequest> enclosingBorrow;
+
+        internal void BindEnclosingBorrow(
+            Func<GuardsDigital.Core.Rules.EffectResolution.BorrowRequest> current) =>
+            enclosingBorrow = current ?? throw new ArgumentNullException(nameof(current));
+
+        private GuardsDigital.Core.Rules.EffectResolution.BorrowRequest CurrentBorrow =>
+            enclosingBorrow?.Invoke() ?? default;
 
         /// <summary>The face the match's coin is showing, or the named absence when none is bound.</summary>
         private GuardsDigital.Core.Participants.TeamSide LiveTieBreakerSide =>
@@ -184,7 +192,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, frame.SourceCardInstanceId, frame.SourceDefinitionReference,
                     frame.ActionDefinitionId, frame.ActorId, frame.ControllerId),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                enclosingBorrow: CurrentBorrow);
             pendingResolution = frame.With(
                 frame.Continuation, frame.CompletedOutcomes, frame.AcceptedChoices,
                 frame.PendingChoice.KeepingOnly(RepeatPerformerQuery.Candidates(frame, node, context)
@@ -309,7 +318,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out IReadOnlyList<RequestedHeroDefeat> requestedHeroDefeats,
             // Milestone 8.35z50. A borrow this Skill's own text asked for, surfaced beside the repeat
             // and never inside it: a borrowed primary is not a p.10 repeat (RULING 22).
-            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested)
+            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested,
+            bool allowBorrowedDefense = false)
         {
             repeat = null;
             borrowRequested = default;
@@ -329,7 +339,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var action = ActionOfferQuery.FindActionDefinition(offer, materializedDefinitions);
-            if (action == null || action.Kind != ActionKind.Skill || action.EffectRoot == null)
+            if (action == null ||
+                (action.Kind != ActionKind.Skill &&
+                 !(allowBorrowedDefense && action.Kind == ActionKind.Defense &&
+                   (offer.InvocationContext == ActionInvocationContext.TextGranted ||
+                    offer.InvocationContext == ActionInvocationContext.TextGrantedSecondary))) ||
+                action.EffectRoot == null)
             {
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
@@ -337,7 +352,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             EffectResolutionContext context = null;
             context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                EffectCardState.Of(materializedDefinitions, materializedInstances), action.Kind,
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
@@ -347,7 +362,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, offer.SourceCardInstanceId, offer.SourceDefinitionReference, offer.ActionDefinitionId, offer.ActorId, offer.ActorId),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                enclosingBorrow: CurrentBorrow);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -373,7 +389,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(
                 step, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
-                offer.ActorId, true);
+                offer.ActorId, true, actionKind: action.Kind);
         }
 
         /// <summary>
@@ -444,7 +460,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances),
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                enclosingBorrow: CurrentBorrow);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -548,7 +565,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 tieBreakerRevealedSide: LiveTieBreakerSide,
-                borrowedPrimaryCanAct: borrowedPrimaryCanAct);
+                borrowedPrimaryCanAct: borrowedPrimaryCanAct,
+                enclosingBorrow: CurrentBorrow);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -600,10 +618,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
+            var actionKind = ActionKindFor(materializedDefinitions, pendingResolution);
             EffectResolutionContext context = null;
             context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                EffectCardState.Of(materializedDefinitions, materializedInstances), actionKind,
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
@@ -613,7 +632,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                enclosingBorrow: CurrentBorrow);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {
@@ -646,7 +666,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;
-            return Complete(step, default, default, default, default, false);
+            return Complete(step, default, default, default, default, false,
+                actionKind: actionKind);
         }
 
         /// <summary>
@@ -694,10 +715,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
+            var actionKind = ActionKindFor(materializedDefinitions, pendingResolution);
             EffectResolutionContext context = null;
             context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                EffectCardState.Of(materializedDefinitions, materializedInstances), actionKind,
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
@@ -707,7 +729,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesTokenPlacements: WatchesTokenPlacements(materializedDefinitions, materializedInstances),
                 repeatCanBePerformed: DifferentBodyRepeatProbe(
                     () => context, pendingResolution.SourceCardInstanceId, pendingResolution.SourceDefinitionReference, pendingResolution.ActionDefinitionId, pendingResolution.ActorId, pendingResolution.ControllerId),
-                tieBreakerRevealedSide: LiveTieBreakerSide);
+                tieBreakerRevealedSide: LiveTieBreakerSide,
+                enclosingBorrow: CurrentBorrow);
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
             {
@@ -732,7 +755,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;
-            return Complete(step, default, default, default, default, false);
+            return Complete(step, default, default, default, default, false,
+                actionKind: actionKind);
         }
 
         /// <summary>
@@ -779,7 +803,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId startedAction,
             HeroId startedActor,
             bool isStart,
-            ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary)
+            ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
+            ActionKind actionKind = ActionKind.Skill)
         {
             // Read the identity before overwriting the field: on the final step the frame is gone, so
             // the completing facts would otherwise have nothing to name.
@@ -872,7 +897,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillActionCompleted(
                     resolutionId, card, action, actor)));
                 steps.Add(ResolutionStep.AtActionEnded(
-                    card, action, actor, ActionKind.Skill, invocationContext,
+                    card, action, actor, actionKind, invocationContext,
                     // Milestone 8.35z29. Whether this Skill's own effect placed the hero
                     // performing it, which is what Misa's Power Overwhelming watches. The resolution
                     // answered it from its trusted definition; nothing is inferred here.
@@ -890,6 +915,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // authority carries this frame straight on and the stream reads as though it never stopped.
             return CardActionResolutionResult.Accept(step.IsComplete, null, null, steps);
         }
+
+        private static ActionKind ActionKindFor(
+            IReadOnlyList<CardDefinition> definitions, PendingResolution pending) =>
+            definitions.Single(definition =>
+                    definition.Reference.Equals(pending.SourceDefinitionReference))
+                .ActionDefinitions.Single(action =>
+                    action.Id.Equals(pending.ActionDefinitionId)).Kind;
 
         /// <summary>
         /// The one place a node outcome becomes a fact kind. It is a translation between two closed

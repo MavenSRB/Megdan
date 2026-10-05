@@ -257,7 +257,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             BoardObjectReference target,
             HeroId sourceHero,
             MatchParticipants participants,
-            IBoardDisplacementAuthority board)
+            IBoardDisplacementAuthority board,
+            RuleModificationSet modifications)
         {
             if (relation == SourceTeamRelation.None || !Enum.IsDefined(typeof(SourceTeamRelation), relation))
             {
@@ -273,12 +274,13 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             if (!sourceHero.IsDefined ||
-                !TryFindTeam(BoardObjectReference.ForHero(sourceHero), participants, board, out var source))
+                !TryFindTeam(BoardObjectReference.ForHero(sourceHero), participants, board,
+                    modifications, out var source))
             {
                 return false;
             }
 
-            if (!TryFindTeam(target, participants, board, out var side))
+            if (!TryFindTeam(target, participants, board, modifications, out var side))
             {
                 // Milestone 8.21. An object on no side satisfies exactly one relation - the one whose
                 // card names it beside an enemy, which is Brogan's "an enemy unit or a token". Every
@@ -302,14 +304,15 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         /// <summary>
-        /// The team a board object belongs to. A hero's is the match's, a minion carries its own, and a
-        /// token has none - which is why this reports whether there is one rather than returning a
-        /// default that would compare equal to a real team.
+        /// The team a board object belongs to. A hero's is the match's and a minion carries its own.
+        /// A token ordinarily has none; only a live effective-minion overlay gives it the controller's
+        /// team for this query. Absence is reported rather than compared as a default team.
         /// </summary>
         private static bool TryFindTeam(
             BoardObjectReference target,
             MatchParticipants participants,
             IBoardDisplacementAuthority board,
+            RuleModificationSet modifications,
             out TeamId teamId)
         {
             teamId = default;
@@ -341,6 +344,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                     }
 
                     return false;
+
+                case BoardObjectKind.Token:
+                    if (!(board is ITokenPlacementAuthority tokens) ||
+                        modifications == null ||
+                        !EffectiveUnitKindQuery.Is(
+                            RuleObject.ForToken(target.TokenInstanceId),
+                            EffectiveUnitKind.Minion, modifications))
+                        return false;
+                    var placed = tokens.PlacedTokens.FirstOrDefault(candidate =>
+                        candidate.Id.Equals(target.TokenInstanceId));
+                    var effectiveController = EffectiveUnitKindQuery.TokenMinionController(
+                        RuleObject.ForToken(target.TokenInstanceId), modifications);
+                    if (placed == null || participants == null ||
+                        !participants.Heroes.Any(hero =>
+                            hero.Id.Equals(effectiveController)))
+                        return false;
+                    teamId = participants.GetTeamForHero(effectiveController).Id;
+                    return teamId.IsDefined;
 
                 default:
                     return false;

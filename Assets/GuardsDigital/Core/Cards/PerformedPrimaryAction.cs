@@ -175,6 +175,7 @@ namespace GuardsDigital.Core.Cards
                 case ActionInvocationContext.TextGranted:
                     return true;
                 case ActionInvocationContext.PrintedSecondary:
+                case ActionInvocationContext.TextGrantedSecondary:
                 case ActionInvocationContext.GeneralRuleSecondary:
                 case ActionInvocationContext.Replacement:
                 case ActionInvocationContext.Reaction:

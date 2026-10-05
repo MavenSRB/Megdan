@@ -216,7 +216,7 @@ namespace GuardsDigital.Core.Rules.Progression
                 !TargetQuery.StandsInRelationTo(
                     SourceTeamRelation.OpposingSource,
                     BoardObjectReference.ForHero(actor), effect.ControllerHeroId,
-                    participants, board))
+                    participants, board, RuleModificationSet.Empty))
                 return false;
             // Milestone 9.21h (RZ-Q13). The disk is drawn around every body of its controller; an owned
             // obstacle anchors it at the obstacle alone, as before.

@@ -1096,6 +1096,32 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         /// <summary>
+        /// A token counts as a minion of the printed standard class, not merely as an untyped
+        /// minion. The existing overlay's Amount field carries the typed class value for this
+        /// declaration only; zero remains the unqualified overlay on older content.
+        /// </summary>
+        public static RuleModification ForEffectiveMinionTypeOverlay(
+            GuardsDigital.Core.Setup.StandardMinionType minionType)
+        {
+            if (minionType == GuardsDigital.Core.Setup.StandardMinionType.None ||
+                !Enum.IsDefined(typeof(GuardsDigital.Core.Setup.StandardMinionType),
+                    minionType))
+                throw new ArgumentException(
+                    "An effective minion overlay names a standard minion class.",
+                    nameof(minionType));
+            return new RuleModification(
+                RuleModificationKind.EffectiveTypeOverlay,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                (int)minionType,
+                EffectiveUnitKind.Minion,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+        }
+
+        /// <summary>
         /// Milestone 8.19c1's `before-removal-prevention@1`: the affected object's removal may be
         /// stopped by the hero controlling this source, for <paramref name="cost"/>.
         ///

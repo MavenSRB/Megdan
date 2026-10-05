@@ -211,7 +211,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (invocationContext != ActionInvocationContext.PrintedPrimary &&
                 invocationContext != ActionInvocationContext.PrintedSecondary &&
                 invocationContext != ActionInvocationContext.Repeated &&
-                invocationContext != ActionInvocationContext.TextGranted)
+                invocationContext != ActionInvocationContext.TextGranted &&
+                invocationContext != ActionInvocationContext.TextGrantedSecondary)
             {
                 throw new ArgumentException(
                     "Pending Attack resolution requires a printed, repeated or text-granted " +
