@@ -6,7 +6,7 @@ The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these 
 
 ## Experimental menu
 
-The host-game screen gains an **Experimental** button opening per-match feature toggles. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
+The host-game screen gains an **Experimental** button opening per-match feature toggles. Map selection is a standard host-screen setting, outside this menu; it remains available with every experiment off. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
 
 | Setting | What it times |
 | --- | --- |
