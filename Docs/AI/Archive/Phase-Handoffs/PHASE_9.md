@@ -599,3 +599,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.59 | Prepared the source integration map, proposed coordination/timer contracts, concrete acceptance cases, regression owners and post-hero handoff; implementation remains queued. [Definition](../../Roadmap/PHASE_9.md#x-959-prepare-the-experimental-features-for-implementation). | `milestone/9.59` |
+
+## Milestone 9.60 Alternate map reference evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.60 | Preserved five uploads for three maps privately with exact hashes: one alternate 2v2/3v3 map and two two-lane 4v4/5v5 maps; recorded preferred copies, the corrected last-map formats, shared turns, independent pushes and either-lane Throne victory, with implementation queued. [Definition](../../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). | `milestone/9.60` |

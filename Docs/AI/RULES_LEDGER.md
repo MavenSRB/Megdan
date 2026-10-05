@@ -60,6 +60,8 @@ The user approved the [experimental turn-timer design](Project/EXPERIMENTAL_FEAT
 
 The user also approved the [Teammate coordination design](Project/EXPERIMENTAL_FEATURES.md#teammate-coordination): a separate per-match host toggle permits allied hand inspection and right-click hex/card suggestions. This proposed digital visibility/communication variant grants no teammate gameplay control and reveals no enemy private information. 9.57 records the design only; 9.58 queues implementation. Standard option-off behavior remains unchanged.
 
+The user specified a future [two-lane maps for 4v4/5v5](Maps/README.md#future-two-lane-maps-for-4v4-and-5v5) on 2026-10-05: one shared initiative/turn order, two independently pushed active Battle Zones, and whole-match victory when either reaches the opposing Throne. Only reference preservation/design recording is authorized at 9.60; implementation 9.62 is queued. No other rule changes were requested. This does not alter shipped single-lane rules or the separate 2v2/3v3 map request; exact map/setup and rule mapping need review before implementation.
+
 ## Approved deviations
 
 | ID | Deviation | Reason | Impact | Removal or review trigger |
