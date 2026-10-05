@@ -20,6 +20,7 @@ namespace GuardsDigital.Application
     {
         private readonly MatchSessionInitialState initialState;
         public ExperimentalMatchOptions Experiments => initialState.Experiments;
+        internal GuardsDigital.Core.Setup.SetupRandomnessSeed SetupSeed => initialState.Scenario.SetupSeed;
 
         /// <summary>
         /// Internal rather than private so a fixture can assert what a live session's aggregate

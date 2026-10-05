@@ -12,9 +12,11 @@ Completed 2026-10-05: the [canonical design](../Project/EXPERIMENTAL_FEATURES.md
 
 Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
 
-### [~] 9.56 Implement and gate the experimental timer and header
+### [!] 9.56 Implement and gate the experimental timer and header
 
 Authorization amended 2026-10-05: follows 9.58 in the isolated worktree; 9.64 then builds the private playtest package. The revised three-hour window defers map 9.61. Owner: timer implementation milestone. Outcome: the opt-in per-match timer and associated header follow [the design](../Project/EXPERIMENTAL_FEATURES.md), including icon-only clocks and Director Undo restoration. Dependencies: completed 9.58 on this worktree baseline. The 2026-10-05 amendment permits parallel implementation before 9.54; gate the available roster here, then re-audit final NebKher choices and reconcile snapshot/wire changes before a merged release containing him. Closing checks: the design's complete choice/timing matrix, timeout-progress and restoration/network checks, timer-off standard-game regression, and fixed-size header visual checks, at the highest tier selected by [testing policy](../Testing/POLICY.md). No new experiments or expanded player Undo rights. Source seams and proposed implementation/test contracts are in [the preparation packet](../Project/EXPERIMENTAL_PREPARATION.md).
+
+Implementation in progress: host-authoritative allowance/bank accounting, timeout selection, readiness/pause transport, snapshot/Director Undo checkpoints, shared-board voting and the fixed-size header are implemented but not yet accepted. Focused checks exposed and corrected clipped status text, a malformed heart glyph and lost restored ballots; final regressions remain required. The full offline baseline passed; Unity breadth and final choice/response checks are running. No timer release claim is made. Keep NebKher out of this candidate, as agreed after the ETA discussion. The user requested a shorter final build check: build once, reuse passing evidence and focus the built-player check on launch, Host/Join and experimental controls (target 20–25 minutes).
 
 ## Teammate coordination design, documentation only
 
@@ -106,8 +108,12 @@ Completed 2026-10-05: 22 terrain-only cells added, completing all playable-cell 
 Historical evidence: [9.63a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-963a-small-map-terrain-border-evidence).
 
 
+User amendment, 2026-10-05: "can you give me the build without testing it?" The implemented 9.56 candidate is checkpointed with its existing focused evidence; its full gate remains incomplete. Stop the current broad runs, preserve their evidence, and proceed directly to 9.64. Interrupted runs and omitted final UI checks are not passes. No further tests or player smoke are required for this explicitly untested package. Resume the remaining feature gate only under a later route.
+
 ## Experimental playtest package
 
-### [ ] 9.64 Build and smoke-test the experimental playtest player
+### [~] 9.64 Build the experimental playtest player
 
-Authorized 2026-10-05 when the user set three remaining hours and required build time to be included. Outcome: a private Windows playtest build containing the validated experimental changes, with the existing single Host/Join entry point. Dependencies: the experimental feature gates; preserve the independent hero checkout and reconcile it only under merge authorization. Reserve the final 45 minutes before 19:00 UTC for build and launch checks; omit optional map 9.61 from this playtest scope. Closing checks: build result and executable identity, ordinary launch/Host/Join, experimental settings and teammate controls in the built player, applicable player-build/board-visual/format smoke recipes, and no included private logs or source artwork beyond the local build's required resources. Keep the package private; no upload, remote push, or distribution is authorized.
+Authorized 2026-10-05 when the user set three remaining hours and required build time to be included. Outcome: a private Windows playtest build containing the validated experimental changes, with the existing single Host/Join entry point. Dependencies: the experimental feature gates; preserve the independent hero checkout and reconcile it only under merge authorization. The original build reservation was 45 minutes before 19:00 UTC; the user subsequently directed shorter build testing, targeting 20–25 minutes with one build and focused launch/Host/Join/experimental-control checks. omit optional map 9.61 from this playtest scope. Closing checks: build result and executable identity, ordinary launch/Host/Join, experimental settings and teammate controls in the built player, applicable player-build/board-visual/format smoke recipes, and no included private logs or source artwork beyond the local build's required resources. Keep the package private; no upload, remote push, or distribution is authorized.
+
+Latest 9.64 amendment: produce the current Windows candidate without launching it or running smoke tests. Closing scope is successful compilation/build, correct private runtime packaging, executable identity and an explicit untested label. This replaces the earlier smoke requirement for this package only; it does not mark the suspended 9.56 gate complete. NebKher and the alternate map remain excluded.

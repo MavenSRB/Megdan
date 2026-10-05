@@ -8,6 +8,38 @@ namespace GuardsDigital.Application
 {
     internal static class ExperimentalWireCodec
     {
+        internal static void WriteClock(BinaryWriter w, MatchClockState state)
+        {
+            w.Write(state.Enabled); w.Write(state.Revision); w.Write(state.Wave);
+            w.Write(state.RedBankTicks); w.Write(state.BlueBankTicks); w.Write(state.Entries.Count);
+            foreach(var e in state.Entries)
+            { w.Write(e.Id); w.Write((int)e.Kind); w.Write(e.Owner.Value??string.Empty); w.Write((int)e.Team); w.Write(e.RemainingTicks); w.Write(e.Running); w.Write(e.IsCurrent); }
+            w.Write(state.BoardVotes.Count);
+            foreach(var vote in state.BoardVotes)
+            { w.Write(vote.Voter.Value); w.Write(vote.Position.Q);w.Write(vote.Position.R);var payload=NetworkCommandCodec.Encode(vote.Command);w.Write(payload.Length);w.Write(payload); }
+        }
+        internal static MatchClockState ReadClock(BinaryReader r)
+        {
+            var enabled=r.ReadBoolean(); var revision=r.ReadInt64(); var wave=r.ReadInt32();
+            var red=r.ReadInt64(); var blue=r.ReadInt64(); var count=r.ReadInt32();
+            if (count<0 || count>4096) throw new ArgumentException("Invalid clock count.");
+            var entries=new List<MatchClockEntry>();
+            for(int i=0;i<count;i++)
+            {
+                var id=ReadId(r); var kind=(MatchClockKind)r.ReadInt32(); var owner=ReadId(r);
+                entries.Add(new MatchClockEntry(id,kind,owner.Length==0?default:new HeroId(owner),
+                    (GuardsDigital.Core.Participants.TeamSide)r.ReadInt32(),r.ReadInt64(),r.ReadBoolean(),r.ReadBoolean()));
+            }
+            var voteCount=r.ReadInt32(); if(voteCount<0 || voteCount>10) throw new ArgumentException("Invalid board vote count.");
+            var votes=new List<BoardChoiceVote>();
+            for(int i=0;i<voteCount;i++)
+            {
+                var hero=new HeroId(ReadId(r)); var position=new HexCoordinate(r.ReadInt32(),r.ReadInt32());var size=r.ReadInt32();
+                if(size<0 || size>65536 || !NetworkCommandCodec.TryDecode(r.ReadBytes(size),out var command)) throw new ArgumentException("Invalid board vote.");
+                votes.Add(new BoardChoiceVote(hero,position,command));
+            }
+            return new MatchClockState(enabled,revision,wave,red,blue,entries,votes);
+        }
         internal static void WriteOptions(BinaryWriter w, ExperimentalMatchOptions o)
         {
             w.Write(o.TeammateCoordination); w.Write(o.TurnTimer);
@@ -53,6 +85,26 @@ namespace GuardsDigital.Application
     }
     public static partial class NetworkMessageCodec
     {
+        public static byte[] BoardVoteFrame(NetworkEnvelope envelope,long version,GuardsDigital.Core.Replay.DirectorCommand command)
+        {
+            using(var s=new MemoryStream()) using(var w=new BinaryWriter(s))
+            { WriteEnvelope(w,envelope);w.Write("board-vote");w.Write(version);var payload=NetworkCommandCodec.Encode(command);w.Write(payload.Length);w.Write(payload);w.Flush();return PrivateSessionFrameCodec.EncodeFrame(SessionMessageKind.BoardVote,s.ToArray()); }
+        }
+        public static byte[] TimerReadinessFrame(NetworkEnvelope envelope,long version,bool ready)
+        {
+            using(var s=new MemoryStream()) using(var w=new BinaryWriter(s,System.Text.Encoding.UTF8))
+            { WriteEnvelope(w,envelope); w.Write(version); w.Write(ready); w.Flush(); return PrivateSessionFrameCodec.EncodeFrame(SessionMessageKind.TimerReadiness,s.ToArray()); }
+        }
+        public static bool TryDecodeTimerReadiness(byte[] payload,out NetworkEnvelope envelope,out long version,out bool ready)
+        {
+            envelope=default; version=0; ready=false;
+            try
+            {
+                using(var s=new MemoryStream(payload??Array.Empty<byte>(),false)) using(var r=new BinaryReader(s))
+                { if(!TryReadEnvelope(r,out envelope)) return false; version=r.ReadInt64(); ready=r.ReadBoolean(); return version>=0 && s.Position==s.Length; }
+            }
+            catch(IOException) { return false; } catch(ArgumentException) { return false; }
+        }
         public static byte[] SubmitCoordinationFrame(NetworkEnvelope envelope, CoordinationCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));

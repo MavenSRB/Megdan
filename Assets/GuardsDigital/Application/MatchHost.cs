@@ -473,6 +473,9 @@ namespace GuardsDigital.Application
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             Experiments = (session as MatchSession)?.Experiments ?? ExperimentalMatchOptions.Disabled;
+            clock = new MatchClock(Experiments);
+            timeoutSeed=(session as MatchSession)?.SetupSeed.Value ?? 0;
+            if(Experiments.TurnTimer && timeoutSeed==0) timeoutSeed=GuardsDigital.Core.Setup.SetupRandomnessAuthority.DrawSeed().Value;
         }
 
         /// <summary>
@@ -537,7 +540,7 @@ namespace GuardsDigital.Application
                 try
                 {
                     DuringSubmissionForTest?.Invoke();
-                    result = Execute(submission);
+                    result = Execute(submission, submission.Kind == MatchSubmissionKind.Undo);
                 }
                 finally
                 {
@@ -719,6 +722,8 @@ namespace GuardsDigital.Application
                         " and the authoritative version is " + projection.Version + ".");
                 }
 
+                if(Experiments.TurnTimer && SharedBoardChoice.RequiresVote(session.Projection,submission.Command))
+                    return SeatRefused(submission,bound,SeatSubmissionRejectionReason.UnauthorizedCommand,"This shared board choice requires a team vote.");
                 var claimed = SeatCommandOwnership.Claim(submission.Command);
                 if (!claimed.IsHeldBy(bound))
                 {
@@ -959,7 +964,7 @@ namespace GuardsDigital.Application
             var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
             return SeatProjectionFactory.ForSeat(
                 source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
-                CoordinationFor(seat), coordination.Revision, coordination.Generation);
+                CoordinationFor(seat), coordination.Revision, coordination.Generation, ClockState);
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -1054,9 +1059,11 @@ namespace GuardsDigital.Application
         /// </summary>
         internal Action DuringSubmissionForTest { get; set; }
 
-        private MatchHostResult Execute(MatchSubmission submission)
+        private MatchHostResult Execute(MatchSubmission submission, bool directorUndo = false)
         {
+            BeforeTimedSubmission();
             var result = ExecuteInner(submission);
+            if (result.Accepted) AfterTimedSubmission(submission, directorUndo);
 
             // Milestone 8.35r. Every accepted submission retires the standing rewind marker,
             // including an accepted Undo. A seat's own rewind run is re-established by

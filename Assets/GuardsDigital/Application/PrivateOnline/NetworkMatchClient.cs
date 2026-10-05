@@ -95,6 +95,8 @@ namespace GuardsDigital.Application
         public MatchClientResult Submit(DirectorCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
+            if((Projection as IExperimentalReadModel)?.Experiments.TurnTimer==true && SharedBoardChoice.RequiresVote(Projection,command))
+            {var voted=session.TrySubmitBoardVote(command);return new MatchClientResult(voted,voted?"Team vote recorded.":"Vote unavailable.",Projection,!voted);}
             var origin = session.LatestProjection;
             var originRevision = session.ProjectionRevision;
             var sent = session.TrySubmitCommand(command, out var submissionId);
@@ -411,6 +413,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<TeammateMarker> TeammateMarkers => wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();
         public long CoordinationRevision => wire?.CoordinationRevision ?? 0;
         public int CoordinationGeneration => wire?.CoordinationGeneration ?? 0;
+        public MatchClockState Clock => wire?.Clock ?? MatchClockState.Disabled;
         public long Version => wire?.Version ?? trusted.Version;
         public bool IsInputEnabled => actionable;
 

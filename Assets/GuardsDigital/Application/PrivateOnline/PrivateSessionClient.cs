@@ -657,6 +657,7 @@ namespace GuardsDigital.Application
                     // speaks under and how it would come back; both are the host's to say, and
                     // both arrive here and nowhere else.
                     ConnectionEpoch = granted.ConnectionEpoch;
+                    lastReadinessVersion = -1;
                     if (granted.ReconnectCapability.Length > 0)
                     {
                         reconnectCapability = granted.ReconnectCapability;
@@ -1021,6 +1022,10 @@ namespace GuardsDigital.Application
         public bool TrySubmitCommand(DirectorCommand command, out string submissionId)
         {
             submissionId = null;
+            if(command!=null && LatestProjection?.Experiments.TurnTimer==true &&
+                (command.Kind==DirectorCommandKind.AnswerSystemTransitionStep && command.SystemTransitionChoice.StepId.Equals(GuardsDigital.Core.Rules.LanePush.LanePushSystemTransition.RespawnStepId) ||
+                 command.Kind==DirectorCommandKind.ChooseCorrectionDestination && !LatestProjection.SelectedActor.IsDefined))
+            { submissionId="board-vote"; return TrySubmitBoardVote(command); }
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
                 IsWaitingForHost)
@@ -1049,6 +1054,24 @@ namespace GuardsDigital.Application
         /// wire's own submission identity, the version the statement was decided against, and a
         /// refusal to act at all while the view is known stale.
         /// </summary>
+        private long lastReadinessVersion = -1;
+        private bool lastReadiness;
+        public void ReportTimerReadiness(bool ready)
+        {
+            if (State!=PrivateSessionClientState.Seated || !HasMatchStarted || LatestProjection?.Experiments.TurnTimer!=true) return;
+            var version=LatestProjection.Version;
+            if (version==lastReadinessVersion && ready==lastReadiness) return;
+            lastReadinessVersion=version; lastReadiness=ready; gameplaySendSequence++;
+            Send(NetworkMessageCodec.TimerReadinessFrame(new NetworkEnvelope(SessionCorrelation,ConnectionEpoch,
+                gameplaySendSequence,gameplaySendSequence),version,ready));
+        }
+        public bool TrySubmitBoardVote(DirectorCommand command)
+        {
+            if(State!=PrivateSessionClientState.Seated || LatestProjection?.Experiments.TurnTimer!=true) return false;
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.BoardVoteFrame(new NetworkEnvelope(SessionCorrelation,ConnectionEpoch,gameplaySendSequence,gameplaySendSequence),LatestProjection.Version,command));
+            return true;
+        }
         public bool TrySubmitCoordination(CoordinationCommand command)
         {
             if (command == null || State != PrivateSessionClientState.Seated || LatestProjection == null ||

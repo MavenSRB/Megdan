@@ -129,6 +129,10 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
         private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
         private Toggle coordinationToggle;
+        private Toggle timerToggle;
+        private readonly List<IntegerField> timerFields = new List<IntegerField>();
+        private readonly int[] timerDefaults = {120,30,30,120,300};
+        private VisualElement timerSettings;
         private VisualElement experimentalPanel;
         private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
         private PrivateLobbyModel renderedModel;
@@ -276,6 +280,25 @@ namespace GuardsDigital.Presentation.Interaction
             var coordinationHelp = Caption("Inspect allied hands. Right-click cards or hexes to suggest them to teammates.", 15, "experimental-coordination-help");
             coordinationHelp.style.whiteSpace = WhiteSpace.Normal;
             experimentalPanel.Add(coordinationHelp);
+            timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
+            timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
+            timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
+            var durationLabels=new[]{"Card commitment time","Card resolution time","Response time","Card upgrade time","Team time bank per wave"};
+            var durationError=Caption(string.Empty,14,"experimental-duration-error");
+            for(int i=0;i<durationLabels.Length;i++)
+            {
+                var index=i; var field=new IntegerField(durationLabels[i]+" (seconds)") {name="experimental-duration-"+i,value=timerDefaults[i]};
+                field.style.fontSize=18; field.style.color=Color.white;
+                field.RegisterValueChangedCallback(change=>
+                {
+                    if(change.newValue<(index==4?0:1) || change.newValue>86400)
+                    { field.SetValueWithoutNotify(change.previousValue); durationError.text="Use whole seconds: "+(index==4?"0":"1")+"–86400. Previous value retained."; }
+                    else durationError.text=string.Empty;
+                });
+                timerFields.Add(field); timerSettings.Add(field);
+            }
+            timerSettings.Add(durationError); experimentalPanel.Add(timerSettings);
+            timerToggle.RegisterValueChangedCallback(change=>timerSettings.style.display=change.newValue?DisplayStyle.Flex:DisplayStyle.None);
             hostMenu.Add(experimentalPanel);
             entry.Add(hostMenu);
 
@@ -420,7 +443,8 @@ namespace GuardsDigital.Presentation.Interaction
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
-                    new ExperimentalMatchOptions(teammateCoordination: coordinationToggle.value))
+                    new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
+                        timerFields[2].value,timerFields[3].value,timerFields[4].value))
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -438,6 +462,8 @@ namespace GuardsDigital.Presentation.Interaction
             if (value == PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Host)
             {
                 coordinationToggle.SetValueWithoutNotify(false);
+                timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
+                for(int i=0;i<timerFields.Count;i++) timerFields[i].SetValueWithoutNotify(timerDefaults[i]);
                 experimentalPanel.style.display = DisplayStyle.None;
             }
             page = value;
@@ -1495,6 +1521,18 @@ namespace GuardsDigital.Presentation.Interaction
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
 
+        private readonly System.Diagnostics.Stopwatch clockStopwatch=System.Diagnostics.Stopwatch.StartNew();
+        private long lastClockTick, lastClockPublish;
+        private void TickExperimentalClock()
+        {
+            var now=clockStopwatch.Elapsed.Ticks; var elapsed=now-lastClockTick; lastClockTick=now;
+            if (session==null || !session.HasMatchStarted || !(compositionRoot?.Runtime?.Host is MatchHost host) || !host.Experiments.TurnTimer) return;
+            host.SetTimerStarted(true);
+            foreach(var seat in botFleet?.Seats ?? Array.Empty<SeatId>()) host.SetClockReadiness(seat,host.Version,true);
+            var version=host.Version; host.AdvanceClock(elapsed,session.IsPaused);
+            if (host.Version!=version || now-lastClockPublish>=TimeSpan.TicksPerSecond)
+            { lastClockPublish=now; session.RepublishProjections(); }
+        }
         private void Update()
         {
             if (presenter == null)
@@ -1514,6 +1552,7 @@ namespace GuardsDigital.Presentation.Interaction
                     HostConsoleCommands.Dispatch(consoleLine, session);
                 }
 
+                TickExperimentalClock();
                 foreach (var hostEvent in listener.Drain())
                 {
                     switch (hostEvent.Kind)
@@ -2773,6 +2812,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void LateUpdate()
         {
+            if (machine?.HasMatchStarted==true && onlineHudAttached && compositionRoot?.Runtime!=null)
+                machine.ReportTimerReadiness(compositionRoot.Runtime.IsClockInputReady);
             if (panelSettings == null || presenter?.Model == null) return;
             // The menu can scroll, so short windows must not shrink it to the game's full-board
             // footprint. Restore the shared HUD coordinates for in-match connection notices.

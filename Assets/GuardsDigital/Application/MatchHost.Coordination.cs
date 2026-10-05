@@ -20,7 +20,7 @@ namespace GuardsDigital.Application
                 return coordination.Submit(CurrentSeats().Find(seat), command, session.Projection, CurrentSeats());
             }
         }
-        private const string ExperimentalSnapshotPrefix = "guards-experimental/1:";
+        private const string ExperimentalSnapshotPrefix = "guards-experimental/2:";
         private string CaptureExperimentalSnapshot()
         {
             lock (gate)
@@ -31,6 +31,7 @@ namespace GuardsDigital.Application
                 using (var writer = new System.IO.BinaryWriter(stream, System.Text.Encoding.UTF8))
                 {
                     ExperimentalWireCodec.WriteOptions(writer, Experiments);
+                    WriteTimerSnapshot(writer);
                     writer.Write(payload); writer.Flush();
                     return ExperimentalSnapshotPrefix + Convert.ToBase64String(stream.ToArray());
                 }
@@ -46,9 +47,12 @@ namespace GuardsDigital.Application
                 using (var reader = new System.IO.BinaryReader(stream, System.Text.Encoding.UTF8))
                 {
                     var options = ExperimentalWireCodec.ReadOptions(reader);
+                    var timer = ReadTimerSnapshot(reader);
                     var inner = reader.ReadString();
-                    return options.Equals(Experiments) && stream.Position == stream.Length
-                        ? inner : "The snapshot belongs to different experimental settings.";
+                    if (!options.Equals(Experiments) || stream.Position != stream.Length)
+                        return "The snapshot belongs to different experimental settings.";
+                    pendingTimerRestore=timer;
+                    return inner;
                 }
             }
             catch (FormatException) { return "Invalid experimental snapshot."; }

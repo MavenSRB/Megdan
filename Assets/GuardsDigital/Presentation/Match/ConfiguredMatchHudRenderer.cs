@@ -46,8 +46,9 @@ namespace GuardsDigital.Presentation.Match
             int roundIndex = 0,
             int turnIndex = 0,
             bool isAwaitingViewerInput = false,
-            int? remainingWaveCounters = null)
+            int? remainingWaveCounters = null, MatchClockState clock = null)
         {
+            Clock = clock ?? MatchClockState.Disabled;
             IsAwaitingViewerInput = isAwaitingViewerInput;
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -91,6 +92,7 @@ namespace GuardsDigital.Presentation.Match
         /// the same derivation, so the two halves of the strip cannot disagree.
         /// </summary>
         public bool IsAwaitingViewerInput { get; }
+        public MatchClockState Clock { get; }
 
         /// <summary>Every fact in this bar as one line, and the Tie Breaker chip's assistive reading.</summary>
         public string Text { get; }

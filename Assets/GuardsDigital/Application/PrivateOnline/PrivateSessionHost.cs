@@ -707,6 +707,24 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if(frame.Kind==SessionMessageKind.BoardVote)
+                    {
+                        if(!NetworkMessageCodec.TryDecodeSubmitCommand(frame.Payload,out var voteMessage) || !NetworkCommandCodec.TryDecode(voteMessage.CommandPayload,out var vote))
+                        { RejectAndClose(record,SessionRejectionReason.MalformedFrame,"Invalid board vote.");return; }
+                        if(!AcceptGameplayEnvelope(record,voteMessage.Envelope)) return;
+                        if(!IsPaused && matchStarted && matchHost is MatchHost votingHost && votingHost.SubmitBoardVoteForSeat(record.Seat,voteMessage.ExpectedVersion,vote))
+                            PublishProjections(record,voteMessage.Envelope.Correlation);
+                        else SendProjectionTo(record,voteMessage.Envelope.Correlation);
+                        return;
+                    }
+                    if (frame.Kind == SessionMessageKind.TimerReadiness)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeTimerReadiness(frame.Payload,out var clockEnvelope,out var clockVersion,out var ready))
+                        { RejectAndClose(record,SessionRejectionReason.MalformedFrame,"Invalid timer readiness."); return; }
+                        if (!AcceptGameplayEnvelope(record,clockEnvelope)) return;
+                        if (matchStarted && matchHost is MatchHost timedHost) timedHost.SetClockReadiness(record.Seat,clockVersion,ready);
+                        return;
+                    }
                     if (frame.Kind == SessionMessageKind.SubmitCoordination)
                     {
                         if (!NetworkMessageCodec.TryDecodeSubmitCoordination(frame.Payload, out var coordinationEnvelope, out var coordinationCommand))
@@ -982,6 +1000,7 @@ namespace GuardsDigital.Application
             hold.HeldByOrdinal = record.Ordinal;
             record.Phase = ConnectionPhase.Seated;
             record.Seat = seat.Id;
+            (matchHost as MatchHost)?.ResetClockReadiness(seat.Id);
             record.Epoch = hold.Epoch;
 
             Deliver(record, PrivateSessionFrameCodec.SeatGrantedFrame(

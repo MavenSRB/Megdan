@@ -48,6 +48,7 @@ namespace GuardsDigital.Application
     public interface IExperimentalReadModel
     {
         ExperimentalMatchOptions Experiments { get; }
+        MatchClockState Clock { get; }
         IReadOnlyList<CardInstance> AlliedHandCards { get; }
         IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
         long CoordinationRevision { get; }

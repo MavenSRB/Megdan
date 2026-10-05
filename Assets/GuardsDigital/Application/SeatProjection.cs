@@ -971,12 +971,13 @@ namespace GuardsDigital.Application
             MatchUndoMarker undoMarker = default,
             ExperimentalMatchOptions experiments = null,
             IReadOnlyList<TeammateMarker> teammateMarkers = null,
-            long coordinationRevision = 0, int coordinationGeneration = 0)
+            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
             Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
             TeammateMarkers = teammateMarkers ?? Array.Empty<TeammateMarker>();
             CoordinationRevision = coordinationRevision;
             CoordinationGeneration = coordinationGeneration;
+            Clock = clock ?? MatchClockState.Disabled;
             var alliedHeroes = source.Setup.Heroes.Where(h => h.TeamSide == seat.TeamSide && !seat.Owns(h.HeroId)).Select(h => h.HeroId).ToArray();
             AlliedHandCards = Experiments.TeammateCoordination
                 ? Array.AsReadOnly(source.Cards.Where(c => alliedHeroes.Contains(c.OwnerId) && c.State.Location == CardLocation.Hand).ToArray())
@@ -1058,6 +1059,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
         public long CoordinationRevision { get; }
         public int CoordinationGeneration { get; }
+        public MatchClockState Clock { get; }
 
         public MatchSeat Seat { get; }
 
@@ -1279,7 +1281,7 @@ namespace GuardsDigital.Application
             MatchUndoMarker undoMarker = default,
             ExperimentalMatchOptions experiments = null,
             IReadOnlyList<TeammateMarker> teammateMarkers = null,
-            long coordinationRevision = 0, int coordinationGeneration = 0)
+            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -1326,7 +1328,7 @@ namespace GuardsDigital.Application
                 new SeatPendingSurface(source, seat, ownsDecision, isActor, nameableCardIds),
                 teamAgreement,
                 isSeatUndoAvailable,
-                undoMarker, experiments, teammateMarkers, coordinationRevision, coordinationGeneration);
+                undoMarker, experiments, teammateMarkers, coordinationRevision, coordinationGeneration, clock);
         }
 
         /// <summary>

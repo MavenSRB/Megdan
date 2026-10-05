@@ -533,7 +533,7 @@ namespace GuardsDigital.Presentation.Match
                     projection.RoundIndex,
                     projection.TurnIndex,
                     AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default),
-                    projection.RemainingWaveCounters)),
+                    projection.RemainingWaveCounters, (projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState)),
                 HeroOverviewsPresenter,
                 // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
                 // said out loud where the playtest logs already look: a marker naming the panel, and
@@ -990,7 +990,7 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.RoundIndex,
                 client.Projection.TurnIndex,
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
-                client.Projection.RemainingWaveCounters));
+                client.Projection.RemainingWaveCounters, (client.Projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState));
             coordinator.RefreshAll();
             FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();
@@ -1019,6 +1019,17 @@ namespace GuardsDigital.Presentation.Match
         /// one open, uncommitted Attack-target selection. Every existing caller of this method keeps
         /// working unchanged; what changed is what one press now does on its behalf.
         /// </summary>
+        public bool IsClockInputReady
+        {
+            get
+            {
+                if (SpotlightPresenter.DefersCues) return false;
+                var attack=SpotlightPresenter.Stage.Current;
+                if (attack!=null) return KineticView.Playback.LungeTargetFor(attack.Attacker).IsDefined;
+                return KineticView.Conductor.IsIdle || KineticView.Conductor.IsHoldingForAcknowledgement;
+            }
+        }
+
         public bool SubmitEndTurn() => RoundPresenter.SubmitEndTurn();
 
         /// <summary>

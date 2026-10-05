@@ -12,6 +12,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Interaction
 {
@@ -428,6 +429,29 @@ namespace GuardsDigital.Presentation.Interaction
             UpdateClient();
         }
 
+        private bool ExperimentalSmoke => options.Mode==PrivateOnlineRehearsalMode.Smoke &&
+            string.Equals(Environment.GetEnvironmentVariable("GUARDS_SMOKE_EXPERIMENTS"),"1",StringComparison.Ordinal);
+        private bool experimentalSmokeSent;
+        private bool ExperimentalSmokeReady(PrivateSessionClient machine)
+        {
+            if(!ExperimentalSmoke) return true;
+            var p=machine.LatestProjection;var rt=compositionRoot.Runtime;
+            if(!p.Experiments.TurnTimer || !p.Experiments.TeammateCoordination || !p.Clock.Enabled || p.Clock.Entries.Count==0)
+            { Fail("experimental-settings-not-projected");return false; }
+            var ally=(rt.ReadModel as IExperimentalReadModel)?.AlliedHandCards.FirstOrDefault();
+            if(ally==null || !rt.SelectViewedHero(ally.OwnerId)) {Fail("experimental-ally-inspection-unavailable");return false;}
+            if(!experimentalSmokeSent)
+            {
+                experimentalSmokeSent=true;
+                machine.TrySubmitCoordination(new CoordinationCommand(0,CoordinationTargetKind.Card,false,
+                    rt.ReadModel.Setup.SelectedMap,cardOwner:ally.OwnerId,card:ally.Id,generation:p.CoordinationGeneration));
+                return false;
+            }
+            if(!p.TeammateMarkers.Any(m=>m.Sender.Value==p.HeroId && m.Card.Equals(ally.Id))) return false;
+            if(!rt.SelectViewedHero(rt.Seat.HeroId)) {Fail("experimental-my-cards-unavailable");return false;}
+            PrivateOnlineMarkers.Log("EXPERIMENTAL_SMOKE_PASS seat="+options.Seat.Value+" clocks="+p.Clock.Entries.Count+" ally-cards="+p.AlliedHandCards.Count);
+            return true;
+        }
         private void PressEntryWhenReady()
         {
             if (lobby.Presenter?.Model == null)
@@ -443,11 +467,19 @@ namespace GuardsDigital.Presentation.Interaction
             // control a player presses.
             var joinsSeatless = options.Mode == PrivateOnlineRehearsalMode.Smoke &&
                 options.Role == PrivateOnlineRehearsalRole.Client;
+            var experiments=ExperimentalMatchOptions.Disabled;
+            if (ExperimentalSmoke && options.Role==PrivateOnlineRehearsalRole.Host)
+            {
+                lobby.View.ShowPage(PrivateLobbyEntryPage.Host);
+                lobby.View.Root.Q<Toggle>("experimental-coordination").value=true;
+                lobby.View.Root.Q<Toggle>("experimental-timer").value=true;
+                experiments=lobby.View.CurrentEntry().Experiments;
+            }
             var entry = new PrivateLobbyEntry(
                 options.Address,
                 options.Port.ToString(CultureInfo.InvariantCulture),
                 options.SessionKey,
-                joinsSeatless ? default : options.Seat);
+                joinsSeatless ? default : options.Seat, experiments:experiments);
             var control = options.Role == PrivateOnlineRehearsalRole.Host
                 ? PrivateLobbyControl.Host
                 : PrivateLobbyControl.Join;
@@ -698,6 +730,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 if (!smokeReported)
                 {
+                    if(!ExperimentalSmokeReady(machine)) return;
                     smokeReported = true;
                     // PLAYTEST FAILURE #2 gate. AuditProjection above proved this seat's authority is
                     // scoped to its own hero; this proves the hero it is scoped ABOUT is the one this

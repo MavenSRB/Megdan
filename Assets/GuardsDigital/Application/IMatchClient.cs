@@ -181,6 +181,8 @@ namespace GuardsDigital.Application
             if (command == null) throw new ArgumentNullException(nameof(command));
 
             var projection = client.Projection;
+            if(projection.Experiments.TurnTimer && SharedBoardChoice.RequiresVote(projection,command) && client is IBoardVoteClient voter)
+            {var voted=voter.SubmitBoardVote(command);return new MatchClientResult(voted,"Team vote recorded.",client.Projection,!voted);}
             var result = client.Submit(new SeatSubmission(NextSubmissionId(), projection.Version, command));
             return new MatchClientResult(
                 result.Accepted,

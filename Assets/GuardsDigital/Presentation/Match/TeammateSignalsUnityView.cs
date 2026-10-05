@@ -58,15 +58,15 @@ namespace GuardsDigital.Presentation.Match
             if (layer?.panel == null || runtime == null || boardCamera == null) return;
             var read = runtime.ReadModel;
             var experimental = read as IExperimentalReadModel;
-            bool enabled = experimental?.Experiments.TeammateCoordination == true;
+            bool enabled = experimental?.Experiments.TeammateCoordination == true || experimental?.Experiments.TurnTimer == true;
             layer.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             cardLayer.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
             if (!enabled) return;
-            if (renderedRevision != experimental.CoordinationRevision || renderedVersion != read.Version)
+            if (renderedRevision != experimental.CoordinationRevision + experimental.Clock.Revision + experimental.Clock.BoardVotes.Count || renderedVersion != read.Version)
             {
-                renderedRevision = experimental.CoordinationRevision; renderedVersion = read.Version;
+                renderedRevision = experimental.CoordinationRevision + experimental.Clock.Revision + experimental.Clock.BoardVotes.Count; renderedVersion = read.Version;
                 layer.Clear(); signals.Clear();
-                foreach (var group in experimental.TeammateMarkers.Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
+                foreach (var group in experimental.TeammateMarkers.Concat(experimental.Clock.BoardVotes.Select(v=>new TeammateMarker(v.Voter,0,v.Position,default,default))).Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
                 {
                     var tile = tiles.FirstOrDefault(t => t != null && t.Coordinate.Equals(group.Key));
                     if (tile == null) continue;
@@ -86,7 +86,7 @@ namespace GuardsDigital.Presentation.Match
                     };
                     signal.Badges.style.position = Position.Absolute;
                     signal.Badges.style.flexDirection = FlexDirection.Row;
-                    foreach (var marker in group.OrderBy(m => m.Sender.Value, StringComparer.Ordinal))
+                    foreach (var marker in group.GroupBy(m=>m.Sender).Select(g=>g.First()).OrderBy(m => m.Sender.Value, StringComparer.Ordinal))
                     {
                         var hero = runtime.HeroOverviewsView?.Model?.Heroes.FirstOrDefault(h => h.HeroId.Equals(marker.Sender));
                         if (hero == null) continue;

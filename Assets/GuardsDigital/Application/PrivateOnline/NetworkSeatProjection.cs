@@ -71,7 +71,7 @@ namespace GuardsDigital.Application
             NetworkProjectionDetailRecord detail,
             IReadOnlyList<NetworkTeamVictoryTallyRow> teamVictoryTallies = null,
             ExperimentalMatchOptions experiments = null, IReadOnlyList<NetworkCardRow> alliedHandCards = null,
-            IReadOnlyList<TeammateMarker> teammateMarkers = null, long coordinationRevision = 0, int coordinationGeneration = 0)
+            IReadOnlyList<TeammateMarker> teammateMarkers = null, long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
             Version = version;
             TeamVictoryTallies = teamVictoryTallies ?? Array.Empty<NetworkTeamVictoryTallyRow>();
@@ -80,6 +80,7 @@ namespace GuardsDigital.Application
             TeammateMarkers = teammateMarkers ?? Array.Empty<TeammateMarker>();
             CoordinationRevision = coordinationRevision;
             CoordinationGeneration = coordinationGeneration;
+            Clock = clock ?? MatchClockState.Disabled;
             SeatId = seatId;
             PlayerId = playerId;
             HeroId = heroId;
@@ -120,6 +121,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
         public long CoordinationRevision { get; }
         public int CoordinationGeneration { get; }
+        public MatchClockState Clock { get; }
         public long Version { get; }
         public string SeatId { get; }
         public string PlayerId { get; }
@@ -930,6 +932,7 @@ namespace GuardsDigital.Application
                 WriteCards(writer, projection.AlliedHandCards);
                 writer.Write(projection.CoordinationRevision);
                 writer.Write(projection.CoordinationGeneration);
+                ExperimentalWireCodec.WriteClock(writer, projection.Clock);
                 ExperimentalWireCodec.WriteMarkers(writer, projection.TeammateMarkers);
 
                 writer.Flush();
@@ -1455,6 +1458,7 @@ namespace GuardsDigital.Application
                     var coordinationRevision = reader.ReadInt64();
                     var coordinationGeneration = reader.ReadInt32();
                     if (coordinationGeneration < 0) return false;
+                    var clock = ExperimentalWireCodec.ReadClock(reader);
                     var teammateMarkers = ExperimentalWireCodec.ReadMarkers(reader);
                     if (coordinationRevision < 0 || (!experiments.TeammateCoordination && (alliedHandCards.Count > 0 || teammateMarkers.Count > 0))) return false;
                     if (stream.Position != stream.Length)
@@ -1486,7 +1490,7 @@ namespace GuardsDigital.Application
                         contractCommands,
                         authorizedCommands,
                         detail,
-                        Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration);
+                        Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration, clock);
                     return true;
                 }
             }

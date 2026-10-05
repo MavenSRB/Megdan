@@ -418,7 +418,7 @@ namespace GuardsDigital.Application
         }
     }
 
-    internal sealed class SeatClient : ISeatClient, ICoordinationClient
+    internal sealed class SeatClient : ISeatClient, ICoordinationClient, IBoardVoteClient
     {
         private readonly IMatchHost host;
 
@@ -431,6 +431,8 @@ namespace GuardsDigital.Application
         public MatchSeat Seat { get; }
 
         public SeatProjection Projection => host.ProjectionForSeat(Seat.Id);
+
+        public bool SubmitBoardVote(DirectorCommand command) => host is MatchHost concrete && concrete.SubmitBoardVoteForSeat(Seat.Id,host.Version,command);
 
         public bool SubmitCoordination(CoordinationCommand command) =>
             host is MatchHost concrete && concrete.SubmitCoordinationForSeat(Seat.Id, command);
