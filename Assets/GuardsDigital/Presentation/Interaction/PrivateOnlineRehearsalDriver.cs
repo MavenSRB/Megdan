@@ -282,6 +282,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// on and this block would otherwise log its pass line again on the way out.
         /// </summary>
         private bool smokeReported;
+        private SeatId[] smokeRemoteSeats = Array.Empty<SeatId>();
         private bool stopped;
         private bool privacyFailed;
         private long auditedRevision = -1;
@@ -538,6 +539,10 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 if (lobby.Presenter.Model?.Offers(PrivateLobbyControl.FillWithTestDrivers) == true)
                 {
+                    smokeRemoteSeats = host.Roster
+                        .Where(row => row.Occupancy == SeatOccupancyState.Claimed &&
+                            !row.Seat.Equals(options.Seat))
+                        .Select(row => row.Seat).ToArray();
                     testDriversFillAttempted = true;
                     if (!lobby.Presenter.Press(PrivateLobbyControl.FillWithTestDrivers, null))
                     {
@@ -619,13 +624,17 @@ namespace GuardsDigital.Presentation.Interaction
                         projection.Version.ToString(CultureInfo.InvariantCulture) +
                         " phase=" + compositionRoot.Runtime.Phase +
                         " seats=" + host.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture));
-                    if (!options.Seat.IsDefined)
-                    {
-                        lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
-                        Quit(0);
-                    }
                 }
 
+                // Keep the authority alive until the remote witnesses have finished their
+                // round trips and exited. The cohort runner separately requires their PASS
+                // markers and clean exits, so departure alone cannot turn a failure green.
+                if (SmokeHostCanExit(!options.Seat.IsDefined || smokeReported,
+                    smokeRemoteSeats, host.Roster))
+                {
+                    lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
+                    Quit(0);
+                }
                 return;
             }
 
@@ -746,7 +755,8 @@ namespace GuardsDigital.Presentation.Interaction
                             .ToString(CultureInfo.InvariantCulture) +
                         " version=" + machine.LatestProjection.Version
                             .ToString(CultureInfo.InvariantCulture));
-                    Quit(0);
+                    if (options.Role != PrivateOnlineRehearsalRole.Host)
+                        Quit(0);
                 }
 
                 return;
@@ -853,6 +863,14 @@ namespace GuardsDigital.Presentation.Interaction
             Quit(0);
             return true;
         }
+
+        internal static bool SmokeHostCanExit(
+            bool localWitnessComplete,
+            IReadOnlyList<SeatId> remoteSeats,
+            IReadOnlyList<SeatRosterEntry> roster) =>
+            localWitnessComplete && remoteSeats.Count > 0 &&
+            remoteSeats.All(seat => roster.Any(row => row.Seat.Equals(seat) &&
+                row.Occupancy != SeatOccupancyState.Claimed));
 
         internal static bool RejoinCutIsReady(
             bool initiativeObserved,
