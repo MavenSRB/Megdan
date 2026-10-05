@@ -107,4 +107,3 @@ namespace GuardsDigital.Application
         public void Remove(HeroId sender) { if (markers.Remove(sender)) Revision++; }
     }
 }
-
