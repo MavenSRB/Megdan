@@ -183,6 +183,12 @@
       "boundaryReview": true
     },
     {
+      "spaceId": "q-5_r-6",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
       "spaceId": "q-5_r-5",
       "appearance": "rock",
       "boundaryReview": true
@@ -218,6 +224,60 @@
       "boundaryReview": true
     },
     {
+      "spaceId": "q-5_r10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-4_r-7",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-4_r10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-4_r11",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-3_r-8",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-3_r11",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-2_r-8",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-2_r11",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q-1_r-9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
       "spaceId": "q-1_r-2",
       "appearance": "rock",
       "boundaryReview": false
@@ -228,6 +288,18 @@
       "boundaryReview": false
     },
     {
+      "spaceId": "q-1_r10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q0_r-9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
       "spaceId": "q0_r0",
       "appearance": "rock",
       "boundaryReview": false
@@ -236,6 +308,60 @@
       "spaceId": "q0_r3",
       "appearance": "rock",
       "boundaryReview": false
+    },
+    {
+      "spaceId": "q0_r10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q1_r-10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q1_r9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q2_r-10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q2_r9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q3_r-10",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q3_r-9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q3_r8",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
+    },
+    {
+      "spaceId": "q4_r-9",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
     },
     {
       "spaceId": "q4_r-8",
@@ -271,6 +397,12 @@
       "spaceId": "q4_r6",
       "appearance": "rock",
       "boundaryReview": true
+    },
+    {
+      "spaceId": "q4_r7",
+      "appearance": "perimeter",
+      "boundaryReview": false,
+      "confirmedBorderAddition": true
     },
     {
       "spaceId": "q5_r-7",
@@ -439,5 +571,35 @@
       "unitType": "ranged-minion",
       "teamId": "red"
     }
-  ]
+  ],
+  "borderCorrection": {
+    "milestone": "9.63a",
+    "authority": "User confirmed terrain border hexes around the spawn zones, 2026-10-05.",
+    "addedSpaceIds": [
+      "q1_r-10",
+      "q2_r-10",
+      "q3_r-10",
+      "q-1_r-9",
+      "q0_r-9",
+      "q3_r-9",
+      "q4_r-9",
+      "q-3_r-8",
+      "q-2_r-8",
+      "q-4_r-7",
+      "q-5_r-6",
+      "q4_r7",
+      "q3_r8",
+      "q1_r9",
+      "q2_r9",
+      "q-5_r10",
+      "q-4_r10",
+      "q-1_r10",
+      "q0_r10",
+      "q-4_r11",
+      "q-3_r11",
+      "q-2_r11"
+    ],
+    "invariant": "Every playable cell has all six adjacent coordinates inventoried as playable or terrain.",
+    "artworkUnchanged": true
+  }
 }

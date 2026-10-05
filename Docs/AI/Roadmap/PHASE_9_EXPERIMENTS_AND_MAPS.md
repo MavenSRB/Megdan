@@ -91,3 +91,12 @@ Authorized 2026-10-05 while the final hero is being implemented. Prepare an expl
 Completed 2026-10-05: [small-map packet](../Maps/ALTERNATE_SMALL_PREPARATION.md) with explicit candidate cells, spawns, registration and private review sheets; the outer-perimeter review limitation remains a promotion check at 9.61. No runtime change.
 
 Historical evidence: [9.63 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-963-small-map-preparation-evidence).
+
+
+### [x] 9.63a Complete the small-map terrain border
+
+Authorized 2026-10-05 after the user identified missing outer borders around the spawn zones and confirmed that these must be terrain hexes. Add the 22 missing neighbour cells (11 around each Throne) to the preparation candidate; preserve all existing cells, zones, spawns and source artwork. Update registration metadata, counts, adjacency and private overlays. Closing check: a complete-neighbour regression over every playable cell must fail on the 9.63 candidate and pass after correction; existing map invariants, symmetry, unchanged playable/spawn data, visual border review, documentation validation and diff check must pass. T0 preparation only: no runtime registration, Unity launch or change to active hero work. Commit locally with evidence and archive index.
+
+Completed 2026-10-05: 22 terrain-only cells added, completing all playable-cell neighbours; [candidate and corrected overlays](../Maps/ALTERNATE_SMALL_PREPARATION.md).
+
+Historical evidence: [9.63a completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-963a-small-map-terrain-border-evidence).

@@ -24,7 +24,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 - 9.50 gated all Emmitt fronts on the permanent real-control matrix. T3 passed: offline 6,670/6,670, Unity Edit 7,770 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127; focused, boundary and visual checks passed. The p.14 Defense-total defect was corrected. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
-Approved 2026-10-05 after 9.54: **9.58 -> 9.56 -> 9.61** (coordination/menu, timer/header, small 2v2/3v3 map with separate selector), separately gated and committed; then stop. **9.63** prepared the [small-map candidate](Maps/ALTERNATE_SMALL_PREPARATION.md), with perimeter review pending. [Owning milestones](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), [experimental packet](Project/EXPERIMENTAL_PREPARATION.md), [maps](Maps/README.md). Two-lane **9.62** remains unauthorized.
+Approved 2026-10-05 after 9.54: **9.58 -> 9.56 -> 9.61** (coordination, timer, small-map selector), separately gated and committed; then stop. **9.63 / 9.63a** prepared the [small-map candidate](Maps/ALTERNATE_SMALL_PREPARATION.md). [Owning milestones](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), [experimental packet](Project/EXPERIMENTAL_PREPARATION.md), [maps](Maps/README.md). Two-lane **9.62** remains unauthorized.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 

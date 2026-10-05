@@ -1,6 +1,6 @@
 # Alternate small map: implementation preparation
 
-Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This is a **review candidate**, not a registered or shipped map. The final hero's source and tests are untouched.
+Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This is a **review candidate**, not a registered or shipped map. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
 
 ## Prepared inventory
 
@@ -17,16 +17,16 @@ Candidate identity: `alternate-small-single-lane@1`, display label `Alternate Sm
 | Starting Battle Zone | 52 |
 | Red Approach | 35 |
 | Red Throne | 17 |
-| Terrain: water / rock | 30 / 50 |
-| Total / playable | 236 / 156 |
+| Terrain: water / rock / spawn-zone border | 30 / 50 / 22 |
+| Total / playable | 258 / 156 |
 
-The lane order is Red Throne -> Red Approach -> Starting Battle Zone -> Blue Approach -> Blue Throne. Only consecutive zones share playable borders. This map has one active Battle Zone and no Jungle zones. The whole inventoried graph, playable graph and each playable zone are connected. There are 647 undirected physical edges and 404 playable edges under the six standard axial directions.
+The lane order is Red Throne -> Red Approach -> Starting Battle Zone -> Blue Approach -> Blue Throne. Only consecutive zones share playable borders. This map has one active Battle Zone and no Jungle zones. The whole inventoried graph, playable graph and each playable zone are connected. There are 709 undirected physical edges and 404 playable edges under the six standard axial directions.
 
 Each team has 3 hero, 11 melee, 3 ranged and 3 heavy spawns (40 total). Each side starts with four melee, one ranged and one heavy minion in the Battle Zone, consistent with the existing p.6 setup. The two former towers are **blue ranged at `(0,-6)`** and **red ranged at `(-1,7)`**. Hero spawns are on the corresponding Throne. All spawn coordinates are unique and playable. The complete inventory and spawn types have half-turn symmetry: `(q,r) -> (-q-1,1-r)` with teams exchanged.
 
 ## Artwork alignment and review
 
-Use the preserved edited `alternate-2v2-3v3-ranged-spawns-2026-10-05.png`, not the tower-bearing original. Received artwork is 900 x 900; do not claim a higher-resolution source. Images remain in the ignored `Docs/Guards of Atlantis II - Map References/` directory. Full-size private review sheets there are `alternate-small-hex-review-9-63.png` and `alternate-small-spawn-review-9-63.png`; `alternate-small-review-9-63.py` reproduces them from the candidate. Original art and prior edits are unchanged.
+Use the preserved edited `alternate-2v2-3v3-ranged-spawns-2026-10-05.png`, not the tower-bearing original. Received artwork is 900 x 900; do not claim a higher-resolution source. Images remain in the ignored `Docs/Guards of Atlantis II - Map References/` directory. Full-size private review sheets there are `alternate-small-hex-review-9-63.png` and `alternate-small-spawn-review-9-63.png`; `alternate-small-review-9-63a.py` reproduces them from the corrected candidate. Earlier review images are preserved as `alternate-small-hex-review-before-9-63a.png` and `alternate-small-spawn-review-before-9-63a.png`; the original recipe remains preserved. Original art and prior edits are unchanged.
 
 Pixel origin is top-left, x right/y down. Map centre `(0,0)` is the upper internal central-rock hex. Registration is:
 
@@ -36,7 +36,9 @@ Pixel origin is top-left, x right/y down. Map centre `(0,0)` is the upper intern
 
 Adjacent-centre spacing is about 43.16 pixels, outer radius 24.92 pixels. Basis vectors have equal lengths and a 60-degree separation to rounding precision. Repeated texture translations were measured separately in upper/lower/full regions and over four/eight spacings; all playable rows and all 40 glyphs were then inspected on the overlay. Painted glyphs may sit slightly off their actual hex centres: use the grid registration, not each glyph's bounding box, for placement and picking.
 
-**Review limitation:** unlike the original implemented map, this image has no user-supplied axial diagram. The candidate includes the outer mountain bases and excludes decorative raised peaks, sea, throne machinery and ships. Forty outer rock cells carry magenta review dots; the four throne-adjacent end cells are `(-5,-5)`, `(-5,-4)`, `(4,5)`, `(4,6)`. Review this perimeter on the annotated sheet before promoting the candidate. Internal water/rock cells, playable rows and spawns are explicitly transcribed; do not let an importer silently manufacture additional cells from the image bounds. A perimeter correction must regenerate counts and adjacency and repeat affected targeting/board-boundary checks.
+**Terrain border confirmed at 9.63a:** every playable cell must have all six neighbour coordinates inventoried. The initial candidate missed 11 terrain cells around each Throne; the corrected candidate adds those 22 cells, highlighted yellow on the review overlay. They are terrain with no zone or spawn, including where the picture shows throne machinery or water at the edge. All 156 playable cells, five zones and 40 spawns remain unchanged. Registration metadata lists every added space ID and its user-confirmed provenance.
+
+This image has no publisher/user-supplied axial diagram, so final visual registration remains a 9.61 promotion check. Forty original outer-rock cells retain magenta review markers. The map ends beyond the complete terrain border; decorative peaks, ships and exterior sea do not generate further cells. The complete-neighbour check must fail if any necessary border cell is removed.
 
 ## Integration seams after the hero and experiments
 
@@ -58,7 +60,7 @@ Paths in the table are relative to `Assets/GuardsDigital/` except `Tools/` paths
 
 ## Closing checks for implementation (not yet executed)
 
-1. Data: exact canonical/resource parity, registration anchors, unique/valid references, symmetry, counts and connected zones. Load both maps in the actual runtime catalog and offline shim. Deliberately wrong map/revision, duplicate IDs and a spawn on terrain must be rejected.
+1. Data: exact canonical/resource parity, registration anchors, unique/valid references, symmetry, counts, connected zones and all six neighbour coordinates present for every playable cell (including both Thrones). Load both maps in the actual runtime catalog and offline shim. Deliberately wrong map/revision, duplicate IDs and a spawn on terrain must be rejected.
 2. Setup/host: the Map selector is visible without opening Experimental and works with every experiment off; both maps crossed with 2v2/3v3 and Quick/Long; selector changes produce correct heroes/minions and no stale pieces/artwork. Defaults, disabled-after-hosting state, bots and lineup rebuilds preserve selection. Joiners inherit the selected map; unsupported identities fail without loops.
 3. Geometry/rules: all five zone borders, path blocking by the four internal rocks and water, adjacent/radius/line queries, Fast Travel, targeting terrain, hero respawn including occupied-spawn fallback, all minion types and Lane Push in both directions through to either Throne. Queries over absent Jungle zones return valid empty results. Audit final NebKher straight-line/board partitioning against this geometry.
 4. Persistence/network: save/load, reconnect, replay, ordinary Undo and Director Undo on this map; wrong-map snapshots refused. Timer and coordination on/off combinations use the selected map's legal choices, timeout destinations and highlight positions without leaking opposing hands or stranding a match.
@@ -66,3 +68,5 @@ Paths in the table are relative to `Assets/GuardsDigital/` except `Tools/` paths
 6. Regressions: existing map/format behavior, setup identity, map catalog/shim, artwork, host/join and restore. Existing fixture anchors include `BoardMapDefinitionTests`, `OfficialFourPlayerSetupTests`, `OfficialSixPlayerSetupTests`, `MatchFormatTests`, `MatchFormatAdmissionTests`, `PrivateLobbyFrontDoorTests`, `PrivateLobbyPlayModeTests`, `OfficialBoardArtworkTests`, `FastTravelActionTests`, `HeroRespawnTests`, `LanePushTransitionTests` and `AuthoritativeSnapshotSerializerTests`. Choose the highest applicable tier after final affectedness review; this cross-cutting playable-map release is an explicit player-path gate, not a data-only pass.
 
 Preparation uses the existing `Test-BoardMapSpecificationInvariant` function directly, plus candidate-only reference, connectivity, symmetry and initial-force checks. It does not run the official-map wrapper against a candidate or create a runtime resource. Gameplay/Unity evidence belongs to 9.61, after the preceding authorized milestones.
+
+The border regression `python tmp/map-border-9-63a/check-complete-border.py <candidate-path>` is preserved as private preparation evidence: it checks the complete-neighbour invariant independently of the data update recipe. Promote this invariant into persistent runtime map tests at 9.61.

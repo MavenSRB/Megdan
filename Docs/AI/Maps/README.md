@@ -16,7 +16,7 @@ Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone
 
 ## Alternate small-map preparation
 
-[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. It is not loaded by runtime.
+[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. The user-confirmed spawn-zone terrain border is completed at [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). It is not loaded by runtime.
 
 ## Future map references
 

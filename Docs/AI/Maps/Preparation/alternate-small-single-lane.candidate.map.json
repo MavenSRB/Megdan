@@ -76,13 +76,13 @@
     "originalArtworkSha256": "0e2d26886b565b28c60d431fe321cf43da24edece1bb48635a3100b30e30089f",
     "preparedOn": "2026-10-05",
     "authority": "User-supplied map and requested ranged tower replacements. Printed rulebook pp.3,6,11,19 for common map/setup semantics. Artwork remains private.",
-    "reviewNote": "Outer terrain follows mountain bases; decorative mountain peaks and exterior sea are not extra spaces. The annotated perimeter is a review candidate, not a publisher-supplied coordinate diagram."
+    "reviewNote": "Preparation candidate. A complete one-hex terrain border around every playable cell is required by the user, including the 22 spawn-zone neighbour cells confirmed at 9.63a. Exterior sea, raised decorative peaks and structures beyond that border are not additional spaces. Not a publisher-supplied coordinate diagram."
   },
   "connectionPolicy": {
     "kind": "standard-axial-touching-inventory-v1",
     "physicalConnections": "Every pair of inventoried cells separated by one named axial direction.",
     "playableConnections": "Physical connections whose two endpoints are playable; terrain endpoints are excluded.",
-    "undirectedPhysicalConnectionCount": 647,
+    "undirectedPhysicalConnectionCount": 709,
     "undirectedPlayableConnectionCount": 404
   },
   "zones": [
@@ -136,6 +136,41 @@
   ],
   "spaces": [
     {
+      "spaceId": "q1_r-10",
+      "q": 1,
+      "r": -10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q2_r-10",
+      "q": 2,
+      "r": -10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q3_r-10",
+      "q": 3,
+      "r": -10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-1_r-9",
+      "q": -1,
+      "r": -9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q0_r-9",
+      "q": 0,
+      "r": -9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
       "spaceId": "q1_r-9",
       "q": 1,
       "r": -9,
@@ -148,6 +183,34 @@
       "r": -9,
       "kind": "playable",
       "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q3_r-9",
+      "q": 3,
+      "r": -9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q4_r-9",
+      "q": 4,
+      "r": -9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r-8",
+      "q": -3,
+      "r": -8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r-8",
+      "q": -2,
+      "r": -8,
+      "kind": "terrain",
+      "zoneId": null
     },
     {
       "spaceId": "q-1_r-8",
@@ -188,6 +251,13 @@
       "spaceId": "q4_r-8",
       "q": 4,
       "r": -8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r-7",
+      "q": -4,
+      "r": -7,
       "kind": "terrain",
       "zoneId": null
     },
@@ -272,6 +342,13 @@
       "spaceId": "q8_r-7",
       "q": 8,
       "r": -7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r-6",
+      "q": -5,
+      "r": -6,
       "kind": "terrain",
       "zoneId": null
     },
@@ -1648,6 +1725,13 @@
       "zoneId": "red-throne"
     },
     {
+      "spaceId": "q4_r7",
+      "q": 4,
+      "r": 7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
       "spaceId": "q-9_r8",
       "q": -9,
       "r": 8,
@@ -1732,6 +1816,13 @@
       "zoneId": "red-throne"
     },
     {
+      "spaceId": "q3_r8",
+      "q": 3,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
       "spaceId": "q-5_r9",
       "q": -5,
       "r": 9,
@@ -1774,6 +1865,34 @@
       "zoneId": "red-throne"
     },
     {
+      "spaceId": "q1_r9",
+      "q": 1,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q2_r9",
+      "q": 2,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r10",
+      "q": -5,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r10",
+      "q": -4,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
       "spaceId": "q-3_r10",
       "q": -3,
       "r": 10,
@@ -1786,6 +1905,41 @@
       "r": 10,
       "kind": "playable",
       "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-1_r10",
+      "q": -1,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q0_r10",
+      "q": 0,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r11",
+      "q": -4,
+      "r": 11,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r11",
+      "q": -3,
+      "r": 11,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r11",
+      "q": -2,
+      "r": 11,
+      "kind": "terrain",
+      "zoneId": null
     }
   ],
   "spawnPoints": [
@@ -2031,9 +2185,9 @@
     }
   ],
   "inventoryTotals": {
-    "cells": 236,
+    "cells": 258,
     "playableSpaces": 156,
-    "terrainCells": 80,
+    "terrainCells": 102,
     "spawnPoints": 40
   }
 }

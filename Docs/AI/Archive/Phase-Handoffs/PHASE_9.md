@@ -629,3 +629,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.63 | Prepared the 236-cell, five-zone, 40-spawn alternate small-map candidate, artwork registration and private annotated reviews, with a perimeter promotion check and source-grounded host selector/setup/network/restore plan. Recorded the approved post-hero 9.58 -> 9.56 -> 9.61 sequence. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map). | `milestone/9.63`; host-selector clarification: `milestone/9.63-host-selector` |
+
+## Milestone 9.63a Small map terrain border evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.63a | Added 22 missing terrain border cells around the two spawn zones; all playable cells now have six mapped neighbours. Preserved playable/spawn data and original art, updated candidate counts and private overlays. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). | `milestone/9.63a` |
