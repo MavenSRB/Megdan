@@ -4,7 +4,7 @@ Canonical current lobby/picker contract. Return to [project context](../PROJECT_
 
 ## Queued Experimental menu
 
-The agreed, unimplemented [Experimental menu and timer settings](EXPERIMENTAL_FEATURES.md#experimental-menu) are recorded separately. They are per-match opt-ins, reset off for a new hosted game; this design does not change the shipped lobby or authorize implementation.
+The agreed, unimplemented [Experimental menu, timer settings and teammate coordination toggle](EXPERIMENTAL_FEATURES.md#experimental-menu) are recorded separately. They are per-match opt-ins, reset off for a new hosted game; this design does not change the shipped lobby or authorize implementation.
 
 ## Setup and selection
 

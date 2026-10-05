@@ -58,6 +58,8 @@ Milestone 8.25 made that setup the configuration a player loads. Earlier synthet
 
 The user approved the [experimental turn-timer design](Project/EXPERIMENTAL_FEATURES.md) on 2026-10-05: configured decision allowances and team banks, legal timeout End Turn/Undo, automatic answers and voting fallbacks. This is a proposed opt-in digital rules variant, not an official board-game interpretation or shipped deviation. Experiments reset off for each new hosted game. Only documentation is authorized by 9.55; 9.56 queues implementation and its exact validation gate. Standard rules and existing Undo limits remain unchanged.
 
+The user also approved the [Teammate coordination design](Project/EXPERIMENTAL_FEATURES.md#teammate-coordination): a separate per-match host toggle permits allied hand inspection and right-click hex/card suggestions. This proposed digital visibility/communication variant grants no teammate gameplay control and reveals no enemy private information. 9.57 records the design only; 9.58 queues implementation. Standard option-off behavior remains unchanged.
+
 ## Approved deviations
 
 | ID | Deviation | Reason | Impact | Removal or review trigger |

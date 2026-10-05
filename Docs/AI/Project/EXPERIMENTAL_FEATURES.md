@@ -1,10 +1,10 @@
-# Experimental features and turn timer
+# Experimental features: turn timer and teammate coordination
 
-Canonical design for the user-approved discussion; **not implemented**. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) records documentation only; [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) is queued, not authorized. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
+Canonical designs for the user-approved discussion; **not implemented**. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is queued, not authorized. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
 
 ## Experimental menu
 
-The host-game screen gains an **Experimental** button opening per-match feature toggles. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. This does not authorize any other experiment. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
+The host-game screen gains an **Experimental** button opening per-match feature toggles. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
 
 | Setting | What it times |
 | --- | --- |
@@ -110,3 +110,36 @@ The future timer milestone owns the following unexecuted closing checks:
 The host must finish timeout resolution through typed authoritative commands, not UI button automation or card-name branches. Random fallback means selection of a **legal completing answer**, not arbitrary button clicks that can deselect, loop or leave a malformed set. Any observed stranded or unhandled case blocks timer completion until corrected with a failing-then-passing regression; log its owning decision and command context for diagnosis. The design requires progress but does not claim the unimplemented feature already guarantees it.
 
 Related prospective risk: [RISK-TIMER-001](../TECHNICAL_RISKS.md). Validation evidence belongs to the future implementation commit, not this design record.
+
+## Teammate coordination
+
+Approved after mockup review; documentation outcome [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design), with implementation queued separately as [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination). This is the second independent option in the host-game **Experimental** menu. It applies to that match only, resets off for each new hosted game, and does not require Turn timer. The current shipped [hero-rail selection/privacy contract](HERO_RAIL_INTERACTION.md#identity-and-selection) remains in force until this opt-in feature is implemented.
+
+### Allied cards and right-click suggestions
+
+- **Left-click an allied hero's board token or hero tray to inspect that ally's current hand.** Identify whose cards are displayed and provide the mockup's **My Cards** return control. Inspecting an ally never grants permission to play, commit, discard, upgrade or otherwise answer for them.
+- **Right-click a board hex to mark it for teammates.** Show a white selection outline and the indicating player's hero token above the hex. This is a communication marker, not an action target or a vote.
+- **Right-click a card in the inspected allied hand to suggest it to its owner.** The owner sees that card with the same white glow and the suggesting player's hero token above it. The inspecting player receives visible feedback for their own suggestion.
+- Marking uses **right-click, not mouse-over**, for both hexes and cards. It is available throughout all match phases, including while another player is acting or simultaneous decisions are underway. Existing hover previews and ordinary left-click gameplay keep their own purposes.
+- Right-clicking the same target again clears that player's marker; right-clicking another moves it. Maintain one board marker and one card suggestion per indicating player so both can appear together, as in the reviewed mockup. Markers persist after pointer exit; a routine phase change alone is not a reason to disable communication or erase a still-valid target.
+- Suggestions are teammate communication. Opponents receive neither private allied hand data nor these markers. The host must enforce team/seat eligibility and the enabled option; hiding already-delivered private data in UI is insufficient. The option adds allied hand visibility, not enemy-hand, deck-order or other undisclosed information.
+
+### Marker appearance and overlapping effects
+
+Use the **existing hero-tray token asset and presentation**, including its existing portrait crop, background and player-coloured outline, as the highlight-owner marker. Reuse it rather than drawing a new token or inventing a white-disc portrait treatment. It identifies the player making the suggestion, not the owner of the suggested card or an occupant of the marked hex. The user's token-reuse correction supersedes the intermediate generated token designs.
+
+The board marker is smaller than the card marker, following the accepted reduced-size mockup (approximately 30 percent smaller than its initial board version; validate actual scaling for legibility). White hex/card outlines and glow remain separate from the token's player-coloured rim. Preserve the existing header and board footprint.
+
+If an effect, legal-target cue or selection already highlights the hex, preserve it. Add the suggestion's thin white outline **outside** the existing highlight and place the hero token above it. If the existing highlight is also white, the hero token still identifies the communication marker. Neither adding nor clearing a suggestion replaces, recolours or removes the underlying effect/selection. Multiple teammates marking the same target retain their separate identity badges without covering one another, following the existing Minion Battle badge arrangement. Apply the same coexistence principle to card highlights.
+
+### Future implementation closing checks
+
+These are acceptance obligations for 9.58, not passing runtime evidence:
+
+1. Host and joined seats in 2v2/3v3 see the same per-match option; it is independent of the timer and resets off on a new host game. Option-off preserves ordinary hand privacy, input and selection behavior.
+2. Both allied board-token and tray clicks reach the intended hand and return to the player's own cards. Team eligibility is checked before projection/transmission, including hostile or stale requests; enemy private cards never reach an unauthorized client.
+3. Right-click works on hexes and inspected cards through every match phase. It does not submit a gameplay choice, cast a Minion Battle vote, cancel a pending action, change a timer or trigger an existing right-click gameplay binding as a second action. Read-only suggestion handling must not wait on the current actor's decision.
+4. Same-target toggle, movement to another target, simultaneous teammates and coexistence with effect/selection/white highlights remain attributable and independent. Removing the communication layer leaves the underlying cues intact. Use the actual tray token, the smaller board size, and supported viewport checks; no header growth or obscured controls.
+5. Use stable player/card identities across tray rebuilds and hand changes, not visual slot indexes. Remove a card suggestion when its target leaves the inspectable hand rather than transferring it to a replacement card. Seat loss, reconnect, match exit and Director restoration must not leave ghost markers, stale hand visibility or a suggestion attached to the wrong target. These presentation messages cannot block authoritative resolution or alter gameplay outcomes.
+
+The reviewed mockups illustrate layout, not exact new artwork. The written right-click and existing-token amendments supersede their earlier hover/invented-badge versions. No gameplay implementation, assets or private reference images are added by this documentation milestone.

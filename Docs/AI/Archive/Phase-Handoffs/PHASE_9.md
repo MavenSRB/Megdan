@@ -587,3 +587,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.55 | Recorded the unimplemented Experimental timer/header design, Director Undo clock restoration, NebKher coverage prerequisite and timeout-progress gate; implementation remains queued. [Definition](../../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design). | `milestone/9.55` |
+
+## Milestone 9.57 Teammate coordination design evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.57 | Recorded the host Experimental teammate coordination toggle, allied hand inspection, persistent right-click suggestions, existing tray-token reuse and effect-highlight coexistence; implementation remains queued. [Definition](../../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design). | `milestone/9.57` |

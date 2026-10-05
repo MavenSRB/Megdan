@@ -16,6 +16,20 @@ Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.m
 
 Queued only; implementation is not authorized. Owner: future timer implementation milestone. Outcome: the opt-in per-match timer and associated header follow [the design](../Project/EXPERIMENTAL_FEATURES.md), including icon-only clocks and Director Undo restoration. Dependencies: explicit implementation approval, completed NebKher content/player-path gates through 9.54, and re-audit of his final choices against the timer matrix. Closing checks: the design's complete choice/timing matrix, timeout-progress and restoration/network checks, timer-off standard-game regression, and fixed-size header visual checks, at the highest tier selected by [testing policy](../Testing/POLICY.md). No new experiments or expanded player Undo rights.
 
+## Teammate coordination design, documentation only
+
+### [x] 9.57 Record the experimental teammate coordination design
+
+Authorized 2026-10-05 after the user reviewed the mockups and directed the feature to be written up as a host Experimental toggle. Scope: allied hand inspection, right-click hex/card suggestions in every phase, reuse of hero-tray identity tokens, and coexistence with existing effect highlights. This is documentation only; it does not authorize runtime implementation or change the active hero sequence. T0 closing checks: conversation/design review, living-documentation validator, `git diff --check`, and a local documentation commit with archive index.
+
+Completed 2026-10-05: [the design](../Project/EXPERIMENTAL_FEATURES.md#teammate-coordination) records the reviewed interaction and visual decisions with unexecuted implementation checks.
+
+Historical evidence: [9.57 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-957-teammate-coordination-design-evidence).
+
+### [ ] 9.58 Implement and gate experimental teammate coordination
+
+Queued only; implementation is not authorized. Owner: future teammate coordination implementation milestone. Outcome: the independent host toggle, allied card inspection and right-click markers follow [the canonical design](../Project/EXPERIMENTAL_FEATURES.md#teammate-coordination). Dependencies: explicit implementation approval and the shared Experimental menu (introduce that surface in this milestone if it has not shipped; the timer itself is not a prerequisite). Closing checks: the design's host/join privacy, all-phase input, marker lifecycle, asset-reuse and overlapping-highlight checks, with the option off preserving existing behavior, at the highest tier selected by [testing policy](../Testing/POLICY.md). No teammate gameplay control, enemy-hand disclosure or timer implementation.
+
 ## Phase 9 - Rules fidelity and hero intake hardening
 
 On 2026-09-28 the user closed Phase 8 and started Phase 9 with this work ("Stop with phas 8. Lets start phase 9 from this point forward"), replacing the earlier presentation-and-pitch plan, which is retired to [the archive](../Archive/PHASE_9_PRESENTATION_PLAN_RETIRED.md) and authorizes nothing.
