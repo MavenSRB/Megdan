@@ -150,10 +150,14 @@ Authorized 2026-10-05 by the user's Gydion spellbook screenshot. Remove the redu
 
 Historical evidence: [9.64b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964b-spellbook-hover-correction-evidence).
 
-### [~] 9.64c Validate and package the corrected experimental player
+### [x] 9.64c Validate and package the corrected experimental player
 
 Authorized 2026-10-05 by "finish the skipped test then", after 9.64b and resumed 9.56. Run the skipped player-build, board visual and multi-client smoke checks including experimental controls, then create a separately named private replacement ZIP. Preserve previous packages. This bounded sequence excludes new maps, NebKher implementation/merge and remote publication.
 
 Sequence amendment 2026-10-05: **9.64b -> 9.56 -> 9.64c** is now authorized. Resume the skipped full offline and Unity Edit/Play timer gates after the popup correction, resolving observed in-scope failures. Reuse current focused evidence until affected; review timeout progress, pauses, responses, voting, snapshots and Undo. Gate the available roster only; final NebKher choices remain a merge prerequisite.
 
 9.64c gate finding: the playing smoke host exited after its own witness, starving slower clients of the experimental suggestion round trip. Keep the smoke authority alive until both captured human peers depart; the runner still requires each peer PASS and clean exit. Closing checks: `SmokeHostWaitsForBothRemoteWitnessesToLeaveBeforeExiting`, rehearsal contract regressions, and fresh standard/experimental multi-client player runs. The initial experimental run failed; ordinary gameplay is outside this smoke-only lifecycle correction.
+
+Completed 2026-10-06: the corrected player was built, exercised through its scripted two-round journey, rendered-board check and host-plus-two-client lobby checks with experiments off/on, then packaged separately as `Builds/Playtest-9.64c-experimental-validated.zip`. The smoke host shutdown race was corrected and its unit/real-process closing checks passed. Private artwork and package integrity checks passed; previous ZIPs are preserved. Review found no additional game-rule, content or compatibility change. An extra manual packaged-launcher inspection was unavailable because the computer-use helper could not initialize; no manual or new internet/fault rehearsal is claimed. The approved sequence is complete; stop here.
+
+Historical evidence: [9.64c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964c-validated-experimental-package-evidence).

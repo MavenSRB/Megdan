@@ -666,3 +666,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.56 | Gated experimental timing and timeout progress for the available 31 heroes; corrected nested Defense timing, malformed voter restoration and board-highlight window layering. Final NebKher audit remains a merge prerequisite. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-956-implement-and-gate-the-experimental-timer-and-header). | `milestone/9.56`; source `8b6f335e` |
+
+## Milestone 9.64c Validated experimental package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64c | Built, smoke-checked and privately packaged the corrected experimental player; closed the smoke-host shutdown race and preserved old builds. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964c-validate-and-package-the-corrected-experimental-player). | `milestone/9.64c`; source `8c3405ef` |
