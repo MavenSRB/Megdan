@@ -98,9 +98,9 @@ The simultaneous display must remain truthful if independent response/upgrade st
 
 ## NebKher prerequisite and release acceptance
 
-**NebKher the Harbinger is being implemented under [9.51-9.54](../Roadmap/PHASE_9_FINAL_TWO_HEROES.md). His final choices must be checked against timers after his implementation and before timer release.** The initial audit cannot certify future content. This does not redirect or block his already approved sequence with unimplemented timer tests.
+**NebKher the Harbinger is being implemented under [9.51-9.54](../Roadmap/PHASE_9_FINAL_TWO_HEROES.md). His final choices must be checked against timers before a merged release containing him.** The 2026-10-05 user amendment authorizes the separate 31-hero experimental build before that merge. Its available-roster gate does not certify future content or redirect his approved sequence.
 
-The future timer milestone owns the following unexecuted closing checks:
+Milestone 9.56 owns these checks for the available roster; the final NebKher merge must extend them to his completed content. The roadmap owns validation status, and 9.64c owns the built-player checks:
 
 1. **Complete choice coverage:** derive the final pending-family/offer/effect-choice inventory from source and dealt content. Map every reachable decision to allowance, owner, optionality, timeout result and continuation. Include all NebKher fronts, Illusion selections/substitution, borrowed primary/secondary/Attack/Defense and nested ownership, optional laughter and divided-board restrictions; include his Ultimate and pending states created only after continuation. Treat an unmapped decision as a failed gate, not as implicitly covered by the phrase random legal.
 2. **No stranded match:** expire each decision family with an empty bank and drive accepted timeout commands through the real authority. Prove that it advances to the next legitimate owner/stage or game end within bounded work. Exercise timeout chains, partial selections, valid rune permutations, minimum counts, optional decline, no-candidate/Stop paths, constrained minion voting, legal Undo and locked attacks, acting-body preselection and turn release. A loop cap, exception, refusal or silent no-op is not passing progression evidence.
@@ -109,9 +109,9 @@ The future timer milestone owns the following unexecuted closing checks:
 5. **Director Undo and persistence:** witness non-default allowances/banks and paused owners before and after Director Undo, restored exactly. Separately prove ordinary/timeout Undo does not refund time. Snapshot, deterministic replay, reconnect and view rebuild must retain valid timing and timeout continuations, with no duplicate charge, fresh reroll or frozen expired state.
 6. **Real player path:** exercise host and joined seats, simultaneous commitments/upgrades and team votes on the final roster including NebKher. Verify timer-off preserves the standard match. Check the icon-only clock transitions, larger two-line status/lives, longest narration, Undo/End Turn and supported viewport sizes without header growth or overlap.
 
-The host must finish timeout resolution through typed authoritative commands, not UI button automation or card-name branches. Random fallback means selection of a **legal completing answer**, not arbitrary button clicks that can deselect, loop or leave a malformed set. Any observed stranded or unhandled case blocks timer completion until corrected with a failing-then-passing regression; log its owning decision and command context for diagnosis. The design requires progress but does not claim the unimplemented feature already guarantees it.
+The host must finish timeout resolution through typed authoritative commands, not UI button automation or card-name branches. Random fallback means selection of a **legal completing answer**, not arbitrary button clicks that can deselect, loop or leave a malformed set. Any observed stranded or unhandled case blocks timer completion until corrected with a failing-then-passing regression; log its owning decision and command context for diagnosis. The progress requirement applies to each reachable decision; future content needs fresh coverage.
 
-Related prospective risk: [RISK-TIMER-001](../TECHNICAL_RISKS.md). Validation evidence belongs to the future implementation commit, not this design record.
+Related risk: [RISK-TIMER-001](../TECHNICAL_RISKS.md). Validation evidence belongs to the implementation commits, not this design record.
 
 ## Teammate coordination
 

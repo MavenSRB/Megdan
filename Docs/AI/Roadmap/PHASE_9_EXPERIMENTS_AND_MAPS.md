@@ -12,17 +12,21 @@ Completed 2026-10-05: the [canonical design](../Project/EXPERIMENTAL_FEATURES.md
 
 Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
 
-### [~] 9.56 Implement and gate the experimental timer and header
+### [x] 9.56 Implement and gate the experimental timer and header
 
 Authorization amended 2026-10-05: follows 9.58 in the isolated worktree; 9.64 then builds the private playtest package. The revised three-hour window defers map 9.61. Owner: timer implementation milestone. Outcome: the opt-in per-match timer and associated header follow [the design](../Project/EXPERIMENTAL_FEATURES.md), including icon-only clocks and Director Undo restoration. Dependencies: completed 9.58 on this worktree baseline. The 2026-10-05 amendment permits parallel implementation before 9.54; gate the available roster here, then re-audit final NebKher choices and reconcile snapshot/wire changes before a merged release containing him. Closing checks: the design's complete choice/timing matrix, timeout-progress and restoration/network checks, timer-off standard-game regression, and fixed-size header visual checks, at the highest tier selected by [testing policy](../Testing/POLICY.md). No new experiments or expanded player Undo rights. Source seams and proposed implementation/test contracts are in [the preparation packet](../Project/EXPERIMENTAL_PREPARATION.md).
 
-Implementation checkpointed at `b51c2114`: host-authoritative allowances/banks, timeout selection, readiness/pause transport, snapshot/Director Undo checkpoints, shared-board voting and the fixed-size header are implemented. Existing focused regressions passed after correcting status layout, restored ballots and reconnect readiness. Full Unity breadth, final screenshots and the final offline rerun are incomplete; broad runs were stopped at the user's explicit request to build without further testing. This is an unvalidated timer candidate, not a completed feature gate. NebKher remains excluded and requires the merge audit. Remaining acceptance stays visible here; no continuation is authorized after the requested 9.64 package.
+Historical checkpoint, superseded by the resumed gate below: implementation checkpointed at `b51c2114`: host-authoritative allowances/banks, timeout selection, readiness/pause transport, snapshot/Director Undo checkpoints, shared-board voting and the fixed-size header are implemented. Existing focused regressions passed after correcting status layout, restored ballots and reconnect readiness. Full Unity breadth, final screenshots and the final offline rerun are incomplete; broad runs were stopped at the user's explicit request to build without further testing. This is an unvalidated timer candidate, not a completed feature gate. NebKher remains excluded and requires the merge audit. Remaining acceptance stays visible here; no continuation is authorized after the requested 9.64 package.
+
+Completed 2026-10-05 for the available 31-hero roster: timing/timeout, restoration and network checks, full offline and Unity breadth, supported-size visual review, and all observed-failure reruns are complete. Nested Defense responses, atomic rejection of duplicate restored voters and board-marker window layering were corrected. Twelve stale protocol assertions were corrected and all affected fixtures rerun; no failures were quarantined. NebKher remains excluded and requires the final-content merge audit. Built-player checks follow at 9.64c.
+
+Historical evidence: [9.56 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-956-experimental-timer-gate-evidence).
 
 ## Teammate coordination design, documentation only
 
 User gate amendment: board highlights and their owner tokens must never paint over game windows, as shown by the spellbook screenshot. Correct the shared signal layer, with an overlapping-window regression at both supported sizes; include this reported acceptance defect in 9.56 before broad validation.
 
-Gate review findings, 2026-10-05: real Parry Defense text returning its discard choice to the attacker used Resolution instead of Response; a duplicated board voter in an experimental snapshot threw during post-Core restore. Closing checks are `DefenseTextReturningToTheAttackerUsesAResponseClock` (including preserved parent budgets, snapshot and timeout completion) and `SnapshotWithDuplicateBoardVotersIsRejectedWithoutChangingTheMatch` (atomic refusal). Both reproduced before correction and passed their focused rerun. The overlapping spellbook-marker regression also failed on the previous layer order and passed after moving board signals beneath the HUD. Full-suite validation is now running.
+Gate review findings, 2026-10-05: real Parry Defense text returning its discard choice to the attacker used Resolution instead of Response; a duplicated board voter in an experimental snapshot threw during post-Core restore. Closing checks are `DefenseTextReturningToTheAttackerUsesAResponseClock` (including preserved parent budgets, snapshot and timeout completion) and `SnapshotWithDuplicateBoardVotersIsRejectedWithoutChangingTheMatch` (atomic refusal). Both reproduced before correction and passed their focused rerun. The overlapping spellbook-marker regression also failed on the previous layer order and passed after moving board signals beneath the HUD. The available-roster gate and observed-failure reruns are complete; built-player validation follows at 9.64c.
 
 ### [x] 9.57 Record the experimental teammate coordination design
 
@@ -146,7 +150,7 @@ Authorized 2026-10-05 by the user's Gydion spellbook screenshot. Remove the redu
 
 Historical evidence: [9.64b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964b-spellbook-hover-correction-evidence).
 
-### [ ] 9.64c Validate and package the corrected experimental player
+### [~] 9.64c Validate and package the corrected experimental player
 
 Authorized 2026-10-05 by "finish the skipped test then", after 9.64b and resumed 9.56. Run the skipped player-build, board visual and multi-client smoke checks including experimental controls, then create a separately named private replacement ZIP. Preserve previous packages. This bounded sequence excludes new maps, NebKher implementation/merge and remote publication.
 

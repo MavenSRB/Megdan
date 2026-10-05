@@ -660,3 +660,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.64b | Removed spellbook hover enlargement while preserving readable faces, visibility and ordinary tray previews. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964b-remove-the-spellbook-hover-popup). | `milestone/9.64b` |
+
+## Milestone 9.56 Experimental timer gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.56 | Gated experimental timing and timeout progress for the available 31 heroes; corrected nested Defense timing, malformed voter restoration and board-highlight window layering. Final NebKher audit remains a merge prerequisite. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-956-implement-and-gate-the-experimental-timer-and-header). | `milestone/9.56`; source `8b6f335e` |

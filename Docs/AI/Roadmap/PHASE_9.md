@@ -13,9 +13,9 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-955-record-the-experim
 
 Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
 
-### [ ] 9.56 Implement and gate the experimental timer and header
+### 9.56 Implement and gate the experimental timer and header
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#956-implement-and-gate-the-experimental-timer-and-header).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-956-implement-and-gate-the-experimental-timer-and-header).
 
 ### [x] 9.57 Record the experimental teammate coordination design
 
