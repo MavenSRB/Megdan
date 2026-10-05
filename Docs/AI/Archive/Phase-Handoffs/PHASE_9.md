@@ -611,3 +611,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome | Commit |
 | --- | --- | --- |
 | 9.60a | Replaced ten tower glyphs with ranged markers on the small map and melee markers on both large maps, retaining private originals and bounded crop recipes. [Definition](../../Roadmap/PHASE_9.md#x-960a-replace-tower-markers-in-private-map-artwork). | `milestone/9.60a` |
+
+## Milestone 9.60b Map artwork cleanup evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.60b | Re-centred the ten replacement glyphs and removed old tower/donor scenery residue, preserving originals, first edits and reproducible private recipes. [Definition](../../Roadmap/PHASE_9.md#x-960b-clean-and-centre-the-replacement-map-glyphs). | `milestone/9.60b` |
