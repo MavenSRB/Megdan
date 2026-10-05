@@ -24,7 +24,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 - 9.50 gated all Emmitt fronts on the permanent real-control matrix. T3 passed: offline 6,670/6,670, Unity Edit 7,770 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127; focused, boundary and visual checks passed. The p.14 Defense-total defect was corrected. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
-Discussion-only **9.55 / 9.57**: [experimental timer/header and teammate coordination designs](Project/EXPERIMENTAL_FEATURES.md), including Director Undo, NebKher timeout coverage, allied hands and right-click markers. Implementation **9.56 / 9.58** remains queued, not authorized; hero route unchanged.
+Discussion/preparation **9.55 / 9.57 / 9.59**: [design and implementation packet](Project/EXPERIMENTAL_PREPARATION.md), covering Director Undo, NebKher timeout coverage, allied hands and right-click markers. Implementation **9.56 / 9.58** remains queued, not authorized; hero route unchanged.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 

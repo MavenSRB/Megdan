@@ -593,3 +593,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.57 | Recorded the host Experimental teammate coordination toggle, allied hand inspection, persistent right-click suggestions, existing tray-token reuse and effect-highlight coexistence; implementation remains queued. [Definition](../../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design). | `milestone/9.57` |
+
+## Milestone 9.59 Experimental preparation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.59 | Prepared the source integration map, proposed coordination/timer contracts, concrete acceptance cases, regression owners and post-hero handoff; implementation remains queued. [Definition](../../Roadmap/PHASE_9.md#x-959-prepare-the-experimental-features-for-implementation). | `milestone/9.59` |

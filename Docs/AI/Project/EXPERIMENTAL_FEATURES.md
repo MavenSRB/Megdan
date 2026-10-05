@@ -2,6 +2,8 @@
 
 Canonical designs for the user-approved discussion; **not implemented**. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is queued, not authorized. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
 
+The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these decisions to existing source, proposed contracts, concrete acceptance cases and the post-hero handoff; it does not authorize runtime work.
+
 ## Experimental menu
 
 The host-game screen gains an **Experimental** button opening per-match feature toggles. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. Numeric defaults/ranges were not selected in the discussion; times and life counts in mockups are illustrative, not balance changes.
