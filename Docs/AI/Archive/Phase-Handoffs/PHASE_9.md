@@ -605,3 +605,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.60 | Preserved five uploads for three maps privately with exact hashes: one alternate 2v2/3v3 map and two two-lane 4v4/5v5 maps; recorded preferred copies, the corrected last-map formats, shared turns, independent pushes and either-lane Throne victory, with implementation queued. [Definition](../../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). | `milestone/9.60` |
+
+## Milestone 9.60a Map spawn artwork evidence
+
+| Milestone | Outcome | Commit |
+| --- | --- | --- |
+| 9.60a | Replaced ten tower glyphs with ranged markers on the small map and melee markers on both large maps, retaining private originals and bounded crop recipes. [Definition](../../Roadmap/PHASE_9.md#x-960a-replace-tower-markers-in-private-map-artwork). | `milestone/9.60a` |

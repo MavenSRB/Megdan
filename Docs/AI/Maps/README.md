@@ -47,6 +47,18 @@ The agreed two-lane design is **one match with one shared initiative/turn order*
 
 Before implementation, review each map's coordinate/terrain/zone/spawn inventory and applicable setup values for eight and ten players. Audit references to the Battle Zone, Minion Battles, Lane Pushes and wave handling against two-lane state; resolve ambiguous mapping rather than silently inventing rules. These rules do not change the separate 2v2/3v3 reference or shipped behavior.
 
+### User-edited spawn artwork
+
+At [9.60a](../Roadmap/PHASE_9.md#x-960a-replace-tower-markers-in-private-map-artwork), the user requested same-team **ranged minion** symbols in place of the two towers on the small map and **melee minion** symbols in place of all four towers on each large map. The following private edited copies are the working artwork references for that request; every original/preferred upload above remains unchanged. The symbol types were checked against the printed rulebook p.6 setup legend.
+
+| Format / map | Edited file in `Docs/Guards of Atlantis II - Map References/` |
+| --- | --- |
+| 2v2/3v3, green | `alternate-2v2-3v3-ranged-spawns-2026-10-05.png` |
+| 4v4/5v5, green two-lane | `two-lane-4v4-5v5-melee-spawns-2026-10-05.png` |
+| 4v4/5v5, ice/lava two-lane | `two-lane-4v4-5v5-lava-bridge-melee-spawns-2026-10-05.png` |
+
+The edit copies existing glyph/terrain patches from the same image, feathers their outer edges, and matches the upper ice patch's background tone. All retain the received 900 x 900 resolution. The private `spawn-marker-edit-recipe-2026-10-05.json` records donor/destination pixel centres, patch radii and file hashes; `spawn-marker-edit-2026-10-05.ps1` preserves the reproducible edit. This changes reference artwork only: no runtime spawn data, setup counts or shipped rules changed. Carry the requested spawn types into the later reviewed map transcription at 9.61/9.62.
+
 ## Source of truth and the generated runtime resource
 
 This file is the single source. `Assets/Resources/Maps/official-single-lane.json` is **generated** from it and must never be edited directly.
