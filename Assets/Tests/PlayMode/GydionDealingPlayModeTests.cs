@@ -26,6 +26,36 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class GydionDealingPlayModeTests
     {
         [UnityTest]
+        public IEnumerator SpellbookCardsStayInPlaceWithoutAHoverPopup()
+        {
+            var oldWidth=(uint)Screen.width; var oldHeight=(uint)Screen.height;
+            try
+            {
+                UiPlayer.SetPlayerViewport(1920,1080,"9.64b spellbook");
+                MatchSceneCompositionRoot.NextComposedSeat=null;
+                yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
+                var root=Root(); var view=root.Runtime.HeroOverviewsView;
+                Assert.That(view.OpenSpellbook(Gydion(root.Runtime)),Is.True);
+                root.Hud.Layout(); yield return null; yield return null;
+                var cards=UiPlayer.Descendants(view.SpellbookDrawer).Where(e=>e.name=="gd-spellbook-spell").ToArray();
+                Assert.That(cards.Length,Is.EqualTo(22));
+                foreach(var card in cards.Take(3))
+                {
+                    var bounds=card.worldBound;
+                    UiPlayer.PointAt(card); yield return null;
+                    Assert.That(view.HoverPreviewRoot.resolvedStyle.display,Is.EqualTo(DisplayStyle.None),
+                        "A readable spellbook card must not spawn a redundant hover face.");
+                    Assert.That(card.worldBound,Is.EqualTo(bounds));
+                    UiPlayer.PointAway(card);
+                }
+                yield return UiPlayer.CaptureScreen("tmp/964b-spellbook-no-popup.png");
+                UiPlayer.Click(view.SpellbookDrawer.Q<Button>("gd-spellbook-close")); yield return null;
+                Assert.That(view.IsSpellbookOpen,Is.False);
+            }
+            finally { UiPlayer.SetPlayerViewport(oldWidth,oldHeight,"9.64b restore viewport"); }
+        }
+
+        [UnityTest]
         public IEnumerator SceneOneFortyTwo_DealsHisStartingHandAFullBookAndHisPreparedFaces()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;

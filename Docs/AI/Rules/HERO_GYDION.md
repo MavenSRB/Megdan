@@ -185,3 +185,5 @@ The approved mockups are preserved at `tmp/9-30-gydion-approved-mockups/APPROVE-
 - **C:** the drawer on every other seat: tier backs stacked with counts, the faceup pile; the Familiar on the board as an outlined hex token.
 - **D:** the plaque's items strip: **every hero's unlocked Ultimate is a small purple card in the items strip** (the separate ULTIMATE row is removed for all heroes); Gydion's "SPELLBOOK 17 | 5" chip (in the book | removed) lives there too and opens the drawer; after Tier IV his Wish count reads "1/3" beside the purple card.
 A built screen that matches its mockup lands and its in-game captures wait for the user's review; one that must differ waits for the user.
+
+Presentation amendment (9.64b, 2026-10-05): spellbook drawer cards retain their readable landscape faces without an additional hover popup. This applies to in-book and removed faces; seat visibility and spell-choice controls are unchanged.

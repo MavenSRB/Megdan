@@ -152,12 +152,6 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public TrayCardViewModel HighlightedDiscardCard => highlighted as TrayCardViewModel;
 
-        /// <summary>
-        /// Milestone 9.30h. The spell face in the SPELLBOOK drawer the pointer is resting on, or null:
-        /// its full face is revealed by the same one preview every rail card uses.
-        /// </summary>
-        public SpellCardViewModel HighlightedSpell => highlighted as SpellCardViewModel;
-
         /// <summary>Milestone 9.30h. The hero whose SPELLBOOK drawer is open, or undefined when none is.</summary>
         public HeroId OpenSpellbookHeroId => openSpellbookHero;
 
@@ -191,9 +185,6 @@ namespace GuardsDigital.Presentation.Match
             openSpellbookHero = default;
             RebuildSpellbook();
         }
-
-        /// <summary>Milestone 9.30h: reports a pointed-at drawer spell directly, for a driver with no pointer.</summary>
-        public void ForwardSpellHighlight(SpellCardViewModel spell) => SetHighlight(spell);
 
         public event Action<HeroTurnSlotViewModel> TurnSlotHighlighted;
 
@@ -299,12 +290,9 @@ namespace GuardsDigital.Presentation.Match
             var card = CardOf(model);
             var face = model is HeroOverviewViewModel hero
                 ? BuildHeroProfile(hero)
-                : model is SpellCardViewModel spell
-                    // Milestone 9.30h: a drawer spell reveals its full landscape face.
-                    ? SpellCardFaceView.Build(spell)
-                    : model != null && withheldOwners.TryGetValue(model, out var owner)
-                        ? BuildCardBack(owner)
-                        : card == null ? null : BuildFace(card);
+                : model != null && withheldOwners.TryGetValue(model, out var owner)
+                    ? BuildCardBack(owner)
+                    : card == null ? null : BuildFace(card);
             if (face == null)
             {
                 highlighted = null;
@@ -422,8 +410,8 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 9.36. A rail mini - a turn slot, the current card, a discard - sits inside its
             // column, so a face placed off the mini's own edge drew over the owner's tray and the plaque
             // below it. Its face is placed off the rail's edge instead. The hero profile keeps 8.42b's
-            // placement beside the portrait, and a drawer spell, between the rails, its own.
-            var beside = model is HeroOverviewViewModel || model is SpellCardViewModel
+            // placement beside the portrait.
+            var beside = model is HeroOverviewViewModel
                 ? anchor
                 : RailColumnOf(element)?.worldBound ?? anchor;
             var onLeft = beside.center.x < width / 2f;
@@ -1141,11 +1129,6 @@ namespace GuardsDigital.Presentation.Match
         private void RebuildSpellbook()
         {
             spellbookPanel.Clear();
-            foreach (var stale in revealAnchors.Keys.OfType<SpellCardViewModel>().ToArray())
-            {
-                revealAnchors.Remove(stale);
-            }
-
             var hero = openSpellbookHero.IsDefined
                 ? Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(openSpellbookHero))
                 : null;
@@ -1153,11 +1136,6 @@ namespace GuardsDigital.Presentation.Match
             {
                 openSpellbookHero = default;
                 spellbookHost.style.display = DisplayStyle.None;
-                if (highlighted is SpellCardViewModel)
-                {
-                    SetHighlight(null);
-                }
-
                 return;
             }
 
@@ -1240,25 +1218,13 @@ namespace GuardsDigital.Presentation.Match
             return row;
         }
 
-        /// <summary>One drawer face, revealing its full face on a pointer rest as every rail card does.</summary>
+        /// <summary>One readable drawer face; spellbook cards do not open hover previews.</summary>
         private VisualElement SpellbookFace(SpellCardViewModel spell)
         {
             var host = new VisualElement { name = "gd-spellbook-spell", tooltip = spell.AssistiveLabel };
             host.style.marginRight = SpellbookFaceGap;
             host.style.marginBottom = SpellbookFaceGap;
             host.Add(SpellCardFaceView.Build(spell, SpellCardFootprint.DrawerScale));
-            revealAnchors[spell] = host;
-            HudElements.OnPointedAt(host, pointedAt =>
-            {
-                if (pointedAt)
-                {
-                    SetHighlight(spell);
-                }
-                else if (ReferenceEquals(highlighted, spell))
-                {
-                    SetHighlight(null);
-                }
-            });
             return host;
         }
 

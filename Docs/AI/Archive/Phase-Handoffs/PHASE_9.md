@@ -654,3 +654,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.64a | Isolated clock ticks from gameplay UI, corrected header/input/hover artwork, restored Emmitt Glitch art and rebuilt the private Windows package; full timer gate remains suspended. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964a-correct-the-reported-experimental-playtest-ui-issues). | `milestone/9.64a`; source `7ec9fa83` |
+
+## Milestone 9.64b Spellbook hover correction evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64b | Removed spellbook hover enlargement while preserving readable faces, visibility and ordinary tray previews. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964b-remove-the-spellbook-hover-popup). | `milestone/9.64b` |

@@ -12,7 +12,7 @@ Completed 2026-10-05: the [canonical design](../Project/EXPERIMENTAL_FEATURES.md
 
 Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
 
-### [!] 9.56 Implement and gate the experimental timer and header
+### [~] 9.56 Implement and gate the experimental timer and header
 
 Authorization amended 2026-10-05: follows 9.58 in the isolated worktree; 9.64 then builds the private playtest package. The revised three-hour window defers map 9.61. Owner: timer implementation milestone. Outcome: the opt-in per-match timer and associated header follow [the design](../Project/EXPERIMENTAL_FEATURES.md), including icon-only clocks and Director Undo restoration. Dependencies: completed 9.58 on this worktree baseline. The 2026-10-05 amendment permits parallel implementation before 9.54; gate the available roster here, then re-audit final NebKher choices and reconcile snapshot/wire changes before a merged release containing him. Closing checks: the design's complete choice/timing matrix, timeout-progress and restoration/network checks, timer-off standard-game regression, and fixed-size header visual checks, at the highest tier selected by [testing policy](../Testing/POLICY.md). No new experiments or expanded player Undo rights. Source seams and proposed implementation/test contracts are in [the preparation packet](../Project/EXPERIMENTAL_PREPARATION.md).
 
@@ -133,3 +133,17 @@ Compatibility audit: the initial 9.64 candidate actually retained wire constant 
 Completed 2026-10-05: source `7ec9fa83` isolates authenticated clock updates from gameplay projections and unrelated UI, and corrects the reported input, alignment, heart, hover-marker and Glitch-artwork issues. Focused boundary/UI checks and supported-size visual review passed. The replacement `Builds/Playtest-9.64a-experimental-fixes.zip` built successfully and passed package integrity checks; the previous ZIP is preserved. No player launch or full timer gate is claimed. Review found no rule, hero-content or Undo-right change. Stop here; 9.56 remains suspended.
 
 Historical evidence: [Completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964a-experimental-corrections-evidence).
+
+### [x] 9.64b Remove the spellbook hover popup
+
+Authorized 2026-10-05 by the user's Gydion spellbook screenshot. Remove the redundant enlarged hover face from cards inside the spellbook drawer; retain the full drawer faces, private/public visibility, ordinary tray previews and spell decisions. T2 closing checks: pointer-hover regression, affected spellbook presentation fixture, focused real-scene hover/close and visual inspection; documentation validation and local commit.
+
+9.64b completed: removed the spellbook-only hover callback and obsolete spell-preview members. Full faces and normal tray previews remain. The real-pointer regression failed on the prior behavior, then passed with the affected Edit/Play checks; the screenshot was reviewed.
+
+Historical evidence: [9.64b completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964b-spellbook-hover-correction-evidence).
+
+### [ ] 9.64c Validate and package the corrected experimental player
+
+Authorized 2026-10-05 by "finish the skipped test then", after 9.64b and resumed 9.56. Run the skipped player-build, board visual and multi-client smoke checks including experimental controls, then create a separately named private replacement ZIP. Preserve previous packages. This bounded sequence excludes new maps, NebKher implementation/merge and remote publication.
+
+Sequence amendment 2026-10-05: **9.64b -> 9.56 -> 9.64c** is now authorized. Resume the skipped full offline and Unity Edit/Play timer gates after the popup correction, resolving observed in-scope failures. Reuse current focused evidence until affected; review timeout progress, pauses, responses, voting, snapshots and Undo. Gate the available roster only; final NebKher choices remain a merge prerequisite.
