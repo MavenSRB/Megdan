@@ -57,14 +57,29 @@ namespace GuardsDigital.Tests.PlayMode
                         UiPlayer.PointAway(first); yield return new WaitForSecondsRealtime(0.25f);
                         if (hero.Equals(ally))
                         {
-                            yield return Choose(window.Q<DropdownField>("gd-hero-card-color"), "Gold");
+                            yield return Choose(window.Q<DropdownField>("gd-hero-card-color"), "GOLD");
                             Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList().Count, Is.EqualTo(3));
                             yield return Choose(window.Q<DropdownField>("gd-hero-card-tier"), "I");
                             Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
                             yield return Choose(window.Q<DropdownField>("gd-hero-card-tier"), "All");
                             yield return Choose(window.Q<DropdownField>("gd-hero-card-color"), "All");
                             Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList().Count, Is.EqualTo(7));
+                            var lastFace=window.Query<VisualElement>("gd-inspected-card").ToList().Last();
+                            var lowerPoint=new Vector2(lastFace.worldBound.center.x,
+                                Mathf.Min(lastFace.worldBound.yMax-10,window.Q<ScrollView>("gd-hero-card-scroll").worldBound.yMax-10));
+                            Assert.That(window.Contains(window.panel.Pick(lowerPoint)),Is.True,
+                                "Ordinary hand cards must not cover or intercept the inspected card's visible bottom edge.");
+                            Assert.That(root.Hud.BlocksPointerAt(MatchHudPanelScaling.PanelPointToScreen(window.worldBound.center,Screen.width,Screen.height)),Is.True,
+                                "Clicks in the inspection window cannot fall through to the board.");
                             var retained = window.Q("gd-inspected-card");
+                            var beforeMarker = ((MatchHost)host).ProjectionForSeat(own.Id);
+                            var previous = beforeMarker.TeammateMarkers.FirstOrDefault(m=>m.Sender.Equals(own.HeroId));
+                            Assert.That(((MatchHost)host).SubmitCoordinationForSeat(own.Id,new CoordinationCommand(previous?.Revision??0,
+                                CoordinationTargetKind.Hex,false,runtime.ReadModel.SelectedMap.Reference,
+                                runtime.ReadModel.SelectedMap.Spaces.First().Coordinate,generation:beforeMarker.CoordinationGeneration)),Is.True);
+                            yield return null;yield return null;
+                            Assert.That(view.CardInspection.IsOpen,Is.True);
+                            Assert.That(window.Q("gd-inspected-card"),Is.SameAs(retained),"A marker update must preserve the open inspection window and its card faces.");
                             runtime.RefreshClockDisplay(); yield return null;
                             Assert.That(window.Q("gd-inspected-card"), Is.SameAs(retained), "Clock ticks cannot rebuild the window.");
                             var scroll = window.Q<ScrollView>("gd-hero-card-scroll");
@@ -103,7 +118,7 @@ namespace GuardsDigital.Tests.PlayMode
         {
             UiPlayer.Click(field); yield return null; yield return null;
             var item = field.panel.visualTree.Query<Label>().ToList().Last(label => label.text == value && UiPlayer.IsShown(label));
-            UiPlayer.Click(item); yield return null; yield return null;
+            AlternateSmallMapPlayModeTests.ClickDropdownItem(item); yield return null; yield return null;
             Assert.That(field.value, Is.EqualTo(value));
         }
     }

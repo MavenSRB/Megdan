@@ -807,6 +807,9 @@ namespace GuardsDigital.Presentation.Match
                 (heroOverviews?.IsSpellbookOpen == true &&
                     TryLiveRect(heroOverviews.SpellbookDrawer, out var liveSpellbook) &&
                     liveSpellbook.Contains(panelPosition)) ||
+                (heroOverviews?.CardInspection.IsOpen == true &&
+                    TryLiveRect(heroOverviews.CardInspection.Root, out var liveInspection) &&
+                    liveInspection.Contains(panelPosition)) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 UnavailableCardsBlockPointerAt(panelPosition) ||
                 // Milestone 8.72. The "deciding for X" slot is the one tray card that reaches past
@@ -1342,6 +1345,11 @@ namespace GuardsDigital.Presentation.Match
             round.OptionalStepActionsRoot.RemoveFromHierarchy();
             round.OptionalStepActionsRoot.style.position = Position.Absolute;
             root.Add(round.OptionalStepActionsRoot);
+            if (heroOverviews != null)
+            {
+                heroOverviews.CardInspection.Root.RemoveFromHierarchy();
+                root.Add(heroOverviews.CardInspection.Root);
+            }
             // Milestone 8.46c. The decision window is placed on the panel like every other standing
             // surface here, and added after the strip's own re-parented hosts so an expanded window
             // paints above the board it insets into. Its two rectangles - an inset of the playfield,
@@ -1636,6 +1644,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.63. And nothing paints over it while it is open - including a layer that
             // attached itself to this root after the composition, which is every one of them that
             // ever covered the window.
+            KeepCardInspectionAboveTheHand(windowOwnsTheDecision);
             KeepTheDecisionWindowOnTop(windowOwnsTheDecision);
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
@@ -2407,6 +2416,19 @@ namespace GuardsDigital.Presentation.Match
             host.style.top = rect.y;
             host.style.width = rect.width;
             host.style.height = rect.height;
+        }
+
+        private void KeepCardInspectionAboveTheHand(bool windowOwnsTheDecision)
+        {
+            if (windowOwnsTheDecision || victoryScreenStanding || heroOverviews?.CardInspection.IsOpen != true) return;
+            var inspection = heroOverviews.CardInspection.Root;
+            var tip = tooltipLayer?.Root;
+            var hasTip = tip != null && ReferenceEquals(tip.parent, root);
+            // Leave the hierarchy untouched when already ordered; markers and clocks must not disturb hover.
+            if (root.IndexOf(inspection) == root.childCount - (hasTip ? 2 : 1) &&
+                (!hasTip || root.IndexOf(tip) == root.childCount - 1)) return;
+            inspection.BringToFront();
+            if (hasTip) tip.BringToFront();
         }
 
         /// <summary>

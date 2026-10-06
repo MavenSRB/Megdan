@@ -110,7 +110,7 @@ namespace GuardsDigital.Presentation.Match
             inspection = model;
             color = null;
             tier = null;
-            title.text = displayName.ToUpperInvariant() + " â€” CURRENT CARDS";
+            title.text = displayName.ToUpperInvariant() + " - CURRENT CARDS";
             tiers.SetValueWithoutNotify("All");
             UpdateColors();
             DrawCards();

@@ -702,3 +702,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64f | Teammate highlights use independent transport and decoration updates; gameplay projection, hover and open windows stay intact. Stale-frame/privacy/reconnect and real-pointer checks pass. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64f` |
+
+## Milestone 9.64e window-layer checkpoint
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64e (pending) | Focused UI and visual gates pass after fixing hand overlap and board-click blocking in current-card inspection. Full Unity gates remain required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-window-layer` |
