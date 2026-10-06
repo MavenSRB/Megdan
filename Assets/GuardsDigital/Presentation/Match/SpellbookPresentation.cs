@@ -174,6 +174,55 @@ namespace GuardsDigital.Presentation.Match
     public static class SpellbookPresentation
     {
         /// <summary>
+        /// Milestone 9.30k. The spell faces a projected action card declares it can cast, in the
+        /// effect graph's printed order. This reads only typed cast arms; it never recognizes Gydion,
+        /// a casting card, or printed wording by name. Removed spells are public faceup cards, so every
+        /// seat can apply the same faded treatment without learning a facedown spell instance.
+        /// </summary>
+        public static IReadOnlyList<SpellCardViewModel> CastableSpells(
+            IMatchReadModel projection,
+            HeroId owner,
+            CardDefinition source)
+        {
+            if (projection == null || source == null || !owner.IsDefined)
+            {
+                return Array.Empty<SpellCardViewModel>();
+            }
+
+            var result = new List<SpellCardViewModel>();
+            var seen = new HashSet<CardDefinitionReference>();
+            foreach (var effect in source.ActionDefinitions
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(value => value != null))
+            {
+                foreach (var node in effect.Nodes)
+                {
+                    if (!SyntheticSpellbookCapabilities.TryReadSpellArm(
+                            new[] { effect }, node.Id, projection.Definitions,
+                            out var spell, out var kind) ||
+                        kind != SyntheticSpellbookCapabilities.SpellArmKind.Cast ||
+                        !seen.Add(spell.Reference))
+                    {
+                        continue;
+                    }
+
+                    var removed = projection.Cards.Any(card =>
+                        card.OwnerId.Equals(owner) &&
+                        card.DefinitionReference.Equals(spell.Reference) &&
+                        card.State.Location == CardLocation.RemovedFromSpellbook);
+                    result.Add(new SpellCardViewModel(
+                        spell,
+                        removed,
+                        removed
+                            ? spell.DisplayName.ToUpperInvariant() + " - REMOVED"
+                            : spell.DisplayName.ToUpperInvariant()));
+                }
+            }
+
+            return Array.AsReadOnly(result.ToArray());
+        }
+
+        /// <summary>
         /// Milestone 9.34. The spell face of the projected card <paramref name="cardInstanceId"/>, or
         /// <c>null</c> when that card is not a spell (or this projection does not carry it). A surface
         /// showing a card that may be a cast spell - a spell attack's card in the spotlight or in the

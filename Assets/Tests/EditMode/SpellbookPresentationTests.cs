@@ -132,6 +132,38 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ACastingCardsHover_ShowsItsTypedSpellsInPrintedOrder_WithRemovedSpellsFaded()
+        {
+            var round = MockupARound();
+            var projection = SpellChoice(round, ownerSeat: true);
+            var played = round.Card(GydionCountingSpellTests.GydionRound.Played);
+            var card = CurrentRoundCards.TrayCard(
+                projection, played, TrayCardGroup.Discarded, 0, false, false);
+
+            Assert.That(card.CastableSpells.Select(spell => spell.DefinitionReference.DefinitionId),
+                Is.EqualTo(new[]
+                {
+                    GydionCardContent.FindFamiliar,
+                    GydionCardContent.Fireball,
+                    GydionCardContent.Sunburst
+                }), "typed cast arms preserve the card's printed order");
+            Assert.That(card.CastableSpells.Select(spell => spell.IsGreyed),
+                Is.EqualTo(new[] { false, true, false }),
+                "Fireball is in the public removed pile; the two in-book spells remain lit");
+            Assert.That(card.CastableSpells[1].Caption, Is.EqualTo("FIREBALL - REMOVED"));
+
+            var preview = new VisualElement();
+            DirectorHandsUnityView.PopulatePeekPreview(
+                preview, card, new VisualElement(), dimUnavailable: false);
+            var shelf = Named(preview, "gd-castable-spells").Single();
+            Assert.That(Named(shelf, "gd-spell-face").Count(), Is.EqualTo(3));
+            Assert.That(Named(shelf, "gd-spell-greyed").Count(), Is.EqualTo(1));
+            Assert.That(Named(shelf, "gd-castable-spell-caption")
+                    .Cast<TextElement>().Select(label => label.text),
+                Is.EqualTo(new[] { "FIND FAMILIAR", "REMOVED", "SUNBURST" }));
+        }
+
         /// <summary>
         /// Milestone 9.30j, found by Gydion's gate in Play Mode: the window's own submit path completes
         /// a choose-several on its last pick (6.5c's <c>EffectChoiceCompletion</c>), so Find Familiar's

@@ -230,7 +230,8 @@ namespace GuardsDigital.Presentation.Match
             bool isResolving = false,
             bool isAwaitedAnswer = false,
             bool isDimmedByResolution = false,
-            bool isFacedown = false)
+            bool isFacedown = false,
+            IReadOnlyList<SpellCardViewModel> castableSpells = null)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -272,6 +273,7 @@ namespace GuardsDigital.Presentation.Match
             IsAwaitedAnswer = isAwaitedAnswer;
             IsDimmedByResolution = isDimmedByResolution;
             IsFacedown = isFacedown;
+            CastableSpells = castableSpells ?? Array.Empty<SpellCardViewModel>();
             ColorName = MatchHudTheme.ColorName(color);
             // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
             // assignment history names its turn from the moment that turn starts - so a card in play
@@ -316,6 +318,13 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.5a: the printed face, in the regions the card draws it in.</summary>
         public TrayCardFaceViewModel Face { get; }
+
+        /// <summary>
+        /// Spell faces declared by this card's typed cast arms, in printed order. A face whose public
+        /// instance is already removed from its owner's spellbook is greyed; an ordinary card carries
+        /// an empty list. This is projected presentation data, not a card-name or printed-text reading.
+        /// </summary>
+        public IReadOnlyList<SpellCardViewModel> CastableSpells { get; }
 
         /// <summary>
         /// The card's printed Initiative and action values as one line. It is the assistive and hover
@@ -1622,7 +1631,8 @@ namespace GuardsDigital.Presentation.Match
                 isAwaitedAnswer,
                 isDimmedByResolution,
                 // Milestone 9.32g: a seat that holds the card may read it, facedown or not.
-                CardLifecycleAuthority.IsFacedownRestingCard(card));
+                CardLifecycleAuthority.IsFacedownRestingCard(card),
+                SpellbookPresentation.CastableSpells(projection, card.OwnerId, definition));
         }
 
         /// <summary>

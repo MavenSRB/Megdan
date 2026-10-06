@@ -54,7 +54,12 @@ namespace GuardsDigital.Tests.PlayMode
                     var shortcut = root.Hud.RootElement.Q<Button>("gd-hand-spellbook");
                     var director = root.Hud.RootElement.Q<Button>("gd-director-toggle");
                     var prompt = root.Hud.RootElement.Q("gd-decision-window-docked");
+                    var trayChip = root.Hud.RootElement.Q<Button>("gd-spellbook-chip");
                     Assert.That(UiPlayer.IsShown(shortcut), Is.True);
+                    Assert.That(shortcut.text, Is.EqualTo(trayChip.text),
+                        "The hand control carries the tray chip's live SPELLBOOK n | m reading.");
+                    Assert.That(shortcut.resolvedStyle.backgroundColor, Is.EqualTo(trayChip.resolvedStyle.backgroundColor));
+                    Assert.That(shortcut.resolvedStyle.color, Is.EqualTo(trayChip.resolvedStyle.color));
                     Assert.That(UiPlayer.IsShown(prompt), Is.True);
                     Assert.That(shortcut.worldBound.Overlaps(director.worldBound), Is.False);
                     Assert.That(shortcut.worldBound.Overlaps(prompt.worldBound), Is.False);
@@ -126,6 +131,78 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 MatchSceneCompositionRoot.NextComposedSeat = null;
                 UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "9.64h restore");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator GydionsJoinedNonHostSeatSeesAndOpensTheSameSpellbookShortcut()
+        {
+            try
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
+                var directorRuntime = Root().Runtime;
+                var joinedSeatId = directorRuntime.Host.Seats.FindByHero(Gydion(directorRuntime)).Id;
+                MatchSceneCompositionRoot.NextComposedSeat = joinedSeatId;
+                yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
+                var root = Root();
+                yield return null;
+                yield return null;
+
+                var runtime = root.Runtime;
+                var seat = runtime.Host.Seats.Seats.Single(value => value.Id.Equals(joinedSeatId));
+                Assert.That(runtime.Setup.Heroes.Single(value => value.HeroId.Equals(seat.HeroId)).ContentId.Value,
+                    Is.EqualTo(GydionCardContent.ContentSetId), "the joined seat is Gydion's, not a host simulation");
+                Assert.That(runtime.Seat?.Id, Is.EqualTo(joinedSeatId),
+                    "the runtime reads and submits through Gydion's owner-scoped seat client");
+                // Local seat fixtures retain Director debug controls. Online admission calls this same
+                // HUD transition from AttachOnlineClient, after binding the admitted seat above.
+                root.Hud.SetDirectorToolsVisible(false);
+                yield return null;
+                var director = root.Hud.RootElement.Q<Button>("gd-director-toggle");
+                Assert.That(UiPlayer.IsShown(director), Is.False, "joined players do not receive Director tools");
+
+                var shortcut = root.Hud.RootElement.Q<Button>("gd-hand-spellbook");
+                var trayChip = root.Hud.RootElement.Q<Button>("gd-spellbook-chip");
+                Assert.That(UiPlayer.IsShown(shortcut), Is.True, "Gydion's joined seat keeps the hand shortcut");
+                Assert.That(shortcut.text, Is.EqualTo("SPELLBOOK 22 | 0"));
+                Assert.That(shortcut.text, Is.EqualTo(trayChip.text));
+                Assert.That(shortcut.resolvedStyle.backgroundColor, Is.EqualTo(trayChip.resolvedStyle.backgroundColor));
+                Assert.That(shortcut.resolvedStyle.color, Is.EqualTo(trayChip.resolvedStyle.color));
+
+                var cantrip = runtime.Cards.Single(card => card.OwnerId.Equals(seat.HeroId) &&
+                    card.DefinitionReference.DefinitionId.Equals(GydionCardContent.Cantrip));
+                var cantripModel = runtime.HandsView.Model.ViewedHand.TrayCards
+                    .Single(card => card.CardInstanceId.Equals(cantrip.Id));
+                Assert.That(cantripModel.CastableSpells.Count, Is.EqualTo(3),
+                    "the seat-scoped hand model carries Cantrip's typed cast arms");
+                var cantripSlot = runtime.HandsView.Root.Query<VisualElement>("gd-card-slot").ToList()
+                    .Single(slot => slot.userData is CardInstanceId id && id.Equals(cantrip.Id));
+                var cantripButton = cantripSlot.Q<Button>("gd-card-choice");
+                UiPlayer.PointAt(cantripButton);
+                yield return new WaitForSecondsRealtime(0.25f);
+                var castable = UiPlayer.Descendants(root.Hud.RootElement)
+                    .SingleOrDefault(element => element.name == "gd-castable-spells" && UiPlayer.IsShown(element));
+                Assert.That(castable, Is.Not.Null,
+                    "the joined Gydion player sees Cantrip's declared spells on pointer rest");
+                Assert.That(castable.Query<VisualElement>("gd-spell-face").ToList().Count, Is.EqualTo(3));
+                Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Is.Empty,
+                    "all three spells begin in the book");
+                yield return UiPlayer.CaptureScreen("tmp/9-30k-gydion-seat-hover.png");
+                UiPlayer.PointAway(cantripButton);
+                yield return new WaitForSecondsRealtime(0.25f);
+
+                var version = runtime.Host.Version;
+                UiPlayer.Click(shortcut);
+                yield return null;
+                yield return null;
+                Assert.That(runtime.HeroOverviewsView.IsSpellbookOpen, Is.True);
+                Assert.That(runtime.HeroOverviewsView.OpenSpellbookHeroId, Is.EqualTo(seat.HeroId));
+                Assert.That(runtime.Host.Version, Is.EqualTo(version), "opening the book is local presentation only");
+            }
+            finally
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
             }
         }
 

@@ -1,0 +1,98 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace GuardsDigital.Presentation.Match
+{
+    /// <summary>
+    /// Milestone 9.30k. The pointer-rest companion for an action card that declares typed spell casts.
+    /// It attaches outside the complete action-card face, so the card remains the hover anchor and the
+    /// same companion can be used by the hand, turn slots, current card and discard surfaces.
+    /// </summary>
+    internal static class CastableSpellHoverView
+    {
+        internal const float FaceScale = 0.34f;
+        internal const float Gap = 7f;
+        private const float Padding = 7f;
+        private const float FaceGap = 5f;
+        private const float CaptionHeight = 18f;
+        private const float EyebrowHeight = 18f;
+
+        internal static float WidthFor(IReadOnlyList<SpellCardViewModel> spells) =>
+            spells == null || spells.Count == 0
+                ? 0f
+                : Padding * 2f + spells.Count * SpellCardFootprint.Width * FaceScale +
+                    Math.Max(0, spells.Count - 1) * FaceGap;
+
+        internal static void Attach(
+            VisualElement cardFace,
+            IReadOnlyList<SpellCardViewModel> spells,
+            bool attachToLeft)
+        {
+            Detach(cardFace);
+            if (cardFace == null || spells == null || spells.Count == 0)
+            {
+                return;
+            }
+
+            var width = WidthFor(spells);
+            var shelf = new VisualElement
+            {
+                name = "gd-castable-spells",
+                pickingMode = PickingMode.Ignore,
+                tooltip = "Spells this card can cast: " + string.Join(", ",
+                    spells.Select(spell => spell.Caption))
+            };
+            shelf.style.position = Position.Absolute;
+            shelf.style.left = attachToLeft ? -width - Gap : CardFootprint.Width + Gap;
+            shelf.style.top = 0f;
+            shelf.style.width = width;
+            shelf.style.height = EyebrowHeight + SpellCardFootprint.Height * FaceScale + CaptionHeight + Padding * 2f;
+            shelf.style.flexDirection = FlexDirection.Column;
+            shelf.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.Padding(shelf, Padding);
+            HudElements.Border(shelf, MatchHudTheme.PanelBorder, 1f, 7f);
+
+            var eyebrow = HudElements.Text("CAN CAST", 10f, MatchHudTheme.CoinFace, FontStyle.Bold);
+            eyebrow.name = "gd-castable-spells-label";
+            eyebrow.style.height = EyebrowHeight;
+            eyebrow.style.unityTextAlign = TextAnchor.MiddleLeft;
+            shelf.Add(eyebrow);
+
+            var row = new VisualElement { name = "gd-castable-spells-row", pickingMode = PickingMode.Ignore };
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.FlexStart;
+            for (var index = 0; index < spells.Count; index++)
+            {
+                var spell = spells[index];
+                var host = new VisualElement { name = "gd-castable-spell", pickingMode = PickingMode.Ignore };
+                host.style.width = SpellCardFootprint.Width * FaceScale;
+                host.style.marginRight = index + 1 < spells.Count ? FaceGap : 0f;
+                host.Add(SpellCardFaceView.Build(spell, FaceScale));
+                var caption = HudElements.Text(
+                    spell.IsGreyed ? "REMOVED" : spell.DisplayName.ToUpperInvariant(),
+                    9f,
+                    spell.IsGreyed ? MatchHudTheme.MutedText : MatchHudTheme.PrimaryText,
+                    FontStyle.Bold);
+                caption.name = "gd-castable-spell-caption";
+                caption.style.height = CaptionHeight;
+                caption.style.unityTextAlign = TextAnchor.MiddleCenter;
+                caption.style.whiteSpace = WhiteSpace.NoWrap;
+                host.Add(caption);
+                row.Add(host);
+            }
+
+            shelf.Add(row);
+            cardFace.style.overflow = Overflow.Visible;
+            cardFace.Add(shelf);
+            DirectorHandsUnityView.IgnorePickingRecursively(shelf);
+        }
+
+        internal static void Detach(VisualElement cardFace)
+        {
+            cardFace?.Q<VisualElement>("gd-castable-spells")?.RemoveFromHierarchy();
+        }
+    }
+}

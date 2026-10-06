@@ -1220,6 +1220,8 @@ namespace GuardsDigital.Presentation.Match
             }, DirectorToggleHeight);
             spellbookShortcut.name = "gd-hand-spellbook";
             spellbookShortcut.tooltip = "Open this hero's spellbook";
+            HeroOverviewsUnityView.ApplySpellbookChipStyle(
+                spellbookShortcut, DirectorToggleHeight, inItemsStrip: false);
             spellbookShortcut.style.position = Position.Absolute;
             spellbookShortcut.style.display = DisplayStyle.None;
             root.Add(spellbookShortcut);
@@ -2646,15 +2648,32 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
-        private bool HasHandSpellbook => hands?.Model?.ViewedHand != null && heroOverviews?.Model?.Heroes
-            .Any(hero => hero.HeroId.Equals(hands.Model.ViewedHand.HeroId) && hero.Spellbook != null) == true;
+        private SpellbookViewModel HandSpellbook
+        {
+            get
+            {
+                var hand = hands?.Model?.ViewedHand;
+                return hand == null
+                    ? null
+                    : heroOverviews?.Model?.Heroes
+                        .FirstOrDefault(hero => hero.HeroId.Equals(hand.HeroId))?.Spellbook;
+            }
+        }
+
+        private bool HasHandSpellbook => HandSpellbook != null;
 
         private void LayoutSpellbookShortcut(Rect toggle)
         {
             if (spellbookShortcut == null) return;
             // Keep both small controls within the rail column; the minimized prompt and optional
             // action rows begin beyond its right edge. Reuse the same book and its projection permissions.
-            var hasBook = HasHandSpellbook;
+            var book = HandSpellbook;
+            var hasBook = book != null;
+            if (book != null)
+            {
+                spellbookShortcut.text = book.ChipLabel;
+                spellbookShortcut.tooltip = book.ChipAssistiveLabel;
+            }
             spellbookShortcut.style.display = hasBook ? DisplayStyle.Flex : DisplayStyle.None;
             spellbookShortcut.pickingMode = hasBook ? PickingMode.Position : PickingMode.Ignore;
             var rail = CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);

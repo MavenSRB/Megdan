@@ -305,6 +305,12 @@ namespace GuardsDigital.Presentation.Match
             }
             else
             {
+                if (card != null && revealAnchors.TryGetValue(model, out var anchor))
+                {
+                    var cardIsOnLeft = anchor.worldBound.center.x < Root.resolvedStyle.width / 2f;
+                    CastableSpellHoverView.Attach(
+                        face, card.CastableSpells, attachToLeft: !cardIsOnLeft);
+                }
                 DirectorHandsUnityView.IgnorePickingRecursively(face);
                 preview.Add(face);
                 preview.style.display = DisplayStyle.Flex;
@@ -420,10 +426,21 @@ namespace GuardsDigital.Presentation.Match
                 ? anchor
                 : RailColumnOf(element)?.worldBound ?? anchor;
             var onLeft = beside.center.x < width / 2f;
+            var card = CardOf(model);
+            var spellShelfWidth = CastableSpellHoverView.WidthFor(card?.CastableSpells);
+            var leftOverhang = !onLeft && spellShelfWidth > 0f
+                ? spellShelfWidth + CastableSpellHoverView.Gap
+                : 0f;
+            var rightOverhang = onLeft && spellShelfWidth > 0f
+                ? spellShelfWidth + CastableSpellHoverView.Gap
+                : 0f;
             var left = onLeft
                 ? beside.xMax + 10f
                 : beside.xMin - faceWidth - 10f;
-            preview.style.left = Mathf.Clamp(left, 0f, Mathf.Max(0f, width - faceWidth));
+            preview.style.left = Mathf.Clamp(
+                left,
+                leftOverhang,
+                Mathf.Max(leftOverhang, width - faceWidth - rightOverhang));
             preview.style.top = Mathf.Max(
                 0f,
                 Mathf.Min(
@@ -1109,15 +1126,26 @@ namespace GuardsDigital.Presentation.Match
                 text = spellbook.ChipLabel,
                 tooltip = spellbook.ChipAssistiveLabel
             };
+            ApplySpellbookChipStyle(chip, StripCardHeight - 4f, inItemsStrip: true);
+            return chip;
+        }
+
+        /// <summary>
+        /// Milestone 9.30k. The one visual treatment for a spellbook control, shared by the hero-tray
+        /// chip and the viewed-hand shortcut so the second control is not a generic grey text button.
+        /// </summary>
+        internal static void ApplySpellbookChipStyle(Button chip, float height, bool inItemsStrip)
+        {
+            if (chip == null) throw new ArgumentNullException(nameof(chip));
             chip.style.fontSize = 10f;
             chip.style.unityFontStyleAndWeight = FontStyle.Bold;
             chip.style.color = MatchHudTheme.CoinFace;
             chip.style.backgroundColor = new Color(0.184f, 0.141f, 0.063f, 1f);
             chip.style.whiteSpace = WhiteSpace.NoWrap;
             chip.style.flexShrink = 0f;
-            chip.style.height = StripCardHeight - 4f;
-            chip.style.marginTop = 2f;
-            chip.style.marginBottom = 2f;
+            chip.style.height = height;
+            chip.style.marginTop = inItemsStrip ? 2f : 0f;
+            chip.style.marginBottom = inItemsStrip ? 2f : 0f;
             chip.style.paddingLeft = 7f;
             chip.style.paddingRight = 7f;
             chip.style.paddingTop = 0f;
@@ -1126,7 +1154,6 @@ namespace GuardsDigital.Presentation.Match
             chip.style.unityTextAlign = TextAnchor.MiddleCenter;
             HudElements.Border(chip, new Color(0.753f, 0.706f, 0.522f, 1f), 1f, 4f);
             HudElements.ApplyButtonMotion(chip);
-            return chip;
         }
 
         /// <summary>
