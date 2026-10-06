@@ -29,8 +29,9 @@ namespace GuardsDigital.Tests.EditMode
 
         // Milestone 9.21k. BodySpaces( and Bodies( are Razzle's journeys' reading of where each of his
         // bodies stands - a board read, as SpaceOf( is for a hero on one space.
+        // NebKher's resolved-card swap changes TurnSlots rather than a card's location.
         private static readonly Regex Outcome = new Regex(
-            @"(BodySpaces\(|Bodies\(|Coordinate|Position\(|SpaceOf\w*\(|HandCount|HandOfCount|HeldBy\(|Tokens\(|PlacedTokens|Coins|CoinsOf|Coin\(|Minions\.(Any|Count)|OnBoard|Stands\(|State\.Location|State,|Heroes\.(Any|Single)|Discard\w*Of\(|DiscardsOf|DiscardOf|Obstacles\.|IsActiveEffectSource|Kills|Life|RoundEvents|Trees\(|Rocks\(|MagmaSpaces|Pyro\(|InHand\(|HeroView\(|CaptureSnapshot|PendingAttackTargetChoice|LegalTarget|Initiative|PrintedValue|AttackTotal|DefenseTotal|FinishMovement\()");
+            @"(BodySpaces\(|Bodies\(|Coordinate|Position\(|SpaceOf\w*\(|HandCount|HandOfCount|HeldBy\(|Tokens\(|PlacedTokens|Coins|CoinsOf|Coin\(|Minions\.(Any|Count)|OnBoard|Stands\(|State\.Location|State,|Heroes\.(Any|Single)|Discard\w*Of\(|DiscardsOf|DiscardOf|Obstacles\.|IsActiveEffectSource|TurnSlots|Kills|Life|RoundEvents|Trees\(|Rocks\(|MagmaSpaces|Pyro\(|InHand\(|HeroView\(|CaptureSnapshot|PendingAttackTargetChoice|LegalTarget|Initiative|PrintedValue|AttackTotal|DefenseTotal|FinishMovement\()");
 
         private static readonly Regex Journey = new Regex(
             @"\[UnityTest\]\s*public IEnumerator (\w+)\(\)\s*\{");

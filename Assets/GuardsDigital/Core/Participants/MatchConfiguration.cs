@@ -2327,6 +2327,26 @@ namespace GuardsDigital.Core.Participants
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.NebKherCardContent.CreateHand(ownerId, "blue"));
 
+        /// <summary>Test-only Tier III NebKher with his laughter-triggered Ultimate faceup.</summary>
+        public static MatchConfiguration CreateStagedNebKherTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.NebKherProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.NebKherCardContent.WhatTheHellAreYou)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
         /// <summary>Test-only Tier III Emmitt with Alternative Timelines unlocked faceup.</summary>
         public static MatchConfiguration CreateStagedEmmittTierThreeForInternalTest(
             TeamSide initialTieBreakerSide)

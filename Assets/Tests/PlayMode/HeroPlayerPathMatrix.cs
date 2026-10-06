@@ -128,6 +128,10 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>A card chosen from a hand, on its whole face, under 8.15a's contract.</summary>
         HandCardSelection,
 
+        /// <summary>A previous-slot card's printed primary or secondary action chosen on its
+        /// own action-index control, after the enemy hero has been selected on the board.</summary>
+        PreviousSlotPrintedActionChoice,
+
         /// <summary>A printed distance range answered by its own numeric controls.</summary>
         PushDistanceChoice,
 
@@ -1604,10 +1608,26 @@ namespace GuardsDigital.Tests.PlayMode
                 ["emmitt-place-at-turn-start"] = Array.Empty<PlayerInteractionShape>(),
                 ["emmitt-swap-unresolved-with-resolved"] =
                     new[] { PlayerInteractionShape.HandCardSelection },
-                ["emmitt-retrieve-turn-discards"] = Array.Empty<PlayerInteractionShape>()
+                ["emmitt-retrieve-turn-discards"] = Array.Empty<PlayerInteractionShape>(),
+                // Milestone 9.54. NebKher's Illusion questions reuse the board-space
+                // surface. Borrowing asks for a printed action index, not a hand card.
+                // Laughing and the Ultimate's range
+                // enumeration publish timing/state, but ask no second question themselves.
+                ["nebkher-place-illusion"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["nebkher-place-adjacent-illusion"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["nebkher-reclaim-illusion"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["borrow-previous-slot-printed-action"] =
+                    new[] { PlayerInteractionShape.PreviousSlotPrintedActionChoice },
+                ["swap-resolved-card-pair"] =
+                    new[] { PlayerInteractionShape.HandCardSelection },
+                ["laugh-diabolically"] = Array.Empty<PlayerInteractionShape>(),
+                ["nebkher-all-enemies-in-radius"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
+        private readonly HashSet<string> boardPartitionCapabilities;
         private readonly IReadOnlyList<EffectDefinition> triggeredEffects;
 
         public HeroPlayerPathMatrix(
@@ -1624,11 +1644,16 @@ namespace GuardsDigital.Tests.PlayMode
             ReturnedToBoxAtSetup = returnedToBoxAtSetup;
             Rows = rows;
 
-            activeEffectsByCapability = activeEffectHandlers
-                .OfType<ActiveEffectCreationHandler>()
+            var handlers = activeEffectHandlers.ToArray();
+            activeEffectsByCapability = handlers
+                .Where(handler => handler is ActiveEffectCreationHandler ||
+                    handler is BoardPartitionCreationHandler)
                 .SelectMany(handler => handler.ActiveEffectDefinitions
                     .Select(definition => (handler.Reference.CapabilityId.Value, definition)))
                 .ToDictionary(pair => pair.Value, pair => pair.definition, StringComparer.Ordinal);
+            boardPartitionCapabilities = new HashSet<string>(handlers
+                .OfType<BoardPartitionCreationHandler>()
+                .Select(handler => handler.Reference.CapabilityId.Value), StringComparer.Ordinal);
         }
 
         public string HeroDisplayName { get; }
@@ -2040,6 +2065,9 @@ namespace GuardsDigital.Tests.PlayMode
             if (activeEffectsByCapability.TryGetValue(capabilityId, out var activeEffect))
             {
                 AddActiveEffectShapes(activeEffect, shapes);
+
+                if (boardPartitionCapabilities.Contains(capabilityId))
+                    shapes.Add(PlayerInteractionShape.DirectionChoice);
 
                 // Milestone 8.114g. The effect's own trigger body, when the matrix was given it.
                 AddActiveEffectTriggerShapes(activeEffect, shapes);

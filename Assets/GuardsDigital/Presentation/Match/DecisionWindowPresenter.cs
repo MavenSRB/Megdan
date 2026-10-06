@@ -907,7 +907,11 @@ namespace GuardsDigital.Presentation.Match
             // the space answers. Dodger's Necromastery asks which minion TYPE comes back from the
             // SUPPLY - candidates with no piece on the board to click - and the first Play Mode run
             // docked that question into a bar with no answers on it at all.
-            var boardAnswered = family == DecisionWindowFamily.Direction ||
+            // Six hex-direction arrows are board controls; a three-axis board-partition
+            // choice has no corresponding board pointer. Its named lines must be drawn
+            // as answer buttons in the expanded window instead of disappearing.
+            var boardAnswered = family == DecisionWindowFamily.Direction &&
+                    choice.ValueVocabulary == EffectChoiceValueVocabulary.HexDirection ||
                 (family == DecisionWindowFamily.PieceOrSpace &&
                     choice.Candidates
                         .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value)

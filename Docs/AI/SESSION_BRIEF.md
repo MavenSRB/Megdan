@@ -8,18 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. Thirty-two heroes are configured; the thirty-one through Emmitt pass permanent player-path gates, and NebKher's gate is active at 9.54. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board-partition line and rejects v58; wire protocol remains `guards-private-online/36`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates, including Emmitt and NebKher. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board-partition line and rejects v58; wire protocol remains `guards-private-online/36`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.53**.
-- Active authorized milestone: **9.54**.
+- Current completed milestone: **9.54**.
+- Active authorized milestone: **none**.
 - Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E3 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. EM-Q3 specifies two empty hexes between Glitches, a minimum hex distance of 3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
-- Next proposed milestone: **9.54**.
-- Next route: **9.54** gate NebKher's every face and component through real player controls, then complete the full-roster gate before the experimental/map sequence below.
+- Next proposed milestone: **9.58**.
+- Next route: **9.58** teammate coordination, first in the separately approved experimental/map sequence below. The overnight final-two-heroes follow-up stops after 9.54.
+- 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
 - 9.53 composed and dealt NebKher's eighteen playable fronts, boxed Mind Probe, added his roster/presentation/art and completed the approved Emmitt Glitch art repair. Focused and full T3 gates, official private-art checks and targeted non-batch Game View inspection passed. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
 - 9.51-9.52 completed NebKher's Illusion/borrow and laughter/divided-board foundations through snapshot v59, wire /36, restore and replay. Their [archive rows](Archive/Phase-Handoffs/PHASE_9.md) and commits retain exact T3 evidence. Preserve untracked user files.
 

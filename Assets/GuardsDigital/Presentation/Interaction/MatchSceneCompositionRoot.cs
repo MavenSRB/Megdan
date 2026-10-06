@@ -1106,7 +1106,13 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedTierThreeEngagedStagedEmmitt = 148,
 
         /// <summary>Emmitt with Arien as a friendly Blue hero (9.50).</summary>
-        VerifiedStagedEmmittWithAlly = 149
+        VerifiedStagedEmmittWithAlly = 149,
+
+        /// <summary>Wasp versus NebKher with his printed starting hand (9.54).</summary>
+        VerifiedEngagedStagedNebKher = 150,
+
+        /// <summary>NebKher with Tier III hands and his Ultimate faceup (9.54).</summary>
+        VerifiedTierThreeEngagedStagedNebKher = 151
     }
 
     [ExecuteAlways]
@@ -1858,6 +1864,10 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedEmmittTierThreeForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedStagedEmmittWithAlly =>
                     MatchConfiguration.CreateStagedEmmittWithAllyForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedNebKher =>
+                    MatchConfiguration.CreateStagedNebKherForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedNebKher =>
+                    MatchConfiguration.CreateStagedNebKherTierThreeForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1958,7 +1968,9 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedEngagedStagedTakahide ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedTakahide ||
                 content == SceneCardContent.VerifiedEngagedStagedEmmitt ||
-                content == SceneCardContent.VerifiedTierThreeEngagedStagedEmmitt)
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedEmmitt ||
+                content == SceneCardContent.VerifiedEngagedStagedNebKher ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedNebKher)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2635,6 +2647,12 @@ namespace GuardsDigital.Presentation.Interaction
                     if (content == SceneCardContent.VerifiedStagedEmmittWithAlly)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusEmmittWithAllyOneVsTwo();
+                    }
+
+                    if (content == SceneCardContent.VerifiedEngagedStagedNebKher ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedNebKher)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusNebKherOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

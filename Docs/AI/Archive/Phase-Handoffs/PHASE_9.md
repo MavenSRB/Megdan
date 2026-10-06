@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.54 NebKher and full-roster gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.54 | NebKher's eighteen playable fronts, boxed Mind Probe and component actions have permanent real-control player-path journeys; all thirty-two configured heroes pass their gates. The three-axis choice presentation and turn-slot journey audit failures were corrected and green-rerun. Focused NebKher Play and unfiltered T3 offline/Edit/Play passed; the official Illusion face was visually inspected in Game View. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-954-gate-nebkher-and-the-complete-roster-on-the-player-path). | `milestone/9.54` |
+
 ## Milestone 9.53 NebKher dealing evidence
 
 | Milestone | Outcome and definition | Commit |

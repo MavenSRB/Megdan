@@ -80,6 +80,10 @@ Completed 2026-10-06. All eighteen fronts are registered at verified values; Min
 
 Historical evidence: [9.53 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-953-nebkher-dealing-evidence).
 
-### [~] 9.54 Gate NebKher and the complete roster on the player path
+### [x] 9.54 Gate NebKher and the complete roster on the player path
 
 Outcome: permanent face-to-journey matrix with real controls and asserted outcomes, plus the highest applicable full-roster validation tier. The resulting configured roster is thirty-two heroes. T3.
+
+Completed 2026-10-06. NebKher's eighteen playable fronts and boxed Mind Probe have permanent player-path coverage through real controls, including token, borrowed-action, optional laughter and three-axis board-partition choices. The full thirty-two-hero roster matrix passes. A demonstrated axis-choice presentation failure and the journey outcome audit's missed turn-slot read were corrected and green-rerun. Focused NebKher Play 33/33, full offline 6,733/6,733, unfiltered Unity Edit 7,840 passed with 37 explicit diagnostic skips, and unfiltered Unity Play 1,161/1,161 passed. The local milestone commit holds exact evidence and limitations.
+
+Historical evidence: [9.54 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-954-nebkher-and-full-roster-gate-evidence).
