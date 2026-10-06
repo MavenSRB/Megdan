@@ -2,13 +2,14 @@ using System;
 
 namespace GuardsDigital.Application
 {
-    /// <summary>Immutable per-game options. A new host starts with both experiments disabled.</summary>
+    /// <summary>Immutable per-game options. A new host starts with all experiments disabled.</summary>
     public sealed class ExperimentalMatchOptions : IEquatable<ExperimentalMatchOptions>
     {
         public static readonly ExperimentalMatchOptions Disabled = new ExperimentalMatchOptions();
         public ExperimentalMatchOptions(bool teammateCoordination = false, bool turnTimer = false,
             int cardCommitmentSeconds = 120, int cardResolutionSeconds = 30,
-            int responseSeconds = 30, int cardUpgradeSeconds = 120, int teamBankSeconds = 300)
+            int responseSeconds = 30, int cardUpgradeSeconds = 120, int teamBankSeconds = 300,
+            bool enemyCardInformation = false)
         {
             Validate(cardCommitmentSeconds, nameof(cardCommitmentSeconds));
             Validate(cardResolutionSeconds, nameof(cardResolutionSeconds));
@@ -17,6 +18,7 @@ namespace GuardsDigital.Application
             Validate(teamBankSeconds, nameof(teamBankSeconds), true);
             TeammateCoordination = teammateCoordination;
             TurnTimer = turnTimer;
+            EnemyCardInformation = enemyCardInformation;
             CardCommitmentSeconds = cardCommitmentSeconds;
             CardResolutionSeconds = cardResolutionSeconds;
             ResponseSeconds = responseSeconds;
@@ -30,6 +32,7 @@ namespace GuardsDigital.Application
         }
         public bool TeammateCoordination { get; }
         public bool TurnTimer { get; }
+        public bool EnemyCardInformation { get; }
         public int CardCommitmentSeconds { get; }
         public int CardResolutionSeconds { get; }
         public int ResponseSeconds { get; }
@@ -37,11 +40,12 @@ namespace GuardsDigital.Application
         public int TeamBankSeconds { get; }
         public bool Equals(ExperimentalMatchOptions other) => other != null &&
             TeammateCoordination == other.TeammateCoordination && TurnTimer == other.TurnTimer &&
+            EnemyCardInformation == other.EnemyCardInformation &&
             CardCommitmentSeconds == other.CardCommitmentSeconds && CardResolutionSeconds == other.CardResolutionSeconds &&
             ResponseSeconds == other.ResponseSeconds && CardUpgradeSeconds == other.CardUpgradeSeconds &&
             TeamBankSeconds == other.TeamBankSeconds;
         public override bool Equals(object obj) => Equals(obj as ExperimentalMatchOptions);
-        public override int GetHashCode() => (TeammateCoordination ? 1 : 0) ^ (TurnTimer ? 2 : 0) ^
+        public override int GetHashCode() => (TeammateCoordination ? 1 : 0) ^ (TurnTimer ? 2 : 0) ^ (EnemyCardInformation ? 4 : 0) ^
             CardCommitmentSeconds ^ CardResolutionSeconds ^ ResponseSeconds ^ CardUpgradeSeconds ^ TeamBankSeconds;
     }
 }

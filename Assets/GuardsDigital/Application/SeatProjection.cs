@@ -982,6 +982,7 @@ namespace GuardsDigital.Application
             AlliedHandCards = Experiments.TeammateCoordination
                 ? Array.AsReadOnly(source.Cards.Where(c => alliedHeroes.Contains(c.OwnerId) && c.State.Location == CardLocation.Hand).ToArray())
                 : (IReadOnlyList<CardInstance>)Array.Empty<CardInstance>();
+            CardInspections = HeroCardInspection.ForSeat(source, seat, Experiments);
             IsSeatUndoAvailable = isSeatUndoAvailable;
             UndoMarker = undoMarker;
             // Milestone 8.35r. The SAME log the Director reads, taken whole rather than filtered.
@@ -1056,6 +1057,7 @@ namespace GuardsDigital.Application
 
         public ExperimentalMatchOptions Experiments { get; }
         public IReadOnlyList<CardInstance> AlliedHandCards { get; }
+        public IReadOnlyList<HeroCardInspection> CardInspections { get; }
         public IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
         public long CoordinationRevision { get; }
         public int CoordinationGeneration { get; }

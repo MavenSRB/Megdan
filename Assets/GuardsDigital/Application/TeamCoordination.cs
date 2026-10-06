@@ -50,6 +50,7 @@ namespace GuardsDigital.Application
         ExperimentalMatchOptions Experiments { get; }
         MatchClockState Clock { get; }
         IReadOnlyList<CardInstance> AlliedHandCards { get; }
+        IReadOnlyList<HeroCardInspection> CardInspections { get; }
         IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
         long CoordinationRevision { get; }
         int CoordinationGeneration { get; }

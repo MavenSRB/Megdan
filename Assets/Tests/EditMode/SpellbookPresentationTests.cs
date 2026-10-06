@@ -297,7 +297,7 @@ namespace GuardsDigital.Tests.EditMode
                 "the owner's seat reads its book as faces (mockup B)");
             Assert.That(Named(owner, "gd-spell-back").Any(), Is.False, "and draws no back of its own book");
             Assert.That(TextOf(Named(owner, "gd-spellbook-subtitle").Single()),
-                Does.StartWith("Only you can see the spells in the book."));
+                Does.StartWith("Spells currently in the book."));
 
             var other = Drawer(host, Other, out var otherView);
             var inBook = Named(other, "gd-spellbook-in-book").Single();

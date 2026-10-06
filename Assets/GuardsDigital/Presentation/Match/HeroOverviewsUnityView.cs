@@ -68,7 +68,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement spellbookPanel;
         private HeroId openSpellbookHero;
 
-        public HeroOverviewsUnityView()
+        public HeroCardInspectionUnityView CardInspection { get; }
+
+        public HeroOverviewsUnityView(Func<IMatchReadModel> read = null)
         {
             Root = new VisualElement { name = "gd-hero-rails" };
             Root.style.position = Position.Absolute;
@@ -99,6 +101,8 @@ namespace GuardsDigital.Presentation.Match
             Root.Add(blueColumn);
             Root.Add(spellbookHost);
             Root.Add(preview);
+            CardInspection = new HeroCardInspectionUnityView(read);
+            Root.Add(CardInspection.Root);
             redColumn.RegisterCallback<GeometryChangedEvent>(_ =>
                 ColumnGeometryChanged?.Invoke());
             blueColumn.RegisterCallback<GeometryChangedEvent>(_ =>
@@ -174,6 +178,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
+            CardInspection.Close();
             openSpellbookHero = heroId;
             RebuildSpellbook();
             return true;
@@ -462,6 +467,9 @@ namespace GuardsDigital.Presentation.Match
             // drawer never covers - so a book of full-size faces scrolls rather than running under it.
             spellbookHost.style.height = Mathf.Max(
                 0f, Mathf.Min(red.yMax, blue.yMax) - Mathf.Min(red.y, blue.y));
+            Place(CardInspection.Root, new Rect(left, Mathf.Min(red.y, blue.y),
+                Mathf.Max(0f, blue.xMin - SpellbookDrawerGap - left),
+                Mathf.Max(0f, Mathf.Min(red.yMax, blue.yMax) - Mathf.Min(red.y, blue.y))));
         }
 
         private static void Place(VisualElement element, Rect rect)
@@ -522,6 +530,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 9.30h. An open drawer follows the projection it was opened over: redrawn from
             // the new model, and closed if that hero no longer has a book to show.
             RebuildSpellbook();
+            CardInspection.Refresh();
         }
 
         private static VisualElement Column(string name)
@@ -1445,6 +1454,21 @@ namespace GuardsDigital.Presentation.Match
             var medallion = BuildSharedHeroPortrait(hero, accent);
             revealAnchors.Add(hero, medallion);
             HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
+            medallion.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button == 0) evt.StopPropagation();
+            });
+            medallion.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                evt.StopPropagation();
+                if (CardInspection.Open(hero.HeroId, hero.HeroDisplayName))
+                {
+                    CloseSpellbook();
+                    SetHighlight(null);
+                }
+                else HeroSelected?.Invoke(hero.HeroId);
+            });
             return medallion;
         }
 

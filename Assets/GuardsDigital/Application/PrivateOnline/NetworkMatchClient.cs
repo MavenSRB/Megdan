@@ -408,6 +408,7 @@ namespace GuardsDigital.Application
             decisionContract = null;
         }
 
+        public IReadOnlyList<HeroCardInspection> CardInspections => wire?.CardInspections ?? Array.Empty<HeroCardInspection>();
         public ExperimentalMatchOptions Experiments => wire?.Experiments ?? ExperimentalMatchOptions.Disabled;
         public IReadOnlyList<CardInstance> AlliedHandCards => wire == null ? Array.Empty<CardInstance>() : Array.AsReadOnly(wire.AlliedHandCards.Select(ToCard).ToArray());
         public IReadOnlyList<TeammateMarker> TeammateMarkers => wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();

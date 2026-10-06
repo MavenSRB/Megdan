@@ -128,8 +128,8 @@ namespace GuardsDigital.Presentation.Match
             // The two headers the approved mockups print: the owner's (B) and every other seat's (C).
             Title = ReadsTheBook ? name : name + "'S SPELLBOOK";
             Subtitle = ReadsTheBook
-                ? "Only you can see the spells in the book. Removed spells are faceup for everyone."
-                : "Facedown - only " + (heroName ?? heroId.Value) + " can see the spells in the book.";
+                ? "Spells currently in the book. Removed spells are faceup for everyone."
+                : "Facedown - this spellbook is hidden from you.";
             InBookLabel = "IN THE BOOK - " + InBookCount.ToString(CultureInfo.InvariantCulture);
             RemovedLabel = "REMOVED, FACEUP - " + RemovedCount.ToString(CultureInfo.InvariantCulture);
         }
@@ -233,6 +233,14 @@ namespace GuardsDigital.Presentation.Match
 
             var namedInBook = Faces(projection, order, owned
                 .Where(card => card.State.Location == CardLocation.Spellbook));
+            var inspection = (projection as IExperimentalReadModel)?.CardInspections
+                .FirstOrDefault(value => value.Hero.Equals(heroId));
+            if (inspection != null)
+                namedInBook = Array.AsReadOnly(inspection.Spellbook
+                    .Select(reference => projection.Definitions.FirstOrDefault(value => value.Reference.Equals(reference)))
+                    .Where(definition => definition != null && definition.Progression.IsSpell)
+                    .OrderBy(definition => order.TryGetValue(definition.Reference, out var index) ? index : int.MaxValue)
+                    .Select(definition => new SpellCardViewModel(definition)).ToArray());
             var backs = (summary?.SpellbookBacks ?? Array.Empty<SpellbookBackCount>())
                 .Select(back => new
                 {

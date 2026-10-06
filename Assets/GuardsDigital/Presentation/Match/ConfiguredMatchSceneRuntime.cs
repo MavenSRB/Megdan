@@ -150,7 +150,7 @@ namespace GuardsDigital.Presentation.Match
             // either: the outcome and the match scoreboard are public information in every projection,
             // so the ended match reads the same on all six screens.
             VictoryScreenView = new VictoryScreenUnityView();
-            HeroOverviewsView = new HeroOverviewsUnityView();
+            HeroOverviewsView = new HeroOverviewsUnityView(() => client.Projection);
             // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
             // "the same log for everyone", so there is no scoped-out composition for it to skip.

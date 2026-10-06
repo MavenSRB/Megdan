@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Units.Heroes;
@@ -44,10 +46,57 @@ namespace GuardsDigital.Application
         {
             w.Write(o.TeammateCoordination); w.Write(o.TurnTimer);
             w.Write(o.CardCommitmentSeconds); w.Write(o.CardResolutionSeconds); w.Write(o.ResponseSeconds);
-            w.Write(o.CardUpgradeSeconds); w.Write(o.TeamBankSeconds);
+            w.Write(o.CardUpgradeSeconds); w.Write(o.TeamBankSeconds); w.Write(o.EnemyCardInformation);
         }
         internal static ExperimentalMatchOptions ReadOptions(BinaryReader r) => new ExperimentalMatchOptions(
-            r.ReadBoolean(), r.ReadBoolean(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32());
+            r.ReadBoolean(), r.ReadBoolean(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadBoolean());
+        internal static void WriteInspections(BinaryWriter writer, IReadOnlyList<HeroCardInspection> rows)
+        {
+            writer.Write(rows.Count);
+            foreach (var row in rows)
+            {
+                writer.Write(row.Hero.Value);
+                writer.Write((int)row.Team);
+                WriteReferences(writer, row.Cards);
+                WriteReferences(writer, row.Spellbook);
+            }
+        }
+        private static void WriteReferences(BinaryWriter writer, IReadOnlyList<CardDefinitionReference> cards)
+        {
+            writer.Write(cards.Count);
+            foreach (var card in cards)
+            {
+                writer.Write(card.DefinitionId.Value);
+                writer.Write(card.ContentRevision);
+            }
+        }
+        internal static IReadOnlyList<HeroCardInspection> ReadInspections(BinaryReader reader)
+        {
+            var count = reader.ReadInt32();
+            if (count < 0 || count > 10) throw new ArgumentException("Invalid inspection count.");
+            var rows = new List<HeroCardInspection>();
+            for (var index = 0; index < count; index++)
+            {
+                var hero = new HeroId(ReadId(reader));
+                var rawTeam = reader.ReadInt32();
+                if (!Enum.IsDefined(typeof(TeamSide), rawTeam)) throw new ArgumentException("Invalid inspection team.");
+                rows.Add(new HeroCardInspection(hero, (TeamSide)rawTeam,
+                    ReadReferences(reader), ReadReferences(reader)));
+            }
+            if (rows.Select(row => row.Hero).Distinct().Count() != rows.Count)
+                throw new ArgumentException("Duplicate inspection owner.");
+            return Array.AsReadOnly(rows.ToArray());
+        }
+        private static IReadOnlyList<CardDefinitionReference> ReadReferences(BinaryReader reader)
+        {
+            var count = reader.ReadInt32();
+            if (count < 0 || count > 64) throw new ArgumentException("Invalid inspection face count.");
+            var cards = new List<CardDefinitionReference>();
+            for (var index = 0; index < count; index++)
+                cards.Add(new CardDefinitionReference(new CardDefinitionId(ReadId(reader)), ReadId(reader)));
+            return Array.AsReadOnly(cards.ToArray());
+        }
+
         internal static void WriteMarkers(BinaryWriter w, IReadOnlyList<TeammateMarker> markers)
         {
             w.Write(markers.Count);

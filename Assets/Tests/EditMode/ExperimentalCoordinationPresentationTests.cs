@@ -10,6 +10,40 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class ExperimentalCoordinationPresentationTests
     {
+        [TestCase(false, false)] [TestCase(true, false)] [TestCase(false, true)] [TestCase(true, true)]
+        public void SpellbookFacesFollowTheSameTeamAndEnemyOptions(bool allies, bool enemies)
+        {
+            var host = HeroCardInspectionTests.Create(allies, enemies);
+            var hero = host.Projection.Setup.Heroes.Single(h => h.ContentId.Value == "gydion");
+            foreach (var seat in host.Seats.Seats)
+            {
+                var projection = host.ProjectionForSeat(seat.Id);
+                Assert.That(NetworkSeatProjectionCodec.TryDecode(NetworkSeatProjectionCodec.Encode(projection), out var record), Is.True);
+                var network = new NetworkMatchReadModel(host.Projection, MatchContentCatalogs.ForThisBuild(), record, true);
+                foreach (IMatchReadModel view in new IMatchReadModel[] { projection, network })
+                {
+                    var book = SpellbookPresentation.ForHero(view, hero.HeroId, "Gydion");
+                    bool allowed = seat.Owns(hero.HeroId) || (seat.TeamSide == hero.TeamSide ? allies : enemies);
+                    Assert.That(book.InBookFaces.Count, Is.EqualTo(allowed ? 22 : 0));
+                    Assert.That(book.InBookBacks.Sum(b => b.Count), Is.EqualTo(allowed ? 0 : 22));
+                    Assert.That(book.Subtitle.Contains("Only you"), Is.False, "The owner-only subtitle is no longer true under sharing.");
+                }
+            }
+        }
+        [Test] public void EnemySettingIsIndependentAndResetsOnANewHostMenu()
+        {
+            var view = new PrivateLobbyUnityView(); view.ShowPage(PrivateLobbyEntryPage.Host);
+            var enemy = view.Root.Q<Toggle>("experimental-enemy-info");
+            Assert.That(enemy.value, Is.False);
+            enemy.value = true;
+            Assert.That(view.CurrentEntry().Experiments.EnemyCardInformation, Is.True);
+            Assert.That(view.CurrentEntry().Experiments.TeammateCoordination, Is.False);
+            Assert.That(view.CurrentEntry().Experiments.TurnTimer, Is.False);
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(enemy.value, Is.True);
+            view.ShowPage(PrivateLobbyEntryPage.Landing); view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(enemy.value, Is.False);
+        }
         [Test] public void AlliedInspectionHasCardsButNoGameplayControlsAndCannotInspectEnemies()
         {
             var state = OwnerScopedProjectionTests.CreateOfficialInitialState();

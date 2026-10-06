@@ -129,6 +129,7 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
         private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
         private Toggle coordinationToggle;
+        private Toggle enemyInfoToggle;
         private Toggle timerToggle;
         private readonly List<IntegerField> timerFields = new List<IntegerField>();
         private readonly int[] timerDefaults = {120,30,30,120,300};
@@ -277,9 +278,17 @@ namespace GuardsDigital.Presentation.Interaction
             coordinationToggle.style.fontSize = 18;
             coordinationToggle.style.color = Color.white;
             experimentalPanel.Add(coordinationToggle);
-            var coordinationHelp = Caption("Inspect allied hands. Right-click cards or hexes to suggest them to teammates.", 15, "experimental-coordination-help");
+            var coordinationHelp = Caption("Inspect allied cards and spellbooks, including all gold cards. Right-click cards or hexes to suggest them.", 15, "experimental-coordination-help");
             coordinationHelp.style.whiteSpace = WhiteSpace.Normal;
             experimentalPanel.Add(coordinationHelp);
+            enemyInfoToggle = new Toggle("Enemy card information") { name = "experimental-enemy-info" };
+            enemyInfoToggle.style.fontSize = 18;
+            enemyInfoToggle.style.color = Color.white;
+            experimentalPanel.Add(enemyInfoToggle);
+            var enemyInfoHelp = Caption("Inspect enemy current cards and spellbooks, including all gold cards.", 15,
+                "experimental-enemy-info-help");
+            enemyInfoHelp.style.whiteSpace = WhiteSpace.Normal;
+            experimentalPanel.Add(enemyInfoHelp);
             timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
             timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
             timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
@@ -445,7 +454,7 @@ namespace GuardsDigital.Presentation.Interaction
             page == PrivateLobbyEntryPage.Host
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
-                        timerFields[2].value,timerFields[3].value,timerFields[4].value))
+                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value))
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -463,6 +472,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (value == PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Host)
             {
                 coordinationToggle.SetValueWithoutNotify(false);
+                enemyInfoToggle.SetValueWithoutNotify(false);
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
                 for(int i=0;i<timerFields.Count;i++) timerFields[i].SetValueWithoutNotify(timerDefaults[i]);
                 experimentalPanel.style.display = DisplayStyle.None;

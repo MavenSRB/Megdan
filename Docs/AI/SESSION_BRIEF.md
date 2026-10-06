@@ -8,17 +8,17 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. Thirty-one heroes, including Emmitt, pass player-path gates; NebKher continues separately. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v58 persists prior state and rejects v57 before a borrowed-secondary continuation; wire protocol is `guards-private-online/39`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5. Thirty-one heroes, including Emmitt, pass player-path gates; NebKher continues separately. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v58 persists prior state and rejects v57 before a borrowed-secondary continuation; worktree wire protocol is `guards-private-online/40`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned seats. Earlier player gates covered 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.64c candidate retains the single Host/Join launcher. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
 - Current completed milestone: **9.64c**.
-- Active authorized milestone: **9.64d**.
+- Active authorized milestone: **9.64e**.
 - Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E3 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. EM-Q3 specifies two empty hexes between Glitches, a minimum hex distance of 3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
-- Next proposed milestone: **9.64d**.
+- Next proposed milestone: **9.64e**.
 - Next route: finish approved **9.64d -> 9.64e**: spellbook hover, then experimental current-card inspection. Existing ZIP, NebKher and maps stay separate.
 - 9.51 completed the unregistered three-Illusion and previous-slot printed-action borrow foundations, including action-only friendly-melee count, token substitution, no markers, owner-seat choices and restore/replay. Snapshot v58 rejects v57. Promoted T3 passed: offline 6,686/6,686, Unity Edit 7,786 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail. Preserve untracked user files.
 - 9.50 gated all Emmitt fronts on the permanent real-control matrix. T3 passed: offline 6,670/6,670, Unity Edit 7,770 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127; focused, boundary and visual checks passed. The p.14 Defense-total defect was corrected. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail.
