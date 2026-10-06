@@ -72,10 +72,14 @@ Completed 2026-10-05 as an unregistered foundation. A real optional laugh leaf c
 
 Historical evidence: [9.52 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-952-nebkher-laughter-and-divided-board-evidence).
 
-### [~] 9.53 Compose and deal NebKher
+### [x] 9.53 Compose and deal NebKher
 
 Outcome: all eighteen playable fronts composed at their exact printed values and clauses; Mind Probe boxed; roster selection, standee/profile and card art, decision labels, bots, wording and offer/outcome checks. T3.
 
-### [ ] 9.54 Gate NebKher and the complete roster on the player path
+Completed 2026-10-06. All eighteen fronts are registered at verified values; Mind Probe remains boxed. The roster picker, standee, selection portrait, card fronts, Illusion token face, decision labels and generated shine overlays are present in the private local art path. Emmitt's omitted Glitch face was repaired and visually checked. Generic finite-map all-range targeting, delayed next-turn reveal choices, and resolved-card ordering close the composed effects without card-name resolution branches. Observed full-suite count, overlay and journey-matrix failures were corrected and green-rerun. Focused, unfiltered T3 offline/Edit/Play, art integrity and targeted non-batch Game View checks passed; NebKher's permanent player-path matrix remains 9.54. Exact evidence and limitations are in the local milestone commit.
+
+Historical evidence: [9.53 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-953-nebkher-dealing-evidence).
+
+### [~] 9.54 Gate NebKher and the complete roster on the player path
 
 Outcome: permanent face-to-journey matrix with real controls and asserted outcomes, plus the highest applicable full-roster validation tier. The resulting configured roster is thirty-two heroes. T3.

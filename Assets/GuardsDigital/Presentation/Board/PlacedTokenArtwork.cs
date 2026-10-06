@@ -77,6 +77,12 @@ namespace GuardsDigital.Presentation.Board
                 // "FAMILIAR" disc, as every kind does.
                 [new TokenDefinitionId("gydion-familiar")] = string.Empty,
 
+                // The official faces already identify Emmitt's hourglass-hatted Glitch
+                // and NebKher's spectral Illusion. Keep named fallback discs when the
+                // private resources are absent from a clean checkout.
+                [new TokenDefinitionId("emmitt-glitch")] = string.Empty,
+                [new TokenDefinitionId("nebkher-illusion")] = string.Empty,
+
                 // Milestone 9.25. Tali's Ice and Totem, the user on the 2026-09-30 playtest board:
                 // "remove totem and ice text from these ones as well". The prepared faces print
                 // the frozen mass with its -1 hourglass and the carved totem, so no caption. Both

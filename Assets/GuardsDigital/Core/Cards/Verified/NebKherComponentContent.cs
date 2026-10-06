@@ -22,6 +22,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         public static EffectCapabilityReference PlaceIllusionV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("nebkher-place-illusion"), 1);
+        public static EffectCapabilityReference PlaceAdjacentIllusionV1 { get; } =
+            new EffectCapabilityReference(new EffectCapabilityId("nebkher-place-adjacent-illusion"), 1);
 
         public static EffectCapabilityReference ReclaimIllusionV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("nebkher-reclaim-illusion"), 1);
@@ -96,6 +98,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticTokenCapabilities.ReclaimHandler(ReclaimIllusionV1, Illusion),
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceIllusionV1, Illusion, PrintedValueChannel.Radius),
+                SyntheticTokenCapabilities.PlaceHandler(
+                    PlaceAdjacentIllusionV1, Illusion, PrintedValueChannel.Radius,
+                    fixedReach: 1),
                 new ActiveEffectCreationHandler(
                     IllusionsCountAsMinionsV1, IllusionsCountAsMinions),
                 new BoardPartitionCreationHandler(CrackRealityV1, CrackReality),

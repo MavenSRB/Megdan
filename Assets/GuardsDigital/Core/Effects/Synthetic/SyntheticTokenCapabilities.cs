@@ -121,9 +121,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             PrintedValueChannel reachChannel,
             string instanceIdentityLabel = null,
             string adjacentToObstacleKind = null,
-            int minimumSameKindHexDistance = 0) =>
+            int minimumSameKindHexDistance = 0,
+            int fixedReach = 0) =>
             new PlaceHeroTokenHandler(reference, definition, reachChannel,
-                instanceIdentityLabel, adjacentToObstacleKind, minimumSameKindHexDistance);
+                instanceIdentityLabel, adjacentToObstacleKind, minimumSameKindHexDistance,
+                fixedReach);
 
         /// <summary>
         /// One p.18 short-supply handler for one token definition. It offers back every token in that
@@ -300,6 +302,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly string instanceIdentityLabel;
             private readonly string adjacentToObstacleKind;
             private readonly int minimumSameKindHexDistance;
+            private readonly int fixedReach;
 
             public PlaceHeroTokenHandler(
                 EffectCapabilityReference reference,
@@ -307,7 +310,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 PrintedValueChannel reachChannel,
                 string instanceIdentityLabel = null,
                 string adjacentToObstacleKind = null,
-                int minimumSameKindHexDistance = 0)
+                int minimumSameKindHexDistance = 0,
+                int fixedReach = 0)
             {
                 if (reachChannel != PrintedValueChannel.Radius && reachChannel != PrintedValueChannel.Range)
                 {
@@ -334,6 +338,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (minimumSameKindHexDistance < 0)
                     throw new ArgumentOutOfRangeException(nameof(minimumSameKindHexDistance));
                 this.minimumSameKindHexDistance = minimumSameKindHexDistance;
+                if (fixedReach < 0)
+                    throw new ArgumentOutOfRangeException(nameof(fixedReach));
+                this.fixedReach = fixedReach;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -495,6 +502,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     PlaceDestinationAnchor.ActingHero);
 
             private int ResolveReach(EffectCapabilityContext context) =>
+                fixedReach > 0 ? fixedReach :
                 (reachChannel == PrintedValueChannel.Radius
                     ? RadiusValueQuery.Calculate(
                         context.SourceCardInstanceId,

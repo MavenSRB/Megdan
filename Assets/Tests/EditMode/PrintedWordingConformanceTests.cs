@@ -164,6 +164,7 @@ namespace GuardsDigital.Tests.EditMode
                 ["trinkets | trinkets-emergency-protocol"] = "W3: \"Up to two enemy heroes ... discard\" hits the heroes present.",
                 ["gydion | gydion-burning-hands"] = "W3: \"Up to 1 enemy hero adjacent to the target discards\" hits the hero present.",
                 ["takahide | takahide-the-right-hand"] = "W3: \"Up to two enemy heroes in radius discard ..., if able\" hits the heroes present: two nested IfAble passes, the second excluding the first (TakahideBlueAndGreenFacesTests).",
+                ["nebkher | nebkher-an-illusion-of-choice"] = "W3: the next-turn up-to-two discard uses two nested IfAble passes, with the second excluding the first; the number of affected present enemies is not a decline choice (NebKherDealingTests).",
                 ["mortimer | mortimer-master-of-puppets"] = "The Ultimate composes no node: \"up to five times\" is the two extra UpTo passes on the seven faces it raises (MortimerRepeatedChoice)."
             };
 
@@ -416,7 +417,9 @@ namespace GuardsDigital.Tests.EditMode
                 ["takahide | takahide-sting-like-a-bee"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, which exclude the swapping card (TakahideGoldSwapTests).",
                 ["takahide | takahide-float-like-a-butterfly"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, Sting like a Bee's rule.",
                 ["takahide | takahide-strike-like-a-tiger"] = "\"a different gold card in your deck\" is swap-this-card-with-deck-card@1's candidates, Sting like a Bee's rule.",
-                ["takahide | takahide-bushido"] = "\"your gold card with a different gold card in your deck\" is swap-owned-color-card-with-deck-card@1, whose deck candidates exclude the subject (TakahideGoldSwapTests)."
+                ["takahide | takahide-bushido"] = "\"your gold card with a different gold card in your deck\" is swap-owned-color-card-with-deck-card@1, whose deck candidates exclude the subject (TakahideGoldSwapTests).",
+                ["nebkher | nebkher-crack-in-reality"] = "\"the other side of the line\" names the opposite partition, not another candidate in a selection; the partition restriction excludes that side (NebKherComposedBasicAndSplitTests).",
+                ["nebkher | nebkher-shift-reality"] = "\"the other side of the line\" names the opposite partition, not another candidate in a selection; Shift also excludes its controller (NebKherComposedBasicAndSplitTests)."
             };
 
         /// <summary>
@@ -508,7 +511,8 @@ namespace GuardsDigital.Tests.EditMode
                 ["garrus | garrus-blunt-force"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28).",
                 ["garrus | garrus-send-flying"] = "W5: under \"up to\", moving 0 spaces is a move, so the push follows (user, 2026-09-28).",
                 ["emmitt | emmitt-flashback"] = "The skippable reclaim is p.18 short-supply preparation, not the printed may-place choice; placing proceeds when supply was already available. The entire placement-and-swap sequence sits inside one May node, so declining it prevents the swap.",
-                ["emmitt | emmitt-deja-vu"] = "As on Flashback, each IfAble reclaim is p.18 short-supply preparation, independent of the following mandatory Place. The printed if-you-do is governed by the parent May node around the whole placement-and-swap sequence."
+                ["emmitt | emmitt-deja-vu"] = "As on Flashback, each IfAble reclaim is p.18 short-supply preparation, independent of the following mandatory Place. The printed if-you-do is governed by the parent May node around the whole placement-and-swap sequence.",
+                ["nebkher | nebkher-diabolical-laughter"] = "The printed if-you-do gates the entire three-choice body behind the optional Laugh node. Its skippable reclaim is p.18 short-supply preparation before a chosen mandatory Place, not the laugh condition."
             };
 
         /// <summary>

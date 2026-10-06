@@ -17,6 +17,7 @@ namespace GuardsDigital.Tests.PlayMode
         private const string RibbonsMove = nameof(EmmittUiJourneyPlayModeTests.EveryPrintedSecondaryMovementMovesEmmittThroughItsCardControl);
         private const string RibbonsDefend = nameof(EmmittUiJourneyPlayModeTests.EveryPrintedSecondaryDefenseAnswersFromItsOwnFace);
         private const string GlitchSkill = nameof(EmmittUiJourneyPlayModeTests.UnstableTimelinePlacesSpacedGlitchesAndTheEnemyChoosesHisSwap);
+        private const string GlitchArt = nameof(EmmittUiJourneyPlayModeTests.GlitchOnTheLiveBoardUsesItsPreparedOfficialFace);
         private const string GlitchDefense = nameof(EmmittUiJourneyPlayModeTests.UnstableTimelineDefensePlacesThreeGlitchesFromItsWholeFace);
         private const string GlitchAttack = nameof(EmmittUiJourneyPlayModeTests.FlashbackAndDejaVuPlaceGlitchesThenLetTheEnemyChooseTheirSwap);
         private const string Snare = nameof(EmmittUiJourneyPlayModeTests.TimeSnareAndTrapTargetOnlyAResolvedEnemyAndMakeHerDiscard);
@@ -84,7 +85,8 @@ namespace GuardsDigital.Tests.PlayMode
                     Array.Empty<ShapeEvidence>(),
                     Prove(CommitAndReveal, GlitchSkill), Prove(PrimarySkillControl, GlitchSkill),
                     Prove(PrimaryDefenseOffer, GlitchDefense), Prove(DefenseTextApplication, GlitchDefense),
-                    Prove(BoardUnitSelection, GlitchSkill), Prove(BoardSpaceSelection, GlitchSkill)),
+                    Prove(BoardUnitSelection, GlitchSkill), Prove(BoardSpaceSelection, GlitchSkill),
+                    Prove(BoardSpaceSelection, GlitchArt)),
 
                 Row(T.TemporalPunch, "Temporal Punch",
                     "EmmittAttackFacesTests.ReverseTime_AndTemporalPunchLine_PrintTheirVerifiedValuesAndTiming",

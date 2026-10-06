@@ -27,7 +27,7 @@ namespace GuardsDigital.Core.Cards
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
-            IResolvedTurnSlotSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap,
+            IResolvedTurnSlotSwap, IResolvedCardOrderSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap,
             ICurrentTurnCardHistory
     {
         public const int TurnsPerRound = 4;
@@ -251,7 +251,7 @@ namespace GuardsDigital.Core.Cards
             // the resolved-slot swap is: it edits the turn slot and the selected card together.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
-                TeamLives, this, this, this));
+                TeamLives, this, this, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -383,6 +383,59 @@ namespace GuardsDigital.Core.Cards
             if (!CardLifecycleAuthority.TrySwapResolvedWithHand(oldCard, newCard))
                 return false;
             turnSlots[matching[0].index] = newSlot;
+            return true;
+        }
+
+        /// <summary>
+        /// Exchange only two resolved positions in this round's turn history. Both cards retain
+        /// their owner, face, resolved state and source-owned Active effects; this is the exact
+        /// "without canceling active effects" card-order operation.
+        /// </summary>
+        public bool TrySwapResolvedCardPositions(
+            HeroId owner, CardInstanceId firstCard, CardInstanceId secondCard)
+        {
+            if (!owner.IsDefined || !firstCard.IsDefined || !secondCard.IsDefined ||
+                firstCard.Equals(secondCard) || Phase != RoundResolutionPhase.ResolvingTurn)
+                return false;
+            var first = instances.SingleOrDefault(card => card.Id.Equals(firstCard));
+            var second = instances.SingleOrDefault(card => card.Id.Equals(secondCard));
+            if (first == null || second == null ||
+                !first.OwnerId.Equals(owner) || !second.OwnerId.Equals(owner) ||
+                !CardLifecycleAuthority.IsResolvedCardInTurnArea(first) ||
+                !CardLifecycleAuthority.IsResolvedCardInTurnArea(second))
+                return false;
+
+            var positions = turnSlots.Select((slot, index) => new { slot, index })
+                .Where(entry => entry.slot.RoundIndex == RoundIndex)
+                .SelectMany(entry => entry.slot.Assignments
+                    .Where(assignment => assignment.HeroId.Equals(owner) &&
+                        assignment.CardInstanceId.HasValue &&
+                        (assignment.CardInstanceId.Value.Equals(firstCard) ||
+                            assignment.CardInstanceId.Value.Equals(secondCard)))
+                    .Select(assignment => new { entry.slot, entry.index, assignment }))
+                .ToArray();
+            if (positions.Length != 2 || positions[0].index == positions[1].index ||
+                !positions.Any(position => position.assignment.CardInstanceId.Value.Equals(firstCard)) ||
+                !positions.Any(position => position.assignment.CardInstanceId.Value.Equals(secondCard)))
+                return false;
+
+            var firstPosition = positions.Single(position =>
+                position.assignment.CardInstanceId.Value.Equals(firstCard));
+            var secondPosition = positions.Single(position =>
+                position.assignment.CardInstanceId.Value.Equals(secondCard));
+            RoundTurnSlot Replace(RoundTurnSlot slot, TurnCardAssignment replacement) =>
+                new RoundTurnSlot(slot.RoundIndex, slot.TurnIndex,
+                    slot.Assignments.Select(assignment =>
+                        assignment.HeroId.Equals(owner) ? replacement : assignment),
+                    instances, participants);
+            var firstReplacement = Replace(firstPosition.slot,
+                new TurnCardAssignment(owner, secondCard, false,
+                    secondPosition.assignment.IsFacedown));
+            var secondReplacement = Replace(secondPosition.slot,
+                new TurnCardAssignment(owner, firstCard, false,
+                    firstPosition.assignment.IsFacedown));
+            turnSlots[firstPosition.index] = firstReplacement;
+            turnSlots[secondPosition.index] = secondReplacement;
             return true;
         }
 
@@ -1398,7 +1451,7 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 9.32a. The p.10 swap with the deck, as the composed round binds it.
                 authority,
                 // Milestone 9.32b. And the swap of an unresolved card.
-                authority, authority));
+                authority, authority, authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:
@@ -1697,6 +1750,11 @@ namespace GuardsDigital.Core.Cards
 
         public RoundResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {
+            if (Phase == RoundResolutionPhase.ResolvingTurn &&
+                CurrentTurnAuthority != null && !CurrentTurnAuthority.IsStarted &&
+                cardActions != null && cardActions.IsPendingTriggeredEffect)
+                return TryAnswerRevealTriggerChoice(command);
+
             // Milestone 8.19c1. A question asked at rulebook p.8's moment before the Minion Battle is
             // answered with the same command a Skill's is, because it is the same frame paused in the
             // same way. What differs is who owns it: the round is between turns, so the turn authority
@@ -1868,7 +1926,7 @@ namespace GuardsDigital.Core.Cards
                 events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnsPerRound, timingEvent));
             }
 
-            AppendTriggeredEffectEvents(events);
+            AppendTriggeredEffectEvents(events, TurnsPerRound);
             return events;
         }
 
@@ -1877,7 +1935,8 @@ namespace GuardsDigital.Core.Cards
         /// fact becomes the nested turn event every other triggered effect publishes; a checkpoint the
         /// effect raised is applied here, in stream order, exactly as the turn applies one.
         /// </summary>
-        private void AppendTriggeredEffectEvents(ICollection<RoundResolutionEvent> events)
+        private void AppendTriggeredEffectEvents(
+            ICollection<RoundResolutionEvent> events, int turnIndex)
         {
             foreach (var step in cardActions.ConsumeTriggeredResolutionSteps())
             {
@@ -1887,13 +1946,13 @@ namespace GuardsDigital.Core.Cards
                         new ActiveEffectCheckpointContext(
                             step.Checkpoint,
                             RoundIndex,
-                            TurnsPerRound,
+                            turnIndex,
                             step.CheckpointAffectedHeroId,
                             step.CheckpointSourceCardInstanceId),
                         TieBreakerState))
                     {
                         events.Add(RoundResolutionEvent.FromTiming(
-                            RoundIndex, TurnsPerRound, timingEvent));
+                            RoundIndex, turnIndex, timingEvent));
                     }
 
                     continue;
@@ -1902,7 +1961,7 @@ namespace GuardsDigital.Core.Cards
                 if (step.Kind == GuardsDigital.Core.Rules.CardResolution.ResolutionStepKind.Fact)
                 {
                     events.Add(RoundResolutionEvent.FromTurn(
-                        RoundIndex, TurnsPerRound, TurnResolutionEvent.FromTriggeredEffect(step.Fact)));
+                        RoundIndex, turnIndex, TurnResolutionEvent.FromTriggeredEffect(step.Fact)));
                 }
             }
         }
@@ -1948,7 +2007,41 @@ namespace GuardsDigital.Core.Cards
             }
 
             var events = new List<RoundResolutionEvent>();
-            AppendTriggeredEffectEvents(events);
+            AppendTriggeredEffectEvents(events, TurnsPerRound);
+            return RoundResolutionResult.Accept(events);
+        }
+
+        /// <summary>
+        /// A next-turn after-playing-cards trigger may ask the affected hero to discard before
+        /// Initiative starts. Resume every candidate at that reveal checkpoint, then start the
+        /// already-created turn only when its last question is settled.
+        /// </summary>
+        private RoundResolutionResult TryAnswerRevealTriggerChoice(EffectChoiceCommand command)
+        {
+            var answered = cardActions.AnswerTriggeredEffectChoice(
+                command, definitions, instances, participants, timing,
+                cardActions.CurrentModifications(
+                    timing, participants, TieBreakerState, CurrentUltimates(),
+                    GuardsDigital.Core.Rules.Modifications.RuleObject.None),
+                RoundIndex, TurnIndex, TieBreakerState);
+            if (!answered.Accepted)
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.TurnCommandRejected);
+
+            var events = new List<RoundResolutionEvent>();
+            AppendTriggeredEffectEvents(events, TurnIndex);
+            if (!cardActions.IsPendingTriggeredEffect)
+            {
+                var start = CurrentTurnAuthority.TryStart();
+                if (!start.Accepted)
+                    throw new InvalidOperationException(
+                        "A settled reveal trigger could not start the validated turn.");
+                RecordResolvedCards(start.Events);
+                foreach (var turnEvent in start.Events)
+                    events.Add(RoundResolutionEvent.FromTurn(RoundIndex, TurnIndex, turnEvent));
+                if (CurrentTurnAuthority.IsEnded)
+                    CompleteCurrentTurn(events);
+            }
             return RoundResolutionResult.Accept(events);
         }
 
@@ -2845,12 +2938,24 @@ namespace GuardsDigital.Core.Cards
             // raises the order this turn resolves in.
             CurrentTurnAuthority.BindHeroItems(HeroItems);
             Phase = RoundResolutionPhase.ResolvingTurn;
-            foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
-                TimingCheckpoint.CardsPlayedAndRevealed,
-                RoundIndex,
-                TurnIndex),
-                tieBreakerState))
+            var revealCheckpoint = new ActiveEffectCheckpointContext(
+                TimingCheckpoint.CardsPlayedAndRevealed, RoundIndex, TurnIndex);
+            var revealEvents = cardActions == null
+                ? timing.ApplyCheckpoint(revealCheckpoint, tieBreakerState)
+                : cardActions.ApplyTriggeredActionEnded(
+                    timing, revealCheckpoint, tieBreakerState,
+                    definitions, instances, participants,
+                    cardActions.CurrentModifications(
+                        timing, participants, tieBreakerState, CurrentUltimates(),
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.None));
+            foreach (var timingEvent in revealEvents)
                 events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnIndex, timingEvent));
+            if (cardActions != null)
+            {
+                AppendTriggeredEffectEvents(events, TurnIndex);
+                if (cardActions.IsPendingTriggeredEffect)
+                    return;
+            }
             var start = CurrentTurnAuthority.TryStart();
             if (!start.Accepted)
             {

@@ -182,7 +182,9 @@ namespace GuardsDigital.Tests.EditMode
                     HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming),
                 // Milestone 9.49. Emmitt's verified profile: four stars and five printed roles.
                 ["hero-emmitt"] = (HeroComplexity.Wizard, HeroRole.Melee | HeroRole.Tactician |
-                    HeroRole.Durable | HeroRole.Disabler | HeroRole.Tokens)
+                    HeroRole.Durable | HeroRole.Disabler | HeroRole.Tokens),
+                ["hero-nebkher"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Disabler | HeroRole.Tokens | HeroRole.Sniper)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

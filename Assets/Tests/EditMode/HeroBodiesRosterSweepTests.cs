@@ -96,6 +96,13 @@ namespace GuardsDigital.Tests.EditMode
             // a radius they draw around another hero reads every body of a hero inside it and counts him
             // once (9.21a); a radius anchored on a many-bodied CONTROLLER is 9.21a's named refusal.
             ["ActiveEffectCreationHandler"] = Reading.HeroLevelResult,
+            // The line's anchor and the Ultimate's radius read the first reported actor body;
+            // neither asks a many-bodied actor which body to use. Card-only edits remain at hero grain.
+            ["BoardPartitionCreationHandler"] = Reading.OpenBodyNotChosen,
+            ["LaughterCapabilities+LaughHandler"] = Reading.NoHeroOrUnit,
+            ["NebKherUltimateContent+EnemiesInRadiusHandler"] = Reading.OpenBodyNotChosen,
+            ["SyntheticPreviousSlotBorrowCapabilities+HandlerImpl"] = Reading.HeroLevelResult,
+            ["SyntheticResolvedCardOrderSwapCapabilities+SwapResolvedPairHandler"] = Reading.HeroLevelResult,
 
             ["BrynnComponentContent+AttackTargetWasAdjacentToObstaclesHandler"] = Reading.AttackedBody,
             ["BrynnComponentContent+EnemyHeroInRadiusAdjacentToObstaclesHandler"] = Reading.PresenceEveryBody,

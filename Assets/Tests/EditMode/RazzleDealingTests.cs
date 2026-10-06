@@ -34,7 +34,7 @@ namespace GuardsDigital.Tests.EditMode
         public void SelectedRazzle_DealsTheEighteenPlayableFacesInEitherFormat_AndDeclaresFourBodies(int perTeam)
         {
             var razzle = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "razzle");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(31));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(32));
             Assert.That(razzle.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.RazzleHeroIdValue));
             Assert.That(razzle.DisplayName, Is.EqualTo("Razzle the Ringmaster"), "RZ-02: the dashboard's title.");
             Assert.That(razzle.Complexity, Is.EqualTo(HeroComplexity.Wizard), "RZ-01: four stars.");

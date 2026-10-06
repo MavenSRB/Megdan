@@ -646,6 +646,8 @@ namespace GuardsDigital.Core.Participants
                 // Milestone 9.49. Tear in Time is boxed by Emmitt's own dealt set.
                 case Setup.QuickGameSetupConfiguration.EmmittHeroIdValue:
                     return Cards.Verified.EmmittCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.NebKherHeroIdValue:
+                    return Cards.Verified.NebKherCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2317,6 +2319,13 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.EmmittCardContent.CreateHand(ownerId, "blue"));
+
+        public static MatchConfiguration CreateStagedNebKherForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.NebKherCardContent.CreateHand(ownerId, "blue"));
 
         /// <summary>Test-only Tier III Emmitt with Alternative Timelines unlocked faceup.</summary>
         public static MatchConfiguration CreateStagedEmmittTierThreeForInternalTest(

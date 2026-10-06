@@ -188,6 +188,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AllInPlayRange_VisitsTheFiniteMapOnceInCanonicalAxialOrder()
+        {
+            var board = CreateBoard(
+                otherAt: new HexCoordinate(4, 0),
+                minionAt: new HexCoordinate(-2, 0));
+            PlaceToken(board, new HexCoordinate(2, 0));
+
+            var targets = TargetQuery.FindTargetsWithin(
+                Origin, int.MaxValue, false, RuleObject.ForHero(Actor),
+                RuleActivity.Skill, board, StagedBoardParticipants.Create(),
+                RuleModificationSet.Empty);
+
+            Assert.That(targets.Select(target => target.Kind), Is.EqualTo(new[]
+            {
+                BoardObjectKind.Minion, BoardObjectKind.Token, BoardObjectKind.Hero
+            }));
+        }
+
+        [Test]
         public void TheGuards_RefuseANegativeRangeAndAnUnnamedActivity()
         {
             var board = CreateBoard(otherAt: new HexCoordinate(1, 0));

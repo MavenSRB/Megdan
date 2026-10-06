@@ -223,6 +223,7 @@ namespace GuardsDigital.Core.Timing
             TimingCheckpoint.ActionEnded,
             TimingCheckpoint.EndOfRoundBeforeMinionBattle,
             TimingCheckpoint.BeforePrimaryAction,
+            TimingCheckpoint.CardsPlayedAndRevealed,
 
             // Milestone 8.35z30 adds another, for Silverarrow's two "End of turn:" faces.
             // It is listed here only because that milestone also gave it a producer: the turn's own
@@ -291,9 +292,7 @@ namespace GuardsDigital.Core.Timing
                 throw new ArgumentException("A declared triggered effect requires at least one trigger checkpoint.", nameof(triggerCheckpoints));
             if (triggeredEffect.HasValue && triggers.Any(value => !SupportedTriggerWindows.Contains(value)))
                 throw new ArgumentException(
-                    "An Active effect triggers at a window this build executes: Action Ended " +
-                    "(milestone 8.12) or the end-of-round moment before the Minion Battle " +
-                    "(milestone 8.19c).",
+                    "An Active effect triggers only at a window visited by triggered-effect authority.",
                     nameof(triggerCheckpoints));
             var declaredModifications = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
             if (declaredModifications.Any(modification => modification == null))

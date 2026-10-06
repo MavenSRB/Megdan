@@ -1151,6 +1151,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "MinionBattleChoiceCommand.HeroId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 // Never non-default on a SEAT by construction.
                 { "BoardObjectReference.HeroBody", "9.21c: a projection names board objects at hero grain - a candidate's own space says which body of a many-bodied hero it is - so a preview's occupant is normalized before it is projected" },
+                { "BoardObjectReference.TokenInstanceId", NotReached("a token-valued board object reference in a projected choice; token interactions are covered by focused Illusion and token presentation tests") },
                 { "PendingSystemTransitionStep.IsConcurrent", "a seat's pause is narrowed to its own one item (8.35u), so it is never concurrent on a seat" },
                 { "MarkerAttachment.PropertySources", "derived from the trusted marker definition, which no dealt marker gives a property" },
                 { "PlacedToken.PropertySources", "derived from the trusted token definition; no token the walks place prints a property" },

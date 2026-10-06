@@ -208,8 +208,7 @@ namespace GuardsDigital.Tests.EditMode
             var defaults = MatchContentCatalogs.ForThisBuild();
             var catalogs = new MatchContentCatalogs(
                 new EffectCapabilityCatalog(
-                    defaults.Capabilities.Registered.Select(defaults.Capabilities.Load)
-                        .Concat(new[] { LaughterCapabilities.Handler })),
+                    defaults.Capabilities.Registered.Select(defaults.Capabilities.Load)),
                 defaults.Components,
                 new TriggeredEffectCatalog(
                     defaults.TriggeredEffects.Definitions.Concat(new[] { triggerEffect })));

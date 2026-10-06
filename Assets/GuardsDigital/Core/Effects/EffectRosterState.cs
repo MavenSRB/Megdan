@@ -13,6 +13,16 @@ namespace GuardsDigital.Core.Effects
             HeroId owner, CardInstanceId resolvedCard, CardInstanceId handCard);
     }
 
+    /// <summary>
+    /// Exchange the recorded positions of two already-resolved cards of one hero. Their
+    /// card states and source-owned Active effects do not change.
+    /// </summary>
+    public interface IResolvedCardOrderSwap
+    {
+        bool TrySwapResolvedCardPositions(
+            HeroId owner, CardInstanceId firstCard, CardInstanceId secondCard);
+    }
+
     public interface IItemCardSwap
     {
         bool TrySwapItemWithCard(
@@ -72,6 +82,7 @@ namespace GuardsDigital.Core.Effects
         private readonly IDeckCardSwap deckCardSwap;
         private readonly IUnresolvedCardSwap unresolvedCardSwap;
         private readonly ICurrentTurnCardHistory currentTurnCardHistory;
+        private readonly IResolvedCardOrderSwap resolvedCardOrderSwap;
 
         private EffectRosterState()
         {
@@ -88,7 +99,8 @@ namespace GuardsDigital.Core.Effects
             TeamLifeState teamLives,
             IDeckCardSwap deckCardSwap,
             IUnresolvedCardSwap unresolvedCardSwap,
-            ICurrentTurnCardHistory currentTurnCardHistory)
+            ICurrentTurnCardHistory currentTurnCardHistory,
+            IResolvedCardOrderSwap resolvedCardOrderSwap)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
@@ -101,6 +113,7 @@ namespace GuardsDigital.Core.Effects
             this.deckCardSwap = deckCardSwap;
             this.unresolvedCardSwap = unresolvedCardSwap;
             this.currentTurnCardHistory = currentTurnCardHistory;
+            this.resolvedCardOrderSwap = resolvedCardOrderSwap;
         }
 
         /// <summary>
@@ -128,13 +141,14 @@ namespace GuardsDigital.Core.Effects
             TeamLifeState teamLives = null,
             IDeckCardSwap deckCardSwap = null,
             IUnresolvedCardSwap unresolvedCardSwap = null,
-            ICurrentTurnCardHistory currentTurnCardHistory = null) =>
+            ICurrentTurnCardHistory currentTurnCardHistory = null,
+            IResolvedCardOrderSwap resolvedCardOrderSwap = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
                 soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives, deckCardSwap,
-                unresolvedCardSwap, currentTurnCardHistory);
+                unresolvedCardSwap, currentTurnCardHistory, resolvedCardOrderSwap);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -148,6 +162,9 @@ namespace GuardsDigital.Core.Effects
 
         public IResolvedTurnSlotSwap ResolvedTurnSlotSwap =>
             IsAvailable ? resolvedTurnSlotSwap : null;
+
+        public IResolvedCardOrderSwap ResolvedCardOrderSwap =>
+            IsAvailable ? resolvedCardOrderSwap : null;
 
         public IItemCardSwap ItemCardSwap =>
             IsAvailable ? itemCardSwap : null;

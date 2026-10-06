@@ -442,6 +442,7 @@ namespace GuardsDigital.Core.Setup
 
         /// <summary>Milestone 9.49. Emmitt the Traveller, the THIRTY-FIRST hero.</summary>
         public const string EmmittHeroIdValue = "hero-emmitt";
+        public const string NebKherHeroIdValue = "hero-nebkher";
 
         /// <summary>
         /// Milestone 9.21j. How many bodies of Razzle can stand on the board at once: RZ-Q1 (a), settled
@@ -652,7 +653,11 @@ namespace GuardsDigital.Core.Setup
                 (EmmittHeroIdValue, "emmitt", "Emmitt the Traveller",
                     HeroComplexity.Wizard,
                     HeroRole.Melee | HeroRole.Tactician | HeroRole.Durable |
-                    HeroRole.Disabler | HeroRole.Tokens)
+                    HeroRole.Disabler | HeroRole.Tokens),
+                // The selection front prints three stars and Disabler, Tokens, Sniper.
+                (NebKherHeroIdValue, "nebkher", "NebKher the Harbinger",
+                    HeroComplexity.VeryComplex,
+                    HeroRole.Disabler | HeroRole.Tokens | HeroRole.Sniper)
             };
 
         /// <summary>
@@ -1037,6 +1042,9 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 9.49. Wasp on Red against Emmitt on Blue.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusEmmittOneVsOne() =>
             CreateOneVsOne(new HeroContentId("emmitt"), "Emmitt");
+
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusNebKherOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("nebkher"), "NebKher");
 
         /// <summary>Test-only three-seat board for Emmitt's friendly Green effects.</summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusEmmittWithAllyOneVsTwo()

@@ -81,16 +81,18 @@ namespace GuardsDigital.Presentation.Match
         /// deliberately did not, because it is a dealing and moves neither the schema nor the
         /// wire.</para>
         ///
-        /// <para>The two still-absent members are absent because no shipped definition declares them:
-        /// <see cref="ActiveEffectAffectedScopeKind.ControllerTeam"/> and
-        /// <see cref="ActiveEffectAffectedScopeKind.Global"/> are derivable but would be speculative
-        /// code for a sentence no card prints; the fixture turns red the day one does.</para>
+        /// <para>NebKher's board-wide partition and action-scoped Illusion effects have no disk.
+        /// Both mark their controller's piece as the public source of a live effect; the tray names
+        /// the exact restriction. This ring does not claim every affected piece is on his space.
+        /// <see cref="ActiveEffectAffectedScopeKind.ControllerTeam"/> remains unrendered.</para>
         /// </summary>
         public static readonly IReadOnlyList<ActiveEffectAffectedScopeKind> RenderedScopes =
             Array.AsReadOnly(new[]
             {
                 ActiveEffectAffectedScopeKind.ControllerHero,
                 ActiveEffectAffectedScopeKind.Hero,
+                ActiveEffectAffectedScopeKind.Global,
+                ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs,
                 ActiveEffectAffectedScopeKind.UnitsInRadius,
                 ActiveEffectAffectedScopeKind.HeroesInRadius,
                 ActiveEffectAffectedScopeKind.MinionsInRadius,
@@ -430,6 +432,8 @@ namespace GuardsDigital.Presentation.Match
         public static bool MarksItsController(ActiveEffectAffectedScopeKind scope) =>
             scope == ActiveEffectAffectedScopeKind.ControllerHero ||
             scope == ActiveEffectAffectedScopeKind.Hero ||
+            scope == ActiveEffectAffectedScopeKind.Global ||
+            scope == ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs ||
             scope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius ||
             scope == ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius;
 

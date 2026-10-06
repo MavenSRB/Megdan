@@ -238,6 +238,36 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator GlitchOnTheLiveBoardUsesItsPreparedOfficialFace()
+        {
+            yield return Stage(new[] { T.UnstableTimeline, T.TemporalPunch });
+            var root = Root();
+            var runtime = root.Runtime;
+            var emmitt = Emmitt(runtime);
+            yield return CommitEverySeat(root, emmitt, NameOf(runtime, T.UnstableTimeline));
+            yield return GarrusUiJourneyTests.WaitForActor(root, emmitt);
+            yield return PointTrayAt(root, emmitt);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var space = TakahideUiJourneyPlayModeTests.ReachableSpace(root,
+                runtime.PendingEffectChoice.Candidates.Where(candidate =>
+                    candidate.Value.Kind == EffectValueKind.Coordinate)
+                    .Select(candidate => candidate.Value.Coordinate));
+            yield return TakahideUiJourneyPlayModeTests.Pick(root,
+                value => value.Kind == EffectValueKind.Coordinate &&
+                    value.Coordinate.Equals(space), "place Glitch for art inspection");
+
+            var officialFace = Resources.Load<Texture2D>("Private/Tokens/emmitt-glitch");
+            Assert.That(officialFace, Is.Not.Null,
+                "Prepare-TokenArtwork.ps1 -Hero emmitt must provide the private face.");
+            var view = runtime.BoardView.TokenViews.Single(token =>
+                token.gameObject.activeSelf && token.Token != null &&
+                token.Token.Definition.Id.Equals(EmmittComponentContent.Glitch.Id));
+            Assert.That(view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture,
+                Is.SameAs(officialFace));
+            yield return UiPlayer.CaptureGameView("9-53", "emmitt-glitch-official-face");
+        }
+
+        [UnityTest]
         public IEnumerator UnstableTimelinePlacesSpacedGlitchesAndTheEnemyChoosesHisSwap()
         {
             yield return Stage(new[] { T.UnstableTimeline, T.TemporalPunch });

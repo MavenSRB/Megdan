@@ -361,7 +361,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(84),
+            Assert.That(nodes.Length, Is.EqualTo(88),
+                "RE-MEASURED at 9.53: 84 plus four NebKher adjacent-unit selections: Mind Grip's minion, Phantasmal Sentry's adjacent arm, and Phantasmal Warrior/Champion's adjacent arms. " +
                 "RE-MEASURED at 9.30d: 83 plus Gydion's Burning Hands, 'Up to 1 enemy hero adjacent to the target' (his spells join this corpus undealt, through GydionCardContent.AllDefinitions). " +
                 "RE-MEASURED at 9.21f: 81 plus Razzle's two push subjects, 'Push a unit adjacent to you' on Magic Trick and Aaaand it's gone! (his faces join this corpus undealt, by their block list). " +
                 "RE-MEASURED at 8.114a: 80 plus Wuk's Tree Slam, whose first bullet is 'Target a minion adjacent to you'. " +

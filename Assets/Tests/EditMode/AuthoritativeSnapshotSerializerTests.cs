@@ -32,15 +32,7 @@ namespace GuardsDigital.Tests.EditMode
             var chosen = new BoardPartitionLine(
                 new HexCoordinate(0, 0), BoardPartitionAxis.NorthEastSouthWest);
             var build = MatchContentCatalogs.ForThisBuild();
-            var capabilities = new EffectCapabilityCatalog(build.Capabilities.Registered
-                .Select(reference => build.Capabilities.Load(reference))
-                .Concat(new IEffectCapabilityHandler[]
-                {
-                    new BoardPartitionCreationHandler(
-                        NebKherComponentContent.CrackRealityV1,
-                        NebKherComponentContent.CrackReality)
-                }));
-            var catalogs = new MatchContentCatalogs(capabilities, build.Components);
+            var catalogs = build;
             var cardActions = new CardActionResolutionAuthority(catalogs, fixture.Board);
             var round = new RoundResolutionAuthority(
                 fixture.Configuration.CardDefinitions,

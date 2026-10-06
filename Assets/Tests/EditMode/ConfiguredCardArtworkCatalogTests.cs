@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA450EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsABijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -178,15 +178,16 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.32h: 522 -> 542, Takahide's TWENTY dealt fronts (his three gold cards are all
             // dealt; Shameful Display boxed).
             // Milestone 9.49: 542 -> 560, Emmitt's eighteen playable fronts (Tear in Time boxed).
-            Assert.That(catalog.Entries, Has.Count.EqualTo(560));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(560));
+            // Milestone 9.53: 560 -> 578, NebKher's eighteen playable fronts (Mind Probe boxed).
+            Assert.That(catalog.Entries, Has.Count.EqualTo(578));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(578));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(560),
+                Is.EqualTo(578),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -197,7 +198,7 @@ namespace GuardsDigital.Tests.EditMode
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("brynn", 18), ("cutter", 18),
                     ("dodger", 18), ("emmitt", 18),
                     ("garrus", 18), ("gydion", 18), ("hanu", 18), ("ignatia", 18), ("min", 18), ("misa", 18),
-                    ("mortimer", 18), ("mrak", 18),
+                    ("mortimer", 18), ("mrak", 18), ("nebkher", 18),
                     ("razzle", 18), ("rowenna", 18),
                     ("sabina", 18),
                     ("silverarrow", 18), ("snorri", 18), ("swift", 18), ("takahide", 20), ("tali", 18),

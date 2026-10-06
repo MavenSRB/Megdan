@@ -26,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var trinkets = RegisteredHeroRoster.ForThisBuild.Single(hero =>
                 hero.ContentId.Value == "trinkets");
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(31));
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(32));
             Assert.That(trinkets.HeroIdValue,
                 Is.EqualTo(QuickGameSetupConfiguration.TrinketsHeroIdValue));
             Assert.That(trinkets.DisplayName, Is.EqualTo("Trinkets the Scavenger"));

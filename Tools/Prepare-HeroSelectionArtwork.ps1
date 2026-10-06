@@ -109,6 +109,9 @@ $sources = [ordered]@{
     # SHA-256-identical to active-hero-cards/_selection-cards/Emmitt__front.png
     # (E843CFC143EE489F7AC7DF9EE91548D09D114BDE58F342AA067D8C7659344CBE; EM-01).
     emmitt = 'randomizers-tt27__7723686__front.png'
+    # SHA-256-identical to active-hero-cards/_selection-cards/Nebkher__front.png
+    # (E5C85D4F...B06E62E; NB-01).
+    nebkher = 'randomizers-tt17__7723685__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

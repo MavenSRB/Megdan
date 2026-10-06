@@ -182,7 +182,8 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 9.32h. His card folder is `Takahide`; the dashboard prints "Takahide the
                 // Warlord" (inventory 9.32).
                 { "takahide", "Takahide" },
-                { "emmitt", "Emmitt" }
+                { "emmitt", "Emmitt" },
+                { "nebkher", "Nebkher" }
             };
 
         /// <summary>
@@ -550,6 +551,7 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 9.32h. Takahide's twenty dealt fronts; Shameful Display is p.20's Handicap.
                 .Concat(TakahideCardContent.DealtDefinitions)
                 .Concat(EmmittCardContent.DealtDefinitions)
+                .Concat(NebKherCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

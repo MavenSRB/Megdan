@@ -70,6 +70,7 @@ $heroFolders = [ordered]@{
     gydion = 'Gydion'
     takahide = 'Takahide'
     emmitt = 'Emmitt'
+    nebkher = 'Nebkher'
 }
 
 # Milestone 9.32h. Every hero deals eighteen fronts except Takahide, whose three gold cards are all

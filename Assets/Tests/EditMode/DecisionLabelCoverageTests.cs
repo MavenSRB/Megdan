@@ -72,6 +72,8 @@ namespace GuardsDigital.Tests.EditMode
             yield return new DealtHero("gydion", GydionCardContent.ContentRevision,
                 GydionCardContent.DealtDefinitions.Concat(GydionCardContent.SpellDefinitions).ToArray());
             yield return new DealtHero("takahide", TakahideCardContent.ContentRevision, TakahideCardContent.DealtDefinitions);
+            yield return new DealtHero("emmitt", EmmittCardContent.ContentRevision, EmmittCardContent.DealtDefinitions);
+            yield return new DealtHero("nebkher", NebKherCardContent.ContentRevision, NebKherCardContent.DealtDefinitions);
         }
 
         /// <summary>
@@ -81,7 +83,7 @@ namespace GuardsDigital.Tests.EditMode
         /// since, each of which is what makes that hero one a match configuration deals - and Gydion the
         /// Archwizard (milestone 9.30i), the first dealing since to join the catalog's own tables.
         /// </summary>
-        private const int MatchConfigurationRosterSize = 30;
+        private const int MatchConfigurationRosterSize = 32;
 
         /// <summary>
         /// The longest label in the content as milestone 8.46a shipped it is 58 characters. The bound

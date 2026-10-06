@@ -251,6 +251,16 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(EmmittTimeWarpContent.Handlers())
                 .Concat(EmmittTimeCapsuleContent.Handlers())
                 .Concat(EmmittBackToFutureContent.Handlers())
+                // Milestone 9.53. Mirror NebKher's component, delayed-color and Ultimate
+                // declarations independently of the production catalog composer.
+                .Concat(NebKherComponentContent.Handlers())
+                .Concat(NebKherDelayedDoubtContent.Handlers())
+                .Concat(NebKherUltimateContent.Handlers())
+                .Concat(new[]
+                {
+                    SyntheticPreviousSlotBorrowCapabilities.Handler(),
+                    SyntheticResolvedCardOrderSwapCapabilities.Handler()
+                })
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

@@ -256,6 +256,9 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 9.49. Emmitt's nineteen verified fronts, including the boxed Handicap,
             // participate in the same structural Attack-target sweep.
             foreach (var card in EmmittCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("emmitt", d);
+            // Milestone 9.53. The thirty-second hero's full printed set joins the same structural
+            // Attack-target sweep, including his optional Illusion and borrowed-action branches.
+            foreach (var card in NebKherCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("nebkher", d);
         }
 
         /// <summary>

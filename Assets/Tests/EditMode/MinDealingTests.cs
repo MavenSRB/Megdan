@@ -31,7 +31,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var min = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == MinCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(31),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(32),
                 "She was the nineteenth hero this build could put on a board; milestone 8.69g " +
                 "deals Brynn as the twentieth, 8.71h Hanu as the twenty-first and 8.75b Ignatia " +
                 "as the twenty-second.");
@@ -407,8 +407,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(MinCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(31));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(31),
+            Assert.That(dealt, Has.Count.EqualTo(32));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(32),
                 "and no two rows name one printed set.");
         }
     }

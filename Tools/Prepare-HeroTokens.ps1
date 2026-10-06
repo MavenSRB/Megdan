@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion', 'takahide', 'emmitt')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets', 'snorri', 'mrak', 'wuk', 'mortimer', 'razzle', 'gydion', 'takahide', 'emmitt', 'nebkher')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -283,6 +283,8 @@ $declaredHeroes = @{
     # The VerticalTokens element TT has two 302x302 faces (element 8629713, public 4635323).
     # Its crop must be visually confirmed against the named Emmitt dashboard before acceptance.
     emmitt = @{ ElementId = 8629713; ElementName = 'TT'; DisplayName = 'Emmitt' }
+    # The bundled VerticalTokens element names the hero by his title and has two 302x302 faces.
+    nebkher = @{ ElementId = 8597494; ElementName = 'Harbinger'; DisplayName = 'NebKher' }
 }
 
 $declared = $declaredHeroes[$Hero]

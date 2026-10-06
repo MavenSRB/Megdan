@@ -68,5 +68,52 @@ namespace GuardsDigital.Core.Cards.Verified
                         })
                 });
         }
+
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            foreach (var card in new[] { Flashback, DejaVu })
+            {
+                yield return DecisionLabelDeclaration.DecisionStep(card,
+                    card.Value + "-may-place-glitches",
+                    "Place Glitch tokens after the attack", "Do not place Glitch tokens");
+                yield return DecisionLabelDeclaration.DecisionStep(card,
+                    card.Value + "-up-to-one-enemy",
+                    "Choose an enemy hero to swap with a Glitch", "Choose no enemy hero");
+            }
+
+            yield return DecisionLabelDeclaration.DecisionArm(TimeWarp, "time-warp-swap-arm",
+                "Swap with an enemy hero who resolved a card this turn");
+            yield return DecisionLabelDeclaration.DecisionArm(TimeWarp, "time-warp-card-arm",
+                "Have an enemy hero swap their unresolved and resolved cards");
+
+            foreach (var card in new[] { TimeCapsule, FutureProof })
+            {
+                yield return DecisionLabelDeclaration.DecisionStep(card,
+                    "time-capsule-self-may",
+                    "Retrieve your cards discarded this turn", "Leave your discarded cards");
+                yield return DecisionLabelDeclaration.DecisionStep(card,
+                    "time-capsule-first-may",
+                    "Retrieve this friendly hero's cards discarded this turn",
+                    "Leave this friendly hero's discarded cards");
+                yield return DecisionLabelDeclaration.DecisionStep(card,
+                    "time-capsule-second-may",
+                    "Retrieve this friendly hero's cards discarded this turn",
+                    "Leave this friendly hero's discarded cards");
+            }
+
+            yield return DecisionLabelDeclaration.DecisionArm(BackToTheFuture,
+                "back-to-the-future-place-arm",
+                "Place a unit into its space at the start of this turn");
+            yield return DecisionLabelDeclaration.DecisionArm(BackToTheFuture,
+                BackToTheFuture.Value + "-root",
+                "Move a stationary enemy hero two spaces in a straight line");
+
+            yield return DecisionLabelDeclaration.DecisionArm(FutureProof,
+                "time-capsule-root",
+                "You and nearby allies may retrieve cards discarded this turn");
+            yield return DecisionLabelDeclaration.DecisionArm(FutureProof,
+                FutureProof.Value + "-text-root",
+                "Nearby friendly heroes are immune to enemy actions this turn");
+        }
     }
 }

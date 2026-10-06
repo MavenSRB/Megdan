@@ -4783,7 +4783,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(GydionCardContent.DealtDefinitions)
                 // Milestone 9.32h. The thirtieth: his twenty dealt fronts.
                 .Concat(TakahideCardContent.DealtDefinitions)
-                .Concat(EmmittCardContent.DealtDefinitions).ToArray();
+                .Concat(EmmittCardContent.DealtDefinitions)
+                .Concat(NebKherCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

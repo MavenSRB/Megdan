@@ -948,15 +948,18 @@ namespace GuardsDigital.Tests.EditMode
         // equality groups and the ordered event stream remain unchanged.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "e2d5061195a3380d61bb4d8e0840f94b54d8b9ba29b8493497a38b1dd013e38a", "0fdb4e9513f2fd732d3d7012b40d4f311c8149d60e8ee155f59dae3680e6316a"),
-            new ScenarioDigest("rejected", "e2d5061195a3380d61bb4d8e0840f94b54d8b9ba29b8493497a38b1dd013e38a", "0fdb4e9513f2fd732d3d7012b40d4f311c8149d60e8ee155f59dae3680e6316a"),
-            new ScenarioDigest("stale", "e2d5061195a3380d61bb4d8e0840f94b54d8b9ba29b8493497a38b1dd013e38a", "0fdb4e9513f2fd732d3d7012b40d4f311c8149d60e8ee155f59dae3680e6316a"),
-            new ScenarioDigest("restored", "e2d5061195a3380d61bb4d8e0840f94b54d8b9ba29b8493497a38b1dd013e38a", "0fdb4e9513f2fd732d3d7012b40d4f311c8149d60e8ee155f59dae3680e6316a"),
-            new ScenarioDigest("replayed", "e2d5061195a3380d61bb4d8e0840f94b54d8b9ba29b8493497a38b1dd013e38a", "0fdb4e9513f2fd732d3d7012b40d4f311c8149d60e8ee155f59dae3680e6316a"),
-            new ScenarioDigest("undo-truncated", "ef8d594e73ad868dc71326ff9031cfefefab298106f299e2f7f30e5e1a8185af", "1ee3f1bbc1681fa800a96abff6e5a91d3470d690d2790ea2872fa9468fdebc4a"),
-            new ScenarioDigest("defense-discarded", "37806f313453ef4e021d179711de6ba99c64383798b8f3a874696557543b309b", "48c19ac370ab2f428b57f11744bae647d8e5263689923b11039a683a4e5c6f52"),
-            new ScenarioDigest("defense-discarded-restored", "37806f313453ef4e021d179711de6ba99c64383798b8f3a874696557543b309b", "48c19ac370ab2f428b57f11744bae647d8e5263689923b11039a683a4e5c6f52"),
-            new ScenarioDigest("defense-discarded-replayed", "37806f313453ef4e021d179711de6ba99c64383798b8f3a874696557543b309b", "48c19ac370ab2f428b57f11744bae647d8e5263689923b11039a683a4e5c6f52"),
+            // Milestone 9.53: the configured content roster now includes NebKher's eighteen fronts
+            // and triggered bodies. Every path changed to the same measured catalog digest;
+            // accepted/rejected/stale and restored/replayed remain pairwise identical.
+            new ScenarioDigest("accepted", "e5ba55739c883c41c3a49870fba3654a896250e210e9a5616e06a16b31b5d262", "546b9a8eb7c61858b1b45a4415698023720281fd351b0aa0d51f27d33c687528"),
+            new ScenarioDigest("rejected", "e5ba55739c883c41c3a49870fba3654a896250e210e9a5616e06a16b31b5d262", "546b9a8eb7c61858b1b45a4415698023720281fd351b0aa0d51f27d33c687528"),
+            new ScenarioDigest("stale", "e5ba55739c883c41c3a49870fba3654a896250e210e9a5616e06a16b31b5d262", "546b9a8eb7c61858b1b45a4415698023720281fd351b0aa0d51f27d33c687528"),
+            new ScenarioDigest("restored", "e5ba55739c883c41c3a49870fba3654a896250e210e9a5616e06a16b31b5d262", "546b9a8eb7c61858b1b45a4415698023720281fd351b0aa0d51f27d33c687528"),
+            new ScenarioDigest("replayed", "e5ba55739c883c41c3a49870fba3654a896250e210e9a5616e06a16b31b5d262", "546b9a8eb7c61858b1b45a4415698023720281fd351b0aa0d51f27d33c687528"),
+            new ScenarioDigest("undo-truncated", "ad263d8710d2ca917cfdfc8aa511467122c2791c6be14a4f12568bd680226474", "ad2df878d53b61a165406dd3178c11f2e1f808a4bdfbe66bfacaf794964900ed"),
+            new ScenarioDigest("defense-discarded", "570bd4e398d244e989b914940e3691c2fdb6131c7707bbb42ac1e887e345391f", "78dd80499f02a05d7d5d3635ae1522c1672f847a25b97199eaad7b595afa8450"),
+            new ScenarioDigest("defense-discarded-restored", "570bd4e398d244e989b914940e3691c2fdb6131c7707bbb42ac1e887e345391f", "78dd80499f02a05d7d5d3635ae1522c1672f847a25b97199eaad7b595afa8450"),
+            new ScenarioDigest("defense-discarded-replayed", "570bd4e398d244e989b914940e3691c2fdb6131c7707bbb42ac1e887e345391f", "78dd80499f02a05d7d5d3635ae1522c1672f847a25b97199eaad7b595afa8450"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

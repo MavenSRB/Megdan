@@ -731,6 +731,7 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 9.32h. Takahide's twenty dealt fronts.
                 .Concat(TakahideCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(EmmittCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(NebKherCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -770,6 +771,7 @@ namespace GuardsDigital.Tests.EditMode
                     "ActorOtherBodiesInRadius",
                     "AdvanceHandler",
                     "AnySupportRuneHandler",
+                    "BoardPartitionCreationHandler",
                     "CastSpellHandler",
                     "ChooseDiscardedCardHandler",
                     "ChooseFriendlyUnitAndTreeHandler",
@@ -784,10 +786,13 @@ namespace GuardsDigital.Tests.EditMode
                     "ContinuedLineEnd",
                     "CountOtherRemovedSpellsHandler",
                     "DefeatMinionHandler",
+                    "EnemiesInRadiusHandler",
                     "EnemyHeroInPlayHandler",
                     "ExcludeAdjacentEnemyMinionsHandler",
+                    "HandlerImpl",
                     "HeroAdjacentToMinionHandler",
                     "InscribeRunesHandler",
+                    "LaughHandler",
                     "ObstacleSpaceHandler",
                     "PlaceAdjacentObstacleHandler",
                     "PlaceAlongLineHandler",
@@ -810,6 +815,7 @@ namespace GuardsDigital.Tests.EditMode
                     "SpellInBookPresent",
                     "SwapHandler",
                     "SwapItemWithCardHandler",
+                    "SwapResolvedPairHandler",
                     "SwapResolvedWithHandHandler",
                     "SwapUnresolvedCardHandler",
                     "SwapWithDeckCardHandler",

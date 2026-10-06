@@ -162,11 +162,8 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.71h, the other side of the same claim: the widening reaches the Hero scope and
-        /// NOTHING ELSE. <see cref="ActiveEffectAffectedScopeKind.ControllerTeam"/> and
-        /// <see cref="ActiveEffectAffectedScopeKind.Global"/> stay off both lists, so the day content
-        /// declares one the two sweeps above go red exactly as they did for his journeys - which is
-        /// what keeps this list a decision rather than a habit.
+        /// NebKher's Global board partition and token-kind overlay now ring their controller as a
+        /// visible source, without inventing a disk. ControllerTeam remains unrendered.
         /// </summary>
         [Test]
         public void TheWideningReachesTheHeroScopeAndNoOtherUnrenderedScope()
@@ -184,14 +181,29 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var scope in new[]
             {
-                ActiveEffectAffectedScopeKind.ControllerTeam,
-                ActiveEffectAffectedScopeKind.Global
+                ActiveEffectAffectedScopeKind.Global,
+                ActiveEffectAffectedScopeKind.TokensOfKindWhileControllerActs
             })
             {
-                Assert.That(ActiveEffectVisibility.RenderedScopes, Has.No.Member(scope),
-                    scope + " is still unrendered, and the sweeps above are what will say so the " +
-                    "day a card declares it.");
+                Assert.That(ActiveEffectVisibility.RenderedScopes, Has.Member(scope));
+                Assert.That(ActiveEffectVisibility.MarksItsController(scope), Is.True);
+                Assert.That(ActiveEffectVisibility.DrawsADisk(scope), Is.False);
             }
+            Assert.That(ActiveEffectVisibility.RenderedScopes,
+                Has.No.Member(ActiveEffectAffectedScopeKind.ControllerTeam));
+        }
+
+        [TestCase("nebkher-crack-reality-effect")]
+        [TestCase("nebkher-shift-reality-effect")]
+        [TestCase("nebkher-illusions-count-as-minions-effect")]
+        public void NebKherBoardWideAndIllusionEffects_MarkTheirControllerWithoutInventingADisk(
+            string effectId)
+        {
+            var card = CardDeclaring(effectId);
+            Assert.That(card, Is.Not.Null, effectId);
+            var model = Derive(card, live: true);
+            Assert.That(model.MarkedHeroes, Is.EqualTo(new[] { Carrier }), effectId);
+            Assert.That(model.AuraSpaces, Is.Empty, effectId);
         }
 
         /// <summary>Nothing live means nothing drawn, on the same card and the same board.</summary>
@@ -637,6 +649,8 @@ namespace GuardsDigital.Tests.EditMode
                     // are the only content in this build that declares the Hero scope and the two
                     // sweeps above are asked of every definition a configured match can load.
                     .Concat(MatchConfiguration.CreateStagedHanuForInternalTest(TeamSide.Red)
+                        .CardDefinitions)
+                    .Concat(MatchConfiguration.CreateStagedNebKherForInternalTest(TeamSide.Red)
                         .CardDefinitions)
                     .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                     .Select(group => group.First())

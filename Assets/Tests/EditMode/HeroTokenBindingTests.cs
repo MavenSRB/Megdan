@@ -16,6 +16,28 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class HeroTokenBindingTests
     {
+        [TestCase("emmitt")]
+        [TestCase("nebkher")]
+        public void FinalTwoHeroes_HavePreparedStandeeFaces(string hero)
+        {
+            var content = new HeroContentId(hero);
+            var neutral = Resources.Load<Texture2D>(HeroTokenArtwork.NeutralResourcePath(content));
+            foreach (var team in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var baked = Resources.Load<Texture2D>(HeroTokenArtwork.ResourcePath(content, team));
+                var expected = baked != null ? baked : neutral;
+                Assert.That(expected, Is.Not.Null,
+                    "run Tools/Prepare-HeroTokens.ps1 -Hero " + hero +
+                    (hero == "emmitt" ? "" : " -Neutral") + " in this checkout");
+                var presentation = HeroTokenArtwork.ResolveToken(content, team, out var resolved);
+                Assert.That(presentation.FaceKind, Is.Not.EqualTo(TokenFaceKind.GeneratedPrism));
+                Assert.That(resolved, Is.SameAs(expected),
+                    hero + " should show its available prepared face on either team.");
+                Assert.That(resolved.width, Is.GreaterThan(0));
+                Assert.That(resolved.height, Is.GreaterThan(0));
+            }
+        }
+
         [Test]
         public void BoardAndRail_UseTheAvailableFaceAndItsTeamRing(
             [Values("wasp", "arien", "brogan", "sabina", "tigerclaw", "xargatha",
@@ -23,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.75b. The twenty-second hero's standee, on the same terms every value
                 // above it is on: her two team faces are prepared as ignored private resources, and
                 // a source-only checkout proves the explicit fallback instead of skipping.
-                "ignatia",
+                "ignatia", "emmitt", "nebkher",
                 "no-such-hero")] string hero,
             [Values(TeamSide.Red, TeamSide.Blue)] TeamSide team)
         {

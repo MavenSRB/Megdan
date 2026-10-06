@@ -104,6 +104,37 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void FinalTwoHeroes_RenderTheirOfficialPlacedTokenFaces()
+        {
+            var roles = new[]
+            {
+                EmmittComponentContent.Glitch,
+                NebKherComponentContent.Illusion
+            };
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                for (var index = 0; index < roles.Length; index++)
+                {
+                    var role = roles[index];
+                    Assert.That(PlacedTokenArtwork.TryLoadTexture(role.Id, out var face),
+                        Is.True, "run Tools/Prepare-TokenArtwork.ps1 -Hero " +
+                            (index == 0 ? "emmitt" : "nebkher") + " in this checkout");
+                    Assert.That(face.width, Is.GreaterThan(0));
+                    Assert.That(face.height, Is.GreaterThan(0));
+                    Assert.That(PlacedTokenArtwork.Caption(role, true), Is.Empty);
+                    Assert.That(PlacedTokenArtwork.Caption(role, false),
+                        Is.EqualTo(role.DisplayName.ToUpperInvariant()));
+                    board.Render(index + 1, Token("final-token-" + index, role,
+                        new HexCoordinate(1, 0)));
+                    var view = board.View.TokenViews.Single();
+                    Assert.That(view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture,
+                        Is.SameAs(face), role.Id.Value + " is missing its face.");
+                    Assert.That(view.NameText, Is.Empty);
+                }
+            }
+        }
+
         /// <summary>
         /// Milestone 9.25, the user on the 2026-09-30 playtest board: "can you remove totem and ice
         /// text from these ones as well". Tali's three kinds print their own faces, so none wears a

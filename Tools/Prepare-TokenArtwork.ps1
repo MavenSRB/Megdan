@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer', 'gydion')]
+    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer', 'gydion', 'emmitt', 'nebkher')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -864,7 +864,7 @@ if ($Hero -eq 'mortimer') {
 # 2026-10-01 (GY-03). The rule is one token definition (GydionComponentContent), so one face is
 # prepared, with no caption over it. Nothing about the rule is read from the picture.
 # -------------------------------------------------------------------------------------------------
-if ($Hero -eq 'gydion') {
+if ($Hero -in @('gydion', 'emmitt', 'nebkher')) {
     $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $corpusRoot = [System.IO.Path]::Combine(
         $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
@@ -883,24 +883,30 @@ if ($Hero -eq 'gydion') {
 
     $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
 
-    $gydionTokens = @(
-        @{ Element = 5831117; Sprite = 0; X = 2058; Y = 2526; TokenId = 'gydion-familiar'; Label = 'Familiar' }
-    )
+    # Each has one official hex face whose two manifest sides name the same rectangle.
+    # Inspected on 2026-10-05: Reality is NebKher's blue horned illusion; clone is
+    # Emmitt's hourglass-hatted duplicate. The names are not the project's token IDs.
+    $singleFaceTokens = @{
+        gydion = @{ Element = 5831117; Name = 'raven'; Atlas = 'Image_0_Atlas'; X = 2058; Y = 2526; Width = 335; Height = 291; TokenId = 'gydion-familiar'; Label = 'Familiar' }
+        emmitt = @{ Element = 5366754; Name = 'clone'; Atlas = 'Image_3_Atlas'; X = 0; Y = 1043; Width = 427; Height = 369; TokenId = 'emmitt-glitch'; Label = 'Glitch' }
+        nebkher = @{ Element = 4418753; Name = 'Reality'; Atlas = 'Image_0_Atlas'; X = 1709; Y = 2526; Width = 335; Height = 291; TokenId = 'nebkher-illusion'; Label = 'Illusion' }
+    }
+    $token = $singleFaceTokens[$Hero]
 
     Add-Type -AssemblyName System.Drawing
     if (-not $Check) { New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null }
 
     $written = 0
     $matched = 0
-    foreach ($token in $gydionTokens) {
+    foreach ($token in @($token)) {
         $found = @($manifest | Where-Object { $_.elementId -eq $token.Element })
         if ($found.Count -ne 1) {
             throw "The manifest holds $($found.Count) elements with id $($token.Element); one was expected."
         }
 
         $element = $found[0]
-        if ($element.elementType -ne 'Tokens') {
-            throw "Element $($token.Element) is '$($element.elementType)', not 'Tokens'. Nothing was written."
+        if ($element.elementType -ne 'Tokens' -or $element.elementName -ne $token.Name) {
+            throw "Element $($token.Element) identity changed; expected Tokens '$($token.Name)'. Nothing was written."
         }
 
         $atlas = $element.atlases[0]
@@ -911,14 +917,18 @@ if ($Hero -eq 'gydion') {
         }
 
         # Both faces are the one rectangle; the front is prepared. See the note above.
-        if ([int] $sprites[1].x -ne 2058 -or [int] $sprites[1].y -ne 2526) {
+        if ($atlas.resource.id -ne $token.Atlas -or
+            [int] $sprites[1].x -ne $token.X -or [int] $sprites[1].y -ne $token.Y -or
+            [int] $sprites[1].width -ne $token.Width -or
+            [int] $sprites[1].height -ne $token.Height) {
             throw ("Element $($token.Element) no longer declares its back face where it was inspected. " +
                 'Nothing was written.')
         }
 
-        $rect = $sprites[$token.Sprite]
-        if ([int] $rect.x -ne $token.X -or [int] $rect.y -ne $token.Y) {
-            throw ("Element $($token.Element) sprite $($token.Sprite) is at ($($rect.x),$($rect.y)), " +
+        $rect = $sprites[0]
+        if ([int] $rect.x -ne $token.X -or [int] $rect.y -ne $token.Y -or
+            [int] $rect.width -ne $token.Width -or [int] $rect.height -ne $token.Height) {
+            throw ("Element $($token.Element) sprite 0 is at ($($rect.x),$($rect.y)), " +
                 "not the measured ($($token.X),$($token.Y)). Nothing was written.")
         }
 

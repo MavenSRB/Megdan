@@ -2,6 +2,12 @@
 
 Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 
+## Milestone 9.53 NebKher dealing evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.53 | NebKher's eighteen verified playable fronts are composed and dealt, Mind Probe is boxed, and his selection, standee, card, Illusion and shine art are prepared privately. Emmitt's missing Glitch face was repaired. Focused and full T3 gates plus non-batch art inspection passed after observed roster/overlay/matrix failures were closed; the permanent NebKher player-path gate follows at 9.54. [Definition](../../Roadmap/PHASE_9_FINAL_TWO_HEROES.md#x-953-compose-and-deal-nebkher). | `milestone/9.53` |
+
 ## Milestone 9.52 NebKher laughter and divided-board evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -235,48 +235,68 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             var found = new List<BoardObjectReference>();
-            for (var dq = -range; dq <= range; dq++)
+            foreach (var coordinate in CoordinatesWithin(origin, range, board.MapDefinition))
             {
-                for (var dr = Math.Max(-range, -dq - range); dr <= Math.Min(range, -dq + range); dr++)
+                if (!includeSelf && coordinate.Equals(origin))
                 {
-                    var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
-                    if (!includeSelf && coordinate.Equals(origin))
-                    {
-                        continue;
-                    }
-
-                    if (!board.TryGetObjectAt(coordinate, out var occupant))
-                    {
-                        continue;
-                    }
-
-                    var asRuleObject = occupant.AsRuleObject();
-                    if (occupant.Kind == BoardObjectKind.Token &&
-                        IsSeparatedByBoardPartition(
-                            RuleObject.ForToken(occupant.TokenInstanceId), targetingUnit,
-                            board, modifications, coordinate))
-                    {
-                        continue;
-                    }
-                    if (asRuleObject.IsDefined && IsPreventedAt(
-                            asRuleObject,
-                            activity,
-                            targetingUnit,
-                            board,
-                            participants,
-                            modifications,
-                            immunityOverrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
-                            overrideActivity == RuleActivity.None ? activity : overrideActivity,
-                            coordinate))
-                    {
-                        continue;
-                    }
-
-                    found.Add(occupant);
+                    continue;
                 }
+
+                if (!board.TryGetObjectAt(coordinate, out var occupant))
+                {
+                    continue;
+                }
+
+                var asRuleObject = occupant.AsRuleObject();
+                if (occupant.Kind == BoardObjectKind.Token &&
+                    IsSeparatedByBoardPartition(
+                        RuleObject.ForToken(occupant.TokenInstanceId), targetingUnit,
+                        board, modifications, coordinate))
+                {
+                    continue;
+                }
+                if (asRuleObject.IsDefined && IsPreventedAt(
+                        asRuleObject,
+                        activity,
+                        targetingUnit,
+                        board,
+                        participants,
+                        modifications,
+                        immunityOverrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
+                        overrideActivity == RuleActivity.None ? activity : overrideActivity,
+                        coordinate))
+                {
+                    continue;
+                }
+
+                found.Add(occupant);
             }
 
             return found;
+        }
+
+        private static IEnumerable<HexCoordinate> CoordinatesWithin(
+            HexCoordinate origin, int range, BoardMapDefinition map)
+        {
+            // A printed "in play" target uses int.MaxValue as the unbounded range. Walking a
+            // geometric disk of that radius would never finish (and its counters would overflow).
+            // The map owns the finite set of spaces a piece can stand on, in the same axial order
+            // as the ordinary radius walk.
+            if (range == int.MaxValue)
+            {
+                if (map == null)
+                    yield break;
+                foreach (var space in map.Spaces
+                    .OrderBy(value => value.Coordinate.Q)
+                    .ThenBy(value => value.Coordinate.R))
+                    yield return space.Coordinate;
+                yield break;
+            }
+
+            for (var dq = -range; dq <= range; dq++)
+                for (var dr = Math.Max(-range, -dq - range);
+                    dr <= Math.Min(range, -dq + range); dr++)
+                    yield return new HexCoordinate(origin.Q + dq, origin.R + dr);
         }
 
         /// <summary>

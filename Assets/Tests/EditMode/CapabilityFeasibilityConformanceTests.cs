@@ -470,7 +470,9 @@ namespace GuardsDigital.Tests.EditMode
             // teammate's unresolved card (9.32b) and the choice of a card in a teammate's discard
             // (9.32e). His two obstacle effects reuse ActiveEffectCreationHandler.
             // Milestone 9.49: Emmitt registers five new hero-specific handler types.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(151),
+            // Milestone 9.53: NebKher registers five more distinct handler types (the remaining
+            // per-card variants reuse existing generic handler types).
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(156),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

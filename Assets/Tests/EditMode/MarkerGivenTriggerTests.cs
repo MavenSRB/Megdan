@@ -623,7 +623,8 @@ namespace GuardsDigital.Tests.EditMode
 
                     // Milestone 9.21j. Razzle's Twin Strike declares 9.21h's basic-Attack condition;
                     // it names ActionEnded like the six, which the case below keeps true.
-                    UltimateTriggerCondition.AfterControllerPerformsBasicAttack
+                    UltimateTriggerCondition.AfterControllerPerformsBasicAttack,
+                    UltimateTriggerCondition.AfterControllerLaughsDiabolically
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
                 "were; Bain adds marker-given, Garrus resolved-card-discarded, Widget actual Movement, " +
@@ -636,6 +637,9 @@ namespace GuardsDigital.Tests.EditMode
                         : rule.TriggerCondition == UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
                             ? rule.TriggerCheckpoints.Count == 1 &&
                                 rule.TriggerCheckpoints[0] == TimingCheckpoint.ResolvedCardDiscarded
+                        : rule.TriggerCondition == UltimateTriggerCondition.AfterControllerLaughsDiabolically
+                            ? rule.TriggerCheckpoints.Count == 1 &&
+                                rule.TriggerCheckpoints[0] == TimingCheckpoint.LaughedDiabolically
                         : rule.TriggerCheckpoints.Count == 1 &&
                             rule.TriggerCheckpoints[0] == TimingCheckpoint.ActionEnded),
                 Is.True,

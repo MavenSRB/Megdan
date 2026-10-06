@@ -169,7 +169,11 @@ namespace GuardsDigital.Core.Timing
                 // cancellation moment, and Constrict triggers before the Minion Battle and expires at
                 // Round End. `ActiveEffectLifecycleTriggerOrderTests` asserts that separation rather
                 // than leaving it to be true by accident.
-                var triggersNow = !activatedNow && effect.Phase == ActiveEffectPhase.Active &&
+                var triggersNow = (!activatedNow ||
+                        (effect.Definition.DurationKind ==
+                            ActiveEffectDurationKind.NextTurnAfterPlayingCards &&
+                         context.Checkpoint == TimingCheckpoint.CardsPlayedAndRevealed)) &&
+                    effect.Phase == ActiveEffectPhase.Active &&
                     effect.Definition.TriggerCheckpoints.Contains(context.Checkpoint) &&
                     IsRelevantHero(effect, context.AffectedHeroId);
                 if (triggersNow)

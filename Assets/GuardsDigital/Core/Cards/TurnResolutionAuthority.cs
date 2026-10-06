@@ -923,7 +923,7 @@ namespace GuardsDigital.Core.Cards
             // acknowledged and the push consumed, so the turn it stops is started, unended, actorless,
             // and holds no request. The phase the reader has already read is what says so; the round
             // authority re-applies `StopResolutionForGameEnd` from the same fact a few lines later.
-            if (!state.IsStarted ||
+            if ((!state.IsStarted && cardActions?.IsPendingTriggeredEffect != true) ||
                 (!state.IsEnded && !matchHasEnded &&
                     state.Initiative.PendingChoice == null &&
                     !state.Initiative.SelectedActor.IsDefined &&

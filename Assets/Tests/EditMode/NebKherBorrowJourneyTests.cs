@@ -341,7 +341,6 @@ namespace GuardsDigital.Tests.EditMode
                         .Select(defaults.Capabilities.Load)
                         .Concat(new[]
                         {
-                            SyntheticPreviousSlotBorrowCapabilities.Handler(),
                             SyntheticTokenCapabilities.PlaceHandler(
                                 PlaceOriginal, Original, PrintedValueChannel.Radius)
                         })),

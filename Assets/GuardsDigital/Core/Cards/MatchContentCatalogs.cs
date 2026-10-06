@@ -246,6 +246,8 @@ namespace GuardsDigital.Core.Cards
                 // TWENTY-EIGHTH hero: Twin Strike's "a different you may repeat it once", the body a
                 // p.16 triggered ability names by reference (9.21h).
                 .Concat(new[] { RazzleEffectContent.TwinStrikeTriggeredEffect(RazzleCardContent.ContentRevision) })
+                .Concat(NebKherDelayedDoubtContent.TriggeredEffects())
+                .Concat(new[] { NebKherUltimateContent.TriggeredEffect })
                 .Concat(new[]
                 {
                     TrinketsEffectContent.DisruptorTrigger(
@@ -546,6 +548,14 @@ namespace GuardsDigital.Core.Cards
                 .Concat(EmmittTimeWarpContent.Handlers())
                 .Concat(EmmittTimeCapsuleContent.Handlers())
                 .Concat(EmmittBackToFutureContent.Handlers())
+                .Concat(NebKherComponentContent.Handlers())
+                .Concat(NebKherDelayedDoubtContent.Handlers())
+                .Concat(NebKherUltimateContent.Handlers())
+                .Concat(new[]
+                {
+                    SyntheticPreviousSlotBorrowCapabilities.Handler(),
+                    SyntheticResolvedCardOrderSwapCapabilities.Handler()
+                })
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary
