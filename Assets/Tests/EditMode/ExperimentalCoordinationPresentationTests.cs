@@ -16,6 +16,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var host = HeroCardInspectionTests.Create(allies, enemies);
             var hero = host.Projection.Setup.Heroes.Single(h => h.ContentId.Value == "gydion");
+            var ownerSeat = host.Seats.Seats.Single(seat => seat.Owns(hero.HeroId));
+            var ownerBook = SpellbookPresentation.ForHero(host.ProjectionForSeat(ownerSeat.Id), hero.HeroId, "Gydion");
             foreach (var seat in host.Seats.Seats)
             {
                 var projection = host.ProjectionForSeat(seat.Id);
@@ -28,6 +30,15 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(book.InBookFaces.Count, Is.EqualTo(allowed ? 22 : 0));
                     Assert.That(book.InBookBacks.Sum(b => b.Count), Is.EqualTo(allowed ? 0 : 22));
                     Assert.That(book.Subtitle.Contains("Only you"), Is.False, "The owner-only subtitle is no longer true under sharing.");
+                    if (allowed)
+                    {
+                        Assert.That(book.InBookFaces.Select(face => face.DefinitionReference),
+                            Is.EqualTo(ownerBook.InBookFaces.Select(face => face.DefinitionReference)));
+                        Assert.That(book.RemovedFaces.Select(face => face.DefinitionReference),
+                            Is.EqualTo(ownerBook.RemovedFaces.Select(face => face.DefinitionReference)));
+                        Assert.That(book.Title, Is.EqualTo(ownerBook.Title));
+                        Assert.That(book.Subtitle, Is.EqualTo(ownerBook.Subtitle));
+                    }
                 }
             }
         }

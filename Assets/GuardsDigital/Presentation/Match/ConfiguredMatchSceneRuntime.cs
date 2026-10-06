@@ -587,6 +587,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             HeroOverviewsPresenter.Refresh();
+            hud?.RefreshSpellbookShortcut();
             return true;
         }
 

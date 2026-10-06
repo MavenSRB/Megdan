@@ -725,3 +725,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64g | Portrait inspection shows the complete current set without filters, counts or lifecycle captions/tooltips; hidden commitments preserve face identity/order. Focused privacy and UI checks plus both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64g` |
+
+## Milestone 9.64h completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64h | Above-hand spellbook shortcut reuses the permitted owner-style drawer; host/non-host placements, tray/prompt clearance and adjacent confirmation are validated. Hero switches refresh only these controls. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64h` |

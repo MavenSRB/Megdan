@@ -493,6 +493,7 @@ namespace GuardsDigital.Presentation.Match
         private bool trayShowsUpgradeComparison;
         private VisualElement directorDrawer;
         private Button directorToggle;
+        private Button spellbookShortcut;
 
         // TWELFTH amendment, milestone 8.35z18: the Director-only sandbox banner.
         private VisualElement sandboxBanner;
@@ -644,6 +645,12 @@ namespace GuardsDigital.Presentation.Match
             Build();
         }
 
+        public void RefreshSpellbookShortcut()
+        {
+            LayoutDirectorControls();
+            LayoutEndTurnControl();
+        }
+
         public void RenderClock(GuardsDigital.Application.MatchClockState state) => statusBar?.RenderClock(state);
 
         public void RenderHeader(MatchHudHeaderViewModel model)
@@ -695,6 +702,7 @@ namespace GuardsDigital.Presentation.Match
             // beside every networked role - so this is the second of two independent reasons an
             // online seat cannot see one, not the only one.
             ApplySandboxBannerState();
+            LayoutSpellbookShortcut(CalculateDirectorToggleRect());
         }
 
         /// <summary>
@@ -823,6 +831,8 @@ namespace GuardsDigital.Presentation.Match
                 // only while the control is drawn, because the corner is genuinely board when it
                 // is not.
                 EndTurnBlocksPointerAt(panelPosition) ||
+                (spellbookShortcut?.resolvedStyle.display == DisplayStyle.Flex &&
+                    TryLiveRect(spellbookShortcut, out var liveShortcut) && liveShortcut.Contains(panelPosition)) ||
                 GetDirectorToggleRect().Contains(panelPosition) ||
                 (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
                 (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)) ||
@@ -1203,6 +1213,16 @@ namespace GuardsDigital.Presentation.Match
             directorToggle.name = "gd-director-toggle";
             directorToggle.style.position = Position.Absolute;
             root.Add(directorToggle);
+            spellbookShortcut = HudElements.Control("SPELLBOOK", () =>
+            {
+                var hand = hands?.Model?.ViewedHand;
+                if (hand != null) heroOverviews?.OpenSpellbook(hand.HeroId);
+            }, DirectorToggleHeight);
+            spellbookShortcut.name = "gd-hand-spellbook";
+            spellbookShortcut.tooltip = "Open this hero's spellbook";
+            spellbookShortcut.style.position = Position.Absolute;
+            spellbookShortcut.style.display = DisplayStyle.None;
+            root.Add(spellbookShortcut);
 
             directorDrawer = HudElements.Panel(MatchHudTheme.RailBackground);
             directorDrawer.name = "gd-director-drawer";
@@ -2176,6 +2196,9 @@ namespace GuardsDigital.Presentation.Match
             var rail = CalculateHeroRailRect(
                 viewport.x, viewport.y, TeamSide.Red, tray.yMin);
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
+            var lowerLimit = HasHandSpellbook
+                ? tray.yMin + OrdinaryCardDownshift - DirectorToggleHeight - 4f
+                : playfield.yMax - DirectorToggleHeight - Margin;
             var lowestY = rail.yMin;
             if (heroOverviews?.TryGetRedColumnBounds(out var liveRed) == true)
             {
@@ -2186,7 +2209,7 @@ namespace GuardsDigital.Presentation.Match
                 rail.xMin,
                 Mathf.Min(
                     lowestY,
-                    Mathf.Max(rail.yMin, playfield.yMax - DirectorToggleHeight - Margin)),
+                    Mathf.Max(rail.yMin, lowerLimit)),
                 Mathf.Min(DirectorToggleWidth, rail.width),
                 DirectorToggleHeight);
         }
@@ -2222,6 +2245,15 @@ namespace GuardsDigital.Presentation.Match
             var viewport = PanelViewport;
             var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var top = toggle.yMax + ConfirmDirectorGap;
+            if (HasHandSpellbook && top + DirectorHandsUnityView.CornerBannerHeight > tray.yMin + OrdinaryCardDownshift - 4f)
+            {
+                // A full three-hero column leaves only one control row above the hand. Put confirmation
+                // beside that row rather than shrinking it to zero or covering the cards below it.
+                var rail = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
+                return new Rect(rail.xMax + Margin,
+                    tray.yMin + OrdinaryCardDownshift - DirectorHandsUnityView.CornerBannerHeight - 4f,
+                    CornerActionControlWidth, DirectorHandsUnityView.CornerBannerHeight);
+            }
             return new Rect(
                 toggle.x,
                 top,
@@ -2614,6 +2646,25 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
+        private bool HasHandSpellbook => hands?.Model?.ViewedHand != null && heroOverviews?.Model?.Heroes
+            .Any(hero => hero.HeroId.Equals(hands.Model.ViewedHand.HeroId) && hero.Spellbook != null) == true;
+
+        private void LayoutSpellbookShortcut(Rect toggle)
+        {
+            if (spellbookShortcut == null) return;
+            // Keep both small controls within the rail column; the minimized prompt and optional
+            // action rows begin beyond its right edge. Reuse the same book and its projection permissions.
+            var hasBook = HasHandSpellbook;
+            spellbookShortcut.style.display = hasBook ? DisplayStyle.Flex : DisplayStyle.None;
+            spellbookShortcut.pickingMode = hasBook ? PickingMode.Position : PickingMode.Ignore;
+            var rail = CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
+            var shortcutLeft = directorToolsVisible ? toggle.xMax + 8f : rail.xMin;
+            spellbookShortcut.style.left = shortcutLeft;
+            spellbookShortcut.style.top = toggle.y;
+            spellbookShortcut.style.width = Mathf.Min(DirectorToggleWidth, Mathf.Max(0f, rail.xMax - shortcutLeft));
+            spellbookShortcut.style.height = toggle.height;
+        }
+
         private void LayoutDirectorControls()
         {
             if (root == null || directorToggle == null || directorDrawer == null)
@@ -2626,6 +2677,8 @@ namespace GuardsDigital.Presentation.Match
             directorToggle.style.top = toggle.y;
             directorToggle.style.width = toggle.width;
             directorToggle.style.height = toggle.height;
+
+            LayoutSpellbookShortcut(toggle);
 
             var viewport = PanelViewport;
             var tray = CalculateCardPanelRect(viewport.x, viewport.y);

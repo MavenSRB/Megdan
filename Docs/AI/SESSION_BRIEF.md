@@ -14,12 +14,12 @@ FILL WITH BOTS uses host-owned seats. Earlier player gates covered 2v2/3v3 human
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.64g**.
+- Current completed milestone: **9.64h**.
 - Active authorized milestone: **none**.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Next proposed milestone: **9.65**.
-- Next route: **9.64g** is complete: portrait inspection has no filters or lifecycle captions, with focused T2 checks and both viewport reviews passed. Stop here. The morning **9.65** merge/build follows the separate hero **9.54** gate, including final NebKher timer/map checks.
+- Next route: **9.64h** is complete: above-hand spellbook shortcut, shared owner-view parity and clear host/non-host control layouts are gated. Stop here. **9.65** remains the later hero integration/build route after the separate **9.54** gate.
 - 9.51 completed the Illusion/borrow foundations and snapshot v58. 9.50 gated every Emmitt front and corrected p.14 Defense totals. Their [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the preserved contracts and T3 evidence. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 

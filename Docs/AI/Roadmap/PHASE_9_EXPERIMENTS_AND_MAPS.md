@@ -200,6 +200,14 @@ Completed 2026-10-06: filters and count removed. Portrait faces omit shared hand
 
 Historical evidence: [9.64g completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964g-completion).
 
+### [x] 9.64h Add a spellbook shortcut above the hand
+
+Authorized 2026-10-06: confirm that experimental book sharing opens the existing owner-style book, then add an above-hand SPELLBOOK shortcut whenever the viewed hero has a book. Reuse the same read-only drawer and projected permissions. Keep it clear of the hand, Director controls, minimized prompt and adjacent action controls at both supported sizes. T2 closing checks: shared book parity/visibility without casting authority; real-pointer shortcut open/close and hover; supported-size coexistence and input blocking; directly affected HUD/spellbook regressions, visual review, documentation validation and local commit. No gameplay, protocol, hero integration or build change.
+
+Completed 2026-10-06: the shortcut opens the existing projected book; independent sharing options preserve owner-view parity without granting spell actions. Hosts see SPELLBOOK beside Director; other players get its position. A measured collision with the third hero tray required the book control row to follow the tray bottom, with confirmation placed alongside when its usual lower lane cannot fit. Hero switches update only this row. Failing-then-passing visibility/clearance checks, real-pointer open/close/commit, affected HUD/spellbook checks and both-size captures passed. Review found no rules, content, protocol or privacy expansion. Existing packages are unchanged; no hero merge or publication.
+
+Historical evidence: [9.64h completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964h-completion).
+
 ### [ ] 9.65 Integrate the completed hero and prepare the next private build
 
 Requested as the later morning follow-up, not part of this overnight implementation run. Owner: merge/build integration. Dependencies: completed 9.54 in the hero checkout, 9.61 and 9.64e; preserve both worktrees and earlier packages. Outcome: merge the completed hero with the experimental/map work, reconcile protocol/snapshot/composition changes, and create the next private playtest package. Closing checks: explicitly audit final NebKher decisions for timer ownership, every timeout fallback and no-strand progress; verify his board interactions on both maps; run merge-affected regressions and the highest applicable gate; copy/check the approved private map artwork with `Tools/Prepare-AlternateBoardArtwork.ps1`; build once and complete required player launch, board and host/client checks with experiments off/on. No two-lane map, new gameplay rules, remote push or upload. Resume only after the hero gate and the agreed morning handoff.
