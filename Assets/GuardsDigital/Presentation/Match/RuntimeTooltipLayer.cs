@@ -385,11 +385,18 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     internal static class RuntimeTooltipCandidateLookup
     {
+        public const string SuppressTooltipClass = "gd-suppress-runtime-tooltip";
+
         public static VisualElement Find(VisualElement hovered)
         {
             var node = hovered;
             while (node != null)
             {
+                if (node.ClassListContains(SuppressTooltipClass))
+                {
+                    return null;
+                }
+
                 if (!string.IsNullOrEmpty(node.tooltip))
                 {
                     return node;

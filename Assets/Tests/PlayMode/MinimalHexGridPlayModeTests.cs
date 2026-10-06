@@ -2603,6 +2603,12 @@ namespace GuardsDigital.Tests.PlayMode
                 var restingChipColor = litChip?.style.backgroundColor.value ?? default;
                 var bounds = resolvingCard.worldBound;
                 UiPlayer.PointAt(available);
+                var tooltipPopup = root.Hud.RootElement.Q<VisualElement>("gd-runtime-tooltip");
+                Assert.That(tooltipPopup, Is.Not.Null);
+                yield return new WaitForSeconds(0.5f);
+                Assert.That(tooltipPopup.style.display.value, Is.EqualTo(DisplayStyle.None),
+                    "The card face already prints an available action's rules, so hovering its " +
+                    "hotspot must not open that action or the parent card as a second tooltip.");
                 if (shineImage != null)
                 {
                     Assert.That(shineImage.style.opacity.value, Is.GreaterThan(restingShine),

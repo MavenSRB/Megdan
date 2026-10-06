@@ -103,6 +103,29 @@ Completed 2026-10-07.
 
 Historical evidence: [9.66 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-966-end-turn-continuation-boundary-evidence).
 
+### [x] 9.68 Remove redundant tooltips from available printed actions
+
+Authorized 2026-10-07 by the user's direction to merge the remaining completed agent work. Outcome:
+an available printed-action hotspot carries no tooltip because the complete card face already prints
+its rules, and it stops runtime-tooltip ancestor lookup before the resolving card's fallback label.
+An unavailable action retains its concise reason tooltip. Preserve the whole-card hover face, action
+highlighting, pointer reachability and exact typed invocation. No rules, command, content, wire,
+snapshot or artwork change. Closing checks: focused lookup and hand-presentation regressions, plus a
+live-panel hover regression proving the runtime popup remains hidden over an available action while
+the hotspot remains clickable. T2.
+
+Result: available printed-action regions now carry an explicit runtime-tooltip barrier and no local
+tooltip, so neither the action's assistive label nor the resolving card's ancestor label opens over
+rules already visible on the card face. Unavailable regions retain their reason. The typed invocation,
+shine treatment, whole-card hover behavior and pointer click path are unchanged. Focused Unity Edit
+Mode passed 146/146 across `MatchHudPresentationTests` and `RuntimeTooltipLayerTests`; the
+focused live resolving-card Play Mode journey passed 1/1, including the delayed popup absence and
+the accepted action click. No rule, command, content, wire, snapshot, artwork or package changed.
+
+Completed 2026-10-07.
+
+Historical evidence: [9.68 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-968-printed-action-tooltip-completion).
+
 ## Phase 9 - Rules fidelity and hero intake hardening
 
 On 2026-09-28 the user closed Phase 8 and started Phase 9 with this work ("Stop with phas 8. Lets start phase 9 from this point forward"), replacing the earlier presentation-and-pitch plan, which is retired to [the archive](../Archive/PHASE_9_PRESENTATION_PLAN_RETIRED.md) and authorizes nothing.

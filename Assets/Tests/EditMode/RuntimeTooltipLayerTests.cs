@@ -231,6 +231,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RuntimeTooltipCandidateLookup.Find(null), Is.Null);
         }
 
+        [Test]
+        public void Find_StopsAtAnExplicitTooltipBarrier_InsteadOfFallingThroughToAParent()
+        {
+            var parent = new VisualElement { tooltip = "Redundant parent reading" };
+            var actionHotspot = new VisualElement();
+            actionHotspot.AddToClassList(RuntimeTooltipCandidateLookup.SuppressTooltipClass);
+            parent.Add(actionHotspot);
+
+            Assert.That(RuntimeTooltipCandidateLookup.Find(actionHotspot), Is.Null,
+                "A printed action whose words are already visible must not reveal its card's " +
+                "fallback tooltip through the invisible hotspot.");
+        }
+
         /// <summary>
         /// THE STRUCTURAL WRINKLE the milestone brief calls out by name: a blocked reason lives on a
         /// control <c>HudElements.MarkUnavailable</c> has already called <c>SetEnabled(false)</c> on.

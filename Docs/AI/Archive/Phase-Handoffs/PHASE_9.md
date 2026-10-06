@@ -767,3 +767,15 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.67 | Simultaneous current non-bank allowances render as one gold main countdown at the latest remaining allowance; lone allowances and distinct team-bank resources retain their colours. The four-seat staggered regression failed with four badges and passed with one gold badge; focused Play Mode passed 1/1 and the final 1920x1080 header capture was inspected. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-967-collapse-simultaneous-allowance-clocks-into-one-gold-countdown). | `milestone/9.67` |
+
+## Milestone 9.68 printed-action tooltip completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.68 | Available printed-action hotspots no longer open redundant local or ancestor runtime tooltips over rules already visible on the card face; unavailable actions retain their reasons. Focused Edit Mode passed 146/146 and the live resolving-card hover/click journey passed 1/1. [Definition](../../Roadmap/PHASE_9.md#x-968-remove-redundant-tooltips-from-available-printed-actions). | `milestone/9.68` |
+
+## Milestone 9.30k Gydion casting-hover completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.30k | Gydion's joined owner keeps the shared spellbook shortcut, and typed cast arms expose ordered CAN CAST spell faces with public removed spells faded. Focused Edit Mode passed 18/18, focused Play Mode passed 6/6, and the joined-seat Cantrip capture was inspected. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930k-make-gydions-spell-access-and-casting-card-hover-explicit). | `milestone/9.30k` |

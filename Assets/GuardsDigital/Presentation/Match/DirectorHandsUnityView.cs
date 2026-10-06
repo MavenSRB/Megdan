@@ -1048,10 +1048,17 @@ namespace GuardsDigital.Presentation.Match
                 {
                     name = "gd-printed-action-region",
                     text = string.Empty,
-                    tooltip = region.AssistiveLabel,
+                    tooltip = region.Invocation == null ? region.AssistiveLabel : string.Empty,
                     userData = region,
                     focusable = !contextOnly
                 };
+                if (region.Invocation != null)
+                {
+                    // The complete face already prints this action's rules. Stop the runtime
+                    // tooltip walk here as well as leaving this hotspot's own tooltip empty, so it
+                    // cannot fall through to the resolving card's parent tooltip.
+                    control.AddToClassList(RuntimeTooltipCandidateLookup.SuppressTooltipClass);
+                }
                 ApplyActionBounds(control, bounds, usesPreparedArtwork);
                 control.style.backgroundColor = Color.clear;
                 control.style.backgroundImage = StyleKeyword.None;

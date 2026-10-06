@@ -95,6 +95,8 @@ Authorized 2026-10-07 by the user. Outcome: the hand spellbook shortcut uses the
 
 Completed 2026-10-07. The above-hand shortcut now carries the tray chip's gold treatment, live `SPELLBOOK n | m` label and assistive count; Gydion's owner-scoped seat retains it after the same host-tool transition online admission uses and opens the existing local drawer without changing match state. Every tray card projects the spells declared by its typed cast arms in definition order, so compact hand previews, full-size hand cards, turn slots, current cards and discards share one `CAN CAST` companion; a spell in the public faceup removed pile is faded and captioned `REMOVED`, with no facedown instance exposed and no Gydion/card-name/printed-text branch. The Play Mode run exposed and closed the wide-layout gap where full-size cards deliberately raise no detached preview. Focused `SpellbookPresentationTests` passed 18/18; `GydionDealingPlayModeTests` passed 6/6; the joined-seat Cantrip capture was inspected at the live viewport. No rule, snapshot or wire change.
 
+Historical evidence: [9.30k completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930k-gydion-casting-hover-completion).
+
 ## Wave plan (agents, as Razzle)
 
 - 9.30 (inventory) on main first.

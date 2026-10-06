@@ -4146,6 +4146,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controls, Has.Length.EqualTo(view.Model.PrintedActionRegions.Count));
             Assert.That(controls.Select(control => control.userData),
                 Is.EqualTo(view.Model.PrintedActionRegions));
+            Assert.That(controls
+                    .Where(control =>
+                        ((PrintedActionRegionViewModel)control.userData).Invocation != null)
+                    .Select(control => control.tooltip),
+                Is.All.Empty,
+                "An available action's words are already printed on the card; its invisible " +
+                "hotspot must not open a second little mouse-over.");
+            Assert.That(controls
+                    .Where(control =>
+                        ((PrintedActionRegionViewModel)control.userData).Invocation != null)
+                    .All(control => control.ClassListContains(
+                        RuntimeTooltipCandidateLookup.SuppressTooltipClass)),
+                Is.True,
+                "The empty hotspot also stops lookup before the resolving card's parent tooltip.");
+            Assert.That(controls
+                    .Where(control =>
+                        ((PrintedActionRegionViewModel)control.userData).Invocation == null)
+                    .All(control => !string.IsNullOrEmpty(control.tooltip)),
+                Is.True,
+                "Unavailable actions keep the reason the standing HUD contract requires.");
 
             TypedInvocationViewModel forwarded = null;
             hands.PrintedActionSubmitted += invocation => forwarded = invocation;
