@@ -27,8 +27,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$specificationPath = [System.IO.Path]::Combine($projectRoot, 'Docs', 'AI', 'Maps', 'official-single-lane.map.json')
-$resourcePath = [System.IO.Path]::Combine($projectRoot, 'Assets', 'Resources', 'Maps', 'official-single-lane.json')
+foreach ($mapName in @('official-single-lane', 'alternate-small-single-lane')) {
+$specificationPath = [System.IO.Path]::Combine($projectRoot, 'Docs', 'AI', 'Maps', ($mapName + '.map.json'))
+$resourcePath = [System.IO.Path]::Combine($projectRoot, 'Assets', 'Resources', 'Maps', ($mapName + '.json'))
 
 if (-not (Test-Path -LiteralPath $specificationPath -PathType Leaf)) {
     throw "Canonical board-map specification is missing: $specificationPath"
@@ -45,7 +46,7 @@ $identical = $resourceExists -and
 
 if ($identical) {
     Write-Output "PASS: runtime board-map resource is byte-identical to its specification ($($specificationBytes.Length) bytes)."
-    exit 0
+    continue
 }
 
 if ($Check) {
@@ -68,3 +69,5 @@ if (-not (Test-Path -LiteralPath $resourceDirectory -PathType Container)) {
 [System.IO.File]::WriteAllBytes($resourcePath, $specificationBytes)
 Write-Output "WROTE: regenerated the runtime board-map resource from its specification ($($specificationBytes.Length) bytes)."
 Write-Output 'The .meta file was not touched; the asset GUID is unchanged.'
+
+}

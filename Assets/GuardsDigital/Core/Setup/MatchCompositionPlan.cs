@@ -1,4 +1,5 @@
 using System;
+using GuardsDigital.Core.Board;
 
 namespace GuardsDigital.Core.Setup
 {
@@ -35,8 +36,9 @@ namespace GuardsDigital.Core.Setup
         /// The heroes each side fields, or <c>null</c> for setup step 7's printed line-up at that
         /// format's team size.
         /// </param>
-        public MatchCompositionPlan(MatchFormat format, HeroLineup lineup = null)
+        public MatchCompositionPlan(MatchFormat format, HeroLineup lineup = null, MapDefinitionReference? map = null)
         {
+            Map = map ?? new MapDefinitionReference(new MapId("official-single-lane"), 1);
             Format = format ?? throw new ArgumentNullException(nameof(format));
             IsPrintedLineup = lineup == null;
             Lineup = lineup ?? RegisteredHeroRoster.PrintedLineup(format.HeroesPerTeam);
@@ -52,6 +54,7 @@ namespace GuardsDigital.Core.Setup
 
         /// <summary>Setup step 4 and step 5's printed setup: the Wave count and the Life count.</summary>
         public MatchFormat Format { get; }
+        public MapDefinitionReference Map { get; }
 
         /// <summary>The heroes on the board, never null - see the type's own remarks.</summary>
         public HeroLineup Lineup { get; }
@@ -64,8 +67,8 @@ namespace GuardsDigital.Core.Setup
         public bool IsPrintedLineup { get; }
 
         /// <summary>The printed setup with nobody having chosen anything - what this build ships.</summary>
-        public static MatchCompositionPlan Printed(MatchFormat format) =>
-            new MatchCompositionPlan(format);
+        public static MatchCompositionPlan Printed(MatchFormat format, MapDefinitionReference? map = null) =>
+            new MatchCompositionPlan(format, map: map);
 
         /// <summary>
         /// The same setup with a different line-up standing on it. The format is what a session's
@@ -73,7 +76,7 @@ namespace GuardsDigital.Core.Setup
         /// <c>PrivateSessionHost</c>'s remarks on why the format is settled before anyone is seated.
         /// </summary>
         public MatchCompositionPlan WithLineup(HeroLineup lineup) =>
-            new MatchCompositionPlan(Format, lineup);
+            new MatchCompositionPlan(Format, lineup, Map);
 
         public override string ToString() =>
             Format.Id + " (" + (IsPrintedLineup ? "printed line-up" : "chosen line-up") + ")";

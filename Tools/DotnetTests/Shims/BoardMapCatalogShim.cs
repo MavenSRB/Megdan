@@ -60,11 +60,19 @@ namespace GuardsDigital.Presentation.Board
         public static readonly MapDefinitionReference SelectedMap =
             new MapDefinitionReference(new MapId("official-single-lane"), 1);
 
+        public static readonly MapDefinitionReference AlternateSmall =
+            new MapDefinitionReference(new MapId("alternate-small-single-lane"), 1);
+        public static System.Collections.Generic.IReadOnlyList<MapDefinitionReference> SupportedMaps { get; } =
+            Array.AsReadOnly(new[] { SelectedMap, AlternateSmall });
+
         public static BoardMapCatalog Load()
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Maps", $"{SelectedMap.MapId.Value}.json");
-            if (!File.Exists(path)) throw new InvalidOperationException($"Selected map resource '{SelectedMap.MapId}' is unavailable.");
-            return new BoardMapCatalog(new[] { BoardMapJsonLoader.Load(File.ReadAllText(path)) });
+            return new BoardMapCatalog(SupportedMaps.Select(reference =>
+            {
+                var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Maps", $"{reference.MapId.Value}.json");
+                if (!File.Exists(path)) throw new InvalidOperationException($"Map resource '{reference}' is unavailable.");
+                return BoardMapJsonLoader.Load(File.ReadAllText(path));
+            }));
         }
     }
 }

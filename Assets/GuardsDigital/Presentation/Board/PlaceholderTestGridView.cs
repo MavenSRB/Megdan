@@ -124,7 +124,7 @@ namespace GuardsDigital.Presentation.Board
         /// face is underneath, and world +Z otherwise, which is what it always was.
         /// </summary>
         public Vector3 ScreenUpInWorld =>
-            IsUnderlayActive ? OfficialBoardArtwork.BoardUpInWorld : Vector3.forward;
+            IsUnderlayActive ? BoardArtworkCatalog.Up(renderedDefinition.Reference) : Vector3.forward;
 
         /// <summary>
         /// The views this rebuild actually produced, excluding any object it retired. Consumers must
@@ -607,8 +607,7 @@ namespace GuardsDigital.Presentation.Board
         /// </remarks>
         private void EnsureUnderlay(BoardMapDefinition definition)
         {
-            var isOfficialMap = definition.Reference.Equals(OfficialBoardMapCatalog.SelectedMap);
-            if (!isOfficialMap || !OfficialBoardArtwork.TryLoadTexture(out var artwork))
+            if (!BoardArtworkCatalog.TryLoadTexture(definition.Reference, out var artwork))
             {
                 RetireUnderlay();
                 return;
@@ -625,7 +624,7 @@ namespace GuardsDigital.Presentation.Board
                 underlayView = underlayObject.AddComponent<OfficialBoardUnderlayView>();
             }
 
-            underlayView.Configure(artwork, outerRadius);
+            underlayView.Configure(artwork, outerRadius, BoardArtworkCatalog.Corners(definition.Reference, outerRadius));
         }
 
         private void RetireUnderlay()
@@ -728,7 +727,7 @@ namespace GuardsDigital.Presentation.Board
             // is world +Z, which is exactly what this did before - and they become the board's own axes
             // once the artwork is there, so the square face reads upright. Measuring the map's extent in
             // the same basis is what keeps every space inside the viewport either way.
-            var screenRight = IsUnderlayActive ? OfficialBoardArtwork.BoardRightInWorld : Vector3.right;
+            var screenRight = IsUnderlayActive ? BoardArtworkCatalog.Right(definition.Reference) : Vector3.right;
             var screenUp = ScreenUpInWorld;
             var aspect = hasConfiguredCameraViewport && configuredCameraLayout.PanelViewport.y > 0f
                 ? configuredCameraLayout.PanelViewport.x / configuredCameraLayout.PanelViewport.y

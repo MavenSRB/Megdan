@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Match;
@@ -110,6 +112,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly VisualElement controls;
         private readonly VisualElement entry;
         private readonly Label status;
+        private readonly Label selectedMapLabel;
         private readonly Label session;
         private readonly Label feedback;
         private readonly Label pickedSeat;
@@ -216,7 +219,9 @@ namespace GuardsDigital.Presentation.Interaction
             title = Caption("PRIVATE LOBBY", 30, TitleName);
             frame.Add(title);
             status = Caption(string.Empty, 22, StatusName);
+            selectedMapLabel = Caption(string.Empty, 18, "lobby-selected-map");
             frame.Add(status);
+            frame.Add(selectedMapLabel);
             session = Caption(string.Empty, 16, SessionName);
             frame.Add(session);
 
@@ -264,6 +269,11 @@ namespace GuardsDigital.Presentation.Interaction
             formatChoices.style.flexWrap = Wrap.NoWrap;
             formatChoices.style.marginBottom = 4f;
             hostMenu.Add(formatChoices);
+            mapSelector = new DropdownField("MAP", mapChoices.Select(m => m.DisplayName).ToList(),
+                Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap))) { name = "host-map-selector" };
+            mapSelector.style.fontSize = 18; mapSelector.style.marginBottom = 6;
+            mapSelector.style.color = Color.black; mapSelector.labelElement.style.color = Color.white;
+            hostMenu.Add(mapSelector);
             experimentalPanel = new VisualElement { name = "experimental-menu" };
             experimentalPanel.style.display = DisplayStyle.None;
             experimentalPanel.style.marginTop = 6;
@@ -450,11 +460,14 @@ namespace GuardsDigital.Presentation.Interaction
         /// The invitation currently typed into the open menu, plus the picked seat. The host menu
         /// names no address: 8.100 derives the host's bind locally.
         /// </summary>
+        private DropdownField mapSelector;
+        private readonly BoardMapDefinition[] mapChoices = OfficialBoardMapCatalog.Load().Definitions.ToArray();
+
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
-                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value))
+                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value), mapChoices[mapSelector.index].Reference)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -471,6 +484,7 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (value == PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Host)
             {
+                mapSelector.index = Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap));
                 coordinationToggle.SetValueWithoutNotify(false);
                 enemyInfoToggle.SetValueWithoutNotify(false);
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
@@ -533,6 +547,8 @@ namespace GuardsDigital.Presentation.Interaction
                 : "SEAT: NONE PICKED";
         }
 
+        public void SetMapName(string name) => selectedMapLabel.text = "MAP: " + name;
+
         public void Render(PrivateLobbyModel model)
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
@@ -561,6 +577,8 @@ namespace GuardsDigital.Presentation.Interaction
                 : string.Empty;
             title.style.display = title.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             status.text = model.StatusLabel;
+            selectedMapLabel.style.display = model.Role == PrivateLobbyRole.None ? DisplayStyle.None : DisplayStyle.Flex;
+            mapSelector.SetEnabled(model.Role == PrivateLobbyRole.None);
             status.style.display = isEntry ? DisplayStyle.None : DisplayStyle.Flex;
             session.text = model.SessionLabel.Length == 0
                 ? string.Empty
@@ -1554,6 +1572,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             var now = DateTime.UtcNow;
             if (session != null && listener != null)
             {
@@ -1721,7 +1740,7 @@ namespace GuardsDigital.Presentation.Interaction
 
                             PrivateOnlineMarkers.Log(
                                 "LOBBY_FORMAT_INHERITED_AT_TRANSITION format=" + hostFormat.Id);
-                            plan = MatchCompositionPlan.Printed(hostFormat);
+                            plan = MatchCompositionPlan.Printed(hostFormat, plan.Map);
                         }
 
                         compositionRoot.Recompose(plan.WithLineup(lineup));
@@ -2038,7 +2057,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var next = formats[(index + 1) % formats.Count];
-            compositionRoot.Recompose(MatchCompositionPlan.Printed(next));
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(next, compositionRoot.ComposedPlan.Map));
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + next.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
         }
@@ -2245,7 +2264,9 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(compositionRoot.ComposedPlan.Format, entry.Map));
             compositionRoot.ConfigureExperiments(entry.Experiments);
+            view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             sessionKey = entry.SessionKey;
             var draftSeed = BitConverter.ToInt32(new CryptoNonceSource().NextNonce(), 0);
             botFleet = new GuardsDigital.Application.Bots.PrivateSessionBotFleet(
@@ -2439,13 +2460,17 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             if (machine.State != PrivateSessionClientState.Rejected ||
-                machine.RejectionReason != SessionRejectionReason.MatchFormatMismatch)
+                (machine.RejectionReason != SessionRejectionReason.MatchFormatMismatch &&
+                 machine.RejectionReason != SessionRejectionReason.MapRevisionMismatch))
             {
                 return false;
             }
 
-            var hostFormat = HostFormatFromRefusal(machine.RejectionDetail);
-            if (hostFormat == null)
+            var refused = machine.LastRejection;
+            var hostFormat = MatchFormat.All.FirstOrDefault(f => f.Id == refused?.HostFormatId);
+            var hostMap = OfficialBoardMapCatalog.Load().Definitions.FirstOrDefault(m =>
+                m.Id.Value == refused?.HostMapId && m.ContentRevision == refused.HostMapRevision);
+            if (hostFormat == null || hostMap == null)
             {
                 // The refusal named no printed id this build composes - a custom staged board, say -
                 // so there is nothing to inherit and the honest answer is the refusal that stands.
@@ -2454,11 +2479,11 @@ namespace GuardsDigital.Presentation.Interaction
 
             formatInheritanceAttempted = true;
 
-            if (compositionRoot.ComposedPlan == null ||
+            if (compositionRoot.ComposedPlan == null || !compositionRoot.ComposedPlan.Map.Equals(hostMap.Reference) ||
                 !string.Equals(
                     compositionRoot.ComposedPlan.Format.Id, hostFormat.Id, StringComparison.Ordinal))
             {
-                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat));
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat, hostMap.Reference));
                 PrivateOnlineMarkers.Log("LOBBY_FORMAT_INHERITED format=" + hostFormat.Id);
             }
 
@@ -2500,31 +2525,6 @@ namespace GuardsDigital.Presentation.Interaction
             PrivateOnlineMarkers.Log(
                 "LOBBY_REJOINING seat=" + SeatLabelForLog() + " format=" + hostFormat.Id);
             return true;
-        }
-
-        /// <summary>
-        /// The printed format a <see cref="SessionRejectionReason.MatchFormatMismatch"/> refusal
-        /// names, or null when it names none this build composes. The host's own
-        /// <c>DescribeMismatch</c> writes the stable <see cref="MatchFormat.Id"/> into the plaintext
-        /// detail; this scans for whichever printed id appears rather than parsing the sentence, so a
-        /// reworded message can never silently defeat inheritance.
-        /// </summary>
-        private static MatchFormat HostFormatFromRefusal(string detail)
-        {
-            if (string.IsNullOrEmpty(detail))
-            {
-                return null;
-            }
-
-            foreach (var format in MatchFormat.All)
-            {
-                if (detail.IndexOf(format.Id, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return format;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>Whether the currently composed match seats a seat of that id.</summary>

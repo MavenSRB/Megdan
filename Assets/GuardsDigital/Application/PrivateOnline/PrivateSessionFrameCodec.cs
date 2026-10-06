@@ -221,6 +221,7 @@ namespace GuardsDigital.Application
             {
                 writer.Write((int)message.Reason);
                 writer.Write(message.Detail);
+                writer.Write(message.HostMapId); writer.Write(message.HostMapRevision); writer.Write(message.HostFormatId);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.Reject, stream.ToArray());
             }
@@ -236,14 +237,15 @@ namespace GuardsDigital.Application
                 {
                     var reasonValue = reader.ReadInt32();
                     var detail = reader.ReadString();
-                    if (!TryReadRejectionReason(reasonValue, out var reason) ||
+                    var hostMap = reader.ReadString(); var hostRevision = reader.ReadInt32(); var hostFormat = reader.ReadString();
+                    if (hostMap.Length > 128 || hostFormat.Length > 64 || hostRevision < 0 || !TryReadRejectionReason(reasonValue, out var reason) ||
                         detail.Length > PrivateSessionProtocol.MaxRejectDetailChars ||
                         stream.Position != stream.Length)
                     {
                         return false;
                     }
 
-                    message = new SessionRejectMessage(reason, detail);
+                    message = new SessionRejectMessage(reason, detail, hostMap, hostRevision, hostFormat);
                     return true;
                 }
             }

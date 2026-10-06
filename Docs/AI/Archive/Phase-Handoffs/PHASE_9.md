@@ -684,3 +684,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.64f (pending) | Highlight-only transport and in-place decoration refresh implemented; focused offline checks green, Unity/UI gates pending the serial Editor slot. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64f-unity-pending` |
+
+## Milestone 9.61 implementation checkpoint
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.61 (pending) | Alternate small map and standard host selector implemented; map-aware setup, artwork and typed join inheritance gated in focused checks. Full offline gate green; unfiltered Unity gates still required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.61-unity-gates` |

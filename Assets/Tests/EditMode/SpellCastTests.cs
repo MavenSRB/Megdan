@@ -310,7 +310,7 @@ namespace GuardsDigital.Tests.EditMode
                 "the restored pause replays to the same authoritative bytes");
             Assert.That(restored.Spell(Attack).State.Location, Is.EqualTo(CardLocation.RemovedFromSpellbook));
             Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(58));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(41));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(42));
         }
 
         // -------------------------------------------------------------------------------------------

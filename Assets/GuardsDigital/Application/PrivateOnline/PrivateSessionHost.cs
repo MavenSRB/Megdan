@@ -2172,7 +2172,7 @@ namespace GuardsDigital.Application
         private void RejectAndClose(ConnectionRecord record, SessionRejectionReason reason, string detail)
         {
             outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
-                new SessionRejectMessage(reason, detail)));
+                new SessionRejectMessage(reason, detail, identity.MapId, identity.MapContentRevision, identity.MatchFormatId)));
             outbox.Close(record.Ordinal);
             Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
                 default, TeamSide.None, reason);

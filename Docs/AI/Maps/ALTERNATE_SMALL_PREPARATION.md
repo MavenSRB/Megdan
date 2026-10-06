@@ -1,6 +1,6 @@
 # Alternate small map: implementation preparation
 
-Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This is a **review candidate**, not a registered or shipped map. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
+Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This preserves the **review candidate** and its provenance. 9.61 now promotes the unchanged inventory to [canonical runtime source](alternate-small-single-lane.map.json); its release gate is pending. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
 
 ## Prepared inventory
 
@@ -38,9 +38,9 @@ Adjacent-centre spacing is about 43.16 pixels, outer radius 24.92 pixels. Basis 
 
 **Terrain border confirmed at 9.63a:** every playable cell must have all six neighbour coordinates inventoried. The initial candidate missed 11 terrain cells around each Throne; the corrected candidate adds those 22 cells, highlighted yellow on the review overlay. They are terrain with no zone or spawn, including where the picture shows throne machinery or water at the edge. All 156 playable cells, five zones and 40 spawns remain unchanged. Registration metadata lists every added space ID and its user-confirmed provenance.
 
-This image has no publisher/user-supplied axial diagram, so final visual registration remains a 9.61 promotion check. Forty original outer-rock cells retain magenta review markers. The map ends beyond the complete terrain border; decorative peaks, ships and exterior sea do not generate further cells. The complete-neighbour check must fail if any necessary border cell is removed.
+This image has no publisher/user-supplied axial diagram. At 9.61, the complete overlay, forty magenta outer-rock markers and supported-size runtime artwork were visually reviewed; the prepared inventory is unchanged. The map ends beyond the complete terrain border; decorative peaks, ships and exterior sea do not generate further cells. The complete-neighbour check must fail if any necessary border cell is removed.
 
-## Integration seams after the hero and experiments
+## Prepared integration seams
 
 Inspected baseline `6438ab66`; unfinished NebKher changes in the shared checkout are not final gate evidence. Recheck source delta after 9.54, 9.58 and 9.56; choose schema/wire changes from the landed implementation.
 
@@ -58,7 +58,7 @@ Inspected baseline `6438ab66`; unfinished NebKher changes in the shared checkout
 
 Paths in the table are relative to `Assets/GuardsDigital/` except `Tools/` paths. Use map-local IDs and existing typed queries throughout; do not branch on a hero/card name. Single-lane progression already has an ordered-zone contract; two-lane changes are outside this milestone.
 
-## Closing checks for implementation (not yet executed)
+## Closing checks for implementation
 
 1. Data: exact canonical/resource parity, registration anchors, unique/valid references, symmetry, counts, connected zones and all six neighbour coordinates present for every playable cell (including both Thrones). Load both maps in the actual runtime catalog and offline shim. Deliberately wrong map/revision, duplicate IDs and a spawn on terrain must be rejected.
 2. Setup/host: the Map selector is visible without opening Experimental and works with every experiment off; both maps crossed with 2v2/3v3 and Quick/Long; selector changes produce correct heroes/minions and no stale pieces/artwork. Defaults, disabled-after-hosting state, bots and lineup rebuilds preserve selection. Joiners inherit the selected map; unsupported identities fail without loops.

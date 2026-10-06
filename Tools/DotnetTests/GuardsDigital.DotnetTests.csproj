@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="../../Assets/Resources/Maps/alternate-small-single-lane.json" CopyToOutputDirectory="PreserveNewest" Link="Resources/Maps/alternate-small-single-lane.json" />
     <Content Include="../../Assets/Resources/Maps/official-single-lane.json"
              CopyToOutputDirectory="PreserveNewest"
              Link="Resources/Maps/official-single-lane.json" />

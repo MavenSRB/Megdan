@@ -411,13 +411,14 @@ namespace GuardsDigital.Application
     /// <summary>A refusal: the exact reason, and a bounded human-readable detail.</summary>
     public sealed class SessionRejectMessage
     {
-        public SessionRejectMessage(SessionRejectionReason reason, string detail)
+        public SessionRejectMessage(SessionRejectionReason reason, string detail, string hostMapId = "", int hostMapRevision = 0, string hostFormatId = "")
         {
             if (reason == SessionRejectionReason.None)
             {
                 throw new ArgumentException("A rejection requires a reason.", nameof(reason));
             }
 
+            HostMapId = hostMapId ?? string.Empty; HostMapRevision = hostMapRevision; HostFormatId = hostFormatId ?? string.Empty;
             Reason = reason;
             Detail = detail ?? string.Empty;
             if (Detail.Length > PrivateSessionProtocol.MaxRejectDetailChars)
@@ -428,6 +429,9 @@ namespace GuardsDigital.Application
 
         public SessionRejectionReason Reason { get; }
         public string Detail { get; }
+        public string HostMapId { get; }
+        public int HostMapRevision { get; }
+        public string HostFormatId { get; }
     }
 
     /// <summary>The client's claim of one seat by id, and since 8.108 the name to show on it.</summary>

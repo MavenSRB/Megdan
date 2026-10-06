@@ -202,6 +202,7 @@ namespace GuardsDigital.Application
 
         /// <summary>The host's bounded rejection detail, empty otherwise.</summary>
         public string RejectionDetail { get; private set; } = string.Empty;
+        public SessionRejectMessage LastRejection { get; private set; }
 
         /// <summary>The host's opaque session correlation, known from admission on.</summary>
         public string SessionCorrelation { get; private set; } = string.Empty;
@@ -384,7 +385,7 @@ namespace GuardsDigital.Application
             gameplaySendSequence = 0; clockReceiveSequence = 0; coordinationReceiveSequence = 0; LatestCoordination = null; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
             gameplayReceiveSequence = 0;
             RejectionReason = SessionRejectionReason.None;
-            RejectionDetail = string.Empty;
+            RejectionDetail = string.Empty; LastRejection = null;
             refusalReceived = false;
             ClearWaitingForHost();
             MatchFeedback = string.Empty;
@@ -463,7 +464,7 @@ namespace GuardsDigital.Application
                 }
 
                 RejectionReason = reject.Reason;
-                RejectionDetail = reject.Detail;
+                RejectionDetail = reject.Detail; LastRejection = reject;
                 refusalReceived = true;
                 IsReconnecting = false;
                 awaitingReconnectProjection = false;

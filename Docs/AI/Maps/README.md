@@ -16,7 +16,20 @@ Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone
 
 ## Alternate small-map preparation
 
-[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. The user-confirmed spawn-zone terrain border is completed at [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). It is not loaded by runtime.
+[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. The user-confirmed spawn-zone terrain border is completed at [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). The reviewed candidate is now promoted in the isolated 9.61 source; release validation is pending.
+
+
+## Alternate map runtime contract
+
+9.61 promotes [alternate-small-single-lane.map.json](alternate-small-single-lane.map.json) as `alternate-small-single-lane@1`. It retains the approved 258 cells, 156 playable cells, five ordered zones, forty spawn points and complete terrain border. The existing `official-single-lane@1` stays the fresh-host default. Both support every current 2v2/3v3 Quick/Long format; neither two-lane map is registered.
+
+The ordinary host-screen **MAP** dropdown is outside Experimental. Hosting fixes its selection; the lobby displays the chosen map. Map identity travels in `MatchCompositionPlan` through experiment setup, hero draft/recomposition and restart. Hero slots follow the same-team hero spawn IDs in ordinal order. Initial minions come from the selected map's starting zone: four melee, one ranged and one heavy per side, retaining stable instance IDs. The map-aware setup path produces the original map's exact prior positions. Wave/Life counts remain format-owned.
+
+Wire 42 adds bounded public host map ID, revision and format fields to a rejection. A joining client with a map/format mismatch may recompose both supported values and retry once; unknown maps/revisions remain refused. Normal identity checks, authentication, content checks and reconnect capabilities remain enforced. Full projections/restore keep the selected map; Core snapshot schema remains 58. This is a standard map option, independent of experiments.
+
+`BoardArtworkCatalog` uses the prepared pixel transform and the matching selected-map camera axes/quad. `Tools/Prepare-AlternateBoardArtwork.ps1` copies the approved private PNG without altering bytes; `-Check` verifies it. Missing private artwork keeps generated geometry playable. `Tools/Sync-BoardMapResource.ps1` synchronizes both canonical JSON resources; the specification validator checks both resources and the alternate map's complete terrain border. The original and edited source images remain private and unchanged.
+
+Source is implemented; focused setup, geometry, round progression, persistence and protocol checks pass. Real-control, artwork and join checks pass; complete Unity gates remain pending in 9.61. Final NebKher geometry/timer coverage belongs to the later merge review; no merge or replacement build is part of this checkpoint.
 
 ## Future map references
 
@@ -24,7 +37,7 @@ Three distinct maps are preserved for future implementation at [9.60](../Roadmap
 
 ### Future alternate map for 2v2 and 3v3
 
-The first pictured map is an additional future option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9.md#961-implement-the-alternate-map-for-2v2-and-3v3) is authorized after 9.54 -> 9.58 -> 9.56, including a host-screen map selector; the existing map remains available. Immediate 9.63 prepares its mapping without changing runtime.
+The first pictured map is an additional future option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9.md#961-implement-the-alternate-map-for-2v2-and-3v3) is authorized now under the 2026-10-06 amendment, including a host-screen map selector; the existing map remains available. 9.63/9.63a preserve the earlier mapping preparation.
 
 - Preferred file: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-preferred-reference-2026-10-05.png`, copied from `codex-clipboard-ea422bb2-e14e-4d02-aeca-4e270f2057f4.png`.
 - Earlier original: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-user-reference-2026-10-05.png`, copied from `codex-clipboard-278a5c29-8648-4cd4-a57c-667b4321932e.png`.

@@ -1210,6 +1210,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// composing the match when the lobby says to rather than when the scene loads. This
         /// property remains what a fixture uses to ask for a format without a command line.</para>
         /// </remarks>
+        public static MapDefinitionReference? NextComposedMap { get; set; }
         public static MatchFormat NextComposedMatchFormat { get; set; }
 
         /// <summary>
@@ -1348,7 +1349,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var catalog = OfficialBoardMapCatalog.Load();
-            var map = catalog.Load(OfficialBoardMapCatalog.SelectedMap);
+
             // Five cards per hero, which is the shape every hand in this project has been specified at
             // since milestone 3.7b. Milestone 6.2d had dealt a sixth here - milestone 6.2's Cache card -
             // because nothing else could put a token on the board, and without one 6.3's Clear and two
@@ -1364,7 +1365,10 @@ namespace GuardsDigital.Presentation.Interaction
             // Milestone 8.35z37. The format and the line-up are one decision from here on,
             // and the plan is what carries it. A caller that chose no line-up gets setup step 7's
             // printed one, so the configured arm below composes exactly the match it always has.
-            var plan = new MatchCompositionPlan(format, TakeRequestedLineup());
+            var requestedMap = NextComposedMap; NextComposedMap = null;
+            var plan = new MatchCompositionPlan(format, TakeRequestedLineup(),
+                content == SceneCardContent.ConfiguredMatch ? requestedMap : null);
+            var map = catalog.Load(plan.Map);
             ComposedPlan = plan;
             var configuration = content switch
             {
@@ -1879,7 +1883,7 @@ namespace GuardsDigital.Presentation.Interaction
             // Milestone 8.25: the default arm - what a player plays - is now rulebook p.5's official
             // six-player board, and it is the only arm that places six heroes.
             var setup = QuickGameSetupAuthority.Create(
-                SelectSetupConfiguration(content, plan),
+                SelectSetupConfiguration(content, plan, map),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -2290,6 +2294,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (plan == null) throw new ArgumentNullException(nameof(plan));
 
             ReleaseComposition();
+            NextComposedMap = plan.Map;
             NextComposedMatchFormat = plan.Format;
             NextComposedLineup = plan.IsPrintedLineup ? null : plan.Lineup;
             Compose();
@@ -2377,7 +2382,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// and its own numbers, so a line-up means nothing to it and it must not be offered one.
         /// </remarks>
         private static QuickGameSetupConfiguration SelectSetupConfiguration(
-            SceneCardContent content, MatchCompositionPlan plan)
+            SceneCardContent content, MatchCompositionPlan plan, BoardMapDefinition map)
         {
             switch (content)
             {
@@ -2388,7 +2393,7 @@ namespace GuardsDigital.Presentation.Interaction
                 case SceneCardContent.MechanicsShowcaseFixture:
                     return QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
                 case SceneCardContent.ConfiguredMatch:
-                    return HeroLineupComposition.Compose(plan.Format, plan.Lineup);
+                    return HeroLineupComposition.Compose(plan.Format, plan.Lineup, map);
                 default:
                     if (content == SceneCardContent.VerifiedStagedTaliWithAlly)
                     {

@@ -41,7 +41,9 @@ namespace GuardsDigital.Presentation.Board
         /// Points the view at a prepared face. The mesh and material are generated once and updated in
         /// place afterwards, so repeated rebuilds do not accumulate native resources.
         /// </summary>
-        public void Configure(Texture2D artwork, float radius)
+        public void Configure(Texture2D artwork, float radius) => Configure(artwork, radius, OfficialBoardArtwork.Corners(radius));
+
+        public void Configure(Texture2D artwork, float radius, Vector3[] corners)
         {
             if (artwork == null) throw new System.ArgumentNullException(nameof(artwork));
             if (radius <= 0f || float.IsNaN(radius) || float.IsInfinity(radius))
@@ -63,7 +65,7 @@ namespace GuardsDigital.Presentation.Board
                 generatedMesh.hideFlags = HideFlags.DontSave;
             }
 
-            var corners = OfficialBoardArtwork.Corners(radius);
+
             var height = PlaneOffset * radius;
             var vertices = new Vector3[corners.Length];
             for (var index = 0; index < corners.Length; index++)
