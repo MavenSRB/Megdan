@@ -755,3 +755,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.65 | Completed thirty-two-hero content merged with the experimental/map line at schema 59 and wire 42; full T3 integration and exact-player checks passed, and the private `Playtest-9.65-integrated` Windows package was created and verified. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.65` |
+
+## Milestone 9.66 END TURN continuation boundary evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.66 | A joined seat now discards an asynchronous END TURN continuation as soon as the projection crosses to another actor, before considering the seat's disabled input gate. The regression failed pre-fix with an unpressed third submission after returning to the same hero, then passed; affected Edit Mode passed 122/122 and focused live-control Play Mode passed 1/1. [Definition](../../Roadmap/PHASE_9.md#x-966-disarm-an-end-turn-press-when-its-actors-turn-has-passed). | `milestone/9.66` |

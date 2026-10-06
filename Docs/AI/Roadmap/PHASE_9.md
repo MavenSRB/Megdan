@@ -73,6 +73,36 @@ Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#mile
 
 See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#962-implement-the-two-lane-maps-for-4v4-and-5v5).
 
+### [x] 9.66 Disarm an END TURN press when its actor's turn has passed
+
+Authorized 2026-10-07 by the user's playtest report: "End turn gets pressed automatically now.
+After movment, after using skill." Outcome: a joined seat's asynchronous one-press END TURN
+continuation is discarded as soon as a projection no longer concerns the hero whose press armed it,
+even while that seat's input is disabled because another hero is acting. The stale continuation must
+not survive into that hero's later turn and must not submit Hold, Stop Movement, an effect stop, or
+Release Turn after a later Movement or Skill update. Preserve the existing one-press composition
+across the original press's own network round trips, including a temporary input-disabled projection
+that still concerns the same actor. No rules, command, wire, snapshot, bot or ordinary action-flow
+change. Closing check: a deterministic joined-client regression reproduces the press crossing to an
+input-disabled other-actor projection and then returning to the original actor; it fails before the
+fix by submitting a command without a new press and passes after. Run the focused presenter fixture,
+the directly affected END TURN input/provenance fixtures, and focused Play Mode for the live control.
+T2.
+
+Result: the joined-seat continuation now checks its actor boundary before the temporary network input
+gate. Once the authoritative projection concerns another hero, the old press is discarded even though
+that seat cannot act; a later turn for the same hero therefore has no press left to resume after a
+Movement or Skill update. The original one-press END TURN path still resumes while an input-disabled
+projection concerns the same hero. The regression failed before the fix by submitting three commands
+where the one old press owned only two (`Expected: 2; But was: 3`) and passed after. Focused Unity
+Edit Mode passed 122/122 across `MatchFeaturePresenterTests` and
+`EndTurnPressProvenanceTests`; focused live-control Play Mode passed 1/1. No rule, command, wire,
+snapshot, bot or package changed.
+
+Completed 2026-10-07.
+
+Historical evidence: [9.66 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-966-end-turn-continuation-boundary-evidence).
+
 ## Phase 9 - Rules fidelity and hero intake hardening
 
 On 2026-09-28 the user closed Phase 8 and started Phase 9 with this work ("Stop with phas 8. Lets start phase 9 from this point forward"), replacing the earlier presentation-and-pitch plan, which is retired to [the archive](../Archive/PHASE_9_PRESENTATION_PLAN_RETIRED.md) and authorizes nothing.

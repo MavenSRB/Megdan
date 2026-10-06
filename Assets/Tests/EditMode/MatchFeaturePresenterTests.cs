@@ -2367,6 +2367,46 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 9.66. A joined seat is non-actionable while another hero owns the turn. An
+        /// END TURN continuation must use that actor boundary even while input is disabled; if it
+        /// waits for input to become enabled before checking the boundary, the old press survives
+        /// until this hero acts again and then spends the later turn without a new press.
+        /// </summary>
+        [Test]
+        public void EndTurnContinuation_DiesOnAnInputDisabledOtherActorBeforeTheHeroActsAgain()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var laterSession = CreateSession();
+            StartTiedTurn(laterSession, ActionKind.Movement);
+            Assert.That(laterSession.Projection.SelectedActor.ActorId, Is.EqualTo(actor),
+                "The independent projection represents this hero's later turn.");
+            var laterOwnTurn = laterSession.Projection;
+            var client = new DeferredMatchClient(session, preserveActorWhileWaiting: true);
+            var presenter = new RoundActionPresenter(client, new CapturingRoundView(), actor);
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True, "The only END TURN press.");
+            client.DeliverPending();
+            presenter.Refresh();
+            client.DeliverPending();
+
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.Not.EqualTo(actor),
+                "The press has released its actor and the match now concerns somebody else.");
+            var submissionsAtBoundary = client.SubmissionsSent;
+            client.ProjectionOverride = new InputGateReadModel(session.Projection, false);
+            presenter.Refresh();
+
+            client.ProjectionOverride = laterOwnTurn;
+            presenter.Refresh();
+
+            Assert.That(client.SubmissionsSent, Is.EqualTo(submissionsAtBoundary),
+                "Returning to the same hero later must not resume an END TURN press from the " +
+                "previous turn. Pre-fix this submits Hold without any new press, and the same " +
+                "stale continuation can stop/release a Movement or Skill after its next update.");
+        }
+
+        /// <summary>
         /// Reproduces <c>NetworkMatchClient</c>'s contract without a wire: a submission is ACCEPTED
         /// but only SENT - the caller gets the pre-command projection back, that projection reports
         /// <c>IsInputEnabled == false</c>, and every further submission is refused until the host's
@@ -2378,15 +2418,22 @@ namespace GuardsDigital.Tests.EditMode
         {
             private readonly IMatchSession session;
             private readonly MatchHost host;
+            private readonly bool preserveActorWhileWaiting;
             private DirectorCommand pending;
 
-            public DeferredMatchClient(IMatchSession session)
+            public DeferredMatchClient(
+                IMatchSession session, bool preserveActorWhileWaiting = false)
             {
                 this.session = session;
                 host = new MatchHost(session);
+                this.preserveActorWhileWaiting = preserveActorWhileWaiting;
             }
 
             public bool InFlight => pending != null;
+
+            public int SubmissionsSent { get; private set; }
+
+            public IMatchReadModel ProjectionOverride { get; set; }
 
             public bool IsDirector => false;
 
@@ -2394,9 +2441,19 @@ namespace GuardsDigital.Tests.EditMode
             {
                 get
                 {
+                    if (ProjectionOverride != null)
+                    {
+                        return ProjectionOverride;
+                    }
+
                     if (pending == null)
                     {
                         return session.Projection;
+                    }
+
+                    if (preserveActorWhileWaiting)
+                    {
+                        return new InputGateReadModel(session.Projection, false);
                     }
 
                     var seat = host.Seats.Seats[0];
@@ -2418,6 +2475,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 pending = command;
+                SubmissionsSent++;
                 return new MatchClientResult(true, "Sent to the host.", Projection, false);
             }
 
@@ -2439,6 +2497,16 @@ namespace GuardsDigital.Tests.EditMode
                 pending = null;
                 session.Execute(command);
             }
+        }
+
+        private sealed class InputGateReadModel : DelegatingReadModel
+        {
+            private readonly bool isInputEnabled;
+
+            public InputGateReadModel(IMatchReadModel inner, bool isInputEnabled) : base(inner) =>
+                this.isInputEnabled = isInputEnabled;
+
+            public override bool IsInputEnabled => isInputEnabled;
         }
 
         /// <summary>

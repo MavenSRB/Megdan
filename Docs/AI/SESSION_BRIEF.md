@@ -14,12 +14,12 @@ FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot 
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.65**.
+- Current completed milestone: **9.66**.
 - Active authorized milestone: **none**.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Next proposed milestone: **9.62**.
-- Next route: **9.65** is complete. The merged thirty-two-hero experimental/map package is validated and cut; stop. **9.62** remains queued and unauthorized unless the user explicitly chooses that bounded two-lane-map outcome.
+- Next route: **9.66** is complete. A joined seat's old END TURN press can no longer survive another actor's turn and resume after that hero's later Movement or Skill. The current package remains **9.65**; no replacement build was requested or cut. **9.62** remains queued and unauthorized unless the user explicitly chooses that bounded two-lane-map outcome.
 - 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
 - 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; the experimental/map line advances the integrated wire protocol to /42. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.

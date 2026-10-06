@@ -458,14 +458,29 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var projection = session.Projection;
-            if (projection == null || !projection.IsInputEnabled)
+            if (projection == null)
+            {
+                return;
+            }
+
+            // Milestone 9.66: actor ownership is a terminal boundary even for a joined seat whose
+            // input is disabled while somebody else acts. Checking the input gate first left the
+            // old press armed throughout every other hero's turn, so it could resume when this
+            // hero later completed a Movement or Skill and submit the next completion/release
+            // without a new press.
+            if (!StillConcerns(projection, actor))
+            {
+                composingEndTurnFor = default;
+                return;
+            }
+
+            if (!projection.IsInputEnabled)
             {
                 // Still waiting on the host. Nothing has changed that this press can act on.
                 return;
             }
 
-            if (++composingEndTurnResumes > MaxEndTurnResumes ||
-                !StillConcerns(projection, actor))
+            if (++composingEndTurnResumes > MaxEndTurnResumes)
             {
                 composingEndTurnFor = default;
                 return;
