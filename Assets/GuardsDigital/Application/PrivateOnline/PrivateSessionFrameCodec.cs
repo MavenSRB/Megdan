@@ -652,7 +652,7 @@ namespace GuardsDigital.Application
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.ClockUpdate)
+                value <= (int)SessionMessageKind.CoordinationUpdate)
             {
                 kind = (SessionMessageKind)value;
                 return true;

@@ -134,6 +134,29 @@ namespace GuardsDigital.Application
     }
     public static partial class NetworkMessageCodec
     {
+        public static byte[] CoordinationUpdateFrame(NetworkEnvelope envelope, CoordinationDisplayState state)
+        {
+            using(var stream=new MemoryStream()) using(var writer=new BinaryWriter(stream))
+            {
+                WriteEnvelope(writer,envelope); writer.Write(state.Version); writer.Write(state.Revision);
+                writer.Write(state.Generation); ExperimentalWireCodec.WriteMarkers(writer,state.Markers);
+                writer.Flush(); return PrivateSessionFrameCodec.EncodeFrame(SessionMessageKind.CoordinationUpdate,stream.ToArray());
+            }
+        }
+        public static bool TryDecodeCoordinationUpdate(byte[] payload,out NetworkEnvelope envelope,out CoordinationDisplayState state)
+        {
+            envelope=default; state=null;
+            try
+            {
+                using(var stream=new MemoryStream(payload??Array.Empty<byte>(),false)) using(var reader=new BinaryReader(stream))
+                {
+                    if(!TryReadEnvelope(reader,out envelope)) return false;
+                    state=new CoordinationDisplayState(reader.ReadInt64(),reader.ReadInt64(),reader.ReadInt32(),ExperimentalWireCodec.ReadMarkers(reader));
+                    return stream.Position==stream.Length;
+                }
+            }
+            catch(IOException) { return false; } catch(FormatException) { return false; } catch(ArgumentException) { return false; }
+        }
         public static byte[] ClockUpdateFrame(NetworkEnvelope envelope, long version, MatchClockState state)
         {
             using(var stream=new MemoryStream()) using(var writer=new BinaryWriter(stream))

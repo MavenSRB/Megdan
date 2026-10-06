@@ -438,7 +438,7 @@ namespace GuardsDigital.Application
         // identity. Older peers are refused at admission.
         // v37: experimental settings, private allied hands and independent teammate signals.
         // v39: isolated, independently sequenced clock display updates; gameplay views stay stable.
-        public const int Version = 40;
+        public const int Version = 41;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

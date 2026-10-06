@@ -577,7 +577,6 @@ namespace GuardsDigital.Presentation.Match
             var own = experimental.TeammateMarkers.FirstOrDefault(m => m.Sender.Equals(HandsPresenter.HomeHeroId));
             communication.SubmitCoordination(new CoordinationCommand(own?.Revision ?? 0, CoordinationTargetKind.Card,
                 own != null && own.Card.Equals(id), projection.SelectedMap.Reference, cardOwner: card.OwnerId, card: id, generation: experimental.CoordinationGeneration));
-            RefreshAll();
         }
 
         public bool SelectViewedHero(HeroId heroId)

@@ -174,6 +174,7 @@ namespace GuardsDigital.Application
                 projectedLogRevision = session.MatchLogRevision;
             }
 
+            projection.ReplaceCoordination(session.LatestCoordination);
             return projection;
         }
 
@@ -398,6 +399,7 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            if (!ReferenceEquals(wire, accepted)) coordinationDisplay = null;
             wire = accepted;
             actionable = nextActionable;
             effectChoiceMaterialized = false;
@@ -411,9 +413,11 @@ namespace GuardsDigital.Application
         public IReadOnlyList<HeroCardInspection> CardInspections => wire?.CardInspections ?? Array.Empty<HeroCardInspection>();
         public ExperimentalMatchOptions Experiments => wire?.Experiments ?? ExperimentalMatchOptions.Disabled;
         public IReadOnlyList<CardInstance> AlliedHandCards => wire == null ? Array.Empty<CardInstance>() : Array.AsReadOnly(wire.AlliedHandCards.Select(ToCard).ToArray());
-        public IReadOnlyList<TeammateMarker> TeammateMarkers => wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();
-        public long CoordinationRevision => wire?.CoordinationRevision ?? 0;
-        public int CoordinationGeneration => wire?.CoordinationGeneration ?? 0;
+        private CoordinationDisplayState coordinationDisplay;
+        public void ReplaceCoordination(CoordinationDisplayState state) => coordinationDisplay = state?.Version == Version ? state : null;
+        public IReadOnlyList<TeammateMarker> TeammateMarkers => coordinationDisplay?.Markers ?? wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();
+        public long CoordinationRevision => coordinationDisplay?.Revision ?? wire?.CoordinationRevision ?? 0;
+        public int CoordinationGeneration => coordinationDisplay?.Generation ?? wire?.CoordinationGeneration ?? 0;
         public MatchClockState Clock => wire?.Clock ?? MatchClockState.Disabled;
         public long Version => wire?.Version ?? trusted.Version;
         public bool IsInputEnabled => actionable;

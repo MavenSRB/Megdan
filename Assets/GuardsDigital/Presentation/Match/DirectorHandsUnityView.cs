@@ -745,7 +745,7 @@ namespace GuardsDigital.Presentation.Match
             // selection treatment, and a card can be selected and active at the same time - two
             // meanings on one border would be one meaning lost. The slot is always drawn, so a card
             // does not change size when an effect starts or ends; only the outline's colour does.
-            var slot = new VisualElement { name = "gd-card-slot" };
+            var slot = new VisualElement { name = "gd-card-slot", userData = card.CardInstanceId };
             slot.style.flexDirection = FlexDirection.Column;
             slot.style.alignItems = Align.Stretch;
             slot.style.marginRight = CardGap;
@@ -830,9 +830,20 @@ namespace GuardsDigital.Presentation.Match
             return slot;
         }
 
+        /// <summary>Refresh decorations without replacing card faces, input state or an open preview.</summary>
+        public void RefreshTeammateSignals()
+        {
+            foreach (var slot in Root.Query<VisualElement>("gd-card-slot").ToList())
+                if (slot.userData is CardInstanceId id)
+                    AddTeammateSignal(slot, SuggestedBy?.Invoke(id));
+            if (highlightedPeekCard != null && hoverPreview.childCount > 0)
+                AddTeammateSignal(hoverPreview[0], SuggestedBy?.Invoke(highlightedPeekCard.CardInstanceId));
+        }
+
         private static void AddTeammateSignal(VisualElement anchor,
             System.Collections.Generic.IReadOnlyList<HeroOverviewViewModel> suggestions)
         {
+            anchor.Q("teammate-card-signal")?.RemoveFromHierarchy();
             if (suggestions != null && suggestions.Count > 0)
             {
                 var signal = new VisualElement { name = "teammate-card-signal", pickingMode = PickingMode.Ignore };

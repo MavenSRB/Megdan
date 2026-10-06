@@ -272,6 +272,9 @@ namespace GuardsDigital.Application
         public MatchClockState LatestClock { get; private set; } = MatchClockState.Disabled;
         public long ClockDisplayRevision { get; private set; }
         private long clockReceiveSequence;
+        private long coordinationReceiveSequence;
+        public CoordinationDisplayState LatestCoordination { get; private set; }
+
 
         /// <summary>
         /// Milestone 8.35r. The seat-public match log this client currently holds, oldest first,
@@ -378,7 +381,7 @@ namespace GuardsDigital.Application
             IsReconnecting = true;
             awaitingReconnectProjection = true;
             channel = null;
-            gameplaySendSequence = 0; clockReceiveSequence = 0; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
+            gameplaySendSequence = 0; clockReceiveSequence = 0; coordinationReceiveSequence = 0; LatestCoordination = null; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
             gameplayReceiveSequence = 0;
             RejectionReason = SessionRejectionReason.None;
             RejectionDetail = string.Empty;
@@ -406,7 +409,7 @@ namespace GuardsDigital.Application
             IsReconnecting = false;
             awaitingReconnectProjection = false;
             channel = null;
-            gameplaySendSequence = 0; clockReceiveSequence = 0; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
+            gameplaySendSequence = 0; clockReceiveSequence = 0; coordinationReceiveSequence = 0; LatestCoordination = null; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
             gameplayReceiveSequence = 0;
             ClearWaitingForHost();
             MatchFeedback = "Could not reach the host. Try reconnecting.";
@@ -771,6 +774,19 @@ namespace GuardsDigital.Application
         /// </summary>
         private void HandleGameplayFrame(SessionFrame frame)
         {
+            if(frame.Kind==SessionMessageKind.CoordinationUpdate)
+            {
+                if(!NetworkMessageCodec.TryDecodeCoordinationUpdate(frame.Payload,out var envelope,out var state) ||
+                    !string.Equals(envelope.SessionCorrelation,SessionCorrelation,StringComparison.Ordinal) || envelope.Epoch!=ConnectionEpoch)
+                { Fault(); return; }
+                if(envelope.Sequence<=coordinationReceiveSequence) { DiscardedFrameCount++; return; }
+                coordinationReceiveSequence=envelope.Sequence;
+                if(LatestProjection==null || LatestProjection.Version!=state.Version || !LatestProjection.Experiments.TeammateCoordination ||
+                    state.Generation!=LatestProjection.CoordinationGeneration ||
+                    (LatestCoordination!=null && state.Revision<LatestCoordination.Revision)) return;
+                LatestCoordination=state;
+                return;
+            }
             if(frame.Kind==SessionMessageKind.ClockUpdate)
             {
                 if(!NetworkMessageCodec.TryDecodeClockUpdate(frame.Payload,out var envelope,out var version,out var clock) ||
@@ -829,6 +845,8 @@ namespace GuardsDigital.Application
 
                 gameplayReceiveSequence = projection.Envelope.Sequence;
                 LatestProjection = record;
+                LatestCoordination = new CoordinationDisplayState(record.Version,record.CoordinationRevision,
+                    record.CoordinationGeneration,record.TeammateMarkers);
                 LatestClock = record.Clock; ClockDisplayRevision++;
                 ProjectionRevision++;
                 ApplyMatchLog(projection.MatchLog);

@@ -241,6 +241,7 @@ namespace GuardsDigital.Application
             /// <summary>Milestone 8.32. The last gameplay-envelope sequence sent to this connection.</summary>
             public long GameplaySendSequence { get; set; }
             public long ClockSendSequence { get; set; }
+            public long CoordinationSendSequence { get; set; }
 
             /// <summary>
             /// Milestone 8.34. The epoch this connection speaks under - its seat's epoch at the
@@ -735,7 +736,7 @@ namespace GuardsDigital.Application
                         }
                         if (!AcceptGameplayEnvelope(record, coordinationEnvelope)) return;
                         if (matchHost is MatchHost coordinationHost && coordinationHost.SubmitCoordinationForSeat(record.Seat, coordinationCommand))
-                            PublishProjections(record, coordinationEnvelope.Correlation);
+                            PublishCoordinationUpdate();
                         else SendProjectionTo(record, coordinationEnvelope.Correlation);
                         return;
                     }
@@ -1990,6 +1991,19 @@ namespace GuardsDigital.Application
         public void RepublishProjections() => PublishProjections();
 
         /// <summary>Display-only time never consumes a gameplay sequence or republishes a seat view.</summary>
+        public void PublishCoordinationUpdate()
+        {
+            if(!matchStarted || !(matchHost is MatchHost signalHost) || !signalHost.Experiments.TeammateCoordination) return;
+            foreach(var record in new List<ConnectionRecord>(connections.Values))
+            {
+                if(record.Phase!=ConnectionPhase.Seated) continue;
+                var view=signalHost.ProjectionForSeat(record.Seat);
+                var state=new CoordinationDisplayState(view.Version,view.CoordinationRevision,view.CoordinationGeneration,view.TeammateMarkers);
+                var frame=NetworkMessageCodec.CoordinationUpdateFrame(new NetworkEnvelope(
+                    SessionCorrelation,record.Epoch,record.CoordinationSendSequence+1,0),state);
+                record.CoordinationSendSequence++; Deliver(record,frame);
+            }
+        }
         public void PublishClockUpdate()
         {
             if(!matchStarted || !(matchHost is MatchHost timedHost) || !timedHost.Experiments.TurnTimer) return;

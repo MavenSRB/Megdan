@@ -70,6 +70,9 @@ namespace GuardsDigital.Presentation.Match
             if (renderedRevision != experimental.CoordinationRevision || renderedVersion != read.Version || renderedVotes!=voteIdentity)
             {
                 renderedRevision = experimental.CoordinationRevision; renderedVersion = read.Version; renderedVotes=voteIdentity;
+                foreach (var entry in cardBadges) entry.Badges.RemoveFromHierarchy();
+                cardBadges.Clear();
+                runtime.HandsView.RefreshTeammateSignals();
                 layer.Clear(); signals.Clear();
                 foreach (var group in experimental.TeammateMarkers.Concat(votes.Select(v=>new TeammateMarker(v.Voter,0,v.Position,default,default))).Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
                 {

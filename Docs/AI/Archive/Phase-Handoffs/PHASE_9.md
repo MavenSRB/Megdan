@@ -678,3 +678,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.64d / 9.64e (pending) | Spellbook bump and current-card inspection implemented; focused Editor/offline gates green, UI/visual and unfiltered Unity gates held by the separate hero run. Not completed or packaged. [Definitions](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-unity-pending`; implementation `82ec92de` |
+
+## Milestone 9.64f pending validation checkpoint
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64f (pending) | Highlight-only transport and in-place decoration refresh implemented; focused offline checks green, Unity/UI gates pending the serial Editor slot. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64f-unity-pending` |

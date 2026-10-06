@@ -47,6 +47,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.IsShown(cardButton), Is.True);
             RightClick(cardButton);
             yield return null; yield return null;
+            Assert.That(runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList().Last(), Is.SameAs(cardButton),
+                "Sending a card suggestion must preserve the actual input control.");
             var host = (MatchHost)runtime.Host;
             Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single().Card, Is.EqualTo(cardId));
             Assert.That(runtime.HandsView.Root.Q("teammate-card-signal"), Is.Not.Null);
@@ -61,6 +63,14 @@ namespace GuardsDigital.Tests.PlayMode
             runtime.RefreshClockDisplay();yield return null;
             Assert.That(runtime.HandsView.HoverPreviewRoot.Q("gd-card-preview"),Is.SameAs(face));
             Assert.That(popped.Q("teammate-card-signal"),Is.SameAs(signal),"A clock-only draw must leave hover and its highlight untouched.");
+            var allyView = host.ProjectionForSeat(ally.Id);
+            Assert.That(host.SubmitCoordinationForSeat(ally.Id, new CoordinationCommand(0, CoordinationTargetKind.Hex,
+                false, runtime.ReadModel.SelectedMap.Reference, runtime.ReadModel.SelectedMap.Spaces.First().Coordinate,
+                generation: allyView.CoordinationGeneration)), Is.True);
+            yield return null; yield return null;
+            Assert.That(runtime.HandsView.HoverPreviewRoot.Q("gd-card-preview"), Is.SameAs(face),
+                "A teammate's suggestion must preserve the hovered card face.");
+            Assert.That(runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList().Last(), Is.SameAs(cardButton));
             yield return UiPlayer.CaptureScreen("tmp/964a-hover-card.png");
             Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
             UiPlayer.Click(root.Hud.RootElement.Q<Button>("my-cards"));

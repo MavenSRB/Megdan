@@ -21,6 +21,60 @@ namespace GuardsDigital.Tests.EditMode
                 state.InitialConfiguration, state.InitialTiming, state.StagedProgression,
                 new ExperimentalMatchOptions(teammateCoordination: enabled)));
         }
+        [TestCase("")] [TestCase("marker-test")]
+        public void MarkerOnlyUpdatesPreserveGameplayProjectionAndLogIdentity(string key)
+        {
+            var host=Create(); var wire=PrivateOnlineWireHarness.Compose(host,key); wire.SeatAll(); wire.ReadyAndPickEverySeat();
+            var sender=host.Seats.Seats[0]; var machine=wire.Client(1);
+            var adapter=new NetworkMatchClient(machine,host.Projection,MatchContentCatalogs.ForThisBuild());
+            var before=machine.LatestProjection; var model=adapter.Projection;
+            var revision=machine.ProjectionRevision; var log=machine.MatchLogRevision;
+            var hex=host.Projection.SelectedMap.Spaces.First().Coordinate;
+            Assert.That(machine.TrySubmitCoordination(new CoordinationCommand(0,CoordinationTargetKind.Hex,false,
+                host.Projection.SelectedMap.Reference,hex)),Is.True);
+            wire.Pump();
+            Assert.That(machine.LatestProjection,Is.SameAs(before),"A highlight must never replace the gameplay projection.");
+            Assert.That(adapter.Projection,Is.SameAs(model));
+            Assert.That(machine.ProjectionRevision,Is.EqualTo(revision));
+            Assert.That(machine.MatchLogRevision,Is.EqualTo(log));
+            Assert.That(((IExperimentalReadModel)adapter.Projection).TeammateMarkers.Single().Hex,Is.EqualTo(hex));
+            Assert.That(host.Version,Is.EqualTo(before.Version));
+        }
+        [Test] public void MarkerFramesCannotAcknowledgeCommandsOrReplaceNewerOrDifferentGameState()
+        {
+            var host=Create();var wire=PrivateOnlineWireHarness.Compose(host);wire.SeatAll();wire.ReadyAndPickEverySeat();
+            var machine=wire.Client(1);var original=machine.LatestProjection;var first=machine.LatestCoordination;
+            Assert.That(machine.TrySubmitCommand(original.AuthorizedCommands[0],out _),Is.True);
+            void Deliver(long sequence,long version,long revision,int generation)
+            {
+                var bytes=NetworkMessageCodec.CoordinationUpdateFrame(new NetworkEnvelope(machine.SessionCorrelation,
+                    machine.ConnectionEpoch,sequence,0),new CoordinationDisplayState(version,revision,generation,first.Markers));
+                machine.OnFrame(new SessionFrame(SessionMessageKind.CoordinationUpdate,bytes.Skip(PrivateSessionProtocol.FrameHeaderBytes).ToArray()));
+            }
+            Deliver(1,original.Version+1,first.Revision+1,first.Generation);
+            Assert.That(machine.LatestCoordination,Is.SameAs(first));
+            Deliver(2,original.Version,first.Revision+1,first.Generation+1);
+            Assert.That(machine.LatestCoordination,Is.SameAs(first));
+            Deliver(3,original.Version,first.Revision+2,first.Generation);
+            var accepted=machine.LatestCoordination;
+            Assert.That(accepted,Is.Not.SameAs(first));
+            Deliver(3,original.Version,first.Revision+3,first.Generation);
+            Deliver(2,original.Version,first.Revision+3,first.Generation);
+            Deliver(4,original.Version,first.Revision+1,first.Generation);
+            Assert.That(machine.LatestCoordination,Is.SameAs(accepted));
+            Assert.That(machine.LatestProjection,Is.SameAs(original));
+            Assert.That(machine.IsWaitingForHost,Is.True);
+            wire.Pump();
+            Assert.That(machine.IsWaitingForHost,Is.False);
+            Assert.That(machine.RecoveredProjectionGapCount,Is.Zero);
+            wire.DisconnectClient(1);var reconnected=wire.Client(wire.ReconnectClient(1));
+            var current=reconnected.LatestProjection;var revisionBefore=reconnected.ProjectionRevision;
+            wire.Session.PublishCoordinationUpdate();wire.Pump();
+            Assert.That(reconnected.LatestProjection,Is.SameAs(current));
+            Assert.That(reconnected.ProjectionRevision,Is.EqualTo(revisionBefore));
+            Assert.That(reconnected.LatestCoordination.Generation,Is.EqualTo(current.CoordinationGeneration));
+            Assert.That(reconnected.RecoveredProjectionGapCount,Is.Zero);
+        }
         [TestCase("2v2-quick")]
         [TestCase("2v2-long")]
         [TestCase("3v3-quick")]
@@ -84,8 +138,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(machine.IsWaitingForHost, Is.False);
             for (int i = 0; i < host.Seats.Seats.Count; i++)
             {
-                var record = wire.Client(i + 1).LatestProjection;
-                Assert.That(record.TeammateMarkers.Count, Is.EqualTo(host.Seats.Seats[i].TeamSide == sender.TeamSide ? 1 : 0));
+                var record = wire.Client(i + 1).LatestCoordination;
+                Assert.That(record.Markers.Count, Is.EqualTo(host.Seats.Seats[i].TeamSide == sender.TeamSide ? 1 : 0));
             }
             wire.DisconnectClient(1);
             Assert.That(host.ProjectionForSeat(sender.Id).TeammateMarkers, Is.Empty);
