@@ -708,3 +708,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64e (pending) | Focused UI and visual gates pass after fixing hand overlap and board-click blocking in current-card inspection. Full Unity gates remain required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-window-layer` |
+
+## Milestone 9.64e completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64e | Current-card inspection, independent enemy sharing and allied spellbook/gold exceptions are gated, including corrected window layering. Full offline and Unity Edit/Play gates passed; no replacement build. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64e` |
