@@ -696,3 +696,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64d | Gydion spellbook uses the shared subtle card hover bump without a detached popup; focused UI and both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64d` |
+
+## Milestone 9.64f completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64f | Teammate highlights use independent transport and decoration updates; gameplay projection, hover and open windows stay intact. Stale-frame/privacy/reconnect and real-pointer checks pass. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64f` |

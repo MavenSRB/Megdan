@@ -115,7 +115,7 @@ namespace GuardsDigital.Tests.PlayMode
             screen = pointer.EventCamera.WorldToScreenPoint(tile.transform.position);
             Assert.That(pointer.TrySuggestAtScreen(screen), Is.True);
             yield return null;
-            Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single().Hex, Is.Null);
+            Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single(m=>m.Sender.Equals(seat.HeroId)).Hex, Is.Null);
             root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
         }
         [UnityTest] public IEnumerator BoardSignalsStayBelowTheSpellbookAndEveryHudWindow()
