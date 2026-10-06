@@ -159,7 +159,12 @@ Authenticated readiness reports name the authoritative version. Input remains pa
 
 Wire 42 carries clock state, readiness, typed shared-board votes and permitted current-card inspection faces. Votes are independent of right-click teammate suggestions and retain the existing deciding-side eligibility. Unanimity resolves early; timeout applies plurality and recorded random ties. Constrained Minion Battle selections retain the initial tally until completion, including across restore. Timer snapshots use `guards-experimental/3:` around unchanged Core schema 58, with options, remaining ticks, paused response frames, current ballots and timeout seed/draw position. Live Director Undo restores a pre-command checkpoint; ordinary and timeout Undo cannot refund spent time. Core snapshots still omit replay ancestry, so importing one does not invent Director Undo history. Gameplay replay uses the accepted timeout commands without waiting or redrawing.
 
-The header keeps its 96-unit footprint. Independently timed normal windows remain separate when their remaining times differ; equal simultaneous Red/Blue allowances share gold. Active bank windows replace their side previews, including mixed bank/normal states. Windows contain the clock icon and digits, with descriptive tooltips.
+The header keeps its 96-unit footprint. Simultaneous current normal allowances share one gold main
+clock even when per-seat readiness started their authoritative budgets a few seconds apart; it shows
+the latest remaining allowance because the shared window stays open until its final participant
+leaves. A lone allowance uses its owning team's colour. Active bank windows remain separate team
+resources and replace their side previews, including mixed bank/normal states. Windows contain the
+clock icon and digits, with descriptive tooltips.
 
 Private built-player smoke can opt in through `GUARDS_SMOKE_EXPERIMENTS=1` only alongside the existing rehearsal Smoke mode. It enables the real host controls, verifies joined clock/options projections, inspects an allied hand, sends a suggestion through the authenticated transport and returns to My Cards. Normal launches never enable this hook or experiments. Final NebKher choices remain a merge prerequisite; this candidate excludes him.
 

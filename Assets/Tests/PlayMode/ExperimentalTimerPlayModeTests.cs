@@ -82,6 +82,31 @@ namespace GuardsDigital.Tests.PlayMode
             foreach(var label in top.Query<VisualElement>("gd-main-clock").ToList().SelectMany(w=>w.Query<Label>().ToList()))
                 Assert.That(label.text.All(c=>char.IsDigit(c)||c==':'),Is.True,"Clock windows contain digits only.");
             yield return UiPlayer.CaptureScreen("tmp/964a-mixed-1920.png");
+
+            // Milestone 9.67: readiness can start simultaneous commitment allowances a few
+            // seconds apart. They remain separate authority clocks, but the shared header must not
+            // turn that implementation detail into four contradictory-looking countdowns.
+            var staggeredCommitments=new MatchClockState(true,2,3,
+                TimeSpan.FromSeconds(18).Ticks,TimeSpan.FromSeconds(20).Ticks,
+                new[]{
+                    new MatchClockEntry("commit-a",MatchClockKind.Commitment,new HeroId("red-a"),TeamSide.Red,TimeSpan.FromSeconds(108).Ticks,true),
+                    new MatchClockEntry("commit-b",MatchClockKind.Commitment,new HeroId("blue-a"),TeamSide.Blue,TimeSpan.FromSeconds(109).Ticks,true),
+                    new MatchClockEntry("commit-c",MatchClockKind.Commitment,new HeroId("blue-b"),TeamSide.Blue,TimeSpan.FromSeconds(111).Ticks,true),
+                    new MatchClockEntry("commit-d",MatchClockKind.Commitment,new HeroId("red-b"),TeamSide.Red,TimeSpan.FromSeconds(110).Ticks,true)
+                });
+            root.Hud.RenderHeader(new MatchHudHeaderViewModel(model.TieBreakerState,model.Setup,
+                roundIndex:99,turnIndex:4,remainingWaveCounters:12,clock:staggeredCommitments));
+            yield return null;yield return null;
+            var sharedCommitment=top.Query<VisualElement>("gd-main-clock").ToList();
+            Assert.That(sharedCommitment,Has.Count.EqualTo(1),
+                "Simultaneous commitment allowances are one gold header countdown, not one " +
+                "badge for every slightly different per-seat value.");
+            Assert.That(sharedCommitment[0].Q<Label>("gd-clock-digits").text,Is.EqualTo("01:51"),
+                "The shared window lasts until its final current participant's allowance expires.");
+            Assert.That(sharedCommitment[0].resolvedStyle.borderTopColor,
+                Is.EqualTo(MatchHudTheme.ShineGlow));
+            yield return UiPlayer.CaptureScreen("tmp/967-shared-commitment-clock-1920.png");
+
             root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
             var menu=new PrivateLobbyUnityView();menu.ShowPage(PrivateLobbyEntryPage.Host);
             root.Hud.RootElement.Add(menu.Root);

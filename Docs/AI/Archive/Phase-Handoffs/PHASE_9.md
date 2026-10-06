@@ -761,3 +761,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.66 | A joined seat now discards an asynchronous END TURN continuation as soon as the projection crosses to another actor, before considering the seat's disabled input gate. The regression failed pre-fix with an unpressed third submission after returning to the same hero, then passed; affected Edit Mode passed 122/122 and focused live-control Play Mode passed 1/1. [Definition](../../Roadmap/PHASE_9.md#x-966-disarm-an-end-turn-press-when-its-actors-turn-has-passed). | `milestone/9.66` |
+
+## Milestone 9.67 shared allowance clock completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.67 | Simultaneous current non-bank allowances render as one gold main countdown at the latest remaining allowance; lone allowances and distinct team-bank resources retain their colours. The four-seat staggered regression failed with four badges and passed with one gold badge; focused Play Mode passed 1/1 and the final 1920x1080 header capture was inspected. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-967-collapse-simultaneous-allowance-clocks-into-one-gold-countdown). | `milestone/9.67` |

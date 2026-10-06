@@ -279,11 +279,21 @@ namespace GuardsDigital.Presentation.Match
             { var preview=ClockWindow(clock.BlueBankTicks,ClockColor(TeamSide.Blue),"Blue team time bank",26); preview.name="gd-blue-bank-preview"; PlaceClock(preview,right+8,baseline+2,114,34); clockLayer.Add(preview); }
             var displays=new List<(long Ticks,Color Color,string Description)>();
             var normal=current.Where(e=>!e.UsesBank).ToArray();
-            foreach(var group in normal.GroupBy(e=>(long)Math.Ceiling(TimeSpan.FromTicks(e.RemainingTicks).TotalSeconds)))
+            if(normal.Length>1)
             {
-                var sides=group.Select(e=>e.Team).Distinct().ToArray();
-                var color=sides.Length>1 ? MatchHudTheme.ShineGlow : ClockColor(sides[0]);
-                displays.Add((group.Key*TimeSpan.TicksPerSecond,color,string.Join(", ",group.Select(e=>e.Owner.Value+" "+e.Kind))));
+                // Milestone 9.67: simultaneous decisions are one window on the shared header.
+                // Per-seat readiness can start their authoritative allowances a few seconds apart;
+                // grouping by the displayed second exposed those offsets as several contradictory
+                // countdowns. Keep the clocks distinct in authority, but show their latest expiry
+                // once in gold because the window remains open until its last participant leaves.
+                displays.Add((normal.Max(e=>e.RemainingTicks),MatchHudTheme.ShineGlow,
+                    string.Join(", ",normal.Select(e=>e.Owner.Value+" "+e.Kind))));
+            }
+            else if(normal.Length==1)
+            {
+                var entry=normal[0];
+                displays.Add((entry.RemainingTicks,ClockColor(entry.Team),
+                    entry.Owner.Value+" "+entry.Kind));
             }
             foreach(var side in banks) displays.Add((clock.Bank(side),ClockColor(side),side+" team time bank"));
             float width=displays.Count<=2?164:Mathf.Min(150,520f/Mathf.Max(1,displays.Count));

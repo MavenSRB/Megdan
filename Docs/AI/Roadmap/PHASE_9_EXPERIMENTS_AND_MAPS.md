@@ -215,3 +215,30 @@ Requested as the later morning follow-up, not part of this overnight implementat
 Completed 2026-10-06: merged the completed thirty-two-hero line with the experimental/map line, retaining snapshot schema 59 and advancing the integrated private wire to 42. The merge gate found and corrected the alternate-map Fast Travel fixture's missing neutral rule-modification argument. Full T3 offline/Edit/Play breadth, merge-focused hero/map/experimental checks, assembly/map/private-art checks and review passed. The exact Windows player passed launch, board-render and host-plus-two-client checks with experiments off and on; the separately named private package is `Builds/Playtest-9.65-integrated.zip` (184 files, SHA-256 `e43cc11f048fdd54982057e823c74750d3c40e6067bb2b5fe5da39dbe2eb7830`). ZIP bytes match the loose package and the packaged executable passed its scripted smoke. No two-lane map, rule change, remote push or publication occurred.
 
 Historical evidence: [9.65 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-965-completion).
+
+### [x] 9.67 Collapse simultaneous allowance clocks into one gold countdown
+
+Authorized 2026-10-07 by the user's screenshot and direction: "Why 4 timers instead of just
+gold... they are not the same time lol." Outcome: when more than one current non-bank allowance
+clock is visible for a simultaneous decision such as card commitment, the header shows one gold
+countdown rather than one badge per distinct remaining second/team. The displayed value is the
+longest remaining allowance, because the simultaneous window remains open until its last current
+participant leaves it; individual authoritative clocks and timeout behavior remain unchanged.
+A single-owner allowance retains its team colour, and active team-bank clocks remain separately
+coloured because they are distinct team resources. No clock authority, readiness, timeout, wire,
+snapshot, or header-dimension change. Closing check: a four-seat commitment display with deliberately
+different remaining values fails on the current renderer with four badges and passes with one gold
+badge showing the latest expiry; retain the existing single-clock, mixed allowance/bank, two-bank,
+clock-only refresh, and supported-viewport checks. T2.
+
+Completed 2026-10-07: the header now treats every set of simultaneous current non-bank allowances
+as one shared display. It shows the latest remaining allowance once in gold, while a lone allowance
+retains its team's colour and active team banks remain separate. The four-seat staggered commitment
+regression failed before the fix with four main clock badges ("Expected: 1; But was: 4") and passed
+after with one gold 01:51 badge; the existing single allowance, mixed allowance/bank, two-bank,
+clock-only refresh, unchanged 96-unit header and 1280x720/1920x1080 checks passed in the same focused
+Play Mode fixture (1/1). The final 1920x1080 capture was inspected: one centred gold main clock is
+visible, with the red and blue bank previews remaining at their sides. Authority clocks, timeouts,
+wire 42, snapshots and the existing package are unchanged.
+
+Historical evidence: [9.67 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-967-shared-allowance-clock-completion).
