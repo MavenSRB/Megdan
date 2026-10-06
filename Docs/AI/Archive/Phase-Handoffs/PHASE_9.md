@@ -749,3 +749,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64h | Above-hand spellbook shortcut reuses the permitted owner-style drawer; host/non-host placements, tray/prompt clearance and adjacent confirmation are validated. Hero switches refresh only these controls. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64h` |
+
+## Milestone 9.65 completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.65 | Completed thirty-two-hero content merged with the experimental/map line at schema 59 and wire 42; full T3 integration and exact-player checks passed, and the private `Playtest-9.65-integrated` Windows package was created and verified. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.65` |

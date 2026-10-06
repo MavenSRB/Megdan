@@ -208,6 +208,10 @@ Completed 2026-10-06: the shortcut opens the existing projected book; independen
 
 Historical evidence: [9.64h completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964h-completion).
 
-### [ ] 9.65 Integrate the completed hero and prepare the next private build
+### [x] 9.65 Integrate the completed hero and prepare the next private build
 
 Requested as the later morning follow-up, not part of this overnight implementation run. Owner: merge/build integration. Dependencies: completed 9.54 in the hero checkout, 9.61 and 9.64e; preserve both worktrees and earlier packages. Outcome: merge the completed hero with the experimental/map work, reconcile protocol/snapshot/composition changes, and create the next private playtest package. Closing checks: explicitly audit final NebKher decisions for timer ownership, every timeout fallback and no-strand progress; verify his board interactions on both maps; run merge-affected regressions and the highest applicable gate; copy/check the approved private map artwork with `Tools/Prepare-AlternateBoardArtwork.ps1`; build once and complete required player launch, board and host/client checks with experiments off/on. No two-lane map, new gameplay rules, remote push or upload. Resume only after the hero gate and the agreed morning handoff.
+
+Completed 2026-10-06: merged the completed thirty-two-hero line with the experimental/map line, retaining snapshot schema 59 and advancing the integrated private wire to 42. The merge gate found and corrected the alternate-map Fast Travel fixture's missing neutral rule-modification argument. Full T3 offline/Edit/Play breadth, merge-focused hero/map/experimental checks, assembly/map/private-art checks and review passed. The exact Windows player passed launch, board-render and host-plus-two-client checks with experiments off and on; the separately named private package is `Builds/Playtest-9.65-integrated.zip` (184 files, SHA-256 `e43cc11f048fdd54982057e823c74750d3c40e6067bb2b5fe5da39dbe2eb7830`). ZIP bytes match the loose package and the packaged executable passed its scripted smoke. No two-lane map, rule change, remote push or publication occurred.
+
+Historical evidence: [9.65 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-965-completion).
