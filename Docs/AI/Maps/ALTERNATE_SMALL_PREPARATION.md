@@ -1,6 +1,6 @@
 # Alternate small map: implementation preparation
 
-Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This preserves the **review candidate** and its provenance. 9.61 now promotes the unchanged inventory to [canonical runtime source](alternate-small-single-lane.map.json); its release gate is pending. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
+Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This preserves the **review candidate** and its provenance. 9.61 now promotes the unchanged inventory to [canonical runtime source](alternate-small-single-lane.map.json); its source/UI gate is complete; the merged-player build follows separately. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
 
 ## Prepared inventory
 

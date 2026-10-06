@@ -714,3 +714,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.64e | Current-card inspection, independent enemy sharing and allied spellbook/gold exceptions are gated, including corrected window layering. Full offline and Unity Edit/Play gates passed; no replacement build. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64e` |
+
+## Milestone 9.61 completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.61 | Alternate small map selectable directly on the host screen for 2v2/3v3 Quick/Long; map-aware setup/artwork, typed join inheritance and full gates complete. Hero integration/build remain the later 9.65 follow-up. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.61` |

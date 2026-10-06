@@ -63,9 +63,11 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-960c-align-replacement
 
 Historical evidence: [9.60c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-960c-map-glyph-alignment-evidence).
 
-### [ ] 9.61 Implement the alternate map for 2v2 and 3v3
+### [x] 9.61 Implement the alternate map for 2v2 and 3v3
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-961-implement-the-alternate-map-for-2v2-and-3v3).
+
+Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-961-completion).
 
 ### [ ] 9.62 Implement the two-lane maps for 4v4 and 5v5
 
