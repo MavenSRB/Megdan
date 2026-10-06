@@ -15,11 +15,11 @@ FILL WITH BOTS uses host-owned seats. Earlier player gates covered 2v2/3v3 human
 ## Current authorization and next route
 
 - Current completed milestone: **9.64c**.
-- Active authorized milestone: **9.64e**.
+- Active authorized milestone: **none**.
 - Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E3 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. EM-Q3 specifies two empty hexes between Glitches, a minimum hex distance of 3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Next proposed milestone: **9.64e**.
-- Next route: finish approved **9.64d -> 9.64e**: spellbook hover, then experimental current-card inspection. Existing ZIP, NebKher and maps stay separate.
+- Next route: after the hero Unity run exits, finish approved **9.64d -> 9.64e** UI and T3 gates. Source is implemented; both await Unity. Existing ZIP, NebKher and maps stay separate.
 - 9.51 completed the unregistered three-Illusion and previous-slot printed-action borrow foundations, including action-only friendly-melee count, token substitution, no markers, owner-seat choices and restore/replay. Snapshot v58 rejects v57. Promoted T3 passed: offline 6,686/6,686, Unity Edit 7,786 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail. Preserve untracked user files.
 - 9.50 gated all Emmitt fronts on the permanent real-control matrix. T3 passed: offline 6,670/6,670, Unity Edit 7,770 passed plus 37 explicit diagnostics, Unity Play 1,127/1,127; focused, boundary and visual checks passed. The p.14 Defense-total defect was corrected. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns detail.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.

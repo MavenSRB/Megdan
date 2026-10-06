@@ -672,3 +672,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.64c | Built, smoke-checked and privately packaged the corrected experimental player; closed the smoke-host shutdown race and preserved old builds. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964c-validate-and-package-the-corrected-experimental-player). | `milestone/9.64c`; source `8c3405ef` |
+
+## Milestones 9.64d-9.64e pending validation checkpoint
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64d / 9.64e (pending) | Spellbook bump and current-card inspection implemented; focused Editor/offline gates green, UI/visual and unfiltered Unity gates held by the separate hero run. Not completed or packaged. [Definitions](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-unity-pending`; implementation `82ec92de` |

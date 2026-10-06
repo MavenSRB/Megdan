@@ -106,7 +106,7 @@ namespace GuardsDigital.Tests.EditMode
                             card.State.Location == CardLocation.DiscardPile || card.State.Location == CardLocation.UltimateArea)
                             Assert.That(row.Cards, Does.Contain(card.DefinitionReference), "Every current face survives its lifecycle state.");
                         if (card.State.Location == CardLocation.ItemSlot || card.State.Location == CardLocation.SetAside)
-                            Assert.That(row.Cards, Does.Not.Contain(card.DefinitionReference), "Items and future choices are excluded.");
+                            Assert.That(row.Cards, Has.No.Member(card.DefinitionReference), "Items and future choices are excluded.");
                     }
                 }
                 return false;
