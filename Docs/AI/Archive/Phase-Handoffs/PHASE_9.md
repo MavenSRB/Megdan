@@ -690,3 +690,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.61 (pending) | Alternate small map and standard host selector implemented; map-aware setup, artwork and typed join inheritance gated in focused checks. Full offline gate green; unfiltered Unity gates still required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.61-unity-gates` |
+
+## Milestone 9.64d completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64d | Gydion spellbook uses the shared subtle card hover bump without a detached popup; focused UI and both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64d` |

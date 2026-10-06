@@ -164,9 +164,11 @@ Completed 2026-10-06: the corrected player was built, exercised through its scri
 
 Historical evidence: [9.64c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964c-validated-experimental-package-evidence).
 
-### [!] 9.64d Add the shared spellbook hover bump
+### [x] 9.64d Add the shared spellbook hover bump
 
-Authorized 2026-10-06: visible spellbook faces get the existing subtle hover bump, without a detached popup. T2 closing checks: spellbook presentation regression, real-pointer hover/leave/close at both supported sizes, existing window-layer regression, visual inspection, documentation validation and local commit. Preserve layout, privacy and ordinary hand behavior. A first Unity attempt was refused while the separate hero gate occupied the serial Editor slot; no gameplay check is yet claimed. Existing ZIP stays unchanged.
+Authorized 2026-10-06: visible spellbook faces get the existing subtle hover bump, without a detached popup. T2 closing checks: spellbook presentation regression, real-pointer hover/leave/close at both supported sizes, existing window-layer regression, visual inspection, documentation validation and local commit. Preserve layout, privacy and ordinary hand behavior. The initial serial-Editor hold is resolved. Completed 2026-10-06: focused Edit/Play checks and real-pointer hover/leave/close passed; both supported-size captures show the shared subtle bump, no detached popup and preserved window layering. Review found no rule, privacy or hand-behavior change. Evidence is indexed in the phase archive. Existing ZIP stays unchanged.
+
+Historical evidence: [9.64d completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964d-completion).
 
 ### [!] 9.64e Add experimental current-card inspection
 
