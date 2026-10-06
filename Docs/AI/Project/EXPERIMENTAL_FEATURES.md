@@ -173,7 +173,7 @@ Gate corrections (9.56): Defense text returning a decision to the original attac
 
 ## Current-card inspection extension
 
-Implemented and gated 2026-10-06 at 9.64e. Clicking a hero's tray portrait opens a read-only window of the current card set: cards in hand, committed/played (including resolved), discarded, and unlocked Ultimate. Exclude future upgrade/deck choices and cards converted into items. Color and tier filters include an All reset. Show the cards without adding private choice/status information; this does not expose which hidden card was committed or grant another hero's controls.
+Implemented at 9.64e; simplified and gated at 9.64g (2026-10-06). Tray-portrait clicks show every current card face: hand, committed/played/resolved, discarded and unlocked Ultimate. Exclude future upgrades/deck choices and cards converted into items. No filters or counts. Never reveal lifecycle through labels, grouping, order, styling, tooltips, fallback captions or state-driven rebuilds. Inspection grants no gameplay controls.
 
 The viewer may inspect their own set. Allied inspection stays under the existing Teammate coordination/team-information-sharing toggle, extended to include an allied Gydion's spellbook and all of Takahide's gold-card faces in the hand/card inspection. Enemy card information uses a separate per-match Experimental toggle, independent of team sharing and the timer and off on a new hosted game. The enemy option governs enemy current-card inspection and the spellbook/gold exceptions; it does not make allied sharing unconditional. Existing ordinary public-card visibility stays intact with both options off. No full 18/20-card catalog, future upgrades, item inventory expansion or gameplay authority is added by this window.
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
@@ -14,18 +13,10 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly Func<IMatchReadModel> read;
         private readonly Label title;
-        private readonly Label count;
-        private readonly DropdownField colors;
-        private readonly DropdownField tiers;
         private readonly VisualElement grid;
         private readonly ScrollView scroll;
-        private readonly List<CardColor?> colorValues = new List<CardColor?>();
-        private static readonly CardTier?[] TierValues =
-            { null, CardTier.None, CardTier.I, CardTier.II, CardTier.III, CardTier.IV };
         private HeroCardInspection inspection;
         private HeroId hero;
-        private CardColor? color;
-        private CardTier? tier;
         public VisualElement Root { get; }
         public bool IsOpen => hero.IsDefined;
         public HeroId Hero => hero;
@@ -51,28 +42,6 @@ namespace GuardsDigital.Presentation.Match
             close.name = "gd-hero-card-close";
             header.Add(close);
             Root.Add(header);
-            var filters = new VisualElement { name = "gd-hero-card-filters" };
-            filters.style.flexDirection = FlexDirection.Row;
-            filters.style.flexShrink = 0;
-            filters.style.marginTop = 10f;
-            filters.style.marginBottom = 10f;
-            colors = new DropdownField("Color", new List<string> { "All" }, 0)
-                { name = "gd-hero-card-color" };
-            tiers = new DropdownField("Tier", new List<string> { "All", "Basic", "I", "II", "III", "IV / Ultimate" }, 0)
-                { name = "gd-hero-card-tier" };
-            foreach (var field in new[] { colors, tiers })
-            {
-                field.style.width = 260f;
-                field.style.marginRight = 14f;
-                field.labelElement.style.minWidth = 45f;
-                field.labelElement.style.color = Color.white;
-                field.style.color = Color.black;
-                filters.Add(field);
-            }
-            count = HudElements.Text(string.Empty, 13f, MatchHudTheme.MutedText);
-            count.style.alignSelf = Align.Center;
-            filters.Add(count);
-            Root.Add(filters);
             scroll = new ScrollView(ScrollViewMode.Vertical) { name = "gd-hero-card-scroll" };
             scroll.style.flexGrow = 1;
             scroll.style.flexShrink = 1;
@@ -84,16 +53,6 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(grid, 8f);
             scroll.Add(grid);
             Root.Add(scroll);
-            colors.RegisterValueChangedCallback(_ =>
-            {
-                color = colors.index >= 0 && colors.index < colorValues.Count ? colorValues[colors.index] : null;
-                DrawCards();
-            });
-            tiers.RegisterValueChangedCallback(_ =>
-            {
-                tier = tiers.index >= 0 && tiers.index < TierValues.Length ? TierValues[tiers.index] : null;
-                DrawCards();
-            });
             Root.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode != KeyCode.Escape) return;
@@ -108,11 +67,7 @@ namespace GuardsDigital.Presentation.Match
             if (model == null) return false;
             hero = id;
             inspection = model;
-            color = null;
-            tier = null;
             title.text = displayName.ToUpperInvariant() + " - CURRENT CARDS";
-            tiers.SetValueWithoutNotify("All");
-            UpdateColors();
             DrawCards();
             Root.style.display = DisplayStyle.Flex;
             Root.BringToFront();
@@ -135,7 +90,6 @@ namespace GuardsDigital.Presentation.Match
             if (next == null) { Close(); return; }
             if (inspection.Cards.SequenceEqual(next.Cards)) return;
             inspection = next;
-            UpdateColors();
             DrawCards();
         }
 
@@ -148,30 +102,17 @@ namespace GuardsDigital.Presentation.Match
                 : HeroCardInspection.ForHero(projection, id);
         }
 
+        // Only printed properties determine order; card lifecycle never changes the faces or layout.
         private CardDefinition[] Definitions() => inspection == null ? Array.Empty<CardDefinition>() :
             read().Definitions.Where(value => inspection.Cards.Contains(value.Reference))
                 .OrderBy(value => value.Progression.Color).ThenBy(value => value.Progression.Tier)
                 .ThenBy(value => value.Id.Value, StringComparer.Ordinal).ToArray();
 
-        private void UpdateColors()
-        {
-            colorValues.Clear();
-            colorValues.Add(null);
-            colorValues.AddRange(Definitions().Select(value => (CardColor?)value.Progression.Color).Distinct());
-            if (!colorValues.Contains(color)) color = null;
-            colors.choices = colorValues.Select(value => !value.HasValue ? "All" :
-                value.Value == CardColor.None ? "Colorless" : MatchHudTheme.ColorName(value.Value)).ToList();
-            colors.SetValueWithoutNotify(colors.choices[colorValues.IndexOf(color)]);
-        }
-
         private void DrawCards()
         {
             grid.Clear();
-            var all = Definitions();
-            var selected = all.Where(value => (!color.HasValue || value.Progression.Color == color.Value) &&
-                (!tier.HasValue || value.Progression.Tier == tier.Value)).ToArray();
-            count.text = selected.Length + " / " + all.Length + " cards";
-            foreach (var definition in selected)
+            var definitions = Definitions();
+            foreach (var definition in definitions)
             {
                 // Presentation-only identity: this window has no card submission/suggestion callbacks.
                 var model = new TrayCardViewModel(new CardInstanceId("inspection:" + definition.Id.Value),
@@ -179,13 +120,17 @@ namespace GuardsDigital.Presentation.Match
                     CurrentRoundCards.ReadFace(definition), TrayCardGroup.Available, 0, false, false);
                 var face = new VisualElement { name = "gd-inspected-card", tooltip = definition.DisplayName };
                 ConfiguredCardFaceView.Build(face, model);
+                // Shared hand faces include lifecycle captions/tooltips; inspection shows only printed faces.
+                face.Q("gd-card-history")?.RemoveFromHierarchy();
+                var artwork = face.Q("gd-card-artwork");
+                if (artwork != null) artwork.tooltip = definition.DisplayName;
                 face.style.marginRight = 18f;
                 face.style.marginBottom = 18f;
                 HudElements.ApplyButtonMotion(face);
                 grid.Add(face);
             }
-            if (selected.Length == 0)
-                grid.Add(HudElements.Text("No cards match these filters.", 16f, MatchHudTheme.MutedText));
+            if (definitions.Length == 0)
+                grid.Add(HudElements.Text("No cards to show.", 16f, MatchHudTheme.MutedText));
             scroll.scrollOffset = Vector2.zero;
         }
     }

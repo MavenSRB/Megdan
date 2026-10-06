@@ -720,3 +720,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Evidence |
 | --- | --- | --- |
 | 9.61 | Alternate small map selectable directly on the host screen for 2v2/3v3 Quick/Long; map-aware setup/artwork, typed join inheritance and full gates complete. Hero integration/build remain the later 9.65 follow-up. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.61` |
+## Milestone 9.64g completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64g | Portrait inspection shows the complete current set without filters, counts or lifecycle captions/tooltips; hidden commitments preserve face identity/order. Focused privacy and UI checks plus both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64g` |

@@ -192,6 +192,14 @@ Completed 2026-10-06: marker-only wire updates and local card/hex overlays prese
 
 Historical evidence: [9.64f completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964f-completion).
 
+### [x] 9.64g Simplify portrait inspection to an undifferentiated current set
+
+Authorized 2026-10-06: remove color/tier filters and their count from portrait inspection. Show all currently permitted card faces with no lifecycle labels, grouping, styling or state-driven reordering/rebuild. Preserve current-set membership, gold/book exceptions and independent visibility toggles. T2 closing checks: no-filter and hidden-commitment face-retention regression; current-set/privacy checks; real-pointer inspection/hover/close, clock/marker retention and layering at both supported sizes; visual review, documentation validation and local commit. No protocol, rules, hero integration or replacement build change. This supersedes the filter UI accepted at 9.64e.
+
+Completed 2026-10-06: filters and count removed. Portrait faces omit shared hand lifecycle tooltips and generated captions; definition-only ordering and unchanged-face refresh preserve the complete set across a hidden commitment. Focused T2 checks and both viewport reviews passed, covering private current-set membership, artwork/fallback faces, portrait interaction, retained clock/marker updates and window layering. Review found no rules, visibility or compatibility change. Existing build and hero worktree are unchanged.
+
+Historical evidence: [9.64g completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-964g-completion).
+
 ### [ ] 9.65 Integrate the completed hero and prepare the next private build
 
 Requested as the later morning follow-up, not part of this overnight implementation run. Owner: merge/build integration. Dependencies: completed 9.54 in the hero checkout, 9.61 and 9.64e; preserve both worktrees and earlier packages. Outcome: merge the completed hero with the experimental/map work, reconcile protocol/snapshot/composition changes, and create the next private playtest package. Closing checks: explicitly audit final NebKher decisions for timer ownership, every timeout fallback and no-strand progress; verify his board interactions on both maps; run merge-affected regressions and the highest applicable gate; copy/check the approved private map artwork with `Tools/Prepare-AlternateBoardArtwork.ps1`; build once and complete required player launch, board and host/client checks with experiments off/on. No two-lane map, new gameplay rules, remote push or upload. Resume only after the hero gate and the agreed morning handoff.

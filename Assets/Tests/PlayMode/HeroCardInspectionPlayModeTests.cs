@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class HeroCardInspectionPlayModeTests
     {
-        [UnityTest] public IEnumerator PortraitFiltersAndCloseInspectWithoutChangingGameplayAtBothSizes()
+        [UnityTest] public IEnumerator PortraitShowsAllCurrentFacesWithoutFiltersAtBothSizes()
         {
             var oldWidth = (uint)Screen.width; var oldHeight = (uint)Screen.height;
             try
@@ -46,6 +46,8 @@ namespace GuardsDigital.Tests.PlayMode
                         var window = view.CardInspection.Root;
                         Assert.That(UiPlayer.IsShown(window), Is.True);
                         Assert.That(view.CardInspection.Hero, Is.EqualTo(hero));
+                        Assert.That(window.Query<DropdownField>().ToList(), Is.Empty);
+                        Assert.That(window.Q("gd-hero-card-filters"), Is.Null);
                         Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList().Count,
                             Is.EqualTo(hero.Equals(ally) ? 7 : 5));
                         var first = window.Q("gd-inspected-card");
@@ -57,13 +59,6 @@ namespace GuardsDigital.Tests.PlayMode
                         UiPlayer.PointAway(first); yield return new WaitForSecondsRealtime(0.25f);
                         if (hero.Equals(ally))
                         {
-                            yield return Choose(window.Q<DropdownField>("gd-hero-card-color"), "GOLD");
-                            Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList().Count, Is.EqualTo(3));
-                            yield return Choose(window.Q<DropdownField>("gd-hero-card-tier"), "I");
-                            Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
-                            yield return Choose(window.Q<DropdownField>("gd-hero-card-tier"), "All");
-                            yield return Choose(window.Q<DropdownField>("gd-hero-card-color"), "All");
-                            Assert.That(window.Query<VisualElement>("gd-inspected-card").ToList().Count, Is.EqualTo(7));
                             var lastFace=window.Query<VisualElement>("gd-inspected-card").ToList().Last();
                             var lowerPoint=new Vector2(lastFace.worldBound.center.x,
                                 Mathf.Min(lastFace.worldBound.yMax-10,window.Q<ScrollView>("gd-hero-card-scroll").worldBound.yMax-10));
@@ -85,7 +80,7 @@ namespace GuardsDigital.Tests.PlayMode
                             var scroll = window.Q<ScrollView>("gd-hero-card-scroll");
                             Assert.That(scroll.contentContainer.worldBound.width, Is.LessThanOrEqualTo(scroll.worldBound.width + 1));
                             Assert.That(scroll.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden));
-                            yield return UiPlayer.CaptureScreen("tmp/964e-current-cards-" + width + ".png");
+                            yield return UiPlayer.CaptureScreen("tmp/964g-current-cards-" + width + ".png");
                         }
                         UiPlayer.Click(window.Q<Button>("gd-hero-card-close")); yield return null;
                         Assert.That(view.CardInspection.IsOpen, Is.False);
@@ -102,7 +97,7 @@ namespace GuardsDigital.Tests.PlayMode
                     UiPlayer.Click(menu.Root.Q<Toggle>("experimental-timer"));
                     yield return null; yield return null;
                     Assert.That(UiPlayer.IsShown(menu.Root.Q<IntegerField>("experimental-duration-4")), Is.True);
-                    yield return UiPlayer.CaptureScreen("tmp/964e-host-menu-" + width + ".png");
+                    yield return UiPlayer.CaptureScreen("tmp/964g-host-menu-" + width + ".png");
                     menu.Root.RemoveFromHierarchy();
                 }
                 Assert.That(host.Version, Is.EqualTo(version));
@@ -113,13 +108,6 @@ namespace GuardsDigital.Tests.PlayMode
                 MatchSceneCompositionRoot.NextComposedSeat = null;
                 UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after inspection");
             }
-        }
-        private static IEnumerator Choose(DropdownField field, string value)
-        {
-            UiPlayer.Click(field); yield return null; yield return null;
-            var item = field.panel.visualTree.Query<Label>().ToList().Last(label => label.text == value && UiPlayer.IsShown(label));
-            AlternateSmallMapPlayModeTests.ClickDropdownItem(item); yield return null; yield return null;
-            Assert.That(field.value, Is.EqualTo(value));
         }
     }
 }

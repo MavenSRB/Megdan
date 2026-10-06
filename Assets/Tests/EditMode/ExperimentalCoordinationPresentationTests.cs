@@ -2,6 +2,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -29,6 +30,36 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(book.Subtitle.Contains("Only you"), Is.False, "The owner-only subtitle is no longer true under sharing.");
                 }
             }
+        }
+        [TestCase(false)] [TestCase(true)]
+        public void PortraitHasNoFiltersAndHiddenCommitmentPreservesEveryFaceAndItsOrder(bool useArtwork)
+        {
+            using var artwork = ConfiguredCardArtwork.UseTextureLoader(_ => useArtwork ? UnityEngine.Texture2D.blackTexture : null);
+            var host = HeroCardInspectionTests.Create(true, true);
+            var owner = host.Seats.Seats[0];
+            var viewer = host.Seats.Seats.Last();
+            IMatchReadModel current = host.ProjectionForSeat(viewer.Id);
+            var view = new HeroCardInspectionUnityView(() => current);
+            Assert.That(view.Open(owner.HeroId, "Inspected hero"), Is.True);
+            Assert.That(view.Root.Query<DropdownField>().ToList(), Is.Empty);
+            Assert.That(view.Root.Q("gd-hero-card-filters"), Is.Null);
+            var faces = view.Root.Query<VisualElement>("gd-inspected-card").ToList();
+            Assert.That(faces.Count, Is.EqualTo(5));
+            foreach (var face in faces)
+            {
+                Assert.That(face.Q("gd-card-history"), Is.Null, "Generated faces must omit lifecycle captions too.");
+                var image = face.Q("gd-card-artwork");
+                Assert.That(image != null, Is.EqualTo(useArtwork));
+                if (image != null) Assert.That(image.tooltip, Is.EqualTo(face.tooltip), "Artwork tooltips show only the card name.");
+            }
+            var own = host.ProjectionForSeat(owner.Id);
+            var command = own.AuthorizedCommands.First(c => c.Kind == DirectorCommandKind.CommitCard);
+            Assert.That(host.SubmitForSeat(owner.Id, new SeatSubmission(new SubmissionId("inspection-face-retention"),
+                own.Version, command)).Accepted, Is.True);
+            current = host.ProjectionForSeat(viewer.Id);
+            view.Refresh();
+            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card").ToList(), Is.EqualTo(faces),
+                "Committing a hidden card cannot remove, reorder, rebuild or mark any displayed face.");
         }
         [Test] public void EnemySettingIsIndependentAndResetsOnANewHostMenu()
         {
