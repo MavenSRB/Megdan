@@ -8,6 +8,10 @@ Emmitt the Traveller is the thirty-first hero selected by the user's 2026-10-04 
 
 The profile prints four stars and Melee, Tactician, Durable, Disabler, Tokens. The dashboard names **Emmitt the Traveller** and has the four ordinary turn slots. The user confirmed **three Glitch tokens** on 2026-10-04. Rulebook pp.7-10 govern turn order, card states, choices and the Ultimate; pp.13-14 govern Attack and Defense; pp.17-19 govern Active effects, immunity, token supply and Swap. The [printed-wording rulings](PRINTED_WORDING.md) apply to each face. Exact card text outranks general rules under the [hierarchy](../RULES_LEDGER.md#authority-hierarchy).
 
+## Private token artwork
+
+The Glitch resource is `Private/Tokens/emmitt-glitch`. The bundled manifest calls this token **clone**, element **5366754**: both faces use `Image_3_Atlas`, rectangle `(0, 1043, 427, 369)`. The inspected face depicts Emmitt with blue glasses and an hourglass hat. `Tools/Prepare-TokenArtwork.ps1 -Hero emmitt` prepares the ignored resource; an optional `-SourceCorpusRoot` reads the preserved corpus from another local checkout. The runtime keeps its labelled fallback when private art is absent; a prepared face has no overlaid caption. This is artwork metadata, not a rule change.
+
 ## Printed inventory
 
 File stems below are under `active-hero-cards/Emmitt/` and end in `__front.png`. `D` and `M` are ribbon Defense and Movement; `A`, `R` and `r` are primary Attack, Range and Radius. A dash means the icon is absent. Item icons are read against the established six-item glyphs. All eighteen non-Handicap fronts enter the deck; Tear in Time returns to the box at setup under p.6.

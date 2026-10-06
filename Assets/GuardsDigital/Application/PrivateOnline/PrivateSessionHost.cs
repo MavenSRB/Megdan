@@ -240,6 +240,8 @@ namespace GuardsDigital.Application
 
             /// <summary>Milestone 8.32. The last gameplay-envelope sequence sent to this connection.</summary>
             public long GameplaySendSequence { get; set; }
+            public long ClockSendSequence { get; set; }
+            public long CoordinationSendSequence { get; set; }
 
             /// <summary>
             /// Milestone 8.34. The epoch this connection speaks under - its seat's epoch at the
@@ -707,6 +709,38 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if(frame.Kind==SessionMessageKind.BoardVote)
+                    {
+                        if(!NetworkMessageCodec.TryDecodeSubmitCommand(frame.Payload,out var voteMessage) || !NetworkCommandCodec.TryDecode(voteMessage.CommandPayload,out var vote))
+                        { RejectAndClose(record,SessionRejectionReason.MalformedFrame,"Invalid board vote.");return; }
+                        if(!AcceptGameplayEnvelope(record,voteMessage.Envelope)) return;
+                        if(!IsPaused && matchStarted && matchHost is MatchHost votingHost && votingHost.SubmitBoardVoteForSeat(record.Seat,voteMessage.ExpectedVersion,vote))
+                            PublishProjections(record,voteMessage.Envelope.Correlation);
+                        else SendProjectionTo(record,voteMessage.Envelope.Correlation);
+                        return;
+                    }
+                    if (frame.Kind == SessionMessageKind.TimerReadiness)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeTimerReadiness(frame.Payload,out var clockEnvelope,out var clockVersion,out var ready))
+                        { RejectAndClose(record,SessionRejectionReason.MalformedFrame,"Invalid timer readiness."); return; }
+                        if (!AcceptGameplayEnvelope(record,clockEnvelope)) return;
+                        if (matchStarted && matchHost is MatchHost timedHost) timedHost.SetClockReadiness(record.Seat,clockVersion,ready);
+                        return;
+                    }
+                    if (frame.Kind == SessionMessageKind.SubmitCoordination)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeSubmitCoordination(frame.Payload, out var coordinationEnvelope, out var coordinationCommand))
+                        {
+                            RejectAndClose(record, SessionRejectionReason.MalformedFrame, "The teammate signal did not decode.");
+                            return;
+                        }
+                        if (!AcceptGameplayEnvelope(record, coordinationEnvelope)) return;
+                        if (matchHost is MatchHost coordinationHost && coordinationHost.SubmitCoordinationForSeat(record.Seat, coordinationCommand))
+                            PublishCoordinationUpdate();
+                        else SendProjectionTo(record, coordinationEnvelope.Correlation);
+                        return;
+                    }
+
                     if (frame.Kind == SessionMessageKind.SubmitAgreement)
                     {
                         HandleAgreementSubmission(record, frame.Payload);
@@ -968,6 +1002,7 @@ namespace GuardsDigital.Application
             hold.HeldByOrdinal = record.Ordinal;
             record.Phase = ConnectionPhase.Seated;
             record.Seat = seat.Id;
+            (matchHost as MatchHost)?.ResetClockReadiness(seat.Id);
             record.Epoch = hold.Epoch;
 
             Deliver(record, PrivateSessionFrameCodec.SeatGrantedFrame(
@@ -1036,8 +1071,11 @@ namespace GuardsDigital.Application
             }
 
             hold.IsReady = readiness.IsReady;
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(record.Seat);
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(PrivateSessionEventKind.SeatReadinessChanged, record.Ordinal, record.Seat,
                 seat == null ? default : seat.HeroId,
                 seat == null ? TeamSide.None : seat.TeamSide,
@@ -1952,6 +1990,34 @@ namespace GuardsDigital.Application
         /// </summary>
         public void RepublishProjections() => PublishProjections();
 
+        /// <summary>Display-only time never consumes a gameplay sequence or republishes a seat view.</summary>
+        public void PublishCoordinationUpdate()
+        {
+            if(!matchStarted || !(matchHost is MatchHost signalHost) || !signalHost.Experiments.TeammateCoordination) return;
+            foreach(var record in new List<ConnectionRecord>(connections.Values))
+            {
+                if(record.Phase!=ConnectionPhase.Seated) continue;
+                var view=signalHost.ProjectionForSeat(record.Seat);
+                var state=new CoordinationDisplayState(view.Version,view.CoordinationRevision,view.CoordinationGeneration,view.TeammateMarkers);
+                var frame=NetworkMessageCodec.CoordinationUpdateFrame(new NetworkEnvelope(
+                    SessionCorrelation,record.Epoch,record.CoordinationSendSequence+1,0),state);
+                record.CoordinationSendSequence++; Deliver(record,frame);
+            }
+        }
+        public void PublishClockUpdate()
+        {
+            if(!matchStarted || !(matchHost is MatchHost timedHost) || !timedHost.Experiments.TurnTimer) return;
+            var state=timedHost.ClockState;
+            foreach(var record in new List<ConnectionRecord>(connections.Values))
+            {
+                if(record.Phase!=ConnectionPhase.Seated) continue;
+                var frame=NetworkMessageCodec.ClockUpdateFrame(new NetworkEnvelope(
+                    SessionCorrelation,record.Epoch,record.ClockSendSequence+1,0),timedHost.Version,state);
+                record.ClockSendSequence++; Deliver(record,frame);
+            }
+        }
+
+
         /// <summary>
         /// Milestone 8.35z61. Attaches the on-disk gameplay narration, writing its header
         /// immediately and every row the match has already produced.
@@ -2106,7 +2172,7 @@ namespace GuardsDigital.Application
         private void RejectAndClose(ConnectionRecord record, SessionRejectionReason reason, string detail)
         {
             outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
-                new SessionRejectMessage(reason, detail)));
+                new SessionRejectMessage(reason, detail, identity.MapId, identity.MapContentRevision, identity.MatchFormatId)));
             outbox.Close(record.Ordinal);
             Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
                 default, TeamSide.None, reason);
@@ -2151,8 +2217,11 @@ namespace GuardsDigital.Application
                 hold.IsReady = false;
             }
 
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(record.Seat);
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(
                 forfeited
                     ? PrivateSessionEventKind.SeatReleased
@@ -2201,8 +2270,11 @@ namespace GuardsDigital.Application
                 hold.IsReady = false;
             }
 
+            (matchHost as MatchHost)?.ClearCoordinationForSeat(seat);
             var released = matchHost.Seats.Find(seat);
             BroadcastRoster();
+            if (matchHost is MatchHost signalHost && signalHost.Experiments.TeammateCoordination)
+                PublishProjections();
             Record(PrivateSessionEventKind.SeatReleased, 0, seat,
                 released == null ? default : released.HeroId,
                 released == null ? TeamSide.None : released.TeamSide,

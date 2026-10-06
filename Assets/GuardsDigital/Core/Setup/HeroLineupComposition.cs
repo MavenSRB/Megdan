@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Setup
 {
@@ -82,6 +83,43 @@ namespace GuardsDigital.Core.Setup
                 format.LifeCountPerTeam,
                 heroes,
                 QuickGameSetupConfiguration.OfficialMinionPlacements(mapId));
+        }
+
+        /// <summary>Compose a selected single-lane map from its reviewed spawn records.</summary>
+        public static QuickGameSetupConfiguration Compose(MatchFormat format, HeroLineup lineup, BoardMapDefinition map)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (format == null) throw new ArgumentNullException(nameof(format));
+            if (lineup == null || lineup.HeroesPerTeam != format.HeroesPerTeam)
+                throw new ArgumentException("The line-up must match the selected format.", nameof(lineup));
+            var heroes = new List<QuickGameHeroPlacementDefinition>();
+            var minions = new List<QuickGameMinionPlacementDefinition>();
+            var battle = map.Zones.Single(z => z.IsStartingBattleZone).Id;
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var team = side == TeamSide.Red ? "red" : "blue";
+                var spawns = map.SpawnPoints.Where(s => s.TeamId == team).OrderBy(s => s.Id.Value, StringComparer.Ordinal).ToArray();
+                var heroSpawns = spawns.Where(s => s.UnitType == "hero").ToArray();
+                if (heroSpawns.Length < format.HeroesPerTeam) throw new ArgumentException("Insufficient hero spawns.", nameof(map));
+                for (int i = 0; i < format.HeroesPerTeam; i++)
+                {
+                    var hero = lineup.ForTeam(side)[i]; var spawn = heroSpawns[i];
+                    heroes.Add(new QuickGameHeroPlacementDefinition(hero.HeroId, hero.ContentId, hero.DisplayName,
+                        new ConfiguredSpawnPointReference(map.Id, spawn.Id), new ConfiguredSpaceReference(map.Id, spawn.SpaceId)));
+                }
+                foreach (var type in new[] { StandardMinionType.Melee, StandardMinionType.Ranged, StandardMinionType.Heavy })
+                {
+                    var name = type.ToString().ToLowerInvariant();
+                    var initial = spawns.Where(s => s.UnitType == name + "-minion" &&
+                        map.Spaces.Single(space => space.Id.Equals(s.SpaceId)).ZoneId.Equals(battle)).ToArray();
+                    if (initial.Length != (type == StandardMinionType.Melee ? 4 : 1))
+                        throw new ArgumentException("Starting zone requires four melee, one ranged and one heavy spawn per team.", nameof(map));
+                    for (int i = 0; i < initial.Length; i++)
+                        minions.Add(new QuickGameMinionPlacementDefinition(new MinionId(team + "-" + name + "-" + (i + 1).ToString("00")), side, type,
+                            new ConfiguredSpawnPointReference(map.Id, initial[i].Id), new ConfiguredSpaceReference(map.Id, initial[i].SpaceId)));
+                }
+            }
+            return new QuickGameSetupConfiguration(map.Reference, format.WaveCount, format.LifeCountPerTeam, heroes, minions);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
   <!-- Explicit Unity/Presentation dependencies; new tests enter the harness by default.
        Add exclusions only after verifying their Unity dependency; remove deleted entries. -->
   <ItemGroup>
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/ExperimentalCoordinationPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ActionUnavailabilityTooltipTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ActiveEffectBoardTreatmentTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ApplicationArchitectureBoundaryTests.cs" />

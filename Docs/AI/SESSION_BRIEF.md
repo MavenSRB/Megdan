@@ -8,23 +8,23 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates, including Emmitt and NebKher. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board-partition line and rejects v58; wire protocol remains `guards-private-online/36`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates, including Emmitt and NebKher. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. The original and alternate small maps are host-selectable. Snapshot schema v59 persists the fixed board-partition line and rejects v58; the integrated wire protocol is `guards-private-online/42`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
 
-FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. The current `Playtest-9.37-takahide` package has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
+FILL WITH BOTS uses host-owned seats. Earlier player gates covered 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.64c candidate retains the single Host/Join launcher. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.54**.
-- Active authorized milestone: **none**.
-- Approved sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04 when the user directed the last two unimplemented heroes, Emmitt the Traveller and NebKher the Harbinger, through full implementation and player-path gates. [The owning roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) maps the separate outcomes, checks and dependencies. E1-E3 and N1-N4 were settled by the user after viewing the fronts; each token supply is three. EM-Q3 specifies two empty hexes between Glitches, a minimum hex distance of 3. Execute serially with separate validation and commits.
+- Current completed milestone: **9.64h**.
+- Active authorized milestone: **9.65**.
+- Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
-- Next proposed milestone: **9.58**.
-- Next route: **9.58** teammate coordination, first in the separately approved experimental/map sequence below. The overnight final-two-heroes follow-up stops after 9.54.
+- Next proposed milestone: **9.65**.
+- Next route: **9.65** is authorized by the user's 2026-10-06 merge-and-build direction. Merge the completed 9.54 hero line with the 9.64h experimental/map line, reconcile schema/wire/composition changes, run the mapped integration gate, and create the next private build; then stop.
 - 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
-- 9.53 composed and dealt NebKher's eighteen playable fronts, boxed Mind Probe, added his roster/presentation/art and completed the approved Emmitt Glitch art repair. Focused and full T3 gates, official private-art checks and targeted non-batch Game View inspection passed. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
-- 9.51-9.52 completed NebKher's Illusion/borrow and laughter/divided-board foundations through snapshot v59, wire /36, restore and replay. Their [archive rows](Archive/Phase-Handoffs/PHASE_9.md) and commits retain exact T3 evidence. Preserve untracked user files.
+- 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; the experimental/map line advances the integrated wire protocol to /42. Preserve untracked user files.
+- Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
-Approved 2026-10-05 after 9.54: **9.58 -> 9.56 -> 9.61** (coordination, timer, small-map selector), separately gated and committed; then stop. **9.63 / 9.63a** prepared the [small-map candidate](Maps/ALTERNATE_SMALL_PREPARATION.md). [Owning milestones](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), [experimental packet](Project/EXPERIMENTAL_PREPARATION.md), [maps](Maps/README.md). Two-lane **9.62** remains unauthorized.
+Amended 2026-10-05: implement **9.58 -> 9.56 -> 9.64** here. Skipped tests and build/smoke/package are complete. Map **9.61** and retained **9.64d/e/f** are complete; **9.65** owns the later merge/build. [Milestones](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), [experimental packet](Project/EXPERIMENTAL_PREPARATION.md), [map preparation](Maps/ALTERNATE_SMALL_PREPARATION.md). Two-lane 9.62 remains unauthorized.
 
 The A-E sequence and its supplemental **9.13f** coverage are complete. Publisher-pitch work and unconfigured variants remain parked.
 
@@ -56,7 +56,7 @@ The TWENTIETH hero, **Brynn the Seeker**, is COMPLETE: **[8.69-8.69h](Roadmap/PH
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.37](Roadmap/PHASE_9.md)'s Windows `Builds/Playtest-9.37-takahide` (thirty heroes, protocol `/35`, schema 54, stamp `...73d9864f`); earlier packages, `Playtest-9.31-gydion` among them, stay preserved and cannot join. [Package history](Archive/SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md) owns older routes.
+Current candidate: [9.64c](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), `Builds/Playtest-9.64c-experimental-validated.zip` (31 heroes, wire /39, schema 58, source `8c3405ef`). The timer gate, spellbook/window-layer fixes, artwork and exact-player build/board/host-plus-two-client checks passed. Experiments were checked on and off. Older ZIPs remain preserved; packages cannot mix. No new internet/fault rehearsal or manual packaged-launcher click-through is claimed.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 
@@ -76,7 +76,7 @@ On 2026-09-11 the user also named **Cutter the Sky Pirate**; [fourteenth-hero de
 
 ## Durable boundaries
 
-The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero selection, no unpicked hero names, hover overview cards from Docs, and a logo/backdrop instead of the pre-match map. Its bounded closing checks live in Phase 8; this does not authorize the parked presentation program or new heroes.
+The user approved **8.36e**, after 8.36b-8.36d: visible hero selection, no unpicked hero names, hover overview cards from Docs, and a logo/backdrop instead of the pre-match map. Its bounded closing checks live in Phase 8; this does not authorize the parked presentation program or new heroes.
 
 8.36e also includes the reported disappearing lobby buttons, with state-transition visibility, reachability and action checks, and random bot hero picks from the currently legal choices instead of the first available hero.
 

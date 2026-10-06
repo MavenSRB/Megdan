@@ -950,7 +950,7 @@ namespace GuardsDigital.Application
     /// projection reports, so a client never decides its own legality and the two can never
     /// disagree.</para>
     /// </remarks>
-    public sealed class SeatProjection : IMatchReadModel
+    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel
     {
         private readonly SeatPendingSurface pending;
         private readonly IReadOnlyList<CardInstance> visibleCards;
@@ -968,8 +968,21 @@ namespace GuardsDigital.Application
             SeatPendingSurface pendingSurface,
             TeamAgreementProjection teamAgreement,
             bool isSeatUndoAvailable,
-            MatchUndoMarker undoMarker = default)
+            MatchUndoMarker undoMarker = default,
+            ExperimentalMatchOptions experiments = null,
+            IReadOnlyList<TeammateMarker> teammateMarkers = null,
+            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
+            Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
+            TeammateMarkers = teammateMarkers ?? Array.Empty<TeammateMarker>();
+            CoordinationRevision = coordinationRevision;
+            CoordinationGeneration = coordinationGeneration;
+            Clock = clock ?? MatchClockState.Disabled;
+            var alliedHeroes = source.Setup.Heroes.Where(h => h.TeamSide == seat.TeamSide && !seat.Owns(h.HeroId)).Select(h => h.HeroId).ToArray();
+            AlliedHandCards = Experiments.TeammateCoordination
+                ? Array.AsReadOnly(source.Cards.Where(c => alliedHeroes.Contains(c.OwnerId) && c.State.Location == CardLocation.Hand).ToArray())
+                : (IReadOnlyList<CardInstance>)Array.Empty<CardInstance>();
+            CardInspections = HeroCardInspection.ForSeat(source, seat, Experiments);
             IsSeatUndoAvailable = isSeatUndoAvailable;
             UndoMarker = undoMarker;
             // Milestone 8.35r. The SAME log the Director reads, taken whole rather than filtered.
@@ -1041,6 +1054,14 @@ namespace GuardsDigital.Application
             AuthorizedCommands = authorizedCommands;
             TeamAgreement = teamAgreement;
         }
+
+        public ExperimentalMatchOptions Experiments { get; }
+        public IReadOnlyList<CardInstance> AlliedHandCards { get; }
+        public IReadOnlyList<HeroCardInspection> CardInspections { get; }
+        public IReadOnlyList<TeammateMarker> TeammateMarkers { get; }
+        public long CoordinationRevision { get; }
+        public int CoordinationGeneration { get; }
+        public MatchClockState Clock { get; }
 
         public MatchSeat Seat { get; }
 
@@ -1259,7 +1280,10 @@ namespace GuardsDigital.Application
             MatchSeat seat,
             TeamAgreementProjection teamAgreement = null,
             bool isSeatUndoAvailable = false,
-            MatchUndoMarker undoMarker = default)
+            MatchUndoMarker undoMarker = default,
+            ExperimentalMatchOptions experiments = null,
+            IReadOnlyList<TeammateMarker> teammateMarkers = null,
+            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -1306,7 +1330,7 @@ namespace GuardsDigital.Application
                 new SeatPendingSurface(source, seat, ownsDecision, isActor, nameableCardIds),
                 teamAgreement,
                 isSeatUndoAvailable,
-                undoMarker);
+                undoMarker, experiments, teammateMarkers, coordinationRevision, coordinationGeneration, clock);
         }
 
         /// <summary>

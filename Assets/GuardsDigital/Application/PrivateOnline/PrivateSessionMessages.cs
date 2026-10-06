@@ -139,7 +139,13 @@ namespace GuardsDigital.Application
         /// is the whole downstream cost of hero selection, and it was measured before this kind was
         /// added rather than discovered afterwards.</para>
         /// </remarks>
-        ChooseHero = 21
+        ChooseHero = 21,
+
+        SubmitCoordination = 22,
+        TimerReadiness = 23,
+        BoardVote = 24,
+        ClockUpdate = 25,
+        CoordinationUpdate = 26
 
         // Milestone 8.35r deliberately added NO kind here. The seat-public match log rides inside
         // SeatProjection's own message instead, and the reason is a measurement rather than a
@@ -405,13 +411,14 @@ namespace GuardsDigital.Application
     /// <summary>A refusal: the exact reason, and a bounded human-readable detail.</summary>
     public sealed class SessionRejectMessage
     {
-        public SessionRejectMessage(SessionRejectionReason reason, string detail)
+        public SessionRejectMessage(SessionRejectionReason reason, string detail, string hostMapId = "", int hostMapRevision = 0, string hostFormatId = "")
         {
             if (reason == SessionRejectionReason.None)
             {
                 throw new ArgumentException("A rejection requires a reason.", nameof(reason));
             }
 
+            HostMapId = hostMapId ?? string.Empty; HostMapRevision = hostMapRevision; HostFormatId = hostFormatId ?? string.Empty;
             Reason = reason;
             Detail = detail ?? string.Empty;
             if (Detail.Length > PrivateSessionProtocol.MaxRejectDetailChars)
@@ -422,6 +429,9 @@ namespace GuardsDigital.Application
 
         public SessionRejectionReason Reason { get; }
         public string Detail { get; }
+        public string HostMapId { get; }
+        public int HostMapRevision { get; }
+        public string HostFormatId { get; }
     }
 
     /// <summary>The client's claim of one seat by id, and since 8.108 the name to show on it.</summary>

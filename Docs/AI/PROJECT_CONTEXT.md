@@ -11,7 +11,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Configured presentation surfaces](Project/CONFIGURED_PRESENTATION.md)
 - [Player-facing match HUD](Project/MATCH_HUD.md)
 - [Hero-rail identity, selection and previews](Project/HERO_RAIL_INTERACTION.md)
-- [Experimental timer and teammate coordination designs (not implemented)](Project/EXPERIMENTAL_FEATURES.md)
+- [Experimental timer and teammate coordination design/status](Project/EXPERIMENTAL_FEATURES.md)
 - [Experimental implementation preparation and source/test map](Project/EXPERIMENTAL_PREPARATION.md)
 - [Private lobby and hero picker](Project/LOBBY_PRESENTATION.md)
 - [Rule modifications and their consumers](Project/RULE_MODIFICATIONS.md)

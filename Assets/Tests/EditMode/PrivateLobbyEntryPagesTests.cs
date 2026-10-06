@@ -58,6 +58,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", PrivateLobbyUnityView.CancelLabel
             }));
+            Assert.That(Shown(view.Root.Q<Button>("experimental-button")), Is.True);
             Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "NAME", "PORT", "SESSION ID" }));
             Assert.That(Label(view, PrivateLobbyUnityView.ModeName), Is.EqualTo("MODE: 3V3 SHORT GAME"));
             Assert.That(Label(view, PrivateLobbyUnityView.TitleName), Is.EqualTo("HOST A GAME"));

@@ -653,3 +653,99 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.63a | Added 22 missing terrain border cells around the two spawn zones; all playable cells now have six mapped neighbours. Preserved playable/spawn data and original art, updated candidate counts and private overlays. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). | `milestone/9.63a` |
+
+
+## Milestone 9.58 Teammate coordination evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.58 | Added the per-match Experimental menu, read-only allied hands, right-click hex/card suggestions and reused tray portraits, with team-scoped wire 37 and immutable snapshot options. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination). | `milestone/9.58` |
+
+## Milestone 9.64 Untested experimental package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64 | Built and privately packaged the experimental candidate with one Host/Join launcher and explicit untested status, under the user's instruction to skip remaining tests and player smoke. Timer gate 9.56 remains incomplete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964-build-the-experimental-playtest-player). | `milestone/9.64` |
+
+## Milestone 9.64a Experimental corrections evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64a | Isolated clock ticks from gameplay UI, corrected header/input/hover artwork, restored Emmitt Glitch art and rebuilt the private Windows package; full timer gate remains suspended. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964a-correct-the-reported-experimental-playtest-ui-issues). | `milestone/9.64a`; source `7ec9fa83` |
+
+## Milestone 9.64b Spellbook hover correction evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64b | Removed spellbook hover enlargement while preserving readable faces, visibility and ordinary tray previews. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964b-remove-the-spellbook-hover-popup). | `milestone/9.64b` |
+
+## Milestone 9.56 Experimental timer gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.56 | Gated experimental timing and timeout progress for the available 31 heroes; corrected nested Defense timing, malformed voter restoration and board-highlight window layering. Final NebKher audit remains a merge prerequisite. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-956-implement-and-gate-the-experimental-timer-and-header). | `milestone/9.56`; source `8b6f335e` |
+
+## Milestone 9.64c Validated experimental package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64c | Built, smoke-checked and privately packaged the corrected experimental player; closed the smoke-host shutdown race and preserved old builds. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-964c-validate-and-package-the-corrected-experimental-player). | `milestone/9.64c`; source `8c3405ef` |
+
+## Milestones 9.64d-9.64e pending validation checkpoint
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64d / 9.64e (pending) | Spellbook bump and current-card inspection implemented; focused Editor/offline gates green, UI/visual and unfiltered Unity gates held by the separate hero run. Not completed or packaged. [Definitions](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-unity-pending`; implementation `82ec92de` |
+
+## Milestone 9.64f pending validation checkpoint
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.64f (pending) | Highlight-only transport and in-place decoration refresh implemented; focused offline checks green, Unity/UI gates pending the serial Editor slot. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64f-unity-pending` |
+
+## Milestone 9.61 implementation checkpoint
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.61 (pending) | Alternate small map and standard host selector implemented; map-aware setup, artwork and typed join inheritance gated in focused checks. Full offline gate green; unfiltered Unity gates still required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.61-unity-gates` |
+
+## Milestone 9.64d completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64d | Gydion spellbook uses the shared subtle card hover bump without a detached popup; focused UI and both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64d` |
+
+## Milestone 9.64f completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64f | Teammate highlights use independent transport and decoration updates; gameplay projection, hover and open windows stay intact. Stale-frame/privacy/reconnect and real-pointer checks pass. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64f` |
+
+## Milestone 9.64e window-layer checkpoint
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64e (pending) | Focused UI and visual gates pass after fixing hand overlap and board-click blocking in current-card inspection. Full Unity gates remain required. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `checkpoint/9.64e-window-layer` |
+
+## Milestone 9.64e completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64e | Current-card inspection, independent enemy sharing and allied spellbook/gold exceptions are gated, including corrected window layering. Full offline and Unity Edit/Play gates passed; no replacement build. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64e` |
+
+## Milestone 9.61 completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.61 | Alternate small map selectable directly on the host screen for 2v2/3v3 Quick/Long; map-aware setup/artwork, typed join inheritance and full gates complete. Hero integration/build remain the later 9.65 follow-up. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.61` |
+## Milestone 9.64g completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64g | Portrait inspection shows the complete current set without filters, counts or lifecycle captions/tooltips; hidden commitments preserve face identity/order. Focused privacy and UI checks plus both viewport reviews complete. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64g` |
+
+## Milestone 9.64h completion
+
+| Milestone | Preserved outcome | Evidence |
+| --- | --- | --- |
+| 9.64h | Above-hand spellbook shortcut reuses the permitted owner-style drawer; host/non-host placements, tray/prompt clearance and adjacent confirmation are validated. Hero switches refresh only these controls. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md). | `milestone/9.64h` |

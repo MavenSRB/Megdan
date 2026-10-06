@@ -27,7 +27,7 @@ namespace GuardsDigital.Application
     /// already uses. Presentation forwards only host-published commands; this object adds the
     /// wire identity/version envelope through <see cref="PrivateSessionClient"/>.
     /// </summary>
-    public sealed class NetworkMatchClient : IMatchClient
+    public sealed class NetworkMatchClient : IMatchClient, ICoordinationClient
     {
         private sealed class PendingEffectAutoConfirm
         {
@@ -90,10 +90,13 @@ namespace GuardsDigital.Application
 
         /// <summary>An admitted seat of a served match, never the Director.</summary>
         public bool IsDirector => false;
+        public bool SubmitCoordination(CoordinationCommand command) => session.TrySubmitCoordination(command);
 
         public MatchClientResult Submit(DirectorCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
+            if((Projection as IExperimentalReadModel)?.Experiments.TurnTimer==true && SharedBoardChoice.RequiresVote(Projection,command))
+            {var voted=session.TrySubmitBoardVote(command);return new MatchClientResult(voted,voted?"Team vote recorded.":"Vote unavailable.",Projection,!voted);}
             var origin = session.LatestProjection;
             var originRevision = session.ProjectionRevision;
             var sent = session.TrySubmitCommand(command, out var submissionId);
@@ -171,6 +174,7 @@ namespace GuardsDigital.Application
                 projectedLogRevision = session.MatchLogRevision;
             }
 
+            projection.ReplaceCoordination(session.LatestCoordination);
             return projection;
         }
 
@@ -339,7 +343,7 @@ namespace GuardsDigital.Application
     /// record. While the session is not actionable the retained view is deliberately stripped of
     /// every offer and pending answer.
     /// </summary>
-    public sealed class NetworkMatchReadModel : IMatchReadModel
+    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel
     {
         private readonly IMatchReadModel trusted;
         private readonly MatchContentCatalogs catalogs;
@@ -395,6 +399,7 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            if (!ReferenceEquals(wire, accepted)) coordinationDisplay = null;
             wire = accepted;
             actionable = nextActionable;
             effectChoiceMaterialized = false;
@@ -405,6 +410,15 @@ namespace GuardsDigital.Application
             decisionContract = null;
         }
 
+        public IReadOnlyList<HeroCardInspection> CardInspections => wire?.CardInspections ?? Array.Empty<HeroCardInspection>();
+        public ExperimentalMatchOptions Experiments => wire?.Experiments ?? ExperimentalMatchOptions.Disabled;
+        public IReadOnlyList<CardInstance> AlliedHandCards => wire == null ? Array.Empty<CardInstance>() : Array.AsReadOnly(wire.AlliedHandCards.Select(ToCard).ToArray());
+        private CoordinationDisplayState coordinationDisplay;
+        public void ReplaceCoordination(CoordinationDisplayState state) => coordinationDisplay = state?.Version == Version ? state : null;
+        public IReadOnlyList<TeammateMarker> TeammateMarkers => coordinationDisplay?.Markers ?? wire?.TeammateMarkers ?? Array.Empty<TeammateMarker>();
+        public long CoordinationRevision => coordinationDisplay?.Revision ?? wire?.CoordinationRevision ?? 0;
+        public int CoordinationGeneration => coordinationDisplay?.Generation ?? wire?.CoordinationGeneration ?? 0;
+        public MatchClockState Clock => wire?.Clock ?? MatchClockState.Disabled;
         public long Version => wire?.Version ?? trusted.Version;
         public bool IsInputEnabled => actionable;
 

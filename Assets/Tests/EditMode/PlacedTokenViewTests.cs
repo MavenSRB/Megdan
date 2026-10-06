@@ -28,6 +28,21 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class PlacedTokenViewTests
     {
+        [Test]
+        public void EmmittGlitchLoadsItsPrivateFaceAndKeepsFallbackReadable()
+        {
+            var definition = EmmittComponentContent.Glitch;
+            Assert.That(PlacedTokenArtwork.TryLoadTexture(definition.Id, out var face), Is.True);
+            Assert.That(face.width, Is.GreaterThan(0)); Assert.That(face.height, Is.GreaterThan(0));
+            Assert.That(PlacedTokenArtwork.Caption(definition, true), Is.Empty);
+            Assert.That(PlacedTokenArtwork.Caption(definition, false), Is.EqualTo("GLITCH"));
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                board.Render(1, Token("glitch", definition, new HexCoordinate(1, 0)));
+                Assert.That(board.View.TokenViews.Single().GetComponent<MeshRenderer>().sharedMaterial.mainTexture, Is.SameAs(face));
+            }
+        }
+
         private static readonly HeroId Owner = new HeroId("token-owner-hero");
         private static readonly CardInstanceId Source = new CardInstanceId("token-source-card");
 

@@ -13,9 +13,9 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-955-record-the-experim
 
 Historical evidence: [9.55 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-955-experimental-timer-design-evidence).
 
-### [ ] 9.56 Implement and gate the experimental timer and header
+### 9.56 Implement and gate the experimental timer and header
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#956-implement-and-gate-the-experimental-timer-and-header).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-956-implement-and-gate-the-experimental-timer-and-header).
 
 ### [x] 9.57 Record the experimental teammate coordination design
 
@@ -24,9 +24,9 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-957-record-the-experim
 
 Historical evidence: [9.57 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-957-teammate-coordination-design-evidence).
 
-### [ ] 9.58 Implement and gate experimental teammate coordination
+### 9.58 Implement and gate experimental teammate coordination
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#958-implement-and-gate-experimental-teammate-coordination).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination).
 
 ### [x] 9.59 Prepare the experimental features for implementation
 
@@ -63,9 +63,11 @@ See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-960c-align-replacement
 
 Historical evidence: [9.60c completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-960c-map-glyph-alignment-evidence).
 
-### [ ] 9.61 Implement the alternate map for 2v2 and 3v3
+### [x] 9.61 Implement the alternate map for 2v2 and 3v3
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#961-implement-the-alternate-map-for-2v2-and-3v3).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-961-implement-the-alternate-map-for-2v2-and-3v3).
+
+Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-961-completion).
 
 ### [ ] 9.62 Implement the two-lane maps for 4v4 and 5v5
 

@@ -12,6 +12,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Interaction
 {
@@ -281,6 +282,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// on and this block would otherwise log its pass line again on the way out.
         /// </summary>
         private bool smokeReported;
+        private SeatId[] smokeRemoteSeats = Array.Empty<SeatId>();
         private bool stopped;
         private bool privacyFailed;
         private long auditedRevision = -1;
@@ -428,6 +430,29 @@ namespace GuardsDigital.Presentation.Interaction
             UpdateClient();
         }
 
+        private bool ExperimentalSmoke => options.Mode==PrivateOnlineRehearsalMode.Smoke &&
+            string.Equals(Environment.GetEnvironmentVariable("GUARDS_SMOKE_EXPERIMENTS"),"1",StringComparison.Ordinal);
+        private bool experimentalSmokeSent;
+        private bool ExperimentalSmokeReady(PrivateSessionClient machine)
+        {
+            if(!ExperimentalSmoke) return true;
+            var p=machine.LatestProjection;var rt=compositionRoot.Runtime;
+            if(!p.Experiments.TurnTimer || !p.Experiments.TeammateCoordination || !p.Clock.Enabled || p.Clock.Entries.Count==0)
+            { Fail("experimental-settings-not-projected");return false; }
+            var ally=(rt.ReadModel as IExperimentalReadModel)?.AlliedHandCards.FirstOrDefault();
+            if(ally==null || !rt.SelectViewedHero(ally.OwnerId)) {Fail("experimental-ally-inspection-unavailable");return false;}
+            if(!experimentalSmokeSent)
+            {
+                experimentalSmokeSent=true;
+                machine.TrySubmitCoordination(new CoordinationCommand(0,CoordinationTargetKind.Card,false,
+                    rt.ReadModel.Setup.SelectedMap,cardOwner:ally.OwnerId,card:ally.Id,generation:p.CoordinationGeneration));
+                return false;
+            }
+            if(!p.TeammateMarkers.Any(m=>m.Sender.Value==p.HeroId && m.Card.Equals(ally.Id))) return false;
+            if(!rt.SelectViewedHero(rt.Seat.HeroId)) {Fail("experimental-my-cards-unavailable");return false;}
+            PrivateOnlineMarkers.Log("EXPERIMENTAL_SMOKE_PASS seat="+options.Seat.Value+" clocks="+p.Clock.Entries.Count+" ally-cards="+p.AlliedHandCards.Count);
+            return true;
+        }
         private void PressEntryWhenReady()
         {
             if (lobby.Presenter?.Model == null)
@@ -443,11 +468,19 @@ namespace GuardsDigital.Presentation.Interaction
             // control a player presses.
             var joinsSeatless = options.Mode == PrivateOnlineRehearsalMode.Smoke &&
                 options.Role == PrivateOnlineRehearsalRole.Client;
+            var experiments=ExperimentalMatchOptions.Disabled;
+            if (ExperimentalSmoke && options.Role==PrivateOnlineRehearsalRole.Host)
+            {
+                lobby.View.ShowPage(PrivateLobbyEntryPage.Host);
+                lobby.View.Root.Q<Toggle>("experimental-coordination").value=true;
+                lobby.View.Root.Q<Toggle>("experimental-timer").value=true;
+                experiments=lobby.View.CurrentEntry().Experiments;
+            }
             var entry = new PrivateLobbyEntry(
                 options.Address,
                 options.Port.ToString(CultureInfo.InvariantCulture),
                 options.SessionKey,
-                joinsSeatless ? default : options.Seat);
+                joinsSeatless ? default : options.Seat, experiments:experiments);
             var control = options.Role == PrivateOnlineRehearsalRole.Host
                 ? PrivateLobbyControl.Host
                 : PrivateLobbyControl.Join;
@@ -506,6 +539,10 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 if (lobby.Presenter.Model?.Offers(PrivateLobbyControl.FillWithTestDrivers) == true)
                 {
+                    smokeRemoteSeats = host.Roster
+                        .Where(row => row.Occupancy == SeatOccupancyState.Claimed &&
+                            !row.Seat.Equals(options.Seat))
+                        .Select(row => row.Seat).ToArray();
                     testDriversFillAttempted = true;
                     if (!lobby.Presenter.Press(PrivateLobbyControl.FillWithTestDrivers, null))
                     {
@@ -587,13 +624,17 @@ namespace GuardsDigital.Presentation.Interaction
                         projection.Version.ToString(CultureInfo.InvariantCulture) +
                         " phase=" + compositionRoot.Runtime.Phase +
                         " seats=" + host.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture));
-                    if (!options.Seat.IsDefined)
-                    {
-                        lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
-                        Quit(0);
-                    }
                 }
 
+                // Keep the authority alive until the remote witnesses have finished their
+                // round trips and exited. The cohort runner separately requires their PASS
+                // markers and clean exits, so departure alone cannot turn a failure green.
+                if (SmokeHostCanExit(!options.Seat.IsDefined || smokeReported,
+                    smokeRemoteSeats, host.Roster))
+                {
+                    lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
+                    Quit(0);
+                }
                 return;
             }
 
@@ -698,6 +739,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 if (!smokeReported)
                 {
+                    if(!ExperimentalSmokeReady(machine)) return;
                     smokeReported = true;
                     // PLAYTEST FAILURE #2 gate. AuditProjection above proved this seat's authority is
                     // scoped to its own hero; this proves the hero it is scoped ABOUT is the one this
@@ -713,7 +755,8 @@ namespace GuardsDigital.Presentation.Interaction
                             .ToString(CultureInfo.InvariantCulture) +
                         " version=" + machine.LatestProjection.Version
                             .ToString(CultureInfo.InvariantCulture));
-                    Quit(0);
+                    if (options.Role != PrivateOnlineRehearsalRole.Host)
+                        Quit(0);
                 }
 
                 return;
@@ -820,6 +863,14 @@ namespace GuardsDigital.Presentation.Interaction
             Quit(0);
             return true;
         }
+
+        internal static bool SmokeHostCanExit(
+            bool localWitnessComplete,
+            IReadOnlyList<SeatId> remoteSeats,
+            IReadOnlyList<SeatRosterEntry> roster) =>
+            localWitnessComplete && remoteSeats.Count > 0 &&
+            remoteSeats.All(seat => roster.Any(row => row.Seat.Equals(seat) &&
+                row.Occupancy != SeatOccupancyState.Claimed));
 
         internal static bool RejoinCutIsReady(
             bool initiativeObserved,

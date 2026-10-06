@@ -19,6 +19,13 @@ namespace GuardsDigital.Application
     public sealed class MatchSession : IMatchSession
     {
         private readonly MatchSessionInitialState initialState;
+        public ExperimentalMatchOptions Experiments => initialState.Experiments;
+        internal GuardsDigital.Core.Setup.SetupRandomnessSeed SetupSeed => initialState.Scenario.SetupSeed;
+
+        /// <summary>The host's timer reads the authoritative p.14 continuation, never a card name or resolution-id string.</summary>
+        internal bool IsResolvingDefenseText =>
+            aggregate.CardActions.PendingCardTextResolution?.Moment == CardTextTiming.DefenseAction ||
+            aggregate.CardActions.PendingCardTextRemainder?.Moment == CardTextTiming.DefenseAction;
 
         /// <summary>
         /// Internal rather than private so a fixture can assert what a live session's aggregate

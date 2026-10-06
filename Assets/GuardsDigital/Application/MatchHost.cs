@@ -332,7 +332,7 @@ namespace GuardsDigital.Application
     /// session does not: the order submissions execute in, the ordered stream of what they did, and
     /// the refusal that keeps that order true.</para>
     /// </remarks>
-    public sealed class MatchHost : IMatchHost
+    public sealed partial class MatchHost : IMatchHost
     {
         /// <summary>
         /// How many records the ordered stream retains. A consumer whose cursor falls behind this is
@@ -472,6 +472,10 @@ namespace GuardsDigital.Application
         public MatchHost(IMatchSession session)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
+            Experiments = (session as MatchSession)?.Experiments ?? ExperimentalMatchOptions.Disabled;
+            clock = new MatchClock(Experiments);
+            timeoutSeed=(session as MatchSession)?.SetupSeed.Value ?? 0;
+            if(Experiments.TurnTimer && timeoutSeed==0) timeoutSeed=GuardsDigital.Core.Setup.SetupRandomnessAuthority.DrawSeed().Value;
         }
 
         /// <summary>
@@ -536,7 +540,7 @@ namespace GuardsDigital.Application
                 try
                 {
                     DuringSubmissionForTest?.Invoke();
-                    result = Execute(submission);
+                    result = Execute(submission, submission.Kind == MatchSubmissionKind.Undo);
                 }
                 finally
                 {
@@ -584,7 +588,7 @@ namespace GuardsDigital.Application
             }
         }
 
-        public string CaptureSnapshot() => session.CaptureSnapshot();
+        public string CaptureSnapshot() => CaptureExperimentalSnapshot();
 
         /// <summary>
         /// Milestone 8.30a. The seats, rebuilt whenever the authority publishes a different
@@ -718,6 +722,8 @@ namespace GuardsDigital.Application
                         " and the authoritative version is " + projection.Version + ".");
                 }
 
+                if(Experiments.TurnTimer && SharedBoardChoice.RequiresVote(session.Projection,submission.Command))
+                    return SeatRefused(submission,bound,SeatSubmissionRejectionReason.UnauthorizedCommand,"This shared board choice requires a team vote.");
                 var claimed = SeatCommandOwnership.Claim(submission.Command);
                 if (!claimed.IsHeldBy(bound))
                 {
@@ -957,7 +963,8 @@ namespace GuardsDigital.Application
             var source = session.Projection;
             var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
             return SeatProjectionFactory.ForSeat(
-                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker());
+                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
+                CoordinationFor(seat), coordination.Revision, coordination.Generation, ClockState);
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -1052,9 +1059,11 @@ namespace GuardsDigital.Application
         /// </summary>
         internal Action DuringSubmissionForTest { get; set; }
 
-        private MatchHostResult Execute(MatchSubmission submission)
+        private MatchHostResult Execute(MatchSubmission submission, bool directorUndo = false)
         {
+            BeforeTimedSubmission();
             var result = ExecuteInner(submission);
+            if (result.Accepted) AfterTimedSubmission(submission, directorUndo);
 
             // Milestone 8.35r. Every accepted submission retires the standing rewind marker,
             // including an accepted Undo. A seat's own rewind run is re-established by
@@ -1081,9 +1090,11 @@ namespace GuardsDigital.Application
                 case MatchSubmissionKind.Undo:
                     return FromOperation(submission, session.Undo());
                 case MatchSubmissionKind.Restart:
-                    return FromOperation(submission, session.Restart());
+                    var restart = session.Restart();
+                    if (restart.Accepted) coordination.Clear();
+                    return FromOperation(submission, restart);
                 case MatchSubmissionKind.RestoreSnapshot:
-                    return FromOperation(submission, session.RestoreSnapshot(submission.SnapshotPayload));
+                    return FromOperation(submission, session.RestoreSnapshot(UnwrapExperimentalSnapshot(submission.SnapshotPayload)));
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(submission),

@@ -68,7 +68,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement spellbookPanel;
         private HeroId openSpellbookHero;
 
-        public HeroOverviewsUnityView()
+        public HeroCardInspectionUnityView CardInspection { get; }
+
+        public HeroOverviewsUnityView(Func<IMatchReadModel> read = null)
         {
             Root = new VisualElement { name = "gd-hero-rails" };
             Root.style.position = Position.Absolute;
@@ -99,6 +101,8 @@ namespace GuardsDigital.Presentation.Match
             Root.Add(blueColumn);
             Root.Add(spellbookHost);
             Root.Add(preview);
+            CardInspection = new HeroCardInspectionUnityView(read);
+            Root.Add(CardInspection.Root);
             redColumn.RegisterCallback<GeometryChangedEvent>(_ =>
                 ColumnGeometryChanged?.Invoke());
             blueColumn.RegisterCallback<GeometryChangedEvent>(_ =>
@@ -152,12 +156,6 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public TrayCardViewModel HighlightedDiscardCard => highlighted as TrayCardViewModel;
 
-        /// <summary>
-        /// Milestone 9.30h. The spell face in the SPELLBOOK drawer the pointer is resting on, or null:
-        /// its full face is revealed by the same one preview every rail card uses.
-        /// </summary>
-        public SpellCardViewModel HighlightedSpell => highlighted as SpellCardViewModel;
-
         /// <summary>Milestone 9.30h. The hero whose SPELLBOOK drawer is open, or undefined when none is.</summary>
         public HeroId OpenSpellbookHeroId => openSpellbookHero;
 
@@ -180,6 +178,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
+            CardInspection.Close();
             openSpellbookHero = heroId;
             RebuildSpellbook();
             return true;
@@ -191,9 +190,6 @@ namespace GuardsDigital.Presentation.Match
             openSpellbookHero = default;
             RebuildSpellbook();
         }
-
-        /// <summary>Milestone 9.30h: reports a pointed-at drawer spell directly, for a driver with no pointer.</summary>
-        public void ForwardSpellHighlight(SpellCardViewModel spell) => SetHighlight(spell);
 
         public event Action<HeroTurnSlotViewModel> TurnSlotHighlighted;
 
@@ -299,12 +295,9 @@ namespace GuardsDigital.Presentation.Match
             var card = CardOf(model);
             var face = model is HeroOverviewViewModel hero
                 ? BuildHeroProfile(hero)
-                : model is SpellCardViewModel spell
-                    // Milestone 9.30h: a drawer spell reveals its full landscape face.
-                    ? SpellCardFaceView.Build(spell)
-                    : model != null && withheldOwners.TryGetValue(model, out var owner)
-                        ? BuildCardBack(owner)
-                        : card == null ? null : BuildFace(card);
+                : model != null && withheldOwners.TryGetValue(model, out var owner)
+                    ? BuildCardBack(owner)
+                    : card == null ? null : BuildFace(card);
             if (face == null)
             {
                 highlighted = null;
@@ -422,8 +415,8 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 9.36. A rail mini - a turn slot, the current card, a discard - sits inside its
             // column, so a face placed off the mini's own edge drew over the owner's tray and the plaque
             // below it. Its face is placed off the rail's edge instead. The hero profile keeps 8.42b's
-            // placement beside the portrait, and a drawer spell, between the rails, its own.
-            var beside = model is HeroOverviewViewModel || model is SpellCardViewModel
+            // placement beside the portrait.
+            var beside = model is HeroOverviewViewModel
                 ? anchor
                 : RailColumnOf(element)?.worldBound ?? anchor;
             var onLeft = beside.center.x < width / 2f;
@@ -474,6 +467,9 @@ namespace GuardsDigital.Presentation.Match
             // drawer never covers - so a book of full-size faces scrolls rather than running under it.
             spellbookHost.style.height = Mathf.Max(
                 0f, Mathf.Min(red.yMax, blue.yMax) - Mathf.Min(red.y, blue.y));
+            Place(CardInspection.Root, new Rect(left, Mathf.Min(red.y, blue.y),
+                Mathf.Max(0f, blue.xMin - SpellbookDrawerGap - left),
+                Mathf.Max(0f, Mathf.Min(red.yMax, blue.yMax) - Mathf.Min(red.y, blue.y))));
         }
 
         private static void Place(VisualElement element, Rect rect)
@@ -534,6 +530,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 9.30h. An open drawer follows the projection it was opened over: redrawn from
             // the new model, and closed if that hero no longer has a book to show.
             RebuildSpellbook();
+            CardInspection.Refresh();
         }
 
         private static VisualElement Column(string name)
@@ -1141,11 +1138,6 @@ namespace GuardsDigital.Presentation.Match
         private void RebuildSpellbook()
         {
             spellbookPanel.Clear();
-            foreach (var stale in revealAnchors.Keys.OfType<SpellCardViewModel>().ToArray())
-            {
-                revealAnchors.Remove(stale);
-            }
-
             var hero = openSpellbookHero.IsDefined
                 ? Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(openSpellbookHero))
                 : null;
@@ -1153,11 +1145,6 @@ namespace GuardsDigital.Presentation.Match
             {
                 openSpellbookHero = default;
                 spellbookHost.style.display = DisplayStyle.None;
-                if (highlighted is SpellCardViewModel)
-                {
-                    SetHighlight(null);
-                }
-
                 return;
             }
 
@@ -1240,25 +1227,14 @@ namespace GuardsDigital.Presentation.Match
             return row;
         }
 
-        /// <summary>One drawer face, revealing its full face on a pointer rest as every rail card does.</summary>
+        /// <summary>One readable drawer face; spellbook cards do not open hover previews.</summary>
         private VisualElement SpellbookFace(SpellCardViewModel spell)
         {
             var host = new VisualElement { name = "gd-spellbook-spell", tooltip = spell.AssistiveLabel };
             host.style.marginRight = SpellbookFaceGap;
             host.style.marginBottom = SpellbookFaceGap;
             host.Add(SpellCardFaceView.Build(spell, SpellCardFootprint.DrawerScale));
-            revealAnchors[spell] = host;
-            HudElements.OnPointedAt(host, pointedAt =>
-            {
-                if (pointedAt)
-                {
-                    SetHighlight(spell);
-                }
-                else if (ReferenceEquals(highlighted, spell))
-                {
-                    SetHighlight(null);
-                }
-            });
+            HudElements.ApplyButtonMotion(host);
             return host;
         }
 
@@ -1475,18 +1451,41 @@ namespace GuardsDigital.Presentation.Match
 
         private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {
+            var medallion = BuildSharedHeroPortrait(hero, accent);
+            revealAnchors.Add(hero, medallion);
+            HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
+            medallion.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button == 0) evt.StopPropagation();
+            });
+            medallion.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (evt.button != 0) return;
+                evt.StopPropagation();
+                if (CardInspection.Open(hero.HeroId, hero.HeroDisplayName))
+                {
+                    CloseSpellbook();
+                    SetHighlight(null);
+                }
+                else HeroSelected?.Invoke(hero.HeroId);
+            });
+            return medallion;
+        }
+
+        internal static VisualElement BuildSharedHeroPortrait(HeroOverviewViewModel hero, Color accent, float scale = 1f)
+        {
             var medallion = new VisualElement { name = "gd-hero-medallion" };
-            medallion.style.width = HeroMedallionSize;
-            medallion.style.height = HeroMedallionSize;
+            medallion.style.width = (HeroMedallionSize * scale);
+            medallion.style.height = (HeroMedallionSize * scale);
             medallion.style.flexShrink = 0f;
             medallion.style.alignItems = Align.Center;
             medallion.style.justifyContent = Justify.Center;
             medallion.style.backgroundColor = Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.30f);
-            HudElements.Border(medallion, accent, 2f, HeroMedallionSize / 2f);
+            HudElements.Border(medallion, accent, 2f, (HeroMedallionSize * scale) / 2f);
 
             var icon = new VisualElement { name = "gd-hero-icon" };
-            icon.style.width = HeroPortraitSize;
-            icon.style.height = HeroPortraitSize;
+            icon.style.width = (HeroPortraitSize * scale);
+            icon.style.height = (HeroPortraitSize * scale);
             icon.style.flexShrink = 0f;
             icon.style.justifyContent = Justify.Center;
             icon.style.backgroundColor = accent;
@@ -1499,7 +1498,7 @@ namespace GuardsDigital.Presentation.Match
                     MatchHudTheme.PrimaryText.b,
                     0.72f),
                 1f,
-                HeroPortraitSize / 2f);
+                (HeroPortraitSize * scale) / 2f);
 
             if (hero.ContentId.IsDefined)
             {
@@ -1507,7 +1506,7 @@ namespace GuardsDigital.Presentation.Match
                 if (portrait != null)
                 {
                     // Match the board's baked-first/neutral-second decision and wider neutral rim.
-                    var faceSize = HeroPortraitSize * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
+                    var faceSize = (HeroPortraitSize * scale) * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
                     icon.style.width = faceSize;
                     icon.style.height = faceSize;
                     // Contained rather than covered, and centred: the source is a circular token
@@ -1534,8 +1533,6 @@ namespace GuardsDigital.Presentation.Match
             icon.tooltip = hero.PortraitAssistiveLabel;
             medallion.tooltip = hero.PortraitAssistiveLabel;
             medallion.Add(icon);
-            revealAnchors.Add(hero, medallion);
-            HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
             return medallion;
         }
 

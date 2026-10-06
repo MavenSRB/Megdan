@@ -16,21 +16,34 @@ Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone
 
 ## Alternate small-map preparation
 
-[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. The user-confirmed spawn-zone terrain border is completed at [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). It is not loaded by runtime.
+[9.63 packet](ALTERNATE_SMALL_PREPARATION.md) owns the explicit coordinate/zone/spawn candidate, registration, private review sheets, perimeter review limitation and host-selector integration checks. The user-confirmed spawn-zone terrain border is completed at [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border). The reviewed candidate is promoted and gated in the isolated 9.61 source; hero integration and packaging remain separate.
+
+
+## Alternate map runtime contract
+
+9.61 promotes [alternate-small-single-lane.map.json](alternate-small-single-lane.map.json) as `alternate-small-single-lane@1`. It retains the approved 258 cells, 156 playable cells, five ordered zones, forty spawn points and complete terrain border. The existing `official-single-lane@1` stays the fresh-host default. Both support every current 2v2/3v3 Quick/Long format; neither two-lane map is registered.
+
+The ordinary host-screen **MAP** dropdown is outside Experimental. Hosting fixes its selection; the lobby displays the chosen map. Map identity travels in `MatchCompositionPlan` through experiment setup, hero draft/recomposition and restart. Hero slots follow the same-team hero spawn IDs in ordinal order. Initial minions come from the selected map's starting zone: four melee, one ranged and one heavy per side, retaining stable instance IDs. The map-aware setup path produces the original map's exact prior positions. Wave/Life counts remain format-owned.
+
+Wire 42 adds bounded public host map ID, revision and format fields to a rejection. A joining client with a map/format mismatch may recompose both supported values and retry once; unknown maps/revisions remain refused. Normal identity checks, authentication, content checks and reconnect capabilities remain enforced. Full projections/restore keep the selected map; Core snapshot schema remains 58. This is a standard map option, independent of experiments.
+
+`BoardArtworkCatalog` uses the prepared pixel transform and the matching selected-map camera axes/quad. `Tools/Prepare-AlternateBoardArtwork.ps1` copies the approved private PNG without altering bytes; `-Check` verifies it. Missing private artwork keeps generated geometry playable. `Tools/Sync-BoardMapResource.ps1` synchronizes both canonical JSON resources; the specification validator checks both resources and the alternate map's complete terrain border. The original and edited source images remain private and unchanged.
+
+Source is implemented; focused setup, geometry, round progression, persistence and protocol checks pass. Real-control, artwork, join and complete Unity gates passed at 9.61. Final NebKher geometry/timer coverage belongs to the later merge review; no merge or replacement build is part of this checkpoint.
 
 ## Future map references
 
-Three distinct maps are preserved for future implementation at [9.60](../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). The later uploads are preferred references; earlier copies remain preserved. These are private visual references, not reviewed runtime coordinate/zone/spawn specifications. All files stay in the existing Git-ignored `Docs/Guards of Atlantis II - Map References/` directory; tracked preparation data and planning are linked above. Saving does not grant publication or distribution rights. The visual descriptors below are filing aids, not official map names.
+Three distinct maps are preserved for future implementation at [9.60](../Roadmap/PHASE_9.md#x-960-preserve-the-future-map-references). The later uploads are preferred references; earlier copies remain preserved. Original images remain private references; reviewed runtime data exists only for the small map linked above. All files stay in the existing Git-ignored `Docs/Guards of Atlantis II - Map References/` directory; tracked preparation data and planning are linked above. Saving does not grant publication or distribution rights. The visual descriptors below are filing aids, not official map names.
 
 ### Future alternate map for 2v2 and 3v3
 
-The first pictured map is an additional future option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9.md#961-implement-the-alternate-map-for-2v2-and-3v3) is authorized after 9.54 -> 9.58 -> 9.56, including a host-screen map selector; the existing map remains available. Immediate 9.63 prepares its mapping without changing runtime.
+The first pictured map is an implemented additional option for **2v2 and 3v3**. Implementation [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-961-implement-the-alternate-map-for-2v2-and-3v3) completed under the 2026-10-06 amendment, including a host-screen map selector; the existing map remains available. 9.63/9.63a preserve the earlier mapping preparation.
 
 - Preferred file: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-preferred-reference-2026-10-05.png`, copied from `codex-clipboard-ea422bb2-e14e-4d02-aeca-4e270f2057f4.png`.
 - Earlier original: `Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-user-reference-2026-10-05.png`, copied from `codex-clipboard-278a5c29-8648-4cd4-a57c-667b4321932e.png`.
 - Both received files are PNG, **900 x 900**, 1,841,279 bytes; SHA-256 `0e2d26886b565b28c60d431fe321cf43da24edece1bb48635a3100b30e30089f`. Although the later upload was described as higher resolution, the received bytes are identical. Both source/copy pairs match exactly.
 
-Do not apply the separate maps' two active Battle Zones or 4v4/5v5 formats to this first image. Review its actual topology, setup and rules before transcription; do not infer additional rules from the artwork.
+Do not apply the separate maps' two active Battle Zones or 4v4/5v5 formats to this first image. Use its reviewed topology, setup and rules; do not infer additional rules from the artwork.
 
 ### Future two-lane maps for 4v4 and 5v5
 

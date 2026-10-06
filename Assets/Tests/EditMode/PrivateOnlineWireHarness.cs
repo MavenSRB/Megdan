@@ -208,11 +208,11 @@ namespace GuardsDigital.Tests.EditMode
         /// pending family - a Defense response, a respawn, a removal-prevention pause - can be put
         /// on the wire without walking to it.
         /// </summary>
-        public static PrivateOnlineWireHarness Compose(IMatchHost matchHost, string sessionKey = "")
+        public static PrivateOnlineWireHarness Compose(IMatchHost matchHost, string sessionKey = "", PrivateSessionIdentity selectedIdentity = null)
         {
             var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var identity = PrivateSessionIdentity.ForComposition(
+            var identity = selectedIdentity ?? PrivateSessionIdentity.ForComposition(
                 map, configuration,
                 OwnerScopedProjectionTests.CreateOfficialInitialState().Setup,
                 "sync-build");

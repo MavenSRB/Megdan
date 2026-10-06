@@ -519,8 +519,8 @@ namespace GuardsDigital.Tests.EditMode
         /// Reuses the real blocked-Spawn pause for cross-family application/surface conformance.
         /// The setup and rule-driving path stay owned here rather than being copied by each consumer.
         /// </summary>
-        internal static MatchSession CreatePausedLanePushPlaceSession() =>
-            StartRemoveSkillAgainstTheLastMinion(blockBlueApproachSpawnPoints: true);
+        internal static MatchSession CreatePausedLanePushPlaceSession(bool sixPlayers = false) =>
+            StartRemoveSkillAgainstTheLastMinion(blockBlueApproachSpawnPoints: true, sixPlayers: sixPlayers);
 
         /// <summary>
         /// Milestone 8.35z23. The other way p.8's push begins: nobody removes anything mid-turn, the
@@ -649,12 +649,12 @@ namespace GuardsDigital.Tests.EditMode
         /// every pinned digest for a rule that needs no content.
         /// </summary>
         private static MatchSession StartRemoveSkillAgainstTheLastMinion(
-            bool blockBlueApproachSpawnPoints = false)
+            bool blockBlueApproachSpawnPoints = false, bool sixPlayers = false)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = sixPlayers ? MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red) : MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                sixPlayers ? QuickGameSetupConfiguration.CreateOfficialSixPlayer() : QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -690,7 +690,18 @@ namespace GuardsDigital.Tests.EditMode
             var session = new MatchSession(
                 new MatchSessionInitialState(scenario, relocatedSetup, new[] { map }));
 
-            CommitBothSides(session);
+            if (sixPlayers)
+            {
+                Accept(session, DirectorCommand.CommitCard(instance.OwnerId,instance.Id));
+                foreach(var hero in configuration.Participants.Heroes.Where(h=>!h.Id.Equals(instance.OwnerId)))
+                {
+                    var card=session.Projection.Cards.First(c=>c.OwnerId.Equals(hero.Id) && c.State.Location==CardLocation.Hand);
+                    Accept(session,DirectorCommand.CommitCard(hero.Id,card.Id));
+                }
+                if(session.Projection.PendingInitiativeChoice!=null)
+                    Accept(session,DirectorCommand.ChooseTiedActor(session.Projection.PendingInitiativeChoice.OwningSide,instance.Id));
+            }
+            else CommitBothSides(session);
             var offer = session.Projection.AvailableTurnActions
                 .Single(candidate => candidate.ActionDefinitionId.Equals(RemoveSkill));
             var started = session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId));

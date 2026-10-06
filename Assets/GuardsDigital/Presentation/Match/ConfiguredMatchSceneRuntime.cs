@@ -26,6 +26,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchHost host;
         private readonly IMatchSession session;
         private readonly SwitchableMatchClient client;
+        private PrivateSessionClient clockSession;
         private readonly IMatchReadModel trustedContent;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
@@ -50,7 +51,7 @@ namespace GuardsDigital.Presentation.Match
             // TWELFTH amendment. Optional and appended, so every existing composition and fixture
             // keeps its exact call - the same reason 8.20a's heroOverviews and 8.35y's kinetics
             // were appended rather than inserted.
-            MatchSessionInitialState stagedInitialState = null)
+            MatchSessionInitialState stagedInitialState = null, ExperimentalMatchOptions experiments = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -102,7 +103,7 @@ namespace GuardsDigital.Presentation.Match
                     scenario,
                     setup,
                     maps,
-                    configuration);
+                    configuration, experiments: experiments);
             host = MatchHost.Compose(InitialState);
             session = new LocalDirectorMatchClient(host);
             IsSandbox = stagedInitialState != null;
@@ -149,7 +150,7 @@ namespace GuardsDigital.Presentation.Match
             // either: the outcome and the match scoreboard are public information in every projection,
             // so the ended match reads the same on all six screens.
             VictoryScreenView = new VictoryScreenUnityView();
-            HeroOverviewsView = new HeroOverviewsUnityView();
+            HeroOverviewsView = new HeroOverviewsUnityView(() => client.Projection);
             // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
             // "the same log for everyone", so there is no scoped-out composition for it to skip.
@@ -340,6 +341,16 @@ namespace GuardsDigital.Presentation.Match
                     BoardPresenter.SubmitHeroBody(heroId, body) ||
                     MinionChoicePresenter.SubmitUnit(
                         GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)));
+            HandsView.SuggestedBy = id =>
+            {
+                if (!(client.Projection is IExperimentalReadModel experimental) || HeroOverviewsView?.Model == null)
+                    return Array.Empty<HeroOverviewViewModel>();
+                return experimental.TeammateMarkers.Where(m => m.Card.Equals(id))
+                    .Select(m => HeroOverviewsView.Model.Heroes.FirstOrDefault(h => h.HeroId.Equals(m.Sender)))
+                    .Where(h => h != null).ToArray();
+            };
+            HandsView.MyCardsRequested += () => SelectViewedHero(HandsPresenter.HomeHeroId);
+            HandsView.CardSuggested += SuggestCard;
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.CardDroppedOnMap += cardId => HandsPresenter.CommitCardImmediately(cardId);
@@ -523,7 +534,7 @@ namespace GuardsDigital.Presentation.Match
                     projection.RoundIndex,
                     projection.TurnIndex,
                     AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default),
-                    projection.RemainingWaveCounters)),
+                    projection.RemainingWaveCounters, (projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState)),
                 HeroOverviewsPresenter,
                 // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
                 // said out loud where the playtest logs already look: a marker naming the panel, and
@@ -547,6 +558,27 @@ namespace GuardsDigital.Presentation.Match
         /// Points the tray at one hero (milestone 7.8a). Local presentation state: no command is
         /// submitted, nothing authoritative moves, and nothing about it is serialized.
         /// </summary>
+        public bool SuggestHex(HexCoordinate hex)
+        {
+            var projection = client.Projection;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination ||
+                !(client is ICoordinationClient communication)) return false;
+            var own = experimental.TeammateMarkers.FirstOrDefault(m => m.Sender.Equals(HandsPresenter.HomeHeroId));
+            return communication.SubmitCoordination(new CoordinationCommand(own?.Revision ?? 0, CoordinationTargetKind.Hex,
+                own?.Hex.HasValue == true && own.Hex.Value.Equals(hex), projection.SelectedMap.Reference, hex, generation: experimental.CoordinationGeneration));
+        }
+        private void SuggestCard(CardInstanceId id)
+        {
+            var projection = client.Projection;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination ||
+                !(client is ICoordinationClient communication)) return;
+            var card = experimental.AlliedHandCards.FirstOrDefault(c => c.Id.Equals(id));
+            if (card == null) return;
+            var own = experimental.TeammateMarkers.FirstOrDefault(m => m.Sender.Equals(HandsPresenter.HomeHeroId));
+            communication.SubmitCoordination(new CoordinationCommand(own?.Revision ?? 0, CoordinationTargetKind.Card,
+                own != null && own.Card.Equals(id), projection.SelectedMap.Reference, cardOwner: card.OwnerId, card: id, generation: experimental.CoordinationGeneration));
+        }
+
         public bool SelectViewedHero(HeroId heroId)
         {
             if (!HandsPresenter.SelectViewedHero(heroId))
@@ -555,6 +587,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             HeroOverviewsPresenter.Refresh();
+            hud?.RefreshSpellbookShortcut();
             return true;
         }
 
@@ -628,6 +661,7 @@ namespace GuardsDigital.Presentation.Match
             Seat = host.Seats.Find(online.TargetSeat) ??
                 throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
             client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
+            clockSession=online;
             BindHomeHero(Seat.HeroId);
             hud.SetDirectorToolsVisible(exposeHostDirectorTools);
             if (exposeHostDirectorTools && republishAfterHostDebugChange != null &&
@@ -696,6 +730,9 @@ namespace GuardsDigital.Presentation.Match
         /// one seat's authorized one when this runtime was composed for a seat.
         /// </summary>
         public IMatchReadModel ReadModel => client.Projection;
+        public MatchClockState DisplayClock => clockSession?.LatestClock ??
+            (client.Projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState ?? MatchClockState.Disabled;
+        public void RefreshClockDisplay() => hud.RenderClock(DisplayClock);
         public QuickGameSetupState Setup => client.Projection.Setup;
         public IReadOnlyList<CardDefinition> Definitions => client.Projection.Definitions;
         public IReadOnlyList<CardInstance> Cards => client.Projection.Cards;
@@ -950,6 +987,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void RefreshAll()
         {
+            HandsView.CoordinationEnabled = (client.Projection as IExperimentalReadModel)?.Experiments.TeammateCoordination == true;
             hud.RenderHeader(new MatchHudHeaderViewModel(
                 client.Projection.TieBreakerState,
                 client.Projection.Setup,
@@ -957,7 +995,7 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.RoundIndex,
                 client.Projection.TurnIndex,
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
-                client.Projection.RemainingWaveCounters));
+                client.Projection.RemainingWaveCounters, DisplayClock));
             coordinator.RefreshAll();
             FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();
@@ -986,6 +1024,17 @@ namespace GuardsDigital.Presentation.Match
         /// one open, uncommitted Attack-target selection. Every existing caller of this method keeps
         /// working unchanged; what changed is what one press now does on its behalf.
         /// </summary>
+        public bool IsClockInputReady
+        {
+            get
+            {
+                if (SpotlightPresenter.DefersCues) return false;
+                var attack=SpotlightPresenter.Stage.Current;
+                if (attack!=null) return KineticView.Playback.LungeTargetFor(attack.Attacker).IsDefined;
+                return KineticView.Conductor.IsIdle || KineticView.Conductor.IsHoldingForAcknowledgement;
+            }
+        }
+
         public bool SubmitEndTurn() => RoundPresenter.SubmitEndTurn();
 
         /// <summary>

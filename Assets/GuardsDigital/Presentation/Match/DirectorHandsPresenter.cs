@@ -40,8 +40,9 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId? selectedCardInstanceId,
             IEnumerable<TrayCardViewModel> trayCards = null,
             CardInstanceId? selectedSecondCardInstanceId = null,
-            bool canCommitTwoCards = false)
+            bool canCommitTwoCards = false, bool isReadOnly = false)
         {
+            IsReadOnly = isReadOnly;
             TrayCards = Array.AsReadOnly((trayCards ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
             PlayableTrayCards = Array.AsReadOnly(TrayCards
@@ -80,6 +81,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroId HeroId { get; }
         public string HeroDisplayName { get; }
         public TurnCardCommitmentStatus CommitmentStatus { get; }
+        public bool IsReadOnly { get; }
         public bool CanPass { get; }
         public CardInstanceId? RevealedCardInstanceId { get; }
         public CardInstance RevealedCard { get; }
@@ -278,12 +280,14 @@ namespace GuardsDigital.Presentation.Match
         public bool SelectViewedHero(HeroId heroId)
         {
             var projection = session.Projection;
-            if (!heroId.IsDefined || (!session.IsDirector && !heroId.Equals(homeHeroId)) ||
+            if (!heroId.IsDefined || (!session.IsDirector && !CanInspect(projection, heroId)) ||
                 !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
             {
                 return false;
             }
 
+            selectedCardInstanceId = null;
+            selectedSecondCardInstanceId = null;
             pinnedHeroId = heroId;
             pinnedAgainstAwaitedHeroId = Awaited(projection);
             Refresh();
@@ -317,10 +321,23 @@ namespace GuardsDigital.Presentation.Match
         /// <inheritdoc />
         public HeroId HomeHeroId => homeHeroId;
 
+        private bool CanInspect(IMatchReadModel projection, HeroId heroId)
+        {
+            if (heroId.Equals(homeHeroId)) return true;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination) return false;
+            var home = projection.Setup.Heroes.FirstOrDefault(h => h.HeroId.Equals(homeHeroId));
+            return home != null && projection.Setup.Heroes.Any(h => h.HeroId.Equals(heroId) && h.TeamSide == home.TeamSide);
+        }
+        private IEnumerable<CardInstance> DisplayCards(IMatchReadModel projection, HeroId heroId) =>
+            !session.IsDirector && !heroId.Equals(homeHeroId) && projection is IExperimentalReadModel experimental
+                ? experimental.AlliedHandCards.Where(c => c.OwnerId.Equals(heroId))
+                : projection.Cards.Where(c => c.OwnerId.Equals(heroId));
+
         private HeroId Resolve(IMatchReadModel projection)
         {
             if (!session.IsDirector)
             {
+                if (pinnedHeroId.IsDefined && CanInspect(projection, pinnedHeroId)) return pinnedHeroId;
                 pinnedHeroId = default;
                 pinnedAgainstAwaitedHeroId = default;
                 return homeHeroId;
@@ -364,9 +381,11 @@ namespace GuardsDigital.Presentation.Match
             return first?.HeroId ?? default;
         }
 
+        private long lastCoordinationRevision = -1;
         public void Refresh()
         {
             var projection = session.Projection;
+            var coordinationRevision = (projection as IExperimentalReadModel)?.CoordinationRevision ?? 0;
             if (!projection.IsInputEnabled ||
                 selectedCardInstanceId.HasValue && !projection.Cards.Any(card =>
                 card.Id.Equals(selectedCardInstanceId.Value) && card.State.Location == CardLocation.Hand))
@@ -381,7 +400,7 @@ namespace GuardsDigital.Presentation.Match
                 selectedSecondCardInstanceId = null;
 
             var viewedHeroId = Resolve(projection);
-            if (!ReferenceEquals(projection, lastProjection) ||
+            if (coordinationRevision != lastCoordinationRevision || !ReferenceEquals(projection, lastProjection) ||
                 !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId) ||
                 !Nullable.Equals(selectedSecondCardInstanceId, lastSelectedSecondCardInstanceId) ||
                 !viewedHeroId.Equals(lastViewedHeroId) ||
@@ -389,7 +408,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 var hands = projection.Setup.Heroes
                     // An unbound player renders no fallback hand; binding supplies the admitted hero.
-                    .Where(hero => session.IsDirector || hero.HeroId.Equals(homeHeroId))
+                    .Where(hero => session.IsDirector || CanInspect(projection, hero.HeroId))
                     .OrderBy(hero => hero.TeamSide)
                     .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
                     .Select(hero =>
@@ -400,7 +419,7 @@ namespace GuardsDigital.Presentation.Match
                             hero.HeroId,
                             hero.DisplayName,
                             commitment.Status,
-                            projection.IsInputEnabled && commitment.CanPass,
+                            projection.IsInputEnabled && commitment.CanPass && (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
                             commitment.RevealedCardInstanceId,
                             // Milestone 8.35e. `Single` here failed the whole tray refresh, and the
                             // absence it refused is legitimate for any projection that withholds a
@@ -412,15 +431,17 @@ namespace GuardsDigital.Presentation.Match
                                 ? projection.Cards.SingleOrDefault(card =>
                                     card.Id.Equals(commitment.RevealedCardInstanceId.Value))
                                 : null,
-                            projection.Cards.Where(card =>
-                                card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
+                            DisplayCards(projection, hero.HeroId).Where(card => card.State.Location == CardLocation.Hand),
                             projection.Definitions,
                             selectedCardInstanceId,
                             BuildTray(projection, hero.HeroId, selectedCardInstanceId,
-                                selectedSecondCardInstanceId: selectedSecondCardInstanceId),
+                                selectedSecondCardInstanceId: selectedSecondCardInstanceId,
+                                displayCards: DisplayCards(projection, hero.HeroId), readOnly: !session.IsDirector && !hero.HeroId.Equals(homeHeroId)),
                             selectedSecondCardInstanceId,
-                            commitment.CanCommitTwoCards);
+                            commitment.CanCommitTwoCards && (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
+                            !session.IsDirector && !hero.HeroId.Equals(homeHeroId));
                     });
+                lastCoordinationRevision = coordinationRevision;
                 lastProjection = projection;
                 lastSelectedCardInstanceId = selectedCardInstanceId;
                 lastSelectedSecondCardInstanceId = selectedSecondCardInstanceId;
@@ -523,10 +544,11 @@ namespace GuardsDigital.Presentation.Match
             HeroId heroId,
             CardInstanceId? selectedCardInstanceId,
             bool? resolvingCardIsAnsweredHere = null,
-            CardInstanceId? selectedSecondCardInstanceId = null)
+            CardInstanceId? selectedSecondCardInstanceId = null,
+            IEnumerable<CardInstance> displayCards = null, bool readOnly = false)
         {
             var commitment = projection.GetCommitment(heroId);
-            var canSelect = projection.IsInputEnabled &&
+            var canSelect = !readOnly && projection.IsInputEnabled &&
                 projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
                 commitment.Status == TurnCardCommitmentStatus.AwaitingResponse;
             // Milestone 8.5b's correction: the card this hero revealed for the current turn is the card
@@ -549,7 +571,7 @@ namespace GuardsDigital.Presentation.Match
                 ? revealedCardInstanceId
                 : null;
             var entries = new List<TrayCardViewModel>();
-            foreach (var card in projection.Cards.Where(card => card.OwnerId.Equals(heroId)))
+            foreach (var card in (displayCards ?? projection.Cards).Where(card => card.OwnerId.Equals(heroId)))
             {
                 var group = card.State.Location == CardLocation.Hand
                     ? TrayCardGroup.Available
@@ -716,7 +738,7 @@ namespace GuardsDigital.Presentation.Match
             return result.Accepted;
         }
 
-        private static CardInstance FindCommittableCard(
+        private CardInstance FindCommittableCard(
             IMatchReadModel projection, CardInstanceId cardInstanceId)
         {
             if (!projection.IsInputEnabled ||
@@ -726,7 +748,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var card = projection.Cards.SingleOrDefault(value => value.Id.Equals(cardInstanceId));
-            return card != null &&
+            return card != null && (session.IsDirector || card.OwnerId.Equals(homeHeroId)) &&
                 card.State.Location == CardLocation.Hand &&
                 projection.GetCommitment(card.OwnerId).Status ==
                     TurnCardCommitmentStatus.AwaitingResponse

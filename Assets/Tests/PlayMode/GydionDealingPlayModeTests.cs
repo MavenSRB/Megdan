@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -25,6 +27,163 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class GydionDealingPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator HandSpellbookShortcutSharesTheDrawerAndClearsDirectorAndDockedPrompt()
+        {
+            var oldWidth = (uint)Screen.width; var oldHeight = (uint)Screen.height;
+            try
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                yield return LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                var root = Root();
+                var printed = RegisteredHeroRoster.PrintedLineup(3);
+                var gydion = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "gydion");
+                root.ComposeForLineup(new HeroLineup(new[] { gydion, printed.Red[1], printed.Red[2] }, printed.Blue));
+                yield return null; yield return null;
+                var runtime = root.Runtime;
+                var hero = runtime.Setup.Heroes.Single(value => value.ContentId.Value == "gydion").HeroId;
+                Assert.That(runtime.SelectViewedHero(hero), Is.True);
+                foreach (var width in new[] { 1280u, 1920u })
+                {
+                    UiPlayer.SetPlayerViewport(width, width * 9 / 16, "9.64h spellbook shortcut");
+                    runtime.DecisionWindowView.Render(new DecisionWindowViewModel(
+                        1L, DecisionWindowFamily.MinionBattleRemoval, DecisionWindowState.Docked,
+                        "964h-shortcut-layout", "REMOVE 2 MINIONS", "MINION BATTLE",
+                        "Click minions on the board until 2 are chosen.", "1 of 2 chosen"));
+                    root.Hud.Layout(); yield return null; yield return null;
+                    var shortcut = root.Hud.RootElement.Q<Button>("gd-hand-spellbook");
+                    var director = root.Hud.RootElement.Q<Button>("gd-director-toggle");
+                    var prompt = root.Hud.RootElement.Q("gd-decision-window-docked");
+                    Assert.That(UiPlayer.IsShown(shortcut), Is.True);
+                    Assert.That(UiPlayer.IsShown(prompt), Is.True);
+                    Assert.That(shortcut.worldBound.Overlaps(director.worldBound), Is.False);
+                    Assert.That(shortcut.worldBound.Overlaps(prompt.worldBound), Is.False);
+                    foreach (var rail in root.Hud.RootElement.Query<VisualElement>("gd-hero-rail").ToList())
+                        Assert.That(shortcut.worldBound.Overlaps(rail.worldBound), Is.False,
+                            "The shortcut must also clear every hero tray: " + shortcut.worldBound + " / " + rail.worldBound);
+                    foreach (var card in runtime.HandsView.Root.Query<VisualElement>("gd-card-slot").ToList())
+                        Assert.That(shortcut.worldBound.yMax, Is.LessThanOrEqualTo(card.worldBound.yMin));
+                    var panel = ConfiguredMatchHudRenderer.PanelViewport;
+                    Assert.That(shortcut.worldBound.Overlaps(ConfiguredMatchHudRenderer.CalculateOptionalStepControlRect(panel.x, panel.y)), Is.False);
+                    Assert.That(shortcut.worldBound.Overlaps(ConfiguredMatchHudRenderer.CalculateTeamAgreementControlRect(panel.x, panel.y)), Is.False);
+                    Assert.That(root.Hud.BlocksPointerAt(MatchHudPanelScaling.PanelPointToScreen(
+                        shortcut.worldBound.center, Screen.width, Screen.height)), Is.True);
+                    UiPlayer.Click(director); yield return null;
+                    Assert.That(root.Hud.IsDirectorDrawerOpen, Is.True);
+                    Assert.That(shortcut.worldBound.Overlaps(root.Hud.RootElement.Q("gd-director-drawer").worldBound), Is.False);
+                    yield return UiPlayer.CaptureScreen("tmp/964h-shortcut-" + width + ".png");
+                    var version = runtime.Host.Version;
+                    UiPlayer.Click(shortcut); yield return null; yield return null;
+                    Assert.That(runtime.HeroOverviewsView.IsSpellbookOpen, Is.True);
+                    Assert.That(runtime.HeroOverviewsView.OpenSpellbookHeroId, Is.EqualTo(hero));
+                    Assert.That(runtime.HeroOverviewsView.SpellbookDrawer.Query<VisualElement>("gd-spellbook-spell").ToList().Count, Is.EqualTo(22));
+                    Assert.That(runtime.Host.Version, Is.EqualTo(version));
+                    UiPlayer.Click(runtime.HeroOverviewsView.SpellbookDrawer.Q<Button>("gd-spellbook-close")); yield return null;
+                    Assert.That(runtime.HeroOverviewsView.IsSpellbookOpen, Is.False);
+                    UiPlayer.Click(director); yield return null;
+                    UiPlayer.PointAway(director); yield return new WaitForSecondsRealtime(0.25f);
+                    var directorPosition = director.worldBound.position;
+                    root.Hud.SetDirectorToolsVisible(false); yield return null; yield return null;
+                    UiPlayer.PointAway(shortcut); yield return new WaitForSecondsRealtime(0.25f);
+                    Assert.That(UiPlayer.IsShown(shortcut), Is.True, "Ordinary players keep their book shortcut.");
+                    Assert.That(shortcut.worldBound.x, Is.EqualTo(directorPosition.x).Within(1f));
+                    Assert.That(shortcut.worldBound.y, Is.EqualTo(directorPosition.y).Within(1f));
+                    Assert.That(shortcut.worldBound.Overlaps(prompt.worldBound), Is.False);
+                    yield return UiPlayer.CaptureScreen("tmp/964h-shortcut-player-" + width + ".png");
+                    UiPlayer.Click(shortcut); yield return null; yield return null;
+                    Assert.That(runtime.HeroOverviewsView.IsSpellbookOpen, Is.True);
+                    UiPlayer.Click(runtime.HeroOverviewsView.SpellbookDrawer.Q<Button>("gd-spellbook-close")); yield return null;
+                    root.Hud.SetDirectorToolsVisible(true);
+                    runtime.DecisionWindowPresenter.Refresh();
+                    yield return null; yield return null;
+                    Assert.That(runtime.SelectCommitmentCard(runtime.HandsView.Model.ViewedHand.Cards.First().Id), Is.True);
+                    yield return null; yield return null;
+                    var confirm = root.Hud.RootElement.Q("gd-confirm-control");
+                    Assert.That(UiPlayer.IsShown(confirm), Is.True);
+                    Assert.That(confirm.worldBound.Overlaps(shortcut.worldBound), Is.False);
+                    Assert.That(confirm.worldBound.Overlaps(ConfiguredMatchHudRenderer.CalculateDecisionWindowDockedRect(panel.x, panel.y)), Is.False);
+                    foreach (var card in runtime.HandsView.Root.Query<VisualElement>("gd-card-slot").ToList())
+                        Assert.That(confirm.worldBound.yMax, Is.LessThanOrEqualTo(card.worldBound.yMin));
+                    yield return UiPlayer.CaptureScreen("tmp/964h-shortcut-confirm-" + width + ".png");
+                    Assert.That(runtime.SelectViewedHero(hero), Is.True);
+                    yield return null; yield return null;
+                }
+                Assert.That(runtime.SelectViewedHero(runtime.Setup.Heroes.First(value => !value.HeroId.Equals(hero)).HeroId), Is.True);
+                yield return null; yield return null;
+                Assert.That(UiPlayer.IsShown(root.Hud.RootElement.Q("gd-hand-spellbook")), Is.False,
+                    "A hero without a book has no shortcut.");
+                Assert.That(runtime.SelectViewedHero(hero), Is.True);
+                yield return null; yield return null;
+                Assert.That(UiPlayer.IsShown(root.Hud.RootElement.Q("gd-hand-spellbook")), Is.True);
+                Assert.That(runtime.SelectCommitmentCard(runtime.HandsView.Model.ViewedHand.Cards.First().Id), Is.True);
+                yield return null; yield return null;
+                var beforeCommit = runtime.Host.Version;
+                UiPlayer.Click(root.Hud.RootElement.Q("gd-confirm-control"));
+                yield return null; yield return null;
+                Assert.That(runtime.Host.Version, Is.EqualTo(beforeCommit + 1), "The relocated confirmation still submits exactly once.");
+            }
+            finally
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "9.64h restore");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SpellbookCardsUseTheSharedHoverBumpWithoutAHoverPopup()
+        {
+            var oldWidth = (uint)Screen.width;
+            var oldHeight = (uint)Screen.height;
+            try
+            {
+                foreach (var width in new[] { 1280u, 1920u })
+                {
+                    UiPlayer.SetPlayerViewport(width, width * 9 / 16, "9.64d spellbook");
+                    MatchSceneCompositionRoot.NextComposedSeat = null;
+                    yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
+                    var root = Root();
+                    var view = root.Runtime.HeroOverviewsView;
+                    Assert.That(view.OpenSpellbook(Gydion(root.Runtime)), Is.True);
+                    root.Hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var cards = UiPlayer.Descendants(view.SpellbookDrawer)
+                        .Where(e => e.name == "gd-spellbook-spell").ToArray();
+                    Assert.That(cards.Length, Is.EqualTo(22));
+                    var version = root.Runtime.Host.Version;
+                    foreach (var card in cards.Take(3))
+                    {
+                        var layout = card.layout;
+                        var bounds = card.worldBound;
+                        var neighbor = cards.First(other => other != card);
+                        var neighborBounds = neighbor.worldBound;
+                        UiPlayer.PointAt(card);
+                        yield return new WaitForSecondsRealtime(0.25f);
+                        Assert.That(view.HoverPreviewRoot.resolvedStyle.display,
+                            Is.EqualTo(DisplayStyle.None), "No detached duplicate face.");
+                        Assert.That(card.layout, Is.EqualTo(layout), "Hover must not reflow the book.");
+                        Assert.That(card.worldBound.width,
+                            Is.EqualTo(bounds.width * MatchHudTheme.ButtonHoverScale).Within(0.5f));
+                        Assert.That(card.worldBound.height,
+                            Is.EqualTo(bounds.height * MatchHudTheme.ButtonHoverScale).Within(0.5f));
+                        Assert.That(neighbor.worldBound, Is.EqualTo(neighborBounds));
+                        if (card == cards[1])
+                            yield return UiPlayer.CaptureScreen("tmp/964d-spellbook-hover-" + width + ".png");
+                        UiPlayer.PointAway(card);
+                        yield return new WaitForSecondsRealtime(0.25f);
+                        Assert.That(card.worldBound.width, Is.EqualTo(bounds.width).Within(0.5f));
+                        Assert.That(card.worldBound.height, Is.EqualTo(bounds.height).Within(0.5f));
+                        Assert.That(root.Runtime.Host.Version, Is.EqualTo(version),
+                            "Inspecting a spell must not submit gameplay.");
+                    }
+                    UiPlayer.Click(view.SpellbookDrawer.Q<Button>("gd-spellbook-close"));
+                    yield return null;
+                    Assert.That(view.IsSpellbookOpen, Is.False);
+                }
+            }
+            finally { UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "9.64d restore viewport"); }
+        }
+
         [UnityTest]
         public IEnumerator SceneOneFortyTwo_DealsHisStartingHandAFullBookAndHisPreparedFaces()
         {

@@ -75,7 +75,7 @@ namespace GuardsDigital.Application
     /// from the locally composed content projection behind the lobby to the admitted network seat.
     /// The presenters never learn that a transport exists and therefore keep one rules-facing path.
     /// </summary>
-    public sealed class SwitchableMatchClient : IMatchClient
+    public sealed class SwitchableMatchClient : IMatchClient, ICoordinationClient
     {
         private IMatchClient current;
 
@@ -85,6 +85,8 @@ namespace GuardsDigital.Application
         public IMatchReadModel Projection => current.Projection;
 
         public bool IsDirector => current.IsDirector;
+        public bool SubmitCoordination(CoordinationCommand command) =>
+            current is ICoordinationClient communication && communication.SubmitCoordination(command);
 
         public void Replace(IMatchClient replacement) =>
             current = replacement ?? throw new ArgumentNullException(nameof(replacement));
@@ -152,7 +154,7 @@ namespace GuardsDigital.Application
     /// on the network path milestone 8.32's <see cref="PrivateSessionClient.TrySubmitCommand"/>
     /// mints the wire's own random identities instead, and nothing here depends on their shape.</para>
     /// </remarks>
-    public sealed class SeatMatchClient : IMatchClient
+    public sealed class SeatMatchClient : IMatchClient, ICoordinationClient
     {
         private static int nextSubmissionOrdinal;
 
@@ -164,6 +166,8 @@ namespace GuardsDigital.Application
         }
 
         public MatchSeat Seat => client.Seat;
+        public bool SubmitCoordination(CoordinationCommand command) =>
+            client is ICoordinationClient communication && communication.SubmitCoordination(command);
 
         /// <summary>This seat's authorized view, which is also what the HUD renders.</summary>
         public SeatProjection SeatProjection => client.Projection;
@@ -177,6 +181,8 @@ namespace GuardsDigital.Application
             if (command == null) throw new ArgumentNullException(nameof(command));
 
             var projection = client.Projection;
+            if(projection.Experiments.TurnTimer && SharedBoardChoice.RequiresVote(projection,command) && client is IBoardVoteClient voter)
+            {var voted=voter.SubmitBoardVote(command);return new MatchClientResult(voted,"Team vote recorded.",client.Projection,!voted);}
             var result = client.Submit(new SeatSubmission(NextSubmissionId(), projection.Version, command));
             return new MatchClientResult(
                 result.Accepted,

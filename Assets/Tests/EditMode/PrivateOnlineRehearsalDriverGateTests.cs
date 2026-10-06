@@ -2,6 +2,8 @@ using System;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using NUnit.Framework;
 
@@ -75,6 +77,40 @@ namespace GuardsDigital.Tests.EditMode
                 minionBattleObserved,
                 version,
                 waitingForHost), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SmokeHostWaitsForBothRemoteWitnessesToLeaveBeforeExiting()
+        {
+            var first = new SeatId("red-player-01");
+            var second = new SeatId("blue-player-01");
+            var peers = new[] { first, second };
+            SeatRosterEntry Row(SeatId seat, SeatOccupancyState state) =>
+                new SeatRosterEntry(seat, default(HeroId), TeamSide.None, state);
+            var firstHere = Row(first, SeatOccupancyState.Claimed);
+            var firstGone = Row(first, SeatOccupancyState.Reserved);
+            var secondHere = Row(second, SeatOccupancyState.Claimed);
+            var secondGone = Row(second, SeatOccupancyState.Open);
+            var local = Row(new SeatId("red-player-02"), SeatOccupancyState.Claimed);
+            var bot = Row(new SeatId("blue-player-02"), SeatOccupancyState.Claimed);
+
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true, peers,
+                new[] { firstHere, secondHere, local, bot }), Is.False);
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true, peers,
+                new[] { firstGone, secondHere, local, bot }), Is.False,
+                "A slow second client must still be able to finish its round trip.");
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true, peers,
+                new[] { firstHere, secondGone, local, bot }), Is.False);
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(false, peers,
+                new[] { firstGone, secondGone, local, bot }), Is.False);
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true, peers,
+                new[] { firstGone, local, bot }), Is.False,
+                "An incomplete roster is not evidence of departure.");
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true,
+                Array.Empty<SeatId>(), new[] { local, bot }), Is.False);
+            Assert.That(PrivateOnlineRehearsalDriver.SmokeHostCanExit(true, peers,
+                new[] { firstGone, secondGone, local, bot }), Is.True,
+                "Host and in-process bots must not keep the finished cohort alive.");
         }
 
         private static NetworkCardRow Card(

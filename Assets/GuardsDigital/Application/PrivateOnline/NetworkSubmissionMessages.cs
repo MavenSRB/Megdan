@@ -369,7 +369,7 @@ namespace GuardsDigital.Application
     /// Milestone 8.32. Encodes and decodes the gameplay messages, in the same refuse-on-read
     /// idiom as <see cref="PrivateSessionFrameCodec"/>.
     /// </summary>
-    public static class NetworkMessageCodec
+    public static partial class NetworkMessageCodec
     {
         public const int MaxSubmissionIdChars = 64;
 

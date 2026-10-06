@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Match;
@@ -110,6 +112,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly VisualElement controls;
         private readonly VisualElement entry;
         private readonly Label status;
+        private readonly Label selectedMapLabel;
         private readonly Label session;
         private readonly Label feedback;
         private readonly Label pickedSeat;
@@ -128,6 +131,13 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly Label invitationAddress;
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
         private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
+        private Toggle coordinationToggle;
+        private Toggle enemyInfoToggle;
+        private Toggle timerToggle;
+        private readonly List<IntegerField> timerFields = new List<IntegerField>();
+        private readonly int[] timerDefaults = {120,30,30,120,300};
+        private VisualElement timerSettings;
+        private VisualElement experimentalPanel;
         private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
         private PrivateLobbyModel renderedModel;
         private readonly Label selectionStatus;
@@ -209,7 +219,9 @@ namespace GuardsDigital.Presentation.Interaction
             title = Caption("PRIVATE LOBBY", 30, TitleName);
             frame.Add(title);
             status = Caption(string.Empty, 22, StatusName);
+            selectedMapLabel = Caption(string.Empty, 18, "lobby-selected-map");
             frame.Add(status);
+            frame.Add(selectedMapLabel);
             session = Caption(string.Empty, 16, SessionName);
             frame.Add(session);
 
@@ -257,6 +269,57 @@ namespace GuardsDigital.Presentation.Interaction
             formatChoices.style.flexWrap = Wrap.NoWrap;
             formatChoices.style.marginBottom = 4f;
             hostMenu.Add(formatChoices);
+            mapSelector = new DropdownField("MAP", mapChoices.Select(m => m.DisplayName).ToList(),
+                Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap))) { name = "host-map-selector" };
+            mapSelector.style.fontSize = 18; mapSelector.style.marginBottom = 6;
+            mapSelector.style.color = Color.black; mapSelector.labelElement.style.color = Color.white;
+            hostMenu.Add(mapSelector);
+            experimentalPanel = new VisualElement { name = "experimental-menu" };
+            experimentalPanel.style.display = DisplayStyle.None;
+            experimentalPanel.style.marginTop = 6;
+            var experimentalButton = new Button(() => experimentalPanel.style.display =
+                experimentalPanel.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None)
+                { text = "EXPERIMENTAL", name = "experimental-button" };
+            experimentalButton.style.height = 36;
+            experimentalButton.style.fontSize = 18;
+            ApplyButtonChrome(experimentalButton);
+            hostMenu.Add(experimentalButton);
+            coordinationToggle = new Toggle("Teammate coordination") { name = "experimental-coordination" };
+            coordinationToggle.style.fontSize = 18;
+            coordinationToggle.style.color = Color.white;
+            experimentalPanel.Add(coordinationToggle);
+            var coordinationHelp = Caption("Inspect allied cards and spellbooks, including all gold cards. Right-click cards or hexes to suggest them.", 15, "experimental-coordination-help");
+            coordinationHelp.style.whiteSpace = WhiteSpace.Normal;
+            experimentalPanel.Add(coordinationHelp);
+            enemyInfoToggle = new Toggle("Enemy card information") { name = "experimental-enemy-info" };
+            enemyInfoToggle.style.fontSize = 18;
+            enemyInfoToggle.style.color = Color.white;
+            experimentalPanel.Add(enemyInfoToggle);
+            var enemyInfoHelp = Caption("Inspect enemy current cards and spellbooks, including all gold cards.", 15,
+                "experimental-enemy-info-help");
+            enemyInfoHelp.style.whiteSpace = WhiteSpace.Normal;
+            experimentalPanel.Add(enemyInfoHelp);
+            timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
+            timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
+            timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
+            var durationLabels=new[]{"Card commitment time","Card resolution time","Response time","Card upgrade time","Team time bank per wave"};
+            var durationError=Caption(string.Empty,14,"experimental-duration-error");
+            for(int i=0;i<durationLabels.Length;i++)
+            {
+                var index=i; var field=new IntegerField(durationLabels[i]+" (seconds)") {name="experimental-duration-"+i,value=timerDefaults[i]};
+                field.style.fontSize=18; field.style.color=Color.black;
+                field.labelElement.style.color=Color.white;
+                field.RegisterValueChangedCallback(change=>
+                {
+                    if(change.newValue<(index==4?0:1) || change.newValue>86400)
+                    { field.SetValueWithoutNotify(change.previousValue); durationError.text="Use whole seconds: "+(index==4?"0":"1")+"–86400. Previous value retained."; }
+                    else durationError.text=string.Empty;
+                });
+                timerFields.Add(field); timerSettings.Add(field);
+            }
+            timerSettings.Add(durationError); experimentalPanel.Add(timerSettings);
+            timerToggle.RegisterValueChangedCallback(change=>timerSettings.style.display=change.newValue?DisplayStyle.Flex:DisplayStyle.None);
+            hostMenu.Add(experimentalPanel);
             entry.Add(hostMenu);
 
             joinMenu = new VisualElement { name = JoinMenuName };
@@ -397,9 +460,14 @@ namespace GuardsDigital.Presentation.Interaction
         /// The invitation currently typed into the open menu, plus the picked seat. The host menu
         /// names no address: 8.100 derives the host's bind locally.
         /// </summary>
+        private DropdownField mapSelector;
+        private readonly BoardMapDefinition[] mapChoices = OfficialBoardMapCatalog.Load().Definitions.ToArray();
+
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
-                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value)
+                ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
+                    new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
+                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value), mapChoices[mapSelector.index].Reference)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -414,6 +482,15 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public void ShowPage(PrivateLobbyEntryPage value)
         {
+            if (value == PrivateLobbyEntryPage.Host && page != PrivateLobbyEntryPage.Host)
+            {
+                mapSelector.index = Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap));
+                coordinationToggle.SetValueWithoutNotify(false);
+                enemyInfoToggle.SetValueWithoutNotify(false);
+                timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
+                for(int i=0;i<timerFields.Count;i++) timerFields[i].SetValueWithoutNotify(timerDefaults[i]);
+                experimentalPanel.style.display = DisplayStyle.None;
+            }
             page = value;
             if (renderedModel != null)
             {
@@ -470,6 +547,8 @@ namespace GuardsDigital.Presentation.Interaction
                 : "SEAT: NONE PICKED";
         }
 
+        public void SetMapName(string name) => selectedMapLabel.text = "MAP: " + name;
+
         public void Render(PrivateLobbyModel model)
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
@@ -498,6 +577,8 @@ namespace GuardsDigital.Presentation.Interaction
                 : string.Empty;
             title.style.display = title.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             status.text = model.StatusLabel;
+            selectedMapLabel.style.display = model.Role == PrivateLobbyRole.None ? DisplayStyle.None : DisplayStyle.Flex;
+            mapSelector.SetEnabled(model.Role == PrivateLobbyRole.None);
             status.style.display = isEntry ? DisplayStyle.None : DisplayStyle.Flex;
             session.text = model.SessionLabel.Length == 0
                 ? string.Empty
@@ -1469,6 +1550,21 @@ namespace GuardsDigital.Presentation.Interaction
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
 
+        private readonly System.Diagnostics.Stopwatch clockStopwatch=System.Diagnostics.Stopwatch.StartNew();
+        private long lastClockTick, lastClockPublish;
+        private long displayedClockRevision=-1;
+        private void TickExperimentalClock()
+        {
+            var now=clockStopwatch.Elapsed.Ticks; var elapsed=now-lastClockTick; lastClockTick=now;
+            if (session==null || !session.HasMatchStarted || !(compositionRoot?.Runtime?.Host is MatchHost host) || !host.Experiments.TurnTimer) return;
+            host.SetTimerStarted(true);
+            foreach(var seat in botFleet?.Seats ?? Array.Empty<SeatId>()) host.SetClockReadiness(seat,host.Version,true);
+            var version=host.Version; host.AdvanceClock(elapsed,session.IsPaused);
+            if (host.Version!=version)
+            { lastClockPublish=now; session.RepublishProjections(); }
+            else if(now-lastClockPublish>=TimeSpan.TicksPerSecond)
+            { lastClockPublish=now; session.PublishClockUpdate(); }
+        }
         private void Update()
         {
             if (presenter == null)
@@ -1476,6 +1572,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             var now = DateTime.UtcNow;
             if (session != null && listener != null)
             {
@@ -1488,6 +1585,7 @@ namespace GuardsDigital.Presentation.Interaction
                     HostConsoleCommands.Dispatch(consoleLine, session);
                 }
 
+                TickExperimentalClock();
                 foreach (var hostEvent in listener.Drain())
                 {
                     switch (hostEvent.Kind)
@@ -1642,7 +1740,7 @@ namespace GuardsDigital.Presentation.Interaction
 
                             PrivateOnlineMarkers.Log(
                                 "LOBBY_FORMAT_INHERITED_AT_TRANSITION format=" + hostFormat.Id);
-                            plan = MatchCompositionPlan.Printed(hostFormat);
+                            plan = MatchCompositionPlan.Printed(hostFormat, plan.Map);
                         }
 
                         compositionRoot.Recompose(plan.WithLineup(lineup));
@@ -1959,7 +2057,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var next = formats[(index + 1) % formats.Count];
-            compositionRoot.Recompose(MatchCompositionPlan.Printed(next));
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(next, compositionRoot.ComposedPlan.Map));
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + next.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
         }
@@ -2166,6 +2264,9 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(compositionRoot.ComposedPlan.Format, entry.Map));
+            compositionRoot.ConfigureExperiments(entry.Experiments);
+            view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             sessionKey = entry.SessionKey;
             var draftSeed = BitConverter.ToInt32(new CryptoNonceSource().NextNonce(), 0);
             botFleet = new GuardsDigital.Application.Bots.PrivateSessionBotFleet(
@@ -2359,13 +2460,17 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             if (machine.State != PrivateSessionClientState.Rejected ||
-                machine.RejectionReason != SessionRejectionReason.MatchFormatMismatch)
+                (machine.RejectionReason != SessionRejectionReason.MatchFormatMismatch &&
+                 machine.RejectionReason != SessionRejectionReason.MapRevisionMismatch))
             {
                 return false;
             }
 
-            var hostFormat = HostFormatFromRefusal(machine.RejectionDetail);
-            if (hostFormat == null)
+            var refused = machine.LastRejection;
+            var hostFormat = MatchFormat.All.FirstOrDefault(f => f.Id == refused?.HostFormatId);
+            var hostMap = OfficialBoardMapCatalog.Load().Definitions.FirstOrDefault(m =>
+                m.Id.Value == refused?.HostMapId && m.ContentRevision == refused.HostMapRevision);
+            if (hostFormat == null || hostMap == null)
             {
                 // The refusal named no printed id this build composes - a custom staged board, say -
                 // so there is nothing to inherit and the honest answer is the refusal that stands.
@@ -2374,11 +2479,11 @@ namespace GuardsDigital.Presentation.Interaction
 
             formatInheritanceAttempted = true;
 
-            if (compositionRoot.ComposedPlan == null ||
+            if (compositionRoot.ComposedPlan == null || !compositionRoot.ComposedPlan.Map.Equals(hostMap.Reference) ||
                 !string.Equals(
                     compositionRoot.ComposedPlan.Format.Id, hostFormat.Id, StringComparison.Ordinal))
             {
-                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat));
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat, hostMap.Reference));
                 PrivateOnlineMarkers.Log("LOBBY_FORMAT_INHERITED format=" + hostFormat.Id);
             }
 
@@ -2420,31 +2525,6 @@ namespace GuardsDigital.Presentation.Interaction
             PrivateOnlineMarkers.Log(
                 "LOBBY_REJOINING seat=" + SeatLabelForLog() + " format=" + hostFormat.Id);
             return true;
-        }
-
-        /// <summary>
-        /// The printed format a <see cref="SessionRejectionReason.MatchFormatMismatch"/> refusal
-        /// names, or null when it names none this build composes. The host's own
-        /// <c>DescribeMismatch</c> writes the stable <see cref="MatchFormat.Id"/> into the plaintext
-        /// detail; this scans for whichever printed id appears rather than parsing the sentence, so a
-        /// reworded message can never silently defeat inheritance.
-        /// </summary>
-        private static MatchFormat HostFormatFromRefusal(string detail)
-        {
-            if (string.IsNullOrEmpty(detail))
-            {
-                return null;
-            }
-
-            foreach (var format in MatchFormat.All)
-            {
-                if (detail.IndexOf(format.Id, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return format;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>Whether the currently composed match seats a seat of that id.</summary>
@@ -2746,6 +2826,13 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void LateUpdate()
         {
+            if (machine?.HasMatchStarted==true && onlineHudAttached && compositionRoot?.Runtime!=null)
+                machine.ReportTimerReadiness(compositionRoot.Runtime.IsClockInputReady);
+            if(machine!=null && onlineHudAttached && compositionRoot?.Runtime!=null && displayedClockRevision!=machine.ClockDisplayRevision)
+            {
+                displayedClockRevision=machine.ClockDisplayRevision;
+                compositionRoot.Runtime.RefreshClockDisplay();
+            }
             if (panelSettings == null || presenter?.Model == null) return;
             // The menu can scroll, so short windows must not shrink it to the game's full-board
             // footprint. Restore the shared HUD coordinates for in-match connection notices.

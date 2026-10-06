@@ -49,6 +49,9 @@
 .PARAMETER Check
     Read-only verification: proves every declared resource exists at its declared size.
 
+.PARAMETER SourceCorpusRoot
+    Optional read-only extracted text-assets root for single-face token preparation in an isolated worktree.
+
 .PARAMETER Force
     Rewrite every prepared face even when all of them already match.
 #>
@@ -57,7 +60,8 @@ param(
     [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets', 'mrak', 'wuk', 'mortimer', 'gydion', 'emmitt', 'nebkher')]
     [string] $Hero = 'tali',
     [switch] $Check,
-    [switch] $Force
+    [switch] $Force,
+    [string] $SourceCorpusRoot
 )
 
 Set-StrictMode -Version Latest
@@ -868,6 +872,7 @@ if ($Hero -in @('gydion', 'emmitt', 'nebkher')) {
     $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     $corpusRoot = [System.IO.Path]::Combine(
         $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    if (-not [string]::IsNullOrWhiteSpace($SourceCorpusRoot)) { $corpusRoot = [System.IO.Path]::GetFullPath($SourceCorpusRoot) }
     $targetRoot = [System.IO.Path]::Combine(
         $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
 

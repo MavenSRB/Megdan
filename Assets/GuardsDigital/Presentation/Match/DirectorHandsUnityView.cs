@@ -287,7 +287,7 @@ namespace GuardsDigital.Presentation.Match
             contextOnly = value;
             CancelCardDrag();
             ClearPeekPreview();
-            contextBlocker.style.display = contextOnly ? DisplayStyle.Flex : DisplayStyle.None;
+            contextBlocker.style.display = contextOnly && !CoordinationEnabled ? DisplayStyle.Flex : DisplayStyle.None;
             confirmAction.style.display = confirmLayoutReady && !trayHidden && !contextOnly
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
@@ -330,6 +330,10 @@ namespace GuardsDigital.Presentation.Match
         public DirectorHandsViewModel Model { get; private set; }
 
         public event Action<CardInstanceId> CardSelected;
+        public event Action<CardInstanceId> CardSuggested;
+        public event Action MyCardsRequested;
+        public Func<CardInstanceId, System.Collections.Generic.IReadOnlyList<HeroOverviewViewModel>> SuggestedBy { get; set; }
+        public bool CoordinationEnabled { get; set; }
         public event Action<CardInstanceId> CardDroppedOnMap;
         public event Action ConfirmRequested;
         public event Action<HeroId> PassRequested;
@@ -428,6 +432,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void SetHidden(bool hidden)
         {
+            hidden = hidden && !(CoordinationEnabled && Model?.ViewedHand?.IsReadOnly == true);
             trayHidden = hidden;
             if (hidden)
             {
@@ -486,6 +491,30 @@ namespace GuardsDigital.Presentation.Match
                     (compactPeekMode ? PeekCardOuterWidth : CardSlotFootprint);
             }
 
+            if (hand.IsReadOnly)
+            {
+                var inspection = new VisualElement { name = "allied-hand-inspection" };
+                inspection.style.position = Position.Absolute;
+                inspection.style.top = -72;
+                inspection.style.left = 140;
+                inspection.style.flexDirection = FlexDirection.Row;
+                var ownerLabel = new Label(hand.HeroDisplayName + " — READ ONLY");
+                ownerLabel.style.color = MatchHudTheme.PrimaryText;
+                ownerLabel.style.fontSize = 22;
+                ownerLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                ownerLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                ownerLabel.style.marginRight = 12;
+                inspection.Add(ownerLabel);
+                var returnButton = new Button(() => MyCardsRequested?.Invoke()) { text = "MY CARDS", name = "my-cards" };
+                returnButton.style.fontSize = 20;
+                returnButton.style.height = 32;
+                returnButton.style.minWidth = 110;
+                returnButton.style.color = MatchHudTheme.PrimaryText;
+                returnButton.style.backgroundColor = MatchHudTheme.PanelBackground;
+                HudElements.Border(returnButton, MatchHudTheme.PanelBorder, 1, 6);
+                inspection.Add(returnButton);
+                cards.Add(inspection);
+            }
             cards.style.width = rowWidth;
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
@@ -682,6 +711,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 name = "gd-card-choice"
             };
+            button.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 1) return;
+                evt.StopImmediatePropagation();
+                CardSuggested?.Invoke(card.CardInstanceId);
+            }, TrickleDown.TrickleDown);
             button.focusable = !contextOnly;
             button.text = string.Empty;
             // The shared builder owns both complete-face shapes: a prepared printed front at its
@@ -710,7 +745,7 @@ namespace GuardsDigital.Presentation.Match
             // selection treatment, and a card can be selected and active at the same time - two
             // meanings on one border would be one meaning lost. The slot is always drawn, so a card
             // does not change size when an effect starts or ends; only the outline's colour does.
-            var slot = new VisualElement { name = "gd-card-slot" };
+            var slot = new VisualElement { name = "gd-card-slot", userData = card.CardInstanceId };
             slot.style.flexDirection = FlexDirection.Column;
             slot.style.alignItems = Align.Stretch;
             slot.style.marginRight = CardGap;
@@ -791,7 +826,42 @@ namespace GuardsDigital.Presentation.Match
                         slot,
                         isUnavailableGroup));
             }
+            AddTeammateSignal(slot, SuggestedBy?.Invoke(card.CardInstanceId));
             return slot;
+        }
+
+        /// <summary>Refresh decorations without replacing card faces, input state or an open preview.</summary>
+        public void RefreshTeammateSignals()
+        {
+            foreach (var slot in Root.Query<VisualElement>("gd-card-slot").ToList())
+                if (slot.userData is CardInstanceId id)
+                    AddTeammateSignal(slot, SuggestedBy?.Invoke(id));
+            if (highlightedPeekCard != null && hoverPreview.childCount > 0)
+                AddTeammateSignal(hoverPreview[0], SuggestedBy?.Invoke(highlightedPeekCard.CardInstanceId));
+        }
+
+        private static void AddTeammateSignal(VisualElement anchor,
+            System.Collections.Generic.IReadOnlyList<HeroOverviewViewModel> suggestions)
+        {
+            anchor.Q("teammate-card-signal")?.RemoveFromHierarchy();
+            if (suggestions != null && suggestions.Count > 0)
+            {
+                var signal = new VisualElement { name = "teammate-card-signal", pickingMode = PickingMode.Ignore };
+                signal.style.position = Position.Absolute;
+                signal.style.left = -5; signal.style.right = -5; signal.style.top = -5; signal.style.bottom = -5;
+                HudElements.Border(signal, Color.white, 2f, 12f);
+                var badges = new VisualElement { name = "teammate-card-owners", pickingMode = PickingMode.Ignore };
+                badges.style.position = Position.Absolute; badges.style.top = -28; badges.style.left = 8;
+                badges.style.flexDirection = FlexDirection.Row;
+                foreach (var hero in suggestions)
+                {
+                    var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(hero, MatchHudTheme.TeamFace(hero.TeamSide), 0.85f);
+                    badge.pickingMode = PickingMode.Ignore;
+                    foreach (var child in badge.Children()) child.pickingMode = PickingMode.Ignore;
+                    badges.Add(badge);
+                }
+                signal.Add(badges); IgnorePickingRecursively(signal); anchor.Add(signal);
+            }
         }
 
         private void BindCardDrag(Button button, VisualElement slot, TrayCardViewModel card)
@@ -1966,6 +2036,7 @@ namespace GuardsDigital.Presentation.Match
                 anchor,
                 isUnavailableGroup,
                 dimUnavailable: true);
+            AddTeammateSignal(hoverPreview[0], SuggestedBy?.Invoke(card.CardInstanceId));
         }
 
         /// <summary>

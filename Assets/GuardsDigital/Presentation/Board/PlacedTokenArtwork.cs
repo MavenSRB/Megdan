@@ -76,6 +76,7 @@ namespace GuardsDigital.Presentation.Board
                 // book (element 5831117), so no caption. Without the private face it keeps its
                 // "FAMILIAR" disc, as every kind does.
                 [new TokenDefinitionId("gydion-familiar")] = string.Empty,
+                [new TokenDefinitionId("emmitt-glitch")] = string.Empty,
 
                 // The official faces already identify Emmitt's hourglass-hatted Glitch
                 // and NebKher's spectral Illusion. Keep named fallback discs when the

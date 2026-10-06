@@ -19,8 +19,10 @@ namespace GuardsDigital.Application
             IEnumerable<BoardMapDefinition> availableMaps,
             MatchConfiguration initialConfiguration = null,
             ActiveEffectLifecycle initialTiming = null,
-            MatchStagedProgression stagedProgression = null)
+            MatchStagedProgression stagedProgression = null,
+            ExperimentalMatchOptions experiments = null)
         {
+            Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             // Milestone 9.21j. A seat whose hero declares several bodies (Razzle, RZ-Q1) carries that
             // supply onto the board from here, the one place every configured and staged match's
@@ -56,6 +58,8 @@ namespace GuardsDigital.Application
             }
 
         }
+
+        public ExperimentalMatchOptions Experiments { get; }
 
         public InitialScenarioDescription Scenario { get; }
 

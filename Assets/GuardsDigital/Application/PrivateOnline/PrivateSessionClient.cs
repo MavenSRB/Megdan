@@ -202,6 +202,7 @@ namespace GuardsDigital.Application
 
         /// <summary>The host's bounded rejection detail, empty otherwise.</summary>
         public string RejectionDetail { get; private set; } = string.Empty;
+        public SessionRejectMessage LastRejection { get; private set; }
 
         /// <summary>The host's opaque session correlation, known from admission on.</summary>
         public string SessionCorrelation { get; private set; } = string.Empty;
@@ -269,6 +270,12 @@ namespace GuardsDigital.Application
         /// statement, is republished at the same gameplay version.
         /// </summary>
         public long ProjectionRevision { get; private set; }
+        public MatchClockState LatestClock { get; private set; } = MatchClockState.Disabled;
+        public long ClockDisplayRevision { get; private set; }
+        private long clockReceiveSequence;
+        private long coordinationReceiveSequence;
+        public CoordinationDisplayState LatestCoordination { get; private set; }
+
 
         /// <summary>
         /// Milestone 8.35r. The seat-public match log this client currently holds, oldest first,
@@ -375,10 +382,10 @@ namespace GuardsDigital.Application
             IsReconnecting = true;
             awaitingReconnectProjection = true;
             channel = null;
-            gameplaySendSequence = 0;
+            gameplaySendSequence = 0; clockReceiveSequence = 0; coordinationReceiveSequence = 0; LatestCoordination = null; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
             gameplayReceiveSequence = 0;
             RejectionReason = SessionRejectionReason.None;
-            RejectionDetail = string.Empty;
+            RejectionDetail = string.Empty; LastRejection = null;
             refusalReceived = false;
             ClearWaitingForHost();
             MatchFeedback = string.Empty;
@@ -403,7 +410,7 @@ namespace GuardsDigital.Application
             IsReconnecting = false;
             awaitingReconnectProjection = false;
             channel = null;
-            gameplaySendSequence = 0;
+            gameplaySendSequence = 0; clockReceiveSequence = 0; coordinationReceiveSequence = 0; LatestCoordination = null; LatestClock = MatchClockState.Disabled; ClockDisplayRevision++;
             gameplayReceiveSequence = 0;
             ClearWaitingForHost();
             MatchFeedback = "Could not reach the host. Try reconnecting.";
@@ -457,7 +464,7 @@ namespace GuardsDigital.Application
                 }
 
                 RejectionReason = reject.Reason;
-                RejectionDetail = reject.Detail;
+                RejectionDetail = reject.Detail; LastRejection = reject;
                 refusalReceived = true;
                 IsReconnecting = false;
                 awaitingReconnectProjection = false;
@@ -657,6 +664,7 @@ namespace GuardsDigital.Application
                     // speaks under and how it would come back; both are the host's to say, and
                     // both arrive here and nowhere else.
                     ConnectionEpoch = granted.ConnectionEpoch;
+                    lastReadinessVersion = -1;
                     if (granted.ReconnectCapability.Length > 0)
                     {
                         reconnectCapability = granted.ReconnectCapability;
@@ -767,6 +775,30 @@ namespace GuardsDigital.Application
         /// </summary>
         private void HandleGameplayFrame(SessionFrame frame)
         {
+            if(frame.Kind==SessionMessageKind.CoordinationUpdate)
+            {
+                if(!NetworkMessageCodec.TryDecodeCoordinationUpdate(frame.Payload,out var envelope,out var state) ||
+                    !string.Equals(envelope.SessionCorrelation,SessionCorrelation,StringComparison.Ordinal) || envelope.Epoch!=ConnectionEpoch)
+                { Fault(); return; }
+                if(envelope.Sequence<=coordinationReceiveSequence) { DiscardedFrameCount++; return; }
+                coordinationReceiveSequence=envelope.Sequence;
+                if(LatestProjection==null || LatestProjection.Version!=state.Version || !LatestProjection.Experiments.TeammateCoordination ||
+                    state.Generation!=LatestProjection.CoordinationGeneration ||
+                    (LatestCoordination!=null && state.Revision<LatestCoordination.Revision)) return;
+                LatestCoordination=state;
+                return;
+            }
+            if(frame.Kind==SessionMessageKind.ClockUpdate)
+            {
+                if(!NetworkMessageCodec.TryDecodeClockUpdate(frame.Payload,out var envelope,out var version,out var clock) ||
+                    !string.Equals(envelope.SessionCorrelation,SessionCorrelation,StringComparison.Ordinal) || envelope.Epoch!=ConnectionEpoch)
+                { Fault(); return; }
+                if(envelope.Sequence<=clockReceiveSequence) { DiscardedFrameCount++; return; }
+                clockReceiveSequence=envelope.Sequence;
+                if(LatestProjection==null || LatestProjection.Version!=version) return;
+                LatestClock=clock; ClockDisplayRevision++;
+                return;
+            }
             if (frame.Kind == SessionMessageKind.SeatProjection)
             {
                 if (!NetworkMessageCodec.TryDecodeSeatProjection(frame.Payload, out var projection))
@@ -814,6 +846,9 @@ namespace GuardsDigital.Application
 
                 gameplayReceiveSequence = projection.Envelope.Sequence;
                 LatestProjection = record;
+                LatestCoordination = new CoordinationDisplayState(record.Version,record.CoordinationRevision,
+                    record.CoordinationGeneration,record.TeammateMarkers);
+                LatestClock = record.Clock; ClockDisplayRevision++;
                 ProjectionRevision++;
                 ApplyMatchLog(projection.MatchLog);
                 if (IsWaitingForHost && awaitingProjectionCorrelation != 0 &&
@@ -1021,6 +1056,10 @@ namespace GuardsDigital.Application
         public bool TrySubmitCommand(DirectorCommand command, out string submissionId)
         {
             submissionId = null;
+            if(command!=null && LatestProjection?.Experiments.TurnTimer==true &&
+                (command.Kind==DirectorCommandKind.AnswerSystemTransitionStep && command.SystemTransitionChoice.StepId.Equals(GuardsDigital.Core.Rules.LanePush.LanePushSystemTransition.RespawnStepId) ||
+                 command.Kind==DirectorCommandKind.ChooseCorrectionDestination && !LatestProjection.SelectedActor.IsDefined))
+            { submissionId="board-vote"; return TrySubmitBoardVote(command); }
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
                 IsWaitingForHost)
@@ -1049,6 +1088,34 @@ namespace GuardsDigital.Application
         /// wire's own submission identity, the version the statement was decided against, and a
         /// refusal to act at all while the view is known stale.
         /// </summary>
+        private long lastReadinessVersion = -1;
+        private bool lastReadiness;
+        public void ReportTimerReadiness(bool ready)
+        {
+            if (State!=PrivateSessionClientState.Seated || !HasMatchStarted || LatestProjection?.Experiments.TurnTimer!=true) return;
+            var version=LatestProjection.Version;
+            if (version==lastReadinessVersion && ready==lastReadiness) return;
+            lastReadinessVersion=version; lastReadiness=ready; gameplaySendSequence++;
+            Send(NetworkMessageCodec.TimerReadinessFrame(new NetworkEnvelope(SessionCorrelation,ConnectionEpoch,
+                gameplaySendSequence,gameplaySendSequence),version,ready));
+        }
+        public bool TrySubmitBoardVote(DirectorCommand command)
+        {
+            if(State!=PrivateSessionClientState.Seated || LatestProjection?.Experiments.TurnTimer!=true) return false;
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.BoardVoteFrame(new NetworkEnvelope(SessionCorrelation,ConnectionEpoch,gameplaySendSequence,gameplaySendSequence),LatestProjection.Version,command));
+            return true;
+        }
+        public bool TrySubmitCoordination(CoordinationCommand command)
+        {
+            if (command == null || State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                !LatestProjection.Experiments.TeammateCoordination) return false;
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitCoordinationFrame(new NetworkEnvelope(
+                SessionCorrelation, ConnectionEpoch, gameplaySendSequence, gameplaySendSequence), command));
+            return true;
+        }
+
         public bool TrySubmitAgreement(TeamAgreementCommand statement, out string submissionId)
         {
             submissionId = null;

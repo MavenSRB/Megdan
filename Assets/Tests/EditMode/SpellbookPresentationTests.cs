@@ -297,7 +297,7 @@ namespace GuardsDigital.Tests.EditMode
                 "the owner's seat reads its book as faces (mockup B)");
             Assert.That(Named(owner, "gd-spell-back").Any(), Is.False, "and draws no back of its own book");
             Assert.That(TextOf(Named(owner, "gd-spellbook-subtitle").Single()),
-                Does.StartWith("Only you can see the spells in the book."));
+                Does.StartWith("Spells currently in the book."));
 
             var other = Drawer(host, Other, out var otherView);
             var inBook = Named(other, "gd-spellbook-in-book").Single();
@@ -354,20 +354,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ADrawerSpell_RevealsItsFullFaceOnAPointerRest_AsEveryRailCardDoes()
+        public void DrawerSpellsStayReadableInPlaceWithoutHoverPreviews()
         {
             var host = new MatchHost(SpellbookZoneTests.CreateSession(true));
             var drawer = Drawer(host, Owner, out var view);
-            var spell = view.Model.Heroes.Single(hero => hero.HeroId.Equals(Owner)).Spellbook.RemovedFaces.Single();
-
-            view.ForwardSpellHighlight(spell);
-            Assert.That(view.HighlightedSpell, Is.SameAs(spell));
-            var revealed = Named(view.HoverPreviewRoot, "gd-spell-face").Single();
-            Assert.That(revealed.style.width.value.value, Is.EqualTo(SpellCardFootprint.Width),
-                "the full landscape face");
-            Assert.That(revealed.userData, Is.EqualTo(spell.DefinitionReference));
-            Assert.That(Named(drawer, "gd-spell-face").First().style.width.value.value,
-                Is.EqualTo(SpellCardFootprint.Width * SpellCardFootprint.DrawerScale).Within(0.01f));
+            foreach (var spellHost in Named(drawer, "gd-spellbook-spell"))
+            {
+                using (var enter = PointerEnterEvent.GetPooled())
+                { enter.target = spellHost; spellHost.SendEvent(enter); }
+                Assert.That(Named(view.HoverPreviewRoot, "gd-spell-face"), Is.Empty);
+                var face = Named(spellHost, "gd-spell-face").Single();
+                Assert.That(face.style.width.value.value,
+                    Is.EqualTo(SpellCardFootprint.Width * SpellCardFootprint.DrawerScale).Within(0.01f));
+            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -797,9 +796,6 @@ namespace GuardsDigital.Tests.EditMode
                 new SpellSurface("the drawer's removed pile on another seat (mockup C)", full,
                     Named(other.SpellbookDrawer, "gd-spell-face"))
             };
-            own.ForwardSpellHighlight(own.Model.Heroes.Single(hero => hero.HeroId.Equals(Owner)).Spellbook.RemovedFaces[0]);
-            surfaces.Add(new SpellSurface("the drawer's pointer-rest reveal", full,
-                Named(own.HoverPreviewRoot, "gd-spell-face")));
             Assert.That(surfaces[0].Faces.Count, Is.EqualTo(3), "mockup A's three spells");
             Assert.That(surfaces[1].Faces.Count, Is.EqualTo(20), "the twenty other spells still in the book");
             Assert.That(surfaces[2].Faces.Count, Is.EqualTo(22), "seventeen in the book and five removed");

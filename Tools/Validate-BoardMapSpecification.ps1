@@ -217,3 +217,21 @@ Write-Output 'Cells: 292 total, 210 playable, 82 terrain'
 Write-Output 'Zones: 7; connections: 809 physical, 530 playable'
 Write-Output 'Spawn points: 40 total, 20 Red, 20 Blue'
 Write-Output "Reviewed zone/space/spawn/Lane inventory digest: $reviewDigest"
+
+# The alternate map has its own reviewed counts; official-map evidence above stays unchanged.
+$alternatePath = Join-Path $PSScriptRoot '../Docs/AI/Maps/alternate-small-single-lane.map.json'
+$alternate = Get-Content -Raw -LiteralPath $alternatePath | ConvertFrom-Json
+$alternateValidation = Test-BoardMapSpecificationInvariant -Map $alternate -Label 'alternate small map'
+if ($alternate.spaces.Count -ne 258 -or @($alternate.spaces | Where-Object kind -eq 'playable').Count -ne 156 -or $alternate.spawnPoints.Count -ne 40) {
+    throw 'Alternate map inventory differs from the reviewed 258/156/40 cells/playable/spawns.'
+}
+$coordinates = @{}
+foreach ($space in $alternate.spaces) { $coordinates["$($space.q),$($space.r)"] = $true }
+foreach ($space in @($alternate.spaces | Where-Object kind -eq 'playable')) {
+    foreach ($offset in @(@(1,0),@(1,-1),@(0,-1),@(-1,0),@(-1,1),@(0,1))) {
+        $key = "$($space.q + $offset[0]),$($space.r + $offset[1])"
+        if (-not $coordinates.ContainsKey($key)) { throw "Missing alternate map border cell $key" }
+    }
+}
+& (Join-Path $PSScriptRoot 'Sync-BoardMapResource.ps1') -Check
+Write-Output 'PASS: alternate small map; 258 cells, 156 playable, 40 spawns, complete terrain border and resource parity.'
