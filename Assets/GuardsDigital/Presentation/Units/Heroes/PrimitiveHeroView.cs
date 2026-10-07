@@ -281,8 +281,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         public void SetCardStateIndicator(
             bool hasCurrent,
-            GuardsDigital.Core.Cards.CardColor current,
-            System.Collections.Generic.IEnumerable<GuardsDigital.Core.Cards.CardColor> knownHand,
+            HeroCardPip current,
+            System.Collections.Generic.IEnumerable<HeroCardPip> knownHand,
             int concealedHandCount)
         {
             if (!hasCurrent && concealedHandCount == 0 && !knownHand.Any())

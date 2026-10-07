@@ -528,3 +528,34 @@ Historical evidence: [9.81 completion](../Archive/Phase-Handoffs/PHASE_9.md#mile
 Authorized 2026-10-07 as the next outcome after 9.81. A player may undo their own committed card and return it to hand while at least one player has not yet committed. Acceptance of the final commitment closes this opportunity atomically; revealed cards cannot be withdrawn. Use the existing player Undo affordance and preserve seat authorization, hidden-card privacy, deterministic replay and reconnect consistency.
 
 Closing checks: focused rules/application tests for retraction, recommitment, final-commit race ordering, non-owner rejection and replay/snapshot behavior; affected private-session tests and a real-control presentation journey. Inspect the rules authority and existing Undo boundary before implementation. No other undo-boundary changes, builds or publication. Approved sequence: 9.81 -> 9.82, separate validation and local commits.
+
+### [x] 9.83 Inspect hero-token card pips with Shift
+
+Authorized 2026-10-08 by the user's request to implement the planned Shift-hover card reading on
+its own branch for later merge. Holding either Shift key while the pointer is over an
+identity-bearing current-card or hand pip raises that complete card face without selecting the hero
+or submitting a command. Concealed and stale pips reveal nothing. The user's screenshot correction
+makes every pip a separated rectangle tangent to the circular token edge, with the hand arc centred
+in screen space rather than biased right by the angled board camera.
+
+Closing checks: focused Edit Mode proves rectangular/tangent rim geometry, equal separation,
+screen-space centring under an angled camera, collider-free mathematical hit testing, identity-only
+hover, concealed-card privacy, shared complete-face construction, safe placement and pointer
+transparency. Focused Play Mode holds a real Input System Shift key over a real token pip, proves
+the projected card face opens and closes on release without changing match version, retains the
+existing experimental-coordination pip journeys, and writes token-close-up and full-hover captures.
+T2 presentation-only change with visual inspection. No rules, card lifecycle, projection shape,
+wire, snapshot, package, publication or remote operation changes.
+
+Completed 2026-10-08 on the merge-ready `codex/hero-token-shift-card-preview` branch. The first
+focused Edit Mode run passed 13/14 and exposed an overstrict new placement assertion; the corrected
+rerun passed 14/14. Focused Play Mode first passed 4/5 and proved that a direct test call was
+correctly closed on the next frame without hardware Shift; a second 4/5 run proved batch mode owns
+no default keyboard; the final real-device run passed 5/5 with queued mouse position, held Left
+Shift, release and temporary-device cleanup. The fresh close-up shows five evenly separated
+rectangles symmetrically following the lower rim, and the 1920x1080 hover capture shows the complete
+face beside the token. The worktree contains no ignored private artwork, so visual inspection used
+the generated token/card fallbacks; geometry and the shared face footprint are production code.
+Review found no gameplay, privacy-authority, compatibility, package or remote change.
+
+Historical evidence: [9.83 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-983-hero-token-shift-hover-completion).

@@ -7,6 +7,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
@@ -64,7 +65,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void CardStatePipsRemainColliderFreeAndRenderAboveEveryHeroHighlight()
+        public void CardStatePipsAreSeparatedRectanglesCenteredAlongTokenEdgeAndRemainColliderFree()
         {
             var gameObject = new GameObject("Primitive Hero Card State Test");
             try
@@ -75,8 +76,14 @@ namespace GuardsDigital.Tests.EditMode
                 view.SetActiveEffectMark(true, Color.magenta);
                 view.SetCardStateIndicator(
                     true,
-                    CardColor.Red,
-                    new[] { CardColor.Blue, CardColor.Green, CardColor.Gold, CardColor.Silver },
+                    new HeroCardPip(CardColor.Red),
+                    new[]
+                    {
+                        new HeroCardPip(CardColor.Blue),
+                        new HeroCardPip(CardColor.Green),
+                        new HeroCardPip(CardColor.Gold),
+                        new HeroCardPip(CardColor.Silver)
+                    },
                     0);
 
                 var indicator = view.CardStateIndicator;
@@ -87,14 +94,39 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(index => indicator.transform.GetChild(index).localPosition)
                     .ToArray();
                 Assert.That(pipCentres, Has.Length.EqualTo(5));
-                Assert.That(pipCentres.All(centre =>
-                        Mathf.Abs(new Vector2(centre.x, centre.z).magnitude - rimRadius) < Tolerance),
-                    Is.True, "Every card pip centre follows the circular token rim.");
+                Assert.That(pipCentres[0].x, Is.EqualTo(0f).Within(Tolerance));
                 Assert.That(pipCentres[0].z, Is.GreaterThan(0f), "The current card stays on the top rim.");
-                Assert.That(pipCentres.Skip(1).All(centre => centre.z < 0f), Is.True,
-                    "Hand cards follow the lower rim arc.");
+                var handCentres = pipCentres.Skip(1).OrderBy(centre => centre.x).ToArray();
+                Assert.That(handCentres.All(centre =>
+                        Mathf.Abs(new Vector2(centre.x, centre.z).magnitude - rimRadius) < Tolerance),
+                    Is.True, "Hand cards follow the curved lower token edge.");
+                Assert.That(handCentres.Average(centre => centre.x), Is.EqualTo(0f).Within(Tolerance),
+                    "The full hand row is centered on the token rather than biased to the right.");
+                Assert.That(handCentres.Zip(handCentres.Skip(1),
+                        (left, right) => Vector3.Distance(left, right))
+                    .All(gap => Mathf.Abs(gap -
+                        (HeroCardStateIndicator.PipWidth + HeroCardStateIndicator.PipGap)) < Tolerance),
+                    Is.True, "Every rectangular pip has the same visible separation.");
+                Assert.That(handCentres.All(centre => centre.z < 0f), Is.True,
+                    "Hand cards remain on the lower edge.");
+                var handPips = Enumerable.Range(1, indicator.transform.childCount - 1)
+                    .Select(index => indicator.transform.GetChild(index))
+                    .ToArray();
+                Assert.That(handPips.All(pip =>
+                {
+                    var right = pip.localRotation * Vector3.right;
+                    var radius = new Vector2(pip.localPosition.x, pip.localPosition.z).normalized;
+                    return Mathf.Abs(Vector2.Dot(new Vector2(right.x, right.z), radius)) < Tolerance;
+                }), Is.True, "Each rectangle is tangent to the curved token edge.");
+                Assert.That(handPips.All(pip => Mathf.Abs(pip.GetChild(0).localScale.x -
+                    HeroCardStateIndicator.PipWidth) < Tolerance &&
+                    Mathf.Abs(pip.GetChild(0).localScale.z - HeroCardStateIndicator.PipDepth) < Tolerance),
+                    Is.True);
                 Assert.That(indicator.GetComponentsInChildren<Collider>(true), Is.Empty);
                 Assert.That(indicator.Renderers, Is.Not.Empty);
+                Assert.That(indicator.Renderers.All(renderer =>
+                    renderer.GetComponent<MeshFilter>().sharedMesh.vertexCount == 4), Is.True,
+                    "Both layers of every pip are rectangular plates.");
                 Assert.That(indicator.Renderers.All(renderer =>
                     renderer.sharedMaterial.renderQueue == HeroCardStateIndicator.OverlayRenderQueue &&
                     renderer.sortingOrder == HeroCardStateIndicator.OverlaySortingOrder &&
@@ -115,10 +147,129 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void CardStatePipArcIsScreenCenteredForAnAngledBoardCamera()
+        {
+            var heroObject = new GameObject("Angled camera pip centering test");
+            var cameraObject = new GameObject("Angled board camera");
+            try
+            {
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.transform.position = new Vector3(6f, 8f, -6f);
+                camera.transform.LookAt(Vector3.zero);
+                camera.pixelRect = new Rect(0f, 0f, 1920f, 1080f);
+                var indicator = HeroCardStateIndicator.GetOrCreate(heroObject.transform);
+                indicator.SetVisible(
+                    false,
+                    default,
+                    new[]
+                    {
+                        new HeroCardPip(CardColor.Red),
+                        new HeroCardPip(CardColor.Blue),
+                        new HeroCardPip(CardColor.Green),
+                        new HeroCardPip(CardColor.Gold)
+                    },
+                    0,
+                    0.62f,
+                    0.2f,
+                    camera);
+
+                var tokenScreenX = camera.WorldToScreenPoint(heroObject.transform.position).x;
+                var pipScreenX = Enumerable.Range(0, indicator.transform.childCount)
+                    .Select(index => camera.WorldToScreenPoint(
+                        indicator.transform.GetChild(index).position).x)
+                    .ToArray();
+                Assert.That(pipScreenX.Average(), Is.EqualTo(tokenScreenX).Within(0.1f),
+                    "The angled camera must not project the centered lower arc to the right.");
+                Assert.That(pipScreenX.Min(), Is.LessThan(tokenScreenX));
+                Assert.That(pipScreenX.Max(), Is.GreaterThan(tokenScreenX));
+            }
+            finally
+            {
+                Object.DestroyImmediate(cameraObject);
+                Object.DestroyImmediate(heroObject);
+            }
+        }
+
         /// <summary>
         /// Milestone 8.11b. A hero this project has no prepared token for keeps the generated prism,
         /// which is the tracked checkout's ordinary state rather than a fault.
         /// </summary>
+
+        [Test]
+        public void ShiftHoverReadsOnlyIdentityBearingPipsAndNeverAddsACollider()
+        {
+            var heroObject = new GameObject("Hero card pip hover test");
+            var inputObject = new GameObject("Hero card pip input test");
+            try
+            {
+                var current = new CardDefinitionReference(
+                    new CardDefinitionId("pip-current"), "pip-preview-test");
+                var hand = new CardDefinitionReference(
+                    new CardDefinitionId("pip-hand"), "pip-preview-test");
+                var view = heroObject.AddComponent<PrimitiveHeroView>();
+                view.EnsurePrimitiveVisual();
+                view.SetCardStateIndicator(
+                    true,
+                    new HeroCardPip(CardColor.Red, current),
+                    new[] { new HeroCardPip(CardColor.Blue, hand) },
+                    1);
+                var selector = heroObject.AddComponent<PrimitiveHeroPointerSelector>();
+                var input = inputObject.AddComponent<PrimitiveHeroPointerInput>();
+                input.AddHeroSelectors(new[] { selector });
+                CardDefinitionReference? shown = null;
+                var notifications = 0;
+                input.CardPipHoverChanged = (reference, _) =>
+                {
+                    shown = reference;
+                    notifications++;
+                };
+
+                Ray PipRay(int index)
+                {
+                    var centre = view.CardStateIndicator.transform.GetChild(index).position;
+                    return new Ray(centre + (Vector3.up * 4f), Vector3.down);
+                }
+
+                Assert.That(
+                    input.RefreshCardPipPreviewFromPointerRay(
+                        PipRay(0), false, new Vector2(100f, 100f)),
+                    Is.False, "hover without Shift remains the ordinary token interaction");
+                Assert.That(shown, Is.Null);
+
+                Assert.That(
+                    input.RefreshCardPipPreviewFromPointerRay(
+                        PipRay(0), true, new Vector2(100f, 100f)),
+                    Is.True);
+                Assert.That(shown, Is.EqualTo(current));
+
+                Assert.That(
+                    input.RefreshCardPipPreviewFromPointerRay(
+                        PipRay(1), true, new Vector2(110f, 100f)),
+                    Is.True, "moving directly between pips replaces the inspected card");
+                Assert.That(shown, Is.EqualTo(hand));
+
+                Assert.That(
+                    input.RefreshCardPipPreviewFromPointerRay(
+                        PipRay(2), true, new Vector2(120f, 100f)),
+                    Is.False, "a concealed pip has no identity to reveal");
+                Assert.That(shown, Is.Null);
+
+                Assert.That(
+                    input.RefreshCardPipPreviewFromPointerRay(
+                        new Ray(Vector3.one * 50f, Vector3.down), true, Vector2.zero),
+                    Is.False, "pointer exit closes the preview");
+                Assert.That(shown, Is.Null);
+                Assert.That(notifications, Is.GreaterThanOrEqualTo(5));
+                Assert.That(view.CardStateIndicator.GetComponentsInChildren<Collider>(true), Is.Empty,
+                    "inspection uses mathematical hit testing and cannot steal token clicks");
+            }
+            finally
+            {
+                Object.DestroyImmediate(inputObject);
+                Object.DestroyImmediate(heroObject);
+            }
+        }
         [Test]
         public void WithNoPreparedToken_TheHeroKeepsTheGeneratedPrismAndItsOwnPointerRadius()
         {

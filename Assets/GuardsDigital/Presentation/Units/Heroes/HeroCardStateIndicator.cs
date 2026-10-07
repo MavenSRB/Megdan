@@ -8,24 +8,41 @@ using UnityEngine.Rendering;
 
 namespace GuardsDigital.Presentation.Units.Heroes
 {
+    public readonly struct HeroCardPip
+    {
+        public HeroCardPip(CardColor color, CardDefinitionReference definitionReference = default)
+        {
+            Color = color;
+            DefinitionReference = definitionReference;
+        }
+
+        public CardColor Color { get; }
+        public CardDefinitionReference DefinitionReference { get; }
+    }
+
     /// <summary>
-    /// Presentation-only card pips that sit above a hero token. They own no card identity and have no
-    /// collider, so target, hover, selection, damage, and activation remain the board's layers below.
+    /// Presentation-only card pips that sit above a hero token. A pip may retain an identity already
+    /// authorized by the viewer's inspection projection, but it has no collider, so target, selection,
+    /// damage, activation, and ordinary token clicks remain the board's layers below.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class HeroCardStateIndicator : MonoBehaviour
     {
         public const int OverlayRenderQueue = 4000;
         public const int OverlaySortingOrder = 100;
-        private const float OuterRadius = 0.12f;
-        private const float InnerRadius = 0.085f;
-        private const float PipSpacing = 0.19f;
+        public const float PipWidth = 0.18f;
+        public const float PipDepth = 0.12f;
+        public const float PipGap = 0.06f;
+        private const float InnerWidth = 0.14f;
+        private const float InnerDepth = 0.08f;
 
         private readonly List<GameObject> pips = new List<GameObject>();
+        private readonly List<HeroCardPip> models = new List<HeroCardPip>();
         private readonly List<Material> materials = new List<Material>();
         private Mesh mesh;
 
         public int PipCount => pips.Count;
+        public IReadOnlyList<HeroCardPip> Pips => models;
         public IReadOnlyList<Renderer> Renderers =>
             pips.SelectMany(value => value.GetComponentsInChildren<Renderer>()).ToArray();
 
@@ -40,11 +57,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         public void SetVisible(
             bool hasCurrent,
-            CardColor current,
-            IEnumerable<CardColor> knownHand,
+            HeroCardPip current,
+            IEnumerable<HeroCardPip> knownHand,
             int concealedHandCount,
             float tokenRadius,
-            float surface)
+            float surface,
+            Camera alignmentCamera = null)
         {
             if (concealedHandCount < 0) throw new ArgumentOutOfRangeException(nameof(concealedHandCount));
             Clear();
@@ -53,66 +71,121 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             var y = surface + 0.055f;
             var rimRadius = tokenRadius * 0.92f;
+            var lowerEdge = LowerEdgeDirection(alignmentCamera ?? Camera.main);
             if (hasCurrent)
-                AddPip(new Vector3(0f, y, rimRadius), current);
+            {
+                var upperEdge = -lowerEdge;
+                AddPip(
+                    (upperEdge * rimRadius) + (Vector3.up * y),
+                    current,
+                    TangentRotation(upperEdge));
+            }
 
             var total = hand.Count + concealedHandCount;
+            var chord = PipWidth + PipGap;
             var step = rimRadius <= 0f
                 ? 0f
-                : 2f * Mathf.Asin(Mathf.Min(1f, PipSpacing / (2f * rimRadius)));
+                : 2f * Mathf.Asin(Mathf.Min(1f, chord / (2f * rimRadius)));
             for (var index = 0; index < total; index++)
             {
-                var color = index < hand.Count ? hand[index] : CardColor.None;
-                var angle = (-Mathf.PI * 0.5f) + ((index - ((total - 1) * 0.5f)) * step);
-                AddPip(new Vector3(Mathf.Cos(angle) * rimRadius, y, Mathf.Sin(angle) * rimRadius), color);
+                var model = index < hand.Count ? hand[index] : new HeroCardPip(CardColor.None);
+                var offset = (index - ((total - 1) * 0.5f)) * step;
+                var tangent = Vector3.Cross(lowerEdge, Vector3.up).normalized;
+                var radial = (lowerEdge * Mathf.Cos(offset)) + (tangent * Mathf.Sin(offset));
+                AddPip(
+                    (radial * rimRadius) + (Vector3.up * y),
+                    model,
+                    TangentRotation(radial));
             }
         }
 
         public void SetHidden() => Clear();
 
-        private void AddPip(Vector3 position, CardColor color)
+        public bool TryGetPipFromPointerRay(Ray pointerRay, out HeroCardPip pip, float maxDistance = 500f)
+        {
+            pip = default;
+            var nearest = float.PositiveInfinity;
+            var found = -1;
+            for (var index = 0; index < pips.Count; index++)
+            {
+                var centre = pips[index].transform.position;
+                var plane = new Plane(transform.up, centre);
+                if (!plane.Raycast(pointerRay, out var distance) || distance < 0f ||
+                    distance > maxDistance || distance >= nearest)
+                    continue;
+                var point = pips[index].transform.InverseTransformPoint(pointerRay.GetPoint(distance));
+                if (Mathf.Abs(point.x) > PipWidth * 0.5f || Mathf.Abs(point.z) > PipDepth * 0.5f)
+                    continue;
+                nearest = distance;
+                found = index;
+            }
+
+            if (found < 0) return false;
+            pip = models[found];
+            return true;
+        }
+
+        private void AddPip(Vector3 position, HeroCardPip model, Quaternion rotation)
         {
             var host = new GameObject("Card state pip");
             host.transform.SetParent(transform, false);
+            host.transform.localRotation = rotation;
             host.transform.localPosition = position;
-            AddDisc(host.transform, OuterRadius, new Color(0.035f, 0.045f, 0.055f, 1f), 0f);
-            AddDisc(host.transform, InnerRadius,
-                color == CardColor.None ? new Color(0.48f, 0.52f, 0.57f, 1f) : MatchHudTheme.Face(color),
+            AddPlate(host.transform, PipWidth, PipDepth, new Color(0.035f, 0.045f, 0.055f, 1f), 0f);
+            AddPlate(host.transform, InnerWidth, InnerDepth,
+                model.Color == CardColor.None
+                    ? new Color(0.48f, 0.52f, 0.57f, 1f)
+                    : MatchHudTheme.Face(model.Color),
                 0.002f);
             pips.Add(host);
+            models.Add(model);
         }
 
-        private void AddDisc(Transform parent, float radius, Color color, float y)
+        private void AddPlate(Transform parent, float width, float depth, Color color, float y)
         {
-            var disc = new GameObject("Disc");
-            disc.transform.SetParent(parent, false);
-            disc.transform.localPosition = new Vector3(0f, y, 0f);
-            disc.transform.localScale = new Vector3(radius, 1f, radius);
-            disc.AddComponent<MeshFilter>().sharedMesh = Mesh();
-            var renderer = disc.AddComponent<MeshRenderer>();
+            var plate = new GameObject("Rectangle");
+            plate.transform.SetParent(parent, false);
+            plate.transform.localPosition = new Vector3(0f, y, 0f);
+            plate.transform.localScale = new Vector3(width, 1f, depth);
+            plate.AddComponent<MeshFilter>().sharedMesh = Mesh();
+            var renderer = plate.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             renderer.sortingOrder = OverlaySortingOrder;
             renderer.sharedMaterial = Material(color);
         }
+        private Vector3 LowerEdgeDirection(Camera alignmentCamera)
+        {
+            if (alignmentCamera == null) return Vector3.back;
+            var screenUp = Vector3.ProjectOnPlane(alignmentCamera.transform.up, transform.up);
+            if (screenUp.sqrMagnitude < 0.0001f) return Vector3.back;
+            var localScreenUp = transform.InverseTransformDirection(screenUp.normalized);
+            var lower = new Vector3(-localScreenUp.x, 0f, -localScreenUp.z);
+            return lower.sqrMagnitude < 0.0001f ? Vector3.back : lower.normalized;
+        }
+
+        private static Quaternion TangentRotation(Vector3 radial)
+        {
+            var tangent = Vector3.Cross(radial, Vector3.up);
+            return tangent.sqrMagnitude < 0.0001f
+                ? Quaternion.identity
+                : Quaternion.FromToRotation(Vector3.right, tangent.normalized);
+        }
+
 
         private Mesh Mesh()
         {
             if (mesh != null) return mesh;
-            const int segments = 24;
-            var vertices = new Vector3[segments + 1];
-            var triangles = new int[segments * 3];
-            for (var index = 0; index < segments; index++)
-            {
-                var angle = (Mathf.PI * 2f * index) / segments;
-                vertices[index + 1] = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                triangles[index * 3] = 0;
-                triangles[(index * 3) + 1] = ((index + 1) % segments) + 1;
-                triangles[(index * 3) + 2] = index + 1;
-            }
             mesh = new Mesh { name = "Hero card-state pip" };
-            mesh.vertices = vertices;
-            mesh.triangles = triangles;
+            mesh.vertices = new[]
+            {
+                new Vector3(-0.5f, 0f, -0.5f),
+                new Vector3(-0.5f, 0f, 0.5f),
+                new Vector3(0.5f, 0f, 0.5f),
+                new Vector3(0.5f, 0f, -0.5f)
+            };
+            mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
+            mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
         }
@@ -140,6 +213,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             pips.Clear();
             foreach (var material in materials) DestroyOwned(material);
             materials.Clear();
+            models.Clear();
         }
 
         private void OnDestroy()

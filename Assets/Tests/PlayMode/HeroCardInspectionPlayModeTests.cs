@@ -8,6 +8,8 @@ using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 namespace GuardsDigital.Tests.PlayMode
@@ -48,8 +50,35 @@ namespace GuardsDigital.Tests.PlayMode
                             "Takahide begins with five bottom-row hand pips and no current-card pip.");
                         yield return BoardPieceCapturePlayModeTests.Capture(
                             runtime.BoardView,
-                            "tmp/9-77-takahide-token-pips-normal-1920",
+                            "tmp/9-83-token-pips-rectangular-centered-1920",
                             new[] { token.Coordinate });
+
+                        var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                        var pip = token.CardStateIndicator.transform.GetChild(2);
+                        var screenPoint = pointerInput.EventCamera.WorldToScreenPoint(pip.position);
+                        var versionBeforePreview = host.Version;
+                        var addedKeyboard = Keyboard.current == null;
+                        var keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+                        var addedMouse = Mouse.current == null;
+                        var mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
+                        InputSystem.QueueStateEvent(
+                            mouse, new MouseState { position = screenPoint });
+                        InputSystem.QueueStateEvent(
+                            keyboard, new KeyboardState(Key.LeftShift));
+                        yield return null;
+                        Assert.That(root.Hud.CardPipPreview.IsVisible, Is.True);
+                        Assert.That(root.Hud.CardPipPreview.DefinitionReference,
+                            Is.EqualTo(token.CardStateIndicator.Pips[2].DefinitionReference));
+                        Assert.That(host.Version, Is.EqualTo(versionBeforePreview),
+                            "Shift-hovering a token pip is inspection-only.");
+                        yield return UiPlayer.CaptureScreen(
+                            "tmp/9-83-shift-hover-card-pip-1920.png");
+
+                        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                        yield return null;
+                        Assert.That(root.Hud.CardPipPreview.IsVisible, Is.False);
+                        if (addedMouse) InputSystem.RemoveDevice(mouse);
+                        if (addedKeyboard) InputSystem.RemoveDevice(keyboard);
                     }
                     foreach (var hero in new[] { own.HeroId, ally, enemy })
                     {
