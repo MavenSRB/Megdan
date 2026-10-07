@@ -820,3 +820,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.75 | A finished card keeps its resolution clock through the END TURN pause, waits for the player while allowance or bank remains, and auto-releases only on actual expiry. The failing regression observed premature authority advance after 250 ms; final focused offline and Unity Edit Mode passed 47/47 each, and focused Play Mode passed 1/1. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-975-wait-for-player-release-under-the-experimental-timer). | `milestone/9.75` |
+
+## Milestone 9.76 hero card inspection row and Other Golds completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.76 | Hero inspection keeps every visible face in one horizontal row, with HAND left and remaining groups right; typed OTHER GOLDS projection and private wire /46 preserve facedown Gold anonymity. Token pips remain current-card plus hand only. Focused screenshot Play Mode passed 2/2, unfiltered Edit Mode passed 7967 executable tests (37 pre-ignored diagnostics), and unfiltered Play Mode passed 1171/1171. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-976-keep-hero-card-inspection-in-one-edge-aligned-row). | milestone/9.76 |

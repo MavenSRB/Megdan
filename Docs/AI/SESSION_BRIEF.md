@@ -8,21 +8,21 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/45`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
+Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/46`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
 FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.65 package retains the single Host/Join launcher. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.75**.
+- Current completed milestone: **9.76**.
 - Active authorized milestone: **none**.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
 - Next proposed milestone: **9.62**.
-- Next route: stop after completed **9.75**. The next build must include its timer correction; no further runtime milestone or package is authorized.
+- Next route: stop after completed **9.76**. The next build must include 9.75 and 9.76; no package is authorized here.
 - 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
-- 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; 9.72 advances the integrated wire protocol to /45, unchanged by 9.73. Preserve untracked user files.
+- 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; 9.72 advanced the integrated wire protocol to /45; 9.76 advances it to /46 for the typed Other Golds inspection section. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.
 
 Amended 2026-10-05: implement **9.58 -> 9.56 -> 9.64** here. Skipped tests and build/smoke/package are complete. Map **9.61** and retained **9.64d/e/f** are complete; **9.65** owns the later merge/build. [Milestones](Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md), [experimental packet](Project/EXPERIMENTAL_PREPARATION.md), [map preparation](Maps/ALTERNATE_SMALL_PREPARATION.md). Two-lane 9.62 remains unauthorized.

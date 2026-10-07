@@ -413,3 +413,22 @@ publication or remote change.
 Completed 2026-10-07. The release pause now reuses the acting card's resolution clock and waits while allowance or team bank remains; manual END TURN closes that decision window, and only genuine expiry submits timeout release. The focused regression first failed because a 250 ms ready tick advanced authority, then passed with manual, expiry, timing and snapshot-restore assertions. Focused offline passed 47/47, Unity Edit Mode passed 47/47 and the experimental-timer Play Mode journey passed 1/1. Review found no timer-off, rule, duration, snapshot-schema, wire or presentation change; no package was requested.
 
 Historical evidence: [9.75 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-975-experimental-timer-release-correction-completion).
+### [x] 9.76 Keep hero card inspection in one edge-aligned row
+
+Authorized 2026-10-07 by the user's review of Takahide's current-card window. Keep every visible
+card in one non-wrapping horizontal row: hand cards form the left group, while remaining groups use
+the available width and align to the right edge. Add a clearly labelled `OTHER GOLDS` group for
+basic Gold cards outside the hand, derived from typed card definition and location data rather than
+hero identity. A Gold swapped into a resolved slot facedown remains an anonymous card back in that
+group until existing authority reveals or moves it; ordinary known Gold faces remain visible.
+
+Closing checks: focused projection and private-wire regressions for known and concealed other Golds;
+single-row, left/right alignment and no-wrap presentation checks at both supported sizes; a normal
+Takahide capture and a real Bushido swap capture before the facedown Gold is played/revealed; affected
+inspection privacy and interaction regressions. T3 because the authoritative private projection and
+wire shape change with presentation; advance the private wire version without changing snapshot
+schema. No gameplay rule, card lifecycle, visibility option, package, publication or remote change.
+
+Completed 2026-10-07. Hero inspection now uses one shared non-wrapping horizontal row with HAND on the left and available OTHER CARDS / OTHER GOLDS groups on the right. Typed private projection and wire /46 keep known basic Golds separate and conceal all same-colour Gold identities when a facedown resting swap would otherwise be identifiable. The token-pip source remains current card plus hand only: the normal close-up shows five hand pips, while the completed Bushido facedown-Gold state correctly adds none. Focused Edit Mode passed 40/40; final screenshot Play Mode passed 2/2; unfiltered Edit Mode passed 7967 executable tests with 37 pre-ignored diagnostic sweeps, and unfiltered Play Mode passed 1171/1171. Normal/facedown card-window and token close-up captures were produced. Review found no gameplay, lifecycle, snapshot-schema, option, package, publication or remote change.
+
+Historical evidence: [9.76 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-976-hero-card-inspection-row-and-other-golds-completion).

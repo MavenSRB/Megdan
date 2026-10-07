@@ -13,10 +13,13 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly Func<IMatchReadModel> read;
         private readonly Label title;
+        private readonly VisualElement handSection;
+        private readonly VisualElement otherSection;
+        private readonly VisualElement otherGoldSection;
         private readonly VisualElement handGrid;
         private readonly VisualElement otherGrid;
-        private readonly ScrollView handScroll;
-        private readonly ScrollView otherScroll;
+        private readonly VisualElement otherGoldGrid;
+        private readonly ScrollView rowScroll;
         private HeroCardInspection inspection;
         private HeroId hero;
         public VisualElement Root { get; }
@@ -34,6 +37,7 @@ namespace GuardsDigital.Presentation.Match
             Root.focusable = true;
             HudElements.Padding(Root, 18f);
             HudElements.Border(Root, MatchHudTheme.PanelBorder, 2f, 12f);
+
             var header = new VisualElement();
             header.style.flexDirection = FlexDirection.Row;
             header.style.flexShrink = 0;
@@ -44,17 +48,39 @@ namespace GuardsDigital.Presentation.Match
             close.name = "gd-hero-card-close";
             header.Add(close);
             Root.Add(header);
-            var sections = new VisualElement { name = "gd-hero-card-sections" };
-            sections.style.flexDirection = FlexDirection.Row;
-            sections.style.flexGrow = 1;
-            sections.style.minHeight = 0;
-            var hand = BuildSection("gd-hero-card-hand", "HAND", Align.FlexStart, out handScroll, out handGrid);
-            hand.style.width = Length.Percent(45f);
-            var other = BuildSection("gd-hero-card-other", null, Align.FlexEnd, out otherScroll, out otherGrid);
-            other.style.width = Length.Percent(55f);
-            sections.Add(hand);
-            sections.Add(other);
-            Root.Add(sections);
+
+            rowScroll = new ScrollView(ScrollViewMode.Horizontal) { name = "gd-hero-card-scroll" };
+            rowScroll.style.flexGrow = 1;
+            rowScroll.style.flexShrink = 1;
+            rowScroll.style.minHeight = 0;
+            rowScroll.horizontalScrollerVisibility = ScrollerVisibility.Auto;
+            rowScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+
+            var row = new VisualElement { name = "gd-hero-card-row" };
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.FlexStart;
+            row.style.minWidth = Length.Percent(100f);
+            row.style.minHeight = 0;
+
+            handSection = BuildSection("gd-hero-card-hand", "HAND", out handGrid);
+            var spacer = new VisualElement { name = "gd-hero-card-spacer" };
+            spacer.style.flexGrow = 1;
+            spacer.style.flexShrink = 0;
+            spacer.style.minWidth = 18f;
+            var right = new VisualElement { name = "gd-hero-card-right" };
+            right.style.flexDirection = FlexDirection.Row;
+            right.style.alignItems = Align.FlexStart;
+            right.style.flexShrink = 0;
+            otherSection = BuildSection("gd-hero-card-other", "OTHER CARDS", out otherGrid);
+            otherGoldSection = BuildSection("gd-hero-card-other-golds", "OTHER GOLDS", out otherGoldGrid);
+            right.Add(otherSection);
+            right.Add(otherGoldSection);
+            row.Add(handSection);
+            row.Add(spacer);
+            row.Add(right);
+            rowScroll.Add(row);
+            Root.Add(rowScroll);
+
             Root.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode != KeyCode.Escape) return;
@@ -63,11 +89,12 @@ namespace GuardsDigital.Presentation.Match
             });
         }
 
-        public bool Open(HeroId id, string displayName)
+        public bool Open(HeroId id, string displayName) => Open(Find(id), displayName);
+
+        public bool Open(HeroCardInspection model, string displayName)
         {
-            var model = Find(id);
             if (model == null) return false;
-            hero = id;
+            hero = model.Hero;
             inspection = model;
             title.text = displayName.ToUpperInvariant() + " - CURRENT CARDS";
             DrawCards();
@@ -83,6 +110,7 @@ namespace GuardsDigital.Presentation.Match
             inspection = null;
             handGrid.Clear();
             otherGrid.Clear();
+            otherGoldGrid.Clear();
             Root.style.display = DisplayStyle.None;
         }
 
@@ -93,8 +121,10 @@ namespace GuardsDigital.Presentation.Match
             if (next == null) { Close(); return; }
             if (inspection.HandCards.SequenceEqual(next.HandCards) &&
                 inspection.OtherCards.SequenceEqual(next.OtherCards) &&
+                inspection.OtherGoldCards.SequenceEqual(next.OtherGoldCards) &&
                 inspection.ConcealedHandCount == next.ConcealedHandCount &&
-                inspection.ConcealedOtherCount == next.ConcealedOtherCount) return;
+                inspection.ConcealedOtherCount == next.ConcealedOtherCount &&
+                inspection.ConcealedOtherGoldCount == next.ConcealedOtherGoldCount) return;
             inspection = next;
             DrawCards();
         }
@@ -120,14 +150,15 @@ namespace GuardsDigital.Presentation.Match
         {
             handGrid.Clear();
             otherGrid.Clear();
+            otherGoldGrid.Clear();
             DrawSection(handGrid, Definitions(inspection.HandCards), inspection.ConcealedHandCount);
             DrawSection(otherGrid, Definitions(inspection.OtherCards), inspection.ConcealedOtherCount);
+            DrawSection(otherGoldGrid, Definitions(inspection.OtherGoldCards), inspection.ConcealedOtherGoldCount);
             if (handGrid.childCount == 0)
                 handGrid.Add(HudElements.Text("No cards in hand.", 16f, MatchHudTheme.MutedText));
-            if (otherGrid.childCount == 0)
-                otherGrid.Add(HudElements.Text("No other cards.", 16f, MatchHudTheme.MutedText));
-            handScroll.scrollOffset = Vector2.zero;
-            otherScroll.scrollOffset = Vector2.zero;
+            otherSection.style.display = otherGrid.childCount == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            otherGoldSection.style.display = otherGoldGrid.childCount == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            rowScroll.scrollOffset = Vector2.zero;
         }
 
         private void DrawSection(VisualElement target, CardDefinition[] definitions, int concealedCount)
@@ -145,7 +176,6 @@ namespace GuardsDigital.Presentation.Match
                 var artwork = face.Q("gd-card-artwork");
                 if (artwork != null) artwork.tooltip = definition.DisplayName;
                 face.style.marginRight = 18f;
-                face.style.marginBottom = 18f;
                 HudElements.ApplyButtonMotion(face);
                 target.Add(face);
             }
@@ -158,43 +188,28 @@ namespace GuardsDigital.Presentation.Match
                 back.name = "gd-inspected-card-back";
                 back.tooltip = "Facedown card";
                 back.style.marginRight = 18f;
-                back.style.marginBottom = 18f;
                 target.Add(back);
             }
         }
 
-        private static VisualElement BuildSection(
-            string name,
-            string heading,
-            Align alignment,
-            out ScrollView scroll,
-            out VisualElement grid)
+        private static VisualElement BuildSection(string name, string heading, out VisualElement grid)
         {
             var section = new VisualElement { name = name };
             section.style.flexDirection = FlexDirection.Column;
-            section.style.alignItems = alignment;
+            section.style.alignItems = Align.Stretch;
+            section.style.flexShrink = 0;
             section.style.minHeight = 0;
-            if (!string.IsNullOrEmpty(heading))
-            {
-                var label = HudElements.Text(heading, 16f, Color.white, FontStyle.Bold);
-                label.name = "gd-hero-card-hand-heading";
-                label.style.unityTextAlign = TextAnchor.MiddleLeft;
-                label.style.alignSelf = Align.Stretch;
-                section.Add(label);
-            }
-            scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.style.flexGrow = 1;
-            scroll.style.flexShrink = 1;
-            scroll.style.minHeight = 0;
-            scroll.style.alignSelf = Align.Stretch;
-            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            grid = new VisualElement();
+            var label = HudElements.Text(heading, 16f, Color.white, FontStyle.Bold);
+            label.name = name + "-heading";
+            label.style.unityTextAlign = TextAnchor.MiddleLeft;
+            label.style.alignSelf = Align.Stretch;
+            section.Add(label);
+            grid = new VisualElement { name = name + "-row" };
             grid.style.flexDirection = FlexDirection.Row;
-            grid.style.flexWrap = Wrap.Wrap;
-            grid.style.justifyContent = alignment == Align.FlexEnd ? Justify.FlexEnd : Justify.FlexStart;
+            grid.style.flexWrap = Wrap.NoWrap;
+            grid.style.flexShrink = 0;
             HudElements.Padding(grid, 8f);
-            scroll.Add(grid);
-            section.Add(scroll);
+            section.Add(grid);
             return section;
         }
     }

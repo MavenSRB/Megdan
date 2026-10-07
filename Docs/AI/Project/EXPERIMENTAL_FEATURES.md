@@ -180,12 +180,12 @@ Enemy card information option. These also govern the existing spellbook and Taka
 exceptions. Ordinary public visibility is unchanged when both are off. Permitted spellbooks remain
 owner-style but non-casting; the 9.64h shortcut stays above the hand and 9.64d owns shared hover.
 
-The projection carries known hand/other definition references and anonymous facedown counts, never
+The projection carries known hand/other/other-Gold definition references and anonymous facedown counts, never
 instance IDs. Its top pip reads the public current-card marker and its bottom pips share the popup's
 hand source. Before joint reveal, non-owners receive anonymous remaining-hand and commitment counts,
 preventing identification by subtraction. A facedown resting swap stays anonymous within its safe
 colour set until authoritative lifecycle state reveals or retrieves it; that Core state already
-persists through rounds, snapshots, replay, Undo and reconnect. Wire 45 rejects earlier peers;
+persists through rounds, snapshots, replay, Undo and reconnect. Wire 46 rejects earlier peers;
 experimental envelope 5 and Core schema 59 are unchanged.
 
 Collider-free unlit pips use the top render queue while target, selection, hover, Active-effect,

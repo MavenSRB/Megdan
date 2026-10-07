@@ -445,7 +445,11 @@ namespace GuardsDigital.Application
         // v44 (milestone 9.71): experimental options add the one-Life hero base-cost flag. A v43
         // peer would misread the enclosing projection, so admission refuses it. The experimental
         // snapshot envelope advances separately to version 5.
-        public const int Version = 45;
+        // v45 (milestone 9.72): visibility-safe hero-card inspection sections cross the private
+        // projection. v46 (milestone 9.76) adds the separately labelled non-hand basic-Gold section
+        // and its anonymous-back count. A v45 peer would misread the remaining row, so admission
+        // refuses it. Snapshot schema 59 and experimental envelope 5 are unchanged.
+        public const int Version = 46;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

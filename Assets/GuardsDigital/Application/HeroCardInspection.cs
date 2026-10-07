@@ -18,8 +18,10 @@ namespace GuardsDigital.Application
             TeamSide team,
             IEnumerable<CardDefinitionReference> handCards,
             IEnumerable<CardDefinitionReference> otherCards,
+            IEnumerable<CardDefinitionReference> otherGoldCards,
             int concealedHandCount,
             int concealedOtherCount,
+            int concealedOtherGoldCount,
             IEnumerable<CardDefinitionReference> spellbook)
         {
             if (!hero.IsDefined) throw new ArgumentException("An inspection names its hero.", nameof(hero));
@@ -28,16 +30,22 @@ namespace GuardsDigital.Application
                 throw new ArgumentOutOfRangeException(nameof(concealedHandCount));
             if (concealedOtherCount < 0 || concealedOtherCount > 64)
                 throw new ArgumentOutOfRangeException(nameof(concealedOtherCount));
+            if (concealedOtherGoldCount < 0 || concealedOtherGoldCount > 64)
+                throw new ArgumentOutOfRangeException(nameof(concealedOtherGoldCount));
 
             Hero = hero;
             Team = team;
             HandCards = Copy(handCards);
             OtherCards = Copy(otherCards);
-            if (HandCards.Intersect(OtherCards).Any())
-                throw new ArgumentException("A face cannot be in both inspection sections.");
+            OtherGoldCards = Copy(otherGoldCards);
+            if (HandCards.Intersect(OtherCards).Any() ||
+                HandCards.Intersect(OtherGoldCards).Any() ||
+                OtherCards.Intersect(OtherGoldCards).Any())
+                throw new ArgumentException("A face cannot be in more than one inspection section.");
             ConcealedHandCount = concealedHandCount;
             ConcealedOtherCount = concealedOtherCount;
-            Cards = Array.AsReadOnly(HandCards.Concat(OtherCards)
+            ConcealedOtherGoldCount = concealedOtherGoldCount;
+            Cards = Array.AsReadOnly(HandCards.Concat(OtherCards).Concat(OtherGoldCards)
                 .OrderBy(value => value.DefinitionId.Value, StringComparer.Ordinal).ToArray());
             Spellbook = Copy(spellbook);
         }
@@ -46,8 +54,10 @@ namespace GuardsDigital.Application
         public TeamSide Team { get; }
         public IReadOnlyList<CardDefinitionReference> HandCards { get; }
         public IReadOnlyList<CardDefinitionReference> OtherCards { get; }
+        public IReadOnlyList<CardDefinitionReference> OtherGoldCards { get; }
         public int ConcealedHandCount { get; }
         public int ConcealedOtherCount { get; }
+        public int ConcealedOtherGoldCount { get; }
         public IReadOnlyList<CardDefinitionReference> Cards { get; }
         public IReadOnlyList<CardDefinitionReference> Spellbook { get; }
 
@@ -97,9 +107,17 @@ namespace GuardsDigital.Application
                 ((hiddenCommitment && card.State.Location == CardLocation.Hand) ||
                  card.State.FaceOrientation == CardFaceOrientation.FaceDown ||
                  hiddenRestingColors.Contains(definitions[card.DefinitionReference].Progression.Color));
+            bool IsOtherGold(CardInstance card)
+            {
+                var progression = definitions[card.DefinitionReference].Progression;
+                return card.State.Location != CardLocation.Hand &&
+                       progression.IsBasic &&
+                       progression.Color == CardColor.Gold;
+            }
 
             var hand = current.Where(card => card.State.Location == CardLocation.Hand).ToArray();
-            var other = current.Where(card => card.State.Location != CardLocation.Hand).ToArray();
+            var otherGold = current.Where(IsOtherGold).ToArray();
+            var other = current.Where(card => card.State.Location != CardLocation.Hand && !IsOtherGold(card)).ToArray();
             var book = owned.Where(card => card.State.Location == CardLocation.Spellbook)
                 .Select(card => card.DefinitionReference).Distinct();
             return new HeroCardInspection(
@@ -107,8 +125,10 @@ namespace GuardsDigital.Application
                 setup.TeamSide,
                 hand.Where(card => !Concealed(card)).Select(card => card.DefinitionReference),
                 other.Where(card => !Concealed(card)).Select(card => card.DefinitionReference),
+                otherGold.Where(card => !Concealed(card)).Select(card => card.DefinitionReference),
                 hand.Count(Concealed),
                 other.Count(Concealed),
+                otherGold.Count(Concealed),
                 book);
         }
     }

@@ -50,8 +50,10 @@ namespace GuardsDigital.Tests.EditMode
                     var copy = remote.CardInspections.Single(r => r.Hero.Equals(row.Hero));
                     Assert.That(copy.HandCards, Is.EqualTo(row.HandCards));
                     Assert.That(copy.OtherCards, Is.EqualTo(row.OtherCards));
+                    Assert.That(copy.OtherGoldCards, Is.EqualTo(row.OtherGoldCards));
                     Assert.That(copy.ConcealedHandCount, Is.EqualTo(row.ConcealedHandCount));
                     Assert.That(copy.ConcealedOtherCount, Is.EqualTo(row.ConcealedOtherCount));
+                    Assert.That(copy.ConcealedOtherGoldCount, Is.EqualTo(row.ConcealedOtherGoldCount));
                     Assert.That(copy.Spellbook, Is.EqualTo(row.Spellbook));
                 }
                 Assert.That(local.AuthorizedCommands.Where(c => c.CardInstanceId.IsDefined)
@@ -68,7 +70,8 @@ namespace GuardsDigital.Tests.EditMode
             var view = host.ProjectionForSeat(host.Seats.Seats.Last().Id);
             var row = view.CardInspections.Single(r => r.Hero.Equals(takahide));
             Assert.That(row.HandCards.Count, Is.EqualTo(5));
-            Assert.That(row.OtherCards.Count, Is.EqualTo(2));
+            Assert.That(row.OtherCards, Is.Empty);
+            Assert.That(row.OtherGoldCards.Count, Is.EqualTo(2));
             Assert.That(row.Cards.Count, Is.EqualTo(7), "Five dealt faces plus the other two basic golds.");
             Assert.That(row.Cards.Count(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Color == CardColor.Gold), Is.EqualTo(3));
             Assert.That(row.Cards.All(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Tier <= CardTier.I), Is.True);
@@ -77,7 +80,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(book.Cards.Count, Is.EqualTo(5));
             Assert.That(book.Cards.Intersect(book.Spellbook), Is.Empty);
             Assert.That(typeof(HeroCardInspection).GetProperties().Select(p => p.Name),
-                Is.EquivalentTo(new[] { "Hero", "Team", "HandCards", "OtherCards", "ConcealedHandCount", "ConcealedOtherCount", "Cards", "Spellbook" }),
+                Is.EquivalentTo(new[] { "Hero", "Team", "HandCards", "OtherCards", "OtherGoldCards", "ConcealedHandCount", "ConcealedOtherCount", "ConcealedOtherGoldCount", "Cards", "Spellbook" }),
                 "Only visibility-safe section membership, never instance identity, belongs in this view.");
         }
         [Test] public void CommittingDoesNotIdentifyTheHiddenCardInTheInspection()
@@ -91,6 +94,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(row.HandCards, Is.Empty, "Remaining identities would identify the missing commitment by elimination.");
             Assert.That(row.ConcealedHandCount, Is.EqualTo(4));
             Assert.That(row.ConcealedOtherCount, Is.EqualTo(1));
+            Assert.That(row.ConcealedOtherGoldCount, Is.Zero);
             Assert.That(row.Cards, Has.No.Member(own.Cards.Single(c => c.Id.Equals(command.CardInstanceId)).DefinitionReference));
             Assert.That(after.Cards.Any(c => c.Id.Equals(command.CardInstanceId)), Is.False);
         }
@@ -160,9 +164,11 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.Throws<ArgumentException>(() => ExperimentalWireCodec.ReadInspections(reader));
             }
             Assert.Throws<ArgumentException>(() => new HeroCardInspection(row.Hero, row.Team,
-                new[] { row.Cards[0], row.Cards[0] }, Array.Empty<CardDefinitionReference>(), 0, 0, row.Spellbook));
+                new[] { row.Cards[0], row.Cards[0] }, Array.Empty<CardDefinitionReference>(),
+                Array.Empty<CardDefinitionReference>(), 0, 0, 0, row.Spellbook));
             Assert.Throws<ArgumentException>(() => new HeroCardInspection(row.Hero, row.Team,
-                new[] { default(CardDefinitionReference) }, Array.Empty<CardDefinitionReference>(), 0, 0, row.Spellbook));
+                new[] { default(CardDefinitionReference) }, Array.Empty<CardDefinitionReference>(),
+                Array.Empty<CardDefinitionReference>(), 0, 0, 0, row.Spellbook));
         }
         [Test] public void EnemyOnlyOptionPersistsAndRejectsMismatchedRestoreAtomically()
         {

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
@@ -20,6 +21,7 @@ using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 using static GuardsDigital.Tests.PlayMode.BainUiJourneyPlayModeTests;
 using static GuardsDigital.Tests.PlayMode.GarrusLifecycleJourneyTests;
 using static GuardsDigital.Tests.PlayMode.XargathaEngagedUiJourneyPlayModeTests;
@@ -457,6 +459,62 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
                     .Any(element => element.name == "gd-facedown-hatch" && UiPlayer.IsShown(element.parent)), Is.True,
                 "His rail draws the facedown gold hatched.");
+
+            var nonOwner = runtime.Host.Seats.Seats.Single(seat => seat.Owns(Wasp(runtime)));
+            var safe = HeroCardInspection.ForSeat(
+                    ((MatchHost)runtime.Host).Projection,
+                    nonOwner,
+                    new ExperimentalMatchOptions(enemyCardInformation: true))
+                .Single(row => row.Hero.Equals(takahide));
+            Assert.That(safe.OtherGoldCards, Is.Empty,
+                "Known Gold faces stay withheld together so the facedown arrival cannot be identified by elimination.");
+            Assert.That(safe.ConcealedOtherGoldCount, Is.EqualTo(3),
+                "The facedown resting Gold and the two basic deck Golds occupy the dedicated anonymous group.");
+
+            var oldWidth = (uint)Screen.width;
+            var oldHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(1920, 1080, "Takahide facedown Gold inspection");
+            root.Hud.Layout();
+            yield return null;
+            yield return null;
+            var token = HeroView(takahide);
+            var overview = runtime.HeroOverviewsView.Model.Heroes.Single(row => row.HeroId.Equals(takahide));
+            var definitions = runtime.ReadModel.Definitions.ToDictionary(value => value.Reference);
+            var knownHandColors = safe.HandCards
+                .Where(definitions.ContainsKey)
+                .Select(reference => definitions[reference].Progression.Color)
+                .OrderBy(color => color)
+                .ToArray();
+            token.SetCardStateIndicator(
+                overview.CurrentCard != null,
+                overview.CurrentCard?.Color ?? CardColor.None,
+                knownHandColors,
+                safe.ConcealedHandCount);
+            var expectedPips = safe.HandCards.Count + safe.ConcealedHandCount + (overview.CurrentCard == null ? 0 : 1);
+            Assert.That(token.CardStateIndicator?.PipCount ?? 0, Is.EqualTo(expectedPips),
+                "The facedown resting Gold is not a playable hand/current-card pip on his token.");
+            Assert.That(expectedPips, Is.Zero,
+                "At this completed Bushido moment the resolved facedown Gold must leave the token pip-free.");
+            yield return BoardPieceCapturePlayModeTests.Capture(
+                runtime.BoardView,
+                "tmp/9-76-takahide-token-pips-facedown-1920",
+                new[] { token.Coordinate });
+            var template = runtime.HeroOverviewsView.CardInspection.Root;
+            var inspection = new HeroCardInspectionUnityView(() => runtime.ReadModel);
+            inspection.Root.style.left = template.resolvedStyle.left;
+            inspection.Root.style.top = template.resolvedStyle.top;
+            inspection.Root.style.width = template.resolvedStyle.width;
+            inspection.Root.style.height = template.resolvedStyle.height;
+            root.Hud.RootElement.Add(inspection.Root);
+            Assert.That(inspection.Open(safe, "Takahide the Warlord"), Is.True);
+            yield return null;
+            yield return null;
+            var goldSection = inspection.Root.Q("gd-hero-card-other-golds");
+            Assert.That(goldSection.Query<VisualElement>("gd-inspected-card-back").ToList(), Has.Count.EqualTo(3));
+            Assert.That(goldSection.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
+            yield return UiPlayer.CaptureScreen("tmp/9-76-takahide-facedown-gold-1920.png");
+            inspection.Root.RemoveFromHierarchy();
+            UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after Takahide facedown Gold inspection");
             Healthy(runtime);
         }
 
