@@ -813,3 +813,10 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.74 | Typed `CAN CAST` spell faces now form one centred vertical column above their casting card; hand and rail previews reserve its height, and a public removed spell remains faded with `REMOVED`. Affected Edit Mode passed 154/154 and the complete Gydion dealing Play Mode fixture passed 6/6, producing fresh all-in-book and one-removed captures. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-974-stack-gydions-castable-spell-hover-above-its-casting-card). | `milestone/9.74` |
+
+
+## Milestone 9.75 experimental-timer release correction completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.75 | A finished card keeps its resolution clock through the END TURN pause, waits for the player while allowance or bank remains, and auto-releases only on actual expiry. The failing regression observed premature authority advance after 250 ms; final focused offline and Unity Edit Mode passed 47/47 each, and focused Play Mode passed 1/1. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-975-wait-for-player-release-under-the-experimental-timer). | `milestone/9.75` |

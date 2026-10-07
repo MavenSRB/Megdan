@@ -17,12 +17,12 @@ namespace GuardsDigital.Tests.EditMode
                 experiments:new ExperimentalMatchOptions(turnTimer:true,cardCommitmentSeconds:allowance,
                     cardResolutionSeconds:allowance,responseSeconds:allowance,cardUpgradeSeconds:allowance,teamBankSeconds:bank)));
         }
-        internal static MatchHost WithTimer(MatchSession source)
+        internal static MatchHost WithTimer(MatchSession source,int allowance=1,int bank=0)
         {
             var initial=(MatchSessionInitialState)typeof(MatchSession).GetField("initialState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(source);
             var copy=new MatchSession(new MatchSessionInitialState(initial.Scenario,initial.Setup,initial.AvailableMaps,
                 initial.InitialConfiguration,initial.InitialTiming,initial.StagedProgression,
-                new ExperimentalMatchOptions(turnTimer:true,cardCommitmentSeconds:1,cardResolutionSeconds:1,responseSeconds:1,cardUpgradeSeconds:1,teamBankSeconds:0)));
+                new ExperimentalMatchOptions(turnTimer:true,cardCommitmentSeconds:allowance,cardResolutionSeconds:allowance,responseSeconds:allowance,cardUpgradeSeconds:allowance,teamBankSeconds:bank)));
             foreach(var command in source.Projection.AcceptedCommands)
                 Assert.That(copy.Execute(command).Accepted,Is.True,"Replay the original fixture before enabling its host clock.");
             return new MatchHost(copy);
@@ -415,6 +415,52 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(h.Projection.AcceptedCommands.Count(c=>c.Kind==DirectorCommandKind.CommitCard && c.CardInstanceId.Equals(command.CardInstanceId)),Is.LessThanOrEqualTo(1));
         }
 
+        [Test]
+        public void NonExpiredReleaseWaitsForThePlayerAndExpiresOnlyAfterAllowanceAndBank()
+        {
+            var manual=WithTimer(EngagedAt("turn-release"),allowance:1,bank:1);
+            var owner=manual.Seats.FindByHero(manual.Projection.PendingTurnRelease.ActorId);
+            Assert.That(owner,Is.Not.Null);
+            Ready(manual);
+            var version=manual.Version;
+            manual.AdvanceClock(TimeSpan.FromMilliseconds(250).Ticks);
+            Assert.That(manual.Version,Is.EqualTo(version),
+                "A ready clock tick cannot release a finished turn while its timer remains.");
+            Assert.That(manual.Projection.PendingTurnRelease,Is.Not.Null);
+            var live=manual.ClockState.Entries.Single(value=>value.Kind==MatchClockKind.Resolution);
+            Assert.That(live.RemainingTicks,Is.EqualTo(TimeSpan.FromMilliseconds(750).Ticks));
+            var snapshot=manual.CaptureSnapshot();
+            var restored=WithTimer(EngagedAt("turn-release"),allowance:1,bank:1);
+            Assert.That(restored.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted,Is.True);
+            Assert.That(restored.Projection.PendingTurnRelease,Is.Not.Null);
+            var restoredClock=restored.ClockState.Entries.Single(value=>value.Kind==MatchClockKind.Resolution);
+            Assert.That(restoredClock.RemainingTicks,Is.EqualTo(TimeSpan.FromMilliseconds(750).Ticks),
+                "Restoring a release pause must preserve the same resolution decision window.");
+            var release=manual.ProjectionForSeat(owner.Id).AuthorizedCommands
+                .Single(value=>value.Kind==DirectorCommandKind.ReleaseTurn);
+            Assert.That(manual.SubmitForSeat(owner.Id,new SeatSubmission(
+                new SubmissionId("manual-release"),manual.Version,release)).Accepted,Is.True);
+            var manualWindow=manual.DecisionWindows.Single(value=>
+                value.Kind==MatchClockKind.Resolution && value.Hero.Equals(owner.HeroId));
+            Assert.That(manualWindow.ActiveTicks,Is.EqualTo(TimeSpan.FromMilliseconds(250).Ticks));
+            Assert.That(manualWindow.CloseReason,Is.EqualTo(DecisionWindowCloseReason.PlayerCommand));
+            Assert.That(manualWindow.ClosingCommand,Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+
+            var timed=WithTimer(EngagedAt("turn-release"),allowance:1,bank:1);
+            Ready(timed);
+            var timedVersion=timed.Version;
+            timed.AdvanceClock(TimeSpan.FromMilliseconds(1999).Ticks);
+            Assert.That(timed.Version,Is.EqualTo(timedVersion));
+            Assert.That(timed.Projection.PendingTurnRelease,Is.Not.Null,
+                "The release pause remains until both its allowance and team bank expire.");
+            timed.AdvanceClock(TimeSpan.FromMilliseconds(1).Ticks);
+            Assert.That(timed.Version,Is.GreaterThan(timedVersion));
+            Assert.That(timed.Projection.PendingTurnRelease,Is.Null);
+            var timedWindow=timed.DecisionWindows.Single(value=>
+                value.Kind==MatchClockKind.Resolution && value.ClosingCommand==DirectorCommandKind.ReleaseTurn);
+            Assert.That(timedWindow.ActiveTicks,Is.EqualTo(TimeSpan.FromSeconds(2).Ticks));
+            Assert.That(timedWindow.CloseReason,Is.EqualTo(DecisionWindowCloseReason.TimeoutCommand));
+        }
         [Test]
         public void TimerOffStillRecordsOnlyActionableDecisionTime()
         {

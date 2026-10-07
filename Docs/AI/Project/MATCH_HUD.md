@@ -2,7 +2,7 @@
 
 Canonical active shard. The player-facing HUD the configured match draws - its panel, its standing regions, the card tray, and the one contextual region every decision is asked in. Split out of [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) at milestone 7.8a.
 
-[CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) keeps the board-facing surfaces - highlights, board cues, retained hero/minion/token views, and the projections behind them - and the presentation contract itself stays in [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md): that presentation is passive, forwards only projected typed invocations, and withholds what the authority would refuse. Every reading below is derived from the projection alone and owns no lifetime of its own, which is why restore, replay, Undo and restart redraw all of them with no serialized field and no schema cause. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
+[CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) owns board-facing surfaces; [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) owns the passive presentation contract. Every HUD reading derives from projection, owns no serialized lifetime, and redraws after restore, replay, Undo or restart. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 
 ## The panel and its regions
 

@@ -129,17 +129,13 @@ namespace GuardsDigital.Application
                         var p=session.Projection;
                         if (p.Phase == RoundResolutionPhase.GameEnded) return;
                         if (!seen.Add(p.Version)) throw new InvalidOperationException("Timeout did not advance authority.");
-                        if (p.PendingTurnRelease != null)
-                        { var releasing=CurrentSeats().FindByHero(p.PendingTurnRelease.ActorId);
-                            if (releasing==null || !IsClockReady(releasing,p.Version)) return;
-                            AcceptTimeout(DirectorCommand.ReleaseTurn(), releasing); decisions=SynchronizeClocks(); continue; }
                         if (p.Phase == RoundResolutionPhase.EndOfRound && p.DecisionContract == null)
                         { ContinueEndOfRound(); decisions=SynchronizeClocks(); if (session.Projection.Version == p.Version) return; continue; }
                         var expired=decisions.FirstOrDefault(d=>clock.Expired(d.Id) && IsClockReady(d.Seat,p.Version));
                         if (expired == null) return;
                         var actor=SeatProjectionFactory.DecidingActor(p);
                         var entry=clock.Capture().Entries.Single(e=>e.Id==expired.Id);
-                        if (entry.Kind==MatchClockKind.Resolution && expired.Seat.Owns(actor) &&
+                        if (p.PendingTurnRelease==null && entry.Kind==MatchClockKind.Resolution && expired.Seat.Owns(actor) &&
                             !expired.Commands.Any(c=>c.Kind==DirectorCommandKind.PerformHold) && CanSeatUndo(expired.Seat,out _))
                         {
                             var undo=Execute(MatchSubmission.ForUndo());
@@ -209,9 +205,13 @@ namespace GuardsDigital.Application
                 if (!clockReadiness.TryGetValue(seat.Id,out var readiness) || readiness.Version!=p.Version)
                     clockReadiness[seat.Id]=(p.Version,false,0);
             var owner=SeatProjectionFactory.OwnerOfStandingDecision(p);
-            var actor=p.SelectedActor.ActorId;
+            var release=p.PendingTurnRelease;
+            var actor=p.SelectedActor.IsDefined ? p.SelectedActor.ActorId : release?.ActorId ?? default;
+            var card=p.SelectedActor.IsDefined ? p.SelectedActor.CardInstanceId : release?.CardInstanceId ?? default;
             var actorSeat=CurrentSeats().FindByHero(actor);
-            var turn=p.SelectedActor.IsDefined ? "resolution:"+p.RoundIndex+":"+p.TurnIndex+":"+p.SelectedActor.CardInstanceId.Value : string.Empty;
+            var turn=actor.IsDefined && card.IsDefined
+                ? "resolution:"+p.RoundIndex+":"+p.TurnIndex+":"+card.Value
+                : string.Empty;
             if (clockTurn != turn) { clockTurn=turn; responseStack.Clear(); }
             if (actorSeat!=null && turn.Length>0)
                 clock.Ensure(turn,MatchClockKind.Resolution,actor,actorSeat.TeamSide);
@@ -221,7 +221,7 @@ namespace GuardsDigital.Application
                 if (p.DecisionContract != null && owner.IsOwnedBy(seat) &&
                     (p.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.Initiative) ||
                      p.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))) commands=p.DecisionContract.Commands;
-                if (commands.Count==0 || commands.All(c=>c.Kind==DirectorCommandKind.ReleaseTurn)) continue;
+                if (commands.Count==0) continue;
                 string id; MatchClockKind kind;
                 if (p.Phase==RoundResolutionPhase.AwaitingCommitments && p.DecisionContract==null)
                 { id="commitment:"+p.RoundIndex+":"+p.TurnIndex+":"+seat.HeroId.Value; kind=MatchClockKind.Commitment; }

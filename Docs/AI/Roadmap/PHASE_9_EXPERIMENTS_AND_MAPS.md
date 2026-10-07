@@ -391,3 +391,25 @@ focused Play Mode 1/1. Review found no gameplay, timeout-policy, snapshot, repla
 package was requested.
 
 Historical evidence: [9.73 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-973-decision-window-timing-and-settings-persistence-completion).
+### [x] 9.75 Wait for player release under the experimental timer
+
+Authorized 2026-10-07 by the user's correction that the reported automatic END TURN occurs only
+with the experimental timer enabled and their request to fix it before the next build. When a card
+finishes resolving, its existing resolution clock continues through the `PendingTurnRelease` pause
+and waits for that player to press END TURN while allowance or team bank remains. Merely advancing a
+ready host clock must not submit `ReleaseTurn`; only actual expiry may do so. Timer-disabled behavior
+is unchanged. The decision-duration record remains one card-resolution window and includes the
+actionable release wait, closing as a player command or timeout as appropriate.
+
+Closing checks: a deterministic failing-then-passing host regression reaches release with no END TURN
+press and advances a non-expired ready clock without changing authority; manual release still works;
+the same resolution allowance and team bank continue through release and timeout submits only after
+both expire; snapshot restore retains the pending release clock; decision timing includes the release
+wait without opening a duplicate window. Run focused offline and Unity Edit Mode timer/narration
+fixtures plus the existing experimental-timer Play Mode journey. T2 because shared Application timer
+enforcement changes. No rule, timeout duration, snapshot schema, wire, presentation, package,
+publication or remote change.
+
+Completed 2026-10-07. The release pause now reuses the acting card's resolution clock and waits while allowance or team bank remains; manual END TURN closes that decision window, and only genuine expiry submits timeout release. The focused regression first failed because a 250 ms ready tick advanced authority, then passed with manual, expiry, timing and snapshot-restore assertions. Focused offline passed 47/47, Unity Edit Mode passed 47/47 and the experimental-timer Play Mode journey passed 1/1. Review found no timer-off, rule, duration, snapshot-schema, wire or presentation change; no package was requested.
+
+Historical evidence: [9.75 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-975-experimental-timer-release-correction-completion).

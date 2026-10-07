@@ -71,7 +71,7 @@ This is a static source audit of the current choice families and non-pending off
 | Snorri rune assignment | Preserve valid accepted assignments and randomly complete a legal full permutation, one rune per slot. |
 | Other mandatory effect mode, value, body/target, numeric, direction or ordered choice | Specific rules above where applicable, otherwise random legal completion. Numeric zero means decline only where the actual choice semantics permit it. |
 | Mandatory choice whose candidates are all refused | Use the authority's existing Stop/impossible-step continuation if offered. An unexplained empty answer set is a defect to close, not permission to fabricate a result. |
-| Finished resolution awaiting turn release | Release that actor's turn. Automatic end-of-round advancement remains automatic and untimed. |
+| Finished resolution awaiting turn release | Keep the same card-resolution clock running and wait for that actor's END TURN while allowance or team bank remains; release automatically only after both expire. Automatic end-of-round advancement remains automatic and untimed. |
 
 All thirteen audited pending families are accounted for: initiative, movement, attack target, Defense, effect, correction, Minion Battle, hero respawn, system transition (Lane Push/upgrade), removal prevention, turn release, acting body and reveal retrieval. Pregame hero selection was not included in the agreed timer scope.
 
