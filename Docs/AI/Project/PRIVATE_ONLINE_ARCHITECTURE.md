@@ -129,6 +129,8 @@ All input is length-checked before allocation-heavy decode and semantically vali
 
 The ten current pending families each have deterministic disconnect-before-answer, disconnect-after-send-before-response, duplicate-after-reconnect, stale-answer-after-resync, and successful-reconnect cases, delivered by milestone 8.34 as `PendingDecisionReconnectTests`. The host retains one bounded idempotency window sufficient for reconnect/retry and rejects submissions older than it; 8.33 chose its exact size from measured retry traffic - worst per-seat distance 27 across the deterministic walk - and recorded it as `PrivateSessionProtocol.SubmissionIdempotencyWindowEntries` = 256 under that measurement's own growth check.
 
+**Milestone 9.70 setup identity assessment.** Before listening, the host settles team size, map and bounded positive Wave/Life counts. Official pp.5-6 tuples keep their IDs; other 2v2/3v3 tuples use `custom-<players>p-w<waves>-l<lives>`. Mismatch still refuses admission, while a current client may reconstruct the identity, recompose and retry once. Existing format and Wave/Life fields carry the values, so wire 43, snapshot 59 and experimental envelope 4 stay fixed. Protocol equality never bypasses exact-format matching or claims compatibility with older peers.
+
 ## Lightweight threat model and limitations
 
 Protected assets are authoritative match integrity, per-seat control, owner-private/team information, compatibility, and useful privacy-safe diagnostics. Relevant adversarial or faulty actions are forged seat/hero claims, a guessed or shared session key, unsolicited connections to a reachable port, captured/replayed submissions, stale clients, malformed/oversized payloads, message delay/reordering/duplication, abusive reconnects, private-data logging, an on-path observer of the plaintext link, and a modified client inspecting every byte it receives.
@@ -143,22 +145,4 @@ The completed track, original estimates and evidence narrative are preserved in 
 
 ## Sources
 
-- [Unity Multiplayer Services SDK overview](https://docs.unity.com/en-us/relay/mirror)
-- [Unity Multiplayer Services 1.2.0 released-package listing](https://docs.unity3d.com/ja/current/Manual/com.unity.services.multiplayer.html)
-- [Unity Transport 2.6.0 released-package listing](https://docs.unity3d.com/ja/current/Manual/com.unity.transport.html)
-- [Unity session network lifecycle and custom network handlers](https://docs.unity.com/en-us/mps-sdk/manage-session-network-connection)
-- [Unity Relay servers, NAT/firewall behavior, IP privacy, and lifecycle](https://docs.unity.com/en-us/mps-sdk/networking/relay-servers)
-- [Unity Relay protocols](https://docs.unity.com/relay/networking)
-- [Unity Gaming Services pricing](https://unity.com/products/gaming-services/pricing)
-- [Unity UGS pricing and free-limit blocking behavior](https://docs.unity.com/en-us/services/pricing-and-billing)
-- [Unity Relay privacy and retention](https://docs.unity.com/mps-sdk/privacy/privacy-overview-relay)
-- [Unity Authentication approaches](https://docs.unity.com/en-us/authentication/approaches-to-authentication)
-- [Unity Authentication privacy](https://docs.unity.com/en-us/authentication/privacy-and-consent/overview)
-- [Unity Terms of Service](https://unity.com/legal/terms-of-service)
-- [Unity Cloud Additional Terms](https://unity.com/legal/cloud-terms-of-service)
-- [Unity Companion License](https://unity.com/legal/licenses/unity-companion-license)
-- [Photon pricing and licensing](https://doc.photonengine.com/photon/current/pricing)
-- [Photon topology comparison](https://doc.photonengine.com/photon/current/photon-products)
-- [Epic Online Services licensing](https://onlineservices.epicgames.com/licensing)
-- [Epic Online Services developer agreement](https://onlineservices.epicgames.com/services/terms/agreements?lang=en-US)
-- [Steam Datagram Relay](https://partner.steamgames.com/doc/features/multiplayer/steamdatagramrelay)
+The evaluated service, transport, pricing, privacy, licensing and topology links are preserved in the [historical implementation track](../Archive/PRIVATE_ONLINE_IMPLEMENTATION_TRACK.md#preserved-transport-source-links).

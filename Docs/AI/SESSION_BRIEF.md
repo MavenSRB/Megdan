@@ -8,18 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates, including Emmitt and NebKher. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. The original and alternate small maps are host-selectable. Snapshot schema v59 persists the fixed board-partition line and rejects v58; the integrated wire protocol is `guards-private-online/43`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail. Parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates, including Emmitt and NebKher. Six-player Quick Game and 2v2/3v3 Quick/Long formats, typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board-partition line and rejects v58; the integrated wire protocol is `guards-private-online/43`. Only p.20 Handicap cards are boxed at setup. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
 FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.65 package retains the single Host/Join launcher. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.69**.
-- Active authorized milestone: **none**.
+- Current completed milestone: **9.70**.
+- Active authorized milestone: **9.71**.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
-- Next proposed milestone: **9.62**.
-- Next route: **9.69** is complete. The independent Experimental Minion Battle removal cap accepts zero, remains immutable per match, and preserves official resolution while disabled; the private wire is now /43 and the experimental snapshot envelope is version 4. The current package remains **9.65**; no replacement build was requested or cut. **9.62** remains queued and unauthorized unless the user explicitly chooses that bounded two-lane-map outcome.
+- Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
+- Next proposed milestone: **9.71**.
+- Next route: implement and gate **9.71**. **9.70** is complete; the host now selects 2v2/3v3 plus bounded Waves/Lives, with former Quick defaults and official Quick/Long reference fixtures. The private wire remains /43, snapshot schema 59 and the experimental snapshot envelope version 4 because no serialized shape changed. The current package remains **9.65**; no replacement build was requested or cut. **9.62** remains queued and unauthorized unless the user explicitly chooses that bounded two-lane-map outcome.
 - 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
 - 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; 9.69 advances the integrated wire protocol to /43. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.

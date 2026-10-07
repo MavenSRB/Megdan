@@ -2,6 +2,28 @@
 
 Preserved losslessly on 2026-09-09 from [the architecture decision](../Project/PRIVATE_ONLINE_ARCHITECTURE.md). This historical sequence and evidence narrative is not current authorization; [the session brief](../SESSION_BRIEF.md) owns that route.
 
+## Preserved transport source links
+
+- [Unity Multiplayer Services SDK overview](https://docs.unity.com/en-us/relay/mirror)
+- [Unity Multiplayer Services 1.2.0 released-package listing](https://docs.unity3d.com/ja/current/Manual/com.unity.services.multiplayer.html)
+- [Unity Transport 2.6.0 released-package listing](https://docs.unity3d.com/ja/current/Manual/com.unity.transport.html)
+- [Unity session network lifecycle and custom network handlers](https://docs.unity.com/en-us/mps-sdk/manage-session-network-connection)
+- [Unity Relay servers, NAT/firewall behavior, IP privacy, and lifecycle](https://docs.unity.com/en-us/mps-sdk/networking/relay-servers)
+- [Unity Relay protocols](https://docs.unity.com/relay/networking)
+- [Unity Gaming Services pricing](https://unity.com/products/gaming-services/pricing)
+- [Unity UGS pricing and free-limit blocking behavior](https://docs.unity.com/en-us/services/pricing-and-billing)
+- [Unity Relay privacy and retention](https://docs.unity.com/mps-sdk/privacy/privacy-overview-relay)
+- [Unity Authentication approaches](https://docs.unity.com/en-us/authentication/approaches-to-authentication)
+- [Unity Authentication privacy](https://docs.unity.com/en-us/authentication/privacy-and-consent/overview)
+- [Unity Terms of Service](https://unity.com/legal/terms-of-service)
+- [Unity Cloud Additional Terms](https://unity.com/legal/cloud-terms-of-service)
+- [Unity Companion License](https://unity.com/legal/licenses/unity-companion-license)
+- [Photon pricing and licensing](https://doc.photonengine.com/photon/current/pricing)
+- [Photon topology comparison](https://doc.photonengine.com/photon/current/photon-products)
+- [Epic Online Services licensing](https://onlineservices.epicgames.com/licensing)
+- [Epic Online Services developer agreement](https://onlineservices.epicgames.com/services/terms/agreements?lang=en-US)
+- [Steam Datagram Relay](https://partner.steamgames.com/doc/features/multiplayer/steamdatagramrelay)
+
 ## Re-baselined implementation track
 
 The dependency-safe sequence remains 8.30 through 8.36a. Estimated implementation/validation effort is **24-41 focused engineering days**, excluding approval latency, service outages, tester scheduling, and corrective milestones. The 2026-09-01 transport substitution is estimate-neutral: package installation and service probes leave the plan while frame-codec and socket-adapter work enters it:

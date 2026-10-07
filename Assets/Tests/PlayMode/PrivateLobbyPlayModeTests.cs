@@ -500,8 +500,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return UiPlayer.CaptureScreen("tmp/8-108-lobby-host-menu.png");
             Assert.That(ControlLabels(driver), Is.EqualTo(new[]
             {
-                "2V2", "3V3", PrivateLobbyUnityView.CancelLabel, "HOST", "LONG GAME", "SHORT GAME"
+                "2V2", "3V3", PrivateLobbyUnityView.CancelLabel, "HOST"
             }));
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.WaveCountFieldName)), Is.True);
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.LifeCountFieldName)), Is.True);
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HostPortFieldName)), Is.True);
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HostKeyFieldName)), Is.True);
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.AddressFieldName)), Is.False,
@@ -2566,7 +2568,7 @@ namespace GuardsDigital.Tests.PlayMode
             var seatsBefore = Runtime().Host.Seats.Seats.Count;
             // Milestone 8.107: the setup is chosen in the host menu.
             yield return OpenHostMenu(driver);
-            foreach (var named in new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME" })
+            foreach (var named in new[] { "2V2", "3V3" })
             {
                 Assert.That(ControlLabels(driver), Contains.Item(named),
                     "The format controls stand on the entry form, where changing one can move no " +
@@ -2582,7 +2584,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "Pressing a named format recomposes onto that printed setup.");
             Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Host),
                 "Choosing a setup keeps the host menu open.");
-            Assert.That(Text(driver, PrivateLobbyUnityView.ModeName), Does.StartWith("MODE: 2V2"));
+            Assert.That(Text(driver, PrivateLobbyUnityView.ModeName), Does.StartWith("SETUP: 2V2"));
+            Assert.That(driver.View.CurrentEntry().WaveCount, Is.EqualTo(3));
+            Assert.That(driver.View.CurrentEntry().LifeCountPerTeam, Is.EqualTo(4),
+                "Choosing 2V2 restores the former Quick values as that team size's defaults.");
             Assert.That(Root().ComposedPlan.Format.PlayerCount, Is.EqualTo(4),
                 "2V2 IS FOUR SEATS, and this is the assertion the cycling button could not make: " +
                 "a named control lands on the format it names, in one press, from any starting " +
@@ -2643,8 +2648,7 @@ namespace GuardsDigital.Tests.PlayMode
             // cannot be pressed - so the case admits either shape and requires only that the press,
             // where it is possible, is answered.
             var formatControls = ControlLabels(driver).Where(label =>
-                label == "2V2" || label == "3V3" ||
-                label == "SHORT GAME" || label == "LONG GAME").ToArray();
+                label == "2V2" || label == "3V3").ToArray();
             if (formatControls.Length == 0)
             {
                 Assert.Pass(

@@ -23,7 +23,10 @@ namespace GuardsDigital.Tests.EditMode
     {
         public static MatchHost Create(string formatId, bool alternate, ExperimentalMatchOptions options = null)
         {
-            var format=MatchFormat.All.Single(f=>f.Id==formatId);
+            return Create(MatchFormat.FindById(formatId), alternate, options);
+        }
+        private static MatchHost Create(MatchFormat format, bool alternate, ExperimentalMatchOptions options = null)
+        {
             var catalog=OfficialBoardMapCatalog.Load();
             var map=catalog.Load(alternate?OfficialBoardMapCatalog.AlternateSmall:OfficialBoardMapCatalog.SelectedMap);
             var config=MatchConfiguration.CreateOfficialForInternalTest(format,TeamSide.Red);
@@ -32,6 +35,42 @@ namespace GuardsDigital.Tests.EditMode
             var scenario=new InitialScenarioDescription(config.Participants,config.CardDefinitions,config.CardInstances,config.TieBreakerState,
                 config.SetupSeed,map.Reference,setup.Heroes.Select(h=>new HeroOccupancy(h.HeroId,h.Coordinate)),Array.Empty<ObstacleOccupancy>());
             return MatchHost.Compose(new MatchSessionInitialState(scenario,setup,catalog.Definitions,config,experiments:options));
+        }
+        [TestCase(false, 2, 7, 9)]
+        [TestCase(true, 3, 8, 10)]
+        public void ConfiguredCountersSurviveBothMapsSnapshotUndoRestartAndJoinedProjection(
+            bool alternate, int heroesPerTeam, int waves, int lives)
+        {
+            var format = MatchFormat.CreateConfigured(heroesPerTeam, waves, lives);
+            var host = Create(format, alternate);
+            Assert.That(host.Projection.Setup.WaveCount, Is.EqualTo(waves));
+            Assert.That(host.Projection.Setup.Teams.All(team => team.LifeCount == lives), Is.True);
+
+            var configuration = MatchConfiguration.CreateOfficialForInternalTest(format, TeamSide.Red);
+            var identity = PrivateSessionIdentity.ForComposition(
+                host.Projection.SelectedMap, configuration, host.Projection.Setup, "configured-map-build");
+            var wire = PrivateOnlineWireHarness.Compose(host, "configured-map", identity);
+            wire.SeatAll(); wire.ReadyAndPickEverySeat();
+            var joined = wire.Client(1).LatestProjection;
+            Assert.That(joined.RemainingWaveCounters, Is.EqualTo(waves));
+            Assert.That(joined.TeamLifeCounters.Select(row => row.Count),
+                Is.All.EqualTo(lives));
+
+            var before = host.CaptureSnapshot();
+            Assert.That(wire.Client(1).TrySubmitCommand(
+                wire.Client(1).LatestProjection.AuthorizedCommands.First(), out _), Is.True);
+            wire.Pump();
+            Assert.That(host.Submit(MatchSubmission.ForRestart()).Accepted, Is.True);
+            Assert.That(host.Projection.Setup.WaveCount, Is.EqualTo(waves));
+            Assert.That(host.Projection.Setup.Teams.All(team => team.LifeCount == lives), Is.True);
+            wire.Session.RepublishProjections(); wire.Pump();
+            Assert.That(wire.Client(1).TrySubmitCommand(
+                wire.Client(1).LatestProjection.AuthorizedCommands.First(), out _), Is.True);
+            wire.Pump();
+            Assert.That(host.Submit(MatchSubmission.ForUndo()).Accepted, Is.True);
+            Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(before)).Accepted, Is.True);
+            Assert.That(host.Projection.Setup.WaveCount, Is.EqualTo(waves));
+            Assert.That(host.Projection.Setup.Teams.All(team => team.LifeCount == lives), Is.True);
         }
         [Test] public void ReviewedGeometryIncludesEverySpawnBorderAndSymmetricLane()
         {

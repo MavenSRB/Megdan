@@ -21,7 +21,9 @@ namespace GuardsDigital.Presentation.Interaction
     public sealed class PrivateLobbyEntry
     {
         public PrivateLobbyEntry(
-            string address, string port, string sessionKey, SeatId seat, string playerName = "", ExperimentalMatchOptions experiments = null, MapDefinitionReference? map = null)
+            string address, string port, string sessionKey, SeatId seat, string playerName = "",
+            ExperimentalMatchOptions experiments = null, MapDefinitionReference? map = null,
+            int waveCount = 0, int lifeCountPerTeam = 0)
         {
             Map = map ?? new MapDefinitionReference(new MapId("official-single-lane"), 1);
             Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
@@ -30,6 +32,8 @@ namespace GuardsDigital.Presentation.Interaction
             SessionKey = PrivateLobbyEntryText.CleanSessionId(sessionKey);
             Seat = seat;
             PlayerName = PrivateLobbyEntryText.CleanPlayerName(playerName);
+            WaveCount = waveCount;
+            LifeCountPerTeam = lifeCountPerTeam;
         }
 
         /// <summary>Milestone 8.108. The name this player typed, cleaned; empty when none.</summary>
@@ -37,6 +41,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         public MapDefinitionReference Map { get; }
         public ExperimentalMatchOptions Experiments { get; }
+        /// <summary>Host-selected setup values; zero means an older/non-host caller did not state one.</summary>
+        public int WaveCount { get; }
+        public int LifeCountPerTeam { get; }
         public string Address { get; }
         public string Port { get; }
         public string SessionKey { get; }
@@ -122,8 +129,7 @@ namespace GuardsDigital.Presentation.Interaction
         public event Action MatchFormatChangeRequested;
 
         /// <summary>
-        /// 8.35z54. Raised on the entry form when the host named a printed setup DIRECTLY -
-        /// the team size or the game length - rather than stepping to the next one.
+        /// 8.35z54/9.70. Raised when the host selects the 2v2 or 3v3 team size.
         /// </summary>
         /// <remarks>
         /// The control that was pressed rides the event, because the driver is what owns the four
@@ -314,8 +320,6 @@ namespace GuardsDigital.Presentation.Interaction
 
                 case PrivateLobbyControl.ChooseTwoVsTwo:
                 case PrivateLobbyControl.ChooseThreeVsThree:
-                case PrivateLobbyControl.ChooseShortGame:
-                case PrivateLobbyControl.ChooseLongGame:
                     MatchSetupChoiceRequested?.Invoke(control);
                     return true;
 

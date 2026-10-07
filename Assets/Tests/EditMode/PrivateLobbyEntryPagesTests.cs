@@ -56,11 +56,15 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(ShownControlLabels(view), Is.EqualTo(new[]
             {
-                "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", PrivateLobbyUnityView.CancelLabel
+                "2V2", "3V3", "HOST", PrivateLobbyUnityView.CancelLabel
             }));
             Assert.That(Shown(view.Root.Q<Button>("experimental-button")), Is.True);
             Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "NAME", "PORT", "SESSION ID" }));
-            Assert.That(Label(view, PrivateLobbyUnityView.ModeName), Is.EqualTo("MODE: 3V3 SHORT GAME"));
+            Assert.That(((IntegerField)Named(view, PrivateLobbyUnityView.WaveCountFieldName)).value,
+                Is.EqualTo(3));
+            Assert.That(((IntegerField)Named(view, PrivateLobbyUnityView.LifeCountFieldName)).value,
+                Is.EqualTo(5));
+            Assert.That(Label(view, PrivateLobbyUnityView.ModeName), Is.EqualTo("SETUP: 3V3"));
             Assert.That(Label(view, PrivateLobbyUnityView.TitleName), Is.EqualTo("HOST A GAME"));
             // Milestone 8.109: the fields first, then the four setup choices on one row.
             var hostMenu = Named(view, PrivateLobbyUnityView.HostMenuName);
@@ -69,27 +73,24 @@ namespace GuardsDigital.Tests.EditMode
                 Is.GreaterThan(order.IndexOf(PrivateLobbyUnityView.HostKeyFieldName)));
             var row = Named(view, PrivateLobbyUnityView.FormatChoicesName);
             Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
-            // Milestone 8.110: two little boxes, team size and game length, side by side.
+            // Milestone 9.70: team size remains a named choice; counts are numeric fields.
             Assert.That(row.Children().Select(child => child.name), Is.EqualTo(new[]
             {
-                PrivateLobbyUnityView.FormatSizeGroupName, PrivateLobbyUnityView.FormatLengthGroupName
+                PrivateLobbyUnityView.FormatSizeGroupName
             }));
             Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).Children()
                 .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "2V2", "3V3" }));
-            Assert.That(Named(view, PrivateLobbyUnityView.FormatLengthGroupName).Children()
-                .OfType<Button>().Select(button => button.text), Is.EqualTo(new[] { "SHORT GAME", "LONG GAME" }));
             Assert.That(Named(view, PrivateLobbyUnityView.FormatSizeGroupName).style.borderTopWidth.value,
                 Is.GreaterThan(0f), "Each group draws its own box.");
             // Each box: two buttons with 3 px side margins, 4 px padding, 1 px border, 5 px outer margins.
             var boxWidth = 2f * (PrivateLobbyUnityView.FormatChoiceWidth + 6f) + 8f + 2f + 10f;
-            Assert.That(2f * boxWidth, Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
-                "Both boxes fit one row inside the menu panel's padding and border.");
+            Assert.That(boxWidth, Is.LessThanOrEqualTo(PrivateLobbyUnityView.MenuPanelWidth - 52f),
+                "The team-size box fits inside the menu panel's padding and border.");
 
             var chosen = ShownButtons(view)
                 .Where(button => button.ClassListContains("gd-lobby-format-chosen"))
                 .Select(button => button.text);
-            Assert.That(chosen, Is.EquivalentTo(new[] { "3V3", "SHORT GAME" }),
-                "The two halves of the composed setup are the highlighted ones.");
+            Assert.That(chosen, Is.EquivalentTo(new[] { "3V3" }));
         }
 
         [Test]
@@ -154,11 +155,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(join.PlayerName, Is.EqualTo("Stefan"), "8.108: one NAME field serves both menus.");
 
             view.ShowPage(PrivateLobbyEntryPage.Host);
+            ((IntegerField)Named(view, PrivateLobbyUnityView.WaveCountFieldName)).value = 7;
+            ((IntegerField)Named(view, PrivateLobbyUnityView.LifeCountFieldName)).value = 9;
             var host = view.CurrentEntry();
             Assert.That(host.Address, Is.Empty, "8.100: the host menu names no address of its own.");
             Assert.That(host.Port, Is.EqualTo("6000"));
             Assert.That(host.SessionKey, Is.EqualTo("HOST-KEY"));
             Assert.That(host.PlayerName, Is.EqualTo("Stefan"));
+            Assert.That(host.WaveCount, Is.EqualTo(7));
+            Assert.That(host.LifeCountPerTeam, Is.EqualTo(9));
         }
 
         [Test]
@@ -228,11 +233,10 @@ namespace GuardsDigital.Tests.EditMode
 
         [TestCase(PrivateLobbyControl.ChooseTwoVsTwo, "2V2-LONG", true)]
         [TestCase(PrivateLobbyControl.ChooseThreeVsThree, "2V2-LONG", false)]
-        [TestCase(PrivateLobbyControl.ChooseLongGame, "2V2-LONG", true)]
-        [TestCase(PrivateLobbyControl.ChooseShortGame, "2V2-LONG", false)]
-        [TestCase(PrivateLobbyControl.ChooseShortGame, "3V3-QUICK", true)]
-        [TestCase(PrivateLobbyControl.ChooseShortGame, "", false)]
-        public void TheChosenFormatButtons_AreTheTwoHalvesOfTheComposedSetup(
+        [TestCase(PrivateLobbyControl.ChooseTwoVsTwo, "CUSTOM-4P-W7-L9", true)]
+        [TestCase(PrivateLobbyControl.ChooseThreeVsThree, "CUSTOM-6P-W7-L9", true)]
+        [TestCase(PrivateLobbyControl.ChooseThreeVsThree, "", false)]
+        public void TheChosenFormatButton_IsTheComposedTeamSize(
             PrivateLobbyControl control, string label, bool chosen)
         {
             Assert.That(PrivateLobbyUnityView.IsChosenFormat(control, label), Is.EqualTo(chosen));

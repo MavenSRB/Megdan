@@ -780,6 +780,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.69 | An independent Experimental match option caps total Minion Battle removals, accepts zero, preserves Heavy-last ordering and lets Lane Push follow the capped board. Immutable settings survive replay/Undo/restore under experimental snapshot envelope 4 and private wire 43; official option-off play is unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-969-add-an-experimental-minion-battle-removal-cap). | `milestone/9.69` |
 
+## Milestone 9.70 configurable setup completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.70 | Player-facing Short/Long modes are removed; hosts select 2v2/3v3 plus bounded positive starting Waves and Lives. Exact custom values compose both maps, compatibility/inheritance, projections and reconstruction paths while official rows remain rules fixtures. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-970-replace-game-length-modes-with-configurable-waves-and-lives). | `milestone/9.70` |
+
 ## Milestone 9.30k Gydion casting-hover completion
 
 | Milestone | Outcome and definition | Commit |

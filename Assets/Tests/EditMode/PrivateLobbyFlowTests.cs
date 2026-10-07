@@ -454,7 +454,7 @@ namespace GuardsDigital.Tests.EditMode
         // ------------------------------------------------------------------ the entry form
 
         [Test]
-        public void TheEntryForm_NamesTheFourPrintedSetupsDirectly_RatherThanOfferingOneCyclingControl()
+        public void TheEntryForm_OffersTeamSizeWithoutPlayerFacingGameLengths()
         {
             var model = PrivateLobbyModel.Entry(
                 System.Array.Empty<SeatRosterEntry>(), string.Empty, "3V3-QUICK");
@@ -464,27 +464,17 @@ namespace GuardsDigital.Tests.EditMode
                 "host log and never reached a setup they wanted.");
             Assert.That(model.Offers(PrivateLobbyControl.ChooseTwoVsTwo), Is.True);
             Assert.That(model.Offers(PrivateLobbyControl.ChooseThreeVsThree), Is.True);
-            Assert.That(model.Offers(PrivateLobbyControl.ChooseShortGame), Is.True);
-            Assert.That(model.Offers(PrivateLobbyControl.ChooseLongGame), Is.True);
+            Assert.That(model.Offers(PrivateLobbyControl.ChooseShortGame), Is.False);
+            Assert.That(model.Offers(PrivateLobbyControl.ChooseLongGame), Is.False);
             Assert.That(model.Offers(PrivateLobbyControl.Host), Is.True);
             Assert.That(model.Offers(PrivateLobbyControl.Join), Is.True);
         }
 
         [Test]
-        public void EveryPrintedSetup_IsReachableByNamingATeamSizeAndALength()
+        public void EveryTeamSize_HasTheFormerQuickValuesAsItsHostDefault()
         {
-            foreach (var format in MatchFormat.All)
-            {
-                var isLong = format.Id.IndexOf("long", System.StringComparison.OrdinalIgnoreCase) >= 0;
-                Assert.That(
-                    MatchFormat.All.Count(candidate =>
-                        candidate.HeroesPerTeam == format.HeroesPerTeam &&
-                        (candidate.Id.IndexOf("long", System.StringComparison.OrdinalIgnoreCase) >= 0)
-                            == isLong),
-                    Is.EqualTo(1),
-                    "Each (team size, length) pair names exactly one printed setup, which is what " +
-                    "lets two named buttons reach all four without a cycle.");
-            }
+            Assert.That(MatchFormat.DefaultForTeamSize(2), Is.SameAs(MatchFormat.TwoVersusTwoQuick));
+            Assert.That(MatchFormat.DefaultForTeamSize(3), Is.SameAs(MatchFormat.ThreeVersusThreeQuick));
         }
     }
 }

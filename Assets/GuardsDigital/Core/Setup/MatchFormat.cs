@@ -55,11 +55,19 @@ namespace GuardsDigital.Core.Setup
     /// </summary>
     public sealed class MatchFormat : IEquatable<MatchFormat>
     {
-        private MatchFormat(string id, int playerCount, MatchGameLength gameLength, int lifeCountPerTeam)
+        public const int MaximumSetupCounterCount = 99;
+
+        private MatchFormat(
+            string id,
+            int playerCount,
+            MatchGameLength gameLength,
+            int waveCount,
+            int lifeCountPerTeam)
         {
             Id = id;
             PlayerCount = playerCount;
             GameLength = gameLength;
+            WaveCount = waveCount;
             LifeCountPerTeam = lifeCountPerTeam;
         }
 
@@ -75,14 +83,14 @@ namespace GuardsDigital.Core.Setup
 
         public MatchGameLength GameLength { get; }
 
-        /// <summary>Setup step 5's table entry for this row, per team.</summary>
+        /// <summary>The immutable starting Life count per team selected for this match.</summary>
         public int LifeCountPerTeam { get; }
 
         /// <summary>
-        /// Setup step 4's count. A function of the game length alone, so it is derived here rather
-        /// than stored a second time: storing it per row would let the two disagree.
+        /// The immutable starting Wave count selected for this match. Official reference rows keep
+        /// the printed Quick/Long values; configured matches may carry another positive value.
         /// </summary>
-        public int WaveCount => GameLength == MatchGameLength.Quick ? 3 : 5;
+        public int WaveCount { get; }
 
         /// <summary>Setup step 2's "two equal teams" over <see cref="PlayerCount"/>.</summary>
         public int HeroesPerTeam => PlayerCount / 2;
@@ -97,22 +105,22 @@ namespace GuardsDigital.Core.Setup
 
         /// <summary>p.6 setup step 7's four dashboards, Quick game: 3 Waves, 4 Lives a side.</summary>
         public static MatchFormat TwoVersusTwoQuick { get; } =
-            new MatchFormat("2v2-quick", 4, MatchGameLength.Quick, 4);
+            new MatchFormat("2v2-quick", 4, MatchGameLength.Quick, 3, 4);
 
         /// <summary>The same four dashboards over p.6's Long game: 5 Waves, 6 Lives a side.</summary>
         public static MatchFormat TwoVersusTwoLong { get; } =
-            new MatchFormat("2v2-long", 4, MatchGameLength.Long, 6);
+            new MatchFormat("2v2-long", 4, MatchGameLength.Long, 5, 6);
 
         /// <summary>
         /// p.6 setup step 7's six dashboards, Quick game: 3 Waves, 5 Lives a side. This is the
         /// configuration milestone 8.25 made the one a player loads, and it stays the default.
         /// </summary>
         public static MatchFormat ThreeVersusThreeQuick { get; } =
-            new MatchFormat("3v3-quick", 6, MatchGameLength.Quick, 5);
+            new MatchFormat("3v3-quick", 6, MatchGameLength.Quick, 3, 5);
 
         /// <summary>The same six dashboards over p.6's Long game: 5 Waves, 8 Lives a side.</summary>
         public static MatchFormat ThreeVersusThreeLong { get; } =
-            new MatchFormat("3v3-long", 6, MatchGameLength.Long, 8);
+            new MatchFormat("3v3-long", 6, MatchGameLength.Long, 5, 8);
 
         /// <summary>
         /// The whole printed menu, in the order p.6's own table prints it - the four-player row
@@ -134,9 +142,47 @@ namespace GuardsDigital.Core.Setup
         public static MatchFormat Default => ThreeVersusThreeQuick;
 
         /// <summary>
-        /// The format that token names, or null when no printed row carries it. Ordinal and
-        /// case-insensitive: a launch flag typed by a person may carry any case, and there is no
-        /// pair of ids these rules could confuse.
+        /// Milestone 9.70. A host-selected 2v2 or 3v3 setup. Printed Quick/Long rows retain their
+        /// historical ids when the selected counts match them; every other supported pair uses the
+        /// admission tuple's existing custom description.
+        /// </summary>
+        public static MatchFormat CreateConfigured(
+            int heroesPerTeam,
+            int waveCount,
+            int lifeCountPerTeam)
+        {
+            if (heroesPerTeam != 2 && heroesPerTeam != 3)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(heroesPerTeam), heroesPerTeam, "Configured play supports 2v2 or 3v3.");
+            }
+
+            ValidateSetupCount(waveCount, nameof(waveCount));
+            ValidateSetupCount(lifeCountPerTeam, nameof(lifeCountPerTeam));
+            var playerCount = heroesPerTeam * 2;
+            var printed = Identify(playerCount, waveCount, lifeCountPerTeam);
+            if (printed != null)
+            {
+                return printed;
+            }
+
+            return new MatchFormat(
+                DescribeComposition(playerCount, waveCount, lifeCountPerTeam),
+                playerCount,
+                MatchGameLength.Quick,
+                waveCount,
+                lifeCountPerTeam);
+        }
+
+        public static MatchFormat DefaultForTeamSize(int heroesPerTeam) =>
+            heroesPerTeam == 2 ? TwoVersusTwoQuick
+            : heroesPerTeam == 3 ? ThreeVersusThreeQuick
+            : throw new ArgumentOutOfRangeException(nameof(heroesPerTeam));
+
+        /// <summary>
+        /// The format that token names, or null when neither an official row nor a supported
+        /// configured identity carries it. Ordinal and case-insensitive because a launch flag typed
+        /// by a person may carry any case.
         /// </summary>
         public static MatchFormat FindById(string id)
         {
@@ -146,8 +192,56 @@ namespace GuardsDigital.Core.Setup
             }
 
             var trimmed = id.Trim();
-            return All.FirstOrDefault(format =>
+            var printed = All.FirstOrDefault(format =>
                 string.Equals(format.Id, trimmed, StringComparison.OrdinalIgnoreCase));
+            if (printed != null)
+            {
+                return printed;
+            }
+
+            // Existing admission identities already describe non-printed compositions as
+            // custom-<players>p-w<waves>-l<lives>. Milestone 9.70 makes that vocabulary a host
+            // choice, so a joined client must be able to reconstruct it rather than only compare it.
+            var parts = trimmed.Split('-');
+            if (parts.Length != 4 ||
+                !string.Equals(parts[0], "custom", StringComparison.OrdinalIgnoreCase) ||
+                !parts[1].EndsWith("p", StringComparison.OrdinalIgnoreCase) ||
+                !parts[2].StartsWith("w", StringComparison.OrdinalIgnoreCase) ||
+                !parts[3].StartsWith("l", StringComparison.OrdinalIgnoreCase) ||
+                !int.TryParse(parts[1].Substring(0, parts[1].Length - 1),
+                    NumberStyles.None, CultureInfo.InvariantCulture, out var playerCount) ||
+                !int.TryParse(parts[2].Substring(1), NumberStyles.None,
+                    CultureInfo.InvariantCulture, out var waves) ||
+                !int.TryParse(parts[3].Substring(1), NumberStyles.None,
+                    CultureInfo.InvariantCulture, out var lives) ||
+                (playerCount != 4 && playerCount != 6))
+            {
+                return null;
+            }
+
+            try
+            {
+                var configured = CreateConfigured(playerCount / 2, waves, lives);
+                return string.Equals(configured.Id, trimmed, StringComparison.OrdinalIgnoreCase)
+                    ? configured
+                    : null;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
+        }
+
+        private static void ValidateSetupCount(int value, string parameterName)
+        {
+            if (value < 1 || value > MaximumSetupCounterCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    value,
+                    "Starting Wave and Life counters must be whole numbers from 1 to " +
+                    MaximumSetupCounterCount.ToString(CultureInfo.InvariantCulture) + ".");
+            }
         }
 
         /// <summary>

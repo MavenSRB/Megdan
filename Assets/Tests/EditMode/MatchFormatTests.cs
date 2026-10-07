@@ -102,16 +102,50 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void FindById_TakesAnyCaseAndRefusesEveryTokenNoPrintedRowCarries()
+        public void FindById_TakesAnyCaseAndReconstructsConfiguredHostChoices()
         {
             Assert.That(MatchFormat.FindById("2V2-QUICK"), Is.SameAs(MatchFormat.TwoVersusTwoQuick),
                 "A person types a launch flag, so the id is matched without case.");
             Assert.That(MatchFormat.FindById("  3v3-long  "), Is.SameAs(MatchFormat.ThreeVersusThreeLong));
+            var configured = MatchFormat.FindById("  CUSTOM-4P-W7-L9  ");
+            Assert.That(configured, Is.Not.Null);
+            Assert.That(configured.Id, Is.EqualTo("custom-4p-w7-l9"));
+            Assert.That(configured.HeroesPerTeam, Is.EqualTo(2));
+            Assert.That(configured.WaveCount, Is.EqualTo(7));
+            Assert.That(configured.LifeCountPerTeam, Is.EqualTo(9));
             Assert.That(MatchFormat.FindById("1v1-quick"), Is.Null,
                 "1v1 was dropped from the amendment and is not printed as a setup at any length.");
             Assert.That(MatchFormat.FindById("4v4-quick"), Is.Null);
             Assert.That(MatchFormat.FindById(""), Is.Null);
             Assert.That(MatchFormat.FindById(null), Is.Null);
+        }
+
+        [Test]
+        public void ConfiguredHostCounts_ArePositiveBoundedAndReuseOfficialReferenceRows()
+        {
+            Assert.That(MatchFormat.CreateConfigured(2, 3, 4),
+                Is.SameAs(MatchFormat.TwoVersusTwoQuick));
+            Assert.That(MatchFormat.CreateConfigured(3, 5, 8),
+                Is.SameAs(MatchFormat.ThreeVersusThreeLong));
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                MatchFormat.CreateConfigured(1, 3, 4));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                MatchFormat.CreateConfigured(2, 0, 4));
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                MatchFormat.CreateConfigured(2, 3, MatchFormat.MaximumSetupCounterCount + 1));
+            Assert.That(MatchFormat.FindById("custom-6p-w0-l5"), Is.Null);
+            Assert.That(MatchFormat.FindById("custom-4p-w3-l100"), Is.Null);
+        }
+
+        [TestCase(2, 3, 4)]
+        [TestCase(3, 3, 5)]
+        public void TeamSizeDefaults_AreTheFormerQuickValues(
+            int heroesPerTeam, int waves, int lives)
+        {
+            var format = MatchFormat.DefaultForTeamSize(heroesPerTeam);
+            Assert.That(format.WaveCount, Is.EqualTo(waves));
+            Assert.That(format.LifeCountPerTeam, Is.EqualTo(lives));
         }
 
         [Test]

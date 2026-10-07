@@ -96,7 +96,7 @@ Completed 2026-10-06: both catalogs load the promoted map; map-aware setup prese
 
 Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-961-completion).
 
-### [ ] 9.62 Implement the two-lane maps for 4v4 and 5v5
+### [!] 9.62 Implement the two-lane maps for 4v4 and 5v5
 
 Queued only; not authorized. Owner: future two-lane map implementation milestone. Outcome: both [saved two-lane maps](../Maps/README.md#future-two-lane-maps-for-4v4-and-5v5) support eight or ten players in one shared initiative order, with two independently pushed active Battle Zones; either lane reaching the opposing Throne ends the whole match. Dependencies: explicit implementation approval, reviewed map/spawn specification, applicable player-count setup values, and audit of lane-specific rules/hero effects without unrequested changes. Closing checks on each map and player count: 4v4/5v5 lobby and seat admission, independent zone progression, Minion Battles/Lane Pushes and immediate whole-match victory from either lane, shared turns, relevant hero effects, restore/Undo/replay/network identity, readable HUD/artwork alignment, and existing-map/format regressions at the highest applicable testing tier. The first image remains a separate 2v2/3v3 map request.
 
@@ -271,3 +271,50 @@ and complete Play gates passed. Review found no official-rule, timer, coordinati
 package change; the 9.65 package remains unchanged.
 
 Historical evidence: [9.69 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-969-minion-battle-removal-cap-completion).
+
+### [x] 9.70 Replace game-length modes with configurable Waves and Lives
+
+Authorized 2026-10-07 as the first outcome in the user's explicit **9.70 -> 9.71** sequence,
+after 9.69 completes. Remove the player-facing Short Game and Long Game choices while retaining
+2v2 and 3v3. The host screen exposes positive bounded whole-number starting Wave counters and
+starting Life counters per team. Fresh 2v2 defaults to 3 Waves/4 Lives and fresh 3v3 to 3 Waves/5
+Lives; the printed Quick/Long rows remain source-reference fixtures, not player-facing modes. The
+chosen values are immutable composition inputs across both maps, hero selection/recomposition,
+restart, replay, retained-prefix Undo, snapshot restore, private-session compatibility and joined
+client inheritance. Closing checks: lower/upper/input bounds; both team sizes and maps; default and
+custom setup composition; host-before-listener identity; format mismatch and automatic inheritance;
+restart/replay/Undo/snapshot equivalence; Waves/Lives HUD and all three victory causes; removal of
+the Short/Long controls with 2v2/3v3 still directly selectable. Advance compatibility only where
+wire or serialized shape changes. T3 because setup identity, session admission and the complete
+match loop change together. No two-lane map, hero rule, Experimental behavior, package or
+publication change.
+
+Completed 2026-10-07: the host screen retains direct 2v2/3v3 selection and replaces Short/Long
+with bounded positive Waves and Lives-per-team fields. Former Quick values are the defaults;
+official Quick/Long rows remain reference fixtures. Custom values receive canonical admission
+identities and survive both maps, automatic join inheritance, hero recomposition, projections,
+restart, snapshot restore and retained-prefix Undo. Existing serialized Wave/Life values and the
+format string changed value rather than shape, so wire 43, snapshot schema 59 and experimental
+envelope 4 remain current. Focused and complete T3 offline/Edit/Play gates passed, including the
+real-TCP custom inheritance journey and reviewed 1920x1080 host capture. No Experimental rule,
+hero, two-lane map, package or publication changed.
+
+Historical evidence: [9.70 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-970-configurable-setup-completion).
+
+### [~] 9.71 Add experimental one-Life hero base cost
+
+Authorized 2026-10-07 as the second outcome in the user's explicit **9.70 -> 9.71** sequence.
+Depends on completed 9.70. Add an independent host Experimental toggle. Enabled replaces p.13's
+Tier-derived base Life cost for a defeated hero with 1, then applies every existing additional-Life
+modifier normally: Bounty or Ursafar's Tear therefore makes the final cost 2. Assist coins remain
+the defeated hero's lowest-card-Tier value and the defeating hero's own coins remain the defeated
+hero's exact Level. Hero-tray worth badges retain their current Tier-derived 1/2/3 number but become
+yellow-only while enabled, because they then communicate assist coins and no longer Life loss;
+situational Life modifiers do not change that badge. Disabled preserves official behavior. The
+immutable option survives restart, replay, retained-prefix Undo, snapshot restore, private wire and
+reconnect. Closing checks: Tier I/II/III disabled/enabled costs; additional attacker and defeated-
+holder modifiers; unchanged ordinary/tripled assists and exact-Level defeat coins; yellow-only
+Tier-number tray presentation at supported viewports; option reset, round-trip, mismatch refusal,
+restore/replay/Undo/reconnect; official option-off regressions. T3 because authoritative defeat,
+snapshot compatibility, network options and visible HUD presentation change together. No package,
+map, timer, Minion Battle, hero-content, remote or publication work.

@@ -103,6 +103,34 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AConfiguredSetup_DerivesAndRoundTripsItsExactAdmissionIdentity()
+        {
+            var format = MatchFormat.CreateConfigured(2, 7, 9);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var configuration = MatchConfiguration.CreateOfficialForInternalTest(format, TeamSide.Red);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateOfficial(format),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var identity = PrivateSessionIdentity.ForComposition(
+                map, configuration, setup, "configured-build");
+
+            Assert.That(identity.MatchFormatId, Is.EqualTo("custom-4p-w7-l9"));
+            var encoded = PrivateSessionFrameCodec.HelloFrame(
+                new SessionHelloMessage(identity, "proof-value"));
+            var assembler = new PrivateSessionFrameAssembler();
+            Assert.That(assembler.Add(encoded, 0, encoded.Length), Is.True);
+            Assert.That(assembler.TryDequeue(out var frame), Is.True);
+            Assert.That(PrivateSessionFrameCodec.TryDecodeHello(frame.Payload, out var decoded), Is.True);
+            Assert.That(decoded.Identity.MatchFormatId, Is.EqualTo(format.Id));
+            Assert.That(decoded.Identity.FirstMismatch(identity), Is.EqualTo(SessionRejectionReason.None));
+            Assert.That(identity.FirstMismatch(Identity(
+                    "2v2-quick", identity.ContentDigest, "configured-build")),
+                Is.EqualTo(SessionRejectionReason.MatchFormatMismatch));
+        }
+
+        [Test]
         public void TheFourPrintedFormats_AreFourMutuallyIncompatibleSessions()
         {
             var identities = MatchFormat.All.Select(format => Identity(format.Id)).ToArray();

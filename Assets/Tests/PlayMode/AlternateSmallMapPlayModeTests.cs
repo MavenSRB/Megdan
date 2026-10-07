@@ -41,7 +41,8 @@ namespace GuardsDigital.Tests.PlayMode
             MatchSceneCompositionRoot.NextComposedSeat=null;
             yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
             var root=ArienUiJourneyPlayModeTests.Root();
-            root.Recompose(MatchCompositionPlan.Printed(MatchFormat.TwoVersusTwoLong,OfficialBoardMapCatalog.AlternateSmall));
+            var configured = MatchFormat.CreateConfigured(2, 7, 9);
+            root.Recompose(MatchCompositionPlan.Printed(configured,OfficialBoardMapCatalog.AlternateSmall));
             var host=root.Runtime.Host;var identity=root.Runtime.SessionIdentity;
             root.Recompose(MatchCompositionPlan.Printed(MatchFormat.ThreeVersusThreeQuick));
             PrivateLobbyDriver.FieldMemoryOverride=new InMemoryPrivateLobbyFieldMemory();PrivateLobbyDriver.SuppressRouterQuestion=true;
@@ -72,7 +73,9 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 Assert.That(Client().State,Is.EqualTo(PrivateSessionClientState.Admitted),Client().RejectionDetail);
                 Assert.That(root.ComposedPlan.Map,Is.EqualTo(OfficialBoardMapCatalog.AlternateSmall));
-                Assert.That(root.ComposedPlan.Format,Is.EqualTo(MatchFormat.TwoVersusTwoLong));
+                Assert.That(root.ComposedPlan.Format,Is.EqualTo(configured));
+                Assert.That(root.Runtime.ReadModel.Setup.WaveCount,Is.EqualTo(7));
+                Assert.That(root.Runtime.ReadModel.Setup.Teams.All(team=>team.LifeCount==9),Is.True);
                 Assert.That(Client().RejectionReason,Is.EqualTo(SessionRejectionReason.None));
                 Assert.That(driver.View.Root.Q<Label>("lobby-selected-map").text,Does.Contain("Alternate Small Map"));
                 driver.Presenter.Press(PrivateLobbyControl.Leave,null);yield return null;
@@ -111,10 +114,15 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return UiPlayer.CaptureScreen("tmp/961-host-map-"+width+".png");
                 }
                 var entry=driver.View.CurrentEntry();
-                driver.Presenter.Press(PrivateLobbyControl.Host,new PrivateLobbyEntry(string.Empty,AvailablePort().ToString(),"alternate-map-test",default,map:entry.Map));
+                driver.Presenter.Press(PrivateLobbyControl.Host,new PrivateLobbyEntry(
+                    string.Empty,AvailablePort().ToString(),"alternate-map-test",default,
+                    map:entry.Map,waveCount:7,lifeCountPerTeam:9));
                 for(int frame=0;frame<120 && driver.Presenter.Model.Role==PrivateLobbyRole.None;frame++)yield return null;
                 Assert.That(driver.Presenter.Model.Role,Is.EqualTo(PrivateLobbyRole.Host));
                 Assert.That(root.ComposedPlan.Map,Is.EqualTo(OfficialBoardMapCatalog.AlternateSmall));
+                Assert.That(root.ComposedPlan.Format.Id,Is.EqualTo("custom-6p-w7-l9"));
+                Assert.That(root.Runtime.ReadModel.Setup.WaveCount,Is.EqualTo(7));
+                Assert.That(root.Runtime.ReadModel.Setup.Teams.All(team=>team.LifeCount==9),Is.True);
                 Assert.That(driver.View.Root.Q<DropdownField>("host-map-selector").enabledSelf,Is.False);
                 Assert.That(driver.View.Root.Q<Label>("lobby-selected-map").text,Does.Contain("Alternate Small Map"));
                 driver.Presenter.Press(PrivateLobbyControl.Leave,null);yield return null;yield return null;

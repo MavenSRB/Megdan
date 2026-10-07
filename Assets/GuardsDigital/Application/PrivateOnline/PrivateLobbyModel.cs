@@ -650,8 +650,6 @@ namespace GuardsDigital.Application
                 // changes is that the choice is now readable instead of being a cycle.
                 controls.Insert(0, PrivateLobbyControl.ChooseTwoVsTwo);
                 controls.Insert(1, PrivateLobbyControl.ChooseThreeVsThree);
-                controls.Insert(2, PrivateLobbyControl.ChooseShortGame);
-                controls.Insert(3, PrivateLobbyControl.ChooseLongGame);
             }
 
             return new PrivateLobbyModel(

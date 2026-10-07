@@ -72,6 +72,8 @@ namespace GuardsDigital.Presentation.Interaction
         public const string FormatChoicesName = "gd-lobby-format-choices";
         public const string HostPortFieldName = "gd-lobby-host-port";
         public const string HostKeyFieldName = "gd-lobby-host-key";
+        public const string WaveCountFieldName = "gd-lobby-wave-count";
+        public const string LifeCountFieldName = "gd-lobby-life-count";
 
         /// <summary>Milestone 8.108. The one NAME field both menus show.</summary>
         public const string PlayerNameFieldName = "gd-lobby-player-name";
@@ -127,6 +129,8 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly VisualElement hostMenu;
         private readonly VisualElement joinMenu;
         private readonly VisualElement formatChoices;
+        private readonly IntegerField waveCountField;
+        private readonly IntegerField lifeCountField;
         private readonly Label invitationSession;
         private readonly Label invitationAddress;
         private PrivateLobbyInvitation invitation = PrivateLobbyInvitation.None;
@@ -272,6 +276,32 @@ namespace GuardsDigital.Presentation.Interaction
             formatChoices.style.flexWrap = Wrap.NoWrap;
             formatChoices.style.marginBottom = 4f;
             hostMenu.Add(formatChoices);
+            var setupCounts = new VisualElement { name = "gd-lobby-setup-counts" };
+            setupCounts.style.flexDirection = FlexDirection.Row;
+            setupCounts.style.flexWrap = Wrap.NoWrap;
+            waveCountField = new IntegerField("WAVES") { name = WaveCountFieldName, value = 3 };
+            lifeCountField = new IntegerField("LIVES PER TEAM") { name = LifeCountFieldName, value = 5 };
+            foreach (var field in new[] { waveCountField, lifeCountField })
+            {
+                field.style.fontSize = 18f;
+                field.style.color = Color.black;
+                field.labelElement.style.color = Color.white;
+                field.style.flexGrow = 1f;
+                field.style.marginRight = 8f;
+                field.RegisterValueChangedCallback(change =>
+                {
+                    if (change.newValue < 1 || change.newValue > MatchFormat.MaximumSetupCounterCount)
+                    {
+                        field.SetValueWithoutNotify(change.previousValue);
+                        feedback.text = "Use a whole number from 1–" +
+                            MatchFormat.MaximumSetupCounterCount.ToString(CultureInfo.InvariantCulture) +
+                            ". Previous value retained.";
+                        feedback.style.display = DisplayStyle.Flex;
+                    }
+                });
+                setupCounts.Add(field);
+            }
+            hostMenu.Add(setupCounts);
             mapSelector = new DropdownField("MAP", mapChoices.Select(m => m.DisplayName).ToList(),
                 Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap))) { name = "host-map-selector" };
             mapSelector.style.fontSize = 18; mapSelector.style.marginBottom = 6;
@@ -500,7 +530,8 @@ namespace GuardsDigital.Presentation.Interaction
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
                         timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value,
-                        minionBattleCapToggle.value,minionBattleCapField.value), mapChoices[mapSelector.index].Reference)
+                        minionBattleCapToggle.value,minionBattleCapField.value), mapChoices[mapSelector.index].Reference,
+                    waveCountField.value, lifeCountField.value)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -584,6 +615,12 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         public void SetMapName(string name) => selectedMapLabel.text = "MAP: " + name;
+
+        public void SetSetupCounts(int waves, int lives)
+        {
+            waveCountField.SetValueWithoutNotify(waves);
+            lifeCountField.SetValueWithoutNotify(lives);
+        }
 
         public void Render(PrivateLobbyModel model)
         {
@@ -695,10 +732,9 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateLobbyEntryPage.Host:
                     mode.text = ModeLine(model.MatchFormatLabel);
                     mode.style.display = mode.text.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
-                    // Milestone 8.110, the user: "Make a little box around 2v2 and 3v3 and
-                    // short/long games" - two boxes side by side, team size and game length.
+                    // Milestone 9.70. Team size remains a direct choice; Waves and Lives are the
+                    // two numeric fields above, so there is no second Short/Long choice group.
                     var sizeGroup = BuildFormatGroup(FormatSizeGroupName);
-                    var lengthGroup = BuildFormatGroup(FormatLengthGroupName);
                     foreach (var control in model.Controls)
                     {
                         if (IsFormatChoice(control))
@@ -717,11 +753,11 @@ namespace GuardsDigital.Presentation.Interaction
 
                             button.style.marginLeft = 3f;
                             button.style.marginRight = 3f;
-                            (IsTeamSizeChoice(control) ? sizeGroup : lengthGroup).Add(button);
+                            sizeGroup.Add(button);
                         }
                     }
 
-                    foreach (var group in new[] { sizeGroup, lengthGroup })
+                    foreach (var group in new[] { sizeGroup })
                     {
                         if (group.childCount > 0)
                         {
@@ -770,10 +806,6 @@ namespace GuardsDigital.Presentation.Interaction
         public const string FormatSizeGroupName = "gd-lobby-format-size";
 
         public const string FormatLengthGroupName = "gd-lobby-format-length";
-
-        private static bool IsTeamSizeChoice(PrivateLobbyControl control) =>
-            control == PrivateLobbyControl.ChooseTwoVsTwo ||
-            control == PrivateLobbyControl.ChooseThreeVsThree;
 
         private static VisualElement BuildFormatGroup(string name)
         {
@@ -828,29 +860,28 @@ namespace GuardsDigital.Presentation.Interaction
         private static bool IsFormatChoice(PrivateLobbyControl control) =>
             control == PrivateLobbyControl.ChooseTwoVsTwo ||
             control == PrivateLobbyControl.ChooseThreeVsThree ||
-            control == PrivateLobbyControl.ChooseShortGame ||
-            control == PrivateLobbyControl.ChooseLongGame ||
             control == PrivateLobbyControl.SetMatchFormat;
 
         /// <summary>Whether a format button names half of the setup currently composed.</summary>
         internal static bool IsChosenFormat(PrivateLobbyControl control, string formatLabel)
         {
-            var label = (formatLabel ?? string.Empty).ToUpperInvariant();
-            var isLong = label.Contains("LONG");
+            var format = MatchFormat.FindById(formatLabel);
+            var label = format?.TeamShape.ToUpperInvariant() ??
+                (formatLabel ?? string.Empty).ToUpperInvariant();
             switch (control)
             {
                 case PrivateLobbyControl.ChooseTwoVsTwo: return label.StartsWith("2V2", StringComparison.Ordinal);
                 case PrivateLobbyControl.ChooseThreeVsThree: return label.StartsWith("3V3", StringComparison.Ordinal);
-                case PrivateLobbyControl.ChooseShortGame: return label.Length > 0 && !isLong;
-                case PrivateLobbyControl.ChooseLongGame: return isLong;
                 default: return false;
             }
         }
 
-        /// <summary>The host menu's one line naming the setup it will host, e.g. <c>MODE: 3V3 SHORT GAME</c>.</summary>
+        /// <summary>The host menu's one line naming the selected team size, e.g. <c>SETUP: 3V3</c>.</summary>
         internal static string ModeLine(string formatLabel)
         {
-            var label = (formatLabel ?? string.Empty).ToUpperInvariant();
+            var format = MatchFormat.FindById(formatLabel);
+            var label = format?.TeamShape.ToUpperInvariant() ??
+                (formatLabel ?? string.Empty).ToUpperInvariant();
             if (label.Length == 0)
             {
                 return string.Empty;
@@ -859,7 +890,7 @@ namespace GuardsDigital.Presentation.Interaction
             var size = label.StartsWith("2V2", StringComparison.Ordinal) ? "2V2"
                 : label.StartsWith("3V3", StringComparison.Ordinal) ? "3V3"
                 : label;
-            return "MODE: " + size + (label.Contains("LONG") ? " LONG GAME" : " SHORT GAME");
+            return "SETUP: " + size;
         }
 
         /// <summary>
@@ -1580,8 +1611,11 @@ namespace GuardsDigital.Presentation.Interaction
             presenter.ReconnectRequested += Redial;
             presenter.FillWithTestDriversRequested += FillEmptySeatsWithTestDrivers;
             presenter.MatchFormatChangeRequested += CycleMatchFormat;
-            // 8.35z54. The four printed setups as named buttons.
+            // 9.70. Team size remains a named choice; the view owns the two counter fields.
             presenter.MatchSetupChoiceRequested += ChooseMatchSetup;
+            view.SetSetupCounts(
+                compositionRoot.ComposedPlan.Format.WaveCount,
+                compositionRoot.ComposedPlan.Format.LifeCountPerTeam);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
@@ -2099,8 +2133,8 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         /// <summary>
-        /// 8.35z54. Composes the printed setup the host NAMED, by changing one half of it -
-        /// the team size or the game length - and keeping the other.
+        /// 9.70. Selects 2v2 or 3v3 and restores that team's ordinary Quick defaults. Waves and
+        /// Lives remain independently editable on the host form before the listener starts.
         /// </summary>
         /// <remarks>
         /// <para>The four printed setups of pp.5-6 are two crossed pairs, so a named choice is a
@@ -2122,29 +2156,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             var current = compositionRoot.ComposedPlan.Format;
             var wantsHeroesPerTeam = control == PrivateLobbyControl.ChooseTwoVsTwo ? 2
-                : control == PrivateLobbyControl.ChooseThreeVsThree ? 3
-                : current.HeroesPerTeam;
-            var wantsLong = control == PrivateLobbyControl.ChooseLongGame ||
-                (control != PrivateLobbyControl.ChooseShortGame && IsLongGame(current));
-
-            MatchFormat chosen = null;
-            foreach (var candidate in MatchFormat.All)
-            {
-                if (candidate.HeroesPerTeam == wantsHeroesPerTeam &&
-                    IsLongGame(candidate) == wantsLong)
-                {
-                    chosen = candidate;
-                    break;
-                }
-            }
-
-            if (chosen == null)
-            {
-                RefuseFormatChange(
-                    "NoSuchPrintedSetup",
-                    "No printed setup on pp.5-6 matches that choice, so nothing was changed.");
-                return;
-            }
+                : 3;
+            var chosen = MatchFormat.DefaultForTeamSize(wantsHeroesPerTeam);
+            view.SetSetupCounts(chosen.WaveCount, chosen.LifeCountPerTeam);
 
             if (string.Equals(chosen.Id, current.Id, StringComparison.Ordinal))
             {
@@ -2158,36 +2172,27 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            compositionRoot.Recompose(MatchCompositionPlan.Printed(chosen));
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(
+                chosen, compositionRoot.ComposedPlan.Map));
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + chosen.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
         }
 
         /// <summary>
-        /// Milestone 8.35z62. The printed setup that seats a team of this size, keeping the game
-        /// length already composed so only the axis the host actually disagrees on moves. Null when
-        /// no printed setup on pp.5-6 seats that many, which is a refusal rather than a fallback.
+        /// The setup that seats a team of this size while preserving the already composed Wave/Life
+        /// values. Null when the size or values are outside the supported host contract.
         /// </summary>
         private static MatchFormat FindFormatForTeamSize(int heroesPerTeam, MatchFormat current)
         {
-            var wantsLong = IsLongGame(current);
-            MatchFormat sameLength = null;
-            foreach (var candidate in MatchFormat.All)
+            try
             {
-                if (candidate.HeroesPerTeam != heroesPerTeam)
-                {
-                    continue;
-                }
-
-                if (IsLongGame(candidate) == wantsLong)
-                {
-                    return candidate;
-                }
-
-                sameLength = sameLength ?? candidate;
+                return MatchFormat.CreateConfigured(
+                    heroesPerTeam, current.WaveCount, current.LifeCountPerTeam);
             }
-
-            return sameLength;
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -2247,14 +2252,6 @@ namespace GuardsDigital.Presentation.Interaction
             presenter.ShowEntry(LocalSeats(), sentence, ComposedFormatLabel());
         }
 
-        /// <summary>
-        /// Which half of a printed setup's id names the LONG game. The four ids are the two team
-        /// sizes crossed with the two lengths, so the length is read off the id rather than kept as
-        /// a second field this surface would have to hold in step with it.
-        /// </summary>
-        private static bool IsLongGame(MatchFormat format) =>
-            format.Id.IndexOf("long", StringComparison.OrdinalIgnoreCase) >= 0;
-
         private IReadOnlyList<SeatRosterEntry> LocalSeats()
         {
             var rows = new List<SeatRosterEntry>();
@@ -2286,6 +2283,26 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // Milestone 9.70. Settle every setup input before a listener exists. The admission
+            // identity, seat graph, Wave pool and both Life pools are all rebuilt from this one
+            // immutable format, so no connected peer can observe the defaults and then be moved to
+            // the values the host typed.
+            try
+            {
+                var current = compositionRoot.ComposedPlan.Format;
+                var waves = entry.WaveCount > 0 ? entry.WaveCount : current.WaveCount;
+                var lives = entry.LifeCountPerTeam > 0
+                    ? entry.LifeCountPerTeam
+                    : current.LifeCountPerTeam;
+                var configured = MatchFormat.CreateConfigured(current.HeroesPerTeam, waves, lives);
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(configured, entry.Map));
+            }
+            catch (ArgumentOutOfRangeException exception)
+            {
+                presenter.ShowEntry(LocalSeats(), exception.Message, ComposedFormatLabel());
+                return;
+            }
+
             try
             {
                 listener = new TcpSessionListener();
@@ -2300,7 +2317,6 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            compositionRoot.Recompose(MatchCompositionPlan.Printed(compositionRoot.ComposedPlan.Format, entry.Map));
             compositionRoot.ConfigureExperiments(entry.Experiments);
             view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             sessionKey = entry.SessionKey;
@@ -2503,7 +2519,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var refused = machine.LastRejection;
-            var hostFormat = MatchFormat.All.FirstOrDefault(f => f.Id == refused?.HostFormatId);
+            var hostFormat = MatchFormat.FindById(refused?.HostFormatId);
             var hostMap = OfficialBoardMapCatalog.Load().Definitions.FirstOrDefault(m =>
                 m.Id.Value == refused?.HostMapId && m.ContentRevision == refused.HostMapRevision);
             if (hostFormat == null || hostMap == null)
