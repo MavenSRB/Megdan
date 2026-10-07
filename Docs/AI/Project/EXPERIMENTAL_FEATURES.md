@@ -171,7 +171,7 @@ The viewer may inspect their own set. Allied inspection stays under the existing
 
 This split supersedes full-deck inspection and unconditional book sharing. Allowed viewers open the owner's existing spellbook view, without casting controls. The 9.64h SPELLBOOK shortcut sits above the viewed hero's hand: beside Director for hosts, in its position for other players. Crowded book layouts place confirmation beside this row. Ordinary hand inspection and suggestions retain their toggle/authority contracts; 9.64d owns the book's shared hover bump.
 
-The inspection projection carries only sorted definition references, separately from playable card instances. It includes current-zone faces and basic gold reserves; it omits instance IDs, locations and hidden commitment state. Shared spellbooks use the same permitted references, while removed spells remain public. Wire 43 rejects earlier peers; the version-4 experimental snapshot envelope stores every independent option and rejects old envelopes or mismatched settings atomically. Core schema 59 is unchanged by the Minion Battle cap.
+The inspection projection carries only sorted definition references, separately from playable card instances. It includes current-zone faces and basic gold reserves; it omits instance IDs, locations and hidden commitment state. Shared spellbooks use the same permitted references, while removed spells remain public. Wire 44 rejects earlier peers; the version-5 experimental snapshot envelope stores every independent option and rejects old envelopes or mismatched settings atomically. Core schema 59 is unchanged by these options.
 
 ## Minion Battle removal cap
 
@@ -191,3 +191,11 @@ The setting is immutable after hosting begins and is part of experimental snapsh
 identity. Restart, replay, Undo and restore use the same configured cap; a snapshot captured with a
 different enabled state or value is refused atomically. This feature does not alter the Core snapshot
 schema, hero/card content, timer, coordination permissions or map selection.
+
+## One-Life hero base cost
+
+Milestone 9.71 adds an independent host option, off for new games. Enabled makes a hero Defeat's base
+Life cost 1, then applies existing additions. Tier-based assist coins and the defeating hero's exact-
+Level reward do not change. Tray badges retain their Tier 1/2/3 number but become yellow-only;
+situational Life modifiers never alter it. The immutable setting follows restart, replay, Undo,
+restore, projections and reconnect. Disabled play remains official.

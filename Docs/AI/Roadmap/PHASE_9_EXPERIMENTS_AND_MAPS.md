@@ -301,7 +301,7 @@ hero, two-lane map, package or publication changed.
 
 Historical evidence: [9.70 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-970-configurable-setup-completion).
 
-### [~] 9.71 Add experimental one-Life hero base cost
+### [x] 9.71 Add experimental one-Life hero base cost
 
 Authorized 2026-10-07 as the second outcome in the user's explicit **9.70 -> 9.71** sequence.
 Depends on completed 9.70. Add an independent host Experimental toggle. Enabled replaces p.13's
@@ -318,3 +318,14 @@ Tier-number tray presentation at supported viewports; option reset, round-trip, 
 restore/replay/Undo/reconnect; official option-off regressions. T3 because authoritative defeat,
 snapshot compatibility, network options and visible HUD presentation change together. No package,
 map, timer, Minion Battle, hero-content, remote or publication work.
+
+Completed 2026-10-07: the independent option is immutable per match and changes a defeated hero's
+base Life cost to 1 before every existing additional-Life modifier. Assist coins remain Tier-derived,
+the defeating hero still earns the defeated hero's exact Level, and tray badges retain their Tier
+number while becoming yellow-only. Restart, replay, retained-prefix Undo, restore, projections,
+reconnect and both host/join views retain the option. Its added serialized field advances private wire
+to 44 and the experimental snapshot envelope to 5; Core snapshot schema 59 is unchanged. Focused and
+complete T3 offline/Edit/Play gates passed, and the enabled match plus host control were reviewed at
+1920x1080. Disabled official behavior is unchanged; no package or publication was produced.
+
+Historical evidence: [9.71 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-971-experimental-one-life-hero-base-completion).

@@ -48,10 +48,11 @@ namespace GuardsDigital.Application
             w.Write(o.CardCommitmentSeconds); w.Write(o.CardResolutionSeconds); w.Write(o.ResponseSeconds);
             w.Write(o.CardUpgradeSeconds); w.Write(o.TeamBankSeconds); w.Write(o.EnemyCardInformation);
             w.Write(o.MinionBattleRemovalCapEnabled); w.Write(o.MinionBattleRemovalCap);
+            w.Write(o.HeroDefeatBaseLifeCostIsOne);
         }
         internal static ExperimentalMatchOptions ReadOptions(BinaryReader r) => new ExperimentalMatchOptions(
             r.ReadBoolean(), r.ReadBoolean(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadInt32(), r.ReadBoolean(),
-            r.ReadBoolean(), r.ReadInt32());
+            r.ReadBoolean(), r.ReadInt32(), r.ReadBoolean());
         internal static void WriteInspections(BinaryWriter writer, IReadOnlyList<HeroCardInspection> rows)
         {
             writer.Write(rows.Count);

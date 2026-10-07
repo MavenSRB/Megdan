@@ -368,7 +368,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.True, "Every seat holds the removed spell.");
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(43));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(44));
         }
 
         // -------------------------------------------------------------------------------------------

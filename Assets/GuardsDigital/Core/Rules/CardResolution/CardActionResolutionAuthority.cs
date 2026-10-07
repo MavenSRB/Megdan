@@ -397,6 +397,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Configures the immutable match-level experimental base used by every hero Defeat.
+        /// Application composition calls this on each fresh or restored authority before it is
+        /// published; ordinary direct constructions retain the official Tier-derived base.
+        /// </summary>
+        public void BindHeroDefeatBaseLifeCost(bool baseCostIsOne)
+        {
+            attackDefenseBackend.BindHeroDefeatBaseLifeCost(baseCostIsOne);
+        }
+
+        /// <summary>
         /// Hands the Attack backend the round's typed hero-Defeat history. The round owns and persists
         /// it; the backend is merely the one p.13 path that can append a completed outcome.
         /// </summary>

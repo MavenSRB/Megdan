@@ -786,6 +786,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.70 | Player-facing Short/Long modes are removed; hosts select 2v2/3v3 plus bounded positive starting Waves and Lives. Exact custom values compose both maps, compatibility/inheritance, projections and reconstruction paths while official rows remain rules fixtures. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-970-replace-game-length-modes-with-configurable-waves-and-lives). | `milestone/9.70` |
 
+## Milestone 9.71 experimental one-Life hero base completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.71 | An independent experiment makes every defeated hero's base Life cost 1 before existing modifiers; coin rewards remain unchanged. Tray badges keep the Tier-derived 1/2/3 number but become yellow-only. The immutable option survives every reconstruction path under experimental envelope 5 and private wire 44. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-971-add-experimental-one-life-hero-base-cost). | `milestone/9.71` |
+
 ## Milestone 9.30k Gydion casting-hover completion
 
 | Milestone | Outcome and definition | Commit |

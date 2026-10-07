@@ -138,6 +138,7 @@ namespace GuardsDigital.Presentation.Interaction
         private Toggle coordinationToggle;
         private Toggle enemyInfoToggle;
         private Toggle minionBattleCapToggle;
+        private Toggle heroDefeatBaseLifeCostToggle;
         private IntegerField minionBattleCapField;
         private VisualElement minionBattleCapSettings;
         private Toggle timerToggle;
@@ -361,6 +362,11 @@ namespace GuardsDigital.Presentation.Interaction
             experimentalPanel.Add(minionBattleCapSettings);
             minionBattleCapToggle.RegisterValueChangedCallback(change =>
                 minionBattleCapSettings.style.display = change.newValue ? DisplayStyle.Flex : DisplayStyle.None);
+            heroDefeatBaseLifeCostToggle = new Toggle("Hero defeats have a base Life cost of 1")
+                { name = "experimental-hero-defeat-base-one" };
+            heroDefeatBaseLifeCostToggle.style.fontSize = 18;
+            heroDefeatBaseLifeCostToggle.style.color = Color.white;
+            experimentalPanel.Add(heroDefeatBaseLifeCostToggle);
             timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
             timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
             timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
@@ -530,7 +536,8 @@ namespace GuardsDigital.Presentation.Interaction
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
                         timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value,
-                        minionBattleCapToggle.value,minionBattleCapField.value), mapChoices[mapSelector.index].Reference,
+                        minionBattleCapToggle.value,minionBattleCapField.value,
+                        heroDefeatBaseLifeCostToggle.value), mapChoices[mapSelector.index].Reference,
                     waveCountField.value, lifeCountField.value)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
@@ -552,6 +559,7 @@ namespace GuardsDigital.Presentation.Interaction
                 coordinationToggle.SetValueWithoutNotify(false);
                 enemyInfoToggle.SetValueWithoutNotify(false);
                 minionBattleCapToggle.SetValueWithoutNotify(false);
+                heroDefeatBaseLifeCostToggle.SetValueWithoutNotify(false);
                 minionBattleCapField.SetValueWithoutNotify(1);
                 minionBattleCapSettings.style.display = DisplayStyle.None;
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;

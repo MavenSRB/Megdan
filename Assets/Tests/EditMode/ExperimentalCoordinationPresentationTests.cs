@@ -104,6 +104,22 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(field.value, Is.EqualTo(1));
             Assert.That(view.CurrentEntry().Experiments.MinionBattleRemovalCapEnabled, Is.False);
         }
+        [Test] public void OneLifeHeroBaseToggleIsIndependentAndResetsForANewHostMenu()
+        {
+            var view = new PrivateLobbyUnityView();
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            var toggle = view.Root.Q<Toggle>("experimental-hero-defeat-base-one");
+            Assert.That(toggle, Is.Not.Null);
+            Assert.That(toggle.value, Is.False);
+            toggle.value = true;
+            Assert.That(view.CurrentEntry().Experiments.HeroDefeatBaseLifeCostIsOne, Is.True);
+            Assert.That(view.CurrentEntry().Experiments.MinionBattleRemovalCapEnabled, Is.False);
+            Assert.That(view.CurrentEntry().Experiments.TurnTimer, Is.False);
+            view.ShowPage(PrivateLobbyEntryPage.Landing);
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(toggle.value, Is.False);
+            Assert.That(view.CurrentEntry().Experiments.HeroDefeatBaseLifeCostIsOne, Is.False);
+        }
         [Test] public void AlliedInspectionHasCardsButNoGameplayControlsAndCannotInspectEnemies()
         {
             var state = OwnerScopedProjectionTests.CreateOfficialInitialState();

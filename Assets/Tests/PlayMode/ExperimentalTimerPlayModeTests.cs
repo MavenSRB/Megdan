@@ -116,11 +116,13 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(menu.Root.Q<Button>("experimental-button"));
             menu.Root.Q<Toggle>("experimental-timer").value=true;
             menu.Root.Q<Toggle>("experimental-coordination").value=true;
+            menu.Root.Q<Toggle>("experimental-hero-defeat-base-one").value=true;
             yield return null;yield return null;
             Assert.That(menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")).Count(),Is.EqualTo(5));
             var commitment=menu.Root.Q<IntegerField>("experimental-duration-0");
             commitment.value=125; commitment.value=0;
             Assert.That(menu.CurrentEntry().Experiments.CardCommitmentSeconds,Is.EqualTo(125));
+            Assert.That(menu.CurrentEntry().Experiments.HeroDefeatBaseLifeCostIsOne,Is.True);
             Assert.That(menu.Root.Q<Label>("experimental-duration-error").text,Is.Not.Empty);
             foreach(var field in menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")))
                 Assert.That(field.resolvedStyle.color,Is.EqualTo(Color.black));

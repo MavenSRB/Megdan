@@ -69,5 +69,20 @@ namespace GuardsDigital.Core.Rules.Consequences
             TryGetLowestCardTier(heroId, definitions, instances, out var tier)
                 ? HeroDefeatRewardSchedule.LifeCounters(tier)
                 : 0;
+
+        public static int LifeCounters(
+            CardTier lowestCardTier,
+            int additionalCounters,
+            bool baseCostIsOne)
+        {
+            if (!baseCostIsOne)
+            {
+                return HeroDefeatRewardSchedule.LifeCounters(lowestCardTier, additionalCounters);
+            }
+
+            // Validate both inputs through the official schedule, then replace only its Tier base.
+            HeroDefeatRewardSchedule.LifeCounters(lowestCardTier, additionalCounters);
+            return 1 + additionalCounters;
+        }
     }
 }

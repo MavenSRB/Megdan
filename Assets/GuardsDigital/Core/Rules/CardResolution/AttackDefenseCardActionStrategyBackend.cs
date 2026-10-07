@@ -105,6 +105,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// than at a later checkpoint that would have to rediscover who was defeated.
         /// </summary>
         private TeamLifeState teamLives;
+        private bool heroDefeatBaseLifeCostIsOne;
 
         /// <summary>
         /// Milestone 8.19a1: the round-owned typed history of completed hero Defeats. It is bound beside
@@ -359,6 +360,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             heroLevels = levels;
             teamLives = lives;
+        }
+
+        internal void BindHeroDefeatBaseLifeCost(bool baseCostIsOne)
+        {
+            heroDefeatBaseLifeCostIsOne = baseCostIsOne;
         }
 
         internal void BindHeroDefeatHistory(RoundHeroDefeatHistory history)
@@ -2522,7 +2528,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     RuleObject.ForHero(completedResolution.ActorId),
                     RuleObject.ForHero(defeatedHeroId));
             var lifeCounters = hasTier
-                ? HeroDefeatRewardSchedule.LifeCounters(lowestTier, additionalLifeCounters)
+                ? HeroDefeatCostQuery.LifeCounters(
+                    lowestTier, additionalLifeCounters, heroDefeatBaseLifeCostIsOne)
                 : 0;
 
             // Milestone 9.13, the hero arm of 8.118's minion fix. One Attack can defeat two heroes -

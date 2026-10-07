@@ -49,6 +49,24 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(HeroDefeatRewardSchedule.LifeCounters(tier, 1), Is.EqualTo(expected));
         }
 
+        [TestCase(CardTier.I, 0, 1)]
+        [TestCase(CardTier.II, 0, 1)]
+        [TestCase(CardTier.III, 0, 1)]
+        [TestCase(CardTier.I, 1, 2)]
+        [TestCase(CardTier.II, 1, 2)]
+        [TestCase(CardTier.III, 2, 3)]
+        public void ExperimentalBaseOne_AppliesBeforeEveryExistingAdditionalCost(
+            CardTier tier, int additional, int expected)
+        {
+            Assert.That(
+                HeroDefeatCostQuery.LifeCounters(tier, additional, baseCostIsOne: true),
+                Is.EqualTo(expected));
+            Assert.That(
+                HeroDefeatCostQuery.LifeCounters(tier, additional, baseCostIsOne: false),
+                Is.EqualTo(HeroDefeatRewardSchedule.LifeCounters(tier, additional)),
+                "Disabling the experiment preserves p.13's official Tier-derived base.");
+        }
+
         [Test]
         public void TwoDeclarationsChargeTwo_SoNeitherSourceIsSilentlySwallowed()
         {

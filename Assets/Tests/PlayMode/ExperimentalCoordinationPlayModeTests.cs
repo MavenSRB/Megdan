@@ -17,6 +17,35 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class ExperimentalCoordinationPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator OneLifeHeroBaseDrawsYellowOnlyTierBadges()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root = ArienUiJourneyPlayModeTests.Root();
+            root.ConfigureExperiments(new ExperimentalMatchOptions(
+                heroDefeatBaseLifeCostIsOne: true));
+            yield return null;
+            yield return null;
+            var badges = UiPlayer.Descendants(root.Hud.RootElement)
+                .Where(element => element.name == "gd-hero-worth" && UiPlayer.IsShown(element))
+                .ToArray();
+            Assert.That(badges, Is.Not.Empty);
+            foreach (var badge in badges)
+            {
+                Assert.That(
+                    badge.Q<VisualElement>("gd-hero-worth-heart").resolvedStyle.backgroundColor,
+                    Is.EqualTo(
+                        badge.Q<VisualElement>("gd-hero-worth-coin").resolvedStyle.backgroundColor));
+                Assert.That(badge.tooltip, Does.Contain("assist coin").And.Not.Contain("costs their team"));
+            }
+            UiPlayer.SetPlayerViewport(1920u, 1080u, "experimental one-Life hero badges");
+            yield return null;
+            yield return null;
+            yield return UiPlayer.CaptureScreen("tmp/971-one-life-yellow-badges-1920.png");
+            root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
+        }
+
         [UnityTest] public IEnumerator InspectSuggestReturnAndBoardOverlayPreserveGameplay()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;

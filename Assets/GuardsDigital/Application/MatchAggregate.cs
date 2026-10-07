@@ -343,6 +343,8 @@ namespace GuardsDigital.Application
             var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
             var rebuiltCardActions = new CardActionResolutionAuthority(
                 rebuiltConfiguration.ContentCatalogs, rebuiltBoard, rebuiltMarkers);
+            rebuiltCardActions.BindHeroDefeatBaseLifeCost(
+                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
             var rebuiltRound = new RoundResolutionAuthority(
                 rebuiltConfiguration.CardDefinitions,
                 rebuiltConfiguration.CardInstances,
@@ -397,6 +399,8 @@ namespace GuardsDigital.Application
             var hasEnvelope = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
             var authoritativePayload = hasEnvelope ? envelope.AuthoritativePayload : payload;
             var restored = DeserializeAuthoritative(authoritativePayload);
+            restored.CardActions.BindHeroDefeatBaseLifeCost(
+                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
 
             ReplaceGraphs(hasEnvelope
                 ? MatchGraphSet.ForRestore(

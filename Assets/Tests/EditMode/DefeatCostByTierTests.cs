@@ -60,6 +60,34 @@ namespace GuardsDigital.Tests.EditMode
                 "Life counters, not one.");
         }
 
+        [TestCase(2)]
+        [TestCase(3)]
+        public void ExperimentalBaseOne_SpendsOneLifeOnARealProgressedDefeat(int tier)
+        {
+            var board = SabinaBoard.Create(
+                tier: tier,
+                branch: SabinaUpgradeBranch.FirstSibling,
+                heroPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["primitive-hero"] = StagedHeroBoard.FirstAdjacent
+                },
+                experiments: new GuardsDigital.Application.ExperimentalMatchOptions(
+                    heroDefeatBaseLifeCostIsOne: true));
+            var session = board.Session;
+            var enemyTeam = session.Projection.Participants.GetTeamForHero(board.Enemy).Id;
+            Assert.That(
+                HeroDefeatCostQuery.Worth(
+                    board.Enemy, session.Projection.Definitions, session.Projection.Cards),
+                Is.EqualTo(tier),
+                "The tray number remains the hero's Tier-derived assist reward.");
+            var before = Counters(session, enemyTeam);
+            board.PlayAttackAt(SabinaCardContent.PointBlankShot, board.Enemy, defendSuccessfully: false);
+            var defense = session.Projection.PendingDefenseChoice;
+            board.Accept(DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId));
+            Assert.That(Counters(session, enemyTeam), Is.EqualTo(before - 1));
+        }
+
+
         private static int Counters(GuardsDigital.Application.MatchSession session, TeamId team) =>
             session.Projection.TeamLifeCounters.Single(entry => entry.Key.Equals(team)).Value;
     }

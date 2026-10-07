@@ -131,6 +131,8 @@ The ten current pending families each have deterministic disconnect-before-answe
 
 **Milestone 9.70 setup identity assessment.** Before listening, the host settles team size, map and bounded positive Wave/Life counts. Official pp.5-6 tuples keep their IDs; other 2v2/3v3 tuples use `custom-<players>p-w<waves>-l<lives>`. Mismatch still refuses admission, while a current client may reconstruct the identity, recompose and retry once. Existing format and Wave/Life fields carry the values, so wire 43, snapshot 59 and experimental envelope 4 stay fixed. Protocol equality never bypasses exact-format matching or claims compatibility with older peers.
 
+**Milestone 9.71 option identity assessment.** The one-Life hero base-cost flag is immutable experimental identity. Host, director and joined-seat clients project it through one typed contract; reconnect cannot substitute a default. Its wire field advances the protocol to 44 and restore field advances the experimental envelope to 5, rejecting older or mismatched peers atomically. Core snapshot schema remains 59.
+
 ## Lightweight threat model and limitations
 
 Protected assets are authoritative match integrity, per-seat control, owner-private/team information, compatibility, and useful privacy-safe diagnostics. Relevant adversarial or faulty actions are forged seat/hero claims, a guessed or shared session key, unsolicited connections to a reachable port, captured/replayed submissions, stale clients, malformed/oversized payloads, message delay/reordering/duplication, abusive reconnects, private-data logging, an on-path observer of the plaintext link, and a modified client inspecting every byte it receives.

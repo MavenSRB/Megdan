@@ -1474,7 +1474,10 @@ namespace GuardsDigital.Presentation.Match
         /// to keep looking alike; this stays as the rail's own call into the shared one.
         /// </remarks>
         private static VisualElement BuildWorthBadge(HeroOverviewViewModel hero) =>
-            HudElements.WorthBadge(hero.WorthLabel, hero.WorthAssistiveLabel);
+            HudElements.WorthBadge(
+                hero.WorthLabel,
+                hero.WorthAssistiveLabel,
+                coinOnly: hero.WorthRepresentsAssistCoinsOnly);
 
         private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {

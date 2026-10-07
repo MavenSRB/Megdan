@@ -75,7 +75,7 @@ namespace GuardsDigital.Application
     /// from the locally composed content projection behind the lobby to the admitted network seat.
     /// The presenters never learn that a transport exists and therefore keep one rules-facing path.
     /// </summary>
-    public sealed class SwitchableMatchClient : IMatchClient, ICoordinationClient
+    public sealed class SwitchableMatchClient : IMatchClient, ICoordinationClient, IExperimentalMatchClient
     {
         private IMatchClient current;
 
@@ -85,6 +85,10 @@ namespace GuardsDigital.Application
         public IMatchReadModel Projection => current.Projection;
 
         public bool IsDirector => current.IsDirector;
+        public ExperimentalMatchOptions Experiments =>
+            (current as IExperimentalMatchClient)?.Experiments ??
+            (current.Projection as IExperimentalReadModel)?.Experiments ??
+            ExperimentalMatchOptions.Disabled;
         public bool SubmitCoordination(CoordinationCommand command) =>
             current is ICoordinationClient communication && communication.SubmitCoordination(command);
 
@@ -102,7 +106,12 @@ namespace GuardsDigital.Application
     /// <summary>
     /// Milestone 8.30b. The Director's client: every command, no envelope, the whole read model.
     /// </summary>
-    public sealed class DirectorMatchClient : IMatchClient
+    public interface IExperimentalMatchClient
+    {
+        ExperimentalMatchOptions Experiments { get; }
+    }
+
+    public sealed class DirectorMatchClient : IMatchClient, IExperimentalMatchClient
     {
         private readonly IMatchSession session;
 
@@ -114,6 +123,11 @@ namespace GuardsDigital.Application
         public IMatchReadModel Projection => session.Projection;
 
         public bool IsDirector => true;
+
+        public ExperimentalMatchOptions Experiments =>
+            (session as MatchSession)?.Experiments ??
+            (session as LocalDirectorMatchClient)?.Experiments ??
+            ExperimentalMatchOptions.Disabled;
 
         public MatchClientResult Submit(DirectorCommand command)
         {

@@ -443,7 +443,7 @@ namespace GuardsDigital.Presentation.Match
         internal const float WorthDigitInkNudge = -0.043f;
 
         internal static VisualElement WorthBadge(
-            string digit, string assistiveLabel, float size = WorthBadgeSize)
+            string digit, string assistiveLabel, float size = WorthBadgeSize, bool coinOnly = false)
         {
             var badge = new VisualElement { name = "gd-hero-worth", tooltip = assistiveLabel };
             badge.style.width = size;
@@ -463,7 +463,7 @@ namespace GuardsDigital.Presentation.Match
             var heartHalf = new VisualElement { name = "gd-hero-worth-heart", pickingMode = PickingMode.Ignore };
             heartHalf.style.width = size / 2f;
             heartHalf.style.height = size;
-            heartHalf.style.backgroundColor = WorthHeartFace;
+            heartHalf.style.backgroundColor = coinOnly ? MatchHudTheme.CoinFace : WorthHeartFace;
             badge.Add(heartHalf);
 
             // Milestone 8.58, the user's last word on it: "number needs to be bigger I think. Make it

@@ -870,7 +870,8 @@ namespace GuardsDigital.Presentation.Match
             TurnSlotMarkerViewModel currentTurnMarker = null,
             SpellbookViewModel spellbook = null,
             GuardsDigital.Core.Rules.Victory.TeamVictoryTally? ultimateTally = null,
-            IEnumerable<CardColor> withheldDiscardColors = null)
+            IEnumerable<CardColor> withheldDiscardColors = null,
+            bool worthRepresentsAssistCoinsOnly = false)
         {
             if (!heroId.IsDefined)
             {
@@ -943,13 +944,16 @@ namespace GuardsDigital.Presentation.Match
             // team spends are one number, the hero's lowest card Tier read as 1, 2 or 3 - which is
             // why the badge is half a coin and half a heart. The user asked for it at the table.
             Worth = worth;
+            WorthRepresentsAssistCoinsOnly = worthRepresentsAssistCoinsOnly;
             WorthLabel = worth == 0
                 ? string.Empty
                 : worth.ToString(System.Globalization.CultureInfo.InvariantCulture);
             WorthAssistiveLabel = worth == 0
                 ? string.Empty
-                : $"Worth {worth}: defeating this hero pays {worth} assist coin{(worth == 1 ? string.Empty : "s")} " +
-                    $"and costs their team {worth} life counter{(worth == 1 ? string.Empty : "s")}";
+                : worthRepresentsAssistCoinsOnly
+                    ? $"Worth {worth}: defeating this hero pays {worth} assist coin{(worth == 1 ? string.Empty : "s")}"
+                    : $"Worth {worth}: defeating this hero pays {worth} assist coin{(worth == 1 ? string.Empty : "s")} " +
+                        $"and costs their team {worth} life counter{(worth == 1 ? string.Empty : "s")}";
             CoinAmountLabel = coins.ToString(System.Globalization.CultureInfo.InvariantCulture);
             CoinAssistiveLabel = coins == 1 ? "1 coin" : CoinAmountLabel + " coins";
             DiscardLabel = "DISCARD";
@@ -1021,6 +1025,7 @@ namespace GuardsDigital.Presentation.Match
         /// priced through, so the badge and the charge cannot disagree.
         /// </summary>
         public int Worth { get; }
+        public bool WorthRepresentsAssistCoinsOnly { get; }
 
         /// <summary>The digit drawn inside the half-coin, half-heart badge; empty when there is none.</summary>
         public string WorthLabel { get; }
@@ -1225,6 +1230,10 @@ namespace GuardsDigital.Presentation.Match
             {
                 lastProjection = projection;
                 lastViewedHero = viewed;
+                var worthRepresentsAssistCoinsOnly =
+                    ((projection as IExperimentalReadModel)?.Experiments ??
+                        (session as IExperimentalMatchClient)?.Experiments ??
+                        ExperimentalMatchOptions.Disabled).HeroDefeatBaseLifeCostIsOne;
                 lastViewModel = new HeroOverviewsViewModel(
                     projection.Version,
                     projection.Setup.Heroes
@@ -1240,7 +1249,8 @@ namespace GuardsDigital.Presentation.Match
                             // of the name the rail happens to print.
                             hero.ContentId,
                             hero.DisplayName,
-                            viewed)));
+                            viewed,
+                            worthRepresentsAssistCoinsOnly)));
             }
 
             view.Render(lastViewModel);
@@ -1253,7 +1263,8 @@ namespace GuardsDigital.Presentation.Match
             TeamSide teamSide,
             HeroContentId contentId,
             string displayName,
-            HeroId viewedHeroId)
+            HeroId viewedHeroId,
+            bool worthRepresentsAssistCoinsOnly)
         {
             var progression = projection.HeroProgression
                 .FirstOrDefault(entry => entry.HeroId.Equals(heroId));
@@ -1298,7 +1309,8 @@ namespace GuardsDigital.Presentation.Match
                     ? GuardsDigital.Core.Rules.Victory.TeamVictoryTallyQuery.ForHero(
                         projection.Participants, projection.TeamVictoryTallies, heroId)
                     : null,
-                CurrentRoundCards.WithheldDiscardColors(projection, heroId));
+                CurrentRoundCards.WithheldDiscardColors(projection, heroId),
+                worthRepresentsAssistCoinsOnly);
         }
     }
 

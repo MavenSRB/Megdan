@@ -10,7 +10,7 @@ namespace GuardsDigital.Application
             int cardCommitmentSeconds = 120, int cardResolutionSeconds = 30,
             int responseSeconds = 30, int cardUpgradeSeconds = 120, int teamBankSeconds = 300,
             bool enemyCardInformation = false, bool minionBattleRemovalCapEnabled = false,
-            int minionBattleRemovalCap = 0)
+            int minionBattleRemovalCap = 0, bool heroDefeatBaseLifeCostIsOne = false)
         {
             Validate(cardCommitmentSeconds, nameof(cardCommitmentSeconds));
             Validate(cardResolutionSeconds, nameof(cardResolutionSeconds));
@@ -23,6 +23,7 @@ namespace GuardsDigital.Application
             EnemyCardInformation = enemyCardInformation;
             MinionBattleRemovalCapEnabled = minionBattleRemovalCapEnabled;
             MinionBattleRemovalCap = minionBattleRemovalCapEnabled ? minionBattleRemovalCap : 0;
+            HeroDefeatBaseLifeCostIsOne = heroDefeatBaseLifeCostIsOne;
             CardCommitmentSeconds = cardCommitmentSeconds;
             CardResolutionSeconds = cardResolutionSeconds;
             ResponseSeconds = responseSeconds;
@@ -39,6 +40,7 @@ namespace GuardsDigital.Application
         public bool EnemyCardInformation { get; }
         public bool MinionBattleRemovalCapEnabled { get; }
         public int MinionBattleRemovalCap { get; }
+        public bool HeroDefeatBaseLifeCostIsOne { get; }
         public int CardCommitmentSeconds { get; }
         public int CardResolutionSeconds { get; }
         public int ResponseSeconds { get; }
@@ -49,12 +51,13 @@ namespace GuardsDigital.Application
             EnemyCardInformation == other.EnemyCardInformation &&
             MinionBattleRemovalCapEnabled == other.MinionBattleRemovalCapEnabled &&
             MinionBattleRemovalCap == other.MinionBattleRemovalCap &&
+            HeroDefeatBaseLifeCostIsOne == other.HeroDefeatBaseLifeCostIsOne &&
             CardCommitmentSeconds == other.CardCommitmentSeconds && CardResolutionSeconds == other.CardResolutionSeconds &&
             ResponseSeconds == other.ResponseSeconds && CardUpgradeSeconds == other.CardUpgradeSeconds &&
             TeamBankSeconds == other.TeamBankSeconds;
         public override bool Equals(object obj) => Equals(obj as ExperimentalMatchOptions);
         public override int GetHashCode() => (TeammateCoordination ? 1 : 0) ^ (TurnTimer ? 2 : 0) ^ (EnemyCardInformation ? 4 : 0) ^
-            (MinionBattleRemovalCapEnabled ? 8 : 0) ^ MinionBattleRemovalCap ^
+            (MinionBattleRemovalCapEnabled ? 8 : 0) ^ (HeroDefeatBaseLifeCostIsOne ? 16 : 0) ^ MinionBattleRemovalCap ^
             CardCommitmentSeconds ^ CardResolutionSeconds ^ ResponseSeconds ^ CardUpgradeSeconds ^ TeamBankSeconds;
     }
 }

@@ -395,6 +395,47 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void ExperimentalOneLifeBase_KeepsTierNumbersAndMakesEveryTrayBadgeYellowOnly()
+        {
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(CreateOfficialSixPlayerSession(true), view).Refresh();
+            Assert.That(view.Model.Heroes.Select(hero => hero.Worth), Has.All.EqualTo(1));
+            Assert.That(view.Model.Heroes, Has.All.Matches<HeroOverviewViewModel>(
+                hero => hero.WorthRepresentsAssistCoinsOnly));
+            foreach (var badge in Descendants(view.Root).Where(element => element.name == "gd-hero-worth"))
+            {
+                var coin = badge.Q<VisualElement>("gd-hero-worth-coin");
+                var heart = badge.Q<VisualElement>("gd-hero-worth-heart");
+                Assert.That(heart.style.backgroundColor.value, Is.EqualTo(coin.style.backgroundColor.value));
+                Assert.That(badge.tooltip, Does.Contain("assist coin").And.Not.Contain("costs their team"));
+            }
+        }
+
+        [TestCase(2)]
+        [TestCase(3)]
+        public void ExperimentalOneLifeBase_ProgressedTrayKeepsItsTierNumber(int tier)
+        {
+            var board = SabinaBoard.Create(
+                tier: tier,
+                experiments: new ExperimentalMatchOptions(heroDefeatBaseLifeCostIsOne: true));
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(board.Session, view).Refresh();
+            var enemy = view.Model.Heroes.Single(hero => hero.HeroId.Equals(board.Enemy));
+            Assert.That(enemy.Worth, Is.EqualTo(tier));
+            Assert.That(enemy.WorthRepresentsAssistCoinsOnly, Is.True);
+            var rail = Descendants(view.Root).Single(element =>
+                element.name == "gd-hero-rail" &&
+                element.userData is HeroId id &&
+                id.Equals(board.Enemy));
+            var badge = Descendants(rail)
+                .Single(element => element.name == "gd-hero-worth");
+            Assert.That(
+                badge.Q<VisualElement>("gd-hero-worth-heart").style.backgroundColor.value,
+                Is.EqualTo(
+                    badge.Q<VisualElement>("gd-hero-worth-coin").style.backgroundColor.value));
+        }
+
         /// <summary>
         /// A rail with no content identity behind it - which no configured setup produces, and which a
         /// hand-built projection can - addresses no portrait and still draws a rail. The absence is
@@ -442,7 +483,7 @@ namespace GuardsDigital.Tests.EditMode
         /// Rulebook p.5's six-player Quick Game, composed exactly as
         /// <c>OfficialSixPlayerSetupTests</c> composes it.
         /// </summary>
-        private static MatchSession CreateOfficialSixPlayerSession()
+        private static MatchSession CreateOfficialSixPlayerSession(bool heroDefeatBaseLifeCostIsOne = false)
         {
             var configuration = MatchConfiguration
                 .CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
@@ -461,7 +502,12 @@ namespace GuardsDigital.Tests.EditMode
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+            return new MatchSession(new MatchSessionInitialState(
+                scenario,
+                setup,
+                new[] { map },
+                experiments: new ExperimentalMatchOptions(
+                    heroDefeatBaseLifeCostIsOne: heroDefeatBaseLifeCostIsOne)));
         }
     }
 }

@@ -61,7 +61,8 @@ namespace GuardsDigital.Tests.EditMode
             bool unlockUltimate = false,
             int? enemyHandSize = null,
             IReadOnlyCollection<CardDefinitionId> sabinaDiscards = null,
-            bool clearHerNeighbourhood = true) =>
+            bool clearHerNeighbourhood = true,
+            GuardsDigital.Application.ExperimentalMatchOptions experiments = null) =>
             StagedHeroBoard.Create(
                 Spec,
                 tier,
@@ -72,6 +73,7 @@ namespace GuardsDigital.Tests.EditMode
                 unlockUltimate,
                 enemyHandSize,
                 sabinaDiscards,
-                clearHerNeighbourhood);
+                clearHerNeighbourhood,
+                experiments: experiments);
     }
 }

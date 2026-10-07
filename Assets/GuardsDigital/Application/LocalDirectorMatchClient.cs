@@ -35,6 +35,9 @@ namespace GuardsDigital.Application
         /// </summary>
         public IMatchHost Host => host;
 
+        public ExperimentalMatchOptions Experiments =>
+            (host as MatchHost)?.Experiments ?? ExperimentalMatchOptions.Disabled;
+
         public MatchSessionProjection Projection => host.Projection;
 
         public MatchCommandResult Execute(DirectorCommand command)

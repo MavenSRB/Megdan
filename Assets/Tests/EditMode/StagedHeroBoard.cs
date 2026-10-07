@@ -191,7 +191,8 @@ namespace GuardsDigital.Tests.EditMode
             int? enemyHandSize = null,
             IReadOnlyCollection<CardDefinitionId> heroDiscards = null,
             bool clearTheNeighbourhood = true,
-            IReadOnlyCollection<HexCoordinate> obstacles = null)
+            IReadOnlyCollection<HexCoordinate> obstacles = null,
+            GuardsDigital.Application.ExperimentalMatchOptions experiments = null)
         {
             if (spec == null) throw new ArgumentNullException(nameof(spec));
             var configuration = spec.Configuration(tier, secondSibling);
@@ -287,7 +288,8 @@ namespace GuardsDigital.Tests.EditMode
                     .Select((coordinate, index) => new ObstacleOccupancy(
                         new ObstacleId($"staged-obstacle-{index}"), coordinate))
                     .ToArray());
-            var initialState = new MatchSessionInitialState(scenario, setup, new[] { map });
+            var initialState = new MatchSessionInitialState(
+                scenario, setup, new[] { map }, experiments: experiments);
             return new StagedHeroBoard(
                 initialState, new MatchSession(initialState), hero, enemy);
         }
