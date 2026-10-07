@@ -190,7 +190,7 @@ namespace GuardsDigital.Tests.EditMode
         /// tint needs none.
         /// </summary>
         [Test]
-        public void TheActingRingMovesOutsideAnEffectAndReturnsBesideTheTokenWhenItEnds()
+        public void TheActingRippleStartsAtTheOutlineWithoutReplacingTheEffect()
         {
             var tile = Tile(new HexCoordinate(0, 0));
             var hero = Hero(Carrier, tile.Coordinate);
@@ -200,11 +200,11 @@ namespace GuardsDigital.Tests.EditMode
             var acting = view.ActingHeroMarker;
             Assert.That(
                 acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio),
-                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius),
+                Is.LessThan(hero.ActiveEffectMarker.VisibleRadius),
                 "Token, violet aura, then gold activity; neither band overlaps.");
             Assert.That(acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio) *
                 (1f - KineticTiming.MarkPulseAmplitude),
-                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius),
+                Is.LessThan(hero.ActiveEffectMarker.VisibleRadius),
                 "The active-turn pulse must clear the aura even at its smallest scale.");
             Assert.That(hero.ActiveEffectMarker.VisibleRadius / hero.SelectionRadius,
                 Is.EqualTo(1.18f).Within(0.0001f), "The effect hugs the token.");
@@ -217,7 +217,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(hero.HasActiveEffectMark, Is.False);
             view.Render(Model(heroes, new[] { Carrier }, Array.Empty<HexCoordinate>(), focused: Carrier));
             Assert.That(acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio),
-                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius));
+                Is.LessThan(hero.ActiveEffectMarker.VisibleRadius));
             Assert.That(acting.OwnedNativeResourceCount, Is.EqualTo(2));
             view.Render(Model(heroes, new[] { Carrier }, Array.Empty<HexCoordinate>()));
             Assert.That(acting.IsVisible, Is.False);

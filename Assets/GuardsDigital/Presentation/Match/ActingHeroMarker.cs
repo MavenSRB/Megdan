@@ -1,48 +1,36 @@
 using System;
+using GuardsDigital.Application;
 using UnityEngine;
 using UnityEngine.Rendering;
 using GuardsDigital.Presentation.Board;
 
 namespace GuardsDigital.Presentation.Match
 {
-    /// <summary>
-    /// Milestone 8.35n (the FOURTH amendment, board highlight, from interim-2 screenshots): "every
-    /// viewer's BOARD marks the acting hero's piece (SelectedActor is already public), so spectators
-    /// can see at a glance who is doing something, not only read it."
-    ///
-    /// <para>A distinct gold ring, drawn additively above the board and independent of
-    /// <see cref="Board.BoardTargetRing"/> and <see cref="Board.HexCornerHighlight"/> - the two
-    /// existing board-cue idioms named in <c>Docs/AI/Project/CONFIGURED_PRESENTATION.md</c> - so it
-    /// can never compete with an existing legality cue's state, colour, or tile-corner priority.
-    /// Configured play already retains a <see cref="Board.BoardTargetRing"/> per hero piece but never
-    /// activates it (every board choice moved to the hex-corner system at milestone 8.30h), and the
-    /// hex-corner palette has no colour free for a new meaning; a third, single, always-additive
-    /// marker avoids re-opening either system's priority chain and its large existing Play Mode
-    /// surface for a change this narrow.</para>
-    ///
-    /// <para>One instance answers the whole board: at most one hero is ever the selected actor, so
-    /// <see cref="BoardInteractionUnityView"/> owns exactly one marker and repositions it, rather than
-    /// retaining one per piece. <see cref="SetHidden"/> is a distinct call from
-    /// <see cref="SetVisible"/> rather than a null position, so "no actor stands" - the FOURTH
-    /// amendment's own clearing rule - can never be expressed as a stray world position.</para>
-    ///
-    /// <para><b>Explicitly NOT live pre-commit aiming</b> (the amendment's own recorded non-goal): this
-    /// marks the acting piece and nothing else - never a transient selection, a hovered destination, or
-    /// any other in-progress choice the actor has not yet committed to. It reads
-    /// <c>IMatchReadModel.SelectedActor</c> alone, the same public fact the narration lane's acting
-    /// line reads.</para>
-    /// </summary>
+    /// <summary>Retained outward ripple starting at the acting token's existing player-coloured outline.
+    /// Independent of legal-target and active-effect layers; other bodies retain the faint treatment.</summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public sealed class ActingHeroMarker : MonoBehaviour
     {
         public const string MarkerObjectName = "Acting Hero Marker";
         public const int Subdivisions = 48;
-        public const float RingWidthRatio = 0.22f;
-        public const float RadiusMargin = 1.18f;
-        // Even at the pulse's minimum scale, 1.64 * 0.78 * 0.94 clears the effect's 1.18.
-        public const float EffectRadiusMargin = 1.64f;
+        public const float RingWidthRatio = 0.04f;
+        public const float RadiusMargin = 1f;
+        public const float EffectRadiusMargin = 1f;
         public const float SurfaceOffset = 0.05f;
+
+        private Color identityColour = Color.white;
+        private Func<SignalVisualSettings> visuals;
+        public void ConfigureAppearance(Color colour, Func<SignalVisualSettings> settings)
+        { identityColour = colour; visuals = settings; }
+        private void LateUpdate()
+        {
+            if (!IsVisible) return;
+            var settings = visuals?.Invoke() ?? SignalVisualSettings.Default;
+            var phase = Mathf.Repeat(Time.unscaledTime * 1000f / settings.PeriodMilliseconds, 1f);
+            transform.localScale = Vector3.one * (1f + 0.4f * phase);
+            ownedMaterial.color = RingColor * ((1f - phase) * settings.IntensityPercent / 100f);
+        }
 
         private Mesh ownedMesh;
         private bool isFaint;
@@ -88,12 +76,9 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 9.21i. The gold this ring adds to the board.</summary>
         public Color RingColor => isFaint
-            ? new Color(
-                MatchHudTheme.ActingHeroMarkerColor.r * FaintIntensity,
-                MatchHudTheme.ActingHeroMarkerColor.g * FaintIntensity,
-                MatchHudTheme.ActingHeroMarkerColor.b * FaintIntensity,
-                MatchHudTheme.ActingHeroMarkerColor.a)
-            : MatchHudTheme.ActingHeroMarkerColor;
+            ? new Color(identityColour.r * FaintIntensity, identityColour.g * FaintIntensity,
+                identityColour.b * FaintIntensity, identityColour.a)
+            : identityColour;
 
         /// <summary>
         /// Places and shows the marker at exactly one world position, ringed around a piece of the
@@ -177,16 +162,7 @@ namespace GuardsDigital.Presentation.Match
 
             if (ownedMaterial == null)
             {
-                // Milestone 8.35z39. The same ring, drawn as LIGHT rather than as an opaque
-                // painted line. Nothing about the mark's shape moves: `BuildRing` is untouched, so
-                // the annulus keeps `RingWidthRatio` 0.22 inside `RadiusMargin` 1.18 of the piece it
-                // circles, and the colour is still `MatchHudTheme.ActingHeroMarkerColor` - the
-                // FOURTH amendment's "a distinct gold ring" means the same gold it always did. What
-                // changes is that the ring now ADDS its gold to the board instead of covering the
-                // board with it, so the artwork the actor is standing on stays visible through the
-                // mark and the space reads as lit. See BoardOverlayMaterial.CreateLuminous for why
-                // this is a blend factor rather than the Bloom the volume profile declares and the
-                // renderer does not run.
+                // Reuse the shipped additive variant; only the outline ripple changes.
                 ownedMaterial = BoardOverlayMaterial.CreateLuminous(
                     MarkerObjectName + (isFaint ? " Faint Ring" : " Ring"), RingColor);
             }

@@ -2132,6 +2132,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             Match.TeammateSignalsUnityView.Attach(gameObject, runtime, hud, eventCamera, tiles);
             pointerInput.SuggestHex = runtime.SuggestHex;
+            pointerInput.ShareCursor = runtime.ShareCursor;
             pointerInput.Configure(
                 eventCamera,
                 pointerSelectors,

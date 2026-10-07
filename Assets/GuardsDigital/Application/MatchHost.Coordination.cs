@@ -5,6 +5,11 @@ namespace GuardsDigital.Application
     public sealed partial class MatchHost
     {
         private readonly TeamCoordination coordination = new TeamCoordination();
+        public SignalVisualSettings SignalVisuals { get; private set; } = SignalVisualSettings.Default;
+        public void SetSignalVisuals(int periodMilliseconds, int intensityPercent)
+        {
+            lock (gate) SignalVisuals = new SignalVisualSettings(periodMilliseconds, intensityPercent);
+        }
         public ExperimentalMatchOptions Experiments { get; }
         private IReadOnlyList<TeammateMarker> CoordinationFor(MatchSeat seat)
         {

@@ -1,4 +1,5 @@
 using System;
+using GuardsDigital.Application;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
@@ -395,6 +396,9 @@ namespace GuardsDigital.Presentation.Match
             heroViewIntentHandler = viewHero;
         }
 
+        public Func<HeroId, Color> IdentityColour { get; set; }
+        public Func<SignalVisualSettings> SignalVisuals { get; set; }
+
         public void Render(BoardInteractionViewModel model) => Render(model, false);
 
         private void Render(BoardInteractionViewModel model, bool refreshHover)
@@ -431,6 +435,7 @@ namespace GuardsDigital.Presentation.Match
             var otherActingBodies = new List<PrimitiveHeroView>();
             foreach (var hero in heroes)
             {
+                // Only projected participants have a player colour; retained inactive scene pieces do not.
                 var occupancy = FindHeroRow(model, hero.Occupancy.HeroId, hero.Body);
                 if (!occupancy.HeroId.IsDefined)
                 {
@@ -460,6 +465,7 @@ namespace GuardsDigital.Presentation.Match
                 // minion views are retained across removal. Projection presence owns visibility;
                 // an absent hero must not remain as a stale selectable board object.
                 hero.Configure(occupancy, hero.OuterRadius);
+                if (IdentityColour != null) hero.SetIdentityAccent(IdentityColour(occupancy.HeroId));
                 hero.gameObject.SetActive(true);
                 // Milestone 8.35z6. A hero reappearing (Respawn, Undo, restore) before its own
                 // fade finished on its own must never leave a stale echo of a piece that is visible
@@ -949,6 +955,7 @@ namespace GuardsDigital.Presentation.Match
                 actingHeroMarker = ActingHeroMarker.Create();
             }
 
+            actingHeroMarker.ConfigureAppearance(actingHero.IdentityAccent, SignalVisuals);
             actingHeroMarker.SetVisible(actingHero.transform.position, actingHero.SelectionRadius,
                 actingHero.HasActiveEffectMark);
         }
@@ -968,6 +975,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 var body = others[index];
+                faintActingMarkers[index].ConfigureAppearance(body.IdentityAccent, SignalVisuals);
                 faintActingMarkers[index].SetVisible(
                     body.transform.position, body.SelectionRadius, body.HasActiveEffectMark);
             }

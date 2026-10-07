@@ -419,8 +419,8 @@ namespace GuardsDigital.Presentation.Match
         /// the compact toggle above it.
         /// </summary>
         public const float ConfirmDirectorGap = 18f;
-        private const float DirectorDrawerWidth = 134f;
-        private const float DirectorDrawerHeight = 112f;
+        private const float DirectorDrawerWidth = 220f;
+        private const float DirectorDrawerHeight = 242f;
         private const int OrdinaryHandCardCount = 5;
 
         private UIDocument document;
@@ -682,6 +682,34 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>Removes Director-only tools when the lobby hands this HUD an online seat.</summary>
+        public void ConfigureSignalControls(Func<SignalVisualSettings> read, Action<int, int> update)
+        {
+            if (directorDrawer == null) return;
+            directorDrawer.Q("signal-controls")?.RemoveFromHierarchy();
+            var controls = new VisualElement { name = "signal-controls" };
+            controls.style.marginTop = 8;
+            var current = read();
+            var speedLabel = new Label();
+            speedLabel.style.color = Color.white; speedLabel.style.fontSize = 12;
+            var speed = new Slider(0.35f, 3.5f) { name = "signal-speed", value = 1400f / current.PeriodMilliseconds };
+            var intensityLabel = new Label();
+            intensityLabel.style.color = Color.white; intensityLabel.style.fontSize = 12;
+            var intensity = new SliderInt(0, 100) { name = "signal-intensity", value = current.IntensityPercent };
+            void Apply()
+            {
+                speedLabel.text = "Ripple speed  " + speed.value.ToString("0.0") + "×";
+                intensityLabel.text = "Ripple intensity  " + intensity.value + "%";
+                update(Mathf.Clamp(Mathf.RoundToInt(1400f / speed.value), 400, 4000), intensity.value);
+            }
+            speed.RegisterValueChangedCallback(_ => Apply());
+            intensity.RegisterValueChangedCallback(_ => Apply());
+            speedLabel.text = "Ripple speed  " + speed.value.ToString("0.0") + "×";
+            intensityLabel.text = "Ripple intensity  " + intensity.value + "%";
+            controls.Add(speedLabel); controls.Add(speed);
+            controls.Add(intensityLabel); controls.Add(intensity);
+            directorDrawer.Add(controls);
+        }
+
         public void SetDirectorToolsVisible(bool visible)
         {
             directorToolsVisible = visible;

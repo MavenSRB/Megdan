@@ -139,6 +139,8 @@ The completed 9.58 closing checks and mockup-scope note are preserved in the [ex
 
 ## Implemented communication contract
 
+Player colours, cursor/ping ripples and Director controls: [signal contract](PLAYER_SIGNALS.md).
+
 **9.58 compatibility:** wire 37 adds immutable experimental settings, a separately filtered allied-hand collection, and typed teammate signals. Signals derive their sender from the admitted seat, check map identity and current hand ownership, and use per-sender revisions plus a restart generation. They never enter gameplay commands, Undo history or gameplay versioning. Reconnect receives current team-only signals; departure republishes their removal. Experimental host snapshots wrap the unchanged Core schema-58 payload with validated immutable settings and reject mismatched settings atomically. The [owning milestone](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination) records validation status; timer implementation and the final hero merge remain separate gates.
 
 ## Timer candidate implementation contract

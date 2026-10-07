@@ -167,7 +167,7 @@ namespace GuardsDigital.Presentation.Match
             playback.Advance(deltaSeconds);
             flights.Advance(deltaSeconds);
             ApplyPieceMotions();
-            ApplyBoardMarkPulse();
+            // Player-coloured acting ripples own their animation and Director settings.
             ApplyShineBreath();
         }
 
@@ -545,20 +545,6 @@ namespace GuardsDigital.Presentation.Match
 
         // ---- The board's own marks.
 
-        private void ApplyBoardMarkPulse()
-        {
-            var marker = board.ActingHeroMarker;
-            if (marker == null || !marker.IsVisible)
-            {
-                return;
-            }
-
-            // Only while the viewer has something to answer. Everything else on the board stays still,
-            // which is the amendment's own rule and the reason this costs one multiply a frame.
-            marker.transform.localScale = model.PulseBoardMarks
-                ? Vector3.one * playback.MarkPulseScale
-                : Vector3.one;
-        }
 
         /// <summary>
         /// The one absolutely-positioned, non-picking layer every kinetic overlay lives on. It is a
@@ -675,6 +661,14 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            if (host.name == "gd-rail-awaited-glow" && host.userData is Color accent)
+            {
+                var playerLight = accent * (0.35f + 0.65f * lit);
+                playerLight.a = accent.a;
+                host.style.borderTopColor = host.style.borderBottomColor = playerLight;
+                host.style.borderLeftColor = host.style.borderRightColor = playerLight;
+                return;
+            }
             var toward = LitOutline(lit);
             var style = host.style;
             if (IsAwaitedGold(host.resolvedStyle.borderTopColor)) style.borderTopColor = toward;

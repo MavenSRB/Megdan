@@ -4,6 +4,8 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 
 ## Canonical active shards
 
+- [Player colours and shared map signals](Project/PLAYER_SIGNALS.md)
+
 - [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)
 - [Combat and its consequences](Project/COMBAT_AND_CONSEQUENCES.md)
 - [Hero progression](Project/HERO_PROGRESSION.md)

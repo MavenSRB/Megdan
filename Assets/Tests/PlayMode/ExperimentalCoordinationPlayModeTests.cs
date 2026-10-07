@@ -18,6 +18,58 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class ExperimentalCoordinationPlayModeTests
     {
         [UnityTest]
+        public IEnumerator PlayerColoursSharedPingsCursorAndDirectorControlsUseTheLiveUi()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root = ArienUiJourneyPlayModeTests.Root();
+            var seat = root.Runtime.Host.Seats.Seats[0];
+            MatchSceneCompositionRoot.NextComposedSeat = seat.Id;
+            root.ConfigureExperiments(new ExperimentalMatchOptions(teammateCoordination: true));
+            yield return null; yield return null;
+            var runtime = root.Runtime;
+            var host = (MatchHost)runtime.Host;
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var tile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                .Where(t => t.IsPlayable).OrderBy(t => Vector2.Distance(pointer.EventCamera.WorldToScreenPoint(t.transform.position),
+                    new Vector2(Screen.width * 0.5f, Screen.height * 0.5f))).First();
+            foreach (var hero in runtime.BoardView.HeroViews.Where(h => h.gameObject.activeSelf))
+                Assert.That(hero.IdentityAccent, Is.EqualTo(PlayerAccent.For(runtime.ReadModel.Participants, hero.Occupancy.HeroId)));
+            foreach (var ally in host.Seats.Seats.Where(s => s.TeamSide == seat.TeamSide))
+            {
+                var read = host.ProjectionForSeat(ally.Id);
+                Assert.That(host.SubmitCoordinationForSeat(ally.Id, new CoordinationCommand(0, CoordinationTargetKind.Hex,
+                    false, read.SelectedMap.Reference, tile.Coordinate, generation: read.CoordinationGeneration)), Is.True);
+                yield return null; yield return null;
+                Assert.That(root.Hud.RootElement.Query<VisualElement>("teammate-hex-outline").ToList().Count, Is.EqualTo(1),
+                    "All senders share one segmented perimeter.");
+            }
+            var before = host.Version;
+            pointer.RefreshHoverFromPointerRay(pointer.EventCamera.ScreenPointToRay(pointer.EventCamera.WorldToScreenPoint(tile.transform.position)));
+            Assert.That(runtime.ShareCursor(tile.Coordinate), Is.True);
+            yield return null; yield return null;
+            Assert.That(root.Hud.RootElement.Q("teammate-cursor-outline"), Is.Not.Null);
+            Assert.That(root.Hud.RootElement.Q("teammate-cursor-outline").pickingMode, Is.EqualTo(PickingMode.Ignore));
+            UiPlayer.Click(root.Hud.RootElement.Q<Button>("gd-director-toggle"));
+            yield return null; yield return null;
+            var speed = root.Hud.RootElement.Q<Slider>("signal-speed");
+            var intensity = root.Hud.RootElement.Q<SliderInt>("signal-intensity");
+            Assert.That(UiPlayer.IsShown(speed), Is.True);
+            speed.value = 2f; intensity.value = 40;
+            yield return null;
+            Assert.That(runtime.DisplaySignalVisuals.PeriodMilliseconds, Is.EqualTo(700));
+            Assert.That(runtime.DisplaySignalVisuals.IntensityPercent, Is.EqualTo(40));
+            Assert.That(host.Version, Is.EqualTo(before));
+            UiPlayer.SetPlayerViewport(1920u, 1080u, "player signals and Director controls");
+            yield return null; yield return null;
+            yield return UiPlayer.CaptureScreen("tmp/981-live-player-signals.png");
+            Assert.That(runtime.ShareCursor(null), Is.True);
+            yield return null; yield return null;
+            Assert.That(host.ProjectionForSeat(seat.Id).TeammateMarkers.Single(m => m.Sender.Equals(seat.HeroId)).Cursor, Is.Null);
+            root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
+        }
+
+        [UnityTest]
         public IEnumerator OneLifeHeroBaseDrawsYellowOnlyTierBadges()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;
@@ -132,7 +184,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(pointer.TrySuggestAtScreen(screen), Is.True);
             yield return null; yield return null;
             Assert.That(root.Hud.RootElement.Q("teammate-hex-outline"), Is.Not.Null);
-            Assert.That(root.Hud.RootElement.Q("teammate-hex-owners").Q("gd-hero-icon"), Is.Not.Null);
+            Assert.That(root.Hud.RootElement.Q("teammate-hex-owners").childCount, Is.Zero, "Pings use coloured edges, never moving portraits.");
             Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(originalMaterial));
             Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
             Assert.That(runtime.SelectViewedHero(ally.HeroId), Is.True);
@@ -145,9 +197,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(root.Hud.StatusBarRect.height, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
                 Assert.That(UiPlayer.IsShown(root.Hud.RootElement.Q<Button>("my-cards")), Is.True);
                 var cardBadge = root.Hud.RootElement.Q("teammate-card-owners").Q("gd-hero-medallion");
-                var boardBadge = root.Hud.RootElement.Q("teammate-hex-owners").Q("gd-hero-medallion");
-                Assert.That(cardBadge.worldBound.height, Is.GreaterThan(boardBadge.worldBound.height * 1.2f),
-                    "Board markers use the approved smaller token size.");
+                Assert.That(cardBadge.worldBound.height, Is.GreaterThan(0f));
                 for (var parent = cardBadge.parent; parent != null; parent = parent.parent)
                     if (parent.style.overflow.value == Overflow.Hidden || parent is ScrollView)
                     {
@@ -192,7 +242,7 @@ namespace GuardsDigital.Tests.PlayMode
                     UiPlayer.SetPlayerViewport(viewport.Item1,viewport.Item2,"board signal occlusion");
                     root.Hud.Layout();yield return null;yield return null;
                     var layer=root.Hud.RootElement.Q("teammate-board-signals");
-                    var badge=layer.Q("teammate-hex-owners");
+                    var badge=layer.Q("teammate-hex-outline");
                     Assert.That(badge,Is.Not.Null);
                     Assert.That(view.SpellbookDrawer.worldBound.Overlaps(badge.worldBound),Is.True,
                         "The scenario must put the marker behind the actual window.");

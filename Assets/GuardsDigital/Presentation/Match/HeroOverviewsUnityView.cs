@@ -68,10 +68,13 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement spellbookPanel;
         private HeroId openSpellbookHero;
 
+        private readonly Func<IMatchReadModel> colourRead;
+
         public HeroCardInspectionUnityView CardInspection { get; }
 
         public HeroOverviewsUnityView(Func<IMatchReadModel> read = null)
         {
+            colourRead = read;
             Root = new VisualElement { name = "gd-hero-rails" };
             Root.style.position = Position.Absolute;
             Root.pickingMode = PickingMode.Ignore;
@@ -585,17 +588,18 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(rail, 9f);
             rail.style.paddingTop = 8f;
             rail.style.paddingBottom = 8f;
-            var accent = MatchHudTheme.TeamFace(hero.TeamSide);
+            var accent = colourRead == null ? MatchHudTheme.TeamFace(hero.TeamSide)
+                : PlayerAccent.For(colourRead().Participants, hero.HeroId);
             // Milestone 8.35m: the same warm-gold family the top bar wears while the match waits on
             // the viewer (`MatchHudTheme.ShineGlow`/`NarrationWarmBackground`), read here per hero from
             // `AwaitedInputQuery.IsHeroAwaited` rather than a second "whose turn" guess. The team accent
             // keeps a faint hand in the tint even while shining, so the rail never stops reading as this
             // hero's own - the reserved top edge and the left/right accent border below still carry
             // that identity untouched.
-            var frame = hero.IsAwaited
+            var frame = colourRead != null ? accent : hero.IsAwaited
                 ? MatchHudTheme.ShineGlow
                 : Color.Lerp(MatchHudTheme.PanelBorder, accent, 0.34f);
-            var body = hero.IsAwaited
+            var body = colourRead != null ? Color.Lerp(MatchHudTheme.PanelBackground, accent, hero.IsAwaited ? 0.18f : 0.08f) : hero.IsAwaited
                 ? Color.Lerp(MatchHudTheme.NarrationWarmBackground, accent, 0.14f)
                 : Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
             body.a = 0.97f;
@@ -1108,7 +1112,7 @@ namespace GuardsDigital.Presentation.Match
             // sub-pixel one. Added LAST so it draws over the rail's own content rather than under it.
             if (hero.IsAwaited)
             {
-                rail.Add(AwaitedGlowBand());
+                rail.Add(AwaitedGlowBand(colourRead != null ? (Color?)accent : null));
             }
 
             return rail;
@@ -1337,7 +1341,7 @@ namespace GuardsDigital.Presentation.Match
         /// for the tray. The rail keeps its own gold border painted at rest, so a tray that this never
         /// touches looks exactly as it always has.</para>
         /// </summary>
-        private static VisualElement AwaitedGlowBand()
+        private static VisualElement AwaitedGlowBand(Color? accent = null)
         {
             var glow = new VisualElement
             {
@@ -1352,7 +1356,8 @@ namespace GuardsDigital.Presentation.Match
             glow.style.right = 0f;
             glow.style.bottom = 0f;
             glow.style.backgroundColor = Color.clear;
-            HudElements.Border(glow, MatchHudTheme.ShineGlow, AwaitedGlowBandWidth, 12f);
+            if (accent.HasValue) glow.userData = accent.Value;
+            HudElements.Border(glow, accent ?? MatchHudTheme.ShineGlow, AwaitedGlowBandWidth, 12f);
             return glow;
         }
 

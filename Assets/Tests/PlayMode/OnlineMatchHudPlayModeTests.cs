@@ -189,12 +189,27 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(director.style.display.value, Is.EqualTo(DisplayStyle.Flex),
                 "The local hosting player alone is deliberately offered the debug drawer.");
 
+            var speed = root.Hud.RootElement.Q<Slider>("signal-speed");
+            var intensity = root.Hud.RootElement.Q<SliderInt>("signal-intensity");
+            speed.value = 2f; intensity.value = 25;
+            wire.Host.Sweep(System.TimeSpan.TicksPerSecond); wire.Pump();
+            foreach (var recipient in new[] { hostingClient, remoteClient, wire.Client(3) })
+            {
+                Assert.That(recipient.LatestCoordination.Visuals.PeriodMilliseconds, Is.EqualTo(700));
+                Assert.That(recipient.LatestCoordination.Visuals.IntensityPercent, Is.EqualTo(25));
+            }
             var remoteReceiptBefore = remoteClient.ProjectionRevision;
             Assert.That(root.Runtime.UndoRestartPresenter.Undo(), Is.True);
             wire.Pump();
             Assert.That(remoteClient.ProjectionRevision, Is.GreaterThan(remoteReceiptBefore));
             Assert.That(remoteClient.LatestProjection.Version, Is.EqualTo(root.Runtime.Host.Version),
                 "A host debug mutation is republished to every owner-scoped remote client.");
+            root.Runtime.AttachOnlineClient(remoteClient);
+            Assert.That(director.style.display.value, Is.EqualTo(DisplayStyle.None));
+            speed.value = 3f; intensity.value = 80;
+            Assert.That(((MatchHost)root.Runtime.Host).SignalVisuals.PeriodMilliseconds, Is.EqualTo(700),
+                "A remote seat cannot alter the host settings even by invoking hidden controls.");
+            Assert.That(((MatchHost)root.Runtime.Host).SignalVisuals.IntensityPercent, Is.EqualTo(25));
         }
 
         [UnityTest]

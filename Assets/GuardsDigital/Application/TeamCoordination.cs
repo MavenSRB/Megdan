@@ -8,7 +8,7 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
-    public enum CoordinationTargetKind { Hex = 1, Card = 2 }
+    public enum CoordinationTargetKind { Hex = 1, Card = 2, Cursor = 3 }
 
     /// <summary>Explicit set/clear intent. The admitted connection supplies the sender.</summary>
     public sealed class CoordinationCommand
@@ -36,8 +36,9 @@ namespace GuardsDigital.Application
     public sealed class TeammateMarker
     {
         public TeammateMarker(HeroId sender, long revision, HexCoordinate? hex,
-            HeroId cardOwner, CardInstanceId card)
-        { Sender = sender; Revision = revision; Hex = hex; CardOwner = cardOwner; Card = card; }
+            HeroId cardOwner, CardInstanceId card, HexCoordinate? cursor = null)
+        { Sender = sender; Revision = revision; Hex = hex; CardOwner = cardOwner; Card = card; Cursor = cursor; }
+        public HexCoordinate? Cursor { get; }
         public HeroId Sender { get; }
         public long Revision { get; }
         public HexCoordinate? Hex { get; }
@@ -73,6 +74,16 @@ namespace GuardsDigital.Application
             Revalidate(source, seats);
             if (command.Generation != Generation) return false;
             markers.TryGetValue(sender.HeroId, out var previous);
+            if (command.Kind == CoordinationTargetKind.Cursor)
+            {
+                if (!command.Clear && !source.SelectedMap.Spaces.Any(s => s.Coordinate.Equals(command.Hex))) return false;
+                var cursor = command.Clear ? (HexCoordinate?)null : command.Hex;
+                if (Nullable.Equals(cursor, previous?.Cursor)) return true;
+                markers[sender.HeroId] = new TeammateMarker(sender.HeroId, previous?.Revision ?? 0,
+                    previous?.Hex, previous?.CardOwner ?? default, previous?.Card ?? default, cursor);
+                Revision++;
+                return true;
+            }
             if (command.ExpectedRevision != (previous?.Revision ?? 0)) return false;
             if (!command.Clear && command.Kind == CoordinationTargetKind.Hex &&
                 !source.SelectedMap.Spaces.Any(s => s.Coordinate.Equals(command.Hex))) return false;
@@ -82,7 +93,7 @@ namespace GuardsDigital.Application
             var hex = command.Kind == CoordinationTargetKind.Hex ? (command.Clear ? (HexCoordinate?)null : command.Hex) : previous?.Hex;
             var owner = command.Kind == CoordinationTargetKind.Card ? (command.Clear ? default : command.CardOwner) : previous?.CardOwner ?? default;
             var card = command.Kind == CoordinationTargetKind.Card ? (command.Clear ? default : command.Card) : previous?.Card ?? default;
-            markers[sender.HeroId] = new TeammateMarker(sender.HeroId, (previous?.Revision ?? 0) + 1, hex, owner, card);
+            markers[sender.HeroId] = new TeammateMarker(sender.HeroId, (previous?.Revision ?? 0) + 1, hex, owner, card, previous?.Cursor);
             Revision++;
             return true;
         }
@@ -100,7 +111,7 @@ namespace GuardsDigital.Application
                 if (!Nullable.Equals(hex, marker.Hex) || (marker.Card.IsDefined && !validCard))
                 {
                     markers[marker.Sender] = new TeammateMarker(marker.Sender, marker.Revision + 1, hex,
-                        validCard ? marker.CardOwner : default, validCard ? marker.Card : default);
+                        validCard ? marker.CardOwner : default, validCard ? marker.Card : default, marker.Cursor);
                     Revision++;
                 }
             }

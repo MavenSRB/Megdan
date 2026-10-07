@@ -178,14 +178,14 @@ namespace GuardsDigital.Tests.EditMode
         /// space the actor stands on stays readable through the mark.</para>
         /// </summary>
         [Test]
-        public void TheActingHeroRing_KeepsItsGeometryAndGoldAndIsDrawnAsLight()
+        public void TheActingHeroRippleStartsAtTokenOutlineAndIsDrawnAsLight()
         {
             var marker = ActingHeroMarker.Create();
             try
             {
-                Assert.That(ActingHeroMarker.RingWidthRatio, Is.EqualTo(0.22f).Within(0.0001f),
+                Assert.That(ActingHeroMarker.RingWidthRatio, Is.EqualTo(0.04f).Within(0.0001f),
                     "The ring's own width is not this milestone's to move.");
-                Assert.That(ActingHeroMarker.RadiusMargin, Is.EqualTo(1.18f).Within(0.0001f),
+                Assert.That(ActingHeroMarker.RadiusMargin, Is.EqualTo(1f).Within(0.0001f),
                     "nor how far outside the piece it sits.");
                 Assert.That(ActingHeroMarker.Subdivisions, Is.EqualTo(48),
                     "nor how round it is.");
@@ -201,7 +201,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(BoardOverlayMaterial.IsAdditive(material), Is.True,
                     "The ring is light now. An opaque ring is what the user asked to stop seeing.");
 
-                var gold = MatchHudTheme.ActingHeroMarkerColor;
+                var gold = marker.RingColor;
                 Assert.That(material.color.r, Is.EqualTo(gold.r).Within(0.0001f));
                 Assert.That(material.color.g, Is.EqualTo(gold.g).Within(0.0001f));
                 Assert.That(material.color.b, Is.EqualTo(gold.b).Within(0.0001f),

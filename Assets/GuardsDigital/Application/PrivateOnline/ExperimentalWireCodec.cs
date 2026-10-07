@@ -119,6 +119,8 @@ namespace GuardsDigital.Application
                 w.Write(m.Sender.Value); w.Write(m.Revision); w.Write(m.Hex.HasValue);
                 if (m.Hex.HasValue) { w.Write(m.Hex.Value.Q); w.Write(m.Hex.Value.R); }
                 w.Write(m.CardOwner.Value ?? string.Empty); w.Write(m.Card.Value ?? string.Empty);
+                w.Write(m.Cursor.HasValue);
+                if (m.Cursor.HasValue) { w.Write(m.Cursor.Value.Q); w.Write(m.Cursor.Value.R); }
             }
         }
         internal static IReadOnlyList<TeammateMarker> ReadMarkers(BinaryReader r)
@@ -133,9 +135,10 @@ namespace GuardsDigital.Application
                 if (revision < 0 || !senders.Add(sender)) throw new ArgumentException("Invalid marker revision/sender.");
                 HexCoordinate? hex = r.ReadBoolean() ? new HexCoordinate(r.ReadInt32(), r.ReadInt32()) : (HexCoordinate?)null;
                 var owner = ReadId(r); var card = ReadId(r);
+                HexCoordinate? cursor = r.ReadBoolean() ? new HexCoordinate(r.ReadInt32(), r.ReadInt32()) : (HexCoordinate?)null;
                 if ((owner.Length == 0) != (card.Length == 0)) throw new ArgumentException("Incomplete card marker.");
                 result.Add(new TeammateMarker(sender, revision, hex,
-                    owner.Length == 0 ? default : new HeroId(owner), card.Length == 0 ? default : new CardInstanceId(card)));
+                    owner.Length == 0 ? default : new HeroId(owner), card.Length == 0 ? default : new CardInstanceId(card), cursor));
             }
             return result.AsReadOnly();
         }
@@ -154,6 +157,7 @@ namespace GuardsDigital.Application
             {
                 WriteEnvelope(writer,envelope); writer.Write(state.Version); writer.Write(state.Revision);
                 writer.Write(state.Generation); ExperimentalWireCodec.WriteMarkers(writer,state.Markers);
+                writer.Write(state.Visuals.PeriodMilliseconds); writer.Write(state.Visuals.IntensityPercent);
                 writer.Flush(); return PrivateSessionFrameCodec.EncodeFrame(SessionMessageKind.CoordinationUpdate,stream.ToArray());
             }
         }
@@ -165,7 +169,8 @@ namespace GuardsDigital.Application
                 using(var stream=new MemoryStream(payload??Array.Empty<byte>(),false)) using(var reader=new BinaryReader(stream))
                 {
                     if(!TryReadEnvelope(reader,out envelope)) return false;
-                    state=new CoordinationDisplayState(reader.ReadInt64(),reader.ReadInt64(),reader.ReadInt32(),ExperimentalWireCodec.ReadMarkers(reader));
+                    state=new CoordinationDisplayState(reader.ReadInt64(),reader.ReadInt64(),reader.ReadInt32(),ExperimentalWireCodec.ReadMarkers(reader),
+                        new SignalVisualSettings(reader.ReadInt32(), reader.ReadInt32()));
                     return stream.Position==stream.Length;
                 }
             }

@@ -20,6 +20,27 @@ namespace GuardsDigital.Presentation.Interaction
         private StandardMinionPointerSelector[] minionSelectors;
         private HexTileView[] tiles;
         private System.Func<Vector2, bool> blocksPointer;
+        public System.Func<GuardsDigital.Core.Board.HexCoordinate?, bool> ShareCursor { get; set; }
+        private GuardsDigital.Core.Board.HexCoordinate? desiredCursor, sentCursor;
+        private float nextCursorSend;
+        private bool pointerFocused = true;
+
+        private void OnApplicationFocus(bool focused)
+        {
+            pointerFocused = focused;
+            if (!focused) ClearSharedCursor();
+        }
+        private void ClearSharedCursor()
+        {
+            desiredCursor = null;
+            if (sentCursor.HasValue && ShareCursor?.Invoke(null) == true) sentCursor = null;
+        }
+        private void PublishCursor()
+        {
+            if (System.Nullable.Equals(desiredCursor, sentCursor) || Time.unscaledTime < nextCursorSend) return;
+            nextCursorSend = Time.unscaledTime + 0.1f;
+            if (ShareCursor?.Invoke(desiredCursor) == true) sentCursor = desiredCursor;
+        }
         public System.Func<GuardsDigital.Core.Board.HexCoordinate, bool> SuggestHex { get; set; }
 
         private readonly InputAction pointerPress = new InputAction(
@@ -88,6 +109,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void OnDisable()
         {
+            ClearSharedCursor();
             pointerPress.Disable();
         }
 
@@ -99,6 +121,7 @@ namespace GuardsDigital.Presentation.Interaction
         private void Update()
         {
             RefreshHoverAtCurrentPointer();
+            PublishCursor();
             if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame && eventCamera != null)
             {
                 TrySuggestAtScreen(Mouse.current.position.ReadValue());
@@ -120,7 +143,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void RefreshHoverAtCurrentPointer()
         {
-            if (boardView == null || eventCamera == null || Pointer.current == null)
+            desiredCursor = null;
+            if (!pointerFocused || boardView == null || eventCamera == null || Pointer.current == null)
             {
                 boardView?.SetHoveredCoordinate(null);
                 boardView?.SetPointerHoveredHero(default);
@@ -148,6 +172,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var tile = FindTileUnderPointer(pointerRay);
+            desiredCursor = tile?.Coordinate;
             boardView.SetHoveredCoordinate(tile?.Coordinate);
             var hoveredHero = default(GuardsDigital.Core.Units.Heroes.HeroId);
             var hoveredBody = 0;

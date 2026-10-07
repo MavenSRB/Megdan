@@ -11,6 +11,19 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class ExperimentalCoordinationPresentationTests
     {
+        [Test]
+        public void PlayerAccentsUseStableOwnerIdentityAndExistingPortraitGeometry()
+        {
+            var host = HeroCardInspectionTests.Create(true, true);
+            var colours = host.Projection.Participants.Heroes.Select(h => PlayerAccent.For(host.Projection.Participants, h.Id)).ToArray();
+            Assert.That(colours.Distinct().Count(), Is.EqualTo(colours.Length));
+            var view = new HeroOverviewsUnityView(() => host.Projection);
+            var presenter = new HeroOverviewsPresenter(new LocalDirectorMatchClient(host), view);
+            presenter.Refresh();
+            foreach (var rail in view.Root.Query<UnityEngine.UIElements.VisualElement>("gd-hero-rail").ToList())
+                Assert.That(rail.Q("gd-hero-identity-plate"), Is.Not.Null);
+        }
+
         [TestCase(false, false)] [TestCase(true, false)] [TestCase(false, true)] [TestCase(true, true)]
         public void SpellbookFacesFollowTheSameTeamAndEnemyOptions(bool allies, bool enemies)
         {

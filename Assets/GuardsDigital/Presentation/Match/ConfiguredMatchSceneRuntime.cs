@@ -138,6 +138,8 @@ namespace GuardsDigital.Presentation.Match
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
                 tokenViewFactory, highlightRimMaterial, resultingSpaceRimMaterial,
                 cornerHighlightTemplate);
+            BoardView.IdentityColour = hero => PlayerAccent.For(client.Projection.Participants, hero);
+            BoardView.SignalVisuals = () => DisplaySignalVisuals;
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();
@@ -521,6 +523,8 @@ namespace GuardsDigital.Presentation.Match
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
                 HeroOverviewsView, MatchLogView, DecisionWindowView, VictoryScreenView);
+            hud.ConfigureSignalControls(() => (host as MatchHost)?.SignalVisuals ?? SignalVisualSettings.Default,
+                (period, intensity) => { if (signalControlsAuthorized && host is MatchHost localHost) localHost.SetSignalVisuals(period, intensity); });
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
@@ -559,6 +563,20 @@ namespace GuardsDigital.Presentation.Match
         /// Points the tray at one hero (milestone 7.8a). Local presentation state: no command is
         /// submitted, nothing authoritative moves, and nothing about it is serialized.
         /// </summary>
+        private bool signalControlsAuthorized = true;
+        public SignalVisualSettings DisplaySignalVisuals =>
+            clockSession?.LatestCoordination?.Visuals ?? (host as MatchHost)?.SignalVisuals ?? SignalVisualSettings.Default;
+
+        public bool ShareCursor(HexCoordinate? hex)
+        {
+            var projection = client.Projection;
+            if (!(projection is IExperimentalReadModel experimental) || !experimental.Experiments.TeammateCoordination ||
+                !(client is ICoordinationClient communication)) return false;
+            return communication.SubmitCoordination(new CoordinationCommand(0, CoordinationTargetKind.Cursor,
+                !hex.HasValue, projection.SelectedMap.Reference, hex: hex ?? default,
+                generation: experimental.CoordinationGeneration));
+        }
+
         public bool SuggestHex(HexCoordinate hex)
         {
             var projection = client.Projection;
@@ -698,6 +716,7 @@ namespace GuardsDigital.Presentation.Match
                 throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
             client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
             clockSession=online;
+            signalControlsAuthorized = exposeHostDirectorTools;
             BindHomeHero(Seat.HeroId);
             hud.SetDirectorToolsVisible(exposeHostDirectorTools);
             if (exposeHostDirectorTools && republishAfterHostDebugChange != null &&

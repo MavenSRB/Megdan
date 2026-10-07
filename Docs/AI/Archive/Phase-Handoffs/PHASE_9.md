@@ -860,3 +860,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.80c | Shared the privacy-safe trusted host partition with hero-token hand viewing, keeping an unrevealed commitment among the five available faces while real resolved/discarded cards remain unavailable, and enforced the view as read-only at the presenter command boundary. Focused offline passed 11/11; directly affected Play Mode passed 4/4. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980c-share-the-trusted-inspection-partition-with-hero-token-viewing). | `milestone/9.80c` |
+
+## Milestone 9.81 player-signals completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.81 | Stable player-coloured tokens/trays; private inward hex cursors; persistent outward shared-edge pings; player-coloured acting ripples; host-only session ripple speed/intensity. Actual game visual inspection and T2 validation; exact checks and limitations in the commit body. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-981-player-colours-and-allied-cursorping-ripples). | `milestone/9.81` |

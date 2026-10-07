@@ -449,7 +449,8 @@ namespace GuardsDigital.Application
         // projection. v46 (milestone 9.76) adds the separately labelled non-hand basic-Gold section
         // and its anonymous-back count. A v45 peer would misread the remaining row, so admission
         // refuses it. Snapshot schema 59 and experimental envelope 5 are unchanged.
-        public const int Version = 46;
+        // 9.81: cursor markers and host-owned presentation settings; prior wire versions reject.
+        public const int Version = 47;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

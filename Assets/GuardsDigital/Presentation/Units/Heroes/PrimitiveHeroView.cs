@@ -77,6 +77,13 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Mesh ownedMesh;
         private Material ownedMaterial;
         private Material ownedRimMaterial;
+        private Color? identityAccent;
+        public Color IdentityAccent => identityAccent ?? GuardsDigital.Presentation.Match.MatchHudTheme.TeamFace(teamSide);
+        public void SetIdentityAccent(Color colour)
+        {
+            identityAccent = colour;
+            if (ownedRimMaterial != null) ownedRimMaterial.color = colour;
+        }
         private BoardTargetRing targetRing;
         private ActiveEffectHeroMarker activeEffectMarker;
         private HeroBodyMark bodyMark;
@@ -511,6 +518,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             // unlit for milestone 8.11a's reason: it is a picture of a printed token, and what it must
             // show is its own pixels.
             ReplaceOwnedMaterial(ref ownedRimMaterial, CreateTeamRimMaterial(teamSide));
+            if (identityAccent.HasValue) ownedRimMaterial.color = identityAccent.Value;
             ReplaceOwnedMaterial(ref ownedMaterial, CreateTokenFaceMaterial(teamSide, face));
             meshRenderer.sharedMaterials = new[] { ownedRimMaterial, ownedMaterial };
             meshRenderer.enabled = true;

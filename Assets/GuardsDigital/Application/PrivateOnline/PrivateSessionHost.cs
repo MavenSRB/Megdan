@@ -735,9 +735,13 @@ namespace GuardsDigital.Application
                             return;
                         }
                         if (!AcceptGameplayEnvelope(record, coordinationEnvelope)) return;
-                        if (matchHost is MatchHost coordinationHost && coordinationHost.SubmitCoordinationForSeat(record.Seat, coordinationCommand))
-                            PublishCoordinationUpdate();
-                        else SendProjectionTo(record, coordinationEnvelope.Correlation);
+                        if (matchStarted && matchHost is MatchHost coordinationHost && coordinationHost.SubmitCoordinationForSeat(record.Seat, coordinationCommand))
+                        {
+                            if (coordinationCommand.Kind == CoordinationTargetKind.Cursor) cursorPublishPending = true;
+                            else PublishCoordinationUpdate();
+                        }
+                        else if (coordinationCommand.Kind != CoordinationTargetKind.Cursor)
+                            SendProjectionTo(record, coordinationEnvelope.Correlation);
                         return;
                     }
 
@@ -801,8 +805,21 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>Closes every unadmitted connection whose handshake deadline has passed.</summary>
+        private bool cursorPublishPending;
+        private long lastSignalPublishTicks;
+        private SignalVisualSettings publishedVisuals;
+
         public void Sweep(long nowTicks)
         {
+            if (matchStarted && matchHost is MatchHost visualHost &&
+                (cursorPublishPending || !ReferenceEquals(publishedVisuals, visualHost.SignalVisuals)) &&
+                nowTicks - lastSignalPublishTicks >= TimeSpan.TicksPerMillisecond * 100)
+            {
+                lastSignalPublishTicks = nowTicks;
+                cursorPublishPending = false;
+                publishedVisuals = visualHost.SignalVisuals;
+                PublishCoordinationUpdate();
+            }
             List<ConnectionRecord> expired = null;
             foreach (var record in connections.Values)
             {
@@ -1951,6 +1968,7 @@ namespace GuardsDigital.Application
             trimmedProjectionLogRows += droppedLogRows;
             record.GameplaySendSequence++;
             Deliver(record, frame);
+            SendCoordinationTo(record);
             return true;
         }
 
@@ -1993,16 +2011,19 @@ namespace GuardsDigital.Application
         /// <summary>Display-only time never consumes a gameplay sequence or republishes a seat view.</summary>
         public void PublishCoordinationUpdate()
         {
-            if(!matchStarted || !(matchHost is MatchHost signalHost) || !signalHost.Experiments.TeammateCoordination) return;
-            foreach(var record in new List<ConnectionRecord>(connections.Values))
-            {
-                if(record.Phase!=ConnectionPhase.Seated) continue;
-                var view=signalHost.ProjectionForSeat(record.Seat);
-                var state=new CoordinationDisplayState(view.Version,view.CoordinationRevision,view.CoordinationGeneration,view.TeammateMarkers);
-                var frame=NetworkMessageCodec.CoordinationUpdateFrame(new NetworkEnvelope(
-                    SessionCorrelation,record.Epoch,record.CoordinationSendSequence+1,0),state);
-                record.CoordinationSendSequence++; Deliver(record,frame);
-            }
+            if (!matchStarted) return;
+            foreach (var record in new List<ConnectionRecord>(connections.Values))
+                SendCoordinationTo(record);
+        }
+        private void SendCoordinationTo(ConnectionRecord record)
+        {
+            if (!matchStarted || record.Phase != ConnectionPhase.Seated || !(matchHost is MatchHost signalHost)) return;
+            var view = signalHost.ProjectionForSeat(record.Seat);
+            var state = new CoordinationDisplayState(view.Version, view.CoordinationRevision,
+                view.CoordinationGeneration, view.TeammateMarkers, signalHost.SignalVisuals);
+            var frame = NetworkMessageCodec.CoordinationUpdateFrame(new NetworkEnvelope(
+                SessionCorrelation, record.Epoch, ++record.CoordinationSendSequence, 0), state);
+            Deliver(record, frame);
         }
         public void PublishClockUpdate()
         {

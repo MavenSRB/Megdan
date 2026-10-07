@@ -510,3 +510,21 @@ Closing checks: focused presentation coverage proves that an ordinary Director v
 Completed 2026-10-07. Focused offline inspection and coordination coverage passed 11/11. The four directly affected Unity Play Mode journeys passed 4/4, including the real seatless-host token route. The user explicitly kept the 9.80 build paused, so no player build or package was produced.
 
 Historical evidence: [9.80c completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-980c-hero-token-inspection-correction-completion).
+
+### [x] 9.81 Player colours and allied cursor/ping ripples
+
+Authorized 2026-10-07 following the approved real-game animated mockup. One bounded outcome: players identify allied pointers and pings by stable player colours, shared with existing hero-token and tray styling. Red-side accents are orange/yellow/magenta; blue-side accents are cyan/green/violet. Recolour existing tray portrait outlines, tinted backgrounds and border lines without adding tray elements. Replace the acting hero's separate yellow ring with a player-coloured outward ripple. Cursors ripple inward; pings ripple outward continuously until moved/cleared. Shared pings partition the six edges among senders. Default ripple loop is 1.4 seconds; the hosting Director tray adjusts this presentation-only duration and intensity for the session.
+
+Acceptance: stable 2v2/3v3 assignments across reconnect; authenticated team-only, map-bounded cursor updates independent of gameplay history/version/acknowledgements; bounded update rate and cleanup on pointer exit, focus loss, disconnect/restart; same player colour on token/tray/ping/cursor; existing legal-target/effect/vote indicators preserved; real hex geometry and pointer-transparent overlays; one/two/three senders and cursor/ping overlap; host-only speed and intensity controls reach clients and cannot change gameplay clocks. Focused application/wire/privacy/reconnect tests, directly affected presentation tests, focused Play Mode real-control/visual and host-plus-two-client coverage at T2. Enumerate any higher-tier trigger before claiming completion.
+
+Non-goals: no gameplay/rule/card changes, no added tray decoration, no free-moving pointer/portrait, no new build/package, no remote publication. The 9.80 no-build gate stays paused.
+
+Completed 2026-10-07. Implemented stable player colours, preserved tray geometry, inward cursors and outward shared-edge pings, player-coloured acting ripples and host-only session speed/intensity controls. T2 focused application/wire and Unity Edit/Play evidence, source review and actual-game visual inspection are recorded in the local milestone commit. No player build or remote operation. [Completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-981-player-signals-completion).
+
+Historical evidence: [9.81 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-981-player-signals-completion).
+
+### [ ] 9.82 Retract an unrevealed card commitment
+
+Authorized 2026-10-07 as the next outcome after 9.81. A player may undo their own committed card and return it to hand while at least one player has not yet committed. Acceptance of the final commitment closes this opportunity atomically; revealed cards cannot be withdrawn. Use the existing player Undo affordance and preserve seat authorization, hidden-card privacy, deterministic replay and reconnect consistency.
+
+Closing checks: focused rules/application tests for retraction, recommitment, final-commit race ordering, non-owner rejection and replay/snapshot behavior; affected private-session tests and a real-control presentation journey. Inspect the rules authority and existing Undo boundary before implementation. No other undo-boundary changes, builds or publication. Approved sequence: 9.81 -> 9.82, separate validation and local commits.

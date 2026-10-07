@@ -27,6 +27,10 @@ namespace GuardsDigital.Presentation.Match
         private sealed class Signal
         {
             public HexTileView Tile;
+            public Color[] Colours;
+            public bool Cursor;
+            public bool Vote;
+            public Vector2 Centre;
             public VisualElement Ring;
             public VisualElement Badges;
             public Vector2[] Points = new Vector2[6];
@@ -74,38 +78,9 @@ namespace GuardsDigital.Presentation.Match
                 cardBadges.Clear();
                 runtime.HandsView.RefreshTeammateSignals();
                 layer.Clear(); signals.Clear();
-                foreach (var group in experimental.TeammateMarkers.Concat(votes.Select(v=>new TeammateMarker(v.Voter,0,v.Position,default,default))).Where(m => m.Hex.HasValue).GroupBy(m => m.Hex.Value))
-                {
-                    var tile = tiles.FirstOrDefault(t => t != null && t.Coordinate.Equals(group.Key));
-                    if (tile == null) continue;
-                    var signal = new Signal { Tile = tile,
-                        Ring = new VisualElement { name = "teammate-hex-outline", pickingMode = PickingMode.Ignore },
-                        Badges = new VisualElement { name = "teammate-hex-owners", pickingMode = PickingMode.Ignore } };
-                    signal.Ring.style.position = Position.Absolute;
-                    signal.Ring.style.left = 0; signal.Ring.style.top = 0;
-                    signal.Ring.style.width = Length.Percent(100); signal.Ring.style.height = Length.Percent(100);
-                    signal.Ring.generateVisualContent += context =>
-                    {
-                        var painter = context.painter2D;
-                        painter.lineWidth = 2f; painter.strokeColor = Color.white;
-                        painter.BeginPath(); painter.MoveTo(signal.Points[0]);
-                        for (var i = 1; i < 6; i++) painter.LineTo(signal.Points[i]);
-                        painter.ClosePath(); painter.Stroke();
-                    };
-                    signal.Badges.style.position = Position.Absolute;
-                    signal.Badges.style.flexDirection = FlexDirection.Row;
-                    foreach (var marker in group.GroupBy(m=>m.Sender).Select(g=>g.First()).OrderBy(m => m.Sender.Value, StringComparer.Ordinal))
-                    {
-                        var hero = runtime.HeroOverviewsView?.Model?.Heroes.FirstOrDefault(h => h.HeroId.Equals(marker.Sender));
-                        if (hero == null) continue;
-                        var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(hero, MatchHudTheme.TeamFace(hero.TeamSide), 0.62f);
-                        badge.pickingMode = PickingMode.Ignore;
-                        // Every child is decorative; an icon must never intercept a board gesture.
-                        foreach (var child in badge.Children()) child.pickingMode = PickingMode.Ignore;
-                        signal.Badges.Add(badge);
-                    }
-                    layer.Add(signal.Ring); layer.Add(signal.Badges); signals.Add(signal);
-                }
+                BuildSignals(experimental.TeammateMarkers.Where(m => m.Hex.HasValue), false, false);
+                BuildSignals(experimental.TeammateMarkers.Where(m => m.Cursor.HasValue), true, false);
+                BuildSignals(votes.Select(v => new TeammateMarker(v.Voter, 0, v.Position, default, default)), false, true);
             }
             if (inspectionAnchor != null && (inspectionAnchor.panel == null || runtime.HandsView.Model?.ViewedHand?.IsReadOnly != true))
             { inspectionRow.RemoveFromHierarchy(); inspectionAnchor = null; inspectionRow = null; }
@@ -145,7 +120,7 @@ namespace GuardsDigital.Presentation.Match
             foreach (var signal in signals)
             {
                 if (signal.Tile == null) continue;
-                var radius = signal.Tile.OuterRadius * 1.07f;
+                var radius = signal.Tile.OuterRadius;
                 for (var i = 0; i < 6; i++)
                 {
                     var angle = (30f + 60f * i) * Mathf.Deg2Rad;
@@ -153,11 +128,68 @@ namespace GuardsDigital.Presentation.Match
                     signal.Points[i] = PanelPoint(world);
                 }
                 var centre = PanelPoint(signal.Tile.transform.position);
+                signal.Centre = centre;
                 signal.Badges.style.left = centre.x - signal.Badges.childCount * 17.36f;
                 signal.Badges.style.top = signal.Points.Min(p => p.y) - 31;
                 signal.Ring.MarkDirtyRepaint();
             }
         }
+        private void BuildSignals(IEnumerable<TeammateMarker> markers, bool cursor, bool vote)
+        {
+            foreach (var group in markers.GroupBy(m => cursor ? m.Cursor.Value : m.Hex.Value))
+            {
+                var tile = tiles.FirstOrDefault(t => t != null && t.Coordinate.Equals(group.Key));
+                if (tile == null) continue;
+                var owners = group.GroupBy(m => m.Sender).Select(g => g.First())
+                    .OrderBy(m => m.Sender.Value, StringComparer.Ordinal).ToArray();
+                var signal = new Signal { Tile = tile, Cursor = cursor, Vote = vote,
+                    Colours = owners.Select(m => PlayerAccent.For(runtime.ReadModel.Participants, m.Sender)).ToArray(),
+                    Ring = new VisualElement { name = cursor ? "teammate-cursor-outline" : "teammate-hex-outline", pickingMode = PickingMode.Ignore },
+                    Badges = new VisualElement { name = "teammate-hex-owners", pickingMode = PickingMode.Ignore } };
+                signal.Ring.style.position = Position.Absolute;
+                signal.Ring.style.left = 0; signal.Ring.style.top = 0;
+                signal.Ring.style.width = Length.Percent(100); signal.Ring.style.height = Length.Percent(100);
+                signal.Ring.generateVisualContent += context => PaintSignal(context, signal);
+                signal.Badges.style.position = Position.Absolute;
+                signal.Badges.style.flexDirection = FlexDirection.Row;
+                // Timer votes keep their existing portrait language; cursors/pings use coloured edges only.
+                if (vote) foreach (var marker in owners)
+                {
+                    var hero = runtime.HeroOverviewsView?.Model?.Heroes.FirstOrDefault(h => h.HeroId.Equals(marker.Sender));
+                    if (hero == null) continue;
+                    var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(hero, MatchHudTheme.TeamFace(hero.TeamSide), 0.62f);
+                    badge.pickingMode = PickingMode.Ignore;
+                    foreach (var child in badge.Children()) child.pickingMode = PickingMode.Ignore;
+                    signal.Badges.Add(badge);
+                }
+                layer.Add(signal.Ring); layer.Add(signal.Badges); signals.Add(signal);
+            }
+        }
+
+        private void PaintSignal(MeshGenerationContext context, Signal signal)
+        {
+            var settings = runtime.DisplaySignalVisuals;
+            float phase = Mathf.Repeat(Time.unscaledTime * 1000f / settings.PeriodMilliseconds, 1f);
+            float baseline = signal.Cursor ? 0.88f : 1.05f;
+            float wave = signal.Cursor ? baseline - 0.42f * phase : baseline + 0.30f * phase;
+            var painter = context.painter2D;
+            for (int edge = 0; edge < 6; edge++)
+            {
+                var colour = signal.Vote ? Color.white : signal.Colours[edge * signal.Colours.Length / 6];
+                void Stroke(float scale, float opacity, float width)
+                {
+                    colour.a = opacity;
+                    painter.strokeColor = colour; painter.lineWidth = width;
+                    painter.BeginPath();
+                    painter.MoveTo(signal.Centre + (signal.Points[edge] - signal.Centre) * scale);
+                    painter.LineTo(signal.Centre + (signal.Points[(edge + 1) % 6] - signal.Centre) * scale);
+                    painter.Stroke();
+                }
+                Stroke(signal.Vote ? 1.07f : baseline, signal.Cursor ? 0.55f : 0.9f, 2f);
+                if (!signal.Vote) Stroke(wave, (1f - phase) * settings.IntensityPercent / 100f, 2.5f);
+            }
+        }
+
         private Vector2 PanelPoint(Vector3 world)
         {
             var screen = boardCamera.WorldToScreenPoint(world);

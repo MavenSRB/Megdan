@@ -782,7 +782,7 @@ namespace GuardsDigital.Application
                 { Fault(); return; }
                 if(envelope.Sequence<=coordinationReceiveSequence) { DiscardedFrameCount++; return; }
                 coordinationReceiveSequence=envelope.Sequence;
-                if(LatestProjection==null || LatestProjection.Version!=state.Version || !LatestProjection.Experiments.TeammateCoordination ||
+                if(LatestProjection==null || LatestProjection.Version!=state.Version ||
                     state.Generation!=LatestProjection.CoordinationGeneration ||
                     (LatestCoordination!=null && state.Revision<LatestCoordination.Revision)) return;
                 LatestCoordination=state;
@@ -847,7 +847,7 @@ namespace GuardsDigital.Application
                 gameplayReceiveSequence = projection.Envelope.Sequence;
                 LatestProjection = record;
                 LatestCoordination = new CoordinationDisplayState(record.Version,record.CoordinationRevision,
-                    record.CoordinationGeneration,record.TeammateMarkers);
+                    record.CoordinationGeneration,record.TeammateMarkers, LatestCoordination?.Visuals);
                 LatestClock = record.Clock; ClockDisplayRevision++;
                 ProjectionRevision++;
                 ApplyMatchLog(projection.MatchLog);

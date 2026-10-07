@@ -14,6 +14,58 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class ExperimentalCoordinationTests
     {
+        [Test] public void CursorIsPrivateCoalescedAndIndependentOfPingRevisionAndGameplay()
+        {
+            var host = Create(); var wire = PrivateOnlineWireHarness.Compose(host);
+            wire.SeatAll(); wire.ReadyAndPickEverySeat();
+            var sender = host.Seats.Seats[0]; var machine = wire.Client(1);
+            var before = host.CaptureSnapshot(); var version = host.Version;
+            var map = host.Projection.SelectedMap;
+            var first = map.Spaces.First().Coordinate; var last = map.Spaces.Last().Coordinate;
+            var generation = machine.LatestProjection.CoordinationGeneration;
+            Assert.That(machine.TrySubmitCoordination(new CoordinationCommand(0, CoordinationTargetKind.Hex, false, map.Reference, first, generation: generation)), Is.True);
+            wire.Pump();
+            Assert.That(machine.TrySubmitCoordination(new CoordinationCommand(0, CoordinationTargetKind.Cursor, false, map.Reference, first, generation: generation)), Is.True);
+            Assert.That(machine.TrySubmitCoordination(new CoordinationCommand(0, CoordinationTargetKind.Cursor, false, map.Reference, last, generation: generation)), Is.True);
+            wire.Pump();
+            Assert.That(machine.LatestCoordination.Markers.Single().Cursor, Is.Null, "Cursor frames wait for the bounded publish tick.");
+            wire.Session.Sweep(TimeSpan.TicksPerSecond); wire.Pump();
+            Assert.That(machine.LatestCoordination.Markers.Single().Cursor, Is.EqualTo(last));
+            Assert.That(machine.LatestCoordination.Markers.Single().Revision, Is.EqualTo(1), "Hover never races the ping revision.");
+            foreach (var seat in host.Seats.Seats)
+            {
+                var markers = host.ProjectionForSeat(seat.Id).TeammateMarkers;
+                Assert.That(markers.Any(m => m.Sender.Equals(sender.HeroId)), Is.EqualTo(seat.TeamSide == sender.TeamSide));
+            }
+            Assert.That(host.SubmitCoordinationForSeat(sender.Id, new CoordinationCommand(0, CoordinationTargetKind.Cursor, false, map.Reference, new HexCoordinate(999,999), generation: generation)), Is.False);
+            Assert.That(host.Version, Is.EqualTo(version)); Assert.That(host.CaptureSnapshot(), Is.EqualTo(before));
+            Assert.That(machine.IsWaitingForHost, Is.False);
+            wire.DisconnectClient(1);
+            Assert.That(host.ProjectionForSeat(sender.Id).TeammateMarkers, Is.Empty);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void HostRippleSettingsReachEveryClientAndReconnectWithoutGameplayChanges(bool enabled)
+        {
+            var host = Create(enabled); var wire = PrivateOnlineWireHarness.Compose(host);
+            wire.SeatAll(); wire.ReadyAndPickEverySeat();
+            var before = host.CaptureSnapshot(); var version = host.Version;
+            host.SetSignalVisuals(800, 35);
+            wire.Session.Sweep(TimeSpan.TicksPerSecond); wire.Pump();
+            for (int i = 1; i <= host.Seats.Seats.Count; i++)
+            {
+                Assert.That(wire.Client(i).LatestCoordination.Visuals.PeriodMilliseconds, Is.EqualTo(800));
+                Assert.That(wire.Client(i).LatestCoordination.Visuals.IntensityPercent, Is.EqualTo(35));
+                Assert.That(wire.Client(i).IsWaitingForHost, Is.False);
+            }
+            wire.DisconnectClient(1);
+            var returned = wire.Client(wire.ReconnectClient(1));
+            Assert.That(returned.LatestCoordination.Visuals.IntensityPercent, Is.EqualTo(35));
+            Assert.That(host.Version, Is.EqualTo(version)); Assert.That(host.CaptureSnapshot(), Is.EqualTo(before));
+            Assert.Throws<ArgumentOutOfRangeException>(() => host.SetSignalVisuals(399, 100));
+            Assert.Throws<ArgumentOutOfRangeException>(() => host.SetSignalVisuals(1400, 101));
+        }
+
         private static MatchHost Create(bool enabled = true)
         {
             var state = OwnerScopedProjectionTests.CreateOfficialInitialState();
