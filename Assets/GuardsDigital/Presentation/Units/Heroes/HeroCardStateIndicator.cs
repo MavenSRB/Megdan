@@ -52,15 +52,19 @@ namespace GuardsDigital.Presentation.Units.Heroes
             if (!hasCurrent && hand.Count == 0 && concealedHandCount == 0) return;
 
             var y = surface + 0.055f;
+            var rimRadius = tokenRadius * 0.92f;
             if (hasCurrent)
-                AddPip(new Vector3(0f, y, tokenRadius * 0.92f), current);
+                AddPip(new Vector3(0f, y, rimRadius), current);
 
             var total = hand.Count + concealedHandCount;
-            var start = -((total - 1) * PipSpacing * 0.5f);
+            var step = rimRadius <= 0f
+                ? 0f
+                : 2f * Mathf.Asin(Mathf.Min(1f, PipSpacing / (2f * rimRadius)));
             for (var index = 0; index < total; index++)
             {
                 var color = index < hand.Count ? hand[index] : CardColor.None;
-                AddPip(new Vector3(start + (index * PipSpacing), y, -tokenRadius * 0.92f), color);
+                var angle = (-Mathf.PI * 0.5f) + ((index - ((total - 1) * 0.5f)) * step);
+                AddPip(new Vector3(Mathf.Cos(angle) * rimRadius, y, Mathf.Sin(angle) * rimRadius), color);
             }
         }
 

@@ -826,3 +826,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.76 | Hero inspection keeps every visible face in one horizontal row, with HAND left and remaining groups right; typed OTHER GOLDS projection and private wire /46 preserve facedown Gold anonymity. Token pips remain current-card plus hand only. Focused screenshot Play Mode passed 2/2, unfiltered Edit Mode passed 7967 executable tests (37 pre-ignored diagnostics), and unfiltered Play Mode passed 1171/1171. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-976-keep-hero-card-inspection-in-one-edge-aligned-row). | milestone/9.76 |
+
+## Milestone 9.77 token-rim pips and inspection layout completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.77 | Card pips follow the hero-token rim; HAND remains upper-left, ordinary UNAVAILABLE CARDS move upper-right, and Takahide's OTHER GOLDS occupy a separate lower-left box. Focused rim geometry passed 1/1 and focused visual Play Mode passed 3/3, with fresh Takahide, Gydion and token captures. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-977-align-card-pips-to-token-rim-and-separate-takahides-golds). | milestone/9.77 |

@@ -169,29 +169,25 @@ Gate corrections (9.56): Defense text returning a decision to the original attac
 
 ## Current-card inspection extension
 
-Implemented at 9.64e/9.64g and partitioned at 9.72. With either card-information
-experiment enabled, an authorized board token or tray opens the same read-only window without
-replacing the local hand. Left-aligned `HAND` exactly matches the bottom token pips; the unheaded,
-right-aligned remainder holds the other current-set cards. Future upgrades, deck choices, items and
-gameplay controls are excluded.
+Implemented at 9.64e/9.64g and partitioned at 9.72. Either card-information experiment lets an
+authorized token or tray open read-only inspection without replacing the local hand. `HAND` is
+upper-left, ordinary `UNAVAILABLE CARDS` upper-right, and Takahide's typed `OTHER GOLDS` in a
+bordered box below his hand. Future upgrades, deck choices, items and controls are excluded.
 
-Own and allied access uses Teammate coordination; enemy access uses its independent, default-off
-Enemy card information option. These also govern the existing spellbook and Takahide-gold
-exceptions. Ordinary public visibility is unchanged when both are off. Permitted spellbooks remain
-owner-style but non-casting; the 9.64h shortcut stays above the hand and 9.64d owns shared hover.
+Teammate coordination grants own/allied access; default-off Enemy card information grants enemy
+access. Both govern spellbook and Takahide-gold exceptions. Public visibility is unchanged when off.
+Permitted spellbooks remain owner-style but non-casting; 9.64h owns the shortcut and 9.64d hover.
 
-The projection carries known hand/other/other-Gold definition references and anonymous facedown counts, never
-instance IDs. Its top pip reads the public current-card marker and its bottom pips share the popup's
-hand source. Before joint reveal, non-owners receive anonymous remaining-hand and commitment counts,
-preventing identification by subtraction. A facedown resting swap stays anonymous within its safe
-colour set until authoritative lifecycle state reveals or retrieves it; that Core state already
+The projection carries known hand/other/other-Gold references and anonymous counts, never instance
+IDs. Top-rim and lower-rim pips read public current-card and hand sources. Before joint reveal,
+non-owners receive anonymous hand and commitment counts, preventing subtraction. A facedown resting
+swap stays anonymous within its colour set until authority reveals or retrieves it; that state
 persists through rounds, snapshots, replay, Undo and reconnect. Wire 46 rejects earlier peers;
 experimental envelope 5 and Core schema 59 are unchanged.
 
-Collider-free unlit pips use the top render queue while target, selection, hover, Active-effect,
-damage and Defense layers continue underneath. Inspection stays above later mandatory decisions so
-CLOSE and Escape remain reachable, and victory closes it before Restart.
-
+Collider-free unlit pips follow the token border in the top render queue while target, selection,
+hover, Active-effect, damage and Defense layers remain underneath. Inspection stays above later
+mandatory decisions; CLOSE and Escape remain reachable, and victory closes it before Restart.
 ## Minion Battle removal cap
 
 Milestone 9.69 adds an independent per-match option in the host's Experimental menu. It is disabled

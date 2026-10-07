@@ -82,6 +82,17 @@ namespace GuardsDigital.Tests.EditMode
                 var indicator = view.CardStateIndicator;
                 Assert.That(indicator, Is.Not.Null);
                 Assert.That(indicator.PipCount, Is.EqualTo(5), "One top current pip plus four hand pips.");
+                var rimRadius = view.SelectionRadius * 0.92f;
+                var pipCentres = Enumerable.Range(0, indicator.transform.childCount)
+                    .Select(index => indicator.transform.GetChild(index).localPosition)
+                    .ToArray();
+                Assert.That(pipCentres, Has.Length.EqualTo(5));
+                Assert.That(pipCentres.All(centre =>
+                        Mathf.Abs(new Vector2(centre.x, centre.z).magnitude - rimRadius) < Tolerance),
+                    Is.True, "Every card pip centre follows the circular token rim.");
+                Assert.That(pipCentres[0].z, Is.GreaterThan(0f), "The current card stays on the top rim.");
+                Assert.That(pipCentres.Skip(1).All(centre => centre.z < 0f), Is.True,
+                    "Hand cards follow the lower rim arc.");
                 Assert.That(indicator.GetComponentsInChildren<Collider>(true), Is.Empty);
                 Assert.That(indicator.Renderers, Is.Not.Empty);
                 Assert.That(indicator.Renderers.All(renderer =>

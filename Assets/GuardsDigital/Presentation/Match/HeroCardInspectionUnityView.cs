@@ -49,12 +49,12 @@ namespace GuardsDigital.Presentation.Match
             header.Add(close);
             Root.Add(header);
 
-            rowScroll = new ScrollView(ScrollViewMode.Horizontal) { name = "gd-hero-card-scroll" };
+            rowScroll = new ScrollView(ScrollViewMode.VerticalAndHorizontal) { name = "gd-hero-card-scroll" };
             rowScroll.style.flexGrow = 1;
             rowScroll.style.flexShrink = 1;
             rowScroll.style.minHeight = 0;
             rowScroll.horizontalScrollerVisibility = ScrollerVisibility.Auto;
-            rowScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            rowScroll.verticalScrollerVisibility = ScrollerVisibility.Auto;
 
             var row = new VisualElement { name = "gd-hero-card-row" };
             row.style.flexDirection = FlexDirection.Row;
@@ -62,22 +62,25 @@ namespace GuardsDigital.Presentation.Match
             row.style.minWidth = Length.Percent(100f);
             row.style.minHeight = 0;
 
+            var availableColumn = new VisualElement { name = "gd-hero-card-available-column" };
+            availableColumn.style.flexDirection = FlexDirection.Column;
+            availableColumn.style.alignItems = Align.FlexStart;
+            availableColumn.style.flexShrink = 0;
             handSection = BuildSection("gd-hero-card-hand", "HAND", out handGrid);
+            otherGoldSection = BuildSection(
+                "gd-hero-card-other-golds", "OTHER GOLDS", out otherGoldGrid, true);
+            otherGoldSection.style.marginTop = 14f;
+            availableColumn.Add(handSection);
+            availableColumn.Add(otherGoldSection);
+
             var spacer = new VisualElement { name = "gd-hero-card-spacer" };
             spacer.style.flexGrow = 1;
             spacer.style.flexShrink = 0;
             spacer.style.minWidth = 18f;
-            var right = new VisualElement { name = "gd-hero-card-right" };
-            right.style.flexDirection = FlexDirection.Row;
-            right.style.alignItems = Align.FlexStart;
-            right.style.flexShrink = 0;
-            otherSection = BuildSection("gd-hero-card-other", "OTHER CARDS", out otherGrid);
-            otherGoldSection = BuildSection("gd-hero-card-other-golds", "OTHER GOLDS", out otherGoldGrid);
-            right.Add(otherSection);
-            right.Add(otherGoldSection);
-            row.Add(handSection);
+            otherSection = BuildSection("gd-hero-card-other", "UNAVAILABLE CARDS", out otherGrid);
+            row.Add(availableColumn);
             row.Add(spacer);
-            row.Add(right);
+            row.Add(otherSection);
             rowScroll.Add(row);
             Root.Add(rowScroll);
 
@@ -192,13 +195,19 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        private static VisualElement BuildSection(string name, string heading, out VisualElement grid)
+        private static VisualElement BuildSection(string name, string heading, out VisualElement grid, bool framed = false)
         {
             var section = new VisualElement { name = name };
             section.style.flexDirection = FlexDirection.Column;
             section.style.alignItems = Align.Stretch;
             section.style.flexShrink = 0;
             section.style.minHeight = 0;
+            if (framed)
+            {
+                section.style.backgroundColor = new Color(0.035f, 0.043f, 0.050f, 0.92f);
+                HudElements.Padding(section, 8f);
+                HudElements.Border(section, MatchHudTheme.PanelBorder, 1f, 8f);
+            }
             var label = HudElements.Text(heading, 16f, Color.white, FontStyle.Bold);
             label.name = name + "-heading";
             label.style.unityTextAlign = TextAnchor.MiddleLeft;

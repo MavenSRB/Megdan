@@ -497,7 +497,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "At this completed Bushido moment the resolved facedown Gold must leave the token pip-free.");
             yield return BoardPieceCapturePlayModeTests.Capture(
                 runtime.BoardView,
-                "tmp/9-76-takahide-token-pips-facedown-1920",
+                "tmp/9-77-takahide-token-pips-facedown-1920",
                 new[] { token.Coordinate });
             var template = runtime.HeroOverviewsView.CardInspection.Root;
             var inspection = new HeroCardInspectionUnityView(() => runtime.ReadModel);
@@ -509,10 +509,19 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(inspection.Open(safe, "Takahide the Warlord"), Is.True);
             yield return null;
             yield return null;
+            var handSection = inspection.Root.Q("gd-hero-card-hand");
+            var unavailableSection = inspection.Root.Q("gd-hero-card-other");
             var goldSection = inspection.Root.Q("gd-hero-card-other-golds");
+            Assert.That(safe.OtherCards, Is.Not.Empty,
+                "Bushido is a visible unavailable card in the completed swap state.");
+            Assert.That(unavailableSection.Query<VisualElement>("gd-inspected-card").ToList(), Is.Not.Empty);
+            Assert.That(unavailableSection.worldBound.xMin, Is.GreaterThan(handSection.worldBound.xMin),
+                "Unavailable cards occupy the upper-right area.");
+            Assert.That(goldSection.worldBound.yMin, Is.GreaterThan(handSection.worldBound.yMin + 1f),
+                "Other Golds occupy their own box below the available hand.");
             Assert.That(goldSection.Query<VisualElement>("gd-inspected-card-back").ToList(), Has.Count.EqualTo(3));
             Assert.That(goldSection.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
-            yield return UiPlayer.CaptureScreen("tmp/9-76-takahide-facedown-gold-1920.png");
+            yield return UiPlayer.CaptureScreen("tmp/9-77-takahide-facedown-gold-1920.png");
             inspection.Root.RemoveFromHierarchy();
             UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after Takahide facedown Gold inspection");
             Healthy(runtime);

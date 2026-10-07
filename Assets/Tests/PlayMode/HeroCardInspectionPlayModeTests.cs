@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -13,7 +14,7 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class HeroCardInspectionPlayModeTests
     {
-        [UnityTest] public IEnumerator PortraitShowsAllCurrentFacesInOneEdgeAlignedRowAtBothSizes()
+        [UnityTest] public IEnumerator PortraitKeepsHandAndUnavailableAboveTheSeparateGoldBoxAtBothSizes()
         {
             var oldWidth = (uint)Screen.width; var oldHeight = (uint)Screen.height;
             try
@@ -47,7 +48,7 @@ namespace GuardsDigital.Tests.PlayMode
                             "Takahide begins with five bottom-row hand pips and no current-card pip.");
                         yield return BoardPieceCapturePlayModeTests.Capture(
                             runtime.BoardView,
-                            "tmp/9-76-takahide-token-pips-normal-1920",
+                            "tmp/9-77-takahide-token-pips-normal-1920",
                             new[] { token.Coordinate });
                     }
                     foreach (var hero in new[] { own.HeroId, ally, enemy })
@@ -77,19 +78,27 @@ namespace GuardsDigital.Tests.PlayMode
                             var other = window.Q("gd-hero-card-other");
                             var golds = window.Q("gd-hero-card-other-golds");
                             Assert.That(other.resolvedStyle.display, Is.EqualTo(DisplayStyle.None),
-                                "Takahide's non-hand basic Golds belong in their dedicated group.");
+                                "No ordinary unavailable card exists in Takahide's opening state.");
+                            Assert.That(other.Q<Label>("gd-hero-card-other-heading").text,
+                                Is.EqualTo("UNAVAILABLE CARDS"));
                             Assert.That(golds.Q<Label>("gd-hero-card-other-golds-heading").text, Is.EqualTo("OTHER GOLDS"));
                             Assert.That(hand.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(5));
                             Assert.That(golds.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(2));
                             Assert.That(hand.Q("gd-hero-card-hand-row").resolvedStyle.flexWrap, Is.EqualTo(Wrap.NoWrap));
                             Assert.That(golds.Q("gd-hero-card-other-golds-row").resolvedStyle.flexWrap, Is.EqualTo(Wrap.NoWrap));
-                            var faces = window.Query<VisualElement>("gd-inspected-card").ToList();
-                            Assert.That(faces.Max(card => card.worldBound.center.y) - faces.Min(card => card.worldBound.center.y),
-                                Is.LessThan(2f), "Every inspected face stays in one horizontal card row.");
-                            Assert.That(hand.worldBound.xMin, Is.LessThan(golds.worldBound.xMin),
-                                "The hand anchors left and the Gold group occupies the right side.");
+                            Assert.That(hand.Query<VisualElement>("gd-inspected-card").ToList()
+                                    .Max(card => card.worldBound.center.y) -
+                                hand.Query<VisualElement>("gd-inspected-card").ToList()
+                                    .Min(card => card.worldBound.center.y),
+                                Is.LessThan(2f), "The available hand remains one horizontal row.");
+                            Assert.That(golds.worldBound.yMin, Is.GreaterThan(hand.worldBound.yMin + 1f),
+                                "Takahide's Other Golds box sits below his available hand.");
+                            Assert.That(golds.worldBound.xMin, Is.EqualTo(hand.worldBound.xMin).Within(1f),
+                                "The lower Other Golds box belongs to the left available-card column.");
+                            Assert.That(golds.resolvedStyle.borderLeftWidth, Is.GreaterThan(0f),
+                                "Other Golds has its own visible box.");
                             Assert.That(row.worldBound.width, Is.GreaterThanOrEqualTo(scroll.contentViewport.worldBound.width - 1f));
-                            Assert.That(scroll.verticalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden));
+                            Assert.That(scroll.verticalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Auto));
 
                             var visibleFace = hand.Query<VisualElement>("gd-inspected-card").ToList().First();
                             var lowerPoint = new Vector2(visibleFace.worldBound.center.x,
@@ -111,7 +120,7 @@ namespace GuardsDigital.Tests.PlayMode
                             runtime.RefreshClockDisplay(); yield return null;
                             Assert.That(window.Q("gd-inspected-card"), Is.SameAs(retained),
                                 "Clock ticks cannot rebuild the window.");
-                            yield return UiPlayer.CaptureScreen("tmp/9-76-takahide-current-cards-" + width + ".png");
+                            yield return UiPlayer.CaptureScreen("tmp/9-77-takahide-current-cards-" + width + ".png");
                         }
                         UiPlayer.Click(window.Q<Button>("gd-hero-card-close")); yield return null;
                         Assert.That(view.CardInspection.IsOpen, Is.False);
@@ -137,6 +146,64 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 MatchSceneCompositionRoot.NextComposedSeat = null;
                 UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after inspection");
+            }
+        }
+        [UnityTest]
+        public IEnumerator GydionShowsHisUnavailableCardsInTheUpperRightGroup()
+        {
+            var oldWidth = (uint)Screen.width;
+            var oldHeight = (uint)Screen.height;
+            try
+            {
+                yield return GydionUiJourneyPlayModeTests.Stage(
+                    SceneCardContent.VerifiedEngagedStagedGydion,
+                    new[] { GydionCardContent.Cantrip, GydionCardContent.PrepareSpells });
+                var root = ArienUiJourneyPlayModeTests.Root();
+                var runtime = root.Runtime;
+                var gydion = GydionUiJourneyPlayModeTests.Gydion(runtime);
+                var owner = runtime.Host.Seats.Seats.Single(seat => seat.Owns(gydion));
+                var model = HeroCardInspection.ForSeat(
+                        ((MatchHost)runtime.Host).Projection,
+                        owner,
+                        new ExperimentalMatchOptions(teammateCoordination: true))
+                    .Single(row => row.Hero.Equals(gydion));
+                Assert.That(model.HandCards, Has.Count.EqualTo(2));
+                Assert.That(model.OtherCards, Has.Count.EqualTo(3));
+                Assert.That(model.OtherGoldCards, Is.Empty);
+
+                UiPlayer.SetPlayerViewport(1920, 1080, "Gydion unavailable-card inspection");
+                root.Hud.Layout();
+                yield return null;
+                yield return null;
+                var template = runtime.HeroOverviewsView.CardInspection.Root;
+                var inspection = new HeroCardInspectionUnityView(() => runtime.ReadModel);
+                inspection.Root.style.left = template.resolvedStyle.left;
+                inspection.Root.style.top = template.resolvedStyle.top;
+                inspection.Root.style.width = template.resolvedStyle.width;
+                inspection.Root.style.height = template.resolvedStyle.height;
+                root.Hud.RootElement.Add(inspection.Root);
+                Assert.That(inspection.Open(model, GydionUiJourneyPlayModeTests.HisName), Is.True);
+                yield return null;
+                yield return null;
+
+                var hand = inspection.Root.Q("gd-hero-card-hand");
+                var unavailable = inspection.Root.Q("gd-hero-card-other");
+                var golds = inspection.Root.Q("gd-hero-card-other-golds");
+                Assert.That(unavailable.Q<Label>("gd-hero-card-other-heading").text,
+                    Is.EqualTo("UNAVAILABLE CARDS"));
+                Assert.That(unavailable.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(3));
+                Assert.That(unavailable.worldBound.xMin, Is.GreaterThan(hand.worldBound.xMin),
+                    "Gydion's discarded cards occupy the upper-right group.");
+                Assert.That(unavailable.worldBound.yMin, Is.EqualTo(hand.worldBound.yMin).Within(1f));
+                Assert.That(golds.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+                yield return UiPlayer.CaptureScreen("tmp/9-77-gydion-unavailable-cards-1920.png");
+                inspection.Root.RemoveFromHierarchy();
+                GydionUiJourneyPlayModeTests.Healthy(runtime);
+            }
+            finally
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after Gydion unavailable-card inspection");
             }
         }
     }

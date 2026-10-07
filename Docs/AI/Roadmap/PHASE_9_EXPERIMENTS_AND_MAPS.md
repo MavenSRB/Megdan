@@ -432,3 +432,20 @@ schema. No gameplay rule, card lifecycle, visibility option, package, publicatio
 Completed 2026-10-07. Hero inspection now uses one shared non-wrapping horizontal row with HAND on the left and available OTHER CARDS / OTHER GOLDS groups on the right. Typed private projection and wire /46 keep known basic Golds separate and conceal all same-colour Gold identities when a facedown resting swap would otherwise be identifiable. The token-pip source remains current card plus hand only: the normal close-up shows five hand pips, while the completed Bushido facedown-Gold state correctly adds none. Focused Edit Mode passed 40/40; final screenshot Play Mode passed 2/2; unfiltered Edit Mode passed 7967 executable tests with 37 pre-ignored diagnostic sweeps, and unfiltered Play Mode passed 1171/1171. Normal/facedown card-window and token close-up captures were produced. Review found no gameplay, lifecycle, snapshot-schema, option, package, publication or remote change.
 
 Historical evidence: [9.76 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-976-hero-card-inspection-row-and-other-golds-completion).
+
+### [x] 9.77 Align card pips to token rim and separate Takahide's Golds
+
+Authorized 2026-10-07 by the user's screenshot review. Place every current-card/hand pip on the
+hero token's circular border rather than on straight chords above and below it. In hero inspection,
+keep available hand cards at upper left and unavailable cards at upper right; Takahide's typed
+`OTHER GOLDS` section is a distinct lower box beneath the available cards. Preserve privacy,
+card sizing, click behavior, and all authoritative card classifications from 9.76.
+
+Closing checks: focused geometry coverage proves every pip centre lies on the token rim; focused
+Play Mode proves the upper left/right placement and Takahide's lower Gold section at both supported
+sizes, plus fresh normal, facedown, and token close-up captures. T2 presentation-only correction;
+no rules, projection, wire, snapshot, package, publication, or remote change.
+
+Completed 2026-10-07. Current-card and hand pip centres now follow the token rim, with the current card at the top and the hand distributed along the lower arc. Inspection keeps HAND upper-left and labels ordinary non-hand cards UNAVAILABLE CARDS upper-right; Takahide alone shows the typed OTHER GOLDS group in a bordered lower-left box. Focused Edit Mode geometry passed 1/1 and focused Play Mode passed 3/3 at the final executable revision, producing 1920x1080 Takahide normal/facedown, Gydion unavailable-card, and token close-up captures. The direct visual-inspection helper was blocked by the Windows sandbox ACL, so automated geometry/layout assertions and valid full-resolution PNG checks are recorded and the captures are presented for user review. No rules, privacy, projection, wire, snapshot, package, publication or remote change.
+
+Historical evidence: [9.77 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-977-token-rim-pips-and-inspection-layout-completion).
