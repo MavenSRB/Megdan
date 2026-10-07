@@ -240,9 +240,15 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 castable = runtime.HandsView.HoverPreviewRoot.Q("gd-castable-spells");
                 Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Has.Count.EqualTo(1));
-                Assert.That(castable.Query<Label>("gd-castable-spell-caption").ToList()
-                    .Count(label => label.text == "REMOVED"), Is.EqualTo(1));
-                yield return UiPlayer.CaptureScreen("tmp/9-74-gydion-cast-hover-one-removed.png");
+                Assert.That(castable.Query<Label>("gd-castable-spell-caption").ToList(), Is.Empty);
+                Assert.That(castable.Q<Label>("gd-castable-spells-label"), Is.Null);
+                Assert.That(castable.Query<VisualElement>("gd-spell-face").ToList()
+                    .All(face => face.worldBound.width > 200f), Is.True,
+                    "the three printed spell faces are large enough to read");
+                Assert.That(castable.worldBound.yMin,
+                    Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
+                    "the larger vertical stack stays below the status header");
+                yield return UiPlayer.CaptureScreen("tmp/9-80-gydion-cast-hover-large-one-dimmed.png");
                 UiPlayer.PointAway(cantripButton);
                 yield return new WaitForSecondsRealtime(0.25f);
 

@@ -173,11 +173,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(hosts, Has.Length.EqualTo(3));
             Assert.That(hosts.Take(2).All(host => host.style.marginBottom.value.value > 0f), Is.True);
             Assert.That(hosts.Last().style.marginBottom.value.value, Is.Zero);
-            Assert.That(Named(shelf, "gd-spell-face").Count(), Is.EqualTo(3));
+            var faces = Named(shelf, "gd-spell-face").ToArray();
+            Assert.That(faces, Has.Length.EqualTo(3));
+            Assert.That(faces.All(face => face.style.width.value.value > 200f), Is.True,
+                "the hover uses readable spell faces rather than thumbnails");
             Assert.That(Named(shelf, "gd-spell-greyed").Count(), Is.EqualTo(1));
-            Assert.That(Named(shelf, "gd-castable-spell-caption")
-                    .Cast<TextElement>().Select(label => label.text),
-                Is.EqualTo(new[] { "FIND FAMILIAR", "REMOVED", "SUNBURST" }));
+            Assert.That(Named(shelf, "gd-castable-spell-caption"), Is.Empty,
+                "availability is the face's dimmed treatment; the printed card needs no duplicate label");
+            Assert.That(Named(shelf, "gd-castable-spells-label"), Is.Empty);
         }
 
         /// <summary>

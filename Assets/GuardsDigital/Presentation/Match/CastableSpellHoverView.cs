@@ -13,12 +13,10 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     internal static class CastableSpellHoverView
     {
-        internal const float FaceScale = 0.34f;
+        internal const float FaceScale = 0.70f;
         internal const float Gap = 7f;
         private const float Padding = 7f;
         private const float FaceGap = 5f;
-        private const float CaptionHeight = 18f;
-        private const float EyebrowHeight = 18f;
 
         internal static float WidthFor(IReadOnlyList<SpellCardViewModel> spells) =>
             spells == null || spells.Count == 0
@@ -28,8 +26,8 @@ namespace GuardsDigital.Presentation.Match
         internal static float HeightFor(IReadOnlyList<SpellCardViewModel> spells) =>
             spells == null || spells.Count == 0
                 ? 0f
-                : Padding * 2f + EyebrowHeight +
-                    spells.Count * (SpellCardFootprint.Height * FaceScale + CaptionHeight) +
+                : Padding * 2f +
+                    spells.Count * SpellCardFootprint.Height * FaceScale +
                     Math.Max(0, spells.Count - 1) * FaceGap;
 
         internal static void Attach(
@@ -61,32 +59,16 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(shelf, Padding);
             HudElements.Border(shelf, MatchHudTheme.PanelBorder, 1f, 7f);
 
-            var eyebrow = HudElements.Text("CAN CAST", 10f, MatchHudTheme.CoinFace, FontStyle.Bold);
-            eyebrow.name = "gd-castable-spells-label";
-            eyebrow.style.height = EyebrowHeight;
-            eyebrow.style.unityTextAlign = TextAnchor.MiddleLeft;
-            shelf.Add(eyebrow);
-
             var row = new VisualElement { name = "gd-castable-spells-row", pickingMode = PickingMode.Ignore };
             row.style.flexDirection = FlexDirection.Column;
             row.style.alignItems = Align.Center;
             for (var index = 0; index < spells.Count; index++)
             {
                 var spell = spells[index];
-                var host = new VisualElement { name = "gd-castable-spell", pickingMode = PickingMode.Ignore };
+                var host = new VisualElement { name = "gd-castable-spell", pickingMode = PickingMode.Ignore, tooltip = spell.AssistiveLabel };
                 host.style.width = SpellCardFootprint.Width * FaceScale;
                 host.style.marginBottom = index + 1 < spells.Count ? FaceGap : 0f;
                 host.Add(SpellCardFaceView.Build(spell, FaceScale));
-                var caption = HudElements.Text(
-                    spell.IsGreyed ? "REMOVED" : spell.DisplayName.ToUpperInvariant(),
-                    9f,
-                    spell.IsGreyed ? MatchHudTheme.MutedText : MatchHudTheme.PrimaryText,
-                    FontStyle.Bold);
-                caption.name = "gd-castable-spell-caption";
-                caption.style.height = CaptionHeight;
-                caption.style.unityTextAlign = TextAnchor.MiddleCenter;
-                caption.style.whiteSpace = WhiteSpace.NoWrap;
-                host.Add(caption);
                 row.Add(host);
             }
 
