@@ -14,6 +14,12 @@ namespace GuardsDigital.Application
     public sealed partial class MatchHost
     {
         private MatchClock clock;
+        private readonly DecisionWindowTracker decisionWindows = new DecisionWindowTracker();
+        private bool acceptingTimeout;
+        public IReadOnlyList<DecisionWindowMeasurement> DecisionWindows
+        {
+            get { lock (gate) return decisionWindows.Completed.ToArray(); }
+        }
         private sealed class TimerCheckpoint
         {
             public MatchClockState State;
@@ -77,6 +83,8 @@ namespace GuardsDigital.Application
         {
             public string Id;
             public MatchSeat Seat;
+            public MatchClockKind Kind;
+            public string Context;
             public IReadOnlyList<DirectorCommand> Commands;
         }
         public void ResetClockReadiness(SeatId seat)
@@ -100,15 +108,17 @@ namespace GuardsDigital.Application
             if (elapsedTicks < 0) throw new ArgumentOutOfRangeException(nameof(elapsedTicks));
             lock(gate)
             {
-                if (!Experiments.TurnTimer || executing || !timerStarted) return;
+                if (executing || !timerStarted) return;
                 timerPaused = paused;
                 var decisions = SynchronizeClocks();
-                clock.Advance(elapsedTicks);
                 if (paused) return;
+                decisionWindows.Advance(elapsedTicks);
+                if (Experiments.TurnTimer) clock.Advance(elapsedTicks);
                 foreach (var pair in clockReadiness.ToArray())
                     clockReadiness[pair.Key] = (pair.Value.Version, pair.Value.Ready,
                         Math.Min(TimeSpan.FromSeconds(30).Ticks, pair.Value.Age + Math.Min(elapsedTicks,TimeSpan.FromSeconds(30).Ticks)));
                 decisions = SynchronizeClocks();
+                if (!Experiments.TurnTimer) return;
                 executing = true;
                 try
                 {
@@ -164,9 +174,14 @@ namespace GuardsDigital.Application
         }
         private void AcceptTimeout(DirectorCommand command, MatchSeat seat)
         {
-            var result=Execute(MatchSubmission.ForCommand(command));
-            if (!result.Accepted) throw new InvalidOperationException("Timeout command refused: "+command+" / "+result.Detail);
-            RefreshSeatUndoWatermark(seat?.Id ?? default,command);
+            acceptingTimeout = true;
+            try
+            {
+                var result=Execute(MatchSubmission.ForCommand(command));
+                if (!result.Accepted) throw new InvalidOperationException("Timeout command refused: "+command+" / "+result.Detail);
+                RefreshSeatUndoWatermark(seat?.Id ?? default,command);
+            }
+            finally { acceptingTimeout = false; }
         }
         private int NextTimeoutRandom(int count)
         {
@@ -187,8 +202,9 @@ namespace GuardsDigital.Application
         private List<TimedDecision> SynchronizeClocks()
         {
             var result=new List<TimedDecision>();
-            if (clock == null || !Experiments.TurnTimer) return result;
-            var p=session.Projection; clock.SetWave(p.RemainingWaveCounters);
+            if (clock == null) return result;
+            var p=session.Projection;
+            clock.SetWave(p.RemainingWaveCounters);
             foreach(var seat in CurrentSeats().Seats)
                 if (!clockReadiness.TryGetValue(seat.Id,out var readiness) || readiness.Version!=p.Version)
                     clockReadiness[seat.Id]=(p.Version,false,0);
@@ -215,7 +231,8 @@ namespace GuardsDigital.Application
                     {
                         var key="upgrade:"+p.PendingSystemTransitionStep.InstanceId.Value+":"+group.Key.Value;
                         clock.Ensure(key,MatchClockKind.Upgrade,seat.HeroId,seat.TeamSide);
-                        result.Add(new TimedDecision{Id=key,Seat=seat,Commands=group.ToArray()});
+                        result.Add(new TimedDecision{Id=key,Seat=seat,Kind=MatchClockKind.Upgrade,
+                            Context="Card upgrade",Commands=group.ToArray()});
                     }
                     continue;
                 }
@@ -227,7 +244,7 @@ namespace GuardsDigital.Application
                     if (seat.Owns(actor) && !inDefenseText) { id=turn; kind=MatchClockKind.Resolution; responseStack.Clear(); }
                     else
                     {
-                        var states=clock.Capture().Entries;
+                        var states=clock.Entries;
                         var existing=responseStack.FindIndex(key=>states.Any(e=>e.Id==key && e.Owner.Equals(seat.HeroId)));
                         if (existing>=0) responseStack.RemoveRange(existing+1,responseStack.Count-existing-1);
                         else responseStack.Add(turn+":response:"+(++responseOrdinal));
@@ -244,15 +261,28 @@ namespace GuardsDigital.Application
                     kind=MatchClockKind.Response;
                 }
                 clock.Ensure(id,kind,owner.IsTeamOwned?default:seat.HeroId,seat.TeamSide);
-                result.Add(new TimedDecision{Id=id,Seat=seat,Commands=commands});
+                var context = kind == MatchClockKind.Commitment ? "Card commitment" :
+                    kind == MatchClockKind.Resolution ? "Card resolution" :
+                    p.DecisionContract?.FamilyId.Value ?? commands[0].Kind.ToString();
+                result.Add(new TimedDecision{Id=id,Seat=seat,Kind=kind,Context=context,Commands=commands});
             }
             var retained=new HashSet<string>(result.Select(d=>d.Id));
             if (turn.Length>0)
-                foreach(var entry in clock.Capture().Entries.Where(e=>(e.Id==turn || e.Id.StartsWith(turn+":response:",StringComparison.Ordinal)))) retained.Add(entry.Id);
+                foreach(var entry in clock.Entries.Where(e=>(e.Id==turn || e.Id.StartsWith(turn+":response:",StringComparison.Ordinal)))) retained.Add(entry.Id);
             clock.Retain(retained);
             foreach(var key in timedVoteTallies.Keys.Where(k=>!retained.Contains(k)).ToArray()) timedVoteTallies.Remove(key);
-            clock.SetCurrent(new HashSet<string>(result.Select(d=>d.Id)));
-            clock.SetRunning(new HashSet<string>(result.Where(d=>IsClockReady(d.Seat,p.Version)).Select(d=>d.Id)));
+            var current = new HashSet<string>(result.Select(d=>d.Id));
+            var running = new HashSet<string>(result.Where(d=>IsClockReady(d.Seat,p.Version)).Select(d=>d.Id));
+            clock.SetCurrent(current);
+            clock.SetRunning(running);
+            string MeasurementId(TimedDecision decision) =>
+                decision.Id+"|seat:"+decision.Seat.Id.Value;
+            var measurementRunning = new HashSet<string>(result
+                .Where(d=>IsClockReady(d.Seat,p.Version)).Select(MeasurementId));
+            decisionWindows.Reconcile(result.Select(d=>new DecisionWindowDescriptor
+                {Id=MeasurementId(d),Kind=d.Kind,Context=d.Context,Seat=d.Seat}),
+                measurementRunning,p.Version,pendingDecisionClosure,retained);
+            pendingDecisionClosure=null;
             return result;
         }
         private (TimerCheckpoint Current, Dictionary<int,TimerCheckpoint> Journal)? pendingTimerRestore;
@@ -310,27 +340,56 @@ namespace GuardsDigital.Application
         }
         private TimerCheckpoint timedBefore;
         private int timedBeforeCount;
+        private DecisionWindowClosure pendingDecisionClosure;
         private void BeforeTimedSubmission()
         {
             pendingTimerRestore=null;
+            SynchronizeClocks();
             if (!Experiments.TurnTimer) return;
-            SynchronizeClocks(); timedBeforeCount=session.Projection.AcceptedCommands.Count; timedBefore=CaptureTimerCheckpoint();
+            timedBeforeCount=session.Projection.AcceptedCommands.Count; timedBefore=CaptureTimerCheckpoint();
         }
         private void AfterTimedSubmission(MatchSubmission submission,bool directorUndo)
         {
-            if (!Experiments.TurnTimer) return;
-            if (timedBefore!=null) clockCheckpoints[timedBeforeCount]=timedBefore;
-            if (submission.Kind==MatchSubmissionKind.RestoreSnapshot && pendingTimerRestore.HasValue)
+            if (Experiments.TurnTimer)
             {
-                var restored=pendingTimerRestore.Value; RestoreTimerCheckpoint(restored.Current,true);
-                clockCheckpoints.Clear(); foreach(var pair in restored.Journal) clockCheckpoints.Add(pair.Key,pair.Value);
-                pendingTimerRestore=null;
+                if (timedBefore!=null) clockCheckpoints[timedBeforeCount]=timedBefore;
+                if (submission.Kind==MatchSubmissionKind.RestoreSnapshot && pendingTimerRestore.HasValue)
+                {
+                    var restored=pendingTimerRestore.Value; RestoreTimerCheckpoint(restored.Current,true);
+                    clockCheckpoints.Clear(); foreach(var pair in restored.Journal) clockCheckpoints.Add(pair.Key,pair.Value);
+                    pendingTimerRestore=null;
+                }
+                if (submission.Kind==MatchSubmissionKind.Undo && clockCheckpoints.TryGetValue(session.Projection.AcceptedCommands.Count,out var checkpoint))
+                    RestoreTimerCheckpoint(checkpoint,directorUndo);
             }
-            if (submission.Kind==MatchSubmissionKind.Undo && clockCheckpoints.TryGetValue(session.Projection.AcceptedCommands.Count,out var checkpoint))
-                RestoreTimerCheckpoint(checkpoint,directorUndo);
             if (submission.Kind==MatchSubmissionKind.Restart)
             { clock=new MatchClock(Experiments); clockCheckpoints.Clear(); clockTurn=string.Empty; responseStack.Clear(); timedVoteTallies.Clear(); boardVotes.Clear(); boardVoteVersion=Version; timeoutDraw=0; }
+            pendingDecisionClosure=ClosureOf(submission,directorUndo);
+            if (submission.Kind!=MatchSubmissionKind.Command)
+                decisionWindows.CloseAll(session.Projection.Version,pendingDecisionClosure);
             SynchronizeClocks();
+        }
+
+        private DecisionWindowClosure ClosureOf(MatchSubmission submission, bool directorUndo)
+        {
+            if (acceptingTimeout)
+                return new DecisionWindowClosure {Reason=DecisionWindowCloseReason.TimeoutCommand,
+                    Command=submission.Command?.Kind};
+            switch (submission.Kind)
+            {
+                case MatchSubmissionKind.Command:
+                    return new DecisionWindowClosure {Reason=DecisionWindowCloseReason.PlayerCommand,
+                        Command=submission.Command?.Kind};
+                case MatchSubmissionKind.Undo:
+                    return new DecisionWindowClosure {Reason=directorUndo
+                        ? DecisionWindowCloseReason.DirectorUndo : DecisionWindowCloseReason.Undo};
+                case MatchSubmissionKind.Restart:
+                    return new DecisionWindowClosure {Reason=DecisionWindowCloseReason.Restart};
+                case MatchSubmissionKind.RestoreSnapshot:
+                    return new DecisionWindowClosure {Reason=DecisionWindowCloseReason.SnapshotRestore};
+                default:
+                    return new DecisionWindowClosure {Reason=DecisionWindowCloseReason.StateAdvanced};
+            }
         }
     }
 }

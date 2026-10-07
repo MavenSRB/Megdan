@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
@@ -411,6 +413,84 @@ namespace GuardsDigital.Tests.EditMode
             var result=h.SubmitForSeat(seat.Id,new SeatSubmission(new SubmissionId("late"),old.Version,command));
             Assert.That(result.Accepted,Is.False);
             Assert.That(h.Projection.AcceptedCommands.Count(c=>c.Kind==DirectorCommandKind.CommitCard && c.CardInstanceId.Equals(command.CardInstanceId)),Is.LessThanOrEqualTo(1));
+        }
+
+        [Test]
+        public void TimerOffStillRecordsOnlyActionableDecisionTime()
+        {
+            var h=MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            h.SetTimerStarted(true);
+            foreach(var seat in h.Seats.Seats) h.SetClockReadiness(seat.Id,h.Version,true);
+            h.AdvanceClock(TimeSpan.FromSeconds(9).Ticks,true);
+            h.AdvanceClock(TimeSpan.FromMilliseconds(1250).Ticks);
+            var acting=h.Seats.Seats[0];
+            var command=h.ProjectionForSeat(acting.Id).AuthorizedCommands
+                .First(value=>value.Kind==DirectorCommandKind.CommitCard);
+            Assert.That(h.SubmitForSeat(acting.Id,new SeatSubmission(
+                new SubmissionId("measured-commitment"),h.Version,command)).Accepted,Is.True);
+
+            var measured=h.DecisionWindows.Single(value=>value.Hero.Equals(acting.HeroId));
+            Assert.That(h.ClockState.Enabled,Is.False,"Passive measurement does not enable the experiment.");
+            Assert.That(measured.Kind,Is.EqualTo(MatchClockKind.Commitment));
+            Assert.That(measured.Context,Is.EqualTo("Card commitment"));
+            Assert.That(measured.ActiveTicks,Is.EqualTo(TimeSpan.FromMilliseconds(1250).Ticks));
+            Assert.That(measured.CloseReason,Is.EqualTo(DecisionWindowCloseReason.PlayerCommand));
+            Assert.That(measured.ClosingCommand,Is.EqualTo(DirectorCommandKind.CommitCard));
+        }
+
+        [Test]
+        public void TimeoutAndRestartClearlyNameHowDecisionWindowsClosed()
+        {
+            var timed=Create();
+            Ready(timed);
+            timed.AdvanceClock(TimeSpan.FromSeconds(2).Ticks);
+            Assert.That(timed.DecisionWindows,Has.Some.Property("CloseReason")
+                .EqualTo(DecisionWindowCloseReason.TimeoutCommand));
+
+            var untimed=MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            untimed.SetTimerStarted(true);
+            foreach(var seat in untimed.Seats.Seats) untimed.SetClockReadiness(seat.Id,untimed.Version,true);
+            untimed.AdvanceClock(TimeSpan.FromMilliseconds(500).Ticks);
+            var restartingSeat=untimed.Seats.Seats[0];
+            var commitment=untimed.ProjectionForSeat(restartingSeat.Id).AuthorizedCommands
+                .First(value=>value.Kind==DirectorCommandKind.CommitCard);
+            Assert.That(untimed.Submit(MatchSubmission.ForCommand(commitment)).Accepted,Is.True);
+            var beforeRestart=untimed.DecisionWindows.Count;
+            Assert.That(untimed.Submit(MatchSubmission.ForRestart()).Accepted,Is.True);
+            Assert.That(untimed.DecisionWindows.Count,Is.GreaterThan(beforeRestart));
+            Assert.That(untimed.DecisionWindows.Skip(beforeRestart).All(value=>
+                value.CloseReason==DecisionWindowCloseReason.Restart),Is.True);
+        }
+        [Test]
+        public void NestedResponsePausesParentWithoutDoubleCountingEitherWindow()
+        {
+            var red=new MatchSeat(new SeatId("red-seat"),new PlayerId("red-player"),
+                new HeroId("red-hero"),new TeamId("red-team"),TeamSide.Red);
+            var blue=new MatchSeat(new SeatId("blue-seat"),new PlayerId("blue-player"),
+                new HeroId("blue-hero"),new TeamId("blue-team"),TeamSide.Blue);
+            var parent=new DecisionWindowDescriptor
+                {Id="resolution|seat:red-seat",Kind=MatchClockKind.Resolution,Context="Card resolution",Seat=red};
+            var response=new DecisionWindowDescriptor
+                {Id="response|seat:blue-seat",Kind=MatchClockKind.Response,Context="defense",Seat=blue};
+            var tracker=new DecisionWindowTracker();
+            tracker.Reconcile(new[]{parent},new System.Collections.Generic.HashSet<string>{parent.Id},10);
+            tracker.Advance(TimeSpan.FromSeconds(1).Ticks);
+            tracker.Reconcile(new[]{response},new System.Collections.Generic.HashSet<string>{response.Id},11,
+                retainedClockIds:new System.Collections.Generic.HashSet<string>{"resolution","response"});
+            tracker.Advance(TimeSpan.FromSeconds(2).Ticks);
+            tracker.Reconcile(new[]{parent},new System.Collections.Generic.HashSet<string>{parent.Id},12,
+                new DecisionWindowClosure{Reason=DecisionWindowCloseReason.PlayerCommand,
+                    Command=DirectorCommandKind.DeclineDefense},
+                new System.Collections.Generic.HashSet<string>{"resolution"});
+            tracker.Advance(TimeSpan.FromSeconds(3).Ticks);
+            tracker.Reconcile(Array.Empty<DecisionWindowDescriptor>(),new System.Collections.Generic.HashSet<string>(),13,
+                new DecisionWindowClosure{Reason=DecisionWindowCloseReason.PlayerCommand,
+                    Command=DirectorCommandKind.PerformHold});
+
+            Assert.That(tracker.Completed.Single(value=>value.Kind==MatchClockKind.Response).ActiveSeconds,
+                Is.EqualTo(2));
+            Assert.That(tracker.Completed.Single(value=>value.Kind==MatchClockKind.Resolution).ActiveSeconds,
+                Is.EqualTo(4));
         }
     }
 }

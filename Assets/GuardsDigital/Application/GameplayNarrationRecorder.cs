@@ -33,6 +33,7 @@ namespace GuardsDigital.Application
         private readonly Func<DateTimeOffset> clock;
         private readonly bool ownsWriter;
         private int lastWrittenSequence;
+        private int lastDecisionSequence;
         private bool headerWritten;
 
         public GameplayNarrationRecorder(
@@ -116,6 +117,25 @@ namespace GuardsDigital.Application
 
             return written;
         }
+
+        /// <summary>Emits each completed player decision window once.</summary>
+        public int ObserveDecisionWindows(
+            long observedVersion,
+            IReadOnlyList<DecisionWindowMeasurement> windows)
+        {
+            if (windows == null) throw new ArgumentNullException(nameof(windows));
+            var fresh = windows.Where(window => window != null && window.Sequence > lastDecisionSequence)
+                .OrderBy(window => window.Sequence).ToArray();
+            foreach (var window in fresh)
+            {
+                WriteLine(GameplayNarrationLog.DecisionWindow(clock(), observedVersion, window));
+                lastDecisionSequence = window.Sequence;
+                DecisionRowsWritten++;
+            }
+            return fresh.Length;
+        }
+
+        public int DecisionRowsWritten { get; private set; }
 
         /// <summary>A session-layer event - a refusal, a resync, a reconnect - written inline.</summary>
         public void WriteSessionEvent(long observedVersion, string marker, string detail = null) =>

@@ -803,3 +803,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.72 | Authorized hero tokens show topmost current/hand pips, and board or tray clicks share one dismissible hand/remainder inspection window. Hidden commitments and Takahide's facedown resting Gold stay anonymous through projection and wire /45; complete T3 gates passed without a replacement build. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-972-add-experimental-hero-card-state-indicators-and-unified-inspection). | `milestone/9.72` |
+## Milestone 9.73 decision-window timing and settings persistence completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.73 | `guards-gameplay-log/2` records every completed per-player decision window in actionable host ticks, including timer-off play, pauses, context and closure; the five valid timer durations persist locally while fresh Experimental toggles remain off. Focused offline passed 69/69, Unity Edit Mode 91/91 and Play Mode 1/1. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-973-record-decision-window-durations-and-remember-timer-settings). | `milestone/9.73` |

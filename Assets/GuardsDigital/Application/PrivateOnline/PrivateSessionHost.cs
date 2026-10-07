@@ -2084,6 +2084,8 @@ namespace GuardsDigital.Application
             if (projection != null)
             {
                 narration.Observe(projection.Version, projection.MatchLog);
+                if (matchHost is MatchHost measured)
+                    narration.ObserveDecisionWindows(projection.Version, measured.DecisionWindows);
             }
         }
 

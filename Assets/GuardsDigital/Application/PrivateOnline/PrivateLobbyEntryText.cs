@@ -226,19 +226,40 @@ namespace GuardsDigital.Application
         public const string JoinPortKey = "guards.lobby.join-port";
         public const string JoinSessionIdKey = "guards.lobby.join-session-id";
         public const string HostPortKey = "guards.lobby.host-port";
+        public const string CardCommitmentSecondsKey = "guards.lobby.timer.card-commitment-seconds";
+        public const string CardResolutionSecondsKey = "guards.lobby.timer.card-resolution-seconds";
+        public const string ResponseSecondsKey = "guards.lobby.timer.response-seconds";
+        public const string CardUpgradeSecondsKey = "guards.lobby.timer.card-upgrade-seconds";
+        public const string TeamBankSecondsKey = "guards.lobby.timer.team-bank-seconds";
+
+        public const int DefaultCardCommitmentSeconds = 120;
+        public const int DefaultCardResolutionSeconds = 30;
+        public const int DefaultResponseSeconds = 30;
+        public const int DefaultCardUpgradeSeconds = 120;
+        public const int DefaultTeamBankSeconds = 300;
 
         /// <summary>Milestone 8.108. The player's own name, shared by both menus.</summary>
         public const string PlayerNameKey = "guards.lobby.player-name";
 
         public PrivateLobbyRememberedFields(
             string joinAddress, string joinPort, string joinSessionId, string hostPort,
-            string playerName = "")
+            string playerName = "",
+            int cardCommitmentSeconds = DefaultCardCommitmentSeconds,
+            int cardResolutionSeconds = DefaultCardResolutionSeconds,
+            int responseSeconds = DefaultResponseSeconds,
+            int cardUpgradeSeconds = DefaultCardUpgradeSeconds,
+            int teamBankSeconds = DefaultTeamBankSeconds)
         {
             JoinAddress = joinAddress ?? string.Empty;
             JoinPort = joinPort ?? string.Empty;
             JoinSessionId = joinSessionId ?? string.Empty;
             HostPort = hostPort ?? string.Empty;
             PlayerName = playerName ?? string.Empty;
+            CardCommitmentSeconds = cardCommitmentSeconds;
+            CardResolutionSeconds = cardResolutionSeconds;
+            ResponseSeconds = responseSeconds;
+            CardUpgradeSeconds = cardUpgradeSeconds;
+            TeamBankSeconds = teamBankSeconds;
         }
 
         public string JoinAddress { get; }
@@ -246,6 +267,11 @@ namespace GuardsDigital.Application
         public string JoinSessionId { get; }
         public string HostPort { get; }
         public string PlayerName { get; }
+        public int CardCommitmentSeconds { get; }
+        public int CardResolutionSeconds { get; }
+        public int ResponseSeconds { get; }
+        public int CardUpgradeSeconds { get; }
+        public int TeamBankSeconds { get; }
 
         /// <summary>
         /// What the store holds, with each missing value replaced by the lobby's default. The
@@ -260,12 +286,24 @@ namespace GuardsDigital.Application
                 return string.IsNullOrEmpty(value) ? fallback : value;
             }
 
+            int Duration(string key, int fallback, int minimum)
+            {
+                var value = memory?.Read(key);
+                return int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) &&
+                    parsed >= minimum && parsed <= 86400 ? parsed : fallback;
+            }
+
             return new PrivateLobbyRememberedFields(
                 Read(JoinAddressKey, defaultAddress),
                 Read(JoinPortKey, defaultPort),
                 Read(JoinSessionIdKey, string.Empty),
                 Read(HostPortKey, defaultPort),
-                PrivateLobbyEntryText.CleanPlayerName(Read(PlayerNameKey, string.Empty)));
+                PrivateLobbyEntryText.CleanPlayerName(Read(PlayerNameKey, string.Empty)),
+                Duration(CardCommitmentSecondsKey, DefaultCardCommitmentSeconds, 1),
+                Duration(CardResolutionSecondsKey, DefaultCardResolutionSeconds, 1),
+                Duration(ResponseSecondsKey, DefaultResponseSeconds, 1),
+                Duration(CardUpgradeSecondsKey, DefaultCardUpgradeSeconds, 1),
+                Duration(TeamBankSecondsKey, DefaultTeamBankSeconds, 0));
         }
 
         /// <summary>Milestone 8.108. Remembers the name a HOST or JOIN press used.</summary>
@@ -273,6 +311,19 @@ namespace GuardsDigital.Application
         {
             if (memory == null) return;
             memory.Write(PlayerNameKey, PrivateLobbyEntryText.CleanPlayerName(playerName));
+        }
+
+        /// <summary>Remembers the five valid timer values without remembering any feature toggle.</summary>
+        public static void RememberTimerSettings(
+            IPrivateLobbyFieldMemory memory,
+            ExperimentalMatchOptions options)
+        {
+            if (memory == null || options == null) return;
+            memory.Write(CardCommitmentSecondsKey, options.CardCommitmentSeconds.ToString(CultureInfo.InvariantCulture));
+            memory.Write(CardResolutionSecondsKey, options.CardResolutionSeconds.ToString(CultureInfo.InvariantCulture));
+            memory.Write(ResponseSecondsKey, options.ResponseSeconds.ToString(CultureInfo.InvariantCulture));
+            memory.Write(CardUpgradeSecondsKey, options.CardUpgradeSeconds.ToString(CultureInfo.InvariantCulture));
+            memory.Write(TeamBankSecondsKey, options.TeamBankSeconds.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>Remembers what a JOIN press used, cleaned exactly as the join reads it.</summary>

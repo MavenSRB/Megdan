@@ -143,7 +143,14 @@ namespace GuardsDigital.Presentation.Interaction
         private VisualElement minionBattleCapSettings;
         private Toggle timerToggle;
         private readonly List<IntegerField> timerFields = new List<IntegerField>();
-        private readonly int[] timerDefaults = {120,30,30,120,300};
+        private readonly int[] timerDefaults = {
+            PrivateLobbyRememberedFields.DefaultCardCommitmentSeconds,
+            PrivateLobbyRememberedFields.DefaultCardResolutionSeconds,
+            PrivateLobbyRememberedFields.DefaultResponseSeconds,
+            PrivateLobbyRememberedFields.DefaultCardUpgradeSeconds,
+            PrivateLobbyRememberedFields.DefaultTeamBankSeconds};
+        private readonly int[] rememberedTimerValues = new int[5];
+        private bool hasRememberedTimerValues;
         private VisualElement timerSettings;
         private VisualElement experimentalPanel;
         private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
@@ -563,7 +570,9 @@ namespace GuardsDigital.Presentation.Interaction
                 minionBattleCapField.SetValueWithoutNotify(1);
                 minionBattleCapSettings.style.display = DisplayStyle.None;
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
-                for(int i=0;i<timerFields.Count;i++) timerFields[i].SetValueWithoutNotify(timerDefaults[i]);
+                for(int i=0;i<timerFields.Count;i++)
+                    timerFields[i].SetValueWithoutNotify(hasRememberedTimerValues
+                        ? rememberedTimerValues[i] : timerDefaults[i]);
                 experimentalPanel.style.display = DisplayStyle.None;
             }
             page = value;
@@ -585,6 +594,31 @@ namespace GuardsDigital.Presentation.Interaction
             key.value = fields.JoinSessionId;
             hostPort.value = fields.HostPort;
             playerName.value = fields.PlayerName;
+            RememberTimerSettings(new ExperimentalMatchOptions(
+                cardCommitmentSeconds: fields.CardCommitmentSeconds,
+                cardResolutionSeconds: fields.CardResolutionSeconds,
+                responseSeconds: fields.ResponseSeconds,
+                cardUpgradeSeconds: fields.CardUpgradeSeconds,
+                teamBankSeconds: fields.TeamBankSeconds));
+        }
+
+        public void RememberTimerSettings(ExperimentalMatchOptions options)
+        {
+            if (options == null) return;
+            var remembered = new[]
+            {
+                options.CardCommitmentSeconds,
+                options.CardResolutionSeconds,
+                options.ResponseSeconds,
+                options.CardUpgradeSeconds,
+                options.TeamBankSeconds
+            };
+            hasRememberedTimerValues = true;
+            for (var i = 0; i < remembered.Length; i++)
+            {
+                rememberedTimerValues[i] = remembered[i];
+                timerFields[i].SetValueWithoutNotify(remembered[i]);
+            }
         }
 
         /// <summary>Milestone 8.107. Puts a fresh session ID in the host menu.</summary>
@@ -1634,10 +1668,11 @@ namespace GuardsDigital.Presentation.Interaction
         private void TickExperimentalClock()
         {
             var now=clockStopwatch.Elapsed.Ticks; var elapsed=now-lastClockTick; lastClockTick=now;
-            if (session==null || !session.HasMatchStarted || !(compositionRoot?.Runtime?.Host is MatchHost host) || !host.Experiments.TurnTimer) return;
+            if (session==null || !session.HasMatchStarted || !(compositionRoot?.Runtime?.Host is MatchHost host)) return;
             host.SetTimerStarted(true);
             foreach(var seat in botFleet?.Seats ?? Array.Empty<SeatId>()) host.SetClockReadiness(seat,host.Version,true);
             var version=host.Version; host.AdvanceClock(elapsed,session.IsPaused);
+            if (!host.Experiments.TurnTimer) return;
             if (host.Version!=version)
             { lastClockPublish=now; session.RepublishProjections(); }
             else if(now-lastClockPublish>=TimeSpan.TicksPerSecond)
@@ -2768,6 +2803,8 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 PrivateLobbyRememberedFields.RememberHost(fieldMemory, entry.Port);
                 PrivateLobbyRememberedFields.RememberPlayerName(fieldMemory, entry.PlayerName);
+                PrivateLobbyRememberedFields.RememberTimerSettings(fieldMemory, entry.Experiments);
+                view.RememberTimerSettings(entry.Experiments);
             }
         }
 

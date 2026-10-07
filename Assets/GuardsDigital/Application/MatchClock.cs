@@ -59,6 +59,9 @@ namespace GuardsDigital.Application
         private long redBank, blueBank, revision;
         private int wave = int.MinValue;
         public MatchClock(ExperimentalMatchOptions options) { this.options = options; }
+        internal IReadOnlyList<MatchClockEntry> Entries =>
+            entries.Values.OrderBy(entry => entry.Id, StringComparer.Ordinal).ToArray();
+
         public MatchClockState Capture() => options.TurnTimer
             ? new MatchClockState(true, revision, wave, redBank, blueBank, entries.Values.OrderBy(e => e.Id, StringComparer.Ordinal))
             : MatchClockState.Disabled;

@@ -294,5 +294,28 @@ namespace GuardsDigital.Tests.EditMode
 
         private static IReadOnlyList<TextField> ShownFields(PrivateLobbyUnityView view) =>
             Descendants(view.Root).OfType<TextField>().Where(Shown).ToArray();
+
+        [Test]
+        public void NewHostPageKeepsRememberedTimerValuesButResetsTheToggle()
+        {
+            var view=EntryView();
+            view.LoadRememberedFields(new PrivateLobbyRememberedFields(
+                "127.0.0.1","45677",string.Empty,"45677",string.Empty,
+                91,22,17,83,0));
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(view.Root.Q<Toggle>("experimental-timer").value,Is.False);
+            Assert.That(Enumerable.Range(0,5)
+                .Select(index=>view.Root.Q<IntegerField>("experimental-duration-"+index).value),
+                Is.EqualTo(new[]{91,22,17,83,0}));
+
+            view.Root.Q<Toggle>("experimental-timer").value=true;
+            Assert.That(view.CurrentEntry().Experiments.TurnTimer,Is.True);
+            Assert.That(view.CurrentEntry().Experiments.TeamBankSeconds,Is.Zero);
+            view.RememberTimerSettings(view.CurrentEntry().Experiments);
+            view.ShowPage(PrivateLobbyEntryPage.Join);
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(view.Root.Q<Toggle>("experimental-timer").value,Is.False);
+            Assert.That(view.Root.Q<IntegerField>("experimental-duration-0").value,Is.EqualTo(91));
+        }
     }
 }

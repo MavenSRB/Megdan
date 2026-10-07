@@ -55,7 +55,7 @@ namespace GuardsDigital.Application
         /// The format marker, first line of every file. It is versioned because a reader written
         /// against these rows is entitled to know when their shape changed.
         /// </summary>
-        public const string FormatVersion = "guards-gameplay-log/1";
+        public const string FormatVersion = "guards-gameplay-log/2";
 
         private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
 
@@ -115,6 +115,38 @@ namespace GuardsDigital.Application
 
             return builder.ToString();
         }
+
+        /// <summary>
+        /// One completed player decision window, using actionable game-clock time rather than the
+        /// wall-clock stamp at the start of this row.
+        /// </summary>
+        public static string DecisionWindow(
+            DateTimeOffset at,
+            long observedVersion,
+            DecisionWindowMeasurement window)
+        {
+            if (window == null) throw new ArgumentNullException(nameof(window));
+            var command = window.ClosingCommand.HasValue
+                ? window.ClosingCommand.Value.ToString()
+                : "none";
+            return Stamp(at) + " v" + Int(observedVersion) + " -- DECISION #" + Int(window.Sequence) +
+                " | " + Blank(window.Hero.Value) + " took " +
+                window.ActiveSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "s for " +
+                Blank(window.Context) + "; closed by " + window.CloseReason + " (" + command + ")" +
+                " | seat=" + Blank(window.Seat.Value) +
+                " hero=" + Blank(window.Hero.Value) +
+                " team=" + window.Team +
+                " kind=" + window.Kind +
+                " context=" + Token(window.Context) +
+                " durationTicks=" + window.ActiveTicks.ToString(CultureInfo.InvariantCulture) +
+                " openedVersion=" + window.OpenedVersion.ToString(CultureInfo.InvariantCulture) +
+                " closedVersion=" + window.ClosedVersion.ToString(CultureInfo.InvariantCulture) +
+                " close=" + window.CloseReason +
+                " command=" + command;
+        }
+
+        private static string Token(string value) =>
+            Blank(value).Replace(" ", "_");
 
         /// <summary>
         /// A session-layer row - a refusal, a resync, a reconnect - narrated inline among the

@@ -7,6 +7,8 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -263,6 +265,50 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(lines.Length, Is.EqualTo(projection.MatchLog.Count));
             Assert.That(lines.All(line => line.Contains("v") && line.Contains("2026-09-07")), Is.True,
                 "Every row carries its wall clock and the projection version it was observed at.");
+        }
+
+        [Test]
+        public void DecisionRowsAreReadableMachineParseableAndWrittenOnce()
+        {
+            var measurement=new DecisionWindowMeasurement(
+                1,"commitment:1:0:hero-wuk",MatchClockKind.Commitment,"Card commitment",
+                new SeatId("blue-player-01"),new HeroId("hero-wuk"),TeamSide.Blue,
+                TimeSpan.FromMilliseconds(8420).Ticks,17,18,
+                DecisionWindowCloseReason.PlayerCommand,DirectorCommandKind.CommitCard);
+            var line=GameplayNarrationLog.DecisionWindow(Noon,18,measurement);
+            Assert.That(line,Does.Contain("hero-wuk took 8.420s for Card commitment"));
+            Assert.That(line,Does.Contain("durationTicks=84200000"));
+            Assert.That(line,Does.Contain("context=Card_commitment"));
+            Assert.That(line,Does.Contain("close=PlayerCommand"));
+            Assert.That(line,Does.Contain("command=CommitCard"));
+
+            var sink=new StringWriter();
+            var recorder=new GameplayNarrationRecorder(sink,()=>Noon,ownsWriter:false);
+            Assert.That(recorder.ObserveDecisionWindows(18,new[]{measurement}),Is.EqualTo(1));
+            Assert.That(recorder.ObserveDecisionWindows(18,new[]{measurement}),Is.Zero);
+            Assert.That(recorder.DecisionRowsWritten,Is.EqualTo(1));
+        }
+        [Test]
+        public void PrivateHostNarrationIncludesTheCompletedDecisionRows()
+        {
+            var host=MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var wire=PrivateOnlineWireHarness.Compose(host);
+            var sink=new StringWriter();
+            var recorder=new GameplayNarrationRecorder(sink,()=>Noon,ownsWriter:false);
+            wire.Session.AttachGameplayNarration(recorder,"test-build","official-single-lane");
+            host.SetTimerStarted(true);
+            foreach(var seat in host.Seats.Seats)
+                host.SetClockReadiness(seat.Id,host.Version,true);
+            host.AdvanceClock(TimeSpan.FromMilliseconds(750).Ticks);
+            var acting=host.Seats.Seats[0];
+            var command=host.ProjectionForSeat(acting.Id).AuthorizedCommands
+                .First(value=>value.Kind==DirectorCommandKind.CommitCard);
+            Assert.That(host.Submit(MatchSubmission.ForCommand(command)).Accepted,Is.True);
+            wire.Session.RepublishProjections();
+
+            Assert.That(sink.ToString(),Does.Contain("-- DECISION #"));
+            Assert.That(sink.ToString(),Does.Contain("durationTicks=7500000"));
+            Assert.That(recorder.DecisionRowsWritten,Is.EqualTo(1));
         }
     }
 }

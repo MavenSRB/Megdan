@@ -1092,7 +1092,7 @@ namespace GuardsDigital.Application
         private bool lastReadiness;
         public void ReportTimerReadiness(bool ready)
         {
-            if (State!=PrivateSessionClientState.Seated || !HasMatchStarted || LatestProjection?.Experiments.TurnTimer!=true) return;
+            if (State!=PrivateSessionClientState.Seated || !HasMatchStarted || LatestProjection==null) return;
             var version=LatestProjection.Version;
             if (version==lastReadinessVersion && ready==lastReadiness) return;
             lastReadinessVersion=version; lastReadiness=ready; gameplaySendSequence++;

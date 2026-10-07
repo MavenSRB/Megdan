@@ -362,3 +362,32 @@ and closes at victory. Focused privacy, presentation and live-click regressions,
 reviews, and the complete T3 offline/Edit/Play gates passed; no package or publication was produced.
 
 Historical evidence: [9.72 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-972-experimental-hero-card-state-inspection-completion).
+### [x] 9.73 Record decision-window durations and remember timer settings
+
+Authorized 2026-10-07 by the user's instruction to proceed after the design discussion. Record every
+player decision window in the private host gameplay log using the timer's authoritative actionable
+time rather than wall-clock time. Each record names the player, decision kind/context, elapsed
+duration and how the window closed; card resolution retains a clear total while separately owned
+responses remain separately measured. Measurement must work with timer enforcement disabled, pause
+during animations/automatic work and another player's response, and must not enter rules authority,
+accepted-command history, snapshots or replay. Also remember the five last valid timer duration
+values across new lobbies and application restarts while keeping experimental feature toggles off on
+a fresh lobby.
+
+Closing checks: focused clock accounting for opened, paused, resumed, answered, timed-out and
+abandoned windows; readable and machine-parseable narration rows with correct owner/context and no
+double charge; timer-off passive measurement; Director Undo/restart disposition; lobby duration
+round-trip, invalid-value refusal and toggle reset; directly affected timer, narration and lobby
+regressions. T2 because shared timing/application behavior and Unity lobby persistence change
+together. No gameplay-rule, timeout-policy, snapshot, wire, package, publication or remote change.
+Completed 2026-10-07. The host now appends one `guards-gameplay-log/2` row per completed
+player decision window, naming owner, timer kind/context, exact actionable ticks, versions and the
+accepted command or non-command disposition. Passive accounting remains active with timer enforcement
+off, uses the same readiness/animation/session pauses, keeps parent resolution totals paused across
+nested responses and gives every participant in a shared team decision an independent measurement.
+The lobby persists only the five last valid duration values through the existing preference store;
+fresh experimental toggles remain off. Focused offline passed 69/69, final Unity Edit Mode 91/91 and
+focused Play Mode 1/1. Review found no gameplay, timeout-policy, snapshot, replay or wire change; no
+package was requested.
+
+Historical evidence: [9.73 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-973-decision-window-timing-and-settings-persistence-completion).

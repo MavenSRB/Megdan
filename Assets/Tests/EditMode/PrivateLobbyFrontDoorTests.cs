@@ -299,5 +299,26 @@ namespace GuardsDigital.Tests.EditMode
 
             public void Write(string key, string value) => values[key] = value;
         }
+
+        [Test]
+        public void TimerDurationsRoundTripAndInvalidStoredValuesFallBack()
+        {
+            var memory=new InMemoryPrivateLobbyFieldMemory();
+            PrivateLobbyRememberedFields.RememberTimerSettings(memory,
+                new ExperimentalMatchOptions(cardCommitmentSeconds:91,cardResolutionSeconds:22,
+                    responseSeconds:17,cardUpgradeSeconds:83,teamBankSeconds:0));
+            var fields=PrivateLobbyRememberedFields.Load(memory,"127.0.0.1","45677");
+            Assert.That(new[]{fields.CardCommitmentSeconds,fields.CardResolutionSeconds,
+                fields.ResponseSeconds,fields.CardUpgradeSeconds,fields.TeamBankSeconds},
+                Is.EqualTo(new[]{91,22,17,83,0}));
+
+            memory.Write(PrivateLobbyRememberedFields.ResponseSecondsKey,"0");
+            memory.Write(PrivateLobbyRememberedFields.TeamBankSecondsKey,"86401");
+            fields=PrivateLobbyRememberedFields.Load(memory,"127.0.0.1","45677");
+            Assert.That(fields.ResponseSeconds,
+                Is.EqualTo(PrivateLobbyRememberedFields.DefaultResponseSeconds));
+            Assert.That(fields.TeamBankSeconds,
+                Is.EqualTo(PrivateLobbyRememberedFields.DefaultTeamBankSeconds));
+        }
     }
 }
