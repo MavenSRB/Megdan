@@ -260,7 +260,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         /// <summary>
         /// Milestone 9.44. Draws the authoritative net minion Defense modifier at this token's
-        /// bottom edge, or clears it. This accepts a projected value and owns no Defense rules.
+        /// left edge, or clears it. This accepts a projected value and owns no Defense rules.
         /// </summary>
         public void SetDefenseModifierShield(int? modifier)
         {

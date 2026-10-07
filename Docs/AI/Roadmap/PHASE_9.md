@@ -196,6 +196,14 @@ Completed 2026-10-03.
 
 Historical evidence: [9.44 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-944-hero-hover-defense-contributors-evidence).
 
+### [x] 9.84 Persistent left-edge hero Defense modifier
+
+Authorized 2026-10-08 after the discussion mockup. Keep the existing tiny number-only shield visible on the left edge of every standing hero token, showing that body's net standard-minion Defense modifier, including zero. Preserve actual card-state pips, token artwork, player colours and shield styling. Ordinary board/linked-rail hover highlights only contributing creeps using the existing signed colours; the same interaction works during Attack target selection. Hover exit removes contributor highlights while retaining each hero's shield. This remains a minion modifier, not a complete Defense Total or a prediction of a private Defense card.
+
+Closing checks: rules-query reuse over public board state; per-body readings, zero and signed totals, movement/removal/Undo refresh and local/seat/network agreement; focused presentation regressions for normal/Attack hover and exit, camera-relative left placement, unchanged card pips and resource reuse; real-scene Play Mode capture and visual inspection of the actual result. T2. No card/rule/lifecycle/command, snapshot, wire, build or publication change. User requested isolated branch codex/hero-defense-shield; merging is deferred. Preserve unrelated 9.82 work and serialize Unity validation.
+
+Historical evidence: [9.84 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-984-persistent-hero-modifier-completion).
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.

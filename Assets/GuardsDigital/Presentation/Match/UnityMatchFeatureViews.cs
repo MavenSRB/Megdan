@@ -1043,7 +1043,7 @@ namespace GuardsDigital.Presentation.Match
                 return Array.Empty<MinionDefenseCueViewModel>();
             }
 
-            var contributions = model.AttackTargetDefensePreviews
+            var contributions = model.HeroDefensePreviews
                 .Where(value => value.HeroId.Equals(previewHeroId) &&
                     (previewBody < HeroOccupancy.FirstBody || value.HeroBody == previewBody))
                 .SelectMany(value => value.MinionContributions)
@@ -1077,17 +1077,12 @@ namespace GuardsDigital.Presentation.Match
                         : 0);
             }
 
-            var hoveredTarget = HoveredDefenseTarget(model);
-            var previewHeroId = hoveredTarget.HeroId;
-            var previewBody = hoveredTarget.Body;
             foreach (var hero in heroes)
             {
-                var preview = !previewHeroId.IsDefined || !hero.gameObject.activeSelf ||
-                    !hero.Occupancy.HeroId.Equals(previewHeroId) ||
-                    (previewBody >= HeroOccupancy.FirstBody && hero.Body != previewBody)
+                var preview = !hero.gameObject.activeSelf
                         ? null
-                        : model.AttackTargetDefensePreviews.FirstOrDefault(value =>
-                            value.HeroId.Equals(previewHeroId) && value.HeroBody == hero.Body);
+                        : model.HeroDefensePreviews.FirstOrDefault(value =>
+                            value.HeroId.Equals(hero.Occupancy.HeroId) && value.HeroBody == hero.Body);
                 hero.SetDefenseModifierShield(preview == null
                     ? (int?)null
                     : preview.MinionContributions.Sum(value => value.Amount));

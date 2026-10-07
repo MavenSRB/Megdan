@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -274,8 +275,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.Not.EqualTo(HexCornerHighlightTemplate.AttackColor));
         }
 
-        [Test]
-        public void AttackIntentEffectTargetHeroHover_KeepsBloodRedTargetAndPreviewsProjectedSignedContributions()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void AttackIntentEffectTargetHeroHover_KeepsBloodRedTargetAndPreviewsProjectedSignedContributions(bool attackIntent)
         {
             var targetTile = Tile(new HexCoordinate(0, 0));
             var positiveTile = Tile(new HexCoordinate(1, 0));
@@ -335,7 +337,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<HeroId>(),
                 Array.Empty<MinionId>(),
                 default,
-                pieceTargetCues: new[]
+                pieceTargetCues: attackIntent ? new[]
                 {
                     new PieceTargetCueViewModel(
                         BoardObjectReference.ForHero(targetId),
@@ -345,26 +347,34 @@ namespace GuardsDigital.Tests.EditMode
                         BoardObjectReference.ForMinion(positive.MinionId),
                         BoardTargetCueState.Eligible,
                         BoardTargetConsequenceIntent.Attack)
-                },
-                attackTargetDefensePreviews: new[] { targetPreview }));
+                } : Array.Empty<PieceTargetCueViewModel>(),
+                attackTargetDefensePreviews: attackIntent ? new[] { targetPreview } : null,
+                heroDefensePreviews: new[] { targetPreview }));
 
-            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
-            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            var restingKind = attackIntent ? HexCornerHighlightKind.Attack : HexCornerHighlightKind.None;
+            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
             Assert.That(positiveTile.CornerHighlight.ContributionKind,
                 Is.EqualTo(HexCornerHighlightKind.None));
 
+            Assert.That(heroView.DefenseModifierShield, Is.Not.Null,
+                "The modifier must be visible before the player hovers the hero.");
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
+
             view.SetHoveredCoordinate(targetTile.Coordinate);
 
-            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
-            Assert.That(targetTile.CornerHighlight.IsHovered, Is.True);
-            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
+            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
+            Assert.That(targetTile.CornerHighlight.IsHovered, Is.EqualTo(attackIntent));
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(attackIntent
+                    ? HexCornerHighlightKind.Attack : HexCornerHighlightKind.DefensePositive),
                 "A minion that is also an Attack target retains its blood-red target halo.");
             Assert.That(positiveTile.CornerHighlight.ContributionKind,
                 Is.EqualTo(HexCornerHighlightKind.DefensePositive));
-            Assert.That(positiveTile.CornerHighlight.VisibleCoreMaterialColor,
-                Is.EqualTo(HexCornerHighlightTemplate.DefensePositiveColor),
-                "A contributing minion that is also an Attack target needs a saturated green core " +
-                "inside its blood-red halo; a white-biased core disappears at gameplay scale.");
+            if (attackIntent)
+                Assert.That(positiveTile.CornerHighlight.VisibleCoreMaterialColor,
+                    Is.EqualTo(HexCornerHighlightTemplate.DefensePositiveColor),
+                    "A contributing minion that is also an Attack target needs a saturated green core " +
+                    "inside its blood-red halo; a white-biased core disappears at gameplay scale.");
             Assert.That(negativeTile.CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
             Assert.That(positiveView.DefenseContributionAmount, Is.EqualTo(1));
@@ -383,6 +393,9 @@ namespace GuardsDigital.Tests.EditMode
             var shieldBounds = heroView.DefenseModifierShield.GetComponent<MeshRenderer>().bounds;
             var valueBounds = heroView.DefenseModifierShield.ValueText
                 .GetComponent<MeshRenderer>().bounds;
+            Assert.That(new Vector2(valueBounds.size.x, valueBounds.size.z).magnitude,
+                Is.LessThan(new Vector2(shieldBounds.size.x, shieldBounds.size.z).magnitude * 0.85f),
+                "The actual rendered numeral must fit inside the tiny shield.");
             Assert.That(new Vector2(valueBounds.center.x - shieldBounds.center.x,
                     valueBounds.center.z - shieldBounds.center.z).magnitude,
                 Is.LessThan(0.001f), "The signed value is centered inside the shield face.");
@@ -391,7 +404,13 @@ namespace GuardsDigital.Tests.EditMode
                     heroView.DefenseModifierShield.transform.localPosition.z).magnitude,
                 Is.EqualTo(heroView.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor)
                     .Within(0.001f),
-                "The tiny shield sits at the token's bottom edge, rather than over its centre.");
+                "The tiny shield stays at the token edge.");
+            var screenLeft = Vector3.Cross(BoardChoiceCue.ScreenUpInWorld, Vector3.up);
+            var shieldOffset = heroView.DefenseModifierShield.transform.position - heroView.transform.position;
+            Assert.That(Vector3.Dot(shieldOffset, screenLeft),
+                Is.EqualTo(heroView.SelectionRadius * HeroDefenseModifierShield.EdgeDistanceFactor)
+                    .Within(0.001f),
+                "The shield must sit on screen-left, not at the bottom beside the hand pips.");
             Assert.That(heroView.DefenseModifierShield.GetComponent<MeshFilter>()
                     .sharedMesh.bounds.size.magnitude,
                 Is.LessThan(heroView.SelectionRadius * 0.75f),
@@ -399,13 +418,14 @@ namespace GuardsDigital.Tests.EditMode
 
             view.SetHoveredCoordinate(null);
 
-            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
             Assert.That(positiveTile.CornerHighlight.ContributionKind,
                 Is.EqualTo(HexCornerHighlightKind.None));
             Assert.That(negativeTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.None));
             Assert.That(positiveView.GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
             Assert.That(negativeView.GetComponent<SpriteRenderer>().color, Is.EqualTo(Color.white));
-            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.False);
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True,
+                "Leaving hover removes creep highlights but retains the hero's modifier.");
 
             view.SetHoveredHero(targetId);
             Assert.That(positiveView.DefenseContributionAmount, Is.EqualTo(1),
@@ -413,7 +433,58 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
             view.SetHoveredHero(default);
             Assert.That(positiveView.DefenseContributionAmount, Is.Zero);
-            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.False);
+            Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
+        }
+
+        [TestCase(0f)]
+        [TestCase(60f)]
+        [TestCase(135f)]
+        public void PersistentShieldUsesScreenLeftAndReusesResourcesWithoutMovingCardPips(float cameraHeading)
+        {
+            var previousUp = BoardChoiceCue.ScreenUpInWorld;
+            var token = new GameObject("Shield and actual card pips");
+            owned.Add(token);
+            try
+            {
+                BoardChoiceCue.SetScreenUp(Quaternion.Euler(0f, cameraHeading, 0f) * Vector3.forward);
+                token.transform.rotation = Quaternion.Euler(0f, 25f, 0f);
+                var pips = HeroCardStateIndicator.GetOrCreate(token.transform);
+                pips.SetVisible(true, CardColor.Blue,
+                    new[] { CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green }, 0, 1f, 0.15f);
+                var pipPositions = pips.Renderers.Select(value => value.transform.position).ToArray();
+                var pipColours = pips.Renderers.Select(value => value.sharedMaterial.color).ToArray();
+                var shield = HeroDefenseModifierShield.GetOrCreate(token.transform);
+                shield.SetVisible(-2, 1f, 0.15f);
+                var mesh = shield.GetComponent<MeshFilter>().sharedMesh;
+                var material = shield.GetComponent<MeshRenderer>().sharedMaterial;
+                var left = Vector3.Cross(BoardChoiceCue.ScreenUpInWorld, Vector3.up);
+                var offset = shield.transform.position - token.transform.position;
+                Assert.That(Vector3.Dot(offset, left),
+                    Is.EqualTo(HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f));
+                Assert.That(Vector3.Dot(offset, BoardChoiceCue.ScreenUpInWorld), Is.EqualTo(0f).Within(0.001f));
+                for (var i = 0; i < 20; i++)
+                {
+                    shield.SetHidden();
+                    shield.SetVisible(i % 3 == 0 ? -12 : i % 3 == 1 ? 0 : 12, 1f, 0.15f);
+                    var glyphs = shield.ValueText.GetComponent<MeshRenderer>().localBounds.size *
+                        shield.ValueText.transform.localScale.x;
+                    Assert.That(glyphs.x, Is.LessThanOrEqualTo(
+                        HeroDefenseModifierShield.HalfWidthFactor * 2f * 0.81f));
+                    Assert.That(glyphs.y, Is.LessThanOrEqualTo(
+                        HeroDefenseModifierShield.HeightFactor * 0.67f));
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.right, -left),
+                        Is.GreaterThan(0.999f), "Signed glyphs read left-to-right, not mirrored.");
+                    Assert.That(Vector3.Dot(shield.ValueText.transform.up, BoardChoiceCue.ScreenUpInWorld),
+                        Is.GreaterThan(0.999f));
+                }
+                Assert.That(shield.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(mesh));
+                Assert.That(shield.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(material));
+                Assert.That(shield.OwnedNativeResourceCount, Is.EqualTo(2));
+                Assert.That(pips.PipCount, Is.EqualTo(5));
+                Assert.That(pips.Renderers.Select(value => value.transform.position), Is.EqualTo(pipPositions));
+                Assert.That(pips.Renderers.Select(value => value.sharedMaterial.color), Is.EqualTo(pipColours));
+            }
+            finally { BoardChoiceCue.SetScreenUp(previousUp); }
         }
 
         [Test]

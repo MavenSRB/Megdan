@@ -220,7 +220,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<DirectionCandidateViewModel> directionCandidates = null,
             IEnumerable<ObstacleOccupancy> obstacles = null,
             int focusedHeroBody = 0,
-            IEnumerable<MinionBattlePickViewModel> minionBattlePicks = null)
+            IEnumerable<MinionBattlePickViewModel> minionBattlePicks = null,
+            IEnumerable<AttackTargetDefensePreviewProjection> heroDefensePreviews = null)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             MinionBattlePicks = Array.AsReadOnly((minionBattlePicks ??
@@ -252,6 +253,14 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
             AttackTargetDefensePreviews = Array.AsReadOnly((attackTargetDefensePreviews ??
                 Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray());
+            HeroDefensePreviews = Array.AsReadOnly((heroDefensePreviews ??
+                AttackTargetDefensePreviews).ToArray());
+            if (HeroDefensePreviews.Any(value => value == null ||
+                    !Heroes.Any(hero => hero.HeroId.Equals(value.HeroId) && hero.Body == value.HeroBody)) ||
+                HeroDefensePreviews.Select(value => (value.HeroId, value.HeroBody)).Distinct().Count() !=
+                    HeroDefensePreviews.Count)
+                throw new ArgumentException("Defense previews must name unique standing hero bodies.",
+                    nameof(heroDefensePreviews));
             PieceTargetCues = Array.AsReadOnly((pieceTargetCues ??
                 Enumerable.Empty<PieceTargetCueViewModel>()).ToArray());
             // Milestone 9.21i. A piece is a hero BODY where the cue names one: two standees of one
@@ -409,6 +418,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<AttackTargetDefensePreviewProjection> AttackTargetDefensePreviews { get; }
+        public IReadOnlyList<AttackTargetDefensePreviewProjection> HeroDefensePreviews { get; }
 
         /// <summary>
         /// The one stable-identity cue projection consumed by hero, minion, and token views. Attack,

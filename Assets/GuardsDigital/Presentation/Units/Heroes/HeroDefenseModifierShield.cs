@@ -6,8 +6,8 @@ using UnityEngine.Rendering;
 namespace GuardsDigital.Presentation.Units.Heroes
 {
     /// <summary>
-    /// Milestone 9.44. A deliberately tiny shield at the hovered hero token's lower edge. It carries
-    /// only the signed net minion modifier projected for that attack target; it is presentation only.
+    /// A deliberately tiny shield at each hero token's screen-left edge. It carries only the
+    /// projected signed net minion modifier and remains visible independently of hover.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
@@ -61,7 +61,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
             var localDown = parent == null ? worldDown : parent.InverseTransformDirection(worldDown);
             localDown = new Vector3(localDown.x, 0f, localDown.z);
             localDown = localDown.sqrMagnitude < 1e-6f ? Vector3.back : localDown.normalized;
-            transform.localPosition = (localDown * (pieceRadius * EdgeDistanceFactor)) +
+            var localLeft = new Vector3(localDown.z, 0f, -localDown.x);
+            transform.localPosition = (localLeft * (pieceRadius * EdgeDistanceFactor)) +
                 (Vector3.up * (surfaceY + SurfaceOffset));
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
@@ -69,13 +70,28 @@ namespace GuardsDigital.Presentation.Units.Heroes
             BuildShield(localDown, pieceRadius);
             valueText.text = modifier.ToString("+0;-0;0");
             valueText.characterSize = pieceRadius * ValueCharacterSizeFactor;
-            valueText.transform.localRotation = BoardChoiceCue.BoardFacingRotation;
+            // TextMesh's readable face looks along local -Z; face it toward the overhead camera.
+            valueText.transform.rotation = Quaternion.LookRotation(Vector3.down, BoardChoiceCue.ScreenUpInWorld);
+            valueText.transform.localScale = Vector3.one;
             valueText.transform.localPosition = Vector3.up * SurfaceOffset;
             Modifier = modifier;
             meshRenderer.enabled = true;
             valueText.gameObject.SetActive(true);
             gameObject.SetActive(true);
+            FitValue(pieceRadius);
             CenterValue();
+        }
+
+        private void FitValue(float pieceRadius)
+        {
+            // TextMesh font size affects world-space glyph bounds as well as raster quality.
+            // Fit the actual glyphs so signed values cannot spill over the tiny shield face.
+            var size = valueText.GetComponent<MeshRenderer>().localBounds.size;
+            var width = pieceRadius * HalfWidthFactor * 2f * 0.80f;
+            var height = pieceRadius * HeightFactor * 0.66f;
+            var scale = Mathf.Min(1f, Mathf.Min(width / Mathf.Max(size.x, 0.0001f),
+                height / Mathf.Max(size.y, 0.0001f)));
+            valueText.transform.localScale = Vector3.one * scale;
         }
 
         private void CenterValue()

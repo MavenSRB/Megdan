@@ -866,3 +866,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.81 | Stable player-coloured tokens/trays; private inward hex cursors; persistent outward shared-edge pings; player-coloured acting ripples; host-only session ripple speed/intensity. Actual game visual inspection and T2 validation; exact checks and limitations in the commit body. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-981-player-colours-and-allied-cursorping-ripples). | `milestone/9.81` |
+
+## Milestone 9.84 persistent hero modifier completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.84 | Persistent left-edge standard-minion modifier shields with readable fitted values; normal and Attack hover contributors, unchanged card pips and per-body public readings. T2 evidence and actual-game visual inspection in the commit body; isolated branch remains unmerged. [Definition](../../Roadmap/PHASE_9.md#x-984-persistent-left-edge-hero-defense-modifier). | `milestone/9.84` |
