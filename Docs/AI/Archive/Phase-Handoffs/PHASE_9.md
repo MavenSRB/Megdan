@@ -832,3 +832,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.77 | Card pips follow the hero-token rim; HAND remains upper-left, ordinary UNAVAILABLE CARDS move upper-right, and Takahide's OTHER GOLDS occupy a separate lower-left box. Focused rim geometry passed 1/1 and focused visual Play Mode passed 3/3, with fresh Takahide, Gydion and token captures. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-977-align-card-pips-to-token-rim-and-separate-takahides-golds). | milestone/9.77 |
+## Milestone 9.78 Gydion inspection approval capture completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.78 | Corrected the approval fixture to show Gydion's real five-card starting hand as three available cards at upper left and two unavailable cards at upper right. Focused Play Mode passed 1/1 and produced the verified 1920x1080 capture. Product behavior was unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-978-correct-the-gydion-inspection-approval-capture). | milestone/9.78 |

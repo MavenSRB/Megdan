@@ -157,7 +157,12 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 yield return GydionUiJourneyPlayModeTests.Stage(
                     SceneCardContent.VerifiedEngagedStagedGydion,
-                    new[] { GydionCardContent.Cantrip, GydionCardContent.PrepareSpells });
+                    new[]
+                    {
+                        GydionCardContent.Cantrip,
+                        GydionCardContent.PrepareSpells,
+                        GydionCardContent.ElementaryEvocation
+                    });
                 var root = ArienUiJourneyPlayModeTests.Root();
                 var runtime = root.Runtime;
                 var gydion = GydionUiJourneyPlayModeTests.Gydion(runtime);
@@ -167,8 +172,8 @@ namespace GuardsDigital.Tests.PlayMode
                         owner,
                         new ExperimentalMatchOptions(teammateCoordination: true))
                     .Single(row => row.Hero.Equals(gydion));
-                Assert.That(model.HandCards, Has.Count.EqualTo(2));
-                Assert.That(model.OtherCards, Has.Count.EqualTo(3));
+                Assert.That(model.HandCards, Has.Count.EqualTo(3));
+                Assert.That(model.OtherCards, Has.Count.EqualTo(2));
                 Assert.That(model.OtherGoldCards, Is.Empty);
 
                 UiPlayer.SetPlayerViewport(1920, 1080, "Gydion unavailable-card inspection");
@@ -191,12 +196,13 @@ namespace GuardsDigital.Tests.PlayMode
                 var golds = inspection.Root.Q("gd-hero-card-other-golds");
                 Assert.That(unavailable.Q<Label>("gd-hero-card-other-heading").text,
                     Is.EqualTo("UNAVAILABLE CARDS"));
-                Assert.That(unavailable.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(3));
+                Assert.That(hand.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(3));
+                Assert.That(unavailable.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(2));
                 Assert.That(unavailable.worldBound.xMin, Is.GreaterThan(hand.worldBound.xMin),
                     "Gydion's discarded cards occupy the upper-right group.");
                 Assert.That(unavailable.worldBound.yMin, Is.EqualTo(hand.worldBound.yMin).Within(1f));
                 Assert.That(golds.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
-                yield return UiPlayer.CaptureScreen("tmp/9-77-gydion-unavailable-cards-1920.png");
+                yield return UiPlayer.CaptureScreen("tmp/9-78-gydion-three-available-two-unavailable-1920.png");
                 inspection.Root.RemoveFromHierarchy();
                 GydionUiJourneyPlayModeTests.Healthy(runtime);
             }

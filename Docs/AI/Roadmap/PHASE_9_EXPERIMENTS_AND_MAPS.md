@@ -449,3 +449,12 @@ no rules, projection, wire, snapshot, package, publication, or remote change.
 Completed 2026-10-07. Current-card and hand pip centres now follow the token rim, with the current card at the top and the hand distributed along the lower arc. Inspection keeps HAND upper-left and labels ordinary non-hand cards UNAVAILABLE CARDS upper-right; Takahide alone shows the typed OTHER GOLDS group in a bordered lower-left box. Focused Edit Mode geometry passed 1/1 and focused Play Mode passed 3/3 at the final executable revision, producing 1920x1080 Takahide normal/facedown, Gydion unavailable-card, and token close-up captures. The direct visual-inspection helper was blocked by the Windows sandbox ACL, so automated geometry/layout assertions and valid full-resolution PNG checks are recorded and the captures are presented for user review. No rules, privacy, projection, wire, snapshot, package, publication or remote change.
 
 Historical evidence: [9.77 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-977-token-rim-pips-and-inspection-layout-completion).
+### [x] 9.78 Correct the Gydion inspection approval capture
+
+Authorized 2026-10-07 by the user's correction to the requested screenshot. Stage Gydion's real five-card starting hand with exactly three cards still available and two in the unavailable group, then capture the full inspection window at 1920x1080. This corrects validation evidence only; presentation and game behavior do not change.
+
+Closing check: the focused Play Mode inspection test proves three HAND faces, two UNAVAILABLE CARDS faces, upper-left/upper-right placement, no Other Golds section, and writes the fresh full-resolution PNG. T1 test-fixture and evidence correction; no product, rules, projection, wire, snapshot, package, publication, or remote change.
+
+Completed 2026-10-07. The corrected real Gydion fixture retains Cantrip, Prepare Spells, and Elementary Evocation in HAND while placing Elementary Enchantment and Elementary Abjuration in UNAVAILABLE CARDS. Focused Play Mode passed 1/1 and produced a verified 1920x1080 PNG. No product behavior or shipped source changed.
+
+Historical evidence: [9.78 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-978-gydion-inspection-approval-capture-completion).
