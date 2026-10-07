@@ -180,13 +180,7 @@ namespace GuardsDigital.Tests.PlayMode
                 root.Hud.Layout();
                 yield return null;
                 yield return null;
-                var template = runtime.HeroOverviewsView.CardInspection.Root;
-                var inspection = new HeroCardInspectionUnityView(() => runtime.ReadModel);
-                inspection.Root.style.left = template.resolvedStyle.left;
-                inspection.Root.style.top = template.resolvedStyle.top;
-                inspection.Root.style.width = template.resolvedStyle.width;
-                inspection.Root.style.height = template.resolvedStyle.height;
-                root.Hud.RootElement.Add(inspection.Root);
+                var inspection = runtime.HeroOverviewsView.CardInspection;
                 Assert.That(inspection.Open(model, GydionUiJourneyPlayModeTests.HisName), Is.True);
                 yield return null;
                 yield return null;
@@ -202,8 +196,14 @@ namespace GuardsDigital.Tests.PlayMode
                     "Gydion's discarded cards occupy the upper-right group.");
                 Assert.That(unavailable.worldBound.yMin, Is.EqualTo(hand.worldBound.yMin).Within(1f));
                 Assert.That(golds.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
-                yield return UiPlayer.CaptureScreen("tmp/9-78-gydion-three-available-two-unavailable-1920.png");
-                inspection.Root.RemoveFromHierarchy();
+                var visibleCards = inspection.Root.Query<VisualElement>("gd-inspected-card").ToList();
+                Assert.That(inspection.Root.worldBound.width, Is.GreaterThan(1000f));
+                Assert.That(visibleCards, Has.Count.EqualTo(5));
+                Assert.That(visibleCards.All(card => UiPlayer.IsShown(card) &&
+                    card.worldBound.width > 200f && inspection.Root.worldBound.Overlaps(card.worldBound)), Is.True,
+                    "Every requested card must be visibly rendered inside the full-size production modal.");
+                yield return UiPlayer.CaptureScreen("tmp/9-79-card-screen-three-available-two-unavailable-1920.png");
+                inspection.Close();
                 GydionUiJourneyPlayModeTests.Healthy(runtime);
             }
             finally

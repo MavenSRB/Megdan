@@ -458,3 +458,12 @@ Closing check: the focused Play Mode inspection test proves three HAND faces, tw
 Completed 2026-10-07. The corrected real Gydion fixture retains Cantrip, Prepare Spells, and Elementary Evocation in HAND while placing Elementary Enchantment and Elementary Abjuration in UNAVAILABLE CARDS. Focused Play Mode passed 1/1 and produced a verified 1920x1080 PNG. No product behavior or shipped source changed.
 
 Historical evidence: [9.78 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-978-gydion-inspection-approval-capture-completion).
+### [x] 9.79 Replace the collapsed card-screen approval capture
+
+Authorized 2026-10-07 by the user's rejection of the 9.78 image. Open the production hero-card inspection modal rather than a detached test copy, preserve the requested three-available/two-unavailable split, and refuse the capture unless the full modal and all five substantial card faces are visibly rendered on-screen.
+
+Closing check: focused Play Mode proves the production modal is wider than 1000 UI units, contains three visible HAND faces and two visible UNAVAILABLE CARDS faces, and every face has a substantial visible bound overlapping the modal before writing a 1920x1080 PNG. T1 screenshot-fixture correction; no product, rules, projection, wire, snapshot, package, publication, or remote change.
+
+Completed 2026-10-07. The detached zero-width test copy was removed from this capture path. The production inspection modal now supplies the evidence, retaining three available and two unavailable real Gydion starting cards. Its first corrective run exposed and rejected an invalid experimental-read-model cast; the host-derived privacy-safe model then opened in the production modal and passed 1/1. Assertions require a modal wider than 1000 UI units and all five shown card faces wider than 200 UI units and overlapping the modal. The resulting PNG is 1920x1080. No product behavior or shipped source changed.
+
+Historical evidence: [9.79 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-979-visible-production-card-screen-capture-completion).

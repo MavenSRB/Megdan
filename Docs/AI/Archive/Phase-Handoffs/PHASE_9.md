@@ -837,3 +837,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.78 | Corrected the approval fixture to show Gydion's real five-card starting hand as three available cards at upper left and two unavailable cards at upper right. Focused Play Mode passed 1/1 and produced the verified 1920x1080 capture. Product behavior was unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-978-correct-the-gydion-inspection-approval-capture). | milestone/9.78 |
+## Milestone 9.79 visible production card-screen capture completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.79 | Replaced the collapsed detached test-window capture with the actual production inspection modal showing three available and two unavailable real cards. Focused Play Mode passed 1/1 only after proving the modal and all five faces have substantial visible bounds; the capture is 1920x1080. Product behavior was unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-979-replace-the-collapsed-card-screen-approval-capture). | milestone/9.79 |
