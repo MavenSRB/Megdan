@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
@@ -79,7 +81,8 @@ namespace GuardsDigital.Application
         public static HeroCardInspection ForHero(IMatchReadModel source, HeroId hero) =>
             ForHero(source, hero, true);
 
-        private static HeroCardInspection ForHero(IMatchReadModel source, HeroId hero, bool revealHidden)
+        private static HeroCardInspection ForHero(
+            IMatchReadModel source, HeroId hero, bool revealFacedownResting)
         {
             var setup = source.Setup.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
             if (setup == null) return null;
@@ -94,30 +97,46 @@ namespace GuardsDigital.Application
                   definition.Progression.Color == CardColor.Gold));
 
             var current = owned.Where(IsCurrent).ToArray();
-            var hiddenCommitment = !revealHidden && current.Any(card =>
+            var hasUnrevealedCommitment = current.Any(card =>
                 card.State.Location == CardLocation.TurnArea &&
-                card.State.FaceOrientation == CardFaceOrientation.FaceDown);
-            var hiddenRestingColors = !revealHidden
+                card.State.FaceOrientation == CardFaceOrientation.FaceDown &&
+                !CardLifecycleAuthority.IsFacedownRestingCard(card));
+            var hiddenRestingColors = !revealFacedownResting
                 ? current.Where(CardLifecycleAuthority.IsFacedownRestingCard)
                     .Select(card => definitions[card.DefinitionReference].Progression.Color)
                     .Where(color => color != CardColor.None).Distinct().ToArray()
                 : Array.Empty<CardColor>();
+            bool HasDeckSwappingGolds(CardDefinition definition) =>
+                definition.ActionDefinitions
+                    .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                    .Where(effect => effect != null)
+                    .SelectMany(effect => effect.Nodes)
+                    .Any(node => node.Kind == EffectNodeKind.Capability &&
+                        (node.Capability.Equals(SyntheticDeckSwapCapabilities.SwapThisCardWithDeckCardV1) ||
+                         node.Capability.Equals(SyntheticDeckSwapCapabilities.SwapOwnedColorCardWithDeckCardV1)));
+            var separatesOtherGolds = owned.Select(card => definitions[card.DefinitionReference])
+                .Any(HasDeckSwappingGolds);
             bool Concealed(CardInstance card) =>
-                !revealHidden &&
-                ((hiddenCommitment && card.State.Location == CardLocation.Hand) ||
-                 card.State.FaceOrientation == CardFaceOrientation.FaceDown ||
+                !revealFacedownResting &&
+                (CardLifecycleAuthority.IsFacedownRestingCard(card) ||
                  hiddenRestingColors.Contains(definitions[card.DefinitionReference].Progression.Color));
+            bool IsDisplayedAsHand(CardInstance card) =>
+                card.State.Location == CardLocation.Hand ||
+                (hasUnrevealedCommitment &&
+                 card.State.Location == CardLocation.TurnArea &&
+                 card.State.FaceOrientation == CardFaceOrientation.FaceDown &&
+                 !CardLifecycleAuthority.IsFacedownRestingCard(card));
             bool IsOtherGold(CardInstance card)
             {
                 var progression = definitions[card.DefinitionReference].Progression;
-                return card.State.Location != CardLocation.Hand &&
+                return separatesOtherGolds && card.State.Location == CardLocation.Deck &&
                        progression.IsBasic &&
                        progression.Color == CardColor.Gold;
             }
 
-            var hand = current.Where(card => card.State.Location == CardLocation.Hand).ToArray();
+            var hand = current.Where(IsDisplayedAsHand).ToArray();
             var otherGold = current.Where(IsOtherGold).ToArray();
-            var other = current.Where(card => card.State.Location != CardLocation.Hand && !IsOtherGold(card)).ToArray();
+            var other = current.Where(card => !IsDisplayedAsHand(card) && !IsOtherGold(card)).ToArray();
             var book = owned.Where(card => card.State.Location == CardLocation.Spellbook)
                 .Select(card => card.DefinitionReference).Distinct();
             return new HeroCardInspection(

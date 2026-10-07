@@ -43,7 +43,7 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
         [TestCase(false)] [TestCase(true)]
-        public void PopupSplitsHandFromOtherAndTurnsHiddenCommitmentIntoAnonymousBacks(bool useArtwork)
+        public void PopupKeepsAllFiveFacesAvailableUntilTheCommitmentIsRevealed(bool useArtwork)
         {
             using var artwork = ConfiguredCardArtwork.UseTextureLoader(_ => useArtwork ? UnityEngine.Texture2D.blackTexture : null);
             var host = HeroCardInspectionTests.Create(true, true);
@@ -72,12 +72,38 @@ namespace GuardsDigital.Tests.EditMode
                 own.Version, command)).Accepted, Is.True);
             current = host.ProjectionForSeat(viewer.Id);
             view.Refresh();
-            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
-            Assert.That(view.Root.Q("gd-hero-card-hand").Query<VisualElement>("gd-inspected-card-back").ToList().Count,
-                Is.EqualTo(4));
-            Assert.That(view.Root.Q("gd-hero-card-other").Query<VisualElement>("gd-inspected-card-back").ToList().Count,
-                Is.EqualTo(1));
+            Assert.That(view.Root.Q("gd-hero-card-hand")
+                .Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(5));
+            Assert.That(view.Root.Q("gd-hero-card-other")
+                .Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
+            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card-back").ToList(), Is.Empty,
+                "No blank backs are needed: every known face remains available until joint reveal.");
         }
+        [Test] public void TrustedSeatlessHostInspectsTheSelectedHerosOwnViewDuringHiddenCommitment()
+        {
+            var host = HeroCardInspectionTests.Create(true, true);
+            var owner = host.Seats.Seats[0];
+            var own = host.ProjectionForSeat(owner.Id);
+            var command = own.AuthorizedCommands.First(c => c.Kind == DirectorCommandKind.CommitCard);
+            Assert.That(host.SubmitForSeat(owner.Id, new SeatSubmission(
+                new SubmissionId("seatless-owner-perspective"), own.Version, command)).Accepted, Is.True);
+
+            var remote = host.ProjectionForSeat(host.Seats.Seats.Last().Id)
+                .CardInspections.Single(row => row.Hero.Equals(owner.HeroId));
+            Assert.That(remote.HandCards, Has.Count.EqualTo(5));
+            Assert.That(remote.ConcealedHandCount + remote.ConcealedOtherCount, Is.Zero,
+                "A seated opponent sees all five faces as available and cannot infer the commitment.");
+
+            var view = new HeroCardInspectionUnityView(() => host.Projection)
+            {
+                UseTrustedLocalHeroPerspective = true
+            };
+            Assert.That(view.Open(owner.HeroId, "Inspected hero"), Is.True);
+            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card").ToList(), Has.Count.EqualTo(5));
+            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card-back").ToList(), Is.Empty,
+                "The unseated local host sees exactly the selected hero's own faces, not blank backs.");
+        }
+
         [Test] public void EnemySettingIsIndependentAndResetsOnANewHostMenu()
         {
             var view = new PrivateLobbyUnityView(); view.ShowPage(PrivateLobbyEntryPage.Host);

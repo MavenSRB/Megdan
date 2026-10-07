@@ -1170,7 +1170,9 @@ namespace GuardsDigital.Application
         /// commitments, Initiative, an agreement or a previous turn. The <b>attack wall</b> rises
         /// the moment a target is chosen and settles above the whole p.14 action once it finishes -
         /// the defender's answer is information that cannot be un-shown, so the action is never
-        /// undoable and there is no undo at all while it is running. The <b>other-seat wall</b>
+        /// undoable and there is no undo at all while it is running. Choices printed after that
+        /// completed Attack are a new actor-owned segment above the wall and remain rewindable.
+        /// The <b>other-seat wall</b>
         /// rises above anything a different seat answered inside this turn, so one player's rewind
         /// can never reach through another player's decision.</para>
         /// </remarks>
@@ -1277,18 +1279,15 @@ namespace GuardsDigital.Application
 
             undoOpposingFingerprint = opposing;
 
-            // The p.14 action is over when nothing of it is still resolving and nothing is being
-            // asked. Milestone 8.29f's rule restated at this layer: what decides whether the action
-            // is still running is what stands once the steps have been applied.
-            // Milestone 8.35g. A standing turn-release is not part of rulebook p.14's action - it
-            // is this same actor being asked whether it is finished - so it does not keep the
-            // attack open. Without this exception an Attack that ends a turn would leave the wall
-            // up through the entire release pause and the seat would have no rewind at all there.
+            // The p.14 action is over when no Attack resolution is standing. A card may immediately
+            // continue with AFTER THE ATTACK choices, but those are a new actor-owned segment above
+            // the wall: the defender's answer and the Attack remain below the floor, while a mistaken
+            // branch choice (Walking Dead's Move rather than discard, for example) can be stepped
+            // back. The other-seat owner check still withholds undo while an opponent is answering,
+            // and their accepted answer raises the floor again, so this does not rewind through
+            // information another player supplied.
             if (undoAttackUnderWay &&
-                !projection.HasPendingAttackResolution &&
-                (projection.DecisionContract == null ||
-                    projection.DecisionContract.FamilyId.Equals(
-                        PendingDecisionFamilies.TurnRelease)))
+                !projection.HasPendingAttackResolution)
             {
                 undoFloor = projection.AcceptedCommands.Count;
                 undoAttackUnderWay = false;

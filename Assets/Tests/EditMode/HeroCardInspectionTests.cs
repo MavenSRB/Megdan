@@ -72,6 +72,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(row.HandCards.Count, Is.EqualTo(5));
             Assert.That(row.OtherCards, Is.Empty);
             Assert.That(row.OtherGoldCards.Count, Is.EqualTo(2));
+            foreach (var ordinary in view.CardInspections.Where(r => !r.Hero.Equals(takahide)))
+            {
+                Assert.That(ordinary.OtherGoldCards, Is.Empty,
+                    "Only a hero with the typed deck-swap mechanic gets an Other Golds section.");
+            }
             Assert.That(row.Cards.Count, Is.EqualTo(7), "Five dealt faces plus the other two basic golds.");
             Assert.That(row.Cards.Count(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Color == CardColor.Gold), Is.EqualTo(3));
             Assert.That(row.Cards.All(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Tier <= CardTier.I), Is.True);
@@ -83,22 +88,25 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EquivalentTo(new[] { "Hero", "Team", "HandCards", "OtherCards", "OtherGoldCards", "ConcealedHandCount", "ConcealedOtherCount", "ConcealedOtherGoldCount", "Cards", "Spellbook" }),
                 "Only visibility-safe section membership, never instance identity, belongs in this view.");
         }
-        [Test] public void CommittingDoesNotIdentifyTheHiddenCardInTheInspection()
+        [Test] public void CommittingKeepsEveryFaceInHandSoTheHiddenChoiceCannotBeInferred()
         {
             var host = Create(true, true); var owner = host.Seats.Seats[0]; var viewer = host.Seats.Seats.Last();
             var own = host.ProjectionForSeat(owner.Id);
             var command = own.AuthorizedCommands.First(c => c.Kind == DirectorCommandKind.CommitCard);
-            Assert.That(host.SubmitForSeat(owner.Id, new SeatSubmission(new SubmissionId("inspection-commit"), own.Version, command)).Accepted, Is.True);
+            var committed = own.Cards.Single(c => c.Id.Equals(command.CardInstanceId)).DefinitionReference;
+            Assert.That(host.SubmitForSeat(owner.Id, new SeatSubmission(
+                new SubmissionId("inspection-commit"), own.Version, command)).Accepted, Is.True);
             var after = host.ProjectionForSeat(viewer.Id);
             var row = after.CardInspections.Single(r => r.Hero.Equals(owner.HeroId));
-            Assert.That(row.HandCards, Is.Empty, "Remaining identities would identify the missing commitment by elimination.");
-            Assert.That(row.ConcealedHandCount, Is.EqualTo(4));
-            Assert.That(row.ConcealedOtherCount, Is.EqualTo(1));
-            Assert.That(row.ConcealedOtherGoldCount, Is.Zero);
-            Assert.That(row.Cards, Has.No.Member(own.Cards.Single(c => c.Id.Equals(command.CardInstanceId)).DefinitionReference));
-            Assert.That(after.Cards.Any(c => c.Id.Equals(command.CardInstanceId)), Is.False);
+            Assert.That(row.HandCards, Has.Count.EqualTo(5));
+            Assert.That(row.OtherCards, Is.Empty);
+            Assert.That(row.ConcealedHandCount + row.ConcealedOtherCount + row.ConcealedOtherGoldCount, Is.Zero);
+            Assert.That(row.HandCards, Does.Contain(committed),
+                "The committed face stays among all five available faces until joint reveal.");
+            Assert.That(after.Cards.Any(c => c.Id.Equals(command.CardInstanceId)), Is.False,
+                "Definition-only inspection never exposes the private card instance or selected identity.");
         }
-        [Test] public void CurrentFacesFollowPlayDiscardUpgradeItemsAndUnlockedUltimates()
+        [Test] public void CurrentFacesSeparateAvailableFromResolvedDiscardedAndFutureCards()
         {
             var state = OwnerScopedProjectionTests.CreateOfficialInitialState();
             var host = MatchHost.Compose(new MatchSessionInitialState(state.Scenario, state.Setup, state.AvailableMaps,
@@ -116,9 +124,18 @@ namespace GuardsDigital.Tests.EditMode
                         if (definition.Progression.IsSpell) continue;
                         seen.Add(card.State.Location);
                         resolved |= card.State.ResolutionStatus == CardResolutionStatus.Resolved;
-                        if (card.State.Location == CardLocation.Hand || card.State.Location == CardLocation.TurnArea ||
-                            card.State.Location == CardLocation.DiscardPile || card.State.Location == CardLocation.UltimateArea)
-                            Assert.That(trusted.Cards, Does.Contain(card.DefinitionReference), "Every current face survives its lifecycle state.");
+                        if (card.State.Location == CardLocation.Hand ||
+                            (card.State.Location == CardLocation.TurnArea &&
+                             card.State.FaceOrientation == CardFaceOrientation.FaceDown &&
+                             card.State.ResolutionStatus == CardResolutionStatus.Unresolved))
+                            Assert.That(trusted.HandCards, Does.Contain(card.DefinitionReference),
+                                "A hand face or unrevealed commitment remains available.");
+                        if (card.State.Location == CardLocation.DiscardPile ||
+                            card.State.Location == CardLocation.UltimateArea ||
+                            (card.State.Location == CardLocation.TurnArea &&
+                             card.State.ResolutionStatus == CardResolutionStatus.Resolved))
+                            Assert.That(trusted.OtherCards, Does.Contain(card.DefinitionReference),
+                                "Resolved, discarded and not-yet-available faces belong under Unavailable Cards.");
                         if (card.State.Location == CardLocation.ItemSlot || card.State.Location == CardLocation.SetAside)
                             Assert.That(trusted.Cards, Has.No.Member(card.DefinitionReference), "Items and future choices are excluded.");
                     }
@@ -139,7 +156,9 @@ namespace GuardsDigital.Tests.EditMode
                     c.State.Location == CardLocation.UltimateArea).ToArray();
                 Assert.That(cards, Is.Not.Empty, "The explicit scenario must contain the state it claims.");
                 foreach (var card in cards)
-                    Assert.That(HeroCardInspection.ForHero(projection, card.OwnerId).Cards, Does.Contain(card.DefinitionReference));
+                    Assert.That(HeroCardInspection.ForHero(projection, card.OwnerId).OtherCards,
+                        Does.Contain(card.DefinitionReference),
+                        "Spent and unlocked-but-unavailable faces stay out of the available hand and Other Golds.");
             }
         }
         [TestCase(-1)] [TestCase(11)]

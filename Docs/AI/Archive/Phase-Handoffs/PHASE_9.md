@@ -848,3 +848,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.80a | An unseated hosting client now watches the live local HUD; board tokens select each hero's player-style current-round hand, hero trays retain their existing behavior, and Director mutations republish to every remote seat without claiming or transferring a seat. Focused Edit Mode passed 28/28 and focused Play Mode passed 1/1, producing a fresh 1920x1080 capture; direct image viewing was blocked by the Windows ACL helper. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980a-show-the-running-match-to-a-host-who-took-no-seat). | `milestone/9.80a` |
+
+## Milestone 9.80b card-inspection correction completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.80b | Corrected seatless-host card inspection privacy and grouping, limited OTHER GOLDS to typed reserve mechanics, clarified Walking Dead's enemy-discard branch, and restored shared seat undo for actor-owned choices after a completed Attack without crossing that Attack or another player's response. Focused offline passed 36/36; directly affected Play Mode passed 4/4. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980b-correct-seatless-host-card-inspection-and-verify-walking-dead). | `milestone/9.80b` |

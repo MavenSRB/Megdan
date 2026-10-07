@@ -41,9 +41,9 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 foreach (var row in Passes(
                              face, MortimerAttackFaces.DeadPrefix, passes,
-                             "Move a Zombie token or make an enemy hero discard", "Do neither",
+                             "Move a Zombie token or make another enemy hero discard", "Do neither",
                              (MortimerAttackFaces.MoveBullet(MortimerAttackFaces.DeadPrefix, 0), MoveZombieRadius),
-                             (MortimerAttackFaces.DiscardBullet(0), "An enemy hero beside a Zombie token discards a card")))
+                             (MortimerAttackFaces.DiscardBullet(0), "Another enemy hero beside a Zombie token discards a card")))
                     yield return row;
             }
 

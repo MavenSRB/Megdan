@@ -873,9 +873,11 @@ namespace GuardsDigital.Tests.PlayMode
                     element.userData is HeroId id && id.Equals(heroes[0]));
                 UiPlayer.Click(rail.Q("gd-hero-identity-plate"));
                 yield return null;
-                Assert.That(runtime.ViewedHeroId, Is.EqualTo(heroes[0]),
-                    "The hero tray keeps its existing selection fallback when inspection is disabled.");
-                Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False);
+                Assert.That(runtime.ViewedHeroId, Is.EqualTo(heroes[1]),
+                    "The hero tray opens inspection without replacing the token-selected bottom-left hand.");
+                Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.True);
+                Assert.That(runtime.HeroOverviewsView.CardInspection.Hero, Is.EqualTo(heroes[0]));
+                runtime.HeroOverviewsView.CardInspection.Close();
 
                 var random = new GuardsDigital.Application.Bots.DeterministicBotRandom(107);
                 var matches = remotes.Select(remote => new NetworkMatchClient(

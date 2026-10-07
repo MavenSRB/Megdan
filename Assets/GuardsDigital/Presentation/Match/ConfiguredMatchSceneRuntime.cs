@@ -614,6 +614,7 @@ namespace GuardsDigital.Presentation.Match
                 throw new InvalidOperationException("A seated host already has its player HUD.");
 
             seatlessHostView = true;
+            HeroOverviewsView.CardInspection.UseTrustedLocalHeroPerspective = true;
             hud.SetDirectorToolsVisible(true);
             if (republishAfterHostDebugChange != null && UndoRestartPresenter != null)
             {

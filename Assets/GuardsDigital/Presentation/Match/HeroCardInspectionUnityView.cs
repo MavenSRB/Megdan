@@ -25,6 +25,12 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement Root { get; }
         public bool IsOpen => hero.IsDefined;
         public HeroId Hero => hero;
+        /// <summary>
+        /// The local unseated host owns the authority and may inspect a hero through that hero's
+        /// own perspective. Remote and seated views keep using their visibility-safe projection.
+        /// </summary>
+        public bool UseTrustedLocalHeroPerspective { get; set; }
+
 
         public HeroCardInspectionUnityView(Func<IMatchReadModel> read)
         {
@@ -136,6 +142,8 @@ namespace GuardsDigital.Presentation.Match
         {
             var projection = read?.Invoke();
             if (projection == null) return null;
+            if (UseTrustedLocalHeroPerspective)
+                return HeroCardInspection.ForHero(projection, id);
             if (!(projection is IExperimentalReadModel experimental) ||
                 (!experimental.Experiments.TeammateCoordination &&
                  !experimental.Experiments.EnemyCardInformation))

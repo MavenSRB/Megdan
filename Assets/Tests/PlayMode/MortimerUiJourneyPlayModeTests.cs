@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
@@ -158,7 +159,8 @@ namespace GuardsDigital.Tests.PlayMode
             PickWhere(root, value => value.Kind == EffectValueKind.Coordinate && value.Coordinate.Equals(space), why);
 
         /// <summary>Takes the modal bullet named by its node through the decision window's control.</summary>
-        private static IEnumerator Bullet(MatchSceneCompositionRoot root, string node)
+        private static IEnumerator Bullet(
+            MatchSceneCompositionRoot root, string node, string expectedLabel = null)
         {
             var runtime = root.Runtime;
             var choice = runtime.PendingEffectChoice;
@@ -170,6 +172,9 @@ namespace GuardsDigital.Tests.PlayMode
                 command.EffectChoice.Candidate.OptionNodeId.Value == node);
             Assert.That(control, Is.Not.Null, "No window control for bullet " + node + ". " +
                 UiPlayer.Describe(root.Hud));
+            if (expectedLabel != null)
+                Assert.That(control.Label, Is.EqualTo(expectedLabel),
+                    "The visible consequence label must belong to the discard branch it submits.");
             UiPlayer.ClickDecisionControl(runtime, root.Hud, control);
             yield return null;
             yield return ConfirmIfStillStanding(root, choice.NodeId);
@@ -450,8 +455,36 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null, face.Value + " " + Remaining(runtime));
                 yield return TargetMinion(root, StagedMinion);
                 yield return TakePass(root, MortimerAttackFaces.DeadPrefix, 1);
+                if (face.Equals(MortimerAttackFaces.WalkingDead))
+                {
+                    // Regression from the host playtest on 2026-10-07. The Attack is already below
+                    // its hard wall; Walking Dead's own AFTER THE ATTACK branch choice is above it
+                    // and belongs to Mortimer, so choosing Move by mistake must be reversible.
+                    yield return Bullet(root,
+                        MortimerAttackFaces.MoveBullet(MortimerAttackFaces.DeadPrefix, 1));
+                    var mortimer = Mortimer(runtime);
+                    var seat = runtime.Host.Seats.FindByHero(mortimer);
+                    Assert.That(seat, Is.Not.Null);
+                    var client = runtime.Host.ClientForSeat(seat.Id);
+                    Assert.That(client.Projection.IsSeatUndoAvailable, Is.True,
+                        "A post-attack choice made by the acting player is undoable even though " +
+                        "the completed Attack and any defense below it are not.");
+                    var beforeUndo = runtime.Host.Projection.AcceptedCommands.Count;
+                    var undone = client.SubmitUndo(new SeatUndoSubmission(
+                        new SubmissionId("walking-dead-post-attack-undo"),
+                        client.Projection.Version));
+                    Assert.That(undone.Accepted, Is.True, undone.Detail);
+                    Assert.That(runtime.Host.Projection.AcceptedCommands.Count,
+                        Is.EqualTo(beforeUndo - 1), "One press removes only the mistaken branch.");
+                    Assert.That(runtime.Host.Projection.AcceptedCommands.Any(command =>
+                            command.Kind == DirectorCommandKind.ChooseAttackTarget), Is.True,
+                        "The Attack target remains recorded below the undo wall.");
+                    runtime.RefreshAll();
+                    yield return null;
+                }
                 var before = HandOfCount(runtime, wasp);
-                yield return Bullet(root, MortimerAttackFaces.DiscardBullet(1));
+                yield return Bullet(root, MortimerAttackFaces.DiscardBullet(1),
+                    "ANOTHER ENEMY HERO BESIDE A ZOMBIE TOKEN DISCARDS A CARD");
                 yield return PickWhere(root, value => value.Kind == EffectValueKind.Hero && value.HeroId.Equals(wasp),
                     "Another enemy hero in radius beside a Zombie.");
                 Assert.That(runtime.PendingEffectChoice?.ChooserId ?? default, Is.EqualTo(wasp),
