@@ -30,6 +30,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchReadModel trustedContent;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
+        private bool seatlessHostView;
 
         public ConfiguredMatchSceneRuntime(
             BoardMapDefinition map,
@@ -334,8 +335,7 @@ namespace GuardsDigital.Presentation.Match
                 // and it stays a first-class feature - clicking a hero to read their tray is how a
                 // player looks around, and nothing about that is changed by no longer letting it
                 // pre-empt the board.
-                heroId => HeroOverviewsView?.OpenCardInspection(heroId) == true ||
-                    SelectViewedHero(heroId),
+                HandleBoardHeroViewIntent,
                 // Milestone 9.21i. A click on one standee of a hero: the body answers the acting-body
                 // pick or an Attack on that body, and otherwise the click means what the hero arm means.
                 (heroId, body) =>
@@ -591,6 +591,39 @@ namespace GuardsDigital.Presentation.Match
             hud?.RefreshSpellbookShortcut();
             return true;
         }
+
+        private bool HandleBoardHeroViewIntent(HeroId heroId)
+        {
+            // Milestone 9.80a. A player keeps the current token behaviour: the same full inspection
+            // modal a tray click opens. The one host that deliberately took no seat instead gets the
+            // earlier tray-pointing behaviour the user requested, while tray clicks remain owned by
+            // HeroOverviewsUnityView and therefore keep opening the modal.
+            return seatlessHostView
+                ? SelectViewedHero(heroId)
+                : HeroOverviewsView?.OpenCardInspection(heroId) == true ||
+                    SelectViewedHero(heroId);
+        }
+
+        /// <summary>
+        /// Milestone 9.80a. Shows the local match HUD to a host that deliberately claimed no seat.
+        /// No client or authority is replaced and no seat is bound. Director mutations republish.
+        /// </summary>
+        public void AttachSeatlessHostView(Action republishAfterHostDebugChange)
+        {
+            if (Seat != null)
+                throw new InvalidOperationException("A seated host already has its player HUD.");
+
+            seatlessHostView = true;
+            hud.SetDirectorToolsVisible(true);
+            if (republishAfterHostDebugChange != null && UndoRestartPresenter != null)
+            {
+                UndoRestartPresenter.SessionProjectionChanged +=
+                    _ => republishAfterHostDebugChange();
+            }
+            RefreshAll();
+        }
+
+        public bool IsSeatlessHostView => seatlessHostView;
 
         /// <summary>The hero whose tray is currently drawn.</summary>
         public HeroId ViewedHeroId => HandsPresenter.ViewedHeroId;

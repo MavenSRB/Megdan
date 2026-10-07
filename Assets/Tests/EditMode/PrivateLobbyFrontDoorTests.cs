@@ -200,7 +200,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AHostWhoTookNoSeat_GetsTheDirectorsToolsOnceTheMatchStarts()
+        public void AHostWhoTookNoSeat_HidesTheLobbyForTheLiveMatchHud()
         {
             var harness = PrivateOnlineWireHarness.Compose();
             var hostClient = harness.ConnectSeatless(7);
@@ -224,18 +224,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(hostClient.HasMatchStarted, Is.False,
                 "It is never told the match began, which is why the host's own fact decides.");
 
-            var console = PrivateLobbyModel.ForHostPlayer(harness.Session, hostClient, string.Empty);
-            Assert.That(console.IsHostConsole, Is.True);
-            Assert.That(console.HasMatchStarted, Is.True);
-            Assert.That(console.IsShown, Is.True);
-            Assert.That(console.Controls, Is.EqualTo(new[]
-            {
-                PrivateLobbyControl.DirectorUndo,
-                PrivateLobbyControl.DirectorRestart,
-                PrivateLobbyControl.Leave
-            }));
-            Assert.That(console.Selection.IsRunning, Is.False);
-            Assert.That(console.Seats.Count, Is.EqualTo(seats.Length));
+            var observer = PrivateLobbyModel.ForHostPlayer(harness.Session, hostClient, string.Empty);
+            Assert.That(observer.IsHostConsole, Is.False);
+            Assert.That(observer.HasMatchStarted, Is.True);
+            Assert.That(observer.IsShown, Is.False,
+                "The host sees the retained local match HUD, not a full-screen lobby console.");
+            Assert.That(observer.Controls, Is.Empty);
+            Assert.That(observer.Selection.IsRunning, Is.False);
+            Assert.That(observer.Seats.Count, Is.EqualTo(seats.Length));
+            Assert.That(harness.Session.ClaimedSeatCount, Is.EqualTo(seats.Length));
+            Assert.That(hostClient.GrantedSeat, Is.Null,
+                "Watching the local authority neither claims nor transfers a player seat.");
         }
 
         [Test]

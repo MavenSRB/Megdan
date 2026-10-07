@@ -1,6 +1,6 @@
 # Guards Digital - Player-Facing Match HUD
 
-Canonical active shard. The player-facing HUD the configured match draws - its panel, its standing regions, the card tray, and the one contextual region every decision is asked in. Split out of [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) at milestone 7.8a.
+Canonical active shard for the configured match panel, standing regions, card tray and contextual decisions. Split from [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) at milestone 7.8a.
 
 [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) owns board-facing surfaces; [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) owns the passive presentation contract. Every HUD reading derives from projection, owns no serialized lifetime, and redraws after restore, replay, Undo or restart. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 

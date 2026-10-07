@@ -817,10 +817,10 @@ namespace GuardsDigital.Application
             // Milestone 8.107. A hosting client that never took a seat is never sent MatchStarted
             // (the host announces it to seated connections only), so its own reading would keep
             // showing a lobby for a match other people are already playing. The host's own fact
-            // decides instead, and the screen becomes the non-playing host's console.
+            // decides instead. Milestone 9.80a hides the lobby so the local match HUD is visible.
             if (host.HasMatchStarted && client.State == PrivateSessionClientState.Admitted)
             {
-                return ForHostConsole(host, hostFeedback, testDriverSeats);
+                return ForSeatlessHostView(host, hostFeedback, testDriverSeats);
             }
 
             var owner = ForClient(client);
@@ -862,30 +862,25 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
-        /// Milestone 8.107. The screen of a host that is running a started match without playing in
-        /// it: the seats, and the Director's undo and restart beside LEAVE.
+        /// Milestone 9.80a. The hidden lobby state of a host watching the local match without a seat.
+        /// The runtime retains the deliberate Director drawer that replaced these console controls.
         /// </summary>
-        private static PrivateLobbyModel ForHostConsole(
+        private static PrivateLobbyModel ForSeatlessHostView(
             PrivateSessionHost host, string hostFeedback, ISet<SeatId> testDriverSeats)
         {
             var plain = ForHost(host, hostFeedback, testDriverSeats);
             return new PrivateLobbyModel(
                 PrivateLobbyRole.Host,
-                true,
-                "HOSTING - MATCH UNDER WAY - YOU ARE NOT PLAYING",
+                false,
+                "HOSTING - MATCH UNDER WAY - WATCHING",
                 plain.FeedbackLabel,
                 plain.SessionLabel,
                 plain.Seats,
-                new[]
-                {
-                    PrivateLobbyControl.DirectorUndo,
-                    PrivateLobbyControl.DirectorRestart,
-                    PrivateLobbyControl.Leave
-                },
+                Array.Empty<PrivateLobbyControl>(),
                 true,
                 PrivateLobbySelection.NotRunning,
                 host.Identity.MatchFormatId,
-                isHostConsole: true);
+                isHostConsole: false);
         }
 
         /// <summary>

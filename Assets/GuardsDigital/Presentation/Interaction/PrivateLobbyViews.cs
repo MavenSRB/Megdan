@@ -1789,6 +1789,19 @@ namespace GuardsDigital.Presentation.Interaction
                     refusalReported = true;
                     PrivateOnlineMarkers.Log("LOBBY_REFUSED reason=" + machine.RejectionReason);
                 }
+                if (!onlineHudAttached && session != null && session.HasMatchStarted &&
+                    machine != null && machine.State == PrivateSessionClientState.Admitted)
+                {
+                    // Milestone 9.80a. This hosting client deliberately took no seat, so it never
+                    // receives MatchStarted or an owner projection. The authority is local in this
+                    // process: retain its existing Director composition, expose that live HUD, and
+                    // leave the loopback client admitted and unseated.
+                    compositionRoot.Runtime.AttachSeatlessHostView(session.RepublishProjections);
+                    onlineHudAttached = true;
+                    PrivateOnlineMarkers.Log(
+                        "LOBBY_MATCH_HUD seat=(unseated) version=" +
+                        compositionRoot.Runtime.Host.Version.ToString(CultureInfo.InvariantCulture));
+                }
                 if (!onlineHudAttached && machine != null && machine.HasMatchStarted &&
                     machine.State == PrivateSessionClientState.Seated &&
                     machine.LatestProjection != null)

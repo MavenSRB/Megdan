@@ -842,3 +842,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.79 | Replaced the collapsed detached test-window capture with the actual production inspection modal showing three available and two unavailable real cards. Focused Play Mode passed 1/1 only after proving the modal and all five faces have substantial visible bounds; the capture is 1920x1080. Product behavior was unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-979-replace-the-collapsed-card-screen-approval-capture). | milestone/9.79 |
+
+## Milestone 9.80a seatless-host live match view completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.80a | An unseated hosting client now watches the live local HUD; board tokens select each hero's player-style current-round hand, hero trays retain their existing behavior, and Director mutations republish to every remote seat without claiming or transferring a seat. Focused Edit Mode passed 28/28 and focused Play Mode passed 1/1, producing a fresh 1920x1080 capture; direct image viewing was blocked by the Windows ACL helper. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980a-show-the-running-match-to-a-host-who-took-no-seat). | `milestone/9.80a` |

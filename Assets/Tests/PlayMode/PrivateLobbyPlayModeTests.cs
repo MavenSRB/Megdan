@@ -734,12 +734,12 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.107. A host that never takes a seat runs the match from its lobby screen.
-        /// Four socket players fill a 2v2, and once the match starts the host's screen becomes its
-        /// console. DIRECTOR UNDO there rewinds the authority and reaches every seat.
+        /// Milestone 9.80a. A host that never takes a seat watches the live match HUD. Board hero
+        /// tokens select the same current-round hand groups a player sees, the hero tray keeps its
+        /// inspection modal, and Director undo still reaches every seat.
         /// </summary>
         [UnityTest]
-        public IEnumerator ANonPlayingHost_UndoesFromItsConsole_AndEverySeatIsUpdated()
+        public IEnumerator ANonPlayingHost_WatchesHandsAndUndoesFromTheLiveHud()
         {
             var remotes = new List<SocketJoiner>();
             try
@@ -810,7 +810,7 @@ namespace GuardsDigital.Tests.PlayMode
                 }
 
                 var startDeadline = Time.realtimeSinceStartup + 20f;
-                while (Time.realtimeSinceStartup < startDeadline && !driver.Presenter.Model.IsHostConsole)
+                while (Time.realtimeSinceStartup < startDeadline && !Runtime().IsSeatlessHostView)
                 {
                     foreach (var remote in remotes)
                     {
@@ -826,17 +826,56 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
                 }
 
-                Assert.That(driver.Presenter.Model.IsHostConsole, Is.True,
-                    "The match started without the host in a seat, so its screen is the host console.");
-                Assert.That(driver.Presenter.Model.Seats.Select(row => row.SeatLabel),
-                    Is.EquivalentTo(new[] { "Player 1", "Player 2", "Player 3", "Player 4" }),
-                    "8.108: every seat row shows its player's name, cleaned, in place of the seat id.");
-                Assert.That(Texts(driver, "gd-lobby-seat-name"), Is.SupersetOf(new[] { "Player 1", "Player 4" }));
+                var runtime = Runtime();
+                Assert.That(runtime.IsSeatlessHostView, Is.True);
+                Assert.That(runtime.Seat, Is.Null, "Watching the match must not claim a player seat.");
+                Assert.That(driver.Presenter.Model.HasMatchStarted, Is.True);
+                Assert.That(driver.Presenter.Model.IsHostConsole, Is.False);
+                Assert.That(driver.Presenter.Model.IsShown, Is.False);
+                Assert.That(UiPlayer.IsShown(driver.View.Root), Is.False,
+                    "The live match replaces the lobby after every seated player is ready.");
+
+                var composition = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+                var director = composition.Hud.RootElement.Q<Button>("gd-director-toggle");
+                Assert.That(director, Is.Not.Null);
+                Assert.That(director.style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                    "The trusted local host keeps its Director controls while spectating.");
+
+                var heroes = runtime.Host.Seats.Seats.Select(seat => seat.HeroId).Take(2).ToArray();
+                Assert.That(heroes, Has.Length.EqualTo(2));
+                Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False);
+                Assert.That(runtime.BoardView.TryForwardHeroViewIntent(heroes[0]), Is.True);
+                yield return null;
+                Assert.That(runtime.ViewedHeroId, Is.EqualTo(heroes[0]));
+                Assert.That(runtime.HandsView.Model.ViewedHand.HeroId, Is.EqualTo(heroes[0]));
+                Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False,
+                    "A board token selects the hand directly instead of opening the tray modal.");
+                var hand = runtime.HandsView.Model.ViewedHand;
+                Assert.That(hand.TrayCards.Select(card => card.CardInstanceId), Is.EquivalentTo(
+                    hand.PlayableTrayCards.Concat(hand.UnavailableTrayCards)
+                        .Select(card => card.CardInstanceId)));
+                Assert.That(hand.PlayableTrayCards.All(card =>
+                    card.Group == TrayCardGroup.Available || card.IsResolving), Is.True);
+                Assert.That(hand.UnavailableTrayCards.All(card =>
+                    card.Group != TrayCardGroup.Available && !card.IsResolving), Is.True);
+
+                Assert.That(runtime.BoardView.TryForwardHeroViewIntent(heroes[1]), Is.True);
+                yield return null;
+                Assert.That(runtime.ViewedHeroId, Is.EqualTo(heroes[1]));
+                Assert.That(runtime.HandsView.Model.ViewedHand.HeroId, Is.EqualTo(heroes[1]));
+                UiPlayer.SetPlayerViewport(1920u, 1080u, "seatless host live match HUD");
                 yield return null;
                 yield return null;
-                Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "DIRECTOR RESTART", "DIRECTOR UNDO", "LEAVE" }));
-                Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.InvitationSessionName)), Is.True,
-                    "The host console still shows what guests need to rejoin.");
+                yield return UiPlayer.CaptureScreen("tmp/9-80a-seatless-host-view-1920x1080.png");
+
+                var rail = UiPlayer.Descendants(composition.Hud.RootElement).Single(element =>
+                    element.name == "gd-hero-rail" &&
+                    element.userData is HeroId id && id.Equals(heroes[0]));
+                UiPlayer.Click(rail.Q("gd-hero-identity-plate"));
+                yield return null;
+                Assert.That(runtime.ViewedHeroId, Is.EqualTo(heroes[0]),
+                    "The hero tray keeps its existing selection fallback when inspection is disabled.");
+                Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False);
 
                 var random = new GuardsDigital.Application.Bots.DeterministicBotRandom(107);
                 var matches = remotes.Select(remote => new NetworkMatchClient(
@@ -857,11 +896,10 @@ namespace GuardsDigital.Tests.PlayMode
                 var acceptedBefore = Runtime().Host.Projection.AcceptedCommands.Count;
                 Assert.That(acceptedBefore, Is.GreaterThanOrEqualTo(2), "The players have made moves to take back.");
 
-                UiPlayer.Click(Control(driver, "DIRECTOR UNDO"));
+                Assert.That(runtime.Undo(), Is.True, "The live HUD preserves the host's Director undo.");
                 yield return null;
                 Assert.That(Runtime().Host.Projection.AcceptedCommands.Count, Is.EqualTo(acceptedBefore - 1),
                     "DIRECTOR UNDO takes back exactly one accepted command on the authority.");
-                Assert.That(Text(driver, PrivateLobbyUnityView.FeedbackName), Does.StartWith("Director undo done"));
 
                 var rewoundVersion = Runtime().Host.Projection.Version;
                 var syncDeadline = Time.realtimeSinceStartup + 5f;
@@ -878,9 +916,6 @@ namespace GuardsDigital.Tests.PlayMode
                         "Every seat was republished the rewound match.");
                 }
 
-                UiPlayer.Click(Control(driver, "LEAVE"));
-                yield return null;
-                Assert.That(ControlLabels(driver), Is.EqualTo(LandingControls));
             }
             finally
             {
