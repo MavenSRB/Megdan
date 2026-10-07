@@ -97,6 +97,32 @@ Completed 2026-10-07. The above-hand shortcut now carries the tray chip's gold t
 
 Historical evidence: [9.30k completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-930k-gydion-casting-hover-completion).
 
+### [x] 9.74 Stack Gydion's castable-spell hover above its casting card
+
+Authorized 2026-10-07 by the user's review of the 9.30k Cantrip hover capture. Outcome: the
+definition-driven `CAN CAST` companion stacks its declared spell faces vertically above the hovered
+casting card instead of extending beside it in a horizontal row. The companion remains attached to
+the complete casting-card preview on compact and wide hand surfaces, stays pointer-transparent and
+inside the validated viewport, and preserves typed cast-arm order. A spell already in the public
+removed-from-spellbook pile remains faded and is captioned `REMOVED`. No rule, card content, command,
+snapshot or wire change. Closing checks: focused presentation regressions for vertical geometry,
+above-card placement and removed-state treatment; the joined non-host Gydion Play Mode hover journey;
+fresh 1920x1080 captures with all declared spells in the book and with one declared spell already
+removed. T2.
+
+Completed 2026-10-07. `CastableSpellHoverView` is now one face wide and computes the full vertical
+height of its ordered spell column, centred immediately above the casting card. Compact hand and rail
+previews reserve that height when they clamp the complete face, while wide hand faces attach the same
+pointer-transparent companion directly. Public removed spells retain their faded face and `REMOVED`
+caption. The geometry/removed-state regression passed inside 154/154 affected Edit Mode checks; the
+joined non-host Gydion fixture passed 6/6 Play Mode checks and wrote fresh 1920x1080 all-in-book and
+one-removed captures. The initial focused run exposed a Play Mode fixture-only assembly-access compile
+error; the fixture now reaches the existing internal staging helper through reflection, and both the
+focused rerun and final affected runs are green. No gameplay, content, command, snapshot, wire or
+package changed.
+
+Historical evidence: [9.74 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-974-vertical-castable-spell-hover-completion).
+
 ## Wave plan (agents, as Razzle)
 
 - 9.30 (inventory) on main first.

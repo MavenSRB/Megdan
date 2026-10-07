@@ -157,6 +157,22 @@ namespace GuardsDigital.Tests.EditMode
             DirectorHandsUnityView.PopulatePeekPreview(
                 preview, card, new VisualElement(), dimUnavailable: false);
             var shelf = Named(preview, "gd-castable-spells").Single();
+            Assert.That(shelf.style.width.value.value,
+                Is.EqualTo(CastableSpellHoverView.WidthFor(card.CastableSpells)));
+            Assert.That(shelf.style.height.value.value,
+                Is.EqualTo(CastableSpellHoverView.HeightFor(card.CastableSpells)));
+            Assert.That(shelf.style.left.value.value,
+                Is.EqualTo((CardFootprint.Width - shelf.style.width.value.value) / 2f),
+                "the one-face-wide stack is centred over its casting card");
+            Assert.That(shelf.style.top.value.value,
+                Is.EqualTo(-shelf.style.height.value.value - CastableSpellHoverView.Gap),
+                "the stack clears the casting card above it");
+            var column = Named(shelf, "gd-castable-spells-row").Single();
+            Assert.That(column.style.flexDirection.value, Is.EqualTo(FlexDirection.Column));
+            var hosts = Named(column, "gd-castable-spell").ToArray();
+            Assert.That(hosts, Has.Length.EqualTo(3));
+            Assert.That(hosts.Take(2).All(host => host.style.marginBottom.value.value > 0f), Is.True);
+            Assert.That(hosts.Last().style.marginBottom.value.value, Is.Zero);
             Assert.That(Named(shelf, "gd-spell-face").Count(), Is.EqualTo(3));
             Assert.That(Named(shelf, "gd-spell-greyed").Count(), Is.EqualTo(1));
             Assert.That(Named(shelf, "gd-castable-spell-caption")

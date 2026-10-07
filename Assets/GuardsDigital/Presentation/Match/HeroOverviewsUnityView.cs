@@ -321,9 +321,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (card != null && revealAnchors.TryGetValue(model, out var anchor))
                 {
-                    var cardIsOnLeft = anchor.worldBound.center.x < Root.resolvedStyle.width / 2f;
-                    CastableSpellHoverView.Attach(
-                        face, card.CastableSpells, attachToLeft: !cardIsOnLeft);
+                    CastableSpellHoverView.Attach(face, card.CastableSpells);
                 }
                 DirectorHandsUnityView.IgnorePickingRecursively(face);
                 preview.Add(face);
@@ -441,25 +439,21 @@ namespace GuardsDigital.Presentation.Match
                 : RailColumnOf(element)?.worldBound ?? anchor;
             var onLeft = beside.center.x < width / 2f;
             var card = CardOf(model);
-            var spellShelfWidth = CastableSpellHoverView.WidthFor(card?.CastableSpells);
-            var leftOverhang = !onLeft && spellShelfWidth > 0f
-                ? spellShelfWidth + CastableSpellHoverView.Gap
-                : 0f;
-            var rightOverhang = onLeft && spellShelfWidth > 0f
-                ? spellShelfWidth + CastableSpellHoverView.Gap
+            var spellShelfHeight = CastableSpellHoverView.HeightFor(card?.CastableSpells);
+            var topOverhang = spellShelfHeight > 0f
+                ? spellShelfHeight + CastableSpellHoverView.Gap
                 : 0f;
             var left = onLeft
                 ? beside.xMax + 10f
                 : beside.xMin - faceWidth - 10f;
             preview.style.left = Mathf.Clamp(
                 left,
-                leftOverhang,
-                Mathf.Max(leftOverhang, width - faceWidth - rightOverhang));
-            preview.style.top = Mathf.Max(
                 0f,
-                Mathf.Min(
-                    anchor.yMin - 40f,
-                    Mathf.Max(0f, height - faceHeight - 8f)));
+                Mathf.Max(0f, width - faceWidth));
+            preview.style.top = Mathf.Clamp(
+                anchor.yMin - 40f,
+                topOverhang,
+                Mathf.Max(topOverhang, height - faceHeight - 8f));
         }
 
         /// <summary>Milestone 9.36: the rail column an element is drawn in, or null outside both.</summary>

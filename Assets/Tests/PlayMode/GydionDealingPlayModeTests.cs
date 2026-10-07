@@ -137,8 +137,11 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator GydionsJoinedNonHostSeatSeesAndOpensTheSameSpellbookShortcut()
         {
+            var oldWidth = (uint)Screen.width;
+            var oldHeight = (uint)Screen.height;
             try
             {
+                UiPlayer.SetPlayerViewport(1920u, 1080u, "9.74 castable spell hover captures");
                 MatchSceneCompositionRoot.NextComposedSeat = null;
                 yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
                 var directorRuntime = Root().Runtime;
@@ -188,7 +191,58 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(castable.Query<VisualElement>("gd-spell-face").ToList().Count, Is.EqualTo(3));
                 Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Is.Empty,
                     "all three spells begin in the book");
-                yield return UiPlayer.CaptureScreen("tmp/9-30k-gydion-seat-hover.png");
+                var castableFaces = castable.Query<VisualElement>("gd-spell-face").ToList();
+                Assert.That(castable.worldBound.yMax,
+                    Is.LessThanOrEqualTo(runtime.HandsView.HoverPreviewRoot.Q("gd-card-preview").worldBound.yMin + 1f),
+                    "the stack stands above and clears the casting card");
+                Assert.That(castableFaces.Select(face => face.worldBound.center.x).Max() -
+                    castableFaces.Select(face => face.worldBound.center.x).Min(), Is.LessThan(1f),
+                    "the declared spell faces form one vertical column");
+                yield return UiPlayer.CaptureScreen("tmp/9-74-gydion-cast-hover-all-in-book.png");
+
+                var removedIndex = 0;
+                var removedDefinition = runtime.Host.Projection.Definitions.Single(definition =>
+                    definition.Reference.Equals(cantripModel.CastableSpells[removedIndex].DefinitionReference));
+                var oneRemovedSpells = cantripModel.CastableSpells.Select((spell, index) =>
+                    index == removedIndex
+                        ? new SpellCardViewModel(removedDefinition, isGreyed: true,
+                            caption: removedDefinition.DisplayName.ToUpperInvariant() + " - REMOVED")
+                        : spell).ToArray();
+                var oneRemovedCantrip = new TrayCardViewModel(
+                    cantripModel.CardInstanceId,
+                    cantripModel.DefinitionReference,
+                    cantripModel.DisplayName,
+                    cantripModel.Color,
+                    cantripModel.Face,
+                    cantripModel.Group,
+                    cantripModel.PlayedTurnIndex,
+                    cantripModel.IsSelectable,
+                    cantripModel.IsSelected,
+                    cantripModel.IsActiveEffectSource,
+                    cantripModel.IsResolving,
+                    cantripModel.IsAwaitedAnswer,
+                    cantripModel.IsDimmedByResolution,
+                    cantripModel.IsFacedown,
+                    oneRemovedSpells);
+                var populatePeek = typeof(DirectorHandsUnityView).GetMethod(
+                    "PopulatePeekPreview",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                Assert.That(populatePeek, Is.Not.Null);
+                populatePeek.Invoke(null, new object[]
+                {
+                    runtime.HandsView.HoverPreviewRoot,
+                    oneRemovedCantrip,
+                    cantripSlot,
+                    false,
+                    false
+                });
+                yield return null;
+                yield return null;
+                castable = runtime.HandsView.HoverPreviewRoot.Q("gd-castable-spells");
+                Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Has.Count.EqualTo(1));
+                Assert.That(castable.Query<Label>("gd-castable-spell-caption").ToList()
+                    .Count(label => label.text == "REMOVED"), Is.EqualTo(1));
+                yield return UiPlayer.CaptureScreen("tmp/9-74-gydion-cast-hover-one-removed.png");
                 UiPlayer.PointAway(cantripButton);
                 yield return new WaitForSecondsRealtime(0.25f);
 
@@ -203,6 +257,7 @@ namespace GuardsDigital.Tests.PlayMode
             finally
             {
                 MatchSceneCompositionRoot.NextComposedSeat = null;
+                UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "9.74 restore");
             }
         }
 

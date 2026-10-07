@@ -7,9 +7,9 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 9.30k. The pointer-rest companion for an action card that declares typed spell casts.
-    /// It attaches outside the complete action-card face, so the card remains the hover anchor and the
-    /// same companion can be used by the hand, turn slots, current card and discard surfaces.
+    /// Milestones 9.30k and 9.74. The pointer-rest companion for an action card that declares typed
+    /// spell casts. It stacks above the complete action-card face, so the card remains the hover anchor
+    /// and the same companion can be used by the hand, turn slots, current card and discard surfaces.
     /// </summary>
     internal static class CastableSpellHoverView
     {
@@ -23,13 +23,18 @@ namespace GuardsDigital.Presentation.Match
         internal static float WidthFor(IReadOnlyList<SpellCardViewModel> spells) =>
             spells == null || spells.Count == 0
                 ? 0f
-                : Padding * 2f + spells.Count * SpellCardFootprint.Width * FaceScale +
+                : Padding * 2f + SpellCardFootprint.Width * FaceScale;
+
+        internal static float HeightFor(IReadOnlyList<SpellCardViewModel> spells) =>
+            spells == null || spells.Count == 0
+                ? 0f
+                : Padding * 2f + EyebrowHeight +
+                    spells.Count * (SpellCardFootprint.Height * FaceScale + CaptionHeight) +
                     Math.Max(0, spells.Count - 1) * FaceGap;
 
         internal static void Attach(
             VisualElement cardFace,
-            IReadOnlyList<SpellCardViewModel> spells,
-            bool attachToLeft)
+            IReadOnlyList<SpellCardViewModel> spells)
         {
             Detach(cardFace);
             if (cardFace == null || spells == null || spells.Count == 0)
@@ -38,6 +43,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var width = WidthFor(spells);
+            var height = HeightFor(spells);
             var shelf = new VisualElement
             {
                 name = "gd-castable-spells",
@@ -46,10 +52,10 @@ namespace GuardsDigital.Presentation.Match
                     spells.Select(spell => spell.Caption))
             };
             shelf.style.position = Position.Absolute;
-            shelf.style.left = attachToLeft ? -width - Gap : CardFootprint.Width + Gap;
-            shelf.style.top = 0f;
+            shelf.style.left = (CardFootprint.Width - width) / 2f;
+            shelf.style.top = -height - Gap;
             shelf.style.width = width;
-            shelf.style.height = EyebrowHeight + SpellCardFootprint.Height * FaceScale + CaptionHeight + Padding * 2f;
+            shelf.style.height = height;
             shelf.style.flexDirection = FlexDirection.Column;
             shelf.style.backgroundColor = MatchHudTheme.PanelBackground;
             HudElements.Padding(shelf, Padding);
@@ -62,14 +68,14 @@ namespace GuardsDigital.Presentation.Match
             shelf.Add(eyebrow);
 
             var row = new VisualElement { name = "gd-castable-spells-row", pickingMode = PickingMode.Ignore };
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.FlexStart;
+            row.style.flexDirection = FlexDirection.Column;
+            row.style.alignItems = Align.Center;
             for (var index = 0; index < spells.Count; index++)
             {
                 var spell = spells[index];
                 var host = new VisualElement { name = "gd-castable-spell", pickingMode = PickingMode.Ignore };
                 host.style.width = SpellCardFootprint.Width * FaceScale;
-                host.style.marginRight = index + 1 < spells.Count ? FaceGap : 0f;
+                host.style.marginBottom = index + 1 < spells.Count ? FaceGap : 0f;
                 host.Add(SpellCardFaceView.Build(spell, FaceScale));
                 var caption = HudElements.Text(
                     spell.IsGreyed ? "REMOVED" : spell.DisplayName.ToUpperInvariant(),

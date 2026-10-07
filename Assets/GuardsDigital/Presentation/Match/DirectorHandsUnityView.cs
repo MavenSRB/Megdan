@@ -833,8 +833,7 @@ namespace GuardsDigital.Presentation.Match
                 HudElements.OnPointedAt(button, pointedAt =>
                 {
                     if (pointedAt)
-                        CastableSpellHoverView.Attach(
-                            button, card.CastableSpells, attachToLeft: isUnavailableGroup);
+                        CastableSpellHoverView.Attach(button, card.CastableSpells);
                     else
                         CastableSpellHoverView.Detach(button);
                 });
@@ -2081,39 +2080,36 @@ namespace GuardsDigital.Presentation.Match
             {
                 face.style.opacity = 1f;
             }
-            var spellShelfWidth = CastableSpellHoverView.WidthFor(card.CastableSpells);
-            CastableSpellHoverView.Attach(face, card.CastableSpells, attachToLeft: isRightSideGroup);
+            var spellShelfHeight = CastableSpellHoverView.HeightFor(card.CastableSpells);
+            CastableSpellHoverView.Attach(face, card.CastableSpells);
             IgnorePickingRecursively(face);
             preview.Add(face);
             preview.style.display = DisplayStyle.Flex;
             preview.BringToFront();
             var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var bounds = anchor.worldBound;
-            var leftOverhang = isRightSideGroup && spellShelfWidth > 0f
-                ? spellShelfWidth + CastableSpellHoverView.Gap
-                : 0f;
-            var rightOverhang = !isRightSideGroup && spellShelfWidth > 0f
-                ? spellShelfWidth + CastableSpellHoverView.Gap
-                : 0f;
             var rightLimit = isRightSideGroup
                 ? Mathf.Max(
-                    CardFootprint.ExteriorOutlineWidth + leftOverhang,
-                    viewport.x - CardFootprint.Width - CardFootprint.ExteriorOutlineWidth - rightOverhang)
+                    CardFootprint.ExteriorOutlineWidth,
+                    viewport.x - CardFootprint.Width - CardFootprint.ExteriorOutlineWidth)
                 : Mathf.Max(
                     CardFootprint.ExteriorOutlineWidth,
                     Mathf.Min(
                         viewport.x,
                         ConfiguredMatchHudRenderer.CompactHandRightEdge) -
-                    CardFootprint.Width - CardFootprint.ExteriorOutlineWidth - rightOverhang);
+                    CardFootprint.Width - CardFootprint.ExteriorOutlineWidth);
             preview.style.left = Mathf.Clamp(
                 bounds.xMin,
-                CardFootprint.ExteriorOutlineWidth + leftOverhang,
+                CardFootprint.ExteriorOutlineWidth,
                 rightLimit);
+            var topOverhang = spellShelfHeight > 0f
+                ? spellShelfHeight + CastableSpellHoverView.Gap
+                : 0f;
             preview.style.top = Mathf.Clamp(
                 bounds.yMin,
-                ConfiguredMatchHudRenderer.StatusBarHeight + 4f,
+                ConfiguredMatchHudRenderer.StatusBarHeight + 4f + topOverhang,
                 Mathf.Max(
-                    CardFootprint.ExteriorOutlineWidth,
+                    ConfiguredMatchHudRenderer.StatusBarHeight + 4f + topOverhang,
                     viewport.y - CardFootprint.Height - CardFootprint.ExteriorOutlineWidth));
         }
 

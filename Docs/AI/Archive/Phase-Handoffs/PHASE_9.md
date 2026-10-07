@@ -808,3 +808,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.73 | `guards-gameplay-log/2` records every completed per-player decision window in actionable host ticks, including timer-off play, pauses, context and closure; the five valid timer durations persist locally while fresh Experimental toggles remain off. Focused offline passed 69/69, Unity Edit Mode 91/91 and Play Mode 1/1. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-973-record-decision-window-durations-and-remember-timer-settings). | `milestone/9.73` |
+## Milestone 9.74 vertical castable-spell hover completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.74 | Typed `CAN CAST` spell faces now form one centred vertical column above their casting card; hand and rail previews reserve its height, and a public removed spell remains faded with `REMOVED`. Affected Edit Mode passed 154/154 and the complete Gydion dealing Play Mode fixture passed 6/6, producing fresh all-in-book and one-removed captures. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-974-stack-gydions-castable-spell-hover-above-its-casting-card). | `milestone/9.74` |
