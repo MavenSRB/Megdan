@@ -559,3 +559,23 @@ the generated token/card fallbacks; geometry and the shared face footprint are p
 Review found no gameplay, privacy-authority, compatibility, package or remote change.
 
 Historical evidence: [9.83 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-983-hero-token-shift-hover-completion).
+
+### [x] 9.83a Turn hero-token card pips vertical
+
+Authorized 2026-10-08 by the user's review of the 9.83 close-up: "this is wrong, it needs
+to be vertical rectangles." Keep the separated, screen-centred token-rim fan and Shift-hover
+behavior, but make every pip's long axis radial and its short edge tangent to the token rather than
+drawing horizontal tabs.
+
+Closing checks: focused geometry coverage pins radial depth greater than tangential width while
+retaining equal gaps, tangent rotation and angled-camera centring; the directly affected live
+token/coordination journeys stay green and regenerate the close-up for visual inspection. T2
+presentation-only corrective. No card identity, privacy, input, gameplay, projection, wire,
+snapshot, package, publication or remote change.
+
+Completed 2026-10-08 on `codex/hero-token-shift-card-preview`. The outer/inner plates changed from
+0.18-by-0.12 / 0.14-by-0.08 to 0.12-by-0.18 / 0.08-by-0.14, retaining a 0.06 tangential gap. Focused
+Edit Mode passed 14/14 and focused Play Mode passed 5/5. The regenerated close-up was visually
+inspected: the centred pip is upright and the side pips fan radially along the lower token edge.
+
+Historical evidence: [9.83a completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-983a-vertical-hero-token-card-pips-completion).

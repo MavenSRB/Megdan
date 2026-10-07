@@ -65,7 +65,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void CardStatePipsAreSeparatedRectanglesCenteredAlongTokenEdgeAndRemainColliderFree()
+        public void CardStatePipsAreSeparatedVerticalRectanglesCenteredAlongTokenEdgeAndRemainColliderFree()
         {
             var gameObject = new GameObject("Primitive Hero Card State Test");
             try
@@ -122,6 +122,8 @@ namespace GuardsDigital.Tests.EditMode
                     HeroCardStateIndicator.PipWidth) < Tolerance &&
                     Mathf.Abs(pip.GetChild(0).localScale.z - HeroCardStateIndicator.PipDepth) < Tolerance),
                     Is.True);
+                Assert.That(HeroCardStateIndicator.PipDepth, Is.GreaterThan(HeroCardStateIndicator.PipWidth),
+                    "The long axis runs radially, so every pip reads as an upright card.");
                 Assert.That(indicator.GetComponentsInChildren<Collider>(true), Is.Empty);
                 Assert.That(indicator.Renderers, Is.Not.Empty);
                 Assert.That(indicator.Renderers.All(renderer =>

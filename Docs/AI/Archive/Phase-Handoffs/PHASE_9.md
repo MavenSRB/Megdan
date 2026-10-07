@@ -873,3 +873,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.83 | Identity-bearing current/hand pips open the viewer-authorized complete card face only while Shift-hovered; concealed pips stay anonymous. Separated rectangular pips remain tangent to a screen-centred token-rim arc. Focused Edit Mode passed 14/14, focused Play Mode passed 5/5 with real Input System Shift, and both fresh captures were visually inspected. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-983-inspect-hero-token-card-pips-with-shift). | `milestone/9.83` |
+
+## Milestone 9.83a vertical hero-token card pips completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.83a | Corrected the separated token-rim card pips from horizontal tabs to narrow vertical rectangles whose long axes point radially. Focused Edit Mode passed 14/14, focused Play Mode passed 5/5, and the regenerated close-up was visually inspected. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-983a-turn-hero-token-card-pips-vertical). | `milestone/9.83a` |
