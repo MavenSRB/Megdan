@@ -797,3 +797,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.30k | Gydion's joined owner keeps the shared spellbook shortcut, and typed cast arms expose ordered CAN CAST spell faces with public removed spells faded. Focused Edit Mode passed 18/18, focused Play Mode passed 6/6, and the joined-seat Cantrip capture was inspected. [Definition](../../Roadmap/PHASE_9_TWENTY_NINTH_HERO.md#x-930k-make-gydions-spell-access-and-casting-card-hover-explicit). | `milestone/9.30k` |
+
+## Milestone 9.72 experimental hero card-state inspection completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.72 | Authorized hero tokens show topmost current/hand pips, and board or tray clicks share one dismissible hand/remainder inspection window. Hidden commitments and Takahide's facedown resting Gold stay anonymous through projection and wire /45; complete T3 gates passed without a replacement build. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-972-add-experimental-hero-card-state-indicators-and-unified-inspection). | `milestone/9.72` |

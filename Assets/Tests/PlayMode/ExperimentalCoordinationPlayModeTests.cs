@@ -58,16 +58,34 @@ namespace GuardsDigital.Tests.PlayMode
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var ally = runtime.Host.Seats.Seats.First(s => s.TeamSide == seat.TeamSide && !s.Id.Equals(seat.Id));
             var version = runtime.ReadModel.Version;
+            foreach (var heroView in runtime.BoardView.HeroViews)
+            {
+                var isVisible = runtime.ReadModel.Setup.Heroes
+                    .Single(hero => hero.HeroId.Equals(heroView.Occupancy.HeroId))
+                    .TeamSide == seat.TeamSide;
+                Assert.That(heroView.CardStateIndicator?.PipCount > 0, Is.EqualTo(isVisible));
+                if (isVisible)
+                    Assert.That(heroView.CardStateIndicator.PipCount, Is.EqualTo(5),
+                        "The initial bottom row is the five-card hand; no top commitment stands yet.");
+            }
             Assert.That(UiPlayer.ClickBoard(pointer, root.Hud,
                 BroganEngagedUiJourneyPlayModeTests.HeroView(ally.HeroId).transform.position), Is.True);
             yield return null;
-            Assert.That(runtime.ViewedHeroId, Is.EqualTo(ally.HeroId));
-            UiPlayer.Click(root.Hud.RootElement.Q<Button>("my-cards"));
+            Assert.That(runtime.HeroOverviewsView.CardInspection.Hero, Is.EqualTo(ally.HeroId));
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(seat.HeroId),
+                "A token opens inspection without replacing the local player's hand.");
+            UiPlayer.Click(runtime.HeroOverviewsView.CardInspection.Root.Q<Button>("gd-hero-card-close"));
             yield return null;
             var rail = UiPlayer.Descendants(root.Hud.RootElement).Single(e => e.name == "gd-hero-rail" &&
                 e.userData is HeroId id && id.Equals(ally.HeroId));
             UiPlayer.Click(rail.Q("gd-hero-identity-plate"));
             yield return null; yield return null;
+            Assert.That(runtime.HeroOverviewsView.CardInspection.Hero, Is.EqualTo(ally.HeroId));
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(seat.HeroId));
+            UiPlayer.Click(runtime.HeroOverviewsView.CardInspection.Root.Q<Button>("gd-hero-card-close"));
+            yield return null;
+            Assert.That(runtime.SelectViewedHero(ally.HeroId), Is.True,
+                "The retained programmatic route still stages the coordination suggestion journey.");
             Assert.That(runtime.HandsView.Model.ViewedHand.IsReadOnly, Is.True);
             var cardId = runtime.HandsView.Model.ViewedHand.PlayableTrayCards.Last().CardInstanceId;
             runtime.HandsView.SetContextOnly(true);

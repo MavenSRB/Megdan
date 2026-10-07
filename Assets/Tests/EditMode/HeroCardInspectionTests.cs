@@ -48,7 +48,10 @@ namespace GuardsDigital.Tests.EditMode
                 foreach (var row in local.CardInspections)
                 {
                     var copy = remote.CardInspections.Single(r => r.Hero.Equals(row.Hero));
-                    Assert.That(copy.Cards, Is.EqualTo(row.Cards));
+                    Assert.That(copy.HandCards, Is.EqualTo(row.HandCards));
+                    Assert.That(copy.OtherCards, Is.EqualTo(row.OtherCards));
+                    Assert.That(copy.ConcealedHandCount, Is.EqualTo(row.ConcealedHandCount));
+                    Assert.That(copy.ConcealedOtherCount, Is.EqualTo(row.ConcealedOtherCount));
                     Assert.That(copy.Spellbook, Is.EqualTo(row.Spellbook));
                 }
                 Assert.That(local.AuthorizedCommands.Where(c => c.CardInstanceId.IsDefined)
@@ -64,6 +67,8 @@ namespace GuardsDigital.Tests.EditMode
             var gydion = full.Setup.Heroes.Single(h => h.ContentId.Value == "gydion").HeroId;
             var view = host.ProjectionForSeat(host.Seats.Seats.Last().Id);
             var row = view.CardInspections.Single(r => r.Hero.Equals(takahide));
+            Assert.That(row.HandCards.Count, Is.EqualTo(5));
+            Assert.That(row.OtherCards.Count, Is.EqualTo(2));
             Assert.That(row.Cards.Count, Is.EqualTo(7), "Five dealt faces plus the other two basic golds.");
             Assert.That(row.Cards.Count(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Color == CardColor.Gold), Is.EqualTo(3));
             Assert.That(row.Cards.All(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Tier <= CardTier.I), Is.True);
@@ -72,17 +77,21 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(book.Cards.Count, Is.EqualTo(5));
             Assert.That(book.Cards.Intersect(book.Spellbook), Is.Empty);
             Assert.That(typeof(HeroCardInspection).GetProperties().Select(p => p.Name),
-                Is.EquivalentTo(new[] { "Hero", "Team", "Cards", "Spellbook" }), "No lifecycle or instance data belongs in this view.");
+                Is.EquivalentTo(new[] { "Hero", "Team", "HandCards", "OtherCards", "ConcealedHandCount", "ConcealedOtherCount", "Cards", "Spellbook" }),
+                "Only visibility-safe section membership, never instance identity, belongs in this view.");
         }
         [Test] public void CommittingDoesNotIdentifyTheHiddenCardInTheInspection()
         {
             var host = Create(true, true); var owner = host.Seats.Seats[0]; var viewer = host.Seats.Seats.Last();
-            var before = host.ProjectionForSeat(viewer.Id).CardInspections.Single(r => r.Hero.Equals(owner.HeroId)).Cards.ToArray();
             var own = host.ProjectionForSeat(owner.Id);
             var command = own.AuthorizedCommands.First(c => c.Kind == DirectorCommandKind.CommitCard);
             Assert.That(host.SubmitForSeat(owner.Id, new SeatSubmission(new SubmissionId("inspection-commit"), own.Version, command)).Accepted, Is.True);
             var after = host.ProjectionForSeat(viewer.Id);
-            Assert.That(after.CardInspections.Single(r => r.Hero.Equals(owner.HeroId)).Cards, Is.EqualTo(before));
+            var row = after.CardInspections.Single(r => r.Hero.Equals(owner.HeroId));
+            Assert.That(row.HandCards, Is.Empty, "Remaining identities would identify the missing commitment by elimination.");
+            Assert.That(row.ConcealedHandCount, Is.EqualTo(4));
+            Assert.That(row.ConcealedOtherCount, Is.EqualTo(1));
+            Assert.That(row.Cards, Has.No.Member(own.Cards.Single(c => c.Id.Equals(command.CardInstanceId)).DefinitionReference));
             Assert.That(after.Cards.Any(c => c.Id.Equals(command.CardInstanceId)), Is.False);
         }
         [Test] public void CurrentFacesFollowPlayDiscardUpgradeItemsAndUnlockedUltimates()
@@ -96,6 +105,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 foreach (var row in host.ProjectionForSeat(host.Seats.Seats[0].Id).CardInspections)
                 {
+                    var trusted = HeroCardInspection.ForHero(projection, row.Hero);
                     foreach (var card in projection.Cards.Where(c => c.OwnerId.Equals(row.Hero)))
                     {
                         var definition = projection.Definitions.Single(d => d.Reference.Equals(card.DefinitionReference));
@@ -104,9 +114,9 @@ namespace GuardsDigital.Tests.EditMode
                         resolved |= card.State.ResolutionStatus == CardResolutionStatus.Resolved;
                         if (card.State.Location == CardLocation.Hand || card.State.Location == CardLocation.TurnArea ||
                             card.State.Location == CardLocation.DiscardPile || card.State.Location == CardLocation.UltimateArea)
-                            Assert.That(row.Cards, Does.Contain(card.DefinitionReference), "Every current face survives its lifecycle state.");
+                            Assert.That(trusted.Cards, Does.Contain(card.DefinitionReference), "Every current face survives its lifecycle state.");
                         if (card.State.Location == CardLocation.ItemSlot || card.State.Location == CardLocation.SetAside)
-                            Assert.That(row.Cards, Has.No.Member(card.DefinitionReference), "Items and future choices are excluded.");
+                            Assert.That(trusted.Cards, Has.No.Member(card.DefinitionReference), "Items and future choices are excluded.");
                     }
                 }
                 return false;
@@ -150,9 +160,9 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.Throws<ArgumentException>(() => ExperimentalWireCodec.ReadInspections(reader));
             }
             Assert.Throws<ArgumentException>(() => new HeroCardInspection(row.Hero, row.Team,
-                new[] { row.Cards[0], row.Cards[0] }, row.Spellbook));
+                new[] { row.Cards[0], row.Cards[0] }, Array.Empty<CardDefinitionReference>(), 0, 0, row.Spellbook));
             Assert.Throws<ArgumentException>(() => new HeroCardInspection(row.Hero, row.Team,
-                new[] { default(CardDefinitionReference) }, row.Spellbook));
+                new[] { default(CardDefinitionReference) }, Array.Empty<CardDefinitionReference>(), 0, 0, row.Spellbook));
         }
         [Test] public void EnemyOnlyOptionPersistsAndRejectsMismatchedRestoreAtomically()
         {

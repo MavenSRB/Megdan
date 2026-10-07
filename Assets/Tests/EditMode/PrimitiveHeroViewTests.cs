@@ -63,6 +63,47 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void CardStatePipsRemainColliderFreeAndRenderAboveEveryHeroHighlight()
+        {
+            var gameObject = new GameObject("Primitive Hero Card State Test");
+            try
+            {
+                var view = gameObject.AddComponent<PrimitiveHeroView>();
+                view.EnsurePrimitiveVisual();
+                view.SetTargetCue(BoardTargetCueState.Selected, BoardTargetConsequenceIntent.Affect);
+                view.SetActiveEffectMark(true, Color.magenta);
+                view.SetCardStateIndicator(
+                    true,
+                    CardColor.Red,
+                    new[] { CardColor.Blue, CardColor.Green, CardColor.Gold, CardColor.Silver },
+                    0);
+
+                var indicator = view.CardStateIndicator;
+                Assert.That(indicator, Is.Not.Null);
+                Assert.That(indicator.PipCount, Is.EqualTo(5), "One top current pip plus four hand pips.");
+                Assert.That(indicator.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(indicator.Renderers, Is.Not.Empty);
+                Assert.That(indicator.Renderers.All(renderer =>
+                    renderer.sharedMaterial.renderQueue == HeroCardStateIndicator.OverlayRenderQueue &&
+                    renderer.sortingOrder == HeroCardStateIndicator.OverlaySortingOrder &&
+                    renderer.sharedMaterial.GetInt("_Cull") == (int)UnityEngine.Rendering.CullMode.Off), Is.True);
+                Assert.That(indicator.Renderers.All(renderer =>
+                    renderer.GetComponent<MeshFilter>().sharedMesh.normals.All(normal => normal.y > 0.99f)), Is.True,
+                    "The board camera looks down; upward winding must not be back-face culled.");
+                Assert.That(indicator.Renderers.Min(renderer => renderer.bounds.min.y),
+                    Is.GreaterThan(gameObject.GetComponent<MeshRenderer>().bounds.max.y),
+                    "Every pip is physically above the hero as well as in the top render queue.");
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
+                Assert.That(view.HasActiveEffectMark, Is.True,
+                    "Existing highlight layers continue underneath rather than being replaced.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
         /// <summary>
         /// Milestone 8.11b. A hero this project has no prepared token for keeps the generated prism,
         /// which is the tracked checkout's ordinary state rather than a fault.

@@ -81,6 +81,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private ActiveEffectHeroMarker activeEffectMarker;
         private HeroBodyMark bodyMark;
         private HeroDefenseModifierShield defenseModifierShield;
+        private HeroCardStateIndicator cardStateIndicator;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Body, Coordinate);
 
@@ -92,6 +93,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         /// <summary>The number-only hover shield, or null before a Defense preview needs it.</summary>
         public HeroDefenseModifierShield DefenseModifierShield => defenseModifierShield;
+        public HeroCardStateIndicator CardStateIndicator => cardStateIndicator;
 
         public TeamSide TeamSide => teamSide;
 
@@ -153,6 +155,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             if (identityChanged)
             {
                 SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+                cardStateIndicator?.SetHidden();
             }
             else
             {
@@ -267,6 +270,25 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
             var surface = HasTokenVisual ? BoardPieceDepth.Standard : height;
             defenseModifierShield.SetVisible(modifier.Value, SelectionRadius, surface);
+        }
+
+        public void SetCardStateIndicator(
+            bool hasCurrent,
+            GuardsDigital.Core.Cards.CardColor current,
+            System.Collections.Generic.IEnumerable<GuardsDigital.Core.Cards.CardColor> knownHand,
+            int concealedHandCount)
+        {
+            if (!hasCurrent && concealedHandCount == 0 && !knownHand.Any())
+            {
+                cardStateIndicator?.SetHidden();
+                return;
+            }
+
+            if (cardStateIndicator == null)
+                cardStateIndicator = HeroCardStateIndicator.GetOrCreate(transform);
+            var surface = HasTokenVisual ? BoardPieceDepth.Standard : height;
+            cardStateIndicator.SetVisible(
+                hasCurrent, current, knownHand, concealedHandCount, SelectionRadius, surface);
         }
 
         public bool PlaceAtConfiguredSpawnPoint(BoardMapDefinition definition)

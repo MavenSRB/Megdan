@@ -13,8 +13,10 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly Func<IMatchReadModel> read;
         private readonly Label title;
-        private readonly VisualElement grid;
-        private readonly ScrollView scroll;
+        private readonly VisualElement handGrid;
+        private readonly VisualElement otherGrid;
+        private readonly ScrollView handScroll;
+        private readonly ScrollView otherScroll;
         private HeroCardInspection inspection;
         private HeroId hero;
         public VisualElement Root { get; }
@@ -42,17 +44,17 @@ namespace GuardsDigital.Presentation.Match
             close.name = "gd-hero-card-close";
             header.Add(close);
             Root.Add(header);
-            scroll = new ScrollView(ScrollViewMode.Vertical) { name = "gd-hero-card-scroll" };
-            scroll.style.flexGrow = 1;
-            scroll.style.flexShrink = 1;
-            scroll.style.minHeight = 0;
-            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            grid = new VisualElement { name = "gd-hero-card-grid" };
-            grid.style.flexDirection = FlexDirection.Row;
-            grid.style.flexWrap = Wrap.Wrap;
-            HudElements.Padding(grid, 8f);
-            scroll.Add(grid);
-            Root.Add(scroll);
+            var sections = new VisualElement { name = "gd-hero-card-sections" };
+            sections.style.flexDirection = FlexDirection.Row;
+            sections.style.flexGrow = 1;
+            sections.style.minHeight = 0;
+            var hand = BuildSection("gd-hero-card-hand", "HAND", Align.FlexStart, out handScroll, out handGrid);
+            hand.style.width = Length.Percent(45f);
+            var other = BuildSection("gd-hero-card-other", null, Align.FlexEnd, out otherScroll, out otherGrid);
+            other.style.width = Length.Percent(55f);
+            sections.Add(hand);
+            sections.Add(other);
+            Root.Add(sections);
             Root.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode != KeyCode.Escape) return;
@@ -79,7 +81,8 @@ namespace GuardsDigital.Presentation.Match
         {
             hero = default;
             inspection = null;
-            grid.Clear();
+            handGrid.Clear();
+            otherGrid.Clear();
             Root.style.display = DisplayStyle.None;
         }
 
@@ -88,7 +91,10 @@ namespace GuardsDigital.Presentation.Match
             if (!IsOpen) return;
             var next = Find(hero);
             if (next == null) { Close(); return; }
-            if (inspection.Cards.SequenceEqual(next.Cards)) return;
+            if (inspection.HandCards.SequenceEqual(next.HandCards) &&
+                inspection.OtherCards.SequenceEqual(next.OtherCards) &&
+                inspection.ConcealedHandCount == next.ConcealedHandCount &&
+                inspection.ConcealedOtherCount == next.ConcealedOtherCount) return;
             inspection = next;
             DrawCards();
         }
@@ -97,21 +103,35 @@ namespace GuardsDigital.Presentation.Match
         {
             var projection = read?.Invoke();
             if (projection == null) return null;
-            return projection is IExperimentalReadModel experimental
-                ? experimental.CardInspections.FirstOrDefault(value => value.Hero.Equals(id))
-                : HeroCardInspection.ForHero(projection, id);
+            if (!(projection is IExperimentalReadModel experimental) ||
+                (!experimental.Experiments.TeammateCoordination &&
+                 !experimental.Experiments.EnemyCardInformation))
+                return null;
+            return experimental.CardInspections.FirstOrDefault(value => value.Hero.Equals(id));
         }
 
-        // Only printed properties determine order; card lifecycle never changes the faces or layout.
-        private CardDefinition[] Definitions() => inspection == null ? Array.Empty<CardDefinition>() :
-            read().Definitions.Where(value => inspection.Cards.Contains(value.Reference))
+        private CardDefinition[] Definitions(System.Collections.Generic.IReadOnlyList<CardDefinitionReference> cards) =>
+            inspection == null ? Array.Empty<CardDefinition>() :
+            read().Definitions.Where(value => cards.Contains(value.Reference))
                 .OrderBy(value => value.Progression.Color).ThenBy(value => value.Progression.Tier)
                 .ThenBy(value => value.Id.Value, StringComparer.Ordinal).ToArray();
 
         private void DrawCards()
         {
-            grid.Clear();
-            var definitions = Definitions();
+            handGrid.Clear();
+            otherGrid.Clear();
+            DrawSection(handGrid, Definitions(inspection.HandCards), inspection.ConcealedHandCount);
+            DrawSection(otherGrid, Definitions(inspection.OtherCards), inspection.ConcealedOtherCount);
+            if (handGrid.childCount == 0)
+                handGrid.Add(HudElements.Text("No cards in hand.", 16f, MatchHudTheme.MutedText));
+            if (otherGrid.childCount == 0)
+                otherGrid.Add(HudElements.Text("No other cards.", 16f, MatchHudTheme.MutedText));
+            handScroll.scrollOffset = Vector2.zero;
+            otherScroll.scrollOffset = Vector2.zero;
+        }
+
+        private void DrawSection(VisualElement target, CardDefinition[] definitions, int concealedCount)
+        {
             foreach (var definition in definitions)
             {
                 // Presentation-only identity: this window has no card submission/suggestion callbacks.
@@ -127,11 +147,55 @@ namespace GuardsDigital.Presentation.Match
                 face.style.marginRight = 18f;
                 face.style.marginBottom = 18f;
                 HudElements.ApplyButtonMotion(face);
-                grid.Add(face);
+                target.Add(face);
             }
-            if (definitions.Length == 0)
-                grid.Add(HudElements.Text("No cards to show.", 16f, MatchHudTheme.MutedText));
-            scroll.scrollOffset = Vector2.zero;
+
+            var projection = read();
+            var setup = projection.Setup.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
+            for (var index = 0; index < concealedCount; index++)
+            {
+                var back = HeroOverviewsUnityView.BuildCardBack(setup?.ContentId ?? default);
+                back.name = "gd-inspected-card-back";
+                back.tooltip = "Facedown card";
+                back.style.marginRight = 18f;
+                back.style.marginBottom = 18f;
+                target.Add(back);
+            }
+        }
+
+        private static VisualElement BuildSection(
+            string name,
+            string heading,
+            Align alignment,
+            out ScrollView scroll,
+            out VisualElement grid)
+        {
+            var section = new VisualElement { name = name };
+            section.style.flexDirection = FlexDirection.Column;
+            section.style.alignItems = alignment;
+            section.style.minHeight = 0;
+            if (!string.IsNullOrEmpty(heading))
+            {
+                var label = HudElements.Text(heading, 16f, Color.white, FontStyle.Bold);
+                label.name = "gd-hero-card-hand-heading";
+                label.style.unityTextAlign = TextAnchor.MiddleLeft;
+                label.style.alignSelf = Align.Stretch;
+                section.Add(label);
+            }
+            scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            scroll.style.alignSelf = Align.Stretch;
+            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            grid = new VisualElement();
+            grid.style.flexDirection = FlexDirection.Row;
+            grid.style.flexWrap = Wrap.Wrap;
+            grid.style.justifyContent = alignment == Align.FlexEnd ? Justify.FlexEnd : Justify.FlexStart;
+            HudElements.Padding(grid, 8f);
+            scroll.Add(grid);
+            section.Add(scroll);
+            return section;
         }
     }
 }

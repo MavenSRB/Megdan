@@ -3855,6 +3855,53 @@ namespace GuardsDigital.Tests.EditMode
                 "and no ordinary action offer is drawn beside the response.");
         }
 
+        [Test]
+        public void OpenCardInspection_StaysAboveAMandatoryDecisionAndCanStillClose()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var hands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, hands).Refresh();
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var inspectionHost = HeroCardInspectionTests.Create(true, true);
+            var inspectionSeat = inspectionHost.Seats.Seats[0];
+            var inspectionClient = new SeatMatchClient(inspectionHost.ClientForSeat(inspectionSeat.Id));
+            var heroes = new HeroOverviewsUnityView(() => inspectionClient.Projection);
+            new HeroOverviewsPresenter(inspectionClient, heroes).Refresh();
+            var decision = new DecisionWindowUnityView();
+            new DecisionWindowPresenter(session, decision).Refresh();
+            var host = new GameObject("9.72-dismissible-card-inspection");
+            try
+            {
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    heroes,
+                    decisionWindowView: decision);
+                var inspected = inspectionHost.Seats.Seats[1].HeroId;
+                Assert.That(heroes.OpenCardInspection(inspected), Is.True);
+
+                hud.ApplyExclusiveContext();
+
+                Assert.That(decision.Model, Is.Not.Null, "The fixture must own a mandatory window.");
+                Assert.That(hud.RootElement.IndexOf(heroes.CardInspection.Root),
+                    Is.GreaterThan(hud.RootElement.IndexOf(decision.Root)),
+                    "The decision used to cover the inspection's CLOSE control.");
+                Assert.That(heroes.CardInspection.Root.Q<Button>("gd-hero-card-close").enabledInHierarchy, Is.True);
+                heroes.CardInspection.Close();
+                Assert.That(heroes.CardInspection.IsOpen, Is.False);
+                Assert.That(heroes.CardInspection.Root.style.display.value, Is.EqualTo(DisplayStyle.None));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
         /// <summary>
         /// Milestone 7.8a1's half of the greyed control. That the offer is projected unavailable is
         /// proved on the cross-platform tier in <see cref="AttackOfferAvailabilityTests"/>; what this

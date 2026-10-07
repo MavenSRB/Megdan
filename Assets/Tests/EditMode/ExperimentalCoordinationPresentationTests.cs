@@ -43,7 +43,7 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
         [TestCase(false)] [TestCase(true)]
-        public void PortraitHasNoFiltersAndHiddenCommitmentPreservesEveryFaceAndItsOrder(bool useArtwork)
+        public void PopupSplitsHandFromOtherAndTurnsHiddenCommitmentIntoAnonymousBacks(bool useArtwork)
         {
             using var artwork = ConfiguredCardArtwork.UseTextureLoader(_ => useArtwork ? UnityEngine.Texture2D.blackTexture : null);
             var host = HeroCardInspectionTests.Create(true, true);
@@ -54,6 +54,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.Open(owner.HeroId, "Inspected hero"), Is.True);
             Assert.That(view.Root.Query<DropdownField>().ToList(), Is.Empty);
             Assert.That(view.Root.Q("gd-hero-card-filters"), Is.Null);
+            Assert.That(view.Root.Q("gd-hero-card-hand"), Is.Not.Null);
+            Assert.That(view.Root.Q("gd-hero-card-other"), Is.Not.Null);
+            Assert.That(view.Root.Q<Label>("gd-hero-card-hand-heading").text, Is.EqualTo("HAND"));
             var faces = view.Root.Query<VisualElement>("gd-inspected-card").ToList();
             Assert.That(faces.Count, Is.EqualTo(5));
             foreach (var face in faces)
@@ -69,8 +72,11 @@ namespace GuardsDigital.Tests.EditMode
                 own.Version, command)).Accepted, Is.True);
             current = host.ProjectionForSeat(viewer.Id);
             view.Refresh();
-            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card").ToList(), Is.EqualTo(faces),
-                "Committing a hidden card cannot remove, reorder, rebuild or mark any displayed face.");
+            Assert.That(view.Root.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
+            Assert.That(view.Root.Q("gd-hero-card-hand").Query<VisualElement>("gd-inspected-card-back").ToList().Count,
+                Is.EqualTo(4));
+            Assert.That(view.Root.Q("gd-hero-card-other").Query<VisualElement>("gd-inspected-card-back").ToList().Count,
+                Is.EqualTo(1));
         }
         [Test] public void EnemySettingIsIndependentAndResetsOnANewHostMenu()
         {

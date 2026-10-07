@@ -61,7 +61,7 @@ namespace GuardsDigital.Tests.PlayMode
                         {
                             var lastFace=window.Query<VisualElement>("gd-inspected-card").ToList().Last();
                             var lowerPoint=new Vector2(lastFace.worldBound.center.x,
-                                Mathf.Min(lastFace.worldBound.yMax-10,window.Q<ScrollView>("gd-hero-card-scroll").worldBound.yMax-10));
+                                Mathf.Min(lastFace.worldBound.yMax-10,window.Q("gd-hero-card-other").Q<ScrollView>().worldBound.yMax-10));
                             Assert.That(window.Contains(window.panel.Pick(lowerPoint)),Is.True,
                                 "Ordinary hand cards must not cover or intercept the inspected card's visible bottom edge.");
                             Assert.That(root.Hud.BlocksPointerAt(MatchHudPanelScaling.PanelPointToScreen(window.worldBound.center,Screen.width,Screen.height)),Is.True,
@@ -77,7 +77,7 @@ namespace GuardsDigital.Tests.PlayMode
                             Assert.That(window.Q("gd-inspected-card"),Is.SameAs(retained),"A marker update must preserve the open inspection window and its card faces.");
                             runtime.RefreshClockDisplay(); yield return null;
                             Assert.That(window.Q("gd-inspected-card"), Is.SameAs(retained), "Clock ticks cannot rebuild the window.");
-                            var scroll = window.Q<ScrollView>("gd-hero-card-scroll");
+                            var scroll = window.Q("gd-hero-card-other").Q<ScrollView>();
                             Assert.That(scroll.contentContainer.worldBound.width, Is.LessThanOrEqualTo(scroll.worldBound.width + 1));
                             Assert.That(scroll.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden));
                             yield return UiPlayer.CaptureScreen("tmp/964g-current-cards-" + width + ".png");

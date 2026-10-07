@@ -334,7 +334,8 @@ namespace GuardsDigital.Presentation.Match
                 // and it stays a first-class feature - clicking a hero to read their tray is how a
                 // player looks around, and nothing about that is changed by no longer letting it
                 // pre-empt the board.
-                heroId => SelectViewedHero(heroId),
+                heroId => HeroOverviewsView?.OpenCardInspection(heroId) == true ||
+                    SelectViewedHero(heroId),
                 // Milestone 9.21i. A click on one standee of a hero: the body answers the acting-body
                 // pick or an Attack on that body, and otherwise the click means what the hero arm means.
                 (heroId, body) =>
@@ -997,8 +998,42 @@ namespace GuardsDigital.Presentation.Match
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
                 client.Projection.RemainingWaveCounters, DisplayClock));
             coordinator.RefreshAll();
+            RefreshHeroCardStateIndicators();
             FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();
+        }
+
+        private void RefreshHeroCardStateIndicators()
+        {
+            var experimental = client.Projection as IExperimentalReadModel;
+            var enabled = experimental != null &&
+                (experimental.Experiments.TeammateCoordination ||
+                 experimental.Experiments.EnemyCardInformation);
+            var definitions = client.Projection.Definitions.ToDictionary(value => value.Reference);
+            foreach (var view in BoardView.HeroViews)
+            {
+                var hero = view.Occupancy.HeroId;
+                var inspection = enabled
+                    ? experimental.CardInspections.FirstOrDefault(value => value.Hero.Equals(hero))
+                    : null;
+                var overview = HeroOverviewsView?.Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
+                if (inspection == null || overview == null)
+                {
+                    view.SetCardStateIndicator(false, CardColor.None, Array.Empty<CardColor>(), 0);
+                    continue;
+                }
+
+                var handColors = inspection.HandCards
+                    .Where(definitions.ContainsKey)
+                    .Select(reference => definitions[reference].Progression.Color)
+                    .OrderBy(color => color)
+                    .ToArray();
+                view.SetCardStateIndicator(
+                    overview.CurrentCard != null,
+                    overview.CurrentCard?.Color ?? CardColor.None,
+                    handColors,
+                    inspection.ConcealedHandCount);
+            }
         }
 
         public bool SelectCommitmentCard(CardInstanceId cardId) =>

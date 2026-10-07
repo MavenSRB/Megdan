@@ -445,7 +445,7 @@ namespace GuardsDigital.Application
         // v44 (milestone 9.71): experimental options add the one-Life hero base-cost flag. A v43
         // peer would misread the enclosing projection, so admission refuses it. The experimental
         // snapshot envelope advances separately to version 5.
-        public const int Version = 44;
+        public const int Version = 45;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

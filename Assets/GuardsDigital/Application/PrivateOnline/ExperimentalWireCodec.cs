@@ -60,7 +60,10 @@ namespace GuardsDigital.Application
             {
                 writer.Write(row.Hero.Value);
                 writer.Write((int)row.Team);
-                WriteReferences(writer, row.Cards);
+                WriteReferences(writer, row.HandCards);
+                WriteReferences(writer, row.OtherCards);
+                writer.Write(row.ConcealedHandCount);
+                writer.Write(row.ConcealedOtherCount);
                 WriteReferences(writer, row.Spellbook);
             }
         }
@@ -83,8 +86,12 @@ namespace GuardsDigital.Application
                 var hero = new HeroId(ReadId(reader));
                 var rawTeam = reader.ReadInt32();
                 if (!Enum.IsDefined(typeof(TeamSide), rawTeam)) throw new ArgumentException("Invalid inspection team.");
+                var hand = ReadReferences(reader);
+                var other = ReadReferences(reader);
+                var concealedHand = reader.ReadInt32();
+                var concealedOther = reader.ReadInt32();
                 rows.Add(new HeroCardInspection(hero, (TeamSide)rawTeam,
-                    ReadReferences(reader), ReadReferences(reader)));
+                    hand, other, concealedHand, concealedOther, ReadReferences(reader)));
             }
             if (rows.Select(row => row.Hero).Distinct().Count() != rows.Count)
                 throw new ArgumentException("Duplicate inspection owner.");

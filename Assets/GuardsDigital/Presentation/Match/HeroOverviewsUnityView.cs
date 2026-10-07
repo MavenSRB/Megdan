@@ -184,6 +184,20 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
+        /// <summary>Opens the one inspection surface used by both a board token and its rail.</summary>
+        public bool OpenCardInspection(HeroId heroId)
+        {
+            var hero = Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(heroId));
+            if (hero == null || !CardInspection.Open(hero.HeroId, hero.HeroDisplayName))
+            {
+                return false;
+            }
+
+            CloseSpellbook();
+            SetHighlight(null);
+            return true;
+        }
+
         /// <summary>Milestone 9.30h. `CLOSE`: the drawer goes away; nothing else changes.</summary>
         public void CloseSpellbook()
         {
@@ -524,7 +538,11 @@ namespace GuardsDigital.Presentation.Match
                     hero.IsViewed ? MatchHudTheme.SelectedOutline : new Color(0f, 0f, 0f, 0f));
                 HudElements.OnPointedAt(rail, pointedAt =>
                     ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
-                rail.AddManipulator(new Clickable(() => HeroSelected?.Invoke(hero.HeroId)));
+                rail.AddManipulator(new Clickable(() =>
+                {
+                    if (!OpenCardInspection(hero.HeroId))
+                        HeroSelected?.Invoke(hero.HeroId);
+                }));
                 column.Add(rail);
             }
 
@@ -1492,12 +1510,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (evt.button != 0) return;
                 evt.StopPropagation();
-                if (CardInspection.Open(hero.HeroId, hero.HeroDisplayName))
-                {
-                    CloseSpellbook();
-                    SetHighlight(null);
-                }
-                else HeroSelected?.Invoke(hero.HeroId);
+                if (!OpenCardInspection(hero.HeroId)) HeroSelected?.Invoke(hero.HeroId);
             });
             return medallion;
         }

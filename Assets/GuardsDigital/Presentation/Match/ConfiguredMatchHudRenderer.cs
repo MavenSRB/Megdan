@@ -1582,6 +1582,10 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            // A terminal screen replaces every reading surface. Close the inspection deliberately
+            // instead of merely hiding it, so Restart cannot resurrect a stale modal window.
+            heroOverviews?.CardInspection.Close();
+
             foreach (var child in root.Children())
             {
                 if (ReferenceEquals(child, host) || foreignChildren.Contains(child) ||
@@ -1663,11 +1667,11 @@ namespace GuardsDigital.Presentation.Match
             // presenter - so it is placed here, on the same per-frame pass and by the same
             // changed-state rule the tray host above uses.
             LayoutDecisionWindow(force: false);
-            // Milestone 8.63. And nothing paints over it while it is open - including a layer that
-            // attached itself to this root after the composition, which is every one of them that
-            // ever covered the window.
-            KeepCardInspectionAboveTheHand(windowOwnsTheDecision);
+            // Milestone 8.63 keeps ordinary HUD layers below the decision window. Milestone 9.72's
+            // explicitly opened inspection is the one modal reading surface above it, so its CLOSE
+            // control cannot be trapped behind a decision that appeared after it opened.
             KeepTheDecisionWindowOnTop(windowOwnsTheDecision);
+            KeepCardInspectionAboveTheHand();
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
@@ -2452,9 +2456,9 @@ namespace GuardsDigital.Presentation.Match
             host.style.height = rect.height;
         }
 
-        private void KeepCardInspectionAboveTheHand(bool windowOwnsTheDecision)
+        private void KeepCardInspectionAboveTheHand()
         {
-            if (windowOwnsTheDecision || victoryScreenStanding || heroOverviews?.CardInspection.IsOpen != true) return;
+            if (victoryScreenStanding || heroOverviews?.CardInspection.IsOpen != true) return;
             var inspection = heroOverviews.CardInspection.Root;
             var tip = tooltipLayer?.Root;
             var hasTip = tip != null && ReferenceEquals(tip.parent, root);

@@ -165,13 +165,28 @@ Gate corrections (9.56): Defense text returning a decision to the original attac
 
 ## Current-card inspection extension
 
-Implemented at 9.64e; simplified and gated at 9.64g (2026-10-06). Tray-portrait clicks show every current card face: hand, committed/played/resolved, discarded and unlocked Ultimate. Exclude future upgrades/deck choices and cards converted into items. No filters or counts. Never reveal lifecycle through labels, grouping, order, styling, tooltips, fallback captions or state-driven rebuilds. Inspection grants no gameplay controls.
+Implemented at 9.64e/9.64g and partitioned at 9.72. With either card-information
+experiment enabled, an authorized board token or tray opens the same read-only window without
+replacing the local hand. Left-aligned `HAND` exactly matches the bottom token pips; the unheaded,
+right-aligned remainder holds the other current-set cards. Future upgrades, deck choices, items and
+gameplay controls are excluded.
 
-The viewer may inspect their own set. Allied inspection stays under the existing Teammate coordination/team-information-sharing toggle, extended to include an allied Gydion's spellbook and all of Takahide's gold-card faces in the hand/card inspection. Enemy card information uses a separate per-match Experimental toggle, independent of team sharing and the timer and off on a new hosted game. The enemy option governs enemy current-card inspection and the spellbook/gold exceptions; it does not make allied sharing unconditional. Existing ordinary public-card visibility stays intact with both options off. No full 18/20-card catalog, future upgrades, item inventory expansion or gameplay authority is added by this window.
+Own and allied access uses Teammate coordination; enemy access uses its independent, default-off
+Enemy card information option. These also govern the existing spellbook and Takahide-gold
+exceptions. Ordinary public visibility is unchanged when both are off. Permitted spellbooks remain
+owner-style but non-casting; the 9.64h shortcut stays above the hand and 9.64d owns shared hover.
 
-This split supersedes full-deck inspection and unconditional book sharing. Allowed viewers open the owner's existing spellbook view, without casting controls. The 9.64h SPELLBOOK shortcut sits above the viewed hero's hand: beside Director for hosts, in its position for other players. Crowded book layouts place confirmation beside this row. Ordinary hand inspection and suggestions retain their toggle/authority contracts; 9.64d owns the book's shared hover bump.
+The projection carries known hand/other definition references and anonymous facedown counts, never
+instance IDs. Its top pip reads the public current-card marker and its bottom pips share the popup's
+hand source. Before joint reveal, non-owners receive anonymous remaining-hand and commitment counts,
+preventing identification by subtraction. A facedown resting swap stays anonymous within its safe
+colour set until authoritative lifecycle state reveals or retrieves it; that Core state already
+persists through rounds, snapshots, replay, Undo and reconnect. Wire 45 rejects earlier peers;
+experimental envelope 5 and Core schema 59 are unchanged.
 
-The inspection projection carries only sorted definition references, separately from playable card instances. It includes current-zone faces and basic gold reserves; it omits instance IDs, locations and hidden commitment state. Shared spellbooks use the same permitted references, while removed spells remain public. Wire 44 rejects earlier peers; the version-5 experimental snapshot envelope stores every independent option and rejects old envelopes or mismatched settings atomically. Core schema 59 is unchanged by these options.
+Collider-free unlit pips use the top render queue while target, selection, hover, Active-effect,
+damage and Defense layers continue underneath. Inspection stays above later mandatory decisions so
+CLOSE and Escape remain reachable, and victory closes it before Restart.
 
 ## Minion Battle removal cap
 

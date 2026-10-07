@@ -329,3 +329,36 @@ complete T3 offline/Edit/Play gates passed, and the enabled match plus host cont
 1920x1080. Disabled official behavior is unchanged; no package or publication was produced.
 
 Historical evidence: [9.71 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-971-experimental-one-life-hero-base-completion).
+
+### [x] 9.72 Add experimental hero card-state indicators and unified inspection
+
+Authorized 2026-10-07 after the completed 9.69 -> 9.71 prerequisite sequence. For every hero whose
+current-card inspection is authorized to the viewer, draw one top token dot for the current unresolved
+card and bottom dots for the remaining hand, above every existing board highlight. Clicking either the
+board hero token or that hero's tray opens the same non-commanding inspection window without replacing
+the local player's home hand. Split that window into a left-aligned `HAND` section matching the bottom
+dots and a right-aligned remainder, for friendly and enemy heroes under the existing independent team-
+sharing and enemy-information experiments. Preserve hidden commitments: before joint reveal, neither
+dots nor sections may identify the committed card. Takahide's ordinary gold faces remain known, while a
+gold swapped into an already-resolved or discarded slot stays a facedown placeholder until the existing
+authoritative lifecycle makes it faceup or returns it to hand; round changes must not reveal it. Audit
+and repair every reproducible state in which the window cannot close.
+
+Closing checks: exact hand/remainder partition after reveal and through resolved/discarded/Ultimate
+states; pre-reveal commitment non-disclosure; Takahide faceup/facedown/round/retrieval, snapshot,
+restore, replay, retained-prefix Undo, reconnect and real-wire projections; own/allied/enemy option
+boundaries; identical board-token and tray click routing; topmost token dots across target, selection,
+hover, Active-effect and Defense treatments; close button and Escape dismissal through ordinary,
+pending-choice, transition and refreshed/reconnected states; affected protocol compatibility and
+supported-size visual journeys. T3 because projection privacy, private wire and visible board/HUD
+presentation change together. No new gameplay authority, card rule, option, map, package, publication,
+remote operation or unrelated presentation refactor.
+
+Completed 2026-10-07. Authorized viewers now get topmost, collider-free current/hand pips and
+one split inspection surface from either board tokens or trays without displacing the local hand.
+Hidden commitments and Takahide's facedown resting Gold remain anonymous through the shared
+authoritative projection and wire /45. The inspection stays dismissible above later decision layers
+and closes at victory. Focused privacy, presentation and live-click regressions, both viewport
+reviews, and the complete T3 offline/Edit/Play gates passed; no package or publication was produced.
+
+Historical evidence: [9.72 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-972-experimental-hero-card-state-inspection-completion).
