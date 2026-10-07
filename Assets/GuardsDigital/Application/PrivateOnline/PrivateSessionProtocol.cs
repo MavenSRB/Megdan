@@ -438,7 +438,11 @@ namespace GuardsDigital.Application
         // identity. Older peers are refused at admission.
         // v37: experimental settings, private allied hands and independent teammate signals.
         // v39: isolated, independently sequenced clock display updates; gameplay views stay stable.
-        public const int Version = 42;
+        // v43 (milestone 9.69): experimental options add an enabled flag and non-negative Minion
+        // Battle removal cap. A v42 peer would stop before those fields and misread the enclosing
+        // projection, so older peers are refused at admission. Core snapshot schema 59 is unchanged;
+        // the experimental envelope advances separately to version 4.
+        public const int Version = 43;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

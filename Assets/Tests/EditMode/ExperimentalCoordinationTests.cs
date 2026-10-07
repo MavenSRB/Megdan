@@ -21,6 +21,12 @@ namespace GuardsDigital.Tests.EditMode
                 state.InitialConfiguration, state.InitialTiming, state.StagedProgression,
                 new ExperimentalMatchOptions(teammateCoordination: enabled)));
         }
+        private static MatchHost Create(ExperimentalMatchOptions options)
+        {
+            var state = OwnerScopedProjectionTests.CreateOfficialInitialState();
+            return MatchHost.Compose(new MatchSessionInitialState(state.Scenario, state.Setup, state.AvailableMaps,
+                state.InitialConfiguration, state.InitialTiming, state.StagedProgression, options));
+        }
         [TestCase("")] [TestCase("marker-test")]
         public void MarkerOnlyUpdatesPreserveGameplayProjectionAndLogIdentity(string key)
         {
@@ -121,6 +127,41 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(other.CaptureSnapshot(), Is.EqualTo(before));
             Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(before)).Accepted, Is.False);
         }
+        [Test] public void MinionBattleCapOptionsRoundTripAndSnapshotsRejectDifferentValuesAtomically()
+        {
+            var options = new ExperimentalMatchOptions(
+                minionBattleRemovalCapEnabled: true,
+                minionBattleRemovalCap: 0);
+            Assert.That(options.MinionBattleRemovalCapEnabled, Is.True);
+            Assert.That(options.MinionBattleRemovalCap, Is.Zero);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ExperimentalMatchOptions(
+                minionBattleRemovalCapEnabled: true,
+                minionBattleRemovalCap: -1));
+
+            using (var stream = new System.IO.MemoryStream())
+            using (var writer = new System.IO.BinaryWriter(stream))
+            {
+                ExperimentalWireCodec.WriteOptions(writer, options);
+                writer.Flush();
+                stream.Position = 0;
+                using (var reader = new System.IO.BinaryReader(stream))
+                {
+                    Assert.That(ExperimentalWireCodec.ReadOptions(reader), Is.EqualTo(options));
+                    Assert.That(stream.Position, Is.EqualTo(stream.Length));
+                }
+            }
+
+            var host = Create(options);
+            var snapshot = host.CaptureSnapshot();
+            Assert.That(snapshot.StartsWith("guards-experimental/4:"), Is.True);
+            Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.True);
+            var other = Create(new ExperimentalMatchOptions(
+                minionBattleRemovalCapEnabled: true,
+                minionBattleRemovalCap: 1));
+            var before = other.CaptureSnapshot();
+            Assert.That(other.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.False);
+            Assert.That(other.CaptureSnapshot(), Is.EqualTo(before));
+        }
         [TestCase("")]
         [TestCase("coordination-private-session")]
         public void RealWireDeliversPrivateMarkersWithoutBlockingAnOutstandingGameplaySubmission(string key)
@@ -202,6 +243,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new ExperimentalMatchOptions(responseSeconds: 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new ExperimentalMatchOptions(teamBankSeconds: int.MaxValue));
             Assert.That(new ExperimentalMatchOptions(teamBankSeconds: 0).TeamBankSeconds, Is.Zero);
+            Assert.That(options.MinionBattleRemovalCapEnabled, Is.False);
+            Assert.That(options.MinionBattleRemovalCap, Is.Zero);
         }
         [Test] public void AlliedHandsTravelSeparatelyAndNeverGrantActionsOrEnemyInformation()
         {

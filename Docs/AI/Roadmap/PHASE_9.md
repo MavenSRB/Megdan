@@ -126,6 +126,12 @@ Completed 2026-10-07.
 
 Historical evidence: [9.68 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-968-printed-action-tooltip-completion).
 
+### [x] 9.69 Add an experimental Minion Battle removal cap
+
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-969-add-an-experimental-minion-battle-removal-cap).
+
+Historical evidence: [9.69 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-969-minion-battle-removal-cap-completion).
+
 ## Phase 9 - Rules fidelity and hero intake hardening
 
 On 2026-09-28 the user closed Phase 8 and started Phase 9 with this work ("Stop with phas 8. Lets start phase 9 from this point forward"), replacing the earlier presentation-and-pitch plan, which is retired to [the archive](../Archive/PHASE_9_PRESENTATION_PLAN_RETIRED.md) and authorizes nothing.

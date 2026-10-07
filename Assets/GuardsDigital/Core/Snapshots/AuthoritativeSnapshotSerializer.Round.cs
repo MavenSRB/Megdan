@@ -133,7 +133,8 @@ namespace GuardsDigital.Core.Snapshots
             AdjacentMoveAuthority board,
             MatchContentCatalogs catalogs,
             ComponentDefinitionCatalog components,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions,
+            int? minionBattleRemovalCap)
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
@@ -360,7 +361,8 @@ namespace GuardsDigital.Core.Snapshots
                 board,
                 systemTransitions,
                 lanePush,
-                lanePushAuthority == null ? null : levelUpRules);
+                lanePushAuthority == null ? null : levelUpRules,
+                minionBattleRemovalCap);
         }
 
         /// <summary>

@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(42),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(43),
                 "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
                 + "row gained the attacking card's instance id, its definition id and that "
                 + "definition's content revision, and the action definition id, all written "

@@ -242,3 +242,32 @@ visible, with the red and blue bank previews remaining at their sides. Authority
 wire 42, snapshots and the existing package are unchanged.
 
 Historical evidence: [9.67 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-967-shared-allowance-clock-completion).
+
+### [x] 9.69 Add an experimental Minion Battle removal cap
+
+Authorized 2026-10-07 by the user's request for a changeable Minion Battle removal cap that may be
+zero. Outcome: the host's Experimental menu exposes an independent opt-in whole-number cap. When
+enabled, one Minion Battle removes at most that many effective losing units in total; `0` removes
+none. The ordinary count difference, losing-side candidates, Heavy-last ordering and chooser remain
+authoritative below the cap. Disabled preserves the official rules. The immutable match setting must
+survive restart, replay, retained-prefix Undo, snapshot restore and joined-seat projection; a setting
+change is a compatibility boundary, not mutable mid-match state. Advance the experimental snapshot
+envelope and private wire rather than best-effort reading older settings. Closing checks: negative
+values reject while zero is accepted; disabled, zero, below-difference and non-binding caps; automatic
+and choice removals; Heavy-last and counts-as-minion regressions; Lane Push only when the capped
+removals actually empty the losing side; replay/Undo/snapshot equivalence and mismatched-setting
+atomic refusal; host-menu reset/input validation; options wire round-trip and prior-wire rejection.
+Run focused Unity Edit Mode for the owning Core/Application/presentation/network fixtures and directly
+affected Minion Battle/Lane Push regressions, then the applicable broader tier selected by testing
+policy. No two-lane map, timer, hero-content, official-rule or package change. T3 because the immutable
+gameplay option changes authoritative resolution, snapshot validation and the private protocol.
+
+Completed 2026-10-07: the host's independent Experimental toggle exposes a non-negative cap, with
+zero removing nothing and a default enabled value of one. The cap is applied once to the ordinary
+derived removal count before forced or chosen Heavy-last resolution; Lane Push follows the resulting
+board. Immutable options reach restart/replay/Undo and capped pending-choice restore, use experimental
+snapshot envelope 4, and advance the private wire to 43. The T3 offline, focused Unity, complete Edit
+and complete Play gates passed. Review found no official-rule, timer, coordination, hero, map or
+package change; the 9.65 package remains unchanged.
+
+Historical evidence: [9.69 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-969-minion-battle-removal-cap-completion).

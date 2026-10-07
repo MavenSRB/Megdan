@@ -37,8 +37,11 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundStageAvailability endOfRoundStageAvailability,
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers,
             HeroProgressionRestoreState startingProgression = null,
-            HeroCoinLedgerRestoreState startingCoins = null)
+            HeroCoinLedgerRestoreState startingCoins = null,
+            int? minionBattleRemovalCap = null)
         {
+            if (minionBattleRemovalCap.HasValue && minionBattleRemovalCap.Value < 0)
+                throw new System.ArgumentOutOfRangeException(nameof(minionBattleRemovalCap));
             CardActions = cardActions;
             Board = board;
             Timing = timing;
@@ -51,6 +54,7 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundHandlers = endOfRoundHandlers;
             StartingProgression = startingProgression;
             StartingCoins = startingCoins;
+            MinionBattleRemovalCap = minionBattleRemovalCap;
         }
 
         public CardActionResolutionAuthority CardActions { get; }
@@ -138,6 +142,12 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public HeroCoinLedgerRestoreState StartingCoins { get; }
 
+        /// <summary>
+        /// An optional match-composition limit on total effective-unit removals in one Minion Battle.
+        /// Null is the official rulebook path; zero is a binding limit that removes nothing.
+        /// </summary>
+        public int? MinionBattleRemovalCap { get; }
+
         public EndOfRoundStageAvailability EndOfRoundStageAvailability { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
@@ -155,11 +165,12 @@ namespace GuardsDigital.Core.Cards
             HeroLevelUpStepRules levelUp = null,
             TeamLifeState teamLives = null,
             HeroProgressionRestoreState startingProgression = null,
-            HeroCoinLedgerRestoreState startingCoins = null)
+            HeroCoinLedgerRestoreState startingCoins = null,
+            int? minionBattleRemovalCap = null)
         {
             return new RoundResolutionComposition(
                 cardActions, board, timing, markers, systemTransitions, lanePush, levelUp, teamLives,
-                null, null, startingProgression, startingCoins);
+                null, null, startingProgression, startingCoins, minionBattleRemovalCap);
         }
 
         /// <summary>

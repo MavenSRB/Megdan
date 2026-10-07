@@ -22,6 +22,85 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MinionBattleResolutionTests
     {
         [Test]
+        public void ExperimentalZeroCapCompletesWithoutRemovingALosingMinion()
+        {
+            var session = CreateSession(
+                RemoveOneBlueRanged,
+                new ExperimentalMatchOptions(
+                    minionBattleRemovalCapEnabled: true,
+                    minionBattleRemovalCap: 0));
+            AdvanceToEndOfRound(session);
+            var before = session.Projection.Minions.Select(value => value.MinionId).ToArray();
+
+            var result = session.Execute(DirectorCommand.AdvanceEndOfRound());
+
+            Assert.That(result.Accepted, Is.True);
+            Assert.That(session.Projection.PendingMinionBattleChoice, Is.Null);
+            Assert.That(session.Projection.PendingLanePushRequest, Is.Null,
+                "A zero cap left a losing minion standing, so no last-minion Lane Push is due.");
+            Assert.That(session.Projection.Minions.Select(value => value.MinionId), Is.EqualTo(before));
+            Assert.That(result.Events, Has.None.Matches<RoundResolutionEvent>(value =>
+                value.Kind == RoundResolutionEventKind.MinionBattleMinionRemoved));
+        }
+
+        [Test]
+        public void ExperimentalCapBelowTheDifferenceLimitsTheRequiredChoiceCount()
+        {
+            var fixture = CreateBattleZoneFixture("MMMMM", "MMM", false, 1);
+
+            var result = AdvanceToMinionBattle(fixture);
+
+            Assert.That(result.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingMinionBattleChoice, Is.Not.Null);
+            Assert.That(fixture.Authority.PendingMinionBattleChoice.RequiredRemovalCount, Is.EqualTo(1));
+            Assert.That(fixture.Authority.PendingMinionBattleChoice.Candidates, Has.Count.EqualTo(3));
+        }
+
+        [Test]
+        public void NonBindingExperimentalCapPreservesTheOrdinaryRemovalCount()
+        {
+            var fixture = CreateBattleZoneFixture("MMMMM", "MMM", false, 10);
+
+            var result = AdvanceToMinionBattle(fixture);
+
+            Assert.That(result.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingMinionBattleChoice.RequiredRemovalCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void BindingCapAutomaticallyRemovesTheOnlyNonHeavyAndLeavesTheHeavyWithoutALanePush()
+        {
+            var fixture = CreateBattleZoneFixture("MMMM", "MH", false, 1);
+            var result = AdvanceToMinionBattle(fixture);
+            Assert.That(result.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingMinionBattleChoice, Is.Null);
+            Assert.That(RemovedTypes(fixture, result), Is.EqualTo(new[] { StandardMinionType.Melee }));
+            Assert.That(fixture.Board.Minions.Any(value =>
+                value.TeamSide == TeamSide.Blue && value.MinionType == StandardMinionType.Heavy), Is.True);
+            Assert.That(fixture.Authority.PendingLanePushRequest, Is.Null);
+        }
+
+        [Test]
+        public void CappedPendingChoiceRoundTripsThroughTheConfiguredSnapshotRestore()
+        {
+            var options = new ExperimentalMatchOptions(
+                minionBattleRemovalCapEnabled: true,
+                minionBattleRemovalCap: 1);
+            var session = CreateSession(RemoveTwoBlueNonHeavy, options);
+            AdvanceToEndOfRound(session);
+            Assert.That(session.Execute(DirectorCommand.AdvanceEndOfRound()).Accepted, Is.True);
+            Assert.That(session.Projection.PendingMinionBattleChoice.RequiredRemovalCount, Is.EqualTo(1));
+            var snapshot = session.CaptureSnapshot();
+
+            var restored = CreateSession(RemoveTwoBlueNonHeavy, options);
+            Assert.That(restored.RestoreSnapshot(snapshot).Accepted, Is.True);
+            AssertChoicesEquivalent(
+                session.Projection.PendingMinionBattleChoice,
+                restored.Projection.PendingMinionBattleChoice);
+            Assert.That(restored.CaptureSnapshot(), Is.EqualTo(snapshot));
+        }
+
+        [Test]
         public void EqualBattleZoneCounts_CompleteWithoutChoiceRemovalOrLanePush()
         {
             var session = CreateSession(minions => minions);
@@ -632,7 +711,8 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession CreateSession(
-            Func<IReadOnlyList<QuickGameMinionSetupState>, IEnumerable<QuickGameMinionSetupState>> selectMinions)
+            Func<IReadOnlyList<QuickGameMinionSetupState>, IEnumerable<QuickGameMinionSetupState>> selectMinions,
+            ExperimentalMatchOptions experiments = null)
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -656,7 +736,8 @@ namespace GuardsDigital.Tests.EditMode
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
-            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+            return new MatchSession(new MatchSessionInitialState(
+                scenario, setup, new[] { map }, experiments: experiments));
         }
 
         private static IEnumerable<QuickGameMinionSetupState> RemoveOneBlueRanged(
@@ -665,6 +746,20 @@ namespace GuardsDigital.Tests.EditMode
             var removed = minions.First(value =>
                 value.TeamSide == TeamSide.Blue && value.MinionType == StandardMinionType.Ranged);
             return minions.Where(value => !value.MinionId.Equals(removed.MinionId));
+        }
+
+        private static IEnumerable<QuickGameMinionSetupState> RemoveTwoBlueNonHeavy(
+            IReadOnlyList<QuickGameMinionSetupState> minions)
+        {
+            var removed = minions
+                .Where(value => value.TeamSide == TeamSide.Blue &&
+                    value.MinionType != StandardMinionType.Heavy)
+                .OrderBy(value => value.MinionId.Value, StringComparer.Ordinal)
+                .Take(2)
+                .Select(value => value.MinionId)
+                .ToArray();
+            Assert.That(removed, Has.Length.EqualTo(2));
+            return minions.Where(value => !removed.Contains(value.MinionId));
         }
 
         private static IEnumerable<QuickGameMinionSetupState> KeepOneBlueOfEachType(
@@ -839,7 +934,8 @@ namespace GuardsDigital.Tests.EditMode
         private static BattleZoneFixture CreateBattleZoneFixture(
             string redShape,
             string blueShape,
-            bool countsAsBlueHero)
+            bool countsAsBlueHero,
+            int? minionBattleRemovalCap = null)
         {
             var participants = StagedBoardParticipants.Create();
             var mapId = new MapId("synthetic-battle-zone-map");
@@ -958,7 +1054,8 @@ namespace GuardsDigital.Tests.EditMode
                     levelUp,
                     null,
                     EndOfRoundStageAvailability.ConfiguredMatch(),
-                    null));
+                    null,
+                    minionBattleRemovalCap: minionBattleRemovalCap));
 
             return new BattleZoneFixture(authority, board, minions, red, blue, blueSpawn);
         }

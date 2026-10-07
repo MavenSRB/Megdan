@@ -86,6 +86,24 @@ namespace GuardsDigital.Tests.EditMode
             view.ShowPage(PrivateLobbyEntryPage.Landing); view.ShowPage(PrivateLobbyEntryPage.Host);
             Assert.That(enemy.value, Is.False);
         }
+        [Test] public void MinionBattleCapAcceptsZeroAndResetsDisabledForANewHostMenu()
+        {
+            var view = new PrivateLobbyUnityView();
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            var toggle = view.Root.Q<Toggle>("experimental-minion-battle-cap");
+            var field = view.Root.Q<IntegerField>("experimental-minion-battle-cap-value");
+            Assert.That(toggle.value, Is.False);
+            Assert.That(field.value, Is.EqualTo(1));
+            toggle.value = true;
+            field.value = 0;
+            Assert.That(view.CurrentEntry().Experiments.MinionBattleRemovalCapEnabled, Is.True);
+            Assert.That(view.CurrentEntry().Experiments.MinionBattleRemovalCap, Is.Zero);
+            view.ShowPage(PrivateLobbyEntryPage.Landing);
+            view.ShowPage(PrivateLobbyEntryPage.Host);
+            Assert.That(toggle.value, Is.False);
+            Assert.That(field.value, Is.EqualTo(1));
+            Assert.That(view.CurrentEntry().Experiments.MinionBattleRemovalCapEnabled, Is.False);
+        }
         [Test] public void AlliedInspectionHasCardsButNoGameplayControlsAndCannotInspectEnemies()
         {
             var state = OwnerScopedProjectionTests.CreateOfficialInitialState();

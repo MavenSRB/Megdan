@@ -774,6 +774,12 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | --- | --- | --- |
 | 9.68 | Available printed-action hotspots no longer open redundant local or ancestor runtime tooltips over rules already visible on the card face; unavailable actions retain their reasons. Focused Edit Mode passed 146/146 and the live resolving-card hover/click journey passed 1/1. [Definition](../../Roadmap/PHASE_9.md#x-968-remove-redundant-tooltips-from-available-printed-actions). | `milestone/9.68` |
 
+## Milestone 9.69 Minion Battle removal cap completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.69 | An independent Experimental match option caps total Minion Battle removals, accepts zero, preserves Heavy-last ordering and lets Lane Push follow the capped board. Immutable settings survive replay/Undo/restore under experimental snapshot envelope 4 and private wire 43; official option-off play is unchanged. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-969-add-an-experimental-minion-battle-removal-cap). | `milestone/9.69` |
+
 ## Milestone 9.30k Gydion casting-hover completion
 
 | Milestone | Outcome and definition | Commit |

@@ -58,6 +58,7 @@ namespace GuardsDigital.Core.Cards
         private readonly EndOfRoundStageAvailability endOfRoundStageAvailability;
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private readonly AdjacentMoveAuthority board;
+        private readonly int? minionBattleRemovalCap;
         private TieBreakerState tieBreakerState;
 
         /// <summary>
@@ -92,6 +93,7 @@ namespace GuardsDigital.Core.Cards
             var compositionStartingCoins = composition.StartingCoins;
             var endOfRoundStageAvailability = composition.EndOfRoundStageAvailability;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
+            var minionBattleRemovalCap = composition.MinionBattleRemovalCap;
 
             this.definitions = Array.AsReadOnly(
                 ActionOfferQuery.BuildDefinitionLookup(definitions).Values.ToArray());
@@ -138,6 +140,7 @@ namespace GuardsDigital.Core.Cards
             tieBreakerState = initialTieBreakerState;
             this.cardActions = cardActions;
             this.board = board;
+            this.minionBattleRemovalCap = minionBattleRemovalCap;
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.markers = markers ?? new MarkerAttachmentRegister();
 
@@ -1332,7 +1335,8 @@ namespace GuardsDigital.Core.Cards
             AdjacentMoveAuthority board,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions,
             GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
-            GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules levelUp)
+            GuardsDigital.Core.Rules.Progression.HeroLevelUpStepRules levelUp,
+            int? minionBattleRemovalCap = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var roundIndex = state.Cursor.RoundIndex;
@@ -1349,7 +1353,8 @@ namespace GuardsDigital.Core.Cards
                 tieBreakerState,
                 roundIndex,
                 RoundResolutionComposition.ForMatch(
-                    cardActions, board, timing, markers, systemTransitions, lanePush, levelUp));
+                    cardActions, board, timing, markers, systemTransitions, lanePush, levelUp,
+                    minionBattleRemovalCap: minionBattleRemovalCap));
             if (turnIndex < 1 || turnIndex > TurnsPerRound || !Enum.IsDefined(typeof(RoundResolutionPhase), phase))
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
@@ -1533,7 +1538,8 @@ namespace GuardsDigital.Core.Cards
                         GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                         GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
                     authority.CurrentMinionBattleRules(),
-                    GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
+                    GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
+                    authority.minionBattleRemovalCap);
                 if (expectedPlan.PendingChoice == null)
                 {
                     throw new ArgumentException("Restored Minion Battle choice is no longer required by authoritative state.");
@@ -2062,7 +2068,8 @@ namespace GuardsDigital.Core.Cards
                         GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                     GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
                 CurrentMinionBattleRules(),
-                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
+                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
+                minionBattleRemovalCap);
             var preceding = precedingEvents ?? new List<RoundResolutionEvent>();
             if (plan.PendingChoice != null)
             {

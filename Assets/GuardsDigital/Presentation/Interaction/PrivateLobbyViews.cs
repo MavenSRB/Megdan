@@ -133,6 +133,9 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateLobbyEntryPage page = PrivateLobbyEntryPage.Landing;
         private Toggle coordinationToggle;
         private Toggle enemyInfoToggle;
+        private Toggle minionBattleCapToggle;
+        private IntegerField minionBattleCapField;
+        private VisualElement minionBattleCapSettings;
         private Toggle timerToggle;
         private readonly List<IntegerField> timerFields = new List<IntegerField>();
         private readonly int[] timerDefaults = {120,30,30,120,300};
@@ -299,6 +302,35 @@ namespace GuardsDigital.Presentation.Interaction
                 "experimental-enemy-info-help");
             enemyInfoHelp.style.whiteSpace = WhiteSpace.Normal;
             experimentalPanel.Add(enemyInfoHelp);
+            minionBattleCapToggle = new Toggle("Minion Battle removal cap") { name = "experimental-minion-battle-cap" };
+            minionBattleCapToggle.style.fontSize = 18;
+            minionBattleCapToggle.style.color = Color.white;
+            experimentalPanel.Add(minionBattleCapToggle);
+            minionBattleCapSettings = new VisualElement { name = "experimental-minion-battle-cap-settings" };
+            minionBattleCapSettings.style.display = DisplayStyle.None;
+            var minionBattleCapError = Caption(string.Empty, 14, "experimental-minion-battle-cap-error");
+            minionBattleCapField = new IntegerField("Maximum removals per battle")
+            {
+                name = "experimental-minion-battle-cap-value",
+                value = 1
+            };
+            minionBattleCapField.style.fontSize = 18;
+            minionBattleCapField.style.color = Color.black;
+            minionBattleCapField.labelElement.style.color = Color.white;
+            minionBattleCapField.RegisterValueChangedCallback(change =>
+            {
+                if (change.newValue < 0 || change.newValue > 86400)
+                {
+                    minionBattleCapField.SetValueWithoutNotify(change.previousValue);
+                    minionBattleCapError.text = "Use a whole number from 0–86400. Previous value retained.";
+                }
+                else minionBattleCapError.text = string.Empty;
+            });
+            minionBattleCapSettings.Add(minionBattleCapField);
+            minionBattleCapSettings.Add(minionBattleCapError);
+            experimentalPanel.Add(minionBattleCapSettings);
+            minionBattleCapToggle.RegisterValueChangedCallback(change =>
+                minionBattleCapSettings.style.display = change.newValue ? DisplayStyle.Flex : DisplayStyle.None);
             timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
             timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
             timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
@@ -467,7 +499,8 @@ namespace GuardsDigital.Presentation.Interaction
             page == PrivateLobbyEntryPage.Host
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
-                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value), mapChoices[mapSelector.index].Reference)
+                        timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value,
+                        minionBattleCapToggle.value,minionBattleCapField.value), mapChoices[mapSelector.index].Reference)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -487,6 +520,9 @@ namespace GuardsDigital.Presentation.Interaction
                 mapSelector.index = Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap));
                 coordinationToggle.SetValueWithoutNotify(false);
                 enemyInfoToggle.SetValueWithoutNotify(false);
+                minionBattleCapToggle.SetValueWithoutNotify(false);
+                minionBattleCapField.SetValueWithoutNotify(1);
+                minionBattleCapSettings.style.display = DisplayStyle.None;
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
                 for(int i=0;i<timerFields.Count;i++) timerFields[i].SetValueWithoutNotify(timerDefaults[i]);
                 experimentalPanel.style.display = DisplayStyle.None;

@@ -524,7 +524,8 @@ namespace GuardsDigital.Core.Cards
             Plan(
                 roundIndex, board, participants, modifications,
                 Array.Empty<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant>(),
-                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
+                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
+                null);
 
         /// <param name="ruleParticipants">
         /// Milestone 8.19c. The heroes taking part in this battle under a declared Minion-Battle rule,
@@ -537,7 +538,8 @@ namespace GuardsDigital.Core.Cards
             MatchParticipants participants,
             RuleModificationSet modifications,
             IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants,
-            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog)
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog,
+            int? removalCap)
         {
             if (roundIndex < 1)
             {
@@ -562,6 +564,11 @@ namespace GuardsDigital.Core.Cards
             if (ruleCatalog == null)
             {
                 throw new ArgumentNullException(nameof(ruleCatalog));
+            }
+
+            if (removalCap.HasValue && removalCap.Value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(removalCap));
             }
 
             // Milestone 6.4a: one authority-owned membership query, shared with Heavy immunity,
@@ -611,6 +618,10 @@ namespace GuardsDigital.Core.Cards
             var losing = participants.Teams.Single(value => value.Side == losingSide);
             var losingMinions = losingSide == TeamSide.Red ? red : blue;
             var required = Math.Min(Math.Abs(redTotal - blueTotal), losingMinions.Length);
+            if (removalCap.HasValue)
+            {
+                required = Math.Min(required, removalCap.Value);
+            }
             if (required == 0)
             {
                 return new MinionBattlePlan(

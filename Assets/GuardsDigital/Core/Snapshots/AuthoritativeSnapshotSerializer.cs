@@ -611,7 +611,8 @@ namespace GuardsDigital.Core.Snapshots
             IEnumerable<CardDefinition> currentDefinitions,
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
             IEnumerable<QuickGameMinionSetupState> minions,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions = null)
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions = null,
+            int? minionBattleRemovalCap = null)
         {
             if (catalogs == null) throw new ArgumentNullException(nameof(catalogs));
             var capabilities = catalogs.Capabilities;
@@ -671,7 +672,7 @@ namespace GuardsDigital.Core.Snapshots
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(
                         reader, definitions, cards, participants, board, catalogs, components,
-                        transitions);
+                        transitions, minionBattleRemovalCap);
                     if (stream.Position != stream.Length)
                     {
                         throw Malformed("Snapshot contains unexpected trailing data.");

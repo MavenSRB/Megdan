@@ -157,7 +157,7 @@ The reviewed mockups illustrate layout, not exact new artwork. The written right
 
 Authenticated readiness reports name the authoritative version. Input remains paused through spotlight/kinetic transitions; an attack held for a defender's answer is actionable. A ready report is latched for that version. Missing visual completion has a 30-second host lease so repeated busy reports cannot freeze a match; disconnected reserved seats retain the existing whole-session pause, including lease aging. No elapsed animation interval is charged retroactively when the lease ends. Pregame selection stays untimed.
 
-Wire 42 carries clock state, readiness, typed shared-board votes and permitted current-card inspection faces. Votes are independent of right-click teammate suggestions and retain the existing deciding-side eligibility. Unanimity resolves early; timeout applies plurality and recorded random ties. Constrained Minion Battle selections retain the initial tally until completion, including across restore. Timer snapshots use `guards-experimental/3:` around unchanged Core schema 58, with options, remaining ticks, paused response frames, current ballots and timeout seed/draw position. Live Director Undo restores a pre-command checkpoint; ordinary and timeout Undo cannot refund spent time. Core snapshots still omit replay ancestry, so importing one does not invent Director Undo history. Gameplay replay uses the accepted timeout commands without waiting or redrawing.
+Wire 43 carries clock state, readiness, typed shared-board votes, permitted current-card inspection faces and the experimental Minion Battle cap. Votes are independent of right-click teammate suggestions and retain the existing deciding-side eligibility. Unanimity resolves early; timeout applies plurality and recorded random ties. Constrained Minion Battle selections retain the initial tally until completion, including across restore. Timer snapshots use `guards-experimental/4:` around unchanged Core schema 59, with options, remaining ticks, paused response frames, current ballots and timeout seed/draw position. Live Director Undo restores a pre-command checkpoint; ordinary and timeout Undo cannot refund spent time. Core snapshots still omit replay ancestry, so importing one does not invent Director Undo history. Gameplay replay uses the accepted timeout commands without waiting or redrawing.
 
 The 96-unit header groups simultaneous normal allowances into one gold clock showing the latest
 remainder; lone allowances use team colour. Bank clocks stay separate team resources. Every clock
@@ -181,4 +181,23 @@ The viewer may inspect their own set. Allied inspection stays under the existing
 
 This split supersedes full-deck inspection and unconditional book sharing. Allowed viewers open the owner's existing spellbook view, without casting controls. The 9.64h SPELLBOOK shortcut sits above the viewed hero's hand: beside Director for hosts, in its position for other players. Crowded book layouts place confirmation beside this row. Ordinary hand inspection and suggestions retain their toggle/authority contracts; 9.64d owns the book's shared hover bump.
 
-The inspection projection carries only sorted definition references, separately from playable card instances. It includes current-zone faces and basic gold reserves; it omits instance IDs, locations and hidden commitment state. Shared spellbooks use the same permitted references, while removed spells remain public. Wire 42 rejects earlier peers; the version-3 experimental snapshot envelope stores the independent enemy option and rejects old envelopes or mismatched settings atomically. Core schema 58, rules resolution and command authorization are unchanged.
+The inspection projection carries only sorted definition references, separately from playable card instances. It includes current-zone faces and basic gold reserves; it omits instance IDs, locations and hidden commitment state. Shared spellbooks use the same permitted references, while removed spells remain public. Wire 43 rejects earlier peers; the version-4 experimental snapshot envelope stores every independent option and rejects old envelopes or mismatched settings atomically. Core schema 59 is unchanged by the Minion Battle cap.
+
+## Minion Battle removal cap
+
+Milestone 9.69 adds an independent per-match option in the host's Experimental menu. It is disabled
+for every new hosted game. When enabled, its non-negative whole-number value caps the total effective
+losing units removed by one Minion Battle after the ordinary count difference and available losing
+units are derived. A value of zero therefore completes the battle without removing a unit. A cap at
+or above the ordinary removal count is non-binding.
+
+The option changes only the removal count. Existing effective-unit counting, Wuk exclusions,
+counts-as-minion participants, Heavy-last selection, losing-team choice authority and stable removal
+order remain unchanged. Lane Push is derived from the board after those capped removals, so a cap that
+leaves a losing unit in the Battle Zone prevents the last-minion push; it never suppresses a push
+after the capped result really did empty that side. Disabled play remains the official rulebook path.
+
+The setting is immutable after hosting begins and is part of experimental snapshot and private-wire
+identity. Restart, replay, Undo and restore use the same configured cap; a snapshot captured with a
+different enabled state or value is refused atomically. This feature does not alter the Core snapshot
+schema, hero/card content, timer, coordination permissions or map selection.

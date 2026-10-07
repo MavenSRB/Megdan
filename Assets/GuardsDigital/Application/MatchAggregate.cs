@@ -372,7 +372,10 @@ namespace GuardsDigital.Application
                     // retained-prefix Undo rather than carried across. That is what makes a staged
                     // situation replay to itself instead of decaying to a dealt one.
                     initialState.StagedProgression.CreateProgressionState(),
-                    initialState.StagedProgression.CreateCoinLedgerState()));
+                    initialState.StagedProgression.CreateCoinLedgerState(),
+                    initialState.Experiments.MinionBattleRemovalCapEnabled
+                        ? initialState.Experiments.MinionBattleRemovalCap
+                        : (int?)null));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,
@@ -423,7 +426,10 @@ namespace GuardsDigital.Application
                 authoritativePayload,
                 initialState.Scenario.CardDefinitions,
                 initialState.AvailableMaps,
-                initialState.Setup.Minions);
+                initialState.Setup.Minions,
+                minionBattleRemovalCap: initialState.Experiments.MinionBattleRemovalCapEnabled
+                    ? initialState.Experiments.MinionBattleRemovalCap
+                    : (int?)null);
 
             if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
             {

@@ -20,13 +20,14 @@ namespace GuardsDigital.Application
                 return coordination.Submit(CurrentSeats().Find(seat), command, session.Projection, CurrentSeats());
             }
         }
-        private const string ExperimentalSnapshotPrefix = "guards-experimental/3:";
+        private const string ExperimentalSnapshotPrefix = "guards-experimental/4:";
         private string CaptureExperimentalSnapshot()
         {
             lock (gate)
             {
                 var payload = session.CaptureSnapshot();
-                if (!Experiments.TeammateCoordination && !Experiments.TurnTimer && !Experiments.EnemyCardInformation) return payload;
+                if (!Experiments.TeammateCoordination && !Experiments.TurnTimer && !Experiments.EnemyCardInformation &&
+                    !Experiments.MinionBattleRemovalCapEnabled) return payload;
                 using (var stream = new System.IO.MemoryStream())
                 using (var writer = new System.IO.BinaryWriter(stream, System.Text.Encoding.UTF8))
                 {
@@ -40,7 +41,8 @@ namespace GuardsDigital.Application
         private string UnwrapExperimentalSnapshot(string payload)
         {
             if (payload == null || !payload.StartsWith(ExperimentalSnapshotPrefix, StringComparison.Ordinal))
-                return Experiments.TeammateCoordination || Experiments.TurnTimer || Experiments.EnemyCardInformation ? "Experimental settings are missing from this snapshot." : payload;
+                return Experiments.TeammateCoordination || Experiments.TurnTimer || Experiments.EnemyCardInformation ||
+                    Experiments.MinionBattleRemovalCapEnabled ? "Experimental settings are missing from this snapshot." : payload;
             try
             {
                 using (var stream = new System.IO.MemoryStream(Convert.FromBase64String(payload.Substring(ExperimentalSnapshotPrefix.Length))))
