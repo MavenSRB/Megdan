@@ -851,6 +851,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False,
                     "A board token selects the hand directly instead of opening the tray modal.");
                 var hand = runtime.HandsView.Model.ViewedHand;
+                Assert.That(hand.IsReadOnly, Is.True,
+                    "The token-selected host view uses the same trusted inspection perspective as the tray.");
+                Assert.That(hand.PlayableTrayCards.Any(card => card.IsSelectable), Is.False,
+                    "Seeing a player's hand grants the unseated host no player-card action.");
                 Assert.That(hand.TrayCards.Select(card => card.CardInstanceId), Is.EquivalentTo(
                     hand.PlayableTrayCards.Concat(hand.UnavailableTrayCards)
                         .Select(card => card.CardInstanceId)));

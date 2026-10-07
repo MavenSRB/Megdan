@@ -615,6 +615,7 @@ namespace GuardsDigital.Presentation.Match
 
             seatlessHostView = true;
             HeroOverviewsView.CardInspection.UseTrustedLocalHeroPerspective = true;
+            HandsPresenter.UseTrustedLocalHeroPerspective = true;
             hud.SetDirectorToolsVisible(true);
             if (republishAfterHostDebugChange != null && UndoRestartPresenter != null)
             {

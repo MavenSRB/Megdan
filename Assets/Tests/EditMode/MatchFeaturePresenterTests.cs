@@ -1842,6 +1842,57 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TrustedSeatlessHostTokenShowsTheSameFiveAvailableFacesAsHeroInspection()
+        {
+            var session = CreateSession();
+            var committed = GetHandCards(session, TeamSide.Red)[0];
+            var owner = committed.OwnerId;
+            var currentSetSize = session.Projection.Cards.Count(card =>
+                card.OwnerId.Equals(owner) && card.State.Location == CardLocation.Hand);
+            Assert.That(session.Execute(DirectorCommand.CommitCard(owner, committed.Id)).Accepted,
+                Is.True);
+
+            var ordinaryView = new CapturingHandsView();
+            var ordinary = new DirectorHandsPresenter(session, ordinaryView);
+            Assert.That(ordinary.SelectViewedHero(owner), Is.True);
+            Assert.That(ordinaryView.Model.ViewedHand.PlayableTrayCards,
+                Has.Count.EqualTo(currentSetSize - 1),
+                "The ordinary Director lifecycle view still distinguishes the facedown commitment.");
+            Assert.That(ordinaryView.Model.ViewedHand.UnavailableTrayCards, Has.Count.EqualTo(1));
+
+            var trustedView = new CapturingHandsView();
+            var trusted = new DirectorHandsPresenter(session, trustedView)
+            {
+                UseTrustedLocalHeroPerspective = true
+            };
+            Assert.That(trusted.SelectViewedHero(owner), Is.True);
+            var hand = trustedView.Model.ViewedHand;
+            Assert.That(hand.Cards, Has.Count.EqualTo(currentSetSize));
+            Assert.That(hand.PlayableTrayCards, Has.Count.EqualTo(currentSetSize),
+                "Token inspection must keep every face available until the joint reveal, exactly " +
+                "like the corrected hero inspection tray.");
+            Assert.That(hand.UnavailableTrayCards, Is.Empty,
+                "The unrevealed commitment must not become a sixth blank or identify one unavailable face.");
+            Assert.That(hand.IsReadOnly, Is.True);
+            Assert.That(hand.PlayableTrayCards.Any(card => card.IsSelectable), Is.False,
+                "Trusted visibility grants no player action to an unseated host.");
+
+            var otherHero = session.Projection.Setup.Heroes
+                .Single(hero => !hero.HeroId.Equals(owner));
+            var otherCard = session.Projection.Cards.First(card =>
+                card.OwnerId.Equals(otherHero.HeroId) &&
+                card.State.Location == CardLocation.Hand);
+            var acceptedCommandCount = session.Projection.AcceptedCommands.Count;
+            Assert.That(trusted.SelectCommitmentCard(otherCard.Id), Is.False);
+            Assert.That(trusted.ConfirmSelectedCard(), Is.False);
+            Assert.That(trusted.CommitCardImmediately(otherCard.Id), Is.False);
+            Assert.That(trusted.Pass(otherHero.HeroId), Is.False);
+            Assert.That(session.Projection.AcceptedCommands,
+                Has.Count.EqualTo(acceptedCommandCount),
+                "Read-only host inspection must reject every card and pass command at the presenter boundary.");
+        }
+
+        [Test]
         public void DirectorHandsPresenter_SelectsAndCommitsWithoutOwningCardAuthority()
         {
             var session = CreateSession();

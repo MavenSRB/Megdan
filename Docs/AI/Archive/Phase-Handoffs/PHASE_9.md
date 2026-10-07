@@ -854,3 +854,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.80b | Corrected seatless-host card inspection privacy and grouping, limited OTHER GOLDS to typed reserve mechanics, clarified Walking Dead's enemy-discard branch, and restored shared seat undo for actor-owned choices after a completed Attack without crossing that Attack or another player's response. Focused offline passed 36/36; directly affected Play Mode passed 4/4. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980b-correct-seatless-host-card-inspection-and-verify-walking-dead). | `milestone/9.80b` |
+
+## Milestone 9.80c hero-token inspection correction completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.80c | Shared the privacy-safe trusted host partition with hero-token hand viewing, keeping an unrevealed commitment among the five available faces while real resolved/discarded cards remain unavailable, and enforced the view as read-only at the presenter command boundary. Focused offline passed 11/11; directly affected Play Mode passed 4/4. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-980c-share-the-trusted-inspection-partition-with-hero-token-viewing). | `milestone/9.80c` |

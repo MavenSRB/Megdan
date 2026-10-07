@@ -500,3 +500,13 @@ Closing checks: focused projection and presentation tests prove the commitment p
 Completed 2026-10-07. The final focused offline run passed 36/36 and the four directly affected Unity Play Mode journeys passed 4/4. Earlier focused Unity Edit Mode passed 24/24 and the broader preceding Play Mode run passed 55/55 after an obsolete tray-fallback assertion was corrected. The real host log showed Walking Dead resolved through Mortimer-owned commands without ever creating an enemy discard prompt, while the same match's Crawling Dead sequence did create the enemy-owned prompt and `CardDiscardedByCardText` event. The correction therefore clarifies the branch label and makes the actor's accidental post-attack choice undoable without changing the verified discard effect.
 
 Historical evidence: [9.80b completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-980b-card-inspection-correction-completion).
+
+### [x] 9.80c Share the trusted inspection partition with hero-token viewing
+
+Authorized 2026-10-07 by the user's request to correct the pictured hero-token click in the same way as the hero inspection tray. For an unseated local host, selecting a hero token now uses the same privacy-safe current-card partition as the full inspection modal: an unrevealed commitment remains among the five available faces, while previously resolved and discarded cards remain genuinely unavailable. The token-selected hand is inspection-only and grants no commit or pass action.
+
+Closing checks: focused presentation coverage proves that an ordinary Director view still distinguishes the facedown commitment while the trusted seatless-host token view shows all five faces as available without selectable actions; direct presenter calls for selection, confirmation, immediate commitment and pass are rejected without accepting commands. The live seatless-host Play Mode journey proves the runtime wires the token-selected hand as read-only. No rules, card content, snapshot, wire, package, publication or remote operation change.
+
+Completed 2026-10-07. Focused offline inspection and coordination coverage passed 11/11. The four directly affected Unity Play Mode journeys passed 4/4, including the real seatless-host token route. The user explicitly kept the 9.80 build paused, so no player build or package was produced.
+
+Historical evidence: [9.80c completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-980c-hero-token-inspection-correction-completion).

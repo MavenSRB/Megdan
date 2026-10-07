@@ -217,6 +217,7 @@ namespace GuardsDigital.Presentation.Match
         private HeroId pinnedHeroId;
         private HeroId pinnedAgainstAwaitedHeroId;
         private HeroId lastViewedHeroId;
+        private bool useTrustedLocalHeroPerspective;
 
 
         /// <summary>
@@ -255,6 +256,24 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
+        /// <summary>
+        /// The unseated local host is trusted to inspect every hero as that hero sees their own
+        /// current cards. This is presentation-only: the resulting hand is read-only and grants no
+        /// card command. Remote and seated clients keep using their scoped projection unchanged.
+        /// </summary>
+        public bool UseTrustedLocalHeroPerspective
+        {
+            get => useTrustedLocalHeroPerspective;
+            set
+            {
+                if (useTrustedLocalHeroPerspective == value) return;
+                useTrustedLocalHeroPerspective = value;
+                lastProjection = null;
+                lastViewModel = null;
+                Refresh();
+            }
+        }
+
 
         /// <summary>
         /// The hero whose tray is currently drawn (milestone 7.8a).
@@ -414,12 +433,23 @@ namespace GuardsDigital.Presentation.Match
                     .Select(hero =>
                     {
                         var commitment = projection.GetCommitment(hero.HeroId);
+                        var displayCards = DisplayCards(projection, hero.HeroId).ToArray();
+                        var trustedInspection = useTrustedLocalHeroPerspective && session.IsDirector
+                            ? HeroCardInspection.ForHero(projection, hero.HeroId)
+                            : null;
+                        var handCards = trustedInspection == null
+                            ? displayCards.Where(card => card.State.Location == CardLocation.Hand)
+                            : displayCards.Where(card =>
+                                trustedInspection.HandCards.Contains(card.DefinitionReference));
+                        var readOnly = useTrustedLocalHeroPerspective ||
+                            !session.IsDirector && !hero.HeroId.Equals(homeHeroId);
                         return new DirectorHandViewModel(
                             hero.TeamSide,
                             hero.HeroId,
                             hero.DisplayName,
                             commitment.Status,
-                            projection.IsInputEnabled && commitment.CanPass && (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
+                            !readOnly && projection.IsInputEnabled && commitment.CanPass &&
+                                (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
                             commitment.RevealedCardInstanceId,
                             // Milestone 8.35e. `Single` here failed the whole tray refresh, and the
                             // absence it refused is legitimate for any projection that withholds a
@@ -431,15 +461,17 @@ namespace GuardsDigital.Presentation.Match
                                 ? projection.Cards.SingleOrDefault(card =>
                                     card.Id.Equals(commitment.RevealedCardInstanceId.Value))
                                 : null,
-                            DisplayCards(projection, hero.HeroId).Where(card => card.State.Location == CardLocation.Hand),
+                            handCards,
                             projection.Definitions,
                             selectedCardInstanceId,
                             BuildTray(projection, hero.HeroId, selectedCardInstanceId,
                                 selectedSecondCardInstanceId: selectedSecondCardInstanceId,
-                                displayCards: DisplayCards(projection, hero.HeroId), readOnly: !session.IsDirector && !hero.HeroId.Equals(homeHeroId)),
+                                displayCards: displayCards, readOnly: readOnly,
+                                trustedInspection: trustedInspection),
                             selectedSecondCardInstanceId,
-                            commitment.CanCommitTwoCards && (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
-                            !session.IsDirector && !hero.HeroId.Equals(homeHeroId));
+                            !readOnly && commitment.CanCommitTwoCards &&
+                                (session.IsDirector || hero.HeroId.Equals(homeHeroId)),
+                            readOnly);
                     });
                 lastCoordinationRevision = coordinationRevision;
                 lastProjection = projection;
@@ -545,7 +577,9 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId? selectedCardInstanceId,
             bool? resolvingCardIsAnsweredHere = null,
             CardInstanceId? selectedSecondCardInstanceId = null,
-            IEnumerable<CardInstance> displayCards = null, bool readOnly = false)
+            IEnumerable<CardInstance> displayCards = null,
+            bool readOnly = false,
+            HeroCardInspection trustedInspection = null)
         {
             var commitment = projection.GetCommitment(heroId);
             var canSelect = !readOnly && projection.IsInputEnabled &&
@@ -573,7 +607,10 @@ namespace GuardsDigital.Presentation.Match
             var entries = new List<TrayCardViewModel>();
             foreach (var card in (displayCards ?? projection.Cards).Where(card => card.OwnerId.Equals(heroId)))
             {
-                var group = card.State.Location == CardLocation.Hand
+                var group = trustedInspection != null &&
+                    trustedInspection.HandCards.Contains(card.DefinitionReference)
+                    ? TrayCardGroup.Available
+                    : card.State.Location == CardLocation.Hand
                     ? TrayCardGroup.Available
                     : card.State.Location == CardLocation.DiscardPile
                         ? TrayCardGroup.Discarded
@@ -663,7 +700,8 @@ namespace GuardsDigital.Presentation.Match
         public bool SelectCommitmentCard(CardInstanceId cardInstanceId)
         {
             var projection = session.Projection;
-            if (FindCommittableCard(projection, cardInstanceId) == null)
+            if (useTrustedLocalHeroPerspective ||
+                FindCommittableCard(projection, cardInstanceId) == null)
             {
                 return false;
             }
@@ -687,7 +725,8 @@ namespace GuardsDigital.Presentation.Match
 
         public bool ConfirmSelectedCard()
         {
-            if (!selectedCardInstanceId.HasValue || !session.Projection.IsInputEnabled)
+            if (useTrustedLocalHeroPerspective ||
+                !selectedCardInstanceId.HasValue || !session.Projection.IsInputEnabled)
             {
                 return false;
             }
@@ -721,6 +760,11 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool CommitCardImmediately(CardInstanceId cardInstanceId)
         {
+            if (useTrustedLocalHeroPerspective)
+            {
+                return false;
+            }
+
             var projection = session.Projection;
             var card = FindCommittableCard(projection, cardInstanceId);
             if (card == null)
@@ -758,6 +802,11 @@ namespace GuardsDigital.Presentation.Match
 
         public bool Pass(HeroId heroId)
         {
+            if (useTrustedLocalHeroPerspective)
+            {
+                return false;
+            }
+
             var projection = session.Projection;
             if (!projection.IsInputEnabled)
             {
