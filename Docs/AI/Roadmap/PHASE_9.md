@@ -230,11 +230,17 @@ Completed 2026-10-08.
 
 Historical evidence: [9.86 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-986-authoritative-movement-route-completion).
 
-### [~] 9.87 Show attack, heavy-minion defeat and Lane Push in causal order
+### [x] 9.87 Show attack, heavy-minion defeat and Lane Push in causal order
 
 Authorized 2026-10-08 from the reported heavy-minion kill: presentation must start the attack, show the defeated heavy minion dying, and only then move the wave to its pushed positions. Do not delay or change authoritative resolution. Preserve ordinary defeat, queued attacks, reconnect/first-sight suppression and non-push refreshes. Closing checks: an ordered heavy-defeat regression, focused kinetic/board regressions and a rendered Play Mode journey. T2.
 
-### [ ] 9.88 Validate and package the integrated Windows playtest build
+Result: when a projection both removes a minion and relocates surviving minions, the board deactivates the authoritative defeated piece immediately but retains the survivors' prior non-interactive positions. Existing attack-camera deferral gates the defeat ghost; after that ghost finishes, the survivors catch up to the latest authoritative Lane Push positions. Undo/reappearance updates the pending target and releases safely. Focused Unity Edit Mode passed 55/55 across defeat, cue and conductor fixtures; rendered `WavePresentationPlayModeTests` passed 5/5. No rule, command, wire, snapshot or content change.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.87 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-987-heavy-defeat-before-lane-push-completion).
+
+### [~] 9.88 Validate and package the integrated Windows playtest build
 
 Authorized 2026-10-08 after the preceding integrated corrections. Run required documentation and source checks, the full applicable T3 gate, produce a Windows package and ZIP from the validated main revision, generate its SHA-256 digest, inspect package contents and smoke-launch the packaged executable. Preserve private/untracked material and publish nothing. T3.
 ## Queued by 9.13, not authorized

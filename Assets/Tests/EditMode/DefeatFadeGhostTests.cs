@@ -239,6 +239,54 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HeavyMinionDefeat_HoldsThePushedWaveUntilAttackGatedDeathFinishes()
+        {
+            var heavyObject = new GameObject("Defeated heavy minion");
+            var waveObject = new GameObject("Pushed wave minion");
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var heavy = MinionState("heavy", new HexCoordinate(0, 0), StandardMinionType.Heavy);
+                var before = MinionState("wave", new HexCoordinate(1, 0));
+                var after = MinionState("wave", new HexCoordinate(2, 0));
+                var heavyView = heavyObject.AddComponent<StandardMinionView>();
+                var waveView = waveObject.AddComponent<StandardMinionView>();
+                heavyView.Configure(heavy, HexWorldLayout.DefaultOuterRadius);
+                waveView.Configure(before, HexWorldLayout.DefaultOuterRadius);
+                var view = new BoardInteractionUnityView(
+                    Array.Empty<PrimitiveHeroView>(), Array.Empty<HexTileView>(), material,
+                    new[] { heavyView, waveView });
+                var attackStillPlaying = true;
+                view.DeferDefeatFades = () => attackStillPlaying;
+
+                view.Render(BoardModel(1, Array.Empty<HeroOccupancy>(), new[] { heavy, before }));
+                view.Render(BoardModel(2, Array.Empty<HeroOccupancy>(), new[] { after }));
+
+                Assert.That(heavyView.gameObject.activeSelf, Is.False,
+                    "The authoritative defeat still removes the real heavy minion immediately.");
+                Assert.That(view.ActiveDefeatFadeCount, Is.EqualTo(1));
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(before.Coordinate),
+                    "The pushed wave must not move before the heavy minion's death is shown.");
+
+                view.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(before.Coordinate),
+                    "The attack gate holds both the death and the consequent wave movement.");
+
+                attackStillPlaying = false;
+                view.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
+
+                Assert.That(view.ActiveDefeatFadeCount, Is.Zero);
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(after.Coordinate),
+                    "After the heavy minion dies, the view catches up to the authoritative Lane Push.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(heavyObject);
+                Object.DestroyImmediate(waveObject);
+            }
+        }
+        [Test]
         public void MinionDefeatGhost_FadesItsOwnOpacity_WithoutMutatingTheRealMinionsSpriteRenderer()
         {
             var minionObject = new GameObject("Projected Minion");
@@ -380,7 +428,10 @@ namespace GuardsDigital.Tests.EditMode
             return hero;
         }
 
-        private static MinionOccupancy MinionState(string minionId, HexCoordinate coordinate) =>
+        private static MinionOccupancy MinionState(
+            string minionId,
+            HexCoordinate coordinate,
+            StandardMinionType type = StandardMinionType.Melee) =>
             MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
                 new MinionId(minionId),
                 new TeamId("blue-team"),

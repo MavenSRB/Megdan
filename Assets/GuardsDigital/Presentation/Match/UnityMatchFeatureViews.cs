@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
@@ -58,6 +59,11 @@ namespace GuardsDigital.Presentation.Match
         private readonly List<DefeatFadeGhostView> freeHeroDefeatGhosts = new List<DefeatFadeGhostView>();
         private readonly List<DefeatFadeGhostView> freeMinionDefeatGhosts =
             new List<DefeatFadeGhostView>();
+        // Milestone 9.87. Authority may already contain a completed Lane Push while its causal
+        // defeat is still being shown. These views retain only the old non-interactive positions
+        // until the defeat ghost finishes, then catch up to the latest projection.
+        private readonly Dictionary<StandardMinionView, MinionOccupancy> deferredMinionMoves =
+            new Dictionary<StandardMinionView, MinionOccupancy>();
 
         // Milestone 8.35z63. The one violet tint and the one hex mesh every Active-effect
         // disk is painted with, generated on first use so a board with nothing running allocates
@@ -1002,6 +1008,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void ReplaceMinionViews(IEnumerable<StandardMinionView> currentMinions)
         {
+            deferredMinionMoves.Clear();
             minions = Array.AsReadOnly((currentMinions ??
                     throw new ArgumentNullException(nameof(currentMinions)))
                 .Where(value => value != null)
@@ -1091,36 +1098,46 @@ namespace GuardsDigital.Presentation.Match
         private void RenderMinions(BoardInteractionViewModel model)
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
+            var startsDefeat = minions.Any(minion =>
+                minion.gameObject.activeSelf &&
+                minion.BoundMinionId.IsDefined &&
+                !projectedMinions.ContainsKey(minion.BoundMinionId));
+
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
                 if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
                 {
                     minion.gameObject.SetActive(true);
-                    // Milestone 8.35z6: see the hero loop's identical comment above.
                     ReleaseMinionDefeatGhost(minion);
-                    if (!ReferenceEquals(minion.Occupancy, state))
+                    var moved = minion.Occupancy != null &&
+                        !minion.Occupancy.Coordinate.Equals(state.Coordinate);
+                    if (deferredMinionMoves.ContainsKey(minion))
+                    {
+                        deferredMinionMoves[minion] = state;
+                    }
+                    else if (startsDefeat && moved)
+                    {
+                        deferredMinionMoves.Add(minion, state);
+                    }
+                    else if (!ReferenceEquals(minion.Occupancy, state))
                     {
                         minion.Configure(state, minion.OuterRadius);
                     }
 
-                    // Milestone 8.62: the same cue on the same terms as the hero loop's. A minion an
-                    // attack can take is the target a player most often has to find on a crowded
-                    // board.
                     ApplyPieceTargetCue(
                         minion, model, BoardObjectReference.ForMinion(state.MinionId));
                     minion.SetPickBadges(
                         TeammatePickersOf(model, BoardObjectReference.ForMinion(state.MinionId)));
-
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
+                    deferredMinionMoves.Remove(minion);
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
                     minion.SetPickBadges(null);
-                    // Milestone 8.35z6: see the hero loop's identical comment above.
                     if (minion.gameObject.activeSelf)
                     {
                         SpawnMinionDefeatGhost(minion);
@@ -1134,8 +1151,27 @@ namespace GuardsDigital.Presentation.Match
             {
                 throw new InvalidOperationException("The configured board has no view for a projected minion identity.");
             }
+
+            ReleaseDeferredMinionMovesIfReady();
         }
 
+        private void ReleaseDeferredMinionMovesIfReady()
+        {
+            if (minionDefeatGhosts.Count > 0 || deferredMinionMoves.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var pair in deferredMinionMoves)
+            {
+                if (pair.Key.gameObject.activeSelf)
+                {
+                    pair.Key.Configure(pair.Value, pair.Key.OuterRadius);
+                }
+            }
+
+            deferredMinionMoves.Clear();
+        }
         /// <summary>
         /// Milestone 6.2d: draws one piece per projected token and nothing else.
         ///
@@ -1677,6 +1713,7 @@ namespace GuardsDigital.Presentation.Match
             if (DeferDefeatFades?.Invoke() == true) return;
             AdvanceGhosts(heroDefeatGhosts, freeHeroDefeatGhosts, deltaSeconds);
             AdvanceGhosts(minionDefeatGhosts, freeMinionDefeatGhosts, deltaSeconds);
+            ReleaseDeferredMinionMovesIfReady();
         }
 
         private static void AdvanceGhosts<TKey>(

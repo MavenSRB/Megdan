@@ -906,3 +906,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.86 | Movement presentation follows every authoritative committed hex via a bounded public route and wire `/48`; Fast Travel remains direct. Offline 6866/6866 and focused Unity Edit Mode 88/88 passed. [Definition](../../Roadmap/PHASE_9.md#x-986-animate-movement-over-its-actual-resolved-route). | `milestone/9.86` |
+## Milestone 9.87 heavy defeat before Lane Push completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.87 | The authoritative defeated minion disappears immediately, its attack-gated death ghost plays, and surviving minion views reach the pushed coordinates only afterward. Focused Edit Mode passed 55/55 and rendered wave Play Mode passed 5/5. [Definition](../../Roadmap/PHASE_9.md#x-987-show-attack-heavy-minion-defeat-and-lane-push-in-causal-order). | `milestone/9.87` |
