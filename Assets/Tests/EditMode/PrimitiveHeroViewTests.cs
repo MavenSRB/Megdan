@@ -141,6 +141,12 @@ namespace GuardsDigital.Tests.EditMode
                     HeroCardStateIndicator.PipWidth) < Tolerance &&
                     Mathf.Abs(pip.GetChild(0).localScale.z - HeroCardStateIndicator.PipDepth) < Tolerance),
                     Is.True);
+                Assert.That(HeroCardStateIndicator.PipWidth, Is.EqualTo(0.18f),
+                    "the approved card width is 150% of the former 0.12");
+                Assert.That(HeroCardStateIndicator.PipDepth, Is.EqualTo(0.27f),
+                    "the approved card depth is 150% of the former 0.18");
+                Assert.That(HeroCardStateIndicator.PipSpacing, Is.EqualTo(0.22f),
+                    "the wider cards keep a visible gap without reaching the left-side shield");
                 Assert.That(HeroCardStateIndicator.PipDepth, Is.GreaterThan(HeroCardStateIndicator.PipWidth),
                     "The long axis runs radially, so every pip reads as an upright card.");
                 Assert.That(indicator.GetComponentsInChildren<Collider>(true), Is.Empty);

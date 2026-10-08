@@ -56,6 +56,29 @@ namespace GuardsDigital.Tests.EditMode
                 value.pickingMode == PickingMode.Ignore), Is.True);
         }
 
+        [TestCase(0, 70f)]
+        [TestCase(1, 93f)]
+        public void PanelHeightIncludesDividerSoTotalStaysInsideBackground(
+            int creepCount, float expectedHeight)
+        {
+            var contributions = Enumerable.Range(0, creepCount)
+                .Select(index => Project(new ValueContribution(
+                    ValueContributionKind.MinionDefenseModifier,
+                    new MinionId("creep-" + index),
+                    PrintedValueChannel.Defense,
+                    1), "Creep " + index))
+                .ToArray();
+            var view = new HeroDefenseModifierBreakdownUnityView();
+
+            view.Show(
+                new HeroDefenseModifierProjection(new HeroId("hero"), 1, contributions),
+                new Vector2(400f, 400f),
+                new Rect(0f, 0f, 1200f, 800f));
+
+            Assert.That(view.LastRect.height, Is.EqualTo(expectedHeight),
+                "the one-pixel divider and both four-pixel margins must be inside the panel");
+        }
+
         private static ValueContributionProjection Project(ValueContribution value, string label) =>
             new ValueContributionProjection(value, label);
 

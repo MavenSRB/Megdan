@@ -235,6 +235,10 @@ Completed 2026-10-08.
 
 Historical evidence: [9.92 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-992-item-aware-defense-shield-windows-package-completion).
 
+### [~] 9.93 Keep the Defense breakdown Total inside its panel and refresh the build
+
+Authorized 2026-10-08 from the user's packaged-player screenshots. The divider's one-pixel line and two four-pixel margins were omitted from the explicit panel-height calculation, so every `Total` row overflowed nine pixels below the dark background. Add exactly that missing height; enlarge the current-card pip above the token and every hand/concealed pip below it to 150% in both dimensions while retaining their existing radial centerline and tightening the lower arc enough to keep visible gaps without reaching the unchanged Defense shield; and raise the ping sender portrait from 0.42 to 0.48 scale without returning to the old oversized 0.62 treatment. Prove empty and one-creep layouts contain the Total, pin pip-to-pip and pip-to-shield separation, visually confirm the corrected real UI and larger ping owner, and cut a replacement private Windows package. Reuse prior behavior evidence and run only the focused panel/pip/ping regressions plus artifact-facing build/package checks; no offline harness or broad Unity suites. Preserve 9.92 and publish nothing.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.

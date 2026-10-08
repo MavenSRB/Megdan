@@ -458,17 +458,22 @@ namespace GuardsDigital.Tests.EditMode
             {
                 BoardChoiceCue.SetScreenUp(Quaternion.Euler(0f, cameraHeading, 0f) * Vector3.forward);
                 token.transform.rotation = Quaternion.Euler(0f, 25f, 0f);
+                var cameraObject = new GameObject("Shield and pip alignment camera");
+                owned.Add(cameraObject);
+                var alignmentCamera = cameraObject.AddComponent<Camera>();
+                alignmentCamera.transform.rotation = Quaternion.LookRotation(
+                    Vector3.down, BoardChoiceCue.ScreenUpInWorld);
                 var pips = HeroCardStateIndicator.GetOrCreate(token.transform);
                 pips.SetVisible(true, new HeroCardPip(CardColor.Blue),
                     new[] { CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green }
-                        .Select(color => new HeroCardPip(color)), 0, 1f, 0.15f);
+                        .Select(color => new HeroCardPip(color)), 0, 1f, 0.15f, alignmentCamera);
                 var pipPositions = pips.Renderers.Select(value => value.transform.position).ToArray();
                 var pipColours = pips.Renderers.Select(value => value.sharedMaterial.color).ToArray();
                 // Each pip has an outer and inner renderer; hand pips follow the current pip.
                 for (var pipIndex = 1; pipIndex < 4; pipIndex++)
                     Assert.That(Vector3.Distance(pipPositions[pipIndex * 2], pipPositions[(pipIndex + 1) * 2]),
-                        Is.EqualTo(0.28f).Within(0.001f),
-                        "Unchanged 0.24-unit card pips have a visible 0.04-unit gap.");
+                        Is.EqualTo(HeroCardStateIndicator.PipSpacing).Within(0.001f),
+                        "Every enlarged lower card keeps a visible gap from its neighbour.");
                 var shield = HeroDefenseModifierShield.GetOrCreate(token.transform);
                 shield.SetVisible(-2, 1f, 0.15f);
                 var mesh = shield.GetComponent<MeshFilter>().sharedMesh;
@@ -479,10 +484,26 @@ namespace GuardsDigital.Tests.EditMode
                 var pipOffset = pipPositions[0] - token.transform.position;
                 var pipRimRadius = new Vector2(pipOffset.x, pipOffset.z).magnitude;
                 Assert.That(Vector3.Dot(offset, left), Is.EqualTo(pipRimRadius).Within(0.001f),
-                    "The shield center straddles the same token rim centerline as the card pips.");
+                    "The enlarged cards retain their existing rim centerline beside the shield.");
                 Assert.That(Vector3.Dot(offset, left),
                     Is.EqualTo(HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f));
                 Assert.That(Vector3.Dot(offset, BoardChoiceCue.ScreenUpInWorld), Is.EqualTo(0f).Within(0.001f));
+                var shieldRadius = Mathf.Sqrt(
+                    HeroDefenseModifierShield.HalfWidthFactor * HeroDefenseModifierShield.HalfWidthFactor +
+                    HeroDefenseModifierShield.HeightFactor * HeroDefenseModifierShield.HeightFactor * 0.25f);
+                var pipRadius = Mathf.Sqrt(
+                    HeroCardStateIndicator.PipWidth * HeroCardStateIndicator.PipWidth +
+                    HeroCardStateIndicator.PipDepth * HeroCardStateIndicator.PipDepth) * 0.5f;
+                foreach (var entry in pips.Renderers.Where((_, index) => index % 2 == 0)
+                             .Select((pip, index) => (pip, index)))
+                {
+                    var separation = entry.pip.transform.position - shield.transform.position;
+                    Assert.That(new Vector2(separation.x, separation.z).magnitude,
+                        Is.GreaterThan(shieldRadius + pipRadius),
+                        $"No enlarged card pip may overlap the left-side shield (pip {entry.index}, " +
+                        $"heading {cameraHeading}, pip {entry.pip.transform.position}, " +
+                        $"shield {shield.transform.position}).");
+                }
                 for (var i = 0; i < 20; i++)
                 {
                     shield.SetHidden();

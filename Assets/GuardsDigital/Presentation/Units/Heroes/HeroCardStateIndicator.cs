@@ -30,12 +30,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
     {
         public const int OverlayRenderQueue = 4000;
         public const int OverlaySortingOrder = 100;
-        public const float PipWidth = 0.12f;
-        public const float PipDepth = 0.18f;
-        public const float PipSpacing = 0.28f;
+        public const float PipWidth = 0.18f;
+        public const float PipDepth = 0.27f;
+        public const float PipSpacing = 0.22f;
         public const float PipGap = PipSpacing - PipWidth;
-        private const float InnerWidth = 0.08f;
-        private const float InnerDepth = 0.14f;
+        private const float InnerWidth = 0.12f;
+        private const float InnerDepth = 0.21f;
 
         private readonly List<GameObject> pips = new List<GameObject>();
         private readonly List<HeroCardPip> models = new List<HeroCardPip>();

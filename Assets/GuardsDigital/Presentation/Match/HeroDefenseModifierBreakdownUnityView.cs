@@ -14,6 +14,7 @@ namespace GuardsDigital.Presentation.Match
         public const float PointerGap = 16f;
         public const float SafeMargin = 8f;
         private const float RowHeight = 23f;
+        private const float TotalDividerHeight = 9f;
 
         public HeroDefenseModifierBreakdownUnityView()
         {
@@ -64,7 +65,7 @@ namespace GuardsDigital.Presentation.Match
 
             var height = 9f + 15f + 5f +
                 (model.Contributions.Count(value => value.Kind != ValueContributionKind.ItemModifier) +
-                 (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + 9f;
+                 (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + TotalDividerHeight + 9f;
             LastRect = CalculateRect(panelPointer, safeRegion, height);
             Root.style.left = LastRect.x;
             Root.style.top = LastRect.y;

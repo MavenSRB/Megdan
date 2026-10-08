@@ -17,7 +17,7 @@ namespace GuardsDigital.Presentation.Match
         public const float PingWaveLineWidth = 4.5f;
 
         /// <summary>Milestone 9.89. The restored ping owner is smaller than 9.58's 0.62-scale badge.</summary>
-        public const float PingOwnerPortraitScale = 0.42f;
+        public const float PingOwnerPortraitScale = 0.48f;
 
         private const float PingOwnerPortraitGap = 4f;
 

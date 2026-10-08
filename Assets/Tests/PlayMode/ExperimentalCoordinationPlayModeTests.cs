@@ -57,6 +57,8 @@ namespace GuardsDigital.Tests.PlayMode
                 token.pickingMode == PickingMode.Ignore &&
                 token.resolvedStyle.width < 30f && token.resolvedStyle.height < 30f),
                 "Ping tokens are smaller than the former 34.72-unit badges and never block the board.");
+            Assert.That(TeammateSignalsUnityView.PingOwnerPortraitScale, Is.EqualTo(0.48f),
+                "the sender token is a modest step up from 0.42 without returning to the old 0.62 size");
             var tileScreen = pointer.EventCamera.WorldToScreenPoint(tile.transform.position);
             var tilePanel = RuntimePanelUtils.ScreenToPanel(pingOwners.panel,
                 new Vector2(tileScreen.x, Screen.height - tileScreen.y));
