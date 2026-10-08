@@ -44,6 +44,26 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(root.Hud.RootElement.Query<VisualElement>("teammate-hex-outline").ToList().Count, Is.EqualTo(1),
                     "All senders share one segmented perimeter.");
             }
+            var pingOwners = root.Hud.RootElement.Q("teammate-hex-owners");
+            var pingTokens = pingOwners.Query<VisualElement>("gd-hero-medallion").ToList();
+            var alliedSenders = host.Seats.Seats.Where(s => s.TeamSide == seat.TeamSide)
+                .OrderBy(s => s.HeroId.Value, System.StringComparer.Ordinal).ToArray();
+            Assert.That(pingTokens.Count, Is.EqualTo(alliedSenders.Length),
+                "Every distinct allied sender keeps one small token when several players ping one hex.");
+            Assert.That(pingTokens.Select(token => ((HeroOverviewViewModel)token.userData).HeroId),
+                Is.EqualTo(alliedSenders.Select(sender => sender.HeroId)),
+                "The shared row is stable in sender order.");
+            Assert.That(pingTokens, Has.All.Matches<VisualElement>(token =>
+                token.pickingMode == PickingMode.Ignore &&
+                token.resolvedStyle.width < 30f && token.resolvedStyle.height < 30f),
+                "Ping tokens are smaller than the former 34.72-unit badges and never block the board.");
+            var tileScreen = pointer.EventCamera.WorldToScreenPoint(tile.transform.position);
+            var tilePanel = RuntimePanelUtils.ScreenToPanel(pingOwners.panel,
+                new Vector2(tileScreen.x, Screen.height - tileScreen.y));
+            Assert.That(pingOwners.worldBound.yMax, Is.LessThan(tilePanel.y),
+                "The sender row sits on top of the ping instead of covering its centre.");
+            Assert.That(TeammateSignalsUnityView.PingSteadyLineWidth, Is.GreaterThan(2f));
+            Assert.That(TeammateSignalsUnityView.PingWaveLineWidth, Is.GreaterThan(2.5f));
             var before = host.Version;
             pointer.RefreshHoverFromPointerRay(pointer.EventCamera.ScreenPointToRay(pointer.EventCamera.WorldToScreenPoint(tile.transform.position)));
             Assert.That(runtime.ShareCursor(tile.Coordinate), Is.True);
@@ -184,7 +204,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(pointer.TrySuggestAtScreen(screen), Is.True);
             yield return null; yield return null;
             Assert.That(root.Hud.RootElement.Q("teammate-hex-outline"), Is.Not.Null);
-            Assert.That(root.Hud.RootElement.Q("teammate-hex-owners").childCount, Is.Zero, "Pings use coloured edges, never moving portraits.");
+            Assert.That(root.Hud.RootElement.Q("teammate-hex-owners").childCount, Is.EqualTo(1),
+                "A single ping restores its sender token above the existing animated edge treatment.");
             Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(originalMaterial));
             Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
             Assert.That(runtime.SelectViewedHero(ally.HeroId), Is.True);

@@ -918,3 +918,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.88 | Stamped main `a67c5a49` produced the private `Playtest-9.88-integrated` Windows folder and ZIP at wire `/48` and schema 59. Unfiltered Edit passed 8009 plus 37 established Explicit skips; final Play passed 1175/1175; exact-player launch, board and host-plus-two-client smokes passed. All 184 ZIP files match the loose package byte-for-byte, packaged launch passed, and SHA-256 is `5a2d0315cd3a4c608dd0211ff1226d50e78c51caef98b3e7ed54c5a9e4cdc722`. [Definition](../../Roadmap/PHASE_9.md#x-988-validate-and-package-the-integrated-windows-playtest-build). | `milestone/9.88` |
+
+## Milestone 9.89 ping and End Turn cue completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.89 | Existing outward ping animation with a heavier perimeter, compact stable-order sender tokens above shared hexes, and the existing End Turn pulse extended across its full face at a modestly faster cadence. The End Turn regression failed then passed; affected Edit passed 29/29 and Play passed 6/6; fresh real-game captures were visually reviewed. [Definition](../../Roadmap/PHASE_9.md#x-989-strengthen-teammate-pings-and-the-end-turn-release-flash). | `milestone/9.89` |

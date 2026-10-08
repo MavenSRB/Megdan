@@ -11,6 +11,16 @@ namespace GuardsDigital.Presentation.Match
     /// <summary>Pointer-transparent communication overlays, independent of every rules highlight.</summary>
     public sealed class TeammateSignalsUnityView : MonoBehaviour
     {
+        /// <summary>Milestone 9.89. Ping perimeters are intentionally heavier than cursor and vote lines.</summary>
+        public const float PingSteadyLineWidth = 4f;
+
+        public const float PingWaveLineWidth = 4.5f;
+
+        /// <summary>Milestone 9.89. The restored ping owner is smaller than 9.58's 0.62-scale badge.</summary>
+        public const float PingOwnerPortraitScale = 0.42f;
+
+        private const float PingOwnerPortraitGap = 4f;
+
         private ConfiguredMatchSceneRuntime runtime;
         private Camera boardCamera;
         private HexTileView[] tiles;
@@ -129,8 +139,15 @@ namespace GuardsDigital.Presentation.Match
                 }
                 var centre = PanelPoint(signal.Tile.transform.position);
                 signal.Centre = centre;
-                signal.Badges.style.left = centre.x - signal.Badges.childCount * 17.36f;
-                signal.Badges.style.top = signal.Points.Min(p => p.y) - 31;
+                var badgeWidth = signal.Badges.resolvedStyle.width;
+                if (float.IsNaN(badgeWidth) || badgeWidth <= 0f)
+                    badgeWidth = signal.Badges.Children().Sum(badge => badge.style.width.value.value);
+                var badgeHeight = signal.Badges.resolvedStyle.height;
+                if (float.IsNaN(badgeHeight) || badgeHeight <= 0f)
+                    badgeHeight = signal.Badges.Children()
+                        .Select(badge => badge.style.height.value.value).DefaultIfEmpty(0f).Max();
+                signal.Badges.style.left = centre.x - badgeWidth * 0.5f;
+                signal.Badges.style.top = signal.Points.Min(p => p.y) - badgeHeight - PingOwnerPortraitGap;
                 signal.Ring.MarkDirtyRepaint();
             }
         }
@@ -152,12 +169,19 @@ namespace GuardsDigital.Presentation.Match
                 signal.Ring.generateVisualContent += context => PaintSignal(context, signal);
                 signal.Badges.style.position = Position.Absolute;
                 signal.Badges.style.flexDirection = FlexDirection.Row;
-                // Timer votes keep their existing portrait language; cursors/pings use coloured edges only.
-                if (vote) foreach (var marker in owners)
+                signal.Badges.style.alignItems = Align.Center;
+                signal.Badges.style.justifyContent = Justify.Center;
+                // Timer votes retain their existing size. Milestone 9.89 restores the earlier ping-owner
+                // portraits at a smaller scale; stable owner ordering above keeps several senders in one row.
+                if (vote || !cursor) foreach (var marker in owners)
                 {
                     var hero = runtime.HeroOverviewsView?.Model?.Heroes.FirstOrDefault(h => h.HeroId.Equals(marker.Sender));
                     if (hero == null) continue;
-                    var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(hero, MatchHudTheme.TeamFace(hero.TeamSide), 0.62f);
+                    var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(
+                        hero,
+                        MatchHudTheme.TeamFace(hero.TeamSide),
+                        vote ? 0.62f : PingOwnerPortraitScale);
+                    badge.userData = hero;
                     badge.pickingMode = PickingMode.Ignore;
                     foreach (var child in badge.Children()) child.pickingMode = PickingMode.Ignore;
                     signal.Badges.Add(badge);
@@ -185,8 +209,11 @@ namespace GuardsDigital.Presentation.Match
                     painter.LineTo(signal.Centre + (signal.Points[(edge + 1) % 6] - signal.Centre) * scale);
                     painter.Stroke();
                 }
-                Stroke(signal.Vote ? 1.07f : baseline, signal.Cursor ? 0.55f : 0.9f, 2f);
-                if (!signal.Vote) Stroke(wave, (1f - phase) * settings.IntensityPercent / 100f, 2.5f);
+                var steadyWidth = !signal.Cursor && !signal.Vote ? PingSteadyLineWidth : 2f;
+                Stroke(signal.Vote ? 1.07f : baseline, signal.Cursor ? 0.55f : 0.9f, steadyWidth);
+                if (!signal.Vote)
+                    Stroke(wave, (1f - phase) * settings.IntensityPercent / 100f,
+                        signal.Cursor ? 2.5f : PingWaveLineWidth);
             }
         }
 

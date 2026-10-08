@@ -205,13 +205,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 9.28, the user on 8.35g's release pause: "their end turn button should start
-        /// flashing". A control whose press releases a finished turn wears a blood-red ring outside
-        /// its face - never over it, so "END TURN" stays readable - in place of the gold sole-action
-        /// outline; any other END TURN does not flash.
+        /// Milestone 9.28, amended by 9.89. A control whose press releases a finished turn wears a
+        /// blood-red ring outside its face and the approved translucent treatment across the whole
+        /// face, in place of the gold sole-action outline; any other END TURN does not flash.
         /// </summary>
         [Test]
-        public void EndTurn_ThatReleasesAFinishedTurn_FlashesBloodRedOutsideItsFace()
+        public void EndTurn_ThatReleasesAFinishedTurn_FlashesBloodRedAcrossItsWholeFace()
         {
             RoundActionViewModel With(TypedInvocationViewModel invocation) => new RoundActionViewModel(
                 1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
@@ -231,6 +230,16 @@ namespace GuardsDigital.Tests.EditMode
                 "The board's own blood red, the colour the user settled at 8.62.");
             Assert.That(flash.style.left.value.value, Is.LessThan(0f), "Outside the face, not over it.");
             Assert.That(flash.style.top.value.value, Is.LessThan(0f));
+            var fill = flash.Q("gd-end-turn-flash-fill");
+            Assert.That(fill, Is.Not.Null, "The same pulse covers the whole button face, not only its outline.");
+            Assert.That(fill.pickingMode, Is.EqualTo(PickingMode.Ignore));
+            Assert.That(fill.style.backgroundColor.value.r, Is.EqualTo(BoardTargetRing.BloodRedColor.r).Within(0.0001f));
+            Assert.That(fill.style.backgroundColor.value.g, Is.EqualTo(BoardTargetRing.BloodRedColor.g).Within(0.0001f));
+            Assert.That(fill.style.backgroundColor.value.b, Is.EqualTo(BoardTargetRing.BloodRedColor.b).Within(0.0001f));
+            Assert.That(fill.style.backgroundColor.value.a, Is.InRange(0.25f, 0.5f),
+                "The face remains translucent enough to keep END TURN readable.");
+            Assert.That(RoundActionUnityView.EndTurnFlashHalfPeriodMs, Is.LessThan(400),
+                "The approved pulse is modestly faster than 9.28's 800 ms cycle.");
             Assert.That(control.Q("gd-end-turn-shine"), Is.Null,
                 "The flash takes the gold outline's place rather than ringing the control twice.");
 

@@ -250,6 +250,16 @@ Completed 2026-10-08.
 
 Historical evidence: [9.88 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-988-integrated-windows-package-completion).
 
+### [x] 9.89 Strengthen teammate pings and the End Turn release flash
+
+Authorized 2026-10-08 after the user's approval of real-UI mockups. Outcome: teammate pings keep 9.81's existing outward ripple animation, use a thicker steady and animated perimeter, and restore a smaller sender hero token centred above the pinged hex; when several allied players ping the same hex, every distinct sender token appears once in stable sender order without blocking the board. A finished turn's existing blood-red End Turn pulse keeps the same eased animation, adds the approved translucent blood-red treatment across the whole button face, and runs modestly faster than 9.28's 800 ms cycle. Presentation only: coordination authority, revisions, wire `/48`, schema 59, gameplay state and input remain unchanged. Closing check: the live coordination Play Mode case proves one shared perimeter with every sender token, stable order, smaller dimensions, above-hex placement and pointer transparency; the End Turn treatment regression proves the full-face fill, existing outer border and shorter period; the composed finished-turn Play Mode case proves the pulse still reaches lit/dark states and stops on release. T2 with visual inspection.
+
+Result: the existing ping phase, scale, alpha and host-controlled period/intensity are unchanged; only its steady/animated strokes grow from 2/2.5 to 4/4.5 units. Each distinct sender now contributes the former shared hero medallion at 0.42 scale to a pointer-transparent, stable-order row centred four units above the ping. End Turn retains its scheduled ease-in-out opacity pulse, adds a 38%-alpha blood-red face inside the existing outside ring, and shortens the cycle from 800 to 650 ms. The new End Turn regression failed on the base at the absent face fill and passed after; directly affected Edit Mode passed 29/29 and Play Mode passed 6/6. Fresh real-game captures of a three-sender ping and the lit End Turn phase were visually reviewed; both labels and board state remain readable. No rule, coordination authority, snapshot, wire, package or publication change.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.89 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-989-ping-and-end-turn-cue-completion).
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.

@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot 
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.88**.
+- Current completed milestone: **9.89**.
 
 - Active authorized milestone: **none**.
 - Authorized sequence: **9.85 -> 9.86 -> 9.87 -> 9.88**, approved 2026-10-08: replace the six player accents with warm red/orange/yellow and cool blue/cyan/teal; animate Movement over the authoritative resolved route; show attack, heavy-minion defeat, then Lane Push in that order; validate and cut the integrated Windows package. Execute serially with separate validation and local commits.

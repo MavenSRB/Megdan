@@ -1988,6 +1988,8 @@ namespace GuardsDigital.Presentation.Match
 
         public const string EndTurnFlashName = "gd-end-turn-flash";
 
+        public const string EndTurnFlashFillName = "gd-end-turn-flash-fill";
+
         /// <summary>Milestone 9.28. How far the flash stands outside the control, in reference units.</summary>
         public const float EndTurnFlashOutset = 5f;
 
@@ -1995,10 +1997,11 @@ namespace GuardsDigital.Presentation.Match
         public const float EndTurnFlashWidth = 5f;
 
         /// <summary>
-        /// Milestone 9.28. Half of one flash: lit this long, then dark this long. 0.8 s a cycle, well
-        /// under the three flashes a second above which a flashing light becomes a hazard.
+        /// Milestone 9.28, modestly accelerated by 9.89. Half of one flash: lit this long, then dark
+        /// this long. The eased 0.65 s cycle remains well under the three flashes a second above which
+        /// a flashing light becomes a hazard.
         /// </summary>
-        public const long EndTurnFlashHalfPeriodMs = 400;
+        public const long EndTurnFlashHalfPeriodMs = 325;
 
         /// <summary>Milestone 9.28. How long each lit-to-dark change takes, so it pulses rather than strobes.</summary>
         public const long EndTurnFlashEaseMs = 150;
@@ -2007,10 +2010,10 @@ namespace GuardsDigital.Presentation.Match
         public const float EndTurnFlashFloorOpacity = 0.12f;
 
         /// <summary>
-        /// Milestone 9.28. The blood-red ring around a control that releases the turn. It sits
-        /// outside the shared chrome and never over the face, as 8.30d's sole-action outline does, so
-        /// "END TURN" stays readable at every point of the flash; it takes no pointer. The red is the
-        /// board's own blood red (8.62), the one the user settled for "this is what to act on".
+        /// Milestone 9.28, amended by 9.89. The blood-red ring around a control that releases the
+        /// turn keeps its existing eased pulse and now carries the approved translucent face overlay.
+        /// It takes no pointer. The red is the board's own blood red (8.62), the one the user settled
+        /// for "this is what to act on".
         ///
         /// <para>It flashes on the element's own scheduler, which UI Toolkit runs only while the
         /// element is on a panel, so a control the HUD rebuilds or removes stops its flash with it and
@@ -2031,6 +2034,25 @@ namespace GuardsDigital.Presentation.Match
             flash.style.bottom = -EndTurnFlashOutset;
             HudElements.Border(flash, BoardTargetRing.BloodRedColor, EndTurnFlashWidth,
                 MatchHudTheme.ButtonCornerRadius + EndTurnFlashOutset);
+            var fillColour = BoardTargetRing.BloodRedColor;
+            fillColour.a = 0.38f;
+            var fill = new VisualElement
+            {
+                name = EndTurnFlashFillName,
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            fill.style.position = Position.Absolute;
+            fill.style.left = EndTurnFlashOutset;
+            fill.style.right = EndTurnFlashOutset;
+            fill.style.top = EndTurnFlashOutset;
+            fill.style.bottom = EndTurnFlashOutset;
+            fill.style.backgroundColor = fillColour;
+            fill.style.borderTopLeftRadius = MatchHudTheme.ButtonCornerRadius;
+            fill.style.borderTopRightRadius = MatchHudTheme.ButtonCornerRadius;
+            fill.style.borderBottomLeftRadius = MatchHudTheme.ButtonCornerRadius;
+            fill.style.borderBottomRightRadius = MatchHudTheme.ButtonCornerRadius;
+            flash.Add(fill);
             flash.style.opacity = 1f;
             flash.style.transitionProperty = new List<StylePropertyName> { new StylePropertyName("opacity") };
             flash.style.transitionDuration = new List<TimeValue> { new TimeValue(EndTurnFlashEaseMs, TimeUnit.Millisecond) };

@@ -76,7 +76,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// Milestone 9.28, on the composed scene: a turn that has finished resolving and waits on its
         /// own player's END TURN says so in the banner, and its END TURN control flashes on the live
         /// panel - really alternating, which only a panel's own scheduler can show - until the press
-        /// lands, when both stop at once. The frames go to <c>tmp/928-captures</c> for the user.
+        /// lands, when both stop at once. Milestone 9.89 adds the full-face treatment to that same
+        /// scheduled pulse and modestly shortens its period. The frames go to
+        /// <c>tmp/928-captures</c> for the user.
         /// </summary>
         [UnityTest]
         public IEnumerator AFinishedTurn_SaysEndTurnAndFlashesItsControl_UntilReleased()
