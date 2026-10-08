@@ -930,3 +930,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.90 | Stamped main `88b89399` produced private `Playtest-9.90-ping-endturn` at wire `/48` and schema 59. Per explicit user direction, it reused 9.89's focused 29/29 Edit and 6/6 Play evidence without rerunning the offline harness or unfiltered suites. Exact-player build/launch, board and packaged-executable smokes passed; all 184 ZIP files match the loose package byte-for-byte, and SHA-256 is `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`. [Definition](../../Roadmap/PHASE_9.md#x-990-package-the-ping-and-end-turn-cue-update-without-broad-suite-reruns). | `milestone/9.90` |
+
+## Milestone 9.91 item-aware Defense shield completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.91 | The unchanged small token shield sums authoritative effect-adjusted creep and Defense-item modifiers. Ordinary hover is quiet; Shift over the hero token shows one row per creep/effective creep source, aggregated items and total while enabling the existing contributor cues. Public detail advances the private wire to `/49`; schema 59 is unchanged. Focused projection/wire passed 16/16, affected Edit passed 46/46, and the rendered in-game journey passed 1/1 with fresh full-frame visual inspection. [Definition](../../Roadmap/PHASE_9.md#x-991-make-the-token-defense-shield-item-aware-with-shift-only-detail). | `milestone/9.91` |

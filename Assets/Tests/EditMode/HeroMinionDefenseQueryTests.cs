@@ -51,6 +51,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingAttackTargetDefensePreviews, Is.Empty);
             var result = HeroMinionDefenseQuery.Create(session.Projection);
             Assert.That(result.Count, Is.EqualTo(session.Projection.Heroes.Count));
+            Assert.That(session.Projection.HeroDefenseModifiers.Count,
+                Is.EqualTo(session.Projection.Heroes.Count));
             Assert.That(result.Single(value => value.HeroId.Equals(blue) && value.HeroBody == 1)
                 .MinionContributions.Any(value => value.SourceMinionId.Equals(support)), Is.False);
             Assert.That(result.Single(value => value.HeroId.Equals(blue) && value.HeroBody == 2)
@@ -66,15 +68,19 @@ namespace GuardsDigital.Tests.EditMode
             var session = HeroBodiesBoard.CreateSession(out _, out _, out _);
             var host = new MatchHost(session);
             var expected = Describe(host.Projection);
+            var expectedModifiers = DescribeModifiers(host.Projection);
             foreach (var seat in host.Seats.Seats)
             {
                 var local = host.ProjectionForSeat(seat.Id);
                 Assert.That(Describe(local), Is.EqualTo(expected));
+                Assert.That(DescribeModifiers(local), Is.EqualTo(expectedModifiers));
                 Assert.That(NetworkSeatProjectionCodec.TryDecode(
                     NetworkSeatProjectionCodec.Encode(local), out var record), Is.True);
                 var remote = new NetworkMatchReadModel(
                     host.Projection, MatchContentCatalogs.ForThisBuild(), record, inputEnabled);
                 Assert.That(Describe(remote), Is.EqualTo(expected));
+                Assert.That(DescribeModifiers(remote), Is.EqualTo(expectedModifiers),
+                    "protocol /49 carries the public item-and-creep modifier rows");
                 Assert.That(remote.PendingAttackTargetDefensePreviews, Is.Empty);
             }
         }
@@ -111,5 +117,10 @@ namespace GuardsDigital.Tests.EditMode
             HeroMinionDefenseQuery.Create(projection).Select(hero =>
                 hero.HeroId.Value + "/" + hero.HeroBody + ":" + string.Join(",",
                     hero.MinionContributions.Select(value => value.SourceMinionId.Value + "=" + value.Amount))));
+
+        private static string DescribeModifiers(IMatchReadModel projection) => string.Join("|",
+            projection.HeroDefenseModifiers.Select(hero =>
+                hero.HeroId.Value + "/" + hero.HeroBody + ":" + string.Join(",",
+                    hero.Contributions.Select(value => value.Kind + "/" + value.SourceLabel + "=" + value.Amount))));
     }
 }

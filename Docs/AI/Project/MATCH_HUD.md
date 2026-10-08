@@ -8,7 +8,7 @@ Canonical active shard for the configured match panel, standing regions, card tr
 
 ## The panel and its regions
 
-Every surface above sits on one runtime UI Toolkit panel, by the recorded user decision. `ConfiguredMatchHudRenderer` owns the drawing surface and holds no session: it creates the panel and its layout in code, lays out five absolutely-placed regions from pure functions of the viewport, and answers where the pointer is blocked from live element bounds with those rects as the fallback.
+Every surface sits on one runtime UI Toolkit panel. `ConfiguredMatchHudRenderer` owns the session-free drawing surface: code lays out five absolute regions from viewport functions and answers pointer blocking from live bounds, with those rects as fallback.
 
 Unity's text shaper ships ICU data only when the build contains a `PanelSettings` asset; the committed `Assets/Resources/UI/GuardsRuntimePanelSettings.asset` supplies it, `Instantiate`d so per-panel values stay runtime-only, its `m_ICUDataAsset` empty because asset presence carries the data. Layout stays code-owned behind `I*View`.
 

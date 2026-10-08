@@ -524,6 +524,7 @@ namespace GuardsDigital.Presentation.Match
         private MatchHudHeaderViewModel header;
         private RuntimeTooltipLayer tooltipLayer;
         private HeroCardPipPreviewUnityView cardPipPreview;
+        private HeroDefenseModifierBreakdownUnityView defenseModifierBreakdown;
 
         /// <summary>
         /// Raised whenever layout assigns the playable hexes their safe L-shaped surface. The board
@@ -580,6 +581,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The panel this HUD draws on, for a test that needs to look at the built tree.</summary>
         public VisualElement RootElement => root;
         public HeroCardPipPreviewUnityView CardPipPreview => cardPipPreview;
+        public HeroDefenseModifierBreakdownUnityView DefenseModifierBreakdown => defenseModifierBreakdown;
 
         /// <summary>
         /// Whether a panel-space point is on the board surface accepted by the commitment drag.
@@ -618,6 +620,26 @@ namespace GuardsDigital.Presentation.Match
         {
             cardPipPreview?.Hide();
         }
+
+        public void ShowDefenseModifierBreakdown(
+            HeroDefenseModifierProjection model, Vector2 screenPosition)
+        {
+            if (defenseModifierBreakdown == null || root == null || model == null || victoryScreenStanding)
+            {
+                HideDefenseModifierBreakdown();
+                return;
+            }
+
+            var viewport = PanelViewport;
+            var panelPoint = MatchHudPanelScaling.ScreenToPanelPoint(
+                screenPosition, Screen.width, Screen.height);
+            var safe = CameraSafeLayout.IsValid
+                ? CameraSafeLayout.UpperRegion
+                : new Rect(0f, 0f, viewport.x, viewport.y);
+            defenseModifierBreakdown.Show(model, panelPoint, safe);
+        }
+
+        public void HideDefenseModifierBreakdown() => defenseModifierBreakdown?.Hide();
 
         public void Configure(
             DirectorHandsUnityView handsView,
@@ -1453,6 +1475,8 @@ namespace GuardsDigital.Presentation.Match
 
             cardPipPreview = new HeroCardPipPreviewUnityView();
             root.Add(cardPipPreview.Root);
+            defenseModifierBreakdown = new HeroDefenseModifierBreakdownUnityView();
+            root.Add(defenseModifierBreakdown.Root);
 
             // Milestone 8.35z19 (placeholder id). Added LAST, after every other surface,
             // so its popup always paints above whatever it is explaining - a drop-down, a hover
@@ -1647,6 +1671,7 @@ namespace GuardsDigital.Presentation.Match
             // instead of merely hiding it, so Restart cannot resurrect a stale modal window.
             heroOverviews?.CardInspection.Close();
             cardPipPreview?.Hide();
+            defenseModifierBreakdown?.Hide();
 
             foreach (var child in root.Children())
             {

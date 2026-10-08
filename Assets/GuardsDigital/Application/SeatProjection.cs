@@ -1045,6 +1045,7 @@ namespace GuardsDigital.Application
             RemainingWaveCounters = source.RemainingWaveCounters;
             TeamVictoryTallies = source.TeamVictoryTallies;
             HeroProgression = source.HeroProgression;
+            HeroDefenseModifiers = source.HeroDefenseModifiers;
             Outcome = source.Outcome;
             OwnCards = ownCards;
             PublicCards = publicCards;
@@ -1120,6 +1121,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
 
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+        public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
 
         /// <summary>
         /// Milestone 8.53. The match scoreboard - identical to every other seat's and to the

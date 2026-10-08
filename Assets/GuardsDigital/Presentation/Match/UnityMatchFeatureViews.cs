@@ -39,6 +39,8 @@ namespace GuardsDigital.Presentation.Match
         private int hoveredHeroBody;
         private Func<HeroId, int, bool> heroBodyIntentHandler;
         private HeroId interfaceHoveredHeroId;
+        private HeroId defenseDetailHeroId;
+        private int defenseDetailHeroBody;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
@@ -941,6 +943,19 @@ namespace GuardsDigital.Presentation.Match
             ApplyHoveredHero();
         }
 
+        public HeroDefenseModifierProjection FindDefenseModifier(HeroId heroId, int body) =>
+            Model?.HeroDefenseModifiers.FirstOrDefault(value =>
+                value.HeroId.Equals(heroId) && value.HeroBody == body);
+
+        public void SetDefenseDetailTarget(HeroId heroId, int body)
+        {
+            var nextBody = heroId.IsDefined ? body : 0;
+            if (defenseDetailHeroId.Equals(heroId) && defenseDetailHeroBody == nextBody) return;
+            defenseDetailHeroId = heroId;
+            defenseDetailHeroBody = nextBody;
+            if (Model != null) Render(Model, true);
+        }
+
         /// <summary>
         /// Milestone 8.35n (the FOURTH amendment): every viewer's board marks the acting hero's own
         /// piece with a distinct ring, and clears the moment no actor stands. One marker serves the
@@ -1021,39 +1036,21 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        private (HeroId HeroId, int Body) HoveredDefenseTarget(BoardInteractionViewModel model)
-        {
-            if (interfaceHoveredHeroId.IsDefined)
-            {
-                return (interfaceHoveredHeroId, 0);
-            }
-
-            if (!hoveredCoordinate.HasValue)
-            {
-                return (default, 0);
-            }
-
-            var occupancy = model.Heroes.FirstOrDefault(value =>
-                value.Coordinate.Equals(hoveredCoordinate.Value));
-            return occupancy.HeroId.IsDefined
-                ? (occupancy.HeroId, occupancy.Body)
-                : (default, 0);
-        }
         private IReadOnlyList<MinionDefenseCueViewModel> HoveredDefenseCues(
             BoardInteractionViewModel model)
         {
-            var hoveredTarget = HoveredDefenseTarget(model);
-            var previewHeroId = hoveredTarget.HeroId;
-            var previewBody = hoveredTarget.Body;
+            var previewHeroId = defenseDetailHeroId;
+            var previewBody = defenseDetailHeroBody;
             if (!previewHeroId.IsDefined)
             {
                 return Array.Empty<MinionDefenseCueViewModel>();
             }
 
-            var contributions = model.HeroDefensePreviews
+            var contributions = model.HeroDefenseModifiers
                 .Where(value => value.HeroId.Equals(previewHeroId) &&
                     (previewBody < HeroOccupancy.FirstBody || value.HeroBody == previewBody))
-                .SelectMany(value => value.MinionContributions)
+                .SelectMany(value => value.Contributions)
+                .Where(value => value.SourceMinionId.IsDefined)
                 .GroupBy(value => value.SourceMinionId)
                 .Select(group =>
                 {
@@ -1088,11 +1085,11 @@ namespace GuardsDigital.Presentation.Match
             {
                 var preview = !hero.gameObject.activeSelf
                         ? null
-                        : model.HeroDefensePreviews.FirstOrDefault(value =>
+                        : model.HeroDefenseModifiers.FirstOrDefault(value =>
                             value.HeroId.Equals(hero.Occupancy.HeroId) && value.HeroBody == hero.Body);
                 hero.SetDefenseModifierShield(preview == null
                     ? (int?)null
-                    : preview.MinionContributions.Sum(value => value.Amount));
+                    : preview.Total);
             }
         }
         private void RenderMinions(BoardInteractionViewModel model)

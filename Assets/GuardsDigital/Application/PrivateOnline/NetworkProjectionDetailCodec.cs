@@ -119,6 +119,14 @@ namespace GuardsDigital.Application
                 writer.Write(projection.UndoMarker.HeroId.Value);
                 writer.Write(projection.UndoMarker.Count);
             }
+
+            writer.Write(projection.HeroDefenseModifiers.Count);
+            foreach (var modifier in projection.HeroDefenseModifiers)
+            {
+                writer.Write(modifier.HeroId.Value);
+                writer.Write(modifier.HeroBody);
+                WriteContributions(writer, modifier.Contributions);
+            }
         }
 
         public static bool TryRead(BinaryReader reader, out NetworkProjectionDetailRecord record)
@@ -325,6 +333,20 @@ namespace GuardsDigital.Application
                 undoMarker = new NetworkUndoMarkerRow(undoHeroId, undoCount);
             }
 
+            if (!TryReadCount(reader, out var heroDefenseModifierCount))
+                return false;
+            var heroDefenseModifiers = new List<NetworkHeroDefenseModifierRow>(heroDefenseModifierCount);
+            for (var index = 0; index < heroDefenseModifierCount; index++)
+            {
+                var heroId = reader.ReadString();
+                var heroBody = reader.ReadInt32();
+                if (string.IsNullOrWhiteSpace(heroId) || heroBody < 1 ||
+                    !TryReadContributions(reader, out var contributions))
+                    return false;
+                heroDefenseModifiers.Add(new NetworkHeroDefenseModifierRow(
+                    heroId, heroBody, contributions));
+            }
+
             record = new NetworkProjectionDetailRecord(
                 teamAgreement,
                 completedRounds,
@@ -350,7 +372,8 @@ namespace GuardsDigital.Application
                 Array.AsReadOnly(fastTravel.ToArray()),
                 Array.AsReadOnly(clears.ToArray()),
                 holdOffer,
-                undoMarker);
+                undoMarker,
+                Array.AsReadOnly(heroDefenseModifiers.ToArray()));
             return true;
         }
 

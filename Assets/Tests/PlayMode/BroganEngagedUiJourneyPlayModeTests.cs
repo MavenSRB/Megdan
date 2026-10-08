@@ -62,16 +62,16 @@ namespace GuardsDigital.Tests.PlayMode
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var version = runtime.ReadModel.Version;
             Assert.That(runtime.ReadModel.PendingAttackTargetChoice, Is.Null);
-            var hero = board.HeroViews.First(value => board.Model.HeroDefensePreviews
+            var hero = board.HeroViews.First(value => board.Model.HeroDefenseModifiers
                 .Any(preview => preview.HeroId.Equals(value.Occupancy.HeroId) &&
-                    preview.HeroBody == value.Body && preview.MinionContributions.Count > 0));
-            var preview = board.Model.HeroDefensePreviews.Single(value =>
+                    preview.HeroBody == value.Body && preview.Contributions.Count > 0));
+            var preview = board.Model.HeroDefenseModifiers.Single(value =>
                 value.HeroId.Equals(hero.Occupancy.HeroId) && value.HeroBody == hero.Body);
             Assert.That(hero.CardStateIndicator, Is.Not.Null);
             var pips = hero.CardStateIndicator.PipCount;
             Assert.That(pips, Is.GreaterThan(0));
             var subjects = new[] { hero.Coordinate }.Concat(board.Model.Minions
-                .Where(minion => preview.MinionContributions.Any(value =>
+                .Where(minion => preview.Contributions.Any(value =>
                     value.SourceMinionId.Equals(minion.MinionId))).Select(value => value.Coordinate)).ToArray();
             pointer.enabled = false;
             try
@@ -81,7 +81,7 @@ namespace GuardsDigital.Tests.PlayMode
                 foreach (var body in board.HeroViews.Where(value => value.gameObject.activeSelf))
                     Assert.That(body.DefenseModifierShield?.IsVisible, Is.True);
                 Assert.That(hero.DefenseModifierShield.Modifier,
-                    Is.EqualTo(preview.MinionContributions.Sum(value => value.Amount)));
+                    Is.EqualTo(preview.Total));
                 var shield = hero.DefenseModifierShield;
                 var screen = Camera.main.WorldToScreenPoint(hero.transform.position);
                 var badge = Camera.main.WorldToScreenPoint(shield.transform.position);
@@ -89,16 +89,23 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return BoardPieceCapturePlayModeTests.Capture(board, "tmp/984-normal", subjects);
 
                 Physics.SyncTransforms();
-                Assert.That(pointer.RefreshHoverFromPointerRay(
-                    new Ray(hero.transform.position + Vector3.up * 10f, Vector3.down)), Is.True);
+                var ray = new Ray(hero.transform.position + Vector3.up * 10f, Vector3.down);
+                Assert.That(pointer.RefreshHoverFromPointerRay(ray), Is.True);
+                Assert.That(Object.FindObjectsByType<StandardMinionView>()
+                    .All(value => value.DefenseContributionAmount == 0), Is.True,
+                    "ordinary hover no longer reveals Defense contributors");
+                Assert.That(pointer.RefreshDefenseModifierPreviewFromPointerRay(
+                    ray, true, Camera.main.WorldToScreenPoint(hero.transform.position)), Is.True);
                 foreach (var minion in Object.FindObjectsByType<StandardMinionView>())
                 {
-                    var source = preview.MinionContributions.FirstOrDefault(value =>
+                    var source = preview.Contributions.FirstOrDefault(value =>
                         value.SourceMinionId.Equals(minion.BoundMinionId));
                     Assert.That(minion.DefenseContributionAmount, Is.EqualTo(source?.Amount ?? 0));
                 }
+                Assert.That(Root().Hud.DefenseModifierBreakdown.IsVisible, Is.True);
+                yield return UiPlayer.CaptureScreen("tmp/991-defense-breakdown.png");
                 yield return BoardPieceCapturePlayModeTests.Capture(board, "tmp/984-hover", subjects);
-                board.SetHoveredCoordinate(null);
+                pointer.RefreshDefenseModifierPreviewFromPointerRay(ray, false, default);
                 Assert.That(hero.DefenseModifierShield.IsVisible, Is.True);
                 Assert.That(hero.CardStateIndicator.PipCount, Is.EqualTo(pips));
                 Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));

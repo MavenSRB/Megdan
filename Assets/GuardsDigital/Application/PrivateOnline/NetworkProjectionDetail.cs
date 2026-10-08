@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace GuardsDigital.Application
@@ -52,9 +53,11 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkFastTravelOptionRow> availableFastTravelOptions,
             IReadOnlyList<NetworkClearOptionRow> availableClearOptions,
             NetworkActionOfferRow availableHoldOffer,
-            NetworkUndoMarkerRow undoMarker = null)
+            NetworkUndoMarkerRow undoMarker = null,
+            IReadOnlyList<NetworkHeroDefenseModifierRow> heroDefenseModifiers = null)
         {
             UndoMarker = undoMarker;
+            HeroDefenseModifiers = heroDefenseModifiers ?? Array.Empty<NetworkHeroDefenseModifierRow>();
             TeamAgreement = teamAgreement;
             CompletedRounds = completedRounds;
             PendingInitiativeChoice = pendingInitiativeChoice;
@@ -91,6 +94,7 @@ namespace GuardsDigital.Application
         public NetworkAttackResolutionRow PendingAttackResolution { get; }
         public NetworkAttackTargetChoiceRow PendingAttackTargetChoice { get; }
         public IReadOnlyList<NetworkAttackTargetDefensePreviewRow> PendingAttackTargetDefensePreviews { get; }
+        public IReadOnlyList<NetworkHeroDefenseModifierRow> HeroDefenseModifiers { get; }
         public NetworkDefenseChoiceRow PendingDefenseChoice { get; }
         public NetworkDefensePreviewRow PendingDefensePreview { get; }
         public NetworkSkillResolutionRow PendingSkillResolution { get; }
@@ -655,6 +659,21 @@ namespace GuardsDigital.Application
         /// <summary>Milestone 9.21a, protocol /26. The body the preview is measured from.</summary>
         public int HeroBody { get; }
         public IReadOnlyList<NetworkValueContributionRow> MinionContributions { get; }
+    }
+
+    public sealed class NetworkHeroDefenseModifierRow
+    {
+        public NetworkHeroDefenseModifierRow(
+            string heroId, int heroBody, IReadOnlyList<NetworkValueContributionRow> contributions)
+        {
+            HeroId = heroId;
+            HeroBody = heroBody;
+            Contributions = contributions;
+        }
+
+        public string HeroId { get; }
+        public int HeroBody { get; }
+        public IReadOnlyList<NetworkValueContributionRow> Contributions { get; }
     }
 
     public sealed class NetworkDefenseChoiceRow

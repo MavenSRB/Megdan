@@ -718,6 +718,11 @@ namespace GuardsDigital.Application
             Array.AsReadOnly(Detail.PendingAttackTargetDefensePreviews.Select(row =>
                 new AttackTargetDefensePreviewProjection(
                     new HeroId(row.HeroId), row.HeroBody, row.MinionContributions.Select(ToContribution))).ToArray());
+        public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers =>
+            PublicDetail == null ? Array.Empty<HeroDefenseModifierProjection>() :
+            Array.AsReadOnly(PublicDetail.HeroDefenseModifiers.Select(row =>
+                new HeroDefenseModifierProjection(
+                    new HeroId(row.HeroId), row.HeroBody, row.Contributions.Select(ToContribution))).ToArray());
         public PendingDefenseResponseChoice PendingDefenseChoice
         {
             get

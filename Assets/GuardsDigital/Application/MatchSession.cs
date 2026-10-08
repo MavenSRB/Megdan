@@ -981,7 +981,7 @@ namespace GuardsDigital.Application
                     configuration.CardDefinitions, turnModifications) ??
                 Array.Empty<EffectChoiceCandidatePreview>();
             var attackTargetDefensePreviews = CreateAttackTargetDefensePreviews(
-                turn, effectChoicePreview);
+                turn, effectChoicePreview, turnModifications);
             // Reads the aggregate's memo rather than re-serializing state the previous command
             // already captured. Neither the payload string nor the diagnostic envelope is built
             // here at all: the projection assembles each on demand from the same immutable capture,
@@ -1079,7 +1079,8 @@ namespace GuardsDigital.Application
                 commitment?.PendingRetrievalHero is HeroId retrievalHero
                     ? commitment.GetRevealedCards(retrievalHero).Select(cardId =>
                         DirectorCommand.RetrieveOneAfterReveal(retrievalHero, cardId))
-                    : null);
+                    : null,
+                CreateHeroDefenseModifiers(turnModifications));
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;
@@ -1201,7 +1202,8 @@ namespace GuardsDigital.Application
                 choice.ChooserId,
                 attack.Target.HeroBody,
                 configuration.Participants,
-                board);
+                board,
+                modifications);
             var projectedChoices = new List<DefenseChoicePreviewProjection>();
             foreach (var offer in choice.LegalDefenseOffers)
             {
@@ -1305,7 +1307,8 @@ namespace GuardsDigital.Application
         private IReadOnlyList<AttackTargetDefensePreviewProjection>
             CreateAttackTargetDefensePreviews(
                 TurnResolutionAuthority turn,
-                IReadOnlyList<EffectChoiceCandidatePreview> effectChoicePreviews)
+                IReadOnlyList<EffectChoiceCandidatePreview> effectChoicePreviews,
+                RuleModificationSet modifications)
         {
             // Milestone 9.21a (RZ-Q3). One preview per legal target BODY, each measured from its own
             // space; the keys come from the derivation the projection checks them against.
@@ -1324,8 +1327,42 @@ namespace GuardsDigital.Application
                             key.Key,
                             key.Value,
                             configuration.Participants,
-                            board)
+                            board,
+                            modifications)
                         .Select(ProjectContribution)))
+                .ToArray());
+        }
+
+        private IReadOnlyList<HeroDefenseModifierProjection> CreateHeroDefenseModifiers(
+            RuleModificationSet modifications)
+        {
+            var liveModifications = modifications ?? RuleModificationSet.Empty;
+            return Array.AsReadOnly(board.Occupancies
+                .OrderBy(value => value.HeroId.Value, StringComparer.Ordinal)
+                .ThenBy(value => value.Body)
+                .Select(hero =>
+                {
+                    var contributions = DefenseValueQuery.CalculateMinionContributions(
+                            hero.HeroId,
+                            hero.Body,
+                            configuration.Participants,
+                            board,
+                            liveModifications)
+                        .ToList();
+                    var bonusPerItem = ItemBonusMultiplierQuery.BonusPerItem(
+                        hero.HeroId, liveModifications);
+                    contributions.AddRange(round.HeroItems.GetItems(hero.HeroId)
+                        .Where(item => item.Icon == PrintedValueChannel.Defense)
+                        .Select(item => new ValueContribution(
+                            ValueContributionKind.ItemModifier,
+                            item.SourceCardInstanceId,
+                            PrintedValueChannel.Defense,
+                            bonusPerItem)));
+                    return new HeroDefenseModifierProjection(
+                        hero.HeroId,
+                        hero.Body,
+                        contributions.Select(ProjectContribution));
+                })
                 .ToArray());
         }
 

@@ -34,6 +34,9 @@ namespace GuardsDigital.Application
         public int Amount => Contribution.Amount;
         public string SourceLabel { get; }
         public MinionId SourceMinionId => Contribution.SourceMinionId;
+        public CardInstanceId SourceCardInstanceId => Contribution.SourceCardInstanceId;
+        public string SourceContinuousSourceId => Contribution.SourceContinuousSourceId;
+        public PrintedValueChannel Channel => Contribution.Channel;
     }
 
     public sealed class DefenseChoicePreviewProjection
@@ -235,15 +238,21 @@ namespace GuardsDigital.Application
 
             var contributions = (minionContributions ??
                 throw new ArgumentNullException(nameof(minionContributions))).ToArray();
-            if (contributions.Any(value =>
-                    value.Kind != ValueContributionKind.MinionDefenseModifier ||
-                    !value.SourceMinionId.IsDefined ||
-                    (value.Amount != -1 && value.Amount != 1)) ||
-                contributions.Select(value => value.SourceMinionId).Distinct().Count() !=
-                    contributions.Length)
+            if (contributions.Any(value => value == null || value.Amount == 0 ||
+                    value.Channel != PrintedValueChannel.Defense ||
+                    !(value.Kind == ValueContributionKind.MinionDefenseModifier
+                        ? value.SourceMinionId.IsDefined
+                        : value.Kind == ValueContributionKind.ContinuousSourceModifier &&
+                          !string.IsNullOrEmpty(value.SourceContinuousSourceId))) ||
+                contributions.Where(value => value.SourceMinionId.IsDefined)
+                    .Select(value => value.SourceMinionId).Distinct().Count() !=
+                    contributions.Count(value => value.SourceMinionId.IsDefined) ||
+                contributions.Where(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId))
+                    .Select(value => value.SourceContinuousSourceId).Distinct().Count() !=
+                    contributions.Count(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId)))
             {
                 throw new ArgumentException(
-                    "An Attack-target Defense preview requires unique signed minion modifiers.",
+                    "An Attack-target Defense preview requires unique non-zero typed board-piece modifiers.",
                     nameof(minionContributions));
             }
 
@@ -301,6 +310,58 @@ namespace GuardsDigital.Application
 
             return Array.AsReadOnly(keys.Distinct().ToArray());
         }
+    }
+
+    /// <summary>
+    /// Public, authoritative Defense modifiers for one standing hero body. Unlike an offered
+    /// Defense card's complete value, this contains only the board pieces and held Defense items
+    /// that modify a matching printed Defense icon. Every contribution keeps its typed source so
+    /// presentation can show each creep separately, collapse items without losing their live
+    /// effect-adjusted amount, and sum exactly what authority supplied.
+    /// </summary>
+    public sealed class HeroDefenseModifierProjection
+    {
+        public HeroDefenseModifierProjection(
+            HeroId heroId,
+            int heroBody,
+            IEnumerable<ValueContributionProjection> contributions)
+        {
+            if (!heroId.IsDefined)
+                throw new ArgumentException("A Defense modifier preview requires a hero.", nameof(heroId));
+            if (heroBody < HeroOccupancy.FirstBody)
+                throw new ArgumentOutOfRangeException(nameof(heroBody));
+
+            var rows = (contributions ?? throw new ArgumentNullException(nameof(contributions)))
+                .ToArray();
+            if (rows.Any(value => value == null || value.Amount == 0 ||
+                    value.Channel != PrintedValueChannel.Defense ||
+                    value.Kind != ValueContributionKind.MinionDefenseModifier &&
+                    value.Kind != ValueContributionKind.ItemModifier &&
+                    value.Kind != ValueContributionKind.ContinuousSourceModifier) ||
+                rows.Where(value => value.SourceMinionId.IsDefined)
+                    .Select(value => value.SourceMinionId).Distinct().Count() !=
+                    rows.Count(value => value.SourceMinionId.IsDefined) ||
+                rows.Where(value => value.SourceCardInstanceId.IsDefined)
+                    .Select(value => value.SourceCardInstanceId).Distinct().Count() !=
+                    rows.Count(value => value.SourceCardInstanceId.IsDefined) ||
+                rows.Where(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId))
+                    .Select(value => value.SourceContinuousSourceId).Distinct().Count() !=
+                    rows.Count(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId)))
+            {
+                throw new ArgumentException(
+                    "Defense modifier rows require unique non-zero typed creep, item, or effective-piece contributions.",
+                    nameof(contributions));
+            }
+
+            HeroId = heroId;
+            HeroBody = heroBody;
+            Contributions = Array.AsReadOnly(rows);
+        }
+
+        public HeroId HeroId { get; }
+        public int HeroBody { get; }
+        public IReadOnlyList<ValueContributionProjection> Contributions { get; }
+        public int Total => Contributions.Sum(value => value.Amount);
     }
 
     public sealed class FastTravelOptionProjection
@@ -1038,7 +1099,8 @@ namespace GuardsDigital.Application
             PendingActingBodyChoice pendingActingBodyChoice = null,
             IEnumerable<HeroActingBody> actingBodies = null,
             IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null,
-            IEnumerable<DirectorCommand> pendingRevealRetrieval = null)
+            IEnumerable<DirectorCommand> pendingRevealRetrieval = null,
+            IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1127,6 +1189,19 @@ namespace GuardsDigital.Application
                     nameof(pendingAttackTargetDefensePreviews));
             }
             PendingAttackTargetDefensePreviews = Array.AsReadOnly(attackTargetDefensePreviews);
+            var defenseModifiers = (heroDefenseModifiers ??
+                Enumerable.Empty<HeroDefenseModifierProjection>()).ToArray();
+            if (defenseModifiers.Any(value => value == null ||
+                    !Heroes.Any(hero => hero.HeroId.Equals(value.HeroId) &&
+                        hero.Body == value.HeroBody)) ||
+                defenseModifiers.Select(value => (value.HeroId, value.HeroBody)).Distinct().Count() !=
+                    defenseModifiers.Length)
+            {
+                throw new ArgumentException(
+                    "Defense modifier previews must name unique standing hero bodies.",
+                    nameof(heroDefenseModifiers));
+            }
+            HeroDefenseModifiers = Array.AsReadOnly(defenseModifiers);
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingActingBodyChoice = pendingActingBodyChoice;
@@ -1550,6 +1625,7 @@ namespace GuardsDigital.Application
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
         public IReadOnlyList<AttackTargetDefensePreviewProjection>
             PendingAttackTargetDefensePreviews { get; }
+        public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
 

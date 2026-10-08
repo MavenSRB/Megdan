@@ -34,6 +34,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FlatHexMeshBuilderTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroBodyStandeeTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroCardPipPreviewTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroDefenseModifierBreakdownTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroRailPortraitTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroTokenBindingTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HexCornerHighlightTests.cs" />

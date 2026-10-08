@@ -1,0 +1,70 @@
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Match;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    public sealed class HeroDefenseModifierBreakdownTests
+    {
+        [Test]
+        public void ShiftPanelKeepsEveryCreepSeparateAggregatesLiveItemsAndShowsExactTotal()
+        {
+            var model = new HeroDefenseModifierProjection(
+                new HeroId("hero"),
+                1,
+                new[]
+                {
+                    Project(new ValueContribution(ValueContributionKind.MinionDefenseModifier,
+                        new MinionId("blue-melee"), PrintedValueChannel.Defense, 1), "Blue Melee creep"),
+                    Project(new ValueContribution(ValueContributionKind.MinionDefenseModifier,
+                        new MinionId("red-heavy"), PrintedValueChannel.Defense, -1), "Red Heavy creep"),
+                    Project(ValueContribution.FromContinuousSource("effective-minion-token:ward",
+                        PrintedValueChannel.Defense, 1), "Ward token (creep)"),
+                    Project(new ValueContribution(ValueContributionKind.ItemModifier,
+                        new CardInstanceId("shield-one"), PrintedValueChannel.Defense, 2), "Shield One"),
+                    Project(new ValueContribution(ValueContributionKind.ItemModifier,
+                        new CardInstanceId("shield-two"), PrintedValueChannel.Defense, 2), "Shield Two")
+                });
+            var view = new HeroDefenseModifierBreakdownUnityView();
+            var safe = new Rect(200f, 60f, 1300f, 800f);
+
+            view.Show(model, new Vector2(260f, 400f), safe);
+
+            Assert.That(view.IsVisible, Is.True);
+            Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-creep-row").ToList(),
+                Has.Count.EqualTo(3), "each creep or effective creep-like source owns one row");
+            Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-items-row").ToList(),
+                Has.Count.EqualTo(1), "items collapse only after their live amounts are summed");
+            var text = DescendantsAndSelf(view.Root).OfType<Label>().Select(value => value.text).ToArray();
+            Assert.That(text, Does.Contain("Blue Melee creep"));
+            Assert.That(text, Does.Contain("Red Heavy creep"));
+            Assert.That(text, Does.Contain("Ward token (creep)"));
+            Assert.That(text, Does.Contain("+4"));
+            Assert.That(text, Does.Contain("+5"));
+            Assert.That(view.LastRect.xMin,
+                Is.GreaterThanOrEqualTo(safe.xMin + HeroDefenseModifierBreakdownUnityView.SafeMargin));
+            Assert.That(view.LastRect.xMax,
+                Is.LessThanOrEqualTo(safe.xMax - HeroDefenseModifierBreakdownUnityView.SafeMargin));
+            Assert.That(DescendantsAndSelf(view.Root).All(value =>
+                value.pickingMode == PickingMode.Ignore), Is.True);
+        }
+
+        private static ValueContributionProjection Project(ValueContribution value, string label) =>
+            new ValueContributionProjection(value, label);
+
+        private static IEnumerable<VisualElement> DescendantsAndSelf(VisualElement root)
+        {
+            yield return root;
+            foreach (var child in root.Children())
+                foreach (var descendant in DescendantsAndSelf(child))
+                    yield return descendant;
+        }
+    }
+}

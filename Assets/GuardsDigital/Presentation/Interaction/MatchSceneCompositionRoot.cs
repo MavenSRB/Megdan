@@ -2134,6 +2134,7 @@ namespace GuardsDigital.Presentation.Interaction
             pointerInput.SuggestHex = runtime.SuggestHex;
             pointerInput.ShareCursor = runtime.ShareCursor;
             pointerInput.CardPipHoverChanged = runtime.HoverCardPip;
+            pointerInput.DefenseModifierHoverChanged = runtime.HoverDefenseModifier;
             pointerInput.Configure(
                 eventCamera,
                 pointerSelectors,

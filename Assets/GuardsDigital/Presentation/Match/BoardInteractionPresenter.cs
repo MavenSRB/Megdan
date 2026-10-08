@@ -168,7 +168,8 @@ namespace GuardsDigital.Presentation.Match
                     // acting cue stands on the body that acts and follows it wherever the engine moves it.
                     FocusedActingBody(projection),
                     CreateMinionBattlePicks(projection),
-                    HeroMinionDefenseQuery.Create(projection));
+                    HeroMinionDefenseQuery.Create(projection),
+                    projection.HeroDefenseModifiers);
             }
 
             view.Render(lastViewModel);

@@ -118,6 +118,7 @@ namespace GuardsDigital.Application
         IReadOnlyList<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> TeamVictoryTallies { get; }
 
         IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+        IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
 
         /// <summary>
         /// Milestone 8.53. The match scoreboard the victory screen prints: one line per participating

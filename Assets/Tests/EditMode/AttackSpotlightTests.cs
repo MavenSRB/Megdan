@@ -981,6 +981,8 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<AttackTargetDefensePreviewProjection>
                 PendingAttackTargetDefensePreviews =>
                 Array.Empty<AttackTargetDefensePreviewProjection>();
+            public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers =>
+                Array.Empty<HeroDefenseModifierProjection>();
 
             public PendingDefenseResponseChoice PendingDefenseChoice => null;
             public PendingDefensePreviewProjection PendingDefensePreview => null;

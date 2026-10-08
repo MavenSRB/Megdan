@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
@@ -23,6 +24,7 @@ namespace GuardsDigital.Presentation.Interaction
         private System.Func<Vector2, bool> blocksPointer;
         public System.Func<GuardsDigital.Core.Board.HexCoordinate?, bool> ShareCursor { get; set; }
         public System.Action<CardDefinitionReference?, Vector2> CardPipHoverChanged { get; set; }
+        public System.Action<HeroDefenseModifierProjection, Vector2> DefenseModifierHoverChanged { get; set; }
         private GuardsDigital.Core.Board.HexCoordinate? desiredCursor, sentCursor;
         private float nextCursorSend;
         private bool pointerFocused = true;
@@ -34,6 +36,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 ClearSharedCursor();
                 HideCardPipPreview();
+                HideDefenseModifierPreview();
             }
         }
         private void ClearSharedCursor()
@@ -116,6 +119,7 @@ namespace GuardsDigital.Presentation.Interaction
         private void OnDisable()
         {
             HideCardPipPreview();
+            HideDefenseModifierPreview();
             ClearSharedCursor();
             pointerPress.Disable();
         }
@@ -155,6 +159,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 boardView?.SetHoveredCoordinate(null);
                 HideCardPipPreview();
+                HideDefenseModifierPreview();
                 boardView?.SetPointerHoveredHero(default);
                 return;
             }
@@ -164,16 +169,23 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 boardView.SetHoveredCoordinate(null);
                 HideCardPipPreview();
+                HideDefenseModifierPreview();
                 boardView.SetPointerHoveredHero(default);
                 return;
             }
 
             var pointerRay = eventCamera.ScreenPointToRay(screenPosition);
-            RefreshHoverFromPointerRay(pointerRay);
             var keyboard = Keyboard.current;
             var shiftHeld = keyboard != null &&
                 (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
-            RefreshCardPipPreviewFromPointerRay(pointerRay, shiftHeld, screenPosition);
+            RefreshHoverFromPointerRay(pointerRay);
+            if (RefreshCardPipPreviewFromPointerRay(pointerRay, shiftHeld, screenPosition))
+            {
+                HideDefenseModifierPreview();
+                return;
+            }
+
+            RefreshDefenseModifierPreviewFromPointerRay(pointerRay, shiftHeld, screenPosition);
         }
 
         /// <summary>Updates only hover strength from the board plane; it never submits an intent.</summary>
@@ -232,6 +244,37 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         private void HideCardPipPreview() => CardPipHoverChanged?.Invoke(null, default);
+
+        public bool RefreshDefenseModifierPreviewFromPointerRay(
+            Ray pointerRay, bool shiftHeld, Vector2 screenPosition)
+        {
+            EnsureBindings();
+            if (!shiftHeld)
+            {
+                HideDefenseModifierPreview();
+                return false;
+            }
+
+            foreach (var selector in selectors ?? System.Array.Empty<PrimitiveHeroPointerSelector>())
+            {
+                if (selector == null ||
+                    !selector.TryGetHeroFromPointerRay(pointerRay, out var heroId, out var body))
+                    continue;
+                var modifier = boardView.FindDefenseModifier(heroId, body);
+                boardView.SetDefenseDetailTarget(heroId, body);
+                DefenseModifierHoverChanged?.Invoke(modifier, screenPosition);
+                return modifier != null;
+            }
+
+            HideDefenseModifierPreview();
+            return false;
+        }
+
+        private void HideDefenseModifierPreview()
+        {
+            boardView?.SetDefenseDetailTarget(default, 0);
+            DefenseModifierHoverChanged?.Invoke(null, default);
+        }
 
         private bool TrySelectAtCurrentPointer()
         {

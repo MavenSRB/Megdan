@@ -4935,6 +4935,8 @@ namespace GuardsDigital.Tests.EditMode
                 inner.PendingAttackTargetChoice;
             public virtual IReadOnlyList<AttackTargetDefensePreviewProjection>
                 PendingAttackTargetDefensePreviews => inner.PendingAttackTargetDefensePreviews;
+            public virtual IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers =>
+                inner.HeroDefenseModifiers;
             public virtual PendingDefenseResponseChoice PendingDefenseChoice =>
                 inner.PendingDefenseChoice;
             public virtual PendingDefensePreviewProjection PendingDefensePreview =>

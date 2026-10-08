@@ -221,7 +221,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<ObstacleOccupancy> obstacles = null,
             int focusedHeroBody = 0,
             IEnumerable<MinionBattlePickViewModel> minionBattlePicks = null,
-            IEnumerable<AttackTargetDefensePreviewProjection> heroDefensePreviews = null)
+            IEnumerable<AttackTargetDefensePreviewProjection> heroDefensePreviews = null,
+            IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             MinionBattlePicks = Array.AsReadOnly((minionBattlePicks ??
@@ -255,12 +256,20 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray());
             HeroDefensePreviews = Array.AsReadOnly((heroDefensePreviews ??
                 AttackTargetDefensePreviews).ToArray());
+            HeroDefenseModifiers = Array.AsReadOnly((heroDefenseModifiers ??
+                Enumerable.Empty<HeroDefenseModifierProjection>()).ToArray());
             if (HeroDefensePreviews.Any(value => value == null ||
                     !Heroes.Any(hero => hero.HeroId.Equals(value.HeroId) && hero.Body == value.HeroBody)) ||
                 HeroDefensePreviews.Select(value => (value.HeroId, value.HeroBody)).Distinct().Count() !=
                     HeroDefensePreviews.Count)
                 throw new ArgumentException("Defense previews must name unique standing hero bodies.",
                     nameof(heroDefensePreviews));
+            if (HeroDefenseModifiers.Any(value => value == null ||
+                    !Heroes.Any(hero => hero.HeroId.Equals(value.HeroId) && hero.Body == value.HeroBody)) ||
+                HeroDefenseModifiers.Select(value => (value.HeroId, value.HeroBody)).Distinct().Count() !=
+                    HeroDefenseModifiers.Count)
+                throw new ArgumentException("Defense modifiers must name unique standing hero bodies.",
+                    nameof(heroDefenseModifiers));
             PieceTargetCues = Array.AsReadOnly((pieceTargetCues ??
                 Enumerable.Empty<PieceTargetCueViewModel>()).ToArray());
             // Milestone 9.21i. A piece is a hero BODY where the cue names one: two standees of one
@@ -419,6 +428,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
         public IReadOnlyList<AttackTargetDefensePreviewProjection> AttackTargetDefensePreviews { get; }
         public IReadOnlyList<AttackTargetDefensePreviewProjection> HeroDefensePreviews { get; }
+        public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
 
         /// <summary>
         /// The one stable-identity cue projection consumed by hero, minion, and token views. Attack,

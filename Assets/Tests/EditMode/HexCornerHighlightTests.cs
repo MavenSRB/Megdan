@@ -307,6 +307,10 @@ namespace GuardsDigital.Tests.EditMode
             var targetPreview = new AttackTargetDefensePreviewProjection(
                 targetId,
                 new[] { Contribution(positive, 1), Contribution(negative, -1) });
+            var targetModifier = new HeroDefenseModifierProjection(
+                targetId,
+                HeroOccupancy.FirstBody,
+                targetPreview.MinionContributions);
 
             var heroObject = new GameObject("Hovered Target Hero");
             var positiveObject = new GameObject("Hover Positive Minion");
@@ -349,7 +353,8 @@ namespace GuardsDigital.Tests.EditMode
                         BoardTargetConsequenceIntent.Attack)
                 } : Array.Empty<PieceTargetCueViewModel>(),
                 attackTargetDefensePreviews: attackIntent ? new[] { targetPreview } : null,
-                heroDefensePreviews: new[] { targetPreview }));
+                heroDefensePreviews: new[] { targetPreview },
+                heroDefenseModifiers: new[] { targetModifier }));
 
             var restingKind = attackIntent ? HexCornerHighlightKind.Attack : HexCornerHighlightKind.None;
             Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
@@ -362,6 +367,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
 
             view.SetHoveredCoordinate(targetTile.Coordinate);
+
+            Assert.That(positiveView.DefenseContributionAmount, Is.Zero,
+                "ordinary hover no longer reveals Defense contributors");
+            Assert.That(negativeView.DefenseContributionAmount, Is.Zero);
+            view.SetDefenseDetailTarget(targetId, HeroOccupancy.FirstBody);
 
             Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
             Assert.That(targetTile.CornerHighlight.IsHovered, Is.EqualTo(attackIntent));
@@ -416,7 +426,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.LessThan(heroView.SelectionRadius * 0.95f),
                 "The shield stays materially smaller than the hero token.");
 
-            view.SetHoveredCoordinate(null);
+            view.SetDefenseDetailTarget(default, 0);
 
             Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(restingKind));
             Assert.That(positiveTile.CornerHighlight.ContributionKind,
@@ -428,8 +438,8 @@ namespace GuardsDigital.Tests.EditMode
                 "Leaving hover removes creep highlights but retains the hero's modifier.");
 
             view.SetHoveredHero(targetId);
-            Assert.That(positiveView.DefenseContributionAmount, Is.EqualTo(1),
-                "A linked rail/interface hover consumes the same authoritative contribution facts.");
+            Assert.That(positiveView.DefenseContributionAmount, Is.Zero,
+                "linked rail/interface hover stays quiet unless the board token is Shift-hovered");
             Assert.That(heroView.DefenseModifierShield.IsVisible, Is.True);
             view.SetHoveredHero(default);
             Assert.That(positiveView.DefenseContributionAmount, Is.Zero);

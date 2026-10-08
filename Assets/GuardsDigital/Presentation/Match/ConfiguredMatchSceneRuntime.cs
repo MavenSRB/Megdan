@@ -1124,6 +1124,15 @@ namespace GuardsDigital.Presentation.Match
             else
                 hud.ShowCardPipPreview(definition, screenPosition);
         }
+
+        public void HoverDefenseModifier(
+            HeroDefenseModifierProjection modifier, UnityEngine.Vector2 screenPosition)
+        {
+            if (modifier == null)
+                hud.HideDefenseModifierBreakdown();
+            else
+                hud.ShowDefenseModifierBreakdown(modifier, screenPosition);
+        }
         public bool SelectCommitmentCard(CardInstanceId cardId) =>
             HandsPresenter.SelectCommitmentCard(cardId);
 

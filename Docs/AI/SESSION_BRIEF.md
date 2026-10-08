@@ -8,18 +8,17 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/48`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
+Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/49`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
 FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.90 package retains the single Host/Join launcher and includes the approved ping and End Turn cue refinements. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.90**.
+- Current completed milestone: **9.91**.
 
 - Active authorized milestone: **None**.
 - Authorized sequence: **9.85 -> 9.86 -> 9.87 -> 9.88**, approved 2026-10-08: replace the six player accents with warm red/orange/yellow and cool blue/cyan/teal; animate Movement over the authoritative resolved route; show attack, heavy-minion defeat, then Lane Push in that order; validate and cut the integrated Windows package. Execute serially with separate validation and local commits.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
-- This sequence uses one implementation agent.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
 - Next proposed milestone: **9.62**.
 - Integrated milestones **9.81 -> 9.82 -> 9.83 -> 9.83a -> 9.84 -> 9.84a** are complete: player signals, owner-only pre-reveal commitment withdrawal, Shift-hover card-pip inspection, vertical separated pips and the approved defense shield. **9.80** remains paused at `[!]`; two-lane **9.62** remains a proposal.
@@ -56,11 +55,11 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`).
 
-The TWENTIETH hero, **Brynn the Seeker**, is COMPLETE: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** and **[8.70](Roadmap/PHASE_8.md)** ([his shard](Rules/HERO_BRYNN.md) owns BR-Q4, BR-Q13 and BR-Q19h and the Play Mode 744 gate).
+The TWENTIETH hero, **Brynn the Seeker**, is complete: [8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md), [8.70](Roadmap/PHASE_8.md), and [his shard](Rules/HERO_BRYNN.md) own the detail.
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.90](Roadmap/PHASE_9.md#x-990-package-the-ping-and-end-turn-cue-update-without-broad-suite-reruns), `Builds/Playtest-9.90-ping-endturn.zip` (32 heroes, wire /48, schema 59, stamped source `88b89399`; SHA-256 `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`). Per user direction it reuses 9.89's focused 29/29 Edit Mode and 6/6 Play Mode evidence rather than rerunning the offline harness or unfiltered suites. Exact-player launch/board checks, the byte-for-byte 184-file ZIP audit and packaged-executable smoke passed. Older ZIPs remain preserved; packages cannot mix. No remote push or publication is claimed.
+Current package: [9.90](Roadmap/PHASE_9.md#x-990-package-the-ping-and-end-turn-cue-update-without-broad-suite-reruns), `Builds/Playtest-9.90-ping-endturn.zip` (32 heroes, wire /48, schema 59, source `88b89399`; SHA-256 `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`). It reused 9.89's focused evidence by user direction; artifact checks and packaged smoke passed. Older packages remain preserved; no publication occurred.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 
