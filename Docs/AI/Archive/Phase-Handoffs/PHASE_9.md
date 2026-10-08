@@ -942,3 +942,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.92 | Stamped main `c177cf7d` produced private `Playtest-9.92-defense-shield` at wire `/49` and schema 59. Per explicit user direction, it reused 9.91's focused 16/16 projection/wire, 46/46 Edit and 1/1 in-game journey evidence without rerunning the offline harness or unfiltered suites. Exact-player build/launch and packaged-executable smokes passed; all 184 ZIP files match the loose package byte-for-byte, and SHA-256 is `e45c5dbc7c106d63fcf8b0112da72c7ff15376d0043018bff8e2af70c18abb8d`. [Definition](../../Roadmap/PHASE_9.md#x-992-package-the-item-aware-defense-shield-without-broad-suite-reruns). | `milestone/9.92` |
+
+## Milestone 9.93 Defense and token legibility completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.93 | The Defense panel includes its divider footprint, keeping Total inside. Upper and lower token card pips are 150% on the original rim centerline with gaps and shield clearance; ping sender portraits rise from 0.42 to 0.48 while retaining multi-sender order/placement. Focused Edit passed 32/32 and exact in-game cases 2/2; fresh captures were reviewed. Private `Playtest-9.93-ui-legibility` at wire `/49` and schema 59 passed exact/package smokes; its 184 ZIP files match byte-for-byte with SHA-256 `6b3b874d3c7ef6fdb93da2e522d0c838289718d32577a14f9dc6b63a69df03d7`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-993-keep-the-defense-breakdown-total-inside-its-panel-and-refresh-the-build). | `milestone/9.93` |
