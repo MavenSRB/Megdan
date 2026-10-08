@@ -100,7 +100,7 @@ namespace GuardsDigital.Tests.PlayMode
             var seats = runtime.Host.Seats.Seats;
             var roster = seats.Select((seat, index) => new SeatRosterEntry(
                 seat.Id, seat.HeroId, seat.TeamSide, SeatOccupancyState.Claimed,
-                playerName: index == 0 ? "WWWMMMMMMMMMMMMM" : "Player " + (index + 1))).ToArray();
+                playerName: index == 0 ? "WWWMMMMMMMMMMMMM" : index == 1 ? "Maven" : "Player " + (index + 1))).ToArray();
             runtime.HeroOverviewsView.SetPlayerNames(roster);
             root.Hud.Layout();
             yield return null;
@@ -132,11 +132,14 @@ namespace GuardsDigital.Tests.PlayMode
                     var name = roster.Single(row => row.Seat.Equals(seat.Id)).PlayerName;
                     Assert.That(plate.text, Is.EqualTo(name));
                     Assert.That(plate.tooltip, Is.EqualTo(name));
-                    Assert.That(plate.worldBound.height, Is.GreaterThanOrEqualTo(16f),
-                        "The player name reserves a complete text line.");
-                    Assert.That(plate.worldBound.yMax + 2f,
+                    Assert.That(rail.resolvedStyle.paddingTop, Is.EqualTo(12f),
+                        "Names must not enlarge the original slim tray.");
+                    Assert.That(plate.worldBound.yMin, Is.LessThan(rail.worldBound.yMin),
+                        "The small banner straddles the top border.");
+                    Assert.That(plate.worldBound.height, Is.EqualTo(16f).Within(0.1f));
+                    Assert.That(plate.worldBound.yMax + 0.5f,
                         Is.LessThanOrEqualTo(rail.Q("gd-hero-identity-plate").worldBound.yMin),
-                        "The identity panel must not paint over the player name.");
+                        "The banner stays clear of the identity panel, including scaled-pixel rounding.");
                     Assert.That(plate.worldBound.yMax, Is.LessThanOrEqualTo(portrait.worldBound.yMin + 1f));
                     Assert.That(team == TeamSide.Red
                         ? plate.worldBound.xMin <= portrait.worldBound.xMin
@@ -144,7 +147,7 @@ namespace GuardsDigital.Tests.PlayMode
                         "the label sits over the portrait toward its outer edge");
                 }
             }
-            yield return UiPlayer.CaptureScreen("tmp/w002-named-trays-" + width + ".png");
+            yield return UiPlayer.CaptureScreen("tmp/w004-name-banner-" + width + ".png");
             }
             runtime.HeroOverviewsView.SetPlayerNames(System.Array.Empty<SeatRosterEntry>());
             Assert.That(root.Hud.RootElement.Query<Label>("gd-hero-player-name").ToList()

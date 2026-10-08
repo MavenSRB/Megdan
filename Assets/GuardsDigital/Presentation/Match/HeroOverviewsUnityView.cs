@@ -617,7 +617,7 @@ namespace GuardsDigital.Presentation.Match
             rail.userData = hero.HeroId;
             rail.style.marginBottom = 8f;
             HudElements.Padding(rail, 9f);
-            rail.style.paddingTop = 25f;
+            rail.style.paddingTop = 12f;
             rail.style.paddingBottom = 8f;
             var accent = colourRead == null ? MatchHudTheme.TeamFace(hero.TeamSide)
                 : PlayerAccent.For(colourRead().Participants, hero.HeroId);
@@ -663,7 +663,7 @@ namespace GuardsDigital.Presentation.Match
             // light. The rail still paints its own gold border at rest, unchanged.
 
             rail.style.backgroundColor = body;
-            rail.style.overflow = Overflow.Hidden;
+            rail.style.overflow = Overflow.Visible;
             rail.style.flexShrink = 0f;
             HudElements.Border(rail, frame, 1f, 12f);
             if (hero.TeamSide == TeamSide.Red)
@@ -685,17 +685,22 @@ namespace GuardsDigital.Presentation.Match
                 ? MatchHudTheme.SelectedOutline
                 : new Color(0f, 0f, 0f, 0f);
 
-            var playerName = HudElements.Text(string.Empty, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            var playerName = HudElements.Text(string.Empty, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold);
             playerName.name = "gd-hero-player-name";
             playerName.pickingMode = PickingMode.Ignore;
             playerName.style.position = Position.Absolute;
-            playerName.style.top = 2f;
-            playerName.style.width = 120f;
+            // Overlay the border; names must not increase any tray's layout footprint.
+            playerName.style.top = -10f;
+            playerName.style.maxWidth = 140f;
+            playerName.style.minWidth = 42f;
             playerName.style.height = 16f;
+            playerName.style.paddingLeft = 6f;
+            playerName.style.paddingRight = 6f;
             playerName.style.overflow = Overflow.Hidden;
             playerName.style.whiteSpace = WhiteSpace.NoWrap;
             playerName.style.textOverflow = TextOverflow.Ellipsis;
-            playerName.style.backgroundColor = body;
+            playerName.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.Border(playerName, accent, 1f, 3f);
             if (hero.TeamSide == TeamSide.Red)
             {
                 playerName.style.left = 8f;
@@ -1171,6 +1176,7 @@ namespace GuardsDigital.Presentation.Match
                 rail.Add(AwaitedGlowBand(colourRead != null ? (Color?)accent : null));
             }
 
+            playerName.BringToFront();
             return rail;
         }
 
