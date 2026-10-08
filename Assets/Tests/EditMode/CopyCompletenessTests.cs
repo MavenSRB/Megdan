@@ -831,6 +831,8 @@ namespace GuardsDigital.Tests.EditMode
             var source = host.Projection;
             Assert.That(source.IsTurnActive && source.AvailableTurnActions.Count > 0, Is.True,
                 "The overlay base walk no longer reaches an offered turn.");
+            Assert.That(source.HeroDefenseModifiers, Is.Not.Empty,
+                "The overlay base walk needs a standing hero's Defense modifier row.");
 
             var populator = new CompletenessPopulator(9110);
             var heroes = source.Participants.Heroes.Select(hero => hero.Id).ToArray();
@@ -878,6 +880,22 @@ namespace GuardsDigital.Tests.EditMode
                 ["teamVictoryTallies"] = source.Participants.Teams.Select((team, index) =>
                     new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(
                         team.Id, index == 0 ? 3 : 1, 3)).ToArray(),
+                // The seeded walks do not encounter a continuous Defense source. Populate its
+                // typed identity on a real standing hero row so the wire's optional field is
+                // compared with a non-default value instead of silently remaining untested.
+                ["heroDefenseModifiers"] = source.HeroDefenseModifiers.Select((modifier, index) =>
+                    index == 0
+                        ? new HeroDefenseModifierProjection(
+                            modifier.HeroId, modifier.HeroBody,
+                            modifier.Contributions.Concat(new[]
+                            {
+                                new ValueContributionProjection(
+                                    ValueContribution.FromContinuousSource(
+                                        "completeness:continuous-defense",
+                                        PrintedValueChannel.Defense, 1),
+                                    "Continuous Defense source")
+                            }))
+                        : modifier).ToArray(),
             });
 
             var checkedViews = 0;
@@ -1200,9 +1218,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "ClearOptionProjection.AdjacentTokens", NotReached("a Clear with an adjacent token") },
                 { "ClearOptionProjection.SubsetInvocations", NotReached("a Clear with an adjacent token") },
                 { "ValueContribution.HasSourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
-                { "ValueContribution.HasSourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
                 { "ValueContribution.SourceActiveEffectId", NotReached("a contribution sourced from an Active effect") },
-                { "ValueContribution.SourceContinuousSourceId", NotReached("a contribution sourced from a continuous rule") },
             };
 
         private const string NinePointTwoNine =

@@ -10,11 +10,11 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/49`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
-FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. Package 9.95 retains its Host/Join launcher with the approved signal and token-legibility refinements. Older packages remain preserved privately.
+FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. Package 9.100 retains Host/Join and adds named seat-ordered trays, Escape dismissal and uniform token rims. Older packages remain private.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.99**.
+- Current completed milestone: **9.100**.
 
 - Active authorized milestone: **None**.
 - Authorized sequence: **9.96 -> 9.97 -> 9.98 -> 9.99 -> 9.100**, approved 2026-10-08 by the user's playtest screenshots, "gogog", and later "after u r done cut out the build": verify compact/expanded Defense balance; fix seat-ordered named hero trays; make Escape close the active closable screen; normalize hero-token rings and remove orange bleed; then cut and verify one local Windows playtest package. Execute serially with separate validation and local commits. No publication was requested.
@@ -40,7 +40,7 @@ On 2026-09-28 the user named **Wuk the Grove Keeper** (WU-Q1-WU-Q4 settled); [8.
 
 On 2026-10-01 the user chose **Gydion the Archwizard** as the TWENTY-NINTH hero: **9.30-9.30j** and the user-directed **9.30h1** are complete - dealt, artworked, pickable and gated ([roadmap](Roadmap/PHASE_9_TWENTY_NINTH_HERO.md), [shard](Rules/HERO_GYDION.md); schema v53, wire /33), built by agents as Razzle was; GY-Q1-GY-Q12 settled by the user.
 
-Asked for an unnamed new hero the same day, the agent chose **Takahide the Warlord** (THIRTIETH) and recorded **9.32 -> 9.32a .. 9.32i** ([roadmap](Roadmap/PHASE_9_THIRTIETH_HERO.md), [shard](Rules/HERO_TAKAHIDE.md)). **9.32-9.32i** are complete (inventory; deck swaps and facedown cards, schema v54; teammate swaps; enemy-only obstacles; every face and the Ultimate; his presentation, wire /35; dealt with his art; gated); the user settled TK-Q1-TK-Q5 as recommended. Corrective **[9.36](Roadmap/PHASE_9.md)** (rail hover, facedown hatch) is complete; corrective **[9.38](Roadmap/PHASE_9.md)** (Fight as One's borrow offer) is complete. Housekeeping sequence authorized 2026-10-02: **9.14 -> 9.26 -> 8.35z70 closure with the brief trim**. On 2026-10-03 the user ruled W10 (a decline ends an "up to N") and gave the control-label directive; sequence **[9.39 -> 9.40](Roadmap/PHASE_9.md)** complete (W10 built; every choice control labelled).
+The completed Takahide and 9.33-9.40 routes are indexed in the [Phase 9 roadmap](Roadmap/PHASE_9.md); their former startup narrative is preserved in the [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md#routed-startup-history).
 
 After that playtest the user reported three defects; correctives **[9.33 -> 9.35](Roadmap/PHASE_9.md)** (terrain lit, spell spotlight, "up to" line moves offer 0) are complete.
 
@@ -60,7 +60,7 @@ The TWENTIETH hero, **Brynn the Seeker**, is complete: [8.69-8.69h](Roadmap/PHAS
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.95](Roadmap/PHASE_9.md#x-995-vertically-balance-the-defense-breakdown), `Builds/Playtest-9.95-defense-balance.zip` (32 heroes, wire /49, schema 59, source `9af97e28`; SHA-256 `a88cdc9ef5a15e4fe1fa4acbf40e07b81272cf95f0f97e9d675a94e9988b44db`). Focused UI, exact-player, packaged-player and byte-for-byte ZIP checks passed; broad suites were omitted by user direction. Older packages remain preserved; no publication occurred.
+Current package: [9.100](Roadmap/PHASE_9.md#x-9100-cut-the-integrated-windows-playtest-package), `Builds/Playtest-9.100-ui-playtest.zip` (32 heroes, wire /49, schema 59; SHA-256 `39c2f120cee059aff641e43020bae872b95b8fcedaf7b86000b5c321c3d74c87`). Change-based UI, multi-client, built-player and ZIP checks passed. Older packages remain private; no publication occurred.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 

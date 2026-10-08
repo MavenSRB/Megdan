@@ -568,6 +568,7 @@ namespace GuardsDigital.Tests.EditMode
                 // records no command and no rule event, so the only material a seat holds says
                 // nothing about who rewound or how far.
                 { "UndoMarker", nameof(NetworkProjectionDetailRecord.UndoMarker) },
+                { "HeroDefenseModifiers", nameof(NetworkProjectionDetailRecord.HeroDefenseModifiers) },
                 { "PendingInitiativeChoice", nameof(NetworkProjectionDetailRecord.PendingInitiativeChoice) },
                 { "PendingMovementResolution", nameof(NetworkProjectionDetailRecord.PendingMovementResolution) },
                 { "HasPendingMovementResolution", nameof(NetworkProjectionDetailRecord.PendingMovementResolution) },
