@@ -50,6 +50,11 @@ function Get-Limit([string] $RelativePath) {
     return $null
 }
 
+function Test-HistoricalPhaseLeaf([string] $RelativePath, [string] $Text) {
+    return $RelativePath.Replace('\', '/') -match '^Docs/AI/Roadmap/PHASE_[^/]+\.md$' -and
+        $Text -match '(?m)^#{1,6} \[x\] ' -and $Text -notmatch '(?m)^#{1,6} \[[ !~]\] '
+}
+
 function Test-ThresholdValues([int] $Words, [int] $Bytes, [int] $WordLimit, [int] $ByteLimit) {
     if ($Words -gt $WordLimit -or $Bytes -gt $ByteLimit) { return 'hard' }
     if ($Words -ge [math]::Ceiling($WordLimit * 0.85) -or $Bytes -ge [math]::Ceiling($ByteLimit * 0.85)) { return 'warning' }
@@ -78,9 +83,9 @@ function Get-SectionByHeading([string] $Text, [string] $Heading) {
 
 function Test-RouteValues([string] $Session, [string] $RoadmapCorpus) {
     $codes = New-Object System.Collections.Generic.List[string]
-    $currentMatches = [regex]::Matches($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
-    $activeMatches = [regex]::Matches($Session, '(?m)^- Active authorized milestone: \*\*([^*]+)\*\*(?:,[^\r\n]*)?\.$')
-    $nextMatches = [regex]::Matches($Session, '(?m)^- Next proposed milestone: \*\*([^*]+)\*\*\.$')
+    $currentMatches = [regex]::Matches($Session, '(?m)^- Last completed work: \*\*([^*]+)\*\*\.$')
+    $activeMatches = [regex]::Matches($Session, '(?m)^- Active authorized work: \*\*([^*]+)\*\*(?:,[^\r\n]*)?\.$')
+    $nextMatches = [regex]::Matches($Session, '(?m)^- Next proposed work: \*\*([^*]+)\*\*\.$')
     if ($currentMatches.Count -ne 1 -or $activeMatches.Count -ne 1 -or $nextMatches.Count -ne 1) {
         $codes.Add('missing-route')
         return $codes.ToArray()
@@ -96,6 +101,7 @@ function Test-RouteValues([string] $Session, [string] $RoadmapCorpus) {
     elseif ($inProgressMatches.Count -ne 1 -or $inProgressMatches[0].Groups[1].Value -ne $active -or $active -ne $next) {
         $codes.Add('active-status')
     }
+    if ($next -eq 'none') { return $codes.ToArray() }
     $nextBlock = [regex]::Match($RoadmapCorpus, "(?ms)^### \[[ !~]\] $([regex]::Escape($next))(?:\s[^\r\n]*)?\r?\n(.*?)(?=^### |\z)")
     if (-not $nextBlock.Success) {
         $codes.Add('next-status')
@@ -132,7 +138,7 @@ function Get-UndeclaredContractTypes([string] $Text, [hashtable] $DeclaredTypes)
 # The brief owns status; subject documents link to it. Legacy explicit claims must still agree.
 function Test-StatusCoherence([string] $Session, [string] $Implementation, [string] $RoadmapCorpus, [string] $Readme) {
     $codes = New-Object System.Collections.Generic.List[string]
-    $sessionMatch = [regex]::Match($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
+    $sessionMatch = [regex]::Match($Session, '(?m)^- Last completed work: \*\*([^*]+)\*\*\.$')
     if (-not $sessionMatch.Success) {
         $codes.Add('missing-status-statement')
         return $codes.ToArray()
@@ -638,7 +644,7 @@ function Get-MilestonesMissingArchiveDestination($Blocks, [hashtable] $ArchiveTe
     $missing = New-Object System.Collections.Generic.List[string]
     foreach ($block in $Blocks) {
         if ($block.Body -match '(?m)^Historical evidence:\s*exempt\b') { continue }
-        $phase = ($block.Id -split '\.')[0]
+        $phase = if ($block.Id -match '^W-\d+$') { 'WORK' } else { ($block.Id -split '\.')[0] }
         $archive = if ($ArchiveTexts.ContainsKey($phase)) { $ArchiveTexts[$phase] } else { '' }
         $escaped = [regex]::Escape($block.Id)
         $hasSection = [regex]::IsMatch($archive, "(?m)^##+ Milestone $escaped\b")
@@ -732,9 +738,9 @@ function Invoke-SelfTests {
     $agentsLimit = Get-Limit 'AGENTS.md'
     Expect 'the root agent entry point is governed' ($agentsLimit[0] -eq 2500 -and $agentsLimit[1] -eq 20KB)
 
-    $validSession = "- Current completed milestone: **1.0**.`n- Active authorized milestone: **none**.`n- Next proposed milestone: **1.1**."
+    $validSession = "- Last completed work: **1.0**.`n- Active authorized work: **none**.`n- Next proposed work: **1.1**."
     $validRoadmap = "### [x] 1.0 Done`n`n### [ ] 1.1 Next`n`nObservable outcome: something.`n"
-    $activeSession = $validSession -replace 'Active authorized milestone: \*\*none\*\*', 'Active authorized milestone: **1.1**, in progress'
+    $activeSession = $validSession -replace 'Active authorized work: \*\*none\*\*', 'Active authorized work: **1.1**, in progress'
     $activeRoadmap = $validRoadmap -replace '### \[ \] 1\.1', '### [~] 1.1'
     Expect 'valid route structure' ((Test-RouteValues $validSession $validRoadmap).Count -eq 0)
     Expect 'valid in-progress route' ((Test-RouteValues $activeSession $activeRoadmap).Count -eq 0)
@@ -743,6 +749,20 @@ function Invoke-SelfTests {
     Expect 'orphaned in-progress milestone' ((Test-RouteValues $validSession $activeRoadmap) -contains 'active-status')
     $multipleActiveRoadmap = $activeRoadmap + "`n### [~] 1.2 Also active`n`nObservable outcome: something else.`n"
     Expect 'multiple in-progress milestones' ((Test-RouteValues $activeSession $multipleActiveRoadmap) -contains 'active-status')
+
+    $idleSession = $validSession -replace 'Next proposed work: \*\*1\.1\*\*', 'Next proposed work: **None**'
+    Expect 'idle route requires no artificial next milestone' ((Test-RouteValues $idleSession $validRoadmap).Count -eq 0)
+    Expect 'idle next cannot conceal active work' ((Test-RouteValues ($activeSession -replace 'Next proposed work: \*\*1\.1\*\*', 'Next proposed work: **None**') $activeRoadmap) -contains 'active-status')
+    $workBlocks = @([pscustomobject]@{ Id = 'W-001'; Body = 'Historical evidence: [work](Archive/WORK_LOG.md)' })
+    Expect 'work completion has its own archive destination' ((Get-MilestonesMissingArchiveDestination $workBlocks @{ 'WORK' = '| W-001 | Transition | work/W-001 |' }).Count -eq 0)
+    Expect 'work completion without archive evidence fails' ((Get-MilestonesMissingArchiveDestination $workBlocks @{}) -contains 'W-001')
+
+    $workSession = $validSession.Replace('1.0', 'W-001').Replace('1.1', 'W-002')
+    $workRoadmap = $validRoadmap.Replace('1.0', 'W-001').Replace('1.1', 'W-002')
+    Expect 'work IDs support normal route checks' ((Test-RouteValues $workSession $workRoadmap).Count -eq 0)
+    Expect 'completed legacy leaf is historical' (Test-HistoricalPhaseLeaf 'Docs/AI/Roadmap/PHASE_8_COMPLETED.md' '### [x] 8.1 Done')
+    Expect 'mixed legacy leaf remains active' (-not (Test-HistoricalPhaseLeaf 'Docs/AI/Roadmap/PHASE_8.md' "### [x] 8.1 Done`n### [!] 8.2 Waiting"))
+    Expect 'current work remains size governed' (-not (Test-HistoricalPhaseLeaf 'Docs/AI/Roadmap/CURRENT_WORK.md' '### [x] W-001 Done'))
 
     $virtualTargets = @('index.md','archive.md#record')
     Expect 'broken archive/shard link' (-not ($virtualTargets -contains 'missing.md#record'))
@@ -779,12 +799,12 @@ function Invoke-SelfTests {
     Expect 'documented type listed as planned' ((Get-UndeclaredContractTypes ("The ``GhostDefinition`` will own this." + $plannedSection) $declared).Count -eq 0)
     Expect 'unlisted type still reported alongside a planned one' ((Get-UndeclaredContractTypes ("The ``OtherDefinition`` owns this." + $plannedSection) $declared) -contains 'OtherDefinition')
 
-    $coherentSession = '- Current completed milestone: **2.5**.'
+    $coherentSession = '- Last completed work: **2.5**.'
     $coherentImplementation = 'The project has completed roadmap milestones through **2.5**. Details follow.'
     $coherentRoadmap = "### [x] 2.5 Done`n`n### [ ] 2.6 Next`n"
     Expect 'coherent status triple' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap).Count -eq 0)
     Expect 'incoherent implementation summary' ((Test-StatusCoherence $coherentSession ($coherentImplementation -replace '2\.5', '2.3') $coherentRoadmap) -contains 'incoherent-status')
-    Expect 'status naming an incomplete milestone' ((Test-StatusCoherence '- Current completed milestone: **2.6**.' 'The project has completed roadmap milestones through **2.6**.' $coherentRoadmap) -contains 'incoherent-status')
+    Expect 'status naming an incomplete milestone' ((Test-StatusCoherence '- Last completed work: **2.6**.' 'The project has completed roadmap milestones through **2.6**.' $coherentRoadmap) -contains 'incoherent-status')
     Expect 'missing status statement' ((Test-StatusCoherence $coherentSession 'No parseable statement here.' $coherentRoadmap) -contains 'missing-status-statement')
 
     $coherentReadme = 'As of the last update the project has completed milestones through **2.5**.'
@@ -793,7 +813,7 @@ function Invoke-SelfTests {
     Expect 'README with no status statement' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap 'No parseable statement here.') -contains 'missing-status-statement')
 
     Expect 'subject owners link to the single current route' ((Test-StatusCoherence $coherentSession 'Status: [route](../SESSION_BRIEF.md).' $coherentRoadmap 'Status: [route](Docs/AI/SESSION_BRIEF.md).').Count -eq 0)
-    Expect 'route links do not admit an incomplete current milestone' ((Test-StatusCoherence '- Current completed milestone: **2.6**.' '[route](../SESSION_BRIEF.md)' $coherentRoadmap '[route](Docs/AI/SESSION_BRIEF.md)') -contains 'incoherent-status')
+    Expect 'route links do not admit an incomplete current milestone' ((Test-StatusCoherence '- Last completed work: **2.6**.' '[route](../SESSION_BRIEF.md)' $coherentRoadmap '[route](Docs/AI/SESSION_BRIEF.md)') -contains 'incoherent-status')
     Expect 'an unrelated link cannot replace the current route' ((Test-StatusCoherence $coherentSession '[route](OTHER.md)' $coherentRoadmap) -contains 'missing-status-statement')
 
     $oneRow = "## Milestone 9.9 Do the thing completion evidence`n`n| ID | Outcome | Commit |`n| --- | --- | --- |`n| 9.9 | It was done. | ``abc1234`` |`n"
@@ -915,7 +935,7 @@ function Invoke-SelfTests {
     Expect 'a document without its designated claim is reported' (@(Get-StalePinnedConstantSites $pinnedTestEntries $pinnedValues @{ 'DOC.md' = 'No claim here at all.' })[0].Kind -eq 'missing-claim')
 
     # Completion-history containment (milestone 6.1ac, corrected at 6.1an).
-    $historyRoute = '- Current completed milestone: **2.5**.'
+    $historyRoute = '- Last completed work: **2.5**.'
     Expect 'the exact current route marker needs no narrative duplicate' (@(Test-CompletionHistory $historyRoute).Count -eq 0)
     Expect 'a current completion narrative is reported' (@(Test-CompletionHistory ($historyRoute + "`n- Milestone **2.5** completed on 2026-08-14. One sentence.")) -contains 'completion-history-in-active-doc')
     Expect 'an older completion narrative is reported' (@(Test-CompletionHistory ($historyRoute + "`n- Milestone **2.4** completed on 2026-08-13. Older narrative.")) -contains 'completion-history-in-active-doc')
@@ -967,6 +987,7 @@ foreach ($file in $activeFiles) {
     $limit = Get-Limit $relative
     if ($null -eq $limit) { continue }
     $text = Read-Utf8 $file.FullName
+    if (Test-HistoricalPhaseLeaf $relative $text) { continue }
     $words = Get-WordCount $text
     $state = Test-ThresholdValues $words $file.Length $limit[0] $limit[1]
     if ($state -eq 'hard') { Add-Issue 'ERROR' 'hard-threshold' "$relative is $words words/$($file.Length) bytes; hard limit is $($limit[0])/$($limit[1])." }
@@ -1002,12 +1023,14 @@ foreach ($relative in $requiredHeadings.Keys) {
 # Exactly one current/active/next route and roadmap/session agreement.
 $session = Read-Utf8 (Join-Path $docsRoot 'SESSION_BRIEF.md')
 $roadmapCorpus = ((Get-ChildItem (Join-Path $docsRoot 'Roadmap') -File -Filter '*.md' | Sort-Object Name | ForEach-Object { Read-Utf8 $_.FullName }) -join "`n")
+$workLogPath = Join-Path $docsRoot 'Archive/WORK_LOG.md'
+if (Test-Path -LiteralPath $workLogPath) { $roadmapCorpus += "`n" + (Read-Utf8 $workLogPath) }
 $routeCodes = Test-RouteValues $session $roadmapCorpus
 foreach ($code in $routeCodes) { Add-Issue 'ERROR' $code 'SESSION_BRIEF.md and the next roadmap milestone do not agree.' }
 $routeMarkerCounts = @{
-    'Current completed milestone:' = 0
-    'Active authorized milestone:' = 0
-    'Next proposed milestone:' = 0
+    'Last completed work:' = 0
+    'Active authorized work:' = 0
+    'Next proposed work:' = 0
 }
 foreach ($file in $activeFiles) {
     $text = Read-Utf8 $file.FullName
@@ -1122,6 +1145,7 @@ $phaseArchiveTexts = @{}
 foreach ($handoff in (Get-ChildItem -LiteralPath ([System.IO.Path]::Combine($docsRoot, 'Archive', 'Phase-Handoffs')) -File -Filter 'PHASE_*.md' -ErrorAction SilentlyContinue)) {
     if ($handoff.BaseName -match '^PHASE_(\d+)$') { $phaseArchiveTexts[$Matches[1]] = Read-Utf8 $handoff.FullName }
 }
+if (Test-Path -LiteralPath $workLogPath) { $phaseArchiveTexts['WORK'] = Read-Utf8 $workLogPath }
 foreach ($id in (Get-MilestonesMissingArchiveDestination $completeMilestoneBlocks $phaseArchiveTexts)) {
     Add-Issue 'ERROR' 'missing-archive-destination' "Complete milestone $id has neither a one-row entry nor a 'Milestone $id' section in its phase handoff archive."
 }

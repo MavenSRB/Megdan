@@ -4,6 +4,9 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 
 ## Canonical active shards
 
+- [PvE design and rule decisions](Project/PVE_DESIGN.md)
+- [Private build records](Project/BUILDS.md)
+
 - [Player colours and shared map signals](Project/PLAYER_SIGNALS.md)
 
 - [Current implementation inventory](Project/CURRENT_IMPLEMENTATION.md)

@@ -12,28 +12,36 @@ The source/body manifest and access experiment are **frozen historical snapshots
 
 Every fact has exactly one canonical active home. Other active documents use a short routing summary and a stable link. Historical evidence has exactly one lossless destination: for new milestone evidence, the commit body indexed by its phase-archive row; for other history, an indexed append-only archive file. The pre-governance baseline is preservation evidence, not current authority.
 
+## Work lifecycle amendment
+
+Approved 2026-10-08: use compact work records for iteration and meaningful milestones for feature integration. The [current plan](Roadmap/CURRENT_WORK.md) holds unfinished approved work; the [backlog](Roadmap/BACKLOG.md) is the shared intake/index, including links to exact legacy definitions. The brief holds only current authorization, baseline and next route. Remove completed authorization narratives from it at completion.
+
+Finished W-NNN records move to [WORK_LOG.md](Archive/WORK_LOG.md), preserving request/scope and acceptance plus a one-line result and immutable work/ID tag or SHA. Detailed validation evidence remains once in the commit body. The completion index also supplies the validator's last-completed-work lookup; it is not routine startup context.
+
+Legacy phase definitions retain their paths, IDs, precise acceptance and evidence. They are historical when completed, not recurring policy. Do not split completed-only files to satisfy active-context size warnings. Mixed files retain unresolved acceptance; select them through the backlog. Current workflow/testing policy overrides obsolete scheduling or blanket-suite prose in historical plans, without erasing what was actually tested.
+
 ## Ownership matrix
 
 | Information category | One canonical home | Permitted noncanonical content |
 | --- | --- | --- |
 | Agent startup, authorization guardrails, safety boundaries, and mandatory handoff procedure | Project-root [`AGENTS.md`](../../AGENTS.md), with detailed milestone/review policy in [`ROADMAP.md`](ROADMAP.md) and validation procedure in [`Testing/POLICY.md`](Testing/POLICY.md) | Short routing summaries and links; no copied detailed policy |
 | Current implementation inventory | [`Project/CURRENT_IMPLEMENTATION.md`](Project/CURRENT_IMPLEMENTATION.md) plus its indexed [`Project/`](Project/) subject shards, currently [`Project/FOUNDATION_CORRECTIONS.md`](Project/FOUNDATION_CORRECTIONS.md), [`Project/CONFIGURED_PRESENTATION.md`](Project/CONFIGURED_PRESENTATION.md), [`Project/MATCH_HUD.md`](Project/MATCH_HUD.md), [`Project/RULE_MODIFICATIONS.md`](Project/RULE_MODIFICATIONS.md), and [`Project/BOARD_OPERATIONS.md`](Project/BOARD_OPERATIONS.md), which [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) also indexes as peer subject shards | Compact startup status and one stable link from [`SESSION_BRIEF.md`](SESSION_BRIEF.md); no duplicated chronology or test totals |
-| Current authorization and exact next milestone | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
-| Roadmap sequencing, milestone status, exact acceptance checks, and non-goals | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
-| Durable product scope, architecture, platform, presentation, terminology, and workflow | [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) plus its indexed [`Project/`](Project/) subject shards | Minimal dependency-routing summaries |
+| Current authorization and exact next work | [`SESSION_BRIEF.md`](SESSION_BRIEF.md) | One stable link; no duplicated route markers |
+| Current work, backlog, milestone acceptance and historical definitions | [`ROADMAP.md`](ROADMAP.md) plus its indexed [`Roadmap/`](Roadmap/) phase shards | Status/routing summaries that link to the exact milestone |
+| Durable product scope, architecture, platform, presentation, terminology, workflow and approved original PvE decisions | [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) plus its indexed [`Project/`](Project/) subject shards | Minimal dependency-routing summaries |
 | Rule/source authority, verification and implementation status, approved deviations, and open questions | [`RULES_LEDGER.md`](RULES_LEDGER.md) plus its indexed [`Rules/`](Rules/) shards, currently [`Rules/CARD_COVERAGE.md`](Rules/CARD_COVERAGE.md) | Links from architecture or milestone definitions |
 | Durable card/action engine contracts and extension boundaries | [`CARD_SYSTEM_ARCHITECTURE.md`](CARD_SYSTEM_ARCHITECTURE.md) plus its indexed [`Card-System/`](Card-System/) shards: core model, resolution/effects, ordinary Skill consequences, validation/extension | Links and narrowly necessary dependency summaries |
 | Durable effect, keyword, query, modifier, timing, token/marker, and transition capabilities | [`CARD_EFFECT_CAPABILITIES.md`](CARD_EFFECT_CAPABILITIES.md) plus its three indexed [`Card-System/`](Card-System/) capability shards: timing/transitions, board, state - the directory is owned jointly by the two indexes | Links and narrowly necessary dependency summaries |
 | Validation policy, launcher resilience, active/future exact recipes, gate definitions, and test ownership | [`TESTING.md`](TESTING.md) plus its indexed [`Testing/`](Testing/) shards | Exact command link or short gate route |
 | Active technical risks | [`TECHNICAL_RISKS.md`](TECHNICAL_RISKS.md) | Milestone links to owning risk IDs |
 | Official map data contract, reviewed inventory, and generated-resource rule | [`Maps/README.md`](Maps/README.md) | Links from the rules ledger's official-map row and the session brief's routing table |
-| Completed milestone outcome and validation evidence | The milestone commit body, indexed by the one-row entry under [`Archive/Phase-Handoffs/`](Archive/Phase-Handoffs/) and routed from [`Archive/README.md`](Archive/README.md) | ID, one-line outcome, commit SHA, and short backlinks only; never a copied evidence body |
+| Legacy milestone outcome and validation evidence | The milestone commit body, indexed by the one-row entry under [`Archive/Phase-Handoffs/`](Archive/Phase-Handoffs/) and routed from [`Archive/README.md`](Archive/README.md) | ID, one-line outcome, commit SHA, and short backlinks only; never a copied evidence body |
 | Superseded recipes, resolved risks, and other non-milestone history | [`Archive/README.md`](Archive/README.md) and its indexed append-only destinations | Short backlink only; never a copied body |
 | Consolidation provenance (frozen; not maintained) | [`Archive/MIGRATION_MANIFEST.md`](Archive/MIGRATION_MANIFEST.md), [`Archive/PRESERVATION_INVENTORY.md`](Archive/PRESERVATION_INVENTORY.md), and [`Archive/Pre-Governance/SHA256SUMS.md`](Archive/Pre-Governance/SHA256SUMS.md) | Stable links only |
 
 ## Active leaf thresholds
 
-Thresholds apply per active leaf, never to the aggregate corpus. Word count uses the validator's stable Unicode token rule; byte count is the file's exact length. At or above 85% of either hard limit, the validator warns; review ownership when that leaf changes or at a phase gate. Exceeding either hard limit blocks handoff.
+Thresholds apply per active leaf, never to the aggregate corpus. Legacy PHASE_*.md definition files containing completed work and no open/blocked/active headings are historical retention; the validator keeps link/evidence checks but does not apply active-leaf size thresholds to them. This explicit predicate does not exempt mixed/open plans or current work records. Word count uses the validator's stable Unicode token rule; byte count is the file's exact length. At or above 85% of either hard limit, the validator warns; review ownership when that leaf changes or at a phase gate. Exceeding either hard limit blocks handoff.
 
 | Active leaf family | Hard words | Hard bytes |
 | --- | ---: | ---: |
@@ -48,6 +56,8 @@ Thresholds apply per active leaf, never to the aggregate corpus. Word count uses
 
 If irreducible precise current material cannot fit, create an indexed authoritative shard with the same family threshold or obtain an explicit governance amendment. Never abbreviate exact material or silently relax the validator. A validator cannot become passable merely by deleting content: the code-truth checks compare documentation against the source, `duplicate-history` reads the archives, and both fail on content that was removed rather than routed.
 
+Aim for a startup brief of roughly one page (about 600 words); its hard limit is a safeguard, not a filling target. Replace current-route fields and remove completed sequences at each handoff. Do not repeat build digests or historical test totals in startup when the build record/evidence already owns them.
+
 The current-implementation inventory is maintained by subject, not chronology: replace or consolidate affected statements when behavior changes; detailed completed outcome and validation evidence is written once in the milestone's commit message body with one archive row, per the history workflow below. Top-level startup and capability indexes remain compact routers; moving precise active authority to an indexed shard is the normal response to sustained growth, not compression.
 
 ## Active risk lifecycle
@@ -57,6 +67,8 @@ The current-implementation inventory is maintained by subject, not chronology: r
 At the owning milestone or phase gate, reassess the entry. A resolved risk moves losslessly to `Archive/RESOLVED_TECHNICAL_RISKS.md`, the active row becomes a short archive link or is removed under a manifest entry, and the archive index is updated. An accepted residual risk remains active with its decision and next reassessment point.
 
 ## History and archive workflow
+
+For post-phase work use the work lifecycle above and immutable `work/<ID>` tags. Legacy phase evidence follows the retained convention below. Both tag families must be created on the completion commit and never moved.
 
 The 2026-09-08 cleanup permits an immutable local `milestone/<ID>` Git tag in the archive's Commit column. Create it on the completion commit and never move it; `git show milestone/<ID>` resolves the evidence without a second SHA-only bookkeeping commit. Existing SHA references remain unchanged. Sequence authorization follows `ROADMAP.md`.
 
@@ -83,6 +95,6 @@ Preservation itself is unchanged: history still moves losslessly to its indexed 
 
 ## Required handoff and phase-gate review
 
-Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1` at every milestone handoff and phase-gate audit, followed by `git diff --check`. `SESSION_BRIEF.md` alone carries a `Last updated:` stamp, kept true at each handoff; other active leaves carry none, because an unenforced stamp drifts into a false claim. Review changed warning-threshold leaves at handoff and all warning-threshold leaves at phase gates. Archive duplicated or completed material losslessly, shard irreducible current material authoritatively, and update the affected indexes. The frozen migration records are not part of a handoff.
+Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1` at each completed work handoff and integration audit, followed by `git diff --check`. `SESSION_BRIEF.md` alone carries a `Last updated:` stamp, kept true at each handoff; other active leaves carry none, because an unenforced stamp drifts into a false claim. Review changed warning-threshold leaves at handoff and all warning-threshold leaves at phase gates. Archive duplicated or completed material losslessly, shard irreducible current material authoritatively, and update the affected indexes. The frozen migration records are not part of a handoff.
 
 At each phase gate, review the ownership matrix, active risk register, threshold measurements, archive backlinks, and whether subject routing still matches how future tasks retrieve authority. Governance maintenance must not change gameplay scope, rule meaning, milestone status, validation evidence, or rights/privacy boundaries without the separate authority required for that change.

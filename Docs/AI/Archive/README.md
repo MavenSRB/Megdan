@@ -2,6 +2,15 @@
 
 Historical files are version-controlled evidence excluded from routine startup loading. Current authority is routed by [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md).
 
+## Iteration transition and work history
+
+- [Completed work records](WORK_LOG.md)
+- [Startup before the iteration transition](SESSION_BRIEF_BEFORE_ITERATION_2026_10_08.txt)
+- [Product direction before the iteration transition](PRODUCT_BEFORE_ITERATION_2026_10_08.txt)
+- [Workflow before the iteration transition](WORKFLOW_AND_TERMS_BEFORE_ITERATION_2026_10_08.txt)
+
+Plain-text snapshots preserve former content; their relative links retain original-document context. Legacy phase definitions retain stable paths and evidence. Current workflow is owned by ROADMAP.md.
+
 ## Preservation and migration
 
 - [Private-online implementation track before 8.36b](PRIVATE_ONLINE_IMPLEMENTATION_TRACK.md)

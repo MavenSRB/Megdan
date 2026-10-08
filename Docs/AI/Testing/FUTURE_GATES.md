@@ -2,6 +2,10 @@
 
 Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
+## Scope of these recipes
+
+[Current testing policy](POLICY.md#new-builds-use-change-based-validation) owns selection and reuse. Named phase/internet gates below preserve their particular acceptance; they are not an automatic pre-build regression campaign. Routine packages use short player, multi-client and board artifact smokes against one freshly built candidate, plus changed/affected checks. Use supported reuse options to keep smokes on the same binary. Full-match/fault/internet runs need an affectedness trigger or explicit gate.
+
 ## Official board-map specification validation
 
 ```powershell

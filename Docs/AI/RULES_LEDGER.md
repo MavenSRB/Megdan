@@ -24,6 +24,10 @@ Card text overrides conflicting general rules unless a higher official correctio
 
 Do not use an unofficial forum answer, convenience behavior, or remembered tabletop practice as authority without verification.
 
+## PvE rule authority
+
+The hierarchy governs the existing mode and tabletop behavior reused by PvE. Original mechanics and mode-specific departures require approved decisions in [Project/PVE_DESIGN.md](Project/PVE_DESIGN.md). Proposals are not authoritative rules. A PvE decision never silently changes the existing mode or its verified cards. Tests must cite the applicable approved source.
+
 ## Primary local sources
 
 - Rulebook: `Docs/Guards of Atlantis II - 2nd Printing_web.pdf`

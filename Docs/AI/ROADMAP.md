@@ -9,27 +9,28 @@
 
 ## Execution rule
 
-This roadmap is a sequence of micro-milestones, not authorization to execute them. A user may explicitly approve a bounded sequence of outcomes in one instruction; map it to exact IDs in the owning shard before execution. Approval persists across separate commits. Execute one milestone at a time and stop at the end of the authorized sequence. Queued and parked work remains unauthorized.
+The project has two tracks: iterate, playtest and repair the existing private game, with large maps retained as a planned expansion; and design PvE, followed by separately scoped implementation. Phase 9 is closed as a development container after 9.100. Unfinished proposals and paused gates remain visible in the [shared backlog](Roadmap/BACKLOG.md); closure does not mark them passed or authorize them.
 
-For every item:
+A user request authorizes its stated outcome, including normal implementation and verification needed to finish it. Record that scope in [current work](Roadmap/CURRENT_WORK.md), using a stable W-NNN identifier. Do not ask again for an already approved step. Proposed/parked items are not authorization. One implementation agent and one active outcome are the default.
 
-1. Confirm approval, individually or within the recorded bounded sequence.
-2. Implement only its stated observable outcome.
-3. Respect its non-goals.
-4. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
-5. Update the continuity documents whose subject the milestone actually changed, including the next proposed milestone.
-6. Create a local Git commit containing the completed milestone, its status change, and continuity updates. The commit message body carries the milestone's evidence record.
-7. Report the result and next route; stop unless that next item is already in the authorized sequence.
+For ordinary fixes or a related playtest batch, record the request and scope, observable result, affected area, closing checks and status. Do not create a milestone for each control, test, file or commit. Independent fixes may have separate commits without another project-direction update. Split when authority, risk or acceptance differs materially. Stop for an unresolved rule/product decision or work outside the request, not routine implementation choices.
 
-Mark a milestone `[~]` and set the session brief's active field only when work spans tasks or is handed off mid-flight; the validator requires their exact agreement and permits at most one in-progress milestone.
+Substantial feature programs use milestones at meaningful playable/integration outcomes. The [PvE plan](Roadmap/PVE.md) starts with design decisions and then a smallest playable encounter; downstream stages stay provisional until playtesting supplies evidence. Design approval and implementation approval are distinct.
 
-Milestones may be split further if implementation reveals more than one independently testable behavior. They must not be silently combined.
+For each approved outcome:
 
-A split has a floor: do not split when its fixed handoff cost would exceed the implementation it isolates. Split whenever parts carry genuinely independent risk or separate acceptance evidence; the floor bars ceremony, not decomposition. Recorded cases are `5.1b`, `5.1c`, and `5.8a1`.
+1. Load affected subject owners and establish acceptance.
+2. Implement within scope, run focused checks and affected regressions under [testing policy](Testing/POLICY.md).
+3. Review player experience, rules authority, maintainability and project risk; fix in-scope acceptance defects.
+4. Update changed subject facts and the current route. Preserve exact validation evidence once in the commit body.
+5. Move the finished work record to [work history](Archive/WORK_LOG.md), retaining request, acceptance and commit/tag locator. Keep current planning small.
+6. Run living-document validation and diff checks, create a local commit, report outcome/limitations and continue remaining approved work.
 
-At each designated phase-gate roadmap audit, reassess the affected unstarted milestones against the evidence produced so far. The audit is a required handoff activity, not a separately numbered milestone, and does not authorize implementation. For each affected milestone, recommend whether to keep it unchanged, merge it with adjacent work that shares the same authority and validation boundary, split independently risky behavior, or defer/remove work that is not required for the private publisher pitch. Record an approximate remaining-effort range and identify the shortest dependency-safe path to the next hard integration outcome. Any resulting roadmap change requires explicit user approval and the applicable continuity updates before the next milestone proceeds. An audit must not weaken verified rules, architecture contracts, acceptance evidence, validation gates, or the one-approved-micro-milestone-at-a-time rule.
+Mark active work [~] immediately and keep it in exact agreement with the brief. Completed phase definitions retain their IDs, links, acceptance and evidence; they are historical records, not current product policy or recurring gates. Never renumber old records.
 
-Separately numbered independent engineering review milestones inspect the implementation accumulated by their preceding gate. Each runs in a fresh task, is analysis-only, and may update only the approved review record and proposed roadmap/continuity documentation; it does not implement a fix. The reviewer must inspect actual source, tests, warnings, runtime paths, and applicable profiling or diagnostic evidence rather than relying on completion notes or assuming earlier decisions were correct. It assesses correctness, dependency direction, determinism and persistence/replay boundaries, performance and resource lifetime, Unity/presentation ownership, test quality, concrete maintainability/style consequences, temporary structures, and roadmap fitness as applicable to that gate.
+At integration gates, reassess affected pending work and risks against the shortest dependency-safe path to the approved playable outcome. Routine decomposition within scope is an agent decision; changing product scope, rules or explicit gates requires the corresponding user decision. A build, phase closure or work-record completion does not itself require full suites.
+
+Explicitly scheduled independent engineering reviews inspect the implementation accumulated by their preceding gate. Each runs in a fresh task, is analysis-only, and may update only the approved review record and proposed roadmap/continuity documentation; it does not implement a fix. The reviewer must inspect actual source, tests, warnings, runtime paths, and applicable profiling or diagnostic evidence rather than relying on completion notes or assuming earlier decisions were correct. It assesses correctness, dependency direction, determinism and persistence/replay boundaries, performance and resource lifetime, Unity/presentation ownership, test quality, concrete maintainability/style consequences, temporary structures, and roadmap fitness as applicable to that gate.
 
 A dimension becomes mechanical only after its check has been observed failing on a deliberate violation; until then the reviewer still assesses it and records either a finding or an explicit no-observation result. The following dimensions have met that proof condition and need not be re-audited semantically unless their check is retired without replacement or evidence identifies a gap:
 
@@ -38,13 +39,13 @@ A dimension becomes mechanical only after its check has been observed failing on
 - **Buildability:** the build-and-launch player smoke gate in `Testing/FUTURE_GATES.md` when its trigger surfaces change.
 - **Toolchain and platform portability:** the cross-platform validator and harness checks routed from `Docs/AI/TESTING.md`.
 
-The implementing agent's review-only milestone handoff pass is a routine self-check and does not satisfy or replace a separately numbered fresh-task independent engineering review.
+The implementing agent's review-only milestone handoff pass is a routine self-check and does not satisfy or replace a fresh-task independent engineering review.
 
-Every independent engineering review classifies each observation as a confirmed defect, demonstrated performance/resource problem, architectural growth risk, maintainability/test-quality problem, or stylistic preference only. Each actionable finding records evidence, impact, severity/timing, the smallest appropriate correction, and focused validation; it also records inspected areas that should be preserved. Gate-blocking or scheduled fixes become separately approved corrective micro-milestones. The review may recommend keeping, merging, splitting, deferring, or removing future work, but neither its findings nor its proposed roadmap changes authorize implementation. It is acceptable and valid for a review to conclude that no corrective work is justified.
+Every independent engineering review classifies each observation as a confirmed defect, demonstrated performance/resource problem, architectural growth risk, maintainability/test-quality problem, or stylistic preference only. Each actionable finding records evidence, impact, severity/timing, the smallest appropriate correction, and focused validation; it also records inspected areas that should be preserved. Gate-blocking or scheduled fixes become corrective work within an approved scope. The review may recommend keeping, merging, splitting, deferring, or removing future work, but neither its findings nor its proposed roadmap changes authorize implementation. It is acceptable and valid for a review to conclude that no corrective work is justified.
 
 Review-correction closure is mechanical. Every actionable finding names one test or validator check that closes it. A finding closes only when that named check has been observed to **fail at the pre-fix revision and pass at the post-fix revision**, with both observations recorded. A finding marked closed in documentation without that recorded transition is not closed, and a check that has never been observed failing is not evidence: it may be passing vacuously.
 
-A separately numbered fresh-task independent verification review is required only for a finding whose closure cannot be expressed as a check - rule-authority interpretation, architectural direction, or player experience. When a corrective sequence contains at least one such finding, its scheduling amendment must schedule that verification after the last correction, and the gate stays blocked until it completes. When a corrective sequence contains no such finding, it closes on its recorded check transitions and no verification milestone is scheduled. Every corrective and verification milestone still requires exact user approval, and neither a review nor a scheduling amendment authorizes execution.
+A fresh-task independent verification review is required only for a finding whose closure cannot be expressed as a check - rule-authority interpretation, architectural direction, or player experience. When a corrective sequence contains at least one such finding, its scheduling amendment must schedule that verification after the last correction, and the gate stays blocked until it completes. When a corrective sequence contains no such finding, it closes on its recorded check transitions and no verification milestone is scheduled. Corrective work and verification must be covered by the approved scope; do not ask again for a correction already included. A review-only request does not authorize implementation.
 
 Each review record maintains a compact finding-disposition table linking every actionable finding to its severity, approved decision, owning corrective or future milestone, the exact named check that closes it, and current status. A later gate cannot treat the review as closed while a gate-blocking row lacks an approved disposition or its recorded failing-then-passing evidence.
 
@@ -54,7 +55,9 @@ Every card-related milestone must preserve the contracts in `Docs/AI/CARD_SYSTEM
 
 ## Active milestone definition index
 
-Milestone definitions and their exact acceptance/non-goal checks are authoritative in the indexed phase shards below. Each linked phase-handoff row indexes the completed milestone's detailed commit-body evidence; neither is routine startup context.
+Current planning: [backlog](Roadmap/BACKLOG.md), [approved work](Roadmap/CURRENT_WORK.md), [PvE delivery plan](Roadmap/PVE.md). Current authority follows [subject owners](PROJECT_CONTEXT.md).
+
+Legacy definitions below preserve historical acceptance/non-goal checks and evidence links. Unfinished work is routed from the backlog. Historical policy text does not override this workflow or current testing policy. Keep paths stable instead of moving files merely to satisfy a size warning. Completed-only legacy definitions are historical retention, not active planning leaves.
 
 - [Phase 0 - Shared context and project shell](Roadmap/PHASE_0.md)
 - [Phase 1 - Smallest board interaction](Roadmap/PHASE_1.md)

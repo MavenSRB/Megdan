@@ -33,7 +33,7 @@ Expected result: all discovered cases pass after loading the complete 292-space 
 
 ## Complete gate suites
 
-Run both unfiltered suites only for T3 validation: a final implementation milestone of a phase, an explicit hard gate, shared test/package/assembly infrastructure, the pre-build regression gate, or a change promoted because its blast radius cannot be enumerated. Resolve focused failures before spending time on these suites. These commands intentionally omit `-testFilter`.
+Run both unfiltered suites only when [current testing policy](POLICY.md#new-builds-use-change-based-validation) selects T3 for a concrete broad-risk change or an explicitly selected full-suite gate. Phase closure and a build/package request are not triggers. Enumerate affected consumers and reuse unaffected evidence before selecting broader checks. Resolve focused failures first. These commands intentionally omit `-testFilter`.
 
 Every Edit Mode case must finish inside the framework's 180 s per-case budget on its own, not merely before the budget is next applied at a yield. The bot tier-two suite gate is the one case that approached it: `BotTierTwoTests` measures each held-out gate seed (101-104, both sides) in its own `TierTwoIsMeasuredAgainstTierOne_OnOneSeedItWasNotTunedOn(seed)` case and `TierTwoIsNotWorseThanTierOne_OnSeedsItWasNotTunedOn` asserts the unchanged outright-break floor over their merged report (milestone 9.26); a focused run of the gate case alone still measures every seed itself.
 

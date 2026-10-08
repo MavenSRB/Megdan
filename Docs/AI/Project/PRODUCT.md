@@ -4,56 +4,31 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Mission
 
-**2026-09-09 user-directed scope amendment:** maintain a private, noncommercial game for the user and friends; no public release or publisher pitch is planned. Prioritize reliable multiplayer, practical improvements to the existing UI and separately approved heroes. Production presentation, 3D/animation, pitch deliverables and licensed-product expansion are parked, not prerequisites for private use. The earlier mission/horizons below are preserved historical direction and do not authorize that work. Existing rules fidelity, privacy, artifact-preservation and publication restrictions remain unchanged; this amendment grants no new rights or external publication authority.
+Maintain and improve a private, noncommercial game for the user and friends. The current plan is to iterate, playtest and fix the existing game while designing PvE. Implementation will follow bounded approved design slices. The configured roster and shipped behavior are owned by [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md).
 
-Create a polished private digital prototype of *Guards of Atlantis II* that can be demonstrated to its publisher as the basis for a possible licensed, cross-platform adaptation.
-
-The private pitch prototype is a complete 3v3 match with six different heroes: the roster the user approved on 2026-08-23 at milestone 8.17, which is the rulebook's own recommended first-game line-up from p.6's setup step 7 - Wasp the Warmaiden, Xargatha the Changed and Tigerclaw the Cutpurse on Red against Arien the Tidemaster, Brogan the Destroyer and Sabina the Gunslinger on Blue - each source-verified before implementation. It retains single-controller director mode for development and demonstration, and now also targets an invite-only pre-production internet playtest in which six humans each control their independently owned hero before production presentation begins.
+Use [PvE design](PVE_DESIGN.md) for original-mode decisions and [workflow](../ROADMAP.md) for delivery. Publisher-pitch, licensed-product expansion, public services and platform expansion remain parked. Prior direction is preserved in the [pre-transition record](../Archive/PRODUCT_BEFORE_ITERATION_2026_10_08.txt).
 
 ## Rights and distribution boundary
 
 - On 2026-08-13, the user stated that they have relevant permission to publish this source repository and the included rulebook. This records the user's authorization for those artifacts; it is not a legal determination or authorization for builds, marketing, monetization, or excluded reference material.
-- The playable prototype remains private, noncommercial, and intended for a direct publisher pitch.
+- The game remains private and noncommercial, for the user and friends.
 - "Guards Digital" is a working title. Final naming is gated on authorization and publisher agreement.
 - Do not create a public build download, marketing campaign, monetization, telemetry, or store listing before separate authorization. The public source repository and tracked rulebook are the current bounded exception.
-- The initial pitch deliverable is a private Windows standalone build plus a short recorded walkthrough as backup.
+- Windows playtest packages support iteration; no pitch deliverable is scheduled.
 - Disposable online playtest builds may be shared only with specifically invited private testers and are not public releases.
 - Builds for all platforms remain internal unless specifically authorized.
 
 This is a project boundary, not a legal determination.
 
-## Product horizons
+## Product tracks
 
-### Horizon 1 - Private pitch prototype
-
-A complete 3v3 match with both director and private online validation modes:
-
-- Three Red heroes and three Blue heroes, all different: Wasp, Xargatha and Tigerclaw against Arien, Brogan and Sabina, per the approved 8.17 roster.
-- Wasp is implemented and integrated first; a mirrored Wasp 1v1 remains an intermediate development gate, not the pitch endpoint.
-- One human controls all six heroes in director mode.
-- All six hero hands are available to the controller through team/hero grouping; each nonempty hero hand requires exactly one facedown commitment, each empty hand requires Pass, reveal waits for all six hero responses, and a read-only four-turn history identifies every hero's authoritative revealed card or empty-hand Pass while current Facedown commitments and private hands remain protected by the applicable projection.
-- The controller selects exactly one owned card for every hero with a nonempty hand and records Pass for every empty hand, regardless of whether that hero is on the board; after all six heroes have responses, it reveals and resolves the played cards through normal Initiative order.
-- Before production presentation begins, six invited humans can connect over the internet from Windows clients, each control exactly one owned hero, see only their authorized private projection, and complete a full match through one authoritative host/session.
-- Full official single-lane board structure and standard minion setup.
-- Six-player Quick Game setup values: three Wave counters and five Life counters per team.
-- Full verified progression for all six heroes, including relevant card tiers, items, and Ultimate access.
-- Complete applicable game loop: cards, initiative, actions, combat, defense, minions, rounds, lane pushing, economy, leveling, respawn, and victory conditions.
-- No opponent AI, pass-and-play, accounts, public matchmaking, progression meta, or public live-service operations.
-
-### Horizon 2 - Licensed product direction
-
-Post-authorization only:
-
-- Production-ready online 3v3 as the primary mode, building on the private pre-production validation track.
-- Six humans, each controlling one hero.
-- Cross-platform release, developed and validated in phases.
-- Larger hero roster, eventually expected to approach roughly 40 heroes.
-- Production-scale hosting, matchmaking, accounts, platform services, moderation, anti-cheat, and operational support remain separate future work.
-- No AI-player requirement is currently planned.
+- Existing game: feedback, fixes, UI improvements and requested packages, prioritized through the shared backlog. Large maps remain a planned expansion, including the existing 4v4/5v5 two-lane proposal; select a bounded implementation slice once its map/setup/rule prerequisites are settled. PvE does not replace this direction.
+- PvE: design the first playable encounter, approve its rules and scope, implement and playtest, then decide what to expand.
+- Platform/pitch/production-service programs remain unscheduled and are not prerequisites for private play.
 
 ## Approved prototype deviations
 
-Everything not listed here must behave exactly like the authoritative physical game sources.
+For existing-mode behavior, the rules ledger's complete deviation register is authoritative; the historical foundation examples below are not an exhaustive current list. Original PvE rules follow approved decisions in PVE_DESIGN.md and never silently alter existing play.
 
 1. **Retired at milestone 8.25**: staged development configurations used one hero per team and a mirrored Wasp before the final pitch integration. The setup a player loads is the official six-player one, and the one-hero-per-team boards survive only as fixtures asked for by name.
 2. One controller sees and operates all six heroes in director mode.
@@ -70,14 +45,14 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - Never parse card pixels or printed text at runtime.
 - Do not add convenience rules, balance changes, or digital-only behavior without explicit approval.
 - When a source is ambiguous, follow the authority hierarchy in `RULES_LEDGER.md` and record any temporary interpretation.
-- The game has no randomness after setup. The only random setup result is the starting side of the Tie Breaker coin.
+- Existing tabletop-derived gameplay adds no new randomness after setup. PvE randomness is undecided; any approved addition must be explicit and replayable.
 - Normal play randomizes the initial Tie Breaker side. Internal tests may explicitly choose Red or Blue.
 
 ## Technology and platforms
 
 - Engine: Unity.
 - Installed and selected editor: Unity `6000.5.9f1`.
-- Rendering pipeline: Built-In Render Pipeline is retained for the current primitive-rule phases. Before production presentation begins, milestone 8.28 migrates the validated primitive match to URP and makes URP the accepted rendering baseline; do not introduce Built-In-only production visual dependencies beforehand.
+- Rendering pipeline: URP 17.5 is the accepted baseline, established at 8.28.
 - Reference development platform: Windows desktop and Unity Editor.
 - Active reference build target: Windows 64-bit standalone (`Win64`).
 - Input: Unity Input System package `1.19.0`, with **Input System Package (New)** as the only active input handler. The legacy Input Manager is not selected for gameplay input.
@@ -88,4 +63,4 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 - iOS support is phase-scale work that is not yet scheduled as milestones. It requires at minimum: touch input replacing the current pointer-driven interaction, an IL2CPP and AOT audit of any reflection-dependent runtime path, ARM64 build configuration, a mobile allocation budget measured at the first mobile player build (the desktop growth work closed with `RISK-PERF-001`'s 6.1o retirement, which recorded the mobile cost as exactly this measurement gap), shader stripping verified by extending the standing player-build smoke gate to the mobile target (the desktop hazard closed with `RISK-BUILD-001`'s 6.1d retirement), and provisioning. These are new platform-bring-up gates, not surviving states of retired prototype risks. Do not treat a passing Windows build as evidence of iOS viability.
 - The corrective sequence prepares the ground for the added platforms without implementing them: 6.1d declares shader dependencies, makes the validation toolchain cross-platform, and adds a player-build smoke gate, while 6.1i removes the per-command allocation growth. Mobile player work is scheduled only after those complete.
 - Use Unity's Input System and keep interactions adaptable across mouse and touch.
-- Do not choose a networking provider or SDK before milestone 8.29 compares current support, relay/hosting, cost, licensing, privacy, and operational constraints.
+- Private networking follows [PRIVATE_ONLINE_ARCHITECTURE.md](PRIVATE_ONLINE_ARCHITECTURE.md). Provider/SDK changes need a scoped compatibility, cost, privacy and operating assessment.
