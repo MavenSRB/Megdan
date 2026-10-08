@@ -21,7 +21,11 @@ Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone
 
 ## Alternate map runtime contract
 
-9.61 promotes [alternate-small-single-lane.map.json](alternate-small-single-lane.map.json) as `alternate-small-single-lane@1`. It retains the approved 258 cells, 156 playable cells, five ordered zones, forty spawn points and complete terrain border. The existing `official-single-lane@1` stays the fresh-host default. Both support 2v2/3v3 with the host's configured Wave/Life counts; neither two-lane map is registered.
+W-005 corrects [alternate-small-single-lane.map.json](alternate-small-single-lane.map.json) as `alternate-small-single-lane@2`: 258 cells, 186 playable cells, five ordered lane zones plus two 15-space off-lane Jungle zones, forty unchanged spawn points and a complete terrain border. The blue lower-left and upper-right regions are playable; their colour was incorrectly interpreted as blocking water in revision 1. The existing `official-single-lane@1` stays the fresh-host default. Both support 2v2/3v3 with the host's configured Wave/Life counts; neither two-lane map is registered.
+
+Authority: user correction on 2026-10-09 and printed rulebook p.19, which distinguishes terrain by the absence of a full grid outline, not by colour. The two side zones use the existing neutral `jungle` classification and are excluded from ordered Lane Push progression. All 30 former water entries become playable; the other 72 terrain cells, existing coordinates, artwork and spawns are unchanged. Physical/playable edges are 709/474. No movement-engine or hero-specific exception is added.
+
+Revision 1 is no longer registered: old alternate-map snapshots and peers must not silently acquire the corrected topology. Revision 2 round-trips through the existing map-reference contract without a snapshot schema or wire-protocol change. Existing W003 packages remain revision 1 until separately rebuilt.
 
 The ordinary host-screen **MAP** dropdown is outside Experimental. Hosting fixes its selection; the lobby displays the chosen map. Map identity and immutable configured Wave/Life values travel in `MatchCompositionPlan` through experiment setup, hero draft/recomposition and restart. Hero slots follow the same-team hero spawn IDs in ordinal order. Initial minions come from the selected map's starting zone: four melee, one ranged and one heavy per side, retaining stable instance IDs. The map-aware setup path produces the original map's exact prior positions.
 

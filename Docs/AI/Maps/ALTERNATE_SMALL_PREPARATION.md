@@ -2,6 +2,12 @@
 
 Preparation owner [9.63](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963-prepare-the-alternate-2v23v3-map); implementation owner [9.61](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-961-implement-the-alternate-map-for-2v2-and-3v3). Return to [map index](README.md). The session brief owns authorization. This preserves the **review candidate** and its provenance. 9.61 now promotes the unchanged inventory to [canonical runtime source](alternate-small-single-lane.map.json); its source/UI gate is complete; the merged-player build follows separately. The final hero's source and tests are untouched. [9.63a](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-963a-complete-the-small-map-terrain-border) corrects the spawn-zone terrain border confirmed by the user.
 
+## Historical preparation and W-005 correction
+
+The inventory below records the original revision-1 preparation, not the corrected runtime classification. W-005 supersedes its claim that both blue regions are blocking water and that this map has no Jungle zones. The user's 2026-10-09 correction and rulebook p.19's full-grid-outline criterion restore both complete 15-space regions as playable off-lane zones. Current revision-2 counts and compatibility are owned by [the runtime contract](README.md#alternate-map-runtime-contract).
+
+The candidate, registration appearance labels, initial-spawn references and private review sheets remain unchanged as historical evidence of the faulty import. Use the canonical map, not that candidate, for runtime classification; the artwork transform remains valid.
+
 ## Prepared inventory
 
 Candidate identity: `alternate-small-single-lane@1`, display label `Alternate Small Map` (a filing/UI description, not a claimed official name). The files in [Preparation/](Preparation/) contain:

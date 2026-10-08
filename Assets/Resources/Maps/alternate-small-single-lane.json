@@ -67,23 +67,23 @@
     ]
   },
   "mapId": "alternate-small-single-lane",
-  "revision": 1,
+  "revision": 2,
   "displayName": "Alternate Small Map",
-  "preparationStatus": "review-candidate-not-runtime-registered",
+  "preparationStatus": "runtime-registered",
   "source": {
     "artwork": "Docs/Guards of Atlantis II - Map References/alternate-2v2-3v3-ranged-spawns-2026-10-05.png",
     "artworkSha256": "f7a57391af1723fb73c4a82d9da8e573e46cb14670d8a52da76e73fae6cf88bd",
     "originalArtworkSha256": "0e2d26886b565b28c60d431fe321cf43da24edece1bb48635a3100b30e30089f",
     "preparedOn": "2026-10-05",
     "authority": "User-supplied map and requested ranged tower replacements. Printed rulebook pp.3,6,11,19 for common map/setup semantics. Artwork remains private.",
-    "reviewNote": "Preparation candidate. A complete one-hex terrain border around every playable cell is required by the user, including the 22 spawn-zone neighbour cells confirmed at 9.63a. Exterior sea, raised decorative peaks and structures beyond that border are not additional spaces. Not a publisher-supplied coordinate diagram."
+    "reviewNote": "W-005 (2026-10-09): user-confirmed blue lower-left and upper-right regions are playable off-lane zones. Rulebook p.19 classifies terrain by missing full grid outlines, not blue colour. Preserve the original lane, spawns and complete one-hex terrain border; exterior decoration beyond that border is not additional space."
   },
   "connectionPolicy": {
     "kind": "standard-axial-touching-inventory-v1",
     "physicalConnections": "Every pair of inventoried cells separated by one named axial direction.",
     "playableConnections": "Physical connections whose two endpoints are playable; terrain endpoints are excluded.",
     "undirectedPhysicalConnectionCount": 709,
-    "undirectedPlayableConnectionCount": 404
+    "undirectedPlayableConnectionCount": 474
   },
   "zones": [
     {
@@ -124,6 +124,22 @@
       "kind": "throne",
       "teamId": "blue",
       "isThrone": true,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "top-jungle",
+      "displayName": "Top Jungle",
+      "kind": "jungle",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "bottom-jungle",
+      "displayName": "Bottom Jungle",
+      "kind": "jungle",
+      "teamId": null,
+      "isThrone": false,
       "isStartingBattleZone": false
     }
   ],
@@ -419,22 +435,22 @@
       "spaceId": "q5_r-6",
       "q": 5,
       "r": -6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q6_r-6",
       "q": 6,
       "r": -6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-6",
       "q": 7,
       "r": -6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-6",
@@ -517,22 +533,22 @@
       "spaceId": "q5_r-5",
       "q": 5,
       "r": -5,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q6_r-5",
       "q": 6,
       "r": -5,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-5",
       "q": 7,
       "r": -5,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-5",
@@ -622,15 +638,15 @@
       "spaceId": "q6_r-4",
       "q": 6,
       "r": -4,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-4",
       "q": 7,
       "r": -4,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-4",
@@ -720,15 +736,15 @@
       "spaceId": "q6_r-3",
       "q": 6,
       "r": -3,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-3",
       "q": 7,
       "r": -3,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-3",
@@ -818,15 +834,15 @@
       "spaceId": "q6_r-2",
       "q": 6,
       "r": -2,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-2",
       "q": 7,
       "r": -2,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-2",
@@ -916,15 +932,15 @@
       "spaceId": "q6_r-1",
       "q": 6,
       "r": -1,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r-1",
       "q": 7,
       "r": -1,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q8_r-1",
@@ -1028,8 +1044,8 @@
       "spaceId": "q6_r0",
       "q": 6,
       "r": 0,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "top-jungle"
     },
     {
       "spaceId": "q7_r0",
@@ -1049,8 +1065,8 @@
       "spaceId": "q-7_r1",
       "q": -7,
       "r": 1,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r1",
@@ -1154,15 +1170,15 @@
       "spaceId": "q-8_r2",
       "q": -8,
       "r": 2,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r2",
       "q": -7,
       "r": 2,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r2",
@@ -1252,15 +1268,15 @@
       "spaceId": "q-8_r3",
       "q": -8,
       "r": 3,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r3",
       "q": -7,
       "r": 3,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r3",
@@ -1350,15 +1366,15 @@
       "spaceId": "q-8_r4",
       "q": -8,
       "r": 4,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r4",
       "q": -7,
       "r": 4,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r4",
@@ -1448,15 +1464,15 @@
       "spaceId": "q-8_r5",
       "q": -8,
       "r": 5,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r5",
       "q": -7,
       "r": 5,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r5",
@@ -1546,22 +1562,22 @@
       "spaceId": "q-8_r6",
       "q": -8,
       "r": 6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r6",
       "q": -7,
       "r": 6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r6",
       "q": -6,
       "r": 6,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-5_r6",
@@ -1644,22 +1660,22 @@
       "spaceId": "q-8_r7",
       "q": -8,
       "r": 7,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-7_r7",
       "q": -7,
       "r": 7,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-6_r7",
       "q": -6,
       "r": 7,
-      "kind": "terrain",
-      "zoneId": null
+      "kind": "playable",
+      "zoneId": "bottom-jungle"
     },
     {
       "spaceId": "q-5_r7",

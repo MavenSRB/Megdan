@@ -10,6 +10,10 @@ The configured match is rulebook p.5's official six-player Quick Game setup: thr
 
 **9.70 setup amendment.** That official row remains the fresh 3v3 default and a source fixture, not the only player-facing setup. The host may choose 2v2/3v3 and bounded positive starting Wave/Life counts under DEV-009; 2v2 defaults to 3/4. Custom values are not claimed as official rules.
 
+## Alternate-map blue side-zone correction
+
+W-005 (2026-10-09): the user identified both blue lower-left/upper-right regions as whole playable zones. Printed rulebook p.19 defines blocking terrain by missing full grid outlines, not colour. Revision-1 import misclassified all 30 gridded spaces as water terrain. Revision 2 restores two neutral off-lane zones using the existing Jungle contract; no special movement permission or new rule is introduced. Inventory, compatibility and source links: [map runtime contract](Maps/README.md#alternate-map-runtime-contract). Regression owner: `AlternateSmallMapTests.BlueSideZonesOfferMovementAndFastTravel`, geometry/round-trip/Lane Push cases, and the rendered-map fixture.
+
 ## Authority hierarchy
 
 When sources conflict or a rule is ambiguous, use this order:

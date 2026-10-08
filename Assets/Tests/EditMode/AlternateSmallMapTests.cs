@@ -72,14 +72,36 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(host.Projection.Setup.WaveCount, Is.EqualTo(waves));
             Assert.That(host.Projection.Setup.Teams.All(team => team.LifeCount == lives), Is.True);
         }
+        // W-005: user-confirmed blue side regions have full grid outlines (rulebook p.19).
+        [TestCase(-5, 6, -6, 6, "bottom-jungle")]
+        [TestCase(4, -5, 5, -5, "top-jungle")]
+        public void BlueSideZonesOfferMovementAndFastTravel(int q, int r, int targetQ, int targetR, string zone)
+        {
+            var host = Create("3v3-quick", true);
+            var map = host.Projection.SelectedMap;
+            var hero = host.Projection.Setup.Heroes.First().HeroId;
+            var occupant = new HeroOccupancy(hero, new HexCoordinate(q, r));
+            var target = new HexCoordinate(targetQ, targetR);
+            var board = new AdjacentMoveAuthority(map, new[] { occupant }, Array.Empty<ObstacleOccupancy>());
+            var movement = MovementReachabilityQuery.FindReachableDestinations(occupant, board, 1, RuleModificationSet.Empty);
+            Assert.That(movement.Select(d => d.Destination), Does.Contain(target), "Blue region must be offered for ordinary movement.");
+            var cells = map.Spaces.Where(s => s.ZoneId.Equals(new ZoneId(zone))).ToArray();
+            Assert.That(cells.Length, Is.EqualTo(15));
+            Assert.That(cells.All(s => s.Kind == BoardMapSpaceKind.Playable), Is.True);
+            var travel = FastTravelActionQuery.FindDestinationsForActor(hero, board, board,
+                host.Projection.Participants, board.Minions, FastTravelZoneScope.SameOrAdjacentZone, RuleModificationSet.Empty);
+            Assert.That(cells.All(s => travel.Contains(s.Coordinate)), Is.True, "The whole adjacent zone must be available.");
+            Assert.That(movement.All(d => !map.Spaces.Any(s => s.Coordinate.Equals(d.Destination) && s.Kind == BoardMapSpaceKind.Terrain)), Is.True);
+        }
+
         [Test] public void ReviewedGeometryIncludesEverySpawnBorderAndSymmetricLane()
         {
             var map=OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.AlternateSmall);
             Assert.That(map.Spaces.Count,Is.EqualTo(258));
-            Assert.That(map.Spaces.Count(s=>s.Kind==BoardMapSpaceKind.Playable),Is.EqualTo(156));
+            Assert.That(map.Spaces.Count(s=>s.Kind==BoardMapSpaceKind.Playable),Is.EqualTo(186));
             Assert.That(map.SpawnPoints.Count,Is.EqualTo(40));
-            Assert.That(map.Zones.Select(z=>map.Spaces.Count(s=>s.ZoneId.Equals(z.Id))),Is.EqualTo(new[]{17,35,52,35,17}));
-            Assert.That(map.Zones.Any(z=>z.Kind=="jungle"),Is.False);
+            Assert.That(map.Zones.Select(z=>map.Spaces.Count(s=>s.ZoneId.Equals(z.Id))),Is.EqualTo(new[]{17,35,52,35,17,15,15}));
+            Assert.That(map.Zones.Count(z=>z.Kind=="jungle"),Is.EqualTo(2));
             var cells=map.Spaces.ToDictionary(s=>s.Coordinate);
             foreach(var cell in map.Spaces)
             {
@@ -246,7 +268,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(decoded.HostFormatId,Is.EqualTo("2v2-long"));
             var catalog=OfficialBoardMapCatalog.Load();
             Assert.Throws<BoardMapLoadException>(()=>catalog.Load(new MapDefinitionReference(new MapId("unknown"),1)));
-            Assert.Throws<BoardMapLoadException>(()=>catalog.Load(new MapDefinitionReference(OfficialBoardMapCatalog.AlternateSmall.MapId,2)));
+            Assert.That(OfficialBoardMapCatalog.AlternateSmall.ContentRevision, Is.EqualTo(2));
+            Assert.Throws<BoardMapLoadException>(()=>catalog.Load(new MapDefinitionReference(OfficialBoardMapCatalog.AlternateSmall.MapId,1)));
+            Assert.Throws<BoardMapLoadException>(()=>catalog.Load(new MapDefinitionReference(OfficialBoardMapCatalog.AlternateSmall.MapId,3)));
         }
     }
 }

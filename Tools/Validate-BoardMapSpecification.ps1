@@ -222,8 +222,15 @@ Write-Output "Reviewed zone/space/spawn/Lane inventory digest: $reviewDigest"
 $alternatePath = Join-Path $PSScriptRoot '../Docs/AI/Maps/alternate-small-single-lane.map.json'
 $alternate = Get-Content -Raw -LiteralPath $alternatePath | ConvertFrom-Json
 $alternateValidation = Test-BoardMapSpecificationInvariant -Map $alternate -Label 'alternate small map'
-if ($alternate.spaces.Count -ne 258 -or @($alternate.spaces | Where-Object kind -eq 'playable').Count -ne 156 -or $alternate.spawnPoints.Count -ne 40) {
-    throw 'Alternate map inventory differs from the reviewed 258/156/40 cells/playable/spawns.'
+if ($alternate.revision -ne 2 -or $alternate.spaces.Count -ne 258 -or @($alternate.spaces | Where-Object kind -eq 'playable').Count -ne 186 -or $alternate.spawnPoints.Count -ne 40) {
+    throw 'Alternate map inventory differs from W-005 revision 2: 258/186/40 cells/playable/spawns.'
+}
+foreach ($zoneId in @('top-jungle', 'bottom-jungle')) {
+    $zone = @($alternate.zones | Where-Object zoneId -eq $zoneId)
+    $cells = @($alternate.spaces | Where-Object zoneId -eq $zoneId)
+    if ($zone.Count -ne 1 -or $zone[0].kind -ne 'jungle' -or $cells.Count -ne 15 -or @($cells | Where-Object kind -ne 'playable').Count -ne 0 -or $alternate.orderedLaneZoneIds -contains $zoneId) {
+        throw "Blue side zone $zoneId must contain 15 playable off-lane spaces."
+    }
 }
 $coordinates = @{}
 foreach ($space in $alternate.spaces) { $coordinates["$($space.q),$($space.r)"] = $true }
@@ -234,4 +241,4 @@ foreach ($space in @($alternate.spaces | Where-Object kind -eq 'playable')) {
     }
 }
 & (Join-Path $PSScriptRoot 'Sync-BoardMapResource.ps1') -Check
-Write-Output 'PASS: alternate small map; 258 cells, 156 playable, 40 spawns, complete terrain border and resource parity.'
+Write-Output 'PASS: alternate small map revision 2; 258 cells, 186 playable, two 15-space side zones, 40 spawns, complete terrain border and resource parity.'

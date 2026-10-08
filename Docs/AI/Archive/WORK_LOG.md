@@ -7,6 +7,14 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
 | W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
+| W-005 | Restored both whole blue side zones on the alternate map; revision-2 identity, movement/travel and rendered-map regressions. | `work/W-005` |
+
+### [x] W-005 Restore both alternate-map blue side zones
+
+Approved by the user's 2026-10-09 instruction to fix the entire lower-left and upper-right blue regions omitted from movement. The original import incorrectly classified their 30 fully gridded spaces as blocked water. Printed rulebook p.19 and the user-confirmed zones govern the correction.
+Outcome: two neutral 15-space playable off-lane zones; original lane, spawns, rocks, artwork and coordinate inventory preserved. Runtime and offline catalogs select map revision 2 and reject obsolete revision 1. Existing package remains unchanged.
+Closing checks: both movement regressions failed before correction and passed afterward; focused map, movement, Fast Travel, setup, Lane Push, snapshot/Undo, revision rejection, rendered tile classification and host/join checks; map/resource and living-document validation, diff review. T2. No hero-specific behavior, new build or unrelated full suites. W-004 remains at its independent visual-approval gate.
+Historical evidence: completion commit addressed by immutable `work/W-005`; exact checks, results and limitations live in its body.
 
 ### [x] W-001 Transition to iteration and PvE design
 

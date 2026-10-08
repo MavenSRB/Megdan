@@ -40,7 +40,7 @@ namespace GuardsDigital.Presentation.Board
             new MapDefinitionReference(new MapId("official-single-lane"), 1);
 
         public static readonly MapDefinitionReference AlternateSmall =
-            new MapDefinitionReference(new MapId("alternate-small-single-lane"), 1);
+            new MapDefinitionReference(new MapId("alternate-small-single-lane"), 2);
         public static System.Collections.Generic.IReadOnlyList<MapDefinitionReference> SupportedMaps { get; } =
             Array.AsReadOnly(new[] { SelectedMap, AlternateSmall });
 

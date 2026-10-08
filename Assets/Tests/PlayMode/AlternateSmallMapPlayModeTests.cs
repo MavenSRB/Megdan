@@ -139,6 +139,12 @@ namespace GuardsDigital.Tests.PlayMode
                         Assert.That(grid.IsUnderlayActive,Is.True,"The approved private image must be imported for the visual gate.");
                         var tiles=grid.GetComponentsInChildren<HexTileView>();
                         Assert.That(tiles.Length,Is.EqualTo(258));
+                        foreach (var zoneId in new[] { "top-jungle", "bottom-jungle" })
+                        {
+                            var sideTiles = tiles.Where(t => t.ZoneId.HasValue && t.ZoneId.Value.Value == zoneId).ToArray();
+                            Assert.That(sideTiles.Length, Is.EqualTo(15), "Entire blue region must be rendered as a zone.");
+                            Assert.That(sideTiles.All(t => t.IsPlayable), Is.True);
+                        }
                         foreach(var spawn in map.SpawnPoints)
                         {
                             var coordinate=map.Spaces.Single(s=>s.Id.Equals(spawn.SpaceId)).Coordinate;
