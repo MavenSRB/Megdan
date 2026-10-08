@@ -9,6 +9,8 @@ using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
@@ -3177,6 +3179,45 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>Milestone 8.107. The first screen's two buttons, sorted as ControlLabels sorts.</summary>
         private static readonly string[] LandingControls = { "HOST", "JOIN" };
+
+        [UnityTest]
+        public IEnumerator EscapeUsesCancelOnHostAndJoinEntryMenusOnly()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var keyboardAdded = Keyboard.current == null;
+            var keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                yield return OpenHostMenu(driver);
+                Control(driver, "CANCEL").Focus();
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+                yield return null;
+                Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing));
+                Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                yield return OpenJoinMenu(driver);
+                driver.View.Root.Q<TextField>().Focus();
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+                yield return null;
+                Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing),
+                    "Escape reaches CANCEL while an entry field owns focus.");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+                yield return null;
+                Assert.That(driver.View.Page, Is.EqualTo(PrivateLobbyEntryPage.Landing),
+                    "The landing has no CANCEL and must stay put.");
+            }
+            finally
+            {
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                if (keyboardAdded) InputSystem.RemoveDevice(keyboard);
+            }
+        }
 
         /// <summary>
         /// Milestone 8.107. Presses the first screen's HOST, which opens the host menu, and waits

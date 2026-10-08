@@ -265,9 +265,13 @@ Result: both rails now sort by seat identity, preserving the fixed per-seat pale
 
 Historical evidence: [9.97 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-997-seat-ordered-named-hero-trays).
 
-### [ ] 9.98 Make Escape use the active screen's close action
+### [x] 9.98 Make Escape use the active screen's close action
 
 Authorized 2026-10-08: Escape closes card inspection and other active surfaces with a CLOSE/CANCEL control, one topmost surface per press, including when keyboard focus is inside a child or back on the board. Closing check: regressions for inspection, spellbook and applicable lobby screens using the real input route, plus directly affected focused Play Mode checks. T2. Escape does not submit a gameplay command.
+
+Result: real keyboard Escape invokes the inspection CLOSE, spellbook CLOSE, or Host/Join entry CANCEL action according to the currently open surface, independently of UI focus. The HUD uses a held-key edge, so one press cannot close a second screen; the lobby landing has no Escape action. Focused new Play checks passed 2/2, and existing inspection, three-viewport spellbook and lobby regressions passed 3/3. The spellbook regression's pre-existing resize timing was corrected to wait one frame for `Screen.SetResolution` before laying out; no spellbook layout behavior changed. No gameplay command, rule or wire change. Completed 2026-10-08.
+
+Historical evidence: [9.98 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-998-escape-closes-the-active-screen).
 
 ### [ ] 9.99 Normalize hero-token ring width and eliminate source-color bleed
 

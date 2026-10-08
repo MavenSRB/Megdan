@@ -16,6 +16,69 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class HeroCardInspectionPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator EscapeClosesInspectionAndSpellbookWithoutSubmittingACommand()
+        {
+            var keyboardAdded = false;
+            Keyboard keyboard = null;
+            try
+            {
+                var registered = RegisteredHeroRoster.ForThisBuild;
+                var gydion = registered.Single(candidate => candidate.ContentId.Value == "gydion");
+                var printed = RegisteredHeroRoster.PrintedLineup(3);
+                MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                    new[] { gydion }.Concat(printed.Red.Where(candidate =>
+                        candidate.ContentId.Value != "gydion").Take(2)), printed.Blue);
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                var root = ArienUiJourneyPlayModeTests.Root();
+                var runtime = root.Runtime;
+                var view = runtime.HeroOverviewsView;
+                view.CardInspection.UseTrustedLocalHeroPerspective = true;
+                var hero = runtime.Host.Projection.Setup.Heroes.Single(candidate =>
+                    candidate.ContentId.Value == "gydion").HeroId;
+                var version = runtime.Host.Version;
+                yield return null;
+                keyboardAdded = Keyboard.current == null;
+                keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+                Assert.That(root.Hud.isActiveAndEnabled, Is.True, "the HUD must poll Escape in this scene");
+
+                Assert.That(view.OpenCardInspection(hero), Is.True);
+                view.CardInspection.Root.Q<Button>("gd-hero-card-close").Focus();
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+                yield return null;
+                yield return null;
+                Assert.That(keyboard.escapeKey.isPressed, Is.True, "the real Input System key event reached the device");
+                Assert.That(view.CardInspection.IsOpen, Is.False,
+                    "Escape closes inspection even while a child owns keyboard focus.");
+                Assert.That(view.OpenSpellbook(hero), Is.True);
+                root.Hud.RootElement.Q<Button>("gd-director-toggle").Focus();
+                yield return null;
+                yield return null;
+                Assert.That(view.IsSpellbookOpen, Is.True,
+                    "Holding the same Escape press must not close a second screen.");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+                yield return null;
+
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+                yield return null;
+                yield return null;
+                Assert.That(view.IsSpellbookOpen, Is.False,
+                    "Escape closes the drawer even when focus returned to the board HUD.");
+                Assert.That(runtime.Host.Version, Is.EqualTo(version),
+                    "Neither close action is a gameplay command.");
+            }
+            finally
+            {
+                MatchSceneCompositionRoot.NextComposedLineup = null;
+                if (keyboard != null)
+                {
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                    if (keyboardAdded) InputSystem.RemoveDevice(keyboard);
+                }
+            }
+        }
+
         [UnityTest] public IEnumerator PortraitKeepsHandAndUnavailableAboveTheSeparateGoldBoxAtBothSizes()
         {
             var oldWidth = (uint)Screen.width; var oldHeight = (uint)Screen.height;

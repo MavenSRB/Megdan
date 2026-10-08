@@ -971,3 +971,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.97 | Red and Blue hero rails follow lobby seats 1/2/3 from top to bottom with fixed red/orange/yellow and blue/cyan/teal accents. Public lobby player names occupy small outward plates above portraits with ellipsis and full-name hover; unnamed seats show no plate. Shuffled-lineup/live-host Play checks passed 2/2, focused Edit passed 158/158, and six-rail fit Play passed 1/1. A private rendered capture is retained; no rule or wire change. [Definition](../../Roadmap/PHASE_9.md#x-997-bind-tray-positions-and-player-name-plates-to-lobby-seats). | `milestone/9.97` |
+## Milestone 9.98 Escape closes the active screen
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.98 | Physical Escape follows the existing CLOSE action on card inspection and spellbook, or CANCEL on pre-match Host/Join menus, independent of keyboard focus. A held press closes at most one HUD surface; no match command is submitted. New real-input Play checks passed 2/2 and affected inspection/spellbook/lobby journeys passed 3/3. The spellbook journey now waits for a requested viewport resize before measuring unchanged layout. [Definition](../../Roadmap/PHASE_9.md#x-998-make-escape-use-the-active-screens-close-action). | `milestone/9.98` |

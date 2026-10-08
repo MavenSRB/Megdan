@@ -20,6 +20,8 @@ Full-height edge rails hold three hero plaques each. Lobby seats 1/2/3 stay top/
 
 The right rail is the left one mirrored rather than repeated, so both read outward from the board and each hero's marker sits on its rail's inner corner. Two rows stay unmirrored: the four resolved-turn slots (a sequence, not decoration) and discard (a pile reads left to right regardless of edge). Which team a hero is on is not written on the rail; the two edges, the accent colours and the hero disc's own hover and assistive reading carry it, as a card's printed colour is carried. [Hero-rail interactions](HERO_RAIL_INTERACTION.md) owns linked identity highlights, plaque selection and portrait pick-card previews.
 
+Escape invokes the current card-inspection or spellbook CLOSE action, one surface per keypress, regardless of whether focus remains in the surface or returns to the HUD. The pre-match Host and Join menus use their existing CANCEL action on Escape; the landing has none. These dismissals never issue a match command.
+
 ## The card in play, and the four turns behind it
 
 The rail separates the card a hero has in play now from the turns behind them. A marker in the header's inner corner holds the current card while it is committed or revealed and unresolved; the four numbered slots are resolved turn history, and a turn is numbered only once that turn's exact card instance reaches `CardResolutionStatus.Resolved`.

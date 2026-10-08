@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot 
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.97**.
+- Current completed milestone: **9.98**.
 
 - Active authorized milestone: **None**.
 - Authorized sequence: **9.96 -> 9.97 -> 9.98 -> 9.99**, approved 2026-10-08 by the user's playtest screenshots and "gogog": vertically center the Defense breakdown at compact and expanded row counts; fix seat-ordered red/blue hero trays and show each lobby player name above the portrait; make Escape close the active screen that has a close control; correct the hero-token ring thickness and orange face bleed. Execute serially with separate validation and local commits; no package or publication was requested.

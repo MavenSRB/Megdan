@@ -90,12 +90,6 @@ namespace GuardsDigital.Presentation.Match
             rowScroll.Add(row);
             Root.Add(rowScroll);
 
-            Root.RegisterCallback<KeyDownEvent>(evt =>
-            {
-                if (evt.keyCode != KeyCode.Escape) return;
-                Close();
-                evt.StopPropagation();
-            });
         }
 
         public bool Open(HeroId id, string displayName) => Open(Find(id), displayName);

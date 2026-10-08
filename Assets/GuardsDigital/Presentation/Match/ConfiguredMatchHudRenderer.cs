@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Board;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Match
@@ -1853,8 +1854,23 @@ namespace GuardsDigital.Presentation.Match
 
         private void LateUpdate()
         {
+            var escapeDown = Keyboard.current?.escapeKey.isPressed == true;
+            if (escapeDown && !escapeWasDown)
+                CloseTopmostScreen();
+            escapeWasDown = escapeDown;
             ApplyExclusiveContext();
             round?.UpdateDefensePreviewDismissal(Time.realtimeSinceStartupAsDouble);
+        }
+
+        private bool escapeWasDown;
+
+        /// <summary>One Escape press invokes only the frontmost visible CLOSE action.</summary>
+        private void CloseTopmostScreen()
+        {
+            if (heroOverviews?.CardInspection.IsOpen == true)
+                heroOverviews.CardInspection.Close();
+            else if (heroOverviews?.IsSpellbookOpen == true)
+                heroOverviews.CloseSpellbook();
         }
 
         private void OnDestroy()

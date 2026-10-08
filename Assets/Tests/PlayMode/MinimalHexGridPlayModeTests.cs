@@ -926,6 +926,9 @@ namespace GuardsDigital.Tests.PlayMode
                 {
                     var where = size.x + "x" + size.y;
                     UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "9.30h1 spellbook");
+                    // Screen.SetResolution takes effect on the next frame; layout must read the
+                    // settled viewport, not the prior iteration's panel dimensions.
+                    yield return null;
 
                     // D and B: the chip in the strip, and the drawer on Gydion's own seat.
                     RenderSpellbookPlaque(runtime, gydion, ownerSeat: true);

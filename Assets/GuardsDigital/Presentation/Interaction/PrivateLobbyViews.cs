@@ -11,6 +11,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -1684,6 +1685,12 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 return;
             }
+
+            if (Keyboard.current?.escapeKey.wasPressedThisFrame == true &&
+                presenter.Model?.Role == PrivateLobbyRole.None &&
+                view.Page != PrivateLobbyEntryPage.Landing &&
+                view.Root.style.display.value == DisplayStyle.Flex)
+                view.ShowPage(PrivateLobbyEntryPage.Landing);
 
             view.SetMapName(compositionRoot.Runtime.ReadModel.SelectedMap.DisplayName);
             var now = DateTime.UtcNow;
