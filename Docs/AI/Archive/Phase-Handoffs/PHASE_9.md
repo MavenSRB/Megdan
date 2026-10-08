@@ -924,3 +924,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.89 | Existing outward ping animation with a heavier perimeter, compact stable-order sender tokens above shared hexes, and the existing End Turn pulse extended across its full face at a modestly faster cadence. The End Turn regression failed then passed; affected Edit passed 29/29 and Play passed 6/6; fresh real-game captures were visually reviewed. [Definition](../../Roadmap/PHASE_9.md#x-989-strengthen-teammate-pings-and-the-end-turn-release-flash). | `milestone/9.89` |
+
+## Milestone 9.90 ping and End Turn Windows package completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.90 | Stamped main `88b89399` produced private `Playtest-9.90-ping-endturn` at wire `/48` and schema 59. Per explicit user direction, it reused 9.89's focused 29/29 Edit and 6/6 Play evidence without rerunning the offline harness or unfiltered suites. Exact-player build/launch, board and packaged-executable smokes passed; all 184 ZIP files match the loose package byte-for-byte, and SHA-256 is `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`. [Definition](../../Roadmap/PHASE_9.md#x-990-package-the-ping-and-end-turn-cue-update-without-broad-suite-reruns). | `milestone/9.90` |

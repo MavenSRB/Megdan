@@ -260,9 +260,15 @@ Completed 2026-10-08.
 
 Historical evidence: [9.89 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-989-ping-and-end-turn-cue-completion).
 
-### [~] 9.90 Package the ping and End Turn cue update without broad-suite reruns
+### [x] 9.90 Package the ping and End Turn cue update without broad-suite reruns
 
 Authorized 2026-10-08 by the user: put 9.89 into a new private Windows playtest build without rerunning the full test program because it is the only source change since 9.88. Reuse 9.89's focused 29/29 Edit Mode and 6/6 Play Mode evidence and explicitly omit the offline harness and unfiltered Unity suites. Stamp a distinct package, run only artifact-facing build/launch interaction and rendered-board smokes, copy without logs/debug material, generate per-file and ZIP checksums, verify the ZIP byte-for-byte against the loose package, and smoke the packaged executable from its own folder. Preserve 9.88 and all unrelated private files; publish nothing.
+
+Result: `Builds/Playtest-9.90-ping-endturn` and its ZIP were cut from stamped main `88b89399` (`1.0-9.90-ping-endturn+20261008123709-b77eb146`) at protocol `/48` and schema 59. As explicitly directed, the offline harness and unfiltered Unity suites were not rerun; the package reuses 9.89's focused 29/29 Edit Mode and 6/6 Play Mode evidence. The exact stamped Windows binary passed the build/launch interaction and rendered-board smokes, and the copied executable passed the same six-marker scripted interaction from its package directory with exit code zero. The package contains 184 files and 584313142 uncompressed bytes; all ZIP members match the loose files byte-for-byte and no log, debug or DoNotShip entry exists. The 102362586-byte ZIP has SHA-256 `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`. Package 9.88 and unrelated private files remain preserved; no remote push or publication occurred.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.90 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-990-ping-and-end-turn-windows-package-completion).
 
 ## Queued by 9.13, not authorized
 
