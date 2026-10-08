@@ -960,3 +960,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.95 | The header uses its budgeted 15-pixel height and the complete title-to-Total stack is centered. Live empty-state bounds have equal outer breathing room after measured correction, with the same panel size and placement. Focused Edit passed 3/3 and the exact in-game case 1/1 with a fresh capture reviewed. Private `Playtest-9.95-defense-balance` at wire `/49` and schema 59 passed exact/package smokes; all 184 ZIP files match the loose 584325951-byte package with no forbidden content, SHA-256 `a88cdc9ef5a15e4fe1fa4acbf40e07b81272cf95f0f97e9d675a94e9988b44db`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-995-vertically-balance-the-defense-breakdown). | `milestone/9.95` |
+
+## Milestone 9.96 Defense breakdown rendered-balance verification
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.96 | Current source's compact and expanded Defense panels are visibly balanced at the reference viewport; a rendered pixel regression now guards zero, one and four contribution rows. No production layout changed. [Definition](../../Roadmap/PHASE_9.md#x-996-center-the-defense-breakdowns-visible-content-at-every-row-count). | `milestone/9.96` |

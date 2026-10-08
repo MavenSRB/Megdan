@@ -48,6 +48,70 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class BroganEngagedUiJourneyPlayModeTests
     {
         [UnityTest]
+        public IEnumerator DefenseBreakdownVisibleInkIsVerticallyBalancedAtEveryRowCount()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);
+            UiPlayer.SetPlayerViewport(2560u, 1440u, "Defense breakdown ink balance");
+            yield return null;
+            yield return null;
+            var root = Root();
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var hero = root.Runtime.BoardView.HeroViews.First(value => value.gameObject.activeSelf);
+            var point = Camera.main.WorldToScreenPoint(hero.transform.position);
+            pointer.enabled = false;
+            try
+            {
+                foreach (var count in new[] { 0, 1, 4 })
+                {
+                    var contributions = Enumerable.Range(0, count)
+                        .Select(index => new ValueContributionProjection(
+                            ValueContribution.FromContinuousSource(
+                                "defense-ink-" + index, PrintedValueChannel.Defense, 1),
+                            "Creep " + (index + 1)))
+                        .ToArray();
+                    root.Hud.ShowDefenseModifierBreakdown(
+                        new HeroDefenseModifierProjection(hero.Occupancy.HeroId, hero.Body, contributions), point);
+                    yield return null;
+                    yield return new WaitForEndOfFrame();
+                    var panel = root.Hud.DefenseModifierBreakdown.Root.worldBound;
+                    var upperLeft = MatchHudPanelScaling.PanelPointToScreen(panel.min, Screen.width, Screen.height);
+                    var lowerRight = MatchHudPanelScaling.PanelPointToScreen(panel.max, Screen.width, Screen.height);
+                    var capture = ScreenCapture.CaptureScreenshotAsTexture();
+                    try
+                    {
+                        var pixels = capture.GetPixels32();
+                        var left = Mathf.CeilToInt(upperLeft.x) + 12;
+                        var right = Mathf.FloorToInt(lowerRight.x) - 12;
+                        var bottom = Mathf.CeilToInt(lowerRight.y) + 5;
+                        var top = Mathf.FloorToInt(upperLeft.y) - 5;
+                        var firstInk = top;
+                        var lastInk = bottom;
+                        for (var y = bottom; y <= top; y++)
+                        for (var x = left; x <= right; x++)
+                        {
+                            var pixel = pixels[y * capture.width + x];
+                            if (pixel.r + pixel.g + pixel.b <= 350) continue;
+                            firstInk = Mathf.Min(firstInk, y);
+                            lastInk = Mathf.Max(lastInk, y);
+                        }
+                        Assert.That(lastInk, Is.GreaterThan(firstInk), "the panel must contain rendered text");
+                        TestContext.WriteLine("Defense ink rows=" + count + " top=" + (top - lastInk) +
+                            " bottom=" + (firstInk - bottom) + " panel=" + panel);
+                        Assert.That(Mathf.Abs((top - lastInk) - (firstInk - bottom)), Is.LessThanOrEqualTo(3),
+                            "the visible text needs equal space above and below at " + count + " contribution rows");
+                    }
+                    finally { Object.DestroyImmediate(capture); }
+                    yield return UiPlayer.CaptureScreen("tmp/996-defense-" + count + "-rows.png");
+                }
+            }
+            finally
+            {
+                root.Hud.HideDefenseModifierBreakdown();
+                pointer.enabled = true;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator HeroModifiersStayVisibleWithCardPipsAndHoverContributorsOutsideAttacks()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);

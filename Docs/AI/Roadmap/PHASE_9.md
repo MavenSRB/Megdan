@@ -249,6 +249,26 @@ Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-995-vertica
 
 Historical evidence: [9.95 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-995-defense-breakdown-vertical-balance-completion).
 
+### [x] 9.96 Center the Defense breakdown's visible content at every row count
+
+Authorized 2026-10-08 by the user's compact-panel screenshot and explicit request to check expanded panels. Outcome: vertically balance the visible title, contribution rows, divider and Total within the existing panel footprint at zero, one and multiple contribution rows; retain horizontal positions, readable spacing and pointer pass-through. Closing check: a regression reproducing the visible imbalance, focused layout Edit Mode and rendered Play Mode checks at compact and expanded sizes, with visual inspection. T2. No Defense calculation or rule change.
+
+Result: the current 9.95 source already renders balanced at the reference viewport; the reported crop's large imbalance was not reproduced. A permanent rendered pixel check now covers zero, one and four contribution rows. The visible upper/lower ink margins were 9/11, 10/10 and 9/11 pixels respectively at 2560x1440. The focused Edit fixture passed 3/3 and rendered Play case 1/1. No production layout changed. Completed 2026-10-08.
+
+Historical evidence: [9.96 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-996-defense-breakdown-rendered-balance-verification).
+
+### [ ] 9.97 Bind tray positions and player-name plates to lobby seats
+
+Authorized 2026-10-08: Red 1/2/3 occupy top/middle/bottom with red/orange/yellow, and Blue 1/2/3 occupy top/middle/bottom with blue/cyan/teal, independent of hero selection. Show each public lobby player name in a small plate at the tray's top edge above its portrait, as far toward that portrait's outer edge as the mirrored layout allows. Long names truncate visibly with their full text on hover; unnamed seats remain clean. Closing check: shuffled-hero lineup and named-roster regressions, focused Edit/Play Mode checks and rendered inspection of both rails. T2. No seat authority or wire change.
+
+### [ ] 9.98 Make Escape use the active screen's close action
+
+Authorized 2026-10-08: Escape closes card inspection and other active surfaces with a CLOSE/CANCEL control, one topmost surface per press, including when keyboard focus is inside a child or back on the board. Closing check: regressions for inspection, spellbook and applicable lobby screens using the real input route, plus directly affected focused Play Mode checks. T2. Escape does not submit a gameplay command.
+
+### [ ] 9.99 Normalize hero-token ring width and eliminate source-color bleed
+
+Authorized 2026-10-08 by the board screenshots: every player-color token ring reads at one thickness across heroes and the original orange edge cannot show through a yellow or other player-color rim, including beneath status pips. Closing check: geometry/pixel regression failing on the current mixed team-baked/team-neutral presentation, focused token Edit/Play Mode checks, and a fresh visual inspection. T2. Preserve token art, identity and pointer footprint; no rule change.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
