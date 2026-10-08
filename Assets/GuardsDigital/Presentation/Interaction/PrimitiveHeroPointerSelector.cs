@@ -19,6 +19,21 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         /// <summary>
+        /// Reads the collider-free card pip under the ray without submitting any hero or board intent.
+        /// </summary>
+        public bool TryGetCardPipFromPointerRay(
+            Ray pointerRay, out HeroCardPip pip, float maxDistance = 500f)
+        {
+            pip = default;
+            var indicator = GetComponent<PrimitiveHeroView>().CardStateIndicator;
+            if (indicator == null)
+            {
+                return false;
+            }
+            return indicator.TryGetPipFromPointerRay(pointerRay, out pip, maxDistance);
+        }
+
+        /// <summary>
         /// Whether this hero is an ANSWER to something the match is currently asking, and if so,
         /// answers it. A ray that hits the piece but that the authority has no use for returns false
         /// here, so the chain this sits in keeps looking.

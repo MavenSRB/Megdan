@@ -482,15 +482,18 @@ namespace GuardsDigital.Tests.PlayMode
             var token = HeroView(takahide);
             var overview = runtime.HeroOverviewsView.Model.Heroes.Single(row => row.HeroId.Equals(takahide));
             var definitions = runtime.ReadModel.Definitions.ToDictionary(value => value.Reference);
-            var knownHandColors = safe.HandCards
+            var knownHandPips = safe.HandCards
                 .Where(definitions.ContainsKey)
-                .Select(reference => definitions[reference].Progression.Color)
-                .OrderBy(color => color)
+                .Select(reference => new HeroCardPip(
+                    definitions[reference].Progression.Color, reference))
+                .OrderBy(pip => pip.Color)
                 .ToArray();
             token.SetCardStateIndicator(
                 overview.CurrentCard != null,
-                overview.CurrentCard?.Color ?? CardColor.None,
-                knownHandColors,
+                new HeroCardPip(
+                    overview.CurrentCard?.Color ?? CardColor.None,
+                    overview.CurrentCard?.Card?.DefinitionReference ?? default),
+                knownHandPips,
                 safe.ConcealedHandCount);
             var expectedPips = safe.HandCards.Count + safe.ConcealedHandCount + (overview.CurrentCard == null ? 0 : 1);
             Assert.That(token.CardStateIndicator?.PipCount ?? 0, Is.EqualTo(expectedPips),

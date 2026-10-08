@@ -1080,23 +1080,50 @@ namespace GuardsDigital.Presentation.Match
                 var overview = HeroOverviewsView?.Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
                 if (inspection == null || overview == null)
                 {
-                    view.SetCardStateIndicator(false, CardColor.None, Array.Empty<CardColor>(), 0);
+                    view.SetCardStateIndicator(
+                        false, default, Array.Empty<HeroCardPip>(), 0);
                     continue;
                 }
 
-                var handColors = inspection.HandCards
+                var handPips = inspection.HandCards
                     .Where(definitions.ContainsKey)
-                    .Select(reference => definitions[reference].Progression.Color)
-                    .OrderBy(color => color)
+                    .Select(reference => new HeroCardPip(
+                        definitions[reference].Progression.Color, reference))
+                    .OrderBy(pip => pip.Color)
                     .ToArray();
+                var current = overview.CurrentCard;
                 view.SetCardStateIndicator(
-                    overview.CurrentCard != null,
-                    overview.CurrentCard?.Color ?? CardColor.None,
-                    handColors,
+                    current != null,
+                    new HeroCardPip(
+                        current?.Color ?? CardColor.None,
+                        current?.Card?.DefinitionReference ?? default),
+                    handPips,
                     inspection.ConcealedHandCount);
             }
         }
 
+
+        /// <summary>
+        /// Resolves a pip identity only against the same immutable definition catalog the current
+        /// projection exposes. A missing or stale reference closes the preview rather than reaching
+        /// into trusted host state.
+        /// </summary>
+        public void HoverCardPip(
+            CardDefinitionReference? reference, UnityEngine.Vector2 screenPosition)
+        {
+            if (!reference.HasValue)
+            {
+                hud.HideCardPipPreview();
+                return;
+            }
+
+            var definition = client.Projection.Definitions.FirstOrDefault(value =>
+                value.Reference.Equals(reference.Value));
+            if (definition == null)
+                hud.HideCardPipPreview();
+            else
+                hud.ShowCardPipPreview(definition, screenPosition);
+        }
         public bool SelectCommitmentCard(CardInstanceId cardId) =>
             HandsPresenter.SelectCommitmentCard(cardId);
 

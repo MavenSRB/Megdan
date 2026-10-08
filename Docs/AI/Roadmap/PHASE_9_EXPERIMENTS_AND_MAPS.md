@@ -532,3 +532,54 @@ Closing checks: focused rules/application tests for retraction, recommitment, fi
 Historical evidence: [9.82 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-982-commitment-withdrawal-completion).
 
 The restore closing check also requires exactly one visible card-choice surface after a deferred decision window resumes. Preserve the standalone strip fallback when no window owns the question; fix the shared presentation handoff without changing authority, choices or card rules.
+
+### [x] 9.83 Inspect hero-token card pips with Shift
+
+Authorized 2026-10-08 by the user's request to implement the planned Shift-hover card reading on
+its own branch for later merge. Holding either Shift key while the pointer is over an
+identity-bearing current-card or hand pip raises that complete card face without selecting the hero
+or submitting a command. Concealed and stale pips reveal nothing. The user's screenshot correction
+makes every pip a separated rectangle tangent to the circular token edge, with the hand arc centred
+in screen space rather than biased right by the angled board camera.
+
+Closing checks: focused Edit Mode proves rectangular/tangent rim geometry, equal separation,
+screen-space centring under an angled camera, collider-free mathematical hit testing, identity-only
+hover, concealed-card privacy, shared complete-face construction, safe placement and pointer
+transparency. Focused Play Mode holds a real Input System Shift key over a real token pip, proves
+the projected card face opens and closes on release without changing match version, retains the
+existing experimental-coordination pip journeys, and writes token-close-up and full-hover captures.
+T2 presentation-only change with visual inspection. No rules, card lifecycle, projection shape,
+wire, snapshot, package, publication or remote operation changes.
+
+Completed 2026-10-08 on the merge-ready `codex/hero-token-shift-card-preview` branch. The first
+focused Edit Mode run passed 13/14 and exposed an overstrict new placement assertion; the corrected
+rerun passed 14/14. Focused Play Mode first passed 4/5 and proved that a direct test call was
+correctly closed on the next frame without hardware Shift; a second 4/5 run proved batch mode owns
+no default keyboard; the final real-device run passed 5/5 with queued mouse position, held Left
+Shift, release and temporary-device cleanup. The fresh close-up shows five evenly separated
+rectangles symmetrically following the lower rim, and the 1920x1080 hover capture shows the complete
+face beside the token. The worktree contains no ignored private artwork, so visual inspection used
+the generated token/card fallbacks; geometry and the shared face footprint are production code.
+Review found no gameplay, privacy-authority, compatibility, package or remote change.
+
+Historical evidence: [9.83 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-983-hero-token-shift-hover-completion).
+
+### [x] 9.83a Turn hero-token card pips vertical
+
+Authorized 2026-10-08 by the user's review of the 9.83 close-up: "this is wrong, it needs
+to be vertical rectangles." Keep the separated, screen-centred token-rim fan and Shift-hover
+behavior, but make every pip's long axis radial and its short edge tangent to the token rather than
+drawing horizontal tabs.
+
+Closing checks: focused geometry coverage pins radial depth greater than tangential width while
+retaining equal gaps, tangent rotation and angled-camera centring; the directly affected live
+token/coordination journeys stay green and regenerate the close-up for visual inspection. T2
+presentation-only corrective. No card identity, privacy, input, gameplay, projection, wire,
+snapshot, package, publication or remote change.
+
+Completed 2026-10-08 on `codex/hero-token-shift-card-preview`. The outer/inner plates changed from
+0.18-by-0.12 / 0.14-by-0.08 to 0.12-by-0.18 / 0.08-by-0.14, retaining a 0.06 tangential gap. Focused
+Edit Mode passed 14/14 and focused Play Mode passed 5/5. The regenerated close-up was visually
+inspected: the centred pip is upright and the side pips fan radially along the lower token edge.
+
+Historical evidence: [9.83a completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-983a-vertical-hero-token-card-pips-completion).

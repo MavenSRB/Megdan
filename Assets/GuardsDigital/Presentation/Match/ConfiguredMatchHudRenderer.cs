@@ -523,6 +523,7 @@ namespace GuardsDigital.Presentation.Match
         private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
         private RuntimeTooltipLayer tooltipLayer;
+        private HeroCardPipPreviewUnityView cardPipPreview;
 
         /// <summary>
         /// Raised whenever layout assigns the playable hexes their safe L-shaped surface. The board
@@ -578,6 +579,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The panel this HUD draws on, for a test that needs to look at the built tree.</summary>
         public VisualElement RootElement => root;
+        public HeroCardPipPreviewUnityView CardPipPreview => cardPipPreview;
 
         /// <summary>
         /// Whether a panel-space point is on the board surface accepted by the commitment drag.
@@ -589,6 +591,33 @@ namespace GuardsDigital.Presentation.Match
             CameraSafeLayout.IsValid &&
             (CameraSafeLayout.UpperRegion.Contains(panelPosition) ||
              CameraSafeLayout.LowerRightRegion.Contains(panelPosition));
+
+        /// <summary>
+        /// Draws a complete face for an identity already admitted by the caller's visibility-safe
+        /// projection, or clears it. The screen point is converted through the same reference-space
+        /// mapping used by every HUD pointer boundary.
+        /// </summary>
+        public void ShowCardPipPreview(CardDefinition definition, Vector2 screenPosition)
+        {
+            if (cardPipPreview == null || root == null || definition == null || victoryScreenStanding)
+            {
+                HideCardPipPreview();
+                return;
+            }
+
+            var viewport = PanelViewport;
+            var panelPoint = MatchHudPanelScaling.ScreenToPanelPoint(
+                screenPosition, Screen.width, Screen.height);
+            var safe = CameraSafeLayout.IsValid
+                ? CameraSafeLayout.UpperRegion
+                : new Rect(0f, 0f, viewport.x, viewport.y);
+            cardPipPreview.Show(definition, panelPoint, safe);
+        }
+
+        public void HideCardPipPreview()
+        {
+            cardPipPreview?.Hide();
+        }
 
         public void Configure(
             DirectorHandsUnityView handsView,
@@ -1421,6 +1450,10 @@ namespace GuardsDigital.Presentation.Match
                 root.Add(heroOverviews.HoverPreviewRoot);
             }
 
+
+            cardPipPreview = new HeroCardPipPreviewUnityView();
+            root.Add(cardPipPreview.Root);
+
             // Milestone 8.35z19 (placeholder id). Added LAST, after every other surface,
             // so its popup always paints above whatever it is explaining - a drop-down, a hover
             // preview, a drag proxy included. One layer serves every `.tooltip` string this whole HUD
@@ -1613,6 +1646,7 @@ namespace GuardsDigital.Presentation.Match
             // A terminal screen replaces every reading surface. Close the inspection deliberately
             // instead of merely hiding it, so Restart cannot resurrect a stale modal window.
             heroOverviews?.CardInspection.Close();
+            cardPipPreview?.Hide();
 
             foreach (var child in root.Children())
             {

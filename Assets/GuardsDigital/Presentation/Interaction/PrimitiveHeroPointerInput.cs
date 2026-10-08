@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace GuardsDigital.Presentation.Interaction
         private HexTileView[] tiles;
         private System.Func<Vector2, bool> blocksPointer;
         public System.Func<GuardsDigital.Core.Board.HexCoordinate?, bool> ShareCursor { get; set; }
+        public System.Action<CardDefinitionReference?, Vector2> CardPipHoverChanged { get; set; }
         private GuardsDigital.Core.Board.HexCoordinate? desiredCursor, sentCursor;
         private float nextCursorSend;
         private bool pointerFocused = true;
@@ -28,7 +30,11 @@ namespace GuardsDigital.Presentation.Interaction
         private void OnApplicationFocus(bool focused)
         {
             pointerFocused = focused;
-            if (!focused) ClearSharedCursor();
+            if (!focused)
+            {
+                ClearSharedCursor();
+                HideCardPipPreview();
+            }
         }
         private void ClearSharedCursor()
         {
@@ -109,6 +115,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void OnDisable()
         {
+            HideCardPipPreview();
             ClearSharedCursor();
             pointerPress.Disable();
         }
@@ -147,6 +154,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (!pointerFocused || boardView == null || eventCamera == null || Pointer.current == null)
             {
                 boardView?.SetHoveredCoordinate(null);
+                HideCardPipPreview();
                 boardView?.SetPointerHoveredHero(default);
                 return;
             }
@@ -155,11 +163,17 @@ namespace GuardsDigital.Presentation.Interaction
             if (blocksPointer != null && blocksPointer(screenPosition))
             {
                 boardView.SetHoveredCoordinate(null);
+                HideCardPipPreview();
                 boardView.SetPointerHoveredHero(default);
                 return;
             }
 
-            RefreshHoverFromPointerRay(eventCamera.ScreenPointToRay(screenPosition));
+            var pointerRay = eventCamera.ScreenPointToRay(screenPosition);
+            RefreshHoverFromPointerRay(pointerRay);
+            var keyboard = Keyboard.current;
+            var shiftHeld = keyboard != null &&
+                (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+            RefreshCardPipPreviewFromPointerRay(pointerRay, shiftHeld, screenPosition);
         }
 
         /// <summary>Updates only hover strength from the board plane; it never submits an intent.</summary>
@@ -185,6 +199,39 @@ namespace GuardsDigital.Presentation.Interaction
             boardView.SetPointerHoveredHero(hoveredHero, hoveredBody);
             return tile != null;
         }
+
+        /// <summary>
+        /// Opens only an identity the current projection already attached to a pip. This is a passive
+        /// read: it does not enter the click-resolution chain below and therefore cannot submit or
+        /// select anything.
+        /// </summary>
+        public bool RefreshCardPipPreviewFromPointerRay(
+            Ray pointerRay, bool shiftHeld, Vector2 screenPosition)
+        {
+            EnsureBindings();
+            if (!shiftHeld)
+            {
+                HideCardPipPreview();
+                return false;
+            }
+
+            foreach (var selector in selectors)
+            {
+                if (selector == null ||
+                    !selector.TryGetCardPipFromPointerRay(pointerRay, out var pip))
+                    continue;
+                var reference = pip.DefinitionReference.IsDefined
+                    ? (CardDefinitionReference?)pip.DefinitionReference
+                    : null;
+                CardPipHoverChanged?.Invoke(reference, screenPosition);
+                return reference.HasValue;
+            }
+
+            HideCardPipPreview();
+            return false;
+        }
+
+        private void HideCardPipPreview() => CardPipHoverChanged?.Invoke(null, default);
 
         private bool TrySelectAtCurrentPointer()
         {
