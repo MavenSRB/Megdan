@@ -240,9 +240,16 @@ Completed 2026-10-08.
 
 Historical evidence: [9.87 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-987-heavy-defeat-before-lane-push-completion).
 
-### [~] 9.88 Validate and package the integrated Windows playtest build
+### [x] 9.88 Validate and package the integrated Windows playtest build
 
 Authorized 2026-10-08 after the preceding integrated corrections. Run required documentation and source checks, the full applicable T3 gate, produce a Windows package and ZIP from the validated main revision, generate its SHA-256 digest, inspect package contents and smoke-launch the packaged executable. Preserve private/untracked material and publish nothing. T3.
+
+Result: `Builds/Playtest-9.88-integrated` and its ZIP were cut from stamped main `a67c5a49` (`1.0-9.88-integrated+20261008113549-53efce62`) at protocol `/48` and schema 59. The unchanged offline authority harness passed 6866/6866; unfiltered Unity Edit Mode passed 8009 with 37 established Explicit diagnostics skipped and zero failures/inconclusive; unfiltered Unity Play Mode passed 1175/1175 after the first integrated run exposed and the focused rerun closed two merged journey-test defects. The exact Windows binary passed build/launch interaction, official-board pixel, and host-plus-two-client lobby smokes. The package contains 184 files and 584310982 uncompressed bytes; all ZIP members match the loose files byte-for-byte, no log/debug/DoNotShip entry exists, and the packaged executable smoke passed from its own directory. The 102362159-byte ZIP has SHA-256 `5a2d0315cd3a4c608dd0211ff1226d50e78c51caef98b3e7ed54c5a9e4cdc722`. No six-client fault rehearsal, full human match, macOS package, remote push or publication.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.88 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-988-integrated-windows-package-completion).
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
