@@ -10,14 +10,13 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/49`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
-FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. The validated 9.90 package retains the single Host/Join launcher and includes the approved ping and End Turn cue refinements. Older packages, logs and artwork remain preserved privately.
+FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. Package 9.92 retains its Host/Join launcher with the approved ping, End Turn and Shift-inspectable Defense shield. Older packages, logs and artwork remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.91**.
+- Current completed milestone: **9.92**.
 
-- Active authorized milestone: **9.92**.
-- Authorized milestone: **9.92**, approved 2026-10-08: package 9.91 as the updated private Windows build, reuse its focused evidence, skip the offline harness and unfiltered Unity suites, and run only artifact-facing build/package checks. Preserve 9.90 and publish nothing.
+- Active authorized milestone: **None**.
 - Authorized sequence: **9.85 -> 9.86 -> 9.87 -> 9.88**, approved 2026-10-08: replace the six player accents with warm red/orange/yellow and cool blue/cyan/teal; animate Movement over the authoritative resolved route; show attack, heavy-minion defeat, then Lane Push in that order; validate and cut the integrated Windows package. Execute serially with separate validation and local commits.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
@@ -60,7 +59,7 @@ The TWENTIETH hero, **Brynn the Seeker**, is complete: [8.69-8.69h](Roadmap/PHAS
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.90](Roadmap/PHASE_9.md#x-990-package-the-ping-and-end-turn-cue-update-without-broad-suite-reruns), `Builds/Playtest-9.90-ping-endturn.zip` (32 heroes, wire /48, schema 59, source `88b89399`; SHA-256 `78f3b6a4b95089dc0902400c7629ea39eb14be813a278958d083608539fe4fdf`). It reused 9.89's focused evidence by user direction; artifact checks and packaged smoke passed. Older packages remain preserved; no publication occurred.
+Current package: [9.92](Roadmap/PHASE_9.md#x-992-package-the-item-aware-defense-shield-without-broad-suite-reruns), `Builds/Playtest-9.92-defense-shield.zip` (32 heroes, wire /49, schema 59, source `c177cf7d`; SHA-256 `e45c5dbc7c106d63fcf8b0112da72c7ff15376d0043018bff8e2af70c18abb8d`). It reused 9.91's focused evidence by user direction; exact-player build/launch, packaged smoke and byte-for-byte ZIP checks passed. Older packages remain preserved; no publication occurred.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 

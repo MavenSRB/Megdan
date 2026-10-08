@@ -225,9 +225,15 @@ Completed 2026-10-08.
 
 Historical evidence: [9.91 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-991-item-aware-defense-shield-completion).
 
-### [~] 9.92 Package the item-aware Defense shield without broad-suite reruns
+### [x] 9.92 Package the item-aware Defense shield without broad-suite reruns
 
 Authorized 2026-10-08 by the user: put 9.91 into the current private Windows playtest build without rerunning the broad test program because this is a focused change. Reuse 9.91's focused projection/wire 16/16, affected Edit Mode 46/46 and in-game journey 1/1 evidence; explicitly omit the offline harness and unfiltered Unity suites. Stamp a distinct package, run only the artifact-facing build/launch interaction smoke, copy without logs/debug material, generate checksums, verify the ZIP byte-for-byte against the loose package, and smoke the packaged executable from its own folder. Preserve 9.90 and all unrelated private files; publish nothing.
+
+Result: `Builds/Playtest-9.92-defense-shield` and its ZIP were cut from stamped main `c177cf7d` (`1.0-9.92-defense-shield+20261008120921-03a3e501`) at protocol `/49` and schema 59. As explicitly directed, the offline harness and unfiltered Unity suites were not rerun; the package reuses 9.91's focused projection/wire 16/16, affected Edit Mode 46/46 and in-game journey 1/1 evidence. The exact stamped Windows binary passed the build/launch interaction smoke, and the copied executable passed the same six-marker scripted interaction from its package directory with exit code zero. The package contains 184 files and 584325763 uncompressed bytes; all ZIP members match the loose files byte-for-byte and no log, debug or DoNotShip entry exists. The 102366817-byte ZIP has SHA-256 `e45c5dbc7c106d63fcf8b0112da72c7ff15376d0043018bff8e2af70c18abb8d`. Package 9.90 and unrelated private files remain preserved; no remote push or publication occurred.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.92 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-992-item-aware-defense-shield-windows-package-completion).
 
 ## Queued by 9.13, not authorized
 

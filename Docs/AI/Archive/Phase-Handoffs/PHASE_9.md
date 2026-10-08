@@ -936,3 +936,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.91 | The unchanged small token shield sums authoritative effect-adjusted creep and Defense-item modifiers. Ordinary hover is quiet; Shift over the hero token shows one row per creep/effective creep source, aggregated items and total while enabling the existing contributor cues. Public detail advances the private wire to `/49`; schema 59 is unchanged. Focused projection/wire passed 16/16, affected Edit passed 46/46, and the rendered in-game journey passed 1/1 with fresh full-frame visual inspection. [Definition](../../Roadmap/PHASE_9.md#x-991-make-the-token-defense-shield-item-aware-with-shift-only-detail). | `milestone/9.91` |
+
+## Milestone 9.92 item-aware Defense shield Windows package completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.92 | Stamped main `c177cf7d` produced private `Playtest-9.92-defense-shield` at wire `/49` and schema 59. Per explicit user direction, it reused 9.91's focused 16/16 projection/wire, 46/46 Edit and 1/1 in-game journey evidence without rerunning the offline harness or unfiltered suites. Exact-player build/launch and packaged-executable smokes passed; all 184 ZIP files match the loose package byte-for-byte, and SHA-256 is `e45c5dbc7c106d63fcf8b0112da72c7ff15376d0043018bff8e2af70c18abb8d`. [Definition](../../Roadmap/PHASE_9.md#x-992-package-the-item-aware-defense-shield-without-broad-suite-reruns). | `milestone/9.92` |
