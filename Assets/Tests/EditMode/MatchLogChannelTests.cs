@@ -266,6 +266,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(line.HasDestination, Is.True);
             Assert.That(line.Destination, Is.EqualTo(new HexCoordinate(3, -1)),
                 "The move ended where its LAST step did.");
+            Assert.That(line.MovementRoute, Is.EqualTo(new[]
+            {
+                new HexCoordinate(0, 0),
+                new HexCoordinate(1, 0),
+                new HexCoordinate(2, -1),
+                new HexCoordinate(3, -1)
+            }), "The public route keeps every committed step in order.");
         }
 
         /// <summary>

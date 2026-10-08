@@ -42,7 +42,8 @@ namespace GuardsDigital.Tests.EditMode
             bool hasOrigin = false,
             bool hasDestination = false,
             MatchLogOutcome outcome = MatchLogOutcome.None,
-            int amount = 0) =>
+            int amount = 0,
+            IEnumerable<HexCoordinate> movementRoute = null) =>
             new MatchLogEntry(
                 sequence, kind, 1, 1,
                 subjectHeroId: subjectHero,
@@ -54,7 +55,8 @@ namespace GuardsDigital.Tests.EditMode
                 hasOrigin: hasOrigin,
                 hasDestination: hasDestination,
                 outcome: outcome,
-                amount: amount);
+                amount: amount,
+                movementRoute: movementRoute);
 
         /// <summary>A stream that has already seen an empty match, so the next row is a real event.</summary>
         private static KineticCueStream PrimedStream()
@@ -89,26 +91,25 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cues[0].Route[1], Is.EqualTo(new HexCoordinate(2, -1)));
         }
 
-        /// <summary>
-        /// The recorded finding this milestone owes its route shape to. The SIXTEENTH AMENDMENT
-        /// assumed the events carry the per-hex steps; the seat-public log folds a whole move into one
-        /// row keeping only the first origin and the last destination, and names the per-hex step as
-        /// one of its own exclusions. So a slide has exactly two waypoints today - and the cue is
-        /// shaped for more, so that a later milestone which does carry the route needs no view change.
-        /// </summary>
+        /// <summary>Milestone 9.86: presentation follows every authoritative committed space.</summary>
+
         [Test]
-        public void ASlidesRoute_IsTwoWaypoints_BecauseThatIsAllThePublicLogCarries()
+        public void ASlidesRoute_FollowsEveryCommittedMovementSpace()
         {
+            var route = new[]
+            {
+                new HexCoordinate(-3, 1),
+                new HexCoordinate(-2, 1),
+                new HexCoordinate(-1, 0),
+                new HexCoordinate(0, 0)
+            };
             var cues = CuesFor(Row(
                 5, MatchLogEntryKind.Move, subjectHero: Attacker,
-                origin: new HexCoordinate(-3, 1), destination: new HexCoordinate(3, 1),
-                hasOrigin: true, hasDestination: true));
+                origin: route[0], destination: route[route.Length - 1],
+                hasOrigin: true, hasDestination: true,
+                movementRoute: route));
 
-            Assert.That(cues[0].Route.Count, Is.EqualTo(2));
-            Assert.That(
-                Enum.GetNames(typeof(MatchLogEntryKind)).Any(name => name.Contains("Step")), Is.False,
-                "If the log ever gains a per-hex step kind, this milestone's route can carry the real " +
-                "one and this expectation is the place that says so.");
+            Assert.That(cues[0].Route, Is.EqualTo(route));
         }
 
         [Test]

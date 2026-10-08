@@ -692,7 +692,9 @@ namespace GuardsDigital.Presentation.Match
                                 entry.Sequence,
                                 KineticCueKind.Slide,
                                 subject,
-                                route: new[] { entry.Origin, entry.Destination })
+                                route: entry.Kind == MatchLogEntryKind.Move && entry.MovementRoute.Count >= 2
+                                    ? entry.MovementRoute
+                                    : new[] { entry.Origin, entry.Destination })
                         },
                         label: "slide:" + entry.SubjectHeroId));
                     return;

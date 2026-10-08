@@ -230,16 +230,23 @@ namespace GuardsDigital.Tests.EditMode
 
             var bytes = Bytes(NetworkMatchLogCodec.ToRow(entry));
             var purple = (byte[])bytes.Clone();
-            BitConverter.GetBytes((int)CardColor.Purple).CopyTo(purple, purple.Length - 4);
+            BitConverter.GetBytes((int)CardColor.Purple).CopyTo(purple, purple.Length - 8);
             Assert.That(RoundTrip(purple), Is.Null, "no text fixes a Purple card");
             var noZone = (byte[])bytes.Clone();
-            BitConverter.GetBytes((int)CardMoveZone.None).CopyTo(noZone, noZone.Length - 4 - 2 - 4);
+            BitConverter.GetBytes((int)CardMoveZone.None).CopyTo(noZone, noZone.Length - 4 - 4 - 2 - 4);
             Assert.That(RoundTrip(noZone), Is.Null, "a move goes somewhere");
 
             var crowded = new NetworkMatchLogRow(5, (int)MatchLogEntryKind.CardSwappedByCardText, 1, 2,
                 GoldStage.Taka.Value, null, null, null, null, false, 0, 0, false, 0, 0, 0, 0,
                 cardMoves: Enumerable.Repeat(moves[0], NetworkMatchLogCodec.MaxCardMovesPerRow + 1));
             Assert.That(RoundTrip(Bytes(crowded)), Is.Null, "a row claiming more moves than any text makes");
+
+            var crowdedRoute = new NetworkMatchLogRow(6, (int)MatchLogEntryKind.Move, 1, 2,
+                GoldStage.Taka.Value, null, null, null, null, true, 0, 0, true, 1, 0, 0, 0,
+                movementRoute: Enumerable.Repeat(new HexCoordinate(0, 0),
+                    NetworkMatchLogCodec.MaxMovementRouteSpaces + 1));
+            Assert.That(RoundTrip(Bytes(crowdedRoute)), Is.Null,
+                "a row claiming more route spaces than the bounded board presentation permits");
         }
 
         [Test]

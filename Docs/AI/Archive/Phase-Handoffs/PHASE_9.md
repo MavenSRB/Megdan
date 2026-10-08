@@ -901,3 +901,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.85 | Stable warm-side player accents are red/orange/yellow and cool-side accents blue/cyan/teal. Exact palette/index coverage and the focused coordination-presentation fixture passed 14/14; the merged pip-spacing regression was brought onto the identity-bearing pip API exposed by compilation. [Definition](../../Roadmap/PHASE_9.md#x-985-replace-the-six-player-accents-with-two-coherent-team-palettes). | `milestone/9.85` |
+## Milestone 9.86 authoritative Movement route completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.86 | Movement presentation follows every authoritative committed hex via a bounded public route and wire `/48`; Fast Travel remains direct. Offline 6866/6866 and focused Unity Edit Mode 88/88 passed. [Definition](../../Roadmap/PHASE_9.md#x-986-animate-movement-over-its-actual-resolved-route). | `milestone/9.86` |

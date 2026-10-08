@@ -37,9 +37,11 @@ namespace GuardsDigital.Application
             int amount,
             string blockingHeroId = null,
             string blockingCardInstanceId = null,
-            IEnumerable<CardMoveFact> cardMoves = null)
+            IEnumerable<CardMoveFact> cardMoves = null,
+            IEnumerable<HexCoordinate> movementRoute = null)
         {
             CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
+            MovementRoute = Array.AsReadOnly((movementRoute ?? Enumerable.Empty<HexCoordinate>()).ToArray());
             Sequence = sequence;
             Kind = kind;
             RoundIndex = roundIndex;
@@ -93,6 +95,9 @@ namespace GuardsDigital.Application
         /// the seat this frame is for may read them - a move it may not name arrives unnamed.
         /// </summary>
         public IReadOnlyList<CardMoveFact> CardMoves { get; }
+
+        /// <summary>Milestone 9.86, protocol /48. The ordered public Movement route.</summary>
+        public IReadOnlyList<HexCoordinate> MovementRoute { get; }
     }
 
     /// <summary>
@@ -112,6 +117,9 @@ namespace GuardsDigital.Application
         /// three, with room - stated so a decoder refuses an oversized claim before allocating for it.
         /// </summary>
         public const int MaxCardMovesPerRow = 8;
+
+        /// <summary>Maximum board spaces carried for one resolved Movement route.</summary>
+        public const int MaxMovementRouteSpaces = 64;
 
         /// <summary>The typed entry as the row the wire carries.</summary>
         public static NetworkMatchLogRow ToRow(MatchLogEntry entry)
@@ -138,7 +146,8 @@ namespace GuardsDigital.Application
                 entry.Amount,
                 entry.BlockingHeroId.Value,
                 entry.BlockingCardInstanceId.Value,
-                entry.CardMoves);
+                entry.CardMoves,
+                entry.MovementRoute);
         }
 
         /// <summary>
@@ -201,6 +210,13 @@ namespace GuardsDigital.Application
                 writer.Write(move.ArrivesFacedown);
                 writer.Write((int)move.KnownColor);
             }
+
+            writer.Write(row.MovementRoute.Count);
+            foreach (var space in row.MovementRoute)
+            {
+                writer.Write(space.Q);
+                writer.Write(space.R);
+            }
         }
 
         internal static bool TryRead(BinaryReader reader, out NetworkMatchLogRow row)
@@ -255,7 +271,8 @@ namespace GuardsDigital.Application
             var amount = reader.ReadInt32();
             if (!TryReadOptional(reader, out var blockingHero) ||
                 !TryReadOptional(reader, out var blockingCard) ||
-                !TryReadCardMoves(reader, out var cardMoves))
+                !TryReadCardMoves(reader, out var cardMoves) ||
+                !TryReadMovementRoute(reader, out var movementRoute))
             {
                 return false;
             }
@@ -265,7 +282,7 @@ namespace GuardsDigital.Application
                 subjectHero, targetHero, subjectMinion, subjectCard, subjectTeam,
                 hasOrigin, originQ, originR,
                 hasDestination, destinationQ, destinationR,
-                outcome, amount, blockingHero, blockingCard, cardMoves);
+                outcome, amount, blockingHero, blockingCard, cardMoves, movementRoute);
             return true;
         }
 
@@ -316,6 +333,25 @@ namespace GuardsDigital.Application
             return true;
         }
 
+
+        private static bool TryReadMovementRoute(BinaryReader reader, out IReadOnlyList<HexCoordinate> route)
+        {
+            route = null;
+            var count = reader.ReadInt32();
+            if (count < 0 || count > MaxMovementRouteSpaces)
+            {
+                return false;
+            }
+
+            var read = new List<HexCoordinate>(count);
+            for (var index = 0; index < count; index++)
+            {
+                read.Add(new HexCoordinate(reader.ReadInt32(), reader.ReadInt32()));
+            }
+
+            route = read;
+            return true;
+        }
         /// <summary>
         /// The decoded row as the typed entry a read model publishes. It goes back through
         /// <see cref="MatchLogEntry"/>'s own constructor, so a wire value the type would refuse -
@@ -357,7 +393,8 @@ namespace GuardsDigital.Application
                 blockingCardInstanceId: string.IsNullOrEmpty(row.BlockingCardInstanceId)
                     ? default
                     : new CardInstanceId(row.BlockingCardInstanceId),
-                cardMoves: row.CardMoves);
+                cardMoves: row.CardMoves,
+                movementRoute: row.MovementRoute);
         }
 
         private static void WriteOptional(BinaryWriter writer, string value)

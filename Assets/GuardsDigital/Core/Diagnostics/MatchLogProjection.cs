@@ -233,6 +233,7 @@ namespace GuardsDigital.Core.Diagnostics
             public HexCoordinate Origin;
             public bool HasDestination;
             public HexCoordinate Destination;
+            public readonly List<HexCoordinate> Route = new List<HexCoordinate>();
         }
 
         private sealed class AttackFold
@@ -280,6 +281,12 @@ namespace GuardsDigital.Core.Diagnostics
                         fold.HasOrigin = true;
                     }
 
+                    if (fold.Route.Count == 0)
+                    {
+                        fold.Route.Add(origin);
+                    }
+
+                    fold.Route.Add(destination);
                     fold.Destination = destination;
                     fold.HasDestination = true;
                 }
@@ -302,7 +309,8 @@ namespace GuardsDigital.Core.Diagnostics
                     origin: fold?.Origin ?? default,
                     destination: fold?.Destination ?? default,
                     hasOrigin: fold?.HasOrigin ?? false,
-                    hasDestination: fold?.HasDestination ?? false));
+                    hasDestination: fold?.HasDestination ?? false,
+                    movementRoute: fold?.Route));
                 return;
             }
 

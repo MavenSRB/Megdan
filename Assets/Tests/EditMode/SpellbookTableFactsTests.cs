@@ -76,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(payload, Does.Not.Contain(id), "The wire names no facedown spell: " + id);
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(47),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(48),
                 "/32 carries the backs; a /31 reader would take the back count for the next row's id.");
         }
 

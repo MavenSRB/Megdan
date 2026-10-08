@@ -220,11 +220,17 @@ Completed 2026-10-08.
 
 Historical evidence: [9.85 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-985-player-accent-palette-completion).
 
-### [~] 9.86 Animate Movement over its actual resolved route
+### [x] 9.86 Animate Movement over its actual resolved route
 
 Authorized 2026-10-08: a Movement flourish visits the ordered spaces actually committed by authority instead of sliding directly from origin to destination. Preserve Fast Travel as direct presentation and keep rules/state independent of animation. Carry the bounded public route through the match-log projection and private wire, bumping the protocol because the row grows. Closing checks: multi-step fold, codec round trip/refusal bounds, seat parity, direct Fast Travel and kinetic waypoint order. T2.
 
-### [ ] 9.87 Show attack, heavy-minion defeat and Lane Push in causal order
+Result: `MovementStepCommitted` facts now fold into one ordered route on the derived `MatchLogEntry`; the route crosses the bounded seat-public codec under wire protocol `/48`, and Movement slides consume every waypoint while Fast Travel retains its direct two-point presentation. The full offline harness passed 6866/6866 and focused Unity Edit Mode passed 88/88 across log folding, kinetics, wire frames, malformed bounds and copy completeness. The merged `HeroCardPipPreviewTests` fixture was added to the harness's explicit Unity-only register after the tripwire correctly rejected its UI Toolkit imports. Snapshot schema remains v59.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.86 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-986-authoritative-movement-route-completion).
+
+### [~] 9.87 Show attack, heavy-minion defeat and Lane Push in causal order
 
 Authorized 2026-10-08 from the reported heavy-minion kill: presentation must start the attack, show the defeated heavy minion dying, and only then move the wave to its pushed positions. Do not delay or change authoritative resolution. Preserve ordinary defeat, queued attacks, reconnect/first-sight suppression and non-push refreshes. Closing checks: an ordered heavy-defeat regression, focused kinetic/board regressions and a rendered Play Mode journey. T2.
 

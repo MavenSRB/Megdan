@@ -304,7 +304,8 @@ namespace GuardsDigital.Core.Diagnostics
             int amount = 0,
             HeroId blockingHeroId = default,
             CardInstanceId blockingCardInstanceId = default,
-            IEnumerable<CardMoveFact> cardMoves = null)
+            IEnumerable<CardMoveFact> cardMoves = null,
+            IEnumerable<HexCoordinate> movementRoute = null)
         {
             if (sequence < 1)
             {
@@ -339,6 +340,7 @@ namespace GuardsDigital.Core.Diagnostics
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
             CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
+            MovementRoute = Array.AsReadOnly((movementRoute ?? Enumerable.Empty<HexCoordinate>()).ToArray());
         }
 
         /// <summary>
@@ -409,12 +411,15 @@ namespace GuardsDigital.Core.Diagnostics
         /// </summary>
         public IReadOnlyList<CardMoveFact> CardMoves { get; }
 
+        /// <summary>Milestone 9.86. A Movement's committed spaces, from origin through destination.</summary>
+        public IReadOnlyList<HexCoordinate> MovementRoute { get; }
+
         /// <summary>Milestone 9.32g. This row with other moves - the form another seat reads.</summary>
         public MatchLogEntry WithCardMoves(IEnumerable<CardMoveFact> cardMoves) =>
             new MatchLogEntry(
                 Sequence, Kind, RoundIndex, TurnIndex, SubjectHeroId, TargetHeroId, SubjectMinionId,
                 SubjectCardInstanceId, SubjectTeamId, Origin, Destination, HasOrigin, HasDestination,
-                Outcome, Amount, BlockingHeroId, BlockingCardInstanceId, cardMoves);
+                Outcome, Amount, BlockingHeroId, BlockingCardInstanceId, cardMoves, MovementRoute);
 
         public bool Equals(MatchLogEntry other)
         {
@@ -436,7 +441,8 @@ namespace GuardsDigital.Core.Diagnostics
                 Amount == other.Amount &&
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
                 BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
-                CardMoves.SequenceEqual(other.CardMoves);
+                CardMoves.SequenceEqual(other.CardMoves) &&
+                MovementRoute.SequenceEqual(other.MovementRoute);
         }
 
         public override bool Equals(object obj) => Equals(obj as MatchLogEntry);
