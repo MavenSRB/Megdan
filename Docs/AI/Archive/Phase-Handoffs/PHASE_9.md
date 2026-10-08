@@ -948,3 +948,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.93 | The Defense panel includes its divider footprint, keeping Total inside. Upper and lower token card pips are 150% on the original rim centerline with gaps and shield clearance; ping sender portraits rise from 0.42 to 0.48 while retaining multi-sender order/placement. Focused Edit passed 32/32 and exact in-game cases 2/2; fresh captures were reviewed. Private `Playtest-9.93-ui-legibility` at wire `/49` and schema 59 passed exact/package smokes; its 184 ZIP files match byte-for-byte with SHA-256 `6b3b874d3c7ef6fdb93da2e522d0c838289718d32577a14f9dc6b63a69df03d7`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-993-keep-the-defense-breakdown-total-inside-its-panel-and-refresh-the-build). | `milestone/9.93` |
+
+## Milestone 9.94 Defense row and ping-line centering completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.94 | Defense labels fill their unchanged rows and align vertically in the middle. Ping portraits are centered on the ticker edge with stable multi-sender order and spacing. Focused Edit passed 3/3 and exact in-game cases 2/2 with fresh captures reviewed. Private `Playtest-9.94-ui-centering` at wire `/49` and schema 59 passed exact/package smokes; all 184 ZIP files match the loose 584325500-byte package with no forbidden content, SHA-256 `165fbf3349e76bfb88baaf41e9f1423fc12d72a03fa7f87dec03edba3fab08b5`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-994-center-defense-text-and-ping-owners-then-refresh-the-build). | `milestone/9.94` |

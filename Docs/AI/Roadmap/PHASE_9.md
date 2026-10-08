@@ -227,23 +227,21 @@ Historical evidence: [9.91 completion](../Archive/Phase-Handoffs/PHASE_9.md#mile
 
 ### [x] 9.92 Package the item-aware Defense shield without broad-suite reruns
 
-Authorized 2026-10-08 by the user: put 9.91 into the current private Windows playtest build without rerunning the broad test program because this is a focused change. Reuse 9.91's focused projection/wire 16/16, affected Edit Mode 46/46 and in-game journey 1/1 evidence; explicitly omit the offline harness and unfiltered Unity suites. Stamp a distinct package, run only the artifact-facing build/launch interaction smoke, copy without logs/debug material, generate checksums, verify the ZIP byte-for-byte against the loose package, and smoke the packaged executable from its own folder. Preserve 9.90 and all unrelated private files; publish nothing.
-
-Result: `Builds/Playtest-9.92-defense-shield` and its ZIP were cut from stamped main `c177cf7d` (`1.0-9.92-defense-shield+20261008120921-03a3e501`) at protocol `/49` and schema 59. As explicitly directed, the offline harness and unfiltered Unity suites were not rerun; the package reuses 9.91's focused projection/wire 16/16, affected Edit Mode 46/46 and in-game journey 1/1 evidence. The exact stamped Windows binary passed the build/launch interaction smoke, and the copied executable passed the same six-marker scripted interaction from its package directory with exit code zero. The package contains 184 files and 584325763 uncompressed bytes; all ZIP members match the loose files byte-for-byte and no log, debug or DoNotShip entry exists. The 102366817-byte ZIP has SHA-256 `e45c5dbc7c106d63fcf8b0112da72c7ff15376d0043018bff8e2af70c18abb8d`. Package 9.90 and unrelated private files remain preserved; no remote push or publication occurred.
-
-Completed 2026-10-08.
+Completed: packaged 9.91 with focused and artifact checks only, preserving prior packages and publishing nothing.
 
 Historical evidence: [9.92 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-992-item-aware-defense-shield-windows-package-completion).
 
 ### [x] 9.93 Keep the Defense breakdown Total inside its panel and refresh the build
 
-Completed: `Total` is contained; card pips are 150% with gap/shield clearance; ping portraits are 0.48. Checks passed. [Full definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-993-keep-the-defense-breakdown-total-inside-its-panel-and-refresh-the-build).
+Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-993-keep-the-defense-breakdown-total-inside-its-panel-and-refresh-the-build).
 
 Historical evidence: [9.93 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-993-defense-and-token-legibility-completion).
 
-### [~] 9.94 Center Defense text and ping owners, then refresh the build
+### [x] 9.94 Center Defense text and ping owners, then refresh the build
 
-Authorized 2026-10-08 from packaged-player screenshots: vertically center both labels within each fixed Defense breakdown row without resizing or moving the panel; place every ping-owner portrait with its vertical center on the ticker's top edge while preserving stable multi-sender horizontal ordering. Run only the focused Defense and shared-ping checks plus artifact-facing build/package checks, preserve 9.93, and publish nothing.
+Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-994-center-defense-text-and-ping-owners-then-refresh-the-build).
+
+Historical evidence: [9.94 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-994-defense-row-and-ping-line-centering-completion).
 
 ## Queued by 9.13, not authorized
 

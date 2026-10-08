@@ -120,3 +120,13 @@ Result: the missing nine-pixel divider footprint now keeps `Total` fully inside 
 Completed 2026-10-08.
 
 Historical evidence: [9.93 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-993-defense-and-token-legibility-completion).
+
+### [x] 9.94 Center Defense text and ping owners, then refresh the build
+
+Authorized 2026-10-08 from packaged-player screenshots: vertically center both labels within each fixed Defense breakdown row without resizing or moving the panel; place every ping-owner portrait with its vertical center on the ticker's top edge while preserving stable multi-sender horizontal ordering. Run only the focused Defense and shared-ping checks plus artifact-facing build/package checks, preserve 9.93, and publish nothing.
+
+Result: each Defense label now fills the existing 23-unit row and uses middle-left or middle-right text alignment, so the panel's size and placement do not move. Ping-owner rows now subtract half the portrait height from the ticker edge rather than a full height plus gap; every sender is bisected by the line while stable horizontal order is unchanged. Focused Defense Edit passed 3/3 and the exact Defense-panel plus shared multi-player ping Play cases passed 2/2; fresh real-UI captures were reviewed. Stamped source `ed406e05` produced `Builds/Playtest-9.94-ui-centering` and its ZIP at wire `/49`, schema 59, stamp `1.0-9.94-ui-centering+20261008125611-ed406e05`. Exact-player and packaged-player six-marker smokes passed. All 184 ZIP files match the loose 584325500-byte package byte-for-byte with no log/debug/DoNotShip entry; the 102366933-byte ZIP SHA-256 is `165fbf3349e76bfb88baaf41e9f1423fc12d72a03fa7f87dec03edba3fab08b5`. The offline harness and unfiltered Unity suites were omitted by user direction. Package 9.93 remains preserved; nothing was published.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.94 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-994-defense-row-and-ping-line-centering-completion).

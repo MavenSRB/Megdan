@@ -10,13 +10,13 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5. All thirty-two configured heroes pass permanent player-path gates. Hosts choose 2v2/3v3 plus bounded Waves/Lives; official Quick/Long rows remain fixtures. Typed rules, replay, Undo, snapshots and private TCP play are implemented. Snapshot schema v59 persists the fixed board partition; the integrated wire protocol is `guards-private-online/49`. Only p.20 Handicap cards are boxed. The [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) and [Phase 9 archive](Archive/Phase-Handoffs/PHASE_9.md) own earlier detail.
 
-FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. Package 9.93 retains its Host/Join launcher with the approved signal and token-legibility refinements. Older packages remain preserved privately.
+FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot play, END TURN/UNDO and hero artwork. Package 9.94 retains its Host/Join launcher with the approved signal and token-legibility refinements. Older packages remain preserved privately.
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.93**.
+- Current completed milestone: **9.94**.
 
-- Active authorized milestone: **9.94** - vertically center Defense breakdown row text and center ping-owner portraits on the ticker line; run only focused UI and package checks, then refresh the private Windows build.
+- Active authorized milestone: **None**.
 - Authorized sequence: **9.85 -> 9.86 -> 9.87 -> 9.88**, approved 2026-10-08: replace the six player accents with warm red/orange/yellow and cool blue/cyan/teal; animate Movement over the authoritative resolved route; show attack, heavy-minion defeat, then Lane Push in that order; validate and cut the integrated Windows package. Execute serially with separate validation and local commits.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
@@ -59,7 +59,7 @@ The TWENTIETH hero, **Brynn the Seeker**, is complete: [8.69-8.69h](Roadmap/PHAS
 
 On 2026-09-21 the user chose **Hanu the Trickster** as the TWENTY-FIRST hero: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** and **[8.72](Roadmap/PHASE_8.md)** are COMPLETE ([his shard](Rules/HERO_HANU.md) owns the four new mechanisms and HA-Q answers; schema v44, wire `/20`); **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu`.
 
-Current package: [9.93](Roadmap/PHASE_9.md#x-993-keep-the-defense-breakdown-total-inside-its-panel-and-refresh-the-build), `Builds/Playtest-9.93-ui-legibility.zip` (32 heroes, wire /49, schema 59, source `23d94a02`; SHA-256 `6b3b874d3c7ef6fdb93da2e522d0c838289718d32577a14f9dc6b63a69df03d7`). Focused UI, exact-player, packaged-player and byte-for-byte ZIP checks passed; broad suites were omitted by user direction. Older packages remain preserved; no publication occurred.
+Current package: [9.94](Roadmap/PHASE_9.md#x-994-center-defense-text-and-ping-owners-then-refresh-the-build), `Builds/Playtest-9.94-ui-centering.zip` (32 heroes, wire /49, schema 59, source `ed406e05`; SHA-256 `165fbf3349e76bfb88baaf41e9f1423fc12d72a03fa7f87dec03edba3fab08b5`). Focused UI, exact-player, packaged-player and byte-for-byte ZIP checks passed; broad suites were omitted by user direction. Older packages remain preserved; no publication occurred.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero, **Ignatia**: [8.75-8.75e](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md) ([her shard](Rules/HERO_IGNATIA.md)) and the playtest follow-ups [8.80-8.91](Roadmap/PHASE_8.md) are complete. **8.105 supersedes the historical coin reading: live play corrected it to `☀ = Blue`, `☾ = Red`.**
 
