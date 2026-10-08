@@ -690,7 +690,7 @@ namespace GuardsDigital.Presentation.Match
             playerName.pickingMode = PickingMode.Ignore;
             playerName.style.position = Position.Absolute;
             // Overlay the border; names must not increase any tray's layout footprint.
-            playerName.style.top = -10f;
+            playerName.style.top = -6f;
             playerName.style.maxWidth = 140f;
             playerName.style.minWidth = 42f;
             playerName.style.height = 16f;

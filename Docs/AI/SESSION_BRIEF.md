@@ -18,7 +18,7 @@ Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. 
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-004 is implemented and awaiting the user's visual approval of the compact name banner. No further implementation or new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
+W-004's lower compact name banner is implemented and awaiting user visual approval. No further implementation or new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
