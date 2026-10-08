@@ -413,7 +413,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The shield must sit on screen-left, not at the bottom beside the hand pips.");
             Assert.That(heroView.DefenseModifierShield.GetComponent<MeshFilter>()
                     .sharedMesh.bounds.size.magnitude,
-                Is.LessThan(heroView.SelectionRadius * 0.75f),
+                Is.LessThan(heroView.SelectionRadius * 0.95f),
                 "The shield stays materially smaller than the hero token.");
 
             view.SetHoveredCoordinate(null);
@@ -453,12 +453,22 @@ namespace GuardsDigital.Tests.EditMode
                     new[] { CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green }, 0, 1f, 0.15f);
                 var pipPositions = pips.Renderers.Select(value => value.transform.position).ToArray();
                 var pipColours = pips.Renderers.Select(value => value.sharedMaterial.color).ToArray();
+                // Each pip has an outer and inner renderer; hand pips follow the current pip.
+                for (var pipIndex = 1; pipIndex < 4; pipIndex++)
+                    Assert.That(Vector3.Distance(pipPositions[pipIndex * 2], pipPositions[(pipIndex + 1) * 2]),
+                        Is.EqualTo(0.28f).Within(0.001f),
+                        "Unchanged 0.24-unit card pips have a visible 0.04-unit gap.");
                 var shield = HeroDefenseModifierShield.GetOrCreate(token.transform);
                 shield.SetVisible(-2, 1f, 0.15f);
                 var mesh = shield.GetComponent<MeshFilter>().sharedMesh;
                 var material = shield.GetComponent<MeshRenderer>().sharedMaterial;
+                var materials = shield.GetComponent<MeshRenderer>().sharedMaterials;
                 var left = Vector3.Cross(BoardChoiceCue.ScreenUpInWorld, Vector3.up);
                 var offset = shield.transform.position - token.transform.position;
+                var pipOffset = pipPositions[0] - token.transform.position;
+                var pipRimRadius = new Vector2(pipOffset.x, pipOffset.z).magnitude;
+                Assert.That(Vector3.Dot(offset, left), Is.EqualTo(pipRimRadius).Within(0.001f),
+                    "The shield center straddles the same token rim centerline as the card pips.");
                 Assert.That(Vector3.Dot(offset, left),
                     Is.EqualTo(HeroDefenseModifierShield.EdgeDistanceFactor).Within(0.001f));
                 Assert.That(Vector3.Dot(offset, BoardChoiceCue.ScreenUpInWorld), Is.EqualTo(0f).Within(0.001f));
@@ -479,10 +489,44 @@ namespace GuardsDigital.Tests.EditMode
                 }
                 Assert.That(shield.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(mesh));
                 Assert.That(shield.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(material));
-                Assert.That(shield.OwnedNativeResourceCount, Is.EqualTo(2));
+                Assert.That(shield.GetComponent<MeshRenderer>().sharedMaterials, Is.EqualTo(materials));
+                Assert.That(shield.OwnedNativeResourceCount, Is.EqualTo(3));
                 Assert.That(pips.PipCount, Is.EqualTo(5));
                 Assert.That(pips.Renderers.Select(value => value.transform.position), Is.EqualTo(pipPositions));
                 Assert.That(pips.Renderers.Select(value => value.sharedMaterial.color), Is.EqualTo(pipColours));
+            }
+            finally { BoardChoiceCue.SetScreenUp(previousUp); }
+        }
+
+        [Test]
+        public void HeroShieldMatchesMockupTallOutlinedSilhouetteAndReleasesItsMaterials()
+        {
+            var previousUp = BoardChoiceCue.ScreenUpInWorld;
+            var token = new GameObject("Mockup shield");
+            owned.Add(token);
+            try
+            {
+                BoardChoiceCue.SetScreenUp(Vector3.forward);
+                var shield = HeroDefenseModifierShield.GetOrCreate(token.transform);
+                shield.SetVisible(-1, 1f, 0.15f);
+                var mesh = shield.GetComponent<MeshFilter>().sharedMesh;
+                var materials = shield.GetComponent<MeshRenderer>().sharedMaterials;
+                Assert.That(mesh.bounds.size.z / mesh.bounds.size.x, Is.InRange(1.25f, 1.4f));
+                Assert.That(mesh.bounds.size.x, Is.EqualTo(0.44f * 1.3f).Within(0.001f));
+                Assert.That(mesh.bounds.size.z, Is.EqualTo(0.58f * 1.3f).Within(0.001f));
+                Assert.That(mesh.subMeshCount, Is.EqualTo(2));
+                Assert.That(materials, Has.Length.EqualTo(2));
+                Assert.That(materials[0].color, Is.EqualTo(HeroDefenseModifierShield.OutlineColor));
+                Assert.That(materials[1].color, Is.EqualTo(HeroDefenseModifierShield.ShieldColor));
+                Assert.That(materials[0].color.grayscale, Is.LessThan(0.1f));
+                Assert.That(materials[1].color.r, Is.GreaterThan(0.7f));
+                Assert.That(mesh.vertices[1].z, Is.GreaterThan(mesh.vertices[2].z),
+                    "The crown rises above the shoulders instead of forming a flat bar.");
+                Assert.That(mesh.vertices[7].x, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(mesh.vertices[7].z, Is.EqualTo(-HeroDefenseModifierShield.HeightFactor / 2f));
+                shield.ReleaseOwnedResources();
+                Assert.That(shield.OwnedNativeResourceCount, Is.Zero);
+                Assert.That(materials.All(value => value == null), Is.True);
             }
             finally { BoardChoiceCue.SetScreenUp(previousUp); }
         }

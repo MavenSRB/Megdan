@@ -872,3 +872,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.84 | Persistent left-edge standard-minion modifier shields with readable fitted values; normal and Attack hover contributors, unchanged card pips and per-body public readings. T2 evidence and actual-game visual inspection in the commit body; isolated branch remains unmerged. [Definition](../../Roadmap/PHASE_9.md#x-984-persistent-left-edge-hero-defense-modifier). | `milestone/9.84` |
+
+## Milestone 9.84a approved token shield and pip spacing completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.84a | Approved taller outlined shield, enlarged 30% and centered on the left rim; unchanged-size pips separated by clear gaps. Actual-scene normal/Attack hover inspection and focused T2 evidence in the commit body; merge delegated to the separate task. [Definition](../../Roadmap/PHASE_9.md#x-984a-match-the-hero-shield-to-the-discussion-mockup). | `milestone/9.84a` |

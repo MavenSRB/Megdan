@@ -19,7 +19,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public const int OverlaySortingOrder = 100;
         private const float OuterRadius = 0.12f;
         private const float InnerRadius = 0.085f;
-        private const float PipSpacing = 0.19f;
+        // The 0.24-unit discs retain a 0.04-unit clear gap along the rim.
+        private const float PipSpacing = 0.28f;
 
         private readonly List<GameObject> pips = new List<GameObject>();
         private readonly List<Material> materials = new List<Material>();

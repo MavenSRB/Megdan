@@ -14,13 +14,13 @@ FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot 
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.84**.
+- Current completed milestone: **9.84a**.
 - Active authorized milestone: **none**.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
 - Next proposed milestone: **9.62**.
-- This isolated branch `codex/hero-defense-shield` contains the completed [9.84 left-edge hero modifier](Roadmap/PHASE_9.md#x-984-persistent-left-edge-hero-defense-modifier). Stop here; merging awaits the user's request. The shared checkout's **9.81 -> 9.82** sequence remains separate; preserve its work. **9.62** is not authorized and **9.80** remains paused at `[!]`; no player build, publication or remote operation is authorized.
+- On `codex/hero-defense-shield`, [9.84a's approved shield and pip spacing](Roadmap/PHASE_9.md#x-984a-match-the-hero-shield-to-the-discussion-mockup) is complete; hand the branch to the separate merge task and stop unmerged here. Preserve the shared checkout's separate **9.81 -> 9.82** work. **9.62** is not authorized and **9.80** remains paused at `[!]`; no player build, publication or remote operation is authorized here.
 - 9.54 gated NebKher's playable faces and components through the permanent real-control journey matrix and completed the thirty-two-hero player-path gate. Focused and unfiltered T3 offline/Edit/Play checks passed, including the corrected three-axis choice presentation and journey outcome audit. The [roadmap](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) owns the outcome; exact evidence is in the local milestone commit.
 - 9.51-9.53 completed NebKher's foundations and dealing through snapshot v59; 9.72 advanced the integrated wire protocol to /45; 9.76 advances it to /46 for the typed Other Golds inspection section. Preserve untracked user files.
 - Corrective route: the user-directed `RISK-PLAYMODE-001` repair closed within 9.48. The final unfiltered Play Mode gate passed 1096/1096 after failing-then-passing focused checks; no quarantine was used.

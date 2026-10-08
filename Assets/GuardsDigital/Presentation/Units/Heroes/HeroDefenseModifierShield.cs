@@ -15,16 +15,20 @@ namespace GuardsDigital.Presentation.Units.Heroes
     {
         public const string ShieldObjectName = "Hero Defense Modifier Shield";
         public const string ValueObjectName = "Defense Modifier Value";
-        public const float HalfWidthFactor = 0.22f;
-        public const float HeightFactor = 0.32f;
-        public const float EdgeDistanceFactor = 0.72f;
+        public const float HalfWidthFactor = 0.286f;
+        public const float HeightFactor = 0.754f;
+        public const float OutlineInsetFactor = 0.0325f;
+        // Center on the same rim radius as the card pips, but at screen-left.
+        public const float EdgeDistanceFactor = 0.92f;
         public const float SurfaceOffset = 0.03f;
-        public const float ValueCharacterSizeFactor = 0.19f;
-        public static readonly Color ShieldColor = new Color(0.62f, 0.67f, 0.72f, 1f);
+        public const float ValueCharacterSizeFactor = 0.247f;
+        public static readonly Color ShieldColor = new Color(0.78f, 0.79f, 0.78f, 1f);
+        public static readonly Color OutlineColor = new Color(0.035f, 0.035f, 0.035f, 1f);
         public static readonly Color ValueColor = new Color(0.05f, 0.06f, 0.07f, 1f);
 
         private Mesh ownedMesh;
         private Material ownedMaterial;
+        private Material ownedOutlineMaterial;
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private TextMesh valueText;
@@ -33,7 +37,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public bool IsVisible => gameObject.activeSelf && Modifier.HasValue;
         public TextMesh ValueText => valueText;
         public int OwnedNativeResourceCount =>
-            (ownedMesh == null ? 0 : 1) + (ownedMaterial == null ? 0 : 1);
+            (ownedMesh == null ? 0 : 1) + (ownedMaterial == null ? 0 : 1) +
+            (ownedOutlineMaterial == null ? 0 : 1);
 
         public static HeroDefenseModifierShield GetOrCreate(Transform piece)
         {
@@ -112,30 +117,45 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         private void BuildShield(Vector3 localDown, float pieceRadius)
         {
-            var right = new Vector3(localDown.z, 0f, -localDown.x);
+            var right = new Vector3(-localDown.z, 0f, localDown.x);
             var up = -localDown;
             var halfWidth = pieceRadius * HalfWidthFactor;
             var height = pieceRadius * HeightFactor;
-            var vertices = new[]
+            // Mockup silhouette: raised crown, upright shoulders and a rounded taper to a point.
+            var contour = new[]
             {
-                Vector3.zero,
-                (-right * halfWidth) + (up * height * 0.42f),
-                (right * halfWidth) + (up * height * 0.42f),
-                (right * halfWidth * 0.82f) + (localDown * height * 0.10f),
-                localDown * height * 0.58f,
-                (-right * halfWidth * 0.82f) + (localDown * height * 0.10f)
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.38f),
+                new Vector2(1f, 0.03f), new Vector2(0.93f, -0.15f),
+                new Vector2(0.75f, -0.30f), new Vector2(0.43f, -0.42f),
+                new Vector2(0f, -0.5f), new Vector2(-0.43f, -0.42f),
+                new Vector2(-0.75f, -0.30f), new Vector2(-0.93f, -0.15f),
+                new Vector2(-1f, 0.03f), new Vector2(-1f, 0.38f)
             };
-            var triangles = new[]
+            var layerSize = contour.Length + 1;
+            var vertices = new Vector3[layerSize * 2];
+            var triangles = new int[2][];
+            for (var layer = 0; layer < 2; layer++)
             {
-                0, 2, 1,
-                0, 3, 2,
-                0, 4, 3,
-                0, 5, 4,
-                0, 1, 5
-            };
+                var start = layer * layerSize;
+                var inset = layer * pieceRadius * OutlineInsetFactor;
+                var lift = Vector3.up * (layer * 0.001f);
+                vertices[start] = lift;
+                triangles[layer] = new int[contour.Length * 3];
+                for (var i = 0; i < contour.Length; i++)
+                {
+                    vertices[start + i + 1] = lift +
+                        right * (contour[i].x * (halfWidth - inset)) +
+                        up * (contour[i].y * (height - 2f * inset));
+                    triangles[layer][i * 3] = start;
+                    triangles[layer][i * 3 + 1] = start + i + 1;
+                    triangles[layer][i * 3 + 2] = start + (i + 1) % contour.Length + 1;
+                }
+            }
             ownedMesh.Clear();
             ownedMesh.SetVertices(vertices);
-            ownedMesh.SetTriangles(triangles, 0);
+            ownedMesh.subMeshCount = 2;
+            ownedMesh.SetTriangles(triangles[0], 0);
+            ownedMesh.SetTriangles(triangles[1], 1);
             ownedMesh.RecalculateBounds();
             ownedMesh.RecalculateNormals();
         }
@@ -174,7 +194,13 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 ownedMaterial.SetFloat("_Cull", (float)CullMode.Off);
             }
 
-            meshRenderer.sharedMaterial = ownedMaterial;
+            if (ownedOutlineMaterial == null)
+                ownedOutlineMaterial = new Material(ownedMaterial)
+                {
+                    name = ShieldObjectName + " Outline Material",
+                    color = OutlineColor
+                };
+            meshRenderer.sharedMaterials = new[] { ownedOutlineMaterial, ownedMaterial };
             if (valueText == null)
             {
                 var valueObject = new GameObject(ValueObjectName);
@@ -193,12 +219,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
         {
             var mesh = ownedMesh;
             var material = ownedMaterial;
+            var outline = ownedOutlineMaterial;
             ownedMesh = null;
             ownedMaterial = null;
+            ownedOutlineMaterial = null;
             if (meshFilter != null && meshFilter.sharedMesh == mesh) meshFilter.sharedMesh = null;
-            if (meshRenderer != null) meshRenderer.sharedMaterial = null;
+            if (meshRenderer != null) meshRenderer.sharedMaterials = Array.Empty<Material>();
             DestroyOwned(mesh);
             DestroyOwned(material);
+            DestroyOwned(outline);
         }
 
         private static void DestroyOwned(UnityEngine.Object resource)

@@ -204,6 +204,12 @@ Closing checks: rules-query reuse over public board state; per-body readings, ze
 
 Historical evidence: [9.84 completion index](../Archive/Phase-Handoffs/PHASE_9.md#milestone-984-persistent-hero-modifier-completion).
 
+### [x] 9.84a Match the hero shield to the discussion mockup
+
+Authorized 2026-10-08: replace the flat squat badge with the mockup's taller tapered shield, black outline and light-grey face. Amended the same day: center the shield on the token's left rim, matching the card pips' rim centerline, with no downward offset. Final approved token preview: enlarge shield width, height, outline and value by 30%; separate the unchanged-size hand pips with 0.28-unit center spacing (0.04-unit clear gap). Change only icon geometry, styling, pip spacing and that placement on `codex/hero-defense-shield`; preserve fitted signed values, card symbols and normal/Attack hover behavior. Closing checks: focused geometry/material/resource, shared rim-centerline, enlarged dimensions, clear pip gaps and existing hover regressions; real-scene normal/hover/Attack captures inspected against the recovered reference. T2; no rules, input, wire, build, merge or publication changes.
+
+Historical evidence: [9.84a completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-984a-approved-token-shield-and-pip-spacing-completion).
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
