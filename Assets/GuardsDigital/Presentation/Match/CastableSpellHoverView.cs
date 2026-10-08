@@ -8,8 +8,8 @@ namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
     /// Milestones 9.30k and 9.74. The pointer-rest companion for an action card that declares typed
-    /// spell casts. It stacks above the complete action-card face, so the card remains the hover anchor
-    /// and the same companion can be used by the hand, turn slots, current card and discard surfaces.
+    /// spell casts. The own-hand companion stacks above its face; read-only inspection places the
+    /// same column beside the face. The casting card remains the pointer anchor in both layouts.
     /// </summary>
     internal static class CastableSpellHoverView
     {
@@ -82,5 +82,14 @@ namespace GuardsDigital.Presentation.Match
         {
             cardFace?.Q<VisualElement>("gd-castable-spells")?.RemoveFromHierarchy();
         }
+
+        internal static void PlaceBeside(VisualElement cardFace)
+        {
+            var shelf = cardFace?.Q<VisualElement>("gd-castable-spells");
+            if (shelf == null) return;
+            shelf.style.left = CardFootprint.Width + Gap;
+            shelf.style.top = 0f;
+        }
+
     }
 }

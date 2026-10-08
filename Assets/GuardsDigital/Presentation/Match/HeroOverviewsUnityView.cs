@@ -468,9 +468,14 @@ namespace GuardsDigital.Presentation.Match
             var onLeft = beside.center.x < width / 2f;
             var card = CardOf(model);
             var spellShelfHeight = CastableSpellHoverView.HeightFor(card?.CastableSpells);
-            var topOverhang = spellShelfHeight > 0f
-                ? spellShelfHeight + CastableSpellHoverView.Gap
-                : 0f;
+            var topOverhang = Mathf.Min(redColumn.worldBound.yMin, blueColumn.worldBound.yMin);
+            // Read-only inspection uses a side column; the player's own hand keeps its above-card companion.
+            if (spellShelfHeight > 0f)
+            {
+                CastableSpellHoverView.PlaceBeside(face);
+                faceWidth += CastableSpellHoverView.Gap + CastableSpellHoverView.WidthFor(card.CastableSpells);
+                faceHeight = Mathf.Max(faceHeight, spellShelfHeight);
+            }
             var left = onLeft
                 ? beside.xMax + 10f
                 : beside.xMin - faceWidth - 10f;
@@ -612,7 +617,7 @@ namespace GuardsDigital.Presentation.Match
             rail.userData = hero.HeroId;
             rail.style.marginBottom = 8f;
             HudElements.Padding(rail, 9f);
-            rail.style.paddingTop = 12f;
+            rail.style.paddingTop = 25f;
             rail.style.paddingBottom = 8f;
             var accent = colourRead == null ? MatchHudTheme.TeamFace(hero.TeamSide)
                 : PlayerAccent.For(colourRead().Participants, hero.HeroId);
@@ -686,7 +691,7 @@ namespace GuardsDigital.Presentation.Match
             playerName.style.position = Position.Absolute;
             playerName.style.top = 2f;
             playerName.style.width = 120f;
-            playerName.style.height = 11f;
+            playerName.style.height = 16f;
             playerName.style.overflow = Overflow.Hidden;
             playerName.style.whiteSpace = WhiteSpace.NoWrap;
             playerName.style.textOverflow = TextOverflow.Ellipsis;

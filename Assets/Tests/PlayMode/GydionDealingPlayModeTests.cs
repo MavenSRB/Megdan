@@ -234,6 +234,7 @@ namespace GuardsDigital.Tests.PlayMode
                     oneRemovedCantrip,
                     cantripSlot,
                     false,
+                    false,
                     false
                 });
                 yield return null;

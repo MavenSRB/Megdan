@@ -23,7 +23,7 @@ namespace GuardsDigital.Presentation.Interaction
         private HexTileView[] tiles;
         private System.Func<Vector2, bool> blocksPointer;
         public System.Func<GuardsDigital.Core.Board.HexCoordinate?, bool> ShareCursor { get; set; }
-        public System.Action<CardDefinitionReference?, Vector2> CardPipHoverChanged { get; set; }
+        public System.Action<GuardsDigital.Core.Units.Heroes.HeroId, CardDefinitionReference?, Vector2> CardPipHoverChanged { get; set; }
         public System.Action<HeroDefenseModifierProjection, Vector2> DefenseModifierHoverChanged { get; set; }
         private GuardsDigital.Core.Board.HexCoordinate? desiredCursor, sentCursor;
         private float nextCursorSend;
@@ -235,7 +235,9 @@ namespace GuardsDigital.Presentation.Interaction
                 var reference = pip.DefinitionReference.IsDefined
                     ? (CardDefinitionReference?)pip.DefinitionReference
                     : null;
-                CardPipHoverChanged?.Invoke(reference, screenPosition);
+                CardPipHoverChanged?.Invoke(
+                    selector.GetComponent<GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView>().Occupancy.HeroId,
+                    reference, screenPosition);
                 return reference.HasValue;
             }
 
@@ -243,7 +245,7 @@ namespace GuardsDigital.Presentation.Interaction
             return false;
         }
 
-        private void HideCardPipPreview() => CardPipHoverChanged?.Invoke(null, default);
+        private void HideCardPipPreview() => CardPipHoverChanged?.Invoke(default, null, default);
 
         public bool RefreshDefenseModifierPreviewFromPointerRay(
             Ray pointerRay, bool shiftHeld, Vector2 screenPosition)

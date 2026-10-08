@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -15,6 +17,7 @@ namespace GuardsDigital.Presentation.Match
         public const float SafeMargin = 8f;
 
         private CardDefinitionReference definitionReference;
+        private IReadOnlyList<SpellCardViewModel> shownSpells = Array.Empty<SpellCardViewModel>();
 
         public HeroCardPipPreviewUnityView()
         {
@@ -38,10 +41,14 @@ namespace GuardsDigital.Presentation.Match
         public CardDefinitionReference DefinitionReference => definitionReference;
         public Rect LastRect { get; private set; }
 
-        public void Show(CardDefinition definition, Vector2 panelPointer, Rect safeRegion)
+        public void Show(CardDefinition definition, Vector2 panelPointer, Rect safeRegion,
+            IReadOnlyList<SpellCardViewModel> spells = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
-            if (!definitionReference.Equals(definition.Reference))
+            spells = spells ?? Array.Empty<SpellCardViewModel>();
+            if (!definitionReference.Equals(definition.Reference) ||
+                !shownSpells.Select(spell => (spell.DefinitionReference, spell.IsGreyed))
+                    .SequenceEqual(spells.Select(spell => (spell.DefinitionReference, spell.IsGreyed))))
             {
                 Root.Clear();
                 var model = new TrayCardViewModel(
@@ -62,12 +69,20 @@ namespace GuardsDigital.Presentation.Match
                 };
                 ConfiguredCardFaceView.Build(face, model);
                 face.Q("gd-card-history")?.RemoveFromHierarchy();
+                CastableSpellHoverView.Attach(face, spells);
+                CastableSpellHoverView.PlaceBeside(face);
                 IgnorePicking(face);
                 Root.Add(face);
                 definitionReference = definition.Reference;
+                shownSpells = spells.ToArray();
             }
 
-            LastRect = CalculateRect(panelPointer, safeRegion);
+            var size = new Vector2(CardFootprint.Width + (spells.Count == 0 ? 0f :
+                CastableSpellHoverView.Gap + CastableSpellHoverView.WidthFor(spells)),
+                Mathf.Max(CardFootprint.Height, CastableSpellHoverView.HeightFor(spells)));
+            Root.style.width = Root.style.minWidth = Root.style.maxWidth = size.x;
+            Root.style.height = Root.style.minHeight = Root.style.maxHeight = size.y;
+            LastRect = CalculateRect(panelPointer, safeRegion, size);
             Root.style.left = LastRect.x;
             Root.style.top = LastRect.y;
             Root.style.display = DisplayStyle.Flex;
@@ -78,25 +93,29 @@ namespace GuardsDigital.Presentation.Match
         {
             if (!IsVisible && !definitionReference.IsDefined) return;
             definitionReference = default;
+            shownSpells = Array.Empty<SpellCardViewModel>();
             Root.Clear();
             Root.style.display = DisplayStyle.None;
         }
 
         public static Rect CalculateRect(Vector2 pointer, Rect safeRegion)
+            => CalculateRect(pointer, safeRegion, new Vector2(CardFootprint.Width, CardFootprint.Height));
+
+        private static Rect CalculateRect(Vector2 pointer, Rect safeRegion, Vector2 size)
         {
             var minimumX = safeRegion.xMin + SafeMargin;
-            var maximumX = safeRegion.xMax - SafeMargin - CardFootprint.Width;
+            var maximumX = safeRegion.xMax - SafeMargin - size.x;
             var minimumY = safeRegion.yMin + SafeMargin;
-            var maximumY = safeRegion.yMax - SafeMargin - CardFootprint.Height;
+            var maximumY = safeRegion.yMax - SafeMargin - size.y;
             if (maximumX < minimumX || maximumY < minimumY)
-                return new Rect(minimumX, minimumY, CardFootprint.Width, CardFootprint.Height);
+                return new Rect(minimumX, minimumY, size.x, size.y);
 
             var right = pointer.x + PointerGap;
-            var left = pointer.x - PointerGap - CardFootprint.Width;
+            var left = pointer.x - PointerGap - size.x;
             var x = pointer.x < safeRegion.center.x ? right : left;
             x = Mathf.Clamp(x, minimumX, maximumX);
-            var y = Mathf.Clamp(pointer.y - (CardFootprint.Height * 0.5f), minimumY, maximumY);
-            return new Rect(x, y, CardFootprint.Width, CardFootprint.Height);
+            var y = Mathf.Clamp(pointer.y - (size.y * 0.5f), minimumY, maximumY);
+            return new Rect(x, y, size.x, size.y);
         }
 
         private static void IgnorePicking(VisualElement root)

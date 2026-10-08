@@ -106,6 +106,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
+            foreach (var width in new[] { 1280u, 1920u, 2560u })
+            {
+            UiPlayer.SetPlayerViewport(width, width * 9 / 16, "readable player nameplates");
+            root.Hud.Layout(); yield return null; yield return null;
             foreach (var team in new[] { TeamSide.Red, TeamSide.Blue })
             {
                 var column = root.Hud.RootElement.Q(team == TeamSide.Red
@@ -128,6 +132,11 @@ namespace GuardsDigital.Tests.PlayMode
                     var name = roster.Single(row => row.Seat.Equals(seat.Id)).PlayerName;
                     Assert.That(plate.text, Is.EqualTo(name));
                     Assert.That(plate.tooltip, Is.EqualTo(name));
+                    Assert.That(plate.worldBound.height, Is.GreaterThanOrEqualTo(16f),
+                        "The player name reserves a complete text line.");
+                    Assert.That(plate.worldBound.yMax + 2f,
+                        Is.LessThanOrEqualTo(rail.Q("gd-hero-identity-plate").worldBound.yMin),
+                        "The identity panel must not paint over the player name.");
                     Assert.That(plate.worldBound.yMax, Is.LessThanOrEqualTo(portrait.worldBound.yMin + 1f));
                     Assert.That(team == TeamSide.Red
                         ? plate.worldBound.xMin <= portrait.worldBound.xMin
@@ -135,7 +144,8 @@ namespace GuardsDigital.Tests.PlayMode
                         "the label sits over the portrait toward its outer edge");
                 }
             }
-            yield return UiPlayer.CaptureScreen("tmp/997-seat-ordered-named-trays.png");
+            yield return UiPlayer.CaptureScreen("tmp/w002-named-trays-" + width + ".png");
+            }
             runtime.HeroOverviewsView.SetPlayerNames(System.Array.Empty<SeatRosterEntry>());
             Assert.That(root.Hud.RootElement.Query<Label>("gd-hero-player-name").ToList()
                 .All(label => label.style.display.value == DisplayStyle.None), Is.True);

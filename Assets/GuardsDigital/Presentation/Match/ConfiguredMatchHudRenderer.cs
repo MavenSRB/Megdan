@@ -600,7 +600,8 @@ namespace GuardsDigital.Presentation.Match
         /// projection, or clears it. The screen point is converted through the same reference-space
         /// mapping used by every HUD pointer boundary.
         /// </summary>
-        public void ShowCardPipPreview(CardDefinition definition, Vector2 screenPosition)
+        public void ShowCardPipPreview(CardDefinition definition, Vector2 screenPosition,
+            IReadOnlyList<SpellCardViewModel> spells = null)
         {
             if (cardPipPreview == null || root == null || definition == null || victoryScreenStanding)
             {
@@ -614,7 +615,7 @@ namespace GuardsDigital.Presentation.Match
             var safe = CameraSafeLayout.IsValid
                 ? CameraSafeLayout.UpperRegion
                 : new Rect(0f, 0f, viewport.x, viewport.y);
-            cardPipPreview.Show(definition, panelPoint, safe);
+            cardPipPreview.Show(definition, panelPoint, safe, spells);
         }
 
         public void HideCardPipPreview()

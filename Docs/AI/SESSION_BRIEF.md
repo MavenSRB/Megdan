@@ -14,11 +14,11 @@ Current private package: [9.100](Roadmap/PHASE_9.md#x-9100-cut-the-integrated-wi
 
 ## Current authorization and next route
 
-- Last completed work: **W-001**.
+- Last completed work: **W-002**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
-The workflow transition is recorded in [work history](Archive/WORK_LOG.md). There is no unfinished authorized implementation sequence; use [current work](Roadmap/CURRENT_WORK.md) when a concrete request is selected.
+No implementation is currently authorized. Select the next bounded outcome through [current work](Roadmap/CURRENT_WORK.md). No build requested.
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

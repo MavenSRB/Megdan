@@ -55,6 +55,43 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void SpellColumnIsBesideTheFaceBoundedAndRefreshesRemovedSpells()
+        {
+            using (ConfiguredCardArtwork.UseTextureLoader(_ => null))
+            {
+                var view = new HeroCardPipPreviewUnityView();
+                var card = GydionCardContent.Definition(GydionCardContent.Cantrip);
+                var spells = new[] { GydionCardContent.FindFamiliar, GydionCardContent.Fireball,
+                    GydionCardContent.Sunburst }.Select(id =>
+                        new SpellCardViewModel(GydionCardContent.Definition(id))).ToArray();
+                var safe = new Rect(260, 72, 1400, 800);
+                foreach (var pointer in new[] { safe.min, safe.max })
+                {
+                    view.Show(card, pointer, safe, spells);
+                    var shelf = view.Root.Q("gd-castable-spells");
+                    Assert.That(shelf.style.left.value.value, Is.GreaterThan(CardFootprint.Width));
+                    Assert.That(shelf.style.top.value.value, Is.Zero);
+                    Assert.That(view.Root.Query("gd-spell-face").ToList(), Has.Count.EqualTo(3));
+                    Assert.That(view.LastRect.xMin, Is.GreaterThanOrEqualTo(safe.xMin));
+                    Assert.That(view.LastRect.yMin, Is.GreaterThanOrEqualTo(safe.yMin));
+                    Assert.That(view.LastRect.xMax, Is.LessThanOrEqualTo(safe.xMax));
+                    Assert.That(view.LastRect.yMax, Is.LessThanOrEqualTo(safe.yMax));
+                }
+                var retained = view.Root[0];
+                view.Show(card, safe.center, safe, spells.ToArray());
+                Assert.That(view.Root[0], Is.SameAs(retained));
+                spells[1] = new SpellCardViewModel(GydionCardContent.Definition(GydionCardContent.Fireball), true);
+                view.Show(card, safe.center, safe, spells);
+                Assert.That(view.Root.Query("gd-spell-greyed").ToList(), Has.Count.EqualTo(1));
+                Assert.That(DescendantsAndSelf(view.Root).All(e => e.pickingMode == PickingMode.Ignore), Is.True);
+                view.Show(WaspCardContent.Definition(WaspCardContent.Shock), safe.center, safe);
+                Assert.That(view.Root.Q("gd-castable-spells"), Is.Null);
+                view.Hide();
+                Assert.That(view.IsVisible, Is.False);
+            }
+        }
+
         private static IEnumerable<VisualElement> DescendantsAndSelf(VisualElement root)
         {
             yield return root;

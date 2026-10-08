@@ -22,6 +22,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly ScrollView rowScroll;
         private HeroCardInspection inspection;
         private HeroId hero;
+        private CardDefinition hoveredDefinition;
+        private VisualElement hoveredFace;
+        public HeroCardPipPreviewUnityView SpellPreview { get; } = new HeroCardPipPreviewUnityView();
         public VisualElement Root { get; }
         public bool IsOpen => hero.IsDefined;
         public HeroId Hero => hero;
@@ -89,6 +92,8 @@ namespace GuardsDigital.Presentation.Match
             row.Add(otherSection);
             rowScroll.Add(row);
             Root.Add(rowScroll);
+            Root.Add(SpellPreview.Root);
+            rowScroll.RegisterCallback<WheelEvent>(_ => ClearSpellPreview());
 
         }
 
@@ -109,6 +114,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void Close()
         {
+            ClearSpellPreview();
             hero = default;
             inspection = null;
             handGrid.Clear();
@@ -127,7 +133,11 @@ namespace GuardsDigital.Presentation.Match
                 inspection.OtherGoldCards.SequenceEqual(next.OtherGoldCards) &&
                 inspection.ConcealedHandCount == next.ConcealedHandCount &&
                 inspection.ConcealedOtherCount == next.ConcealedOtherCount &&
-                inspection.ConcealedOtherGoldCount == next.ConcealedOtherGoldCount) return;
+                inspection.ConcealedOtherGoldCount == next.ConcealedOtherGoldCount)
+            {
+                RefreshSpellPreview();
+                return;
+            }
             inspection = next;
             DrawCards();
         }
@@ -153,6 +163,7 @@ namespace GuardsDigital.Presentation.Match
 
         private void DrawCards()
         {
+            ClearSpellPreview();
             handGrid.Clear();
             otherGrid.Clear();
             otherGoldGrid.Clear();
@@ -182,6 +193,14 @@ namespace GuardsDigital.Presentation.Match
                 if (artwork != null) artwork.tooltip = definition.DisplayName;
                 face.style.marginRight = 18f;
                 HudElements.ApplyButtonMotion(face);
+                face.userData = definition.Reference;
+                HudElements.OnPointedAt(face, pointedAt =>
+                {
+                    if (!pointedAt) { ClearSpellPreview(); return; }
+                    hoveredDefinition = definition;
+                    hoveredFace = face;
+                    RefreshSpellPreview();
+                });
                 target.Add(face);
             }
 
@@ -195,6 +214,25 @@ namespace GuardsDigital.Presentation.Match
                 back.style.marginRight = 18f;
                 target.Add(back);
             }
+        }
+
+        private void ClearSpellPreview()
+        {
+            hoveredDefinition = null;
+            hoveredFace = null;
+            SpellPreview.Hide();
+        }
+
+        private void RefreshSpellPreview()
+        {
+            if (hoveredDefinition == null || hoveredFace?.panel == null) return;
+            var spells = SpellbookPresentation.CastableSpells(read(), hero, hoveredDefinition);
+            if (spells.Count == 0) { SpellPreview.Hide(); return; }
+            var bounds = Root.parent?.worldBound ?? Root.worldBound;
+            var top = Mathf.Max(bounds.yMin, Root.worldBound.yMin + 48f);
+            var origin = Root.WorldToLocal(new Vector2(bounds.xMin, top));
+            SpellPreview.Show(hoveredDefinition, Root.WorldToLocal(hoveredFace.worldBound.center),
+                new Rect(origin.x, origin.y, bounds.width, bounds.yMax - top), spells);
         }
 
         private static VisualElement BuildSection(string name, string heading, out VisualElement grid, bool framed = false)

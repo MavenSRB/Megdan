@@ -17,6 +17,115 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class HeroCardInspectionPlayModeTests
     {
         [UnityTest]
+        public IEnumerator CastingCardInspectionPipsAndTopTrayKeepTheirSpellColumnBesideAndOnScreen()
+        {
+            var oldWidth = (uint)Screen.width; var oldHeight = (uint)Screen.height;
+            var addedKeyboard = Keyboard.current == null;
+            var keyboard = Keyboard.current ?? InputSystem.AddDevice<Keyboard>();
+            var addedMouse = Mouse.current == null;
+            var mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
+            try
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                var root = ArienUiJourneyPlayModeTests.Root();
+                root.ConfigureExperiments(new ExperimentalMatchOptions(teammateCoordination: true, enemyCardInformation: true));
+                var printed = RegisteredHeroRoster.PrintedLineup(3);
+                var gydion = RegisteredHeroRoster.ForThisBuild.Single(h => h.ContentId.Value == "gydion");
+                MatchSceneCompositionRoot.NextComposedSeat = new SeatId("red-player-01");
+                root.ComposeForLineup(new HeroLineup(new[] { gydion, printed.Red.Skip(1).First(), printed.Red.Last() }, printed.Blue));
+                yield return null; yield return null;
+                var runtime = root.Runtime;
+                var hero = runtime.Seat.HeroId;
+                var view = runtime.HeroOverviewsView;
+                var version = runtime.Host.Version;
+                foreach (var width in new[] { 1280u, 1920u })
+                {
+                    UiPlayer.SetPlayerViewport(width, width * 9 / 16, "side-column spell inspection");
+                    root.Hud.Layout(); yield return null; yield return null;
+                    var rail = UiPlayer.Descendants(view.Root).Single(e => e.name == "gd-hero-rail" && e.userData is HeroId id && id.Equals(hero));
+                    UiPlayer.Click(rail.Q("gd-hero-medallion")); yield return null; yield return null;
+                    var inspection = view.CardInspection;
+                    var card = inspection.Root.Query<VisualElement>("gd-inspected-card").ToList().Single(e =>
+                        e.userData is GuardsDigital.Core.Cards.CardDefinitionReference reference &&
+                        reference.DefinitionId.Equals(GydionCardContent.Cantrip));
+                    inspection.Root.Q<ScrollView>("gd-hero-card-scroll").ScrollTo(card);
+                    yield return null; yield return null;
+                    UiPlayer.PointAt(card); yield return new WaitForSecondsRealtime(0.25f);
+                    Assert.That(inspection.SpellPreview.IsVisible, Is.True);
+                    AssertSideColumn(inspection.SpellPreview.Root);
+                    yield return UiPlayer.CaptureScreen("tmp/w002-inspection-" + width + ".png");
+                    UiPlayer.PointAway(card); yield return null;
+                    Assert.That(inspection.SpellPreview.IsVisible, Is.False);
+                    inspection.Close(); yield return null;
+
+                    var token = runtime.BoardView.HeroViews.Single(v => v.Occupancy.HeroId.Equals(hero));
+                    var pipIndex = Enumerable.Range(0, token.CardStateIndicator.PipCount).Single(i =>
+                        token.CardStateIndicator.Pips[i].DefinitionReference.DefinitionId.Equals(GydionCardContent.Cantrip));
+                    var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                    var position = pointer.EventCamera.WorldToScreenPoint(token.CardStateIndicator.transform.GetChild(pipIndex).position);
+                    InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift));
+                    yield return null; yield return null;
+                    Assert.That(root.Hud.CardPipPreview.IsVisible, Is.True);
+                    AssertSideColumn(root.Hud.CardPipPreview.Root);
+                    yield return UiPlayer.CaptureScreen("tmp/w002-pip-" + width + ".png");
+                    InputSystem.QueueStateEvent(keyboard, new KeyboardState()); yield return null;
+                    Assert.That(root.Hud.CardPipPreview.IsVisible, Is.False);
+
+                    // A read-only view fixture puts the same public card in each top rail without
+                    // changing authoritative card locations or issuing gameplay commands.
+                    var saved = view.Model;
+                    var casting = runtime.HandsView.Model.ViewedHand.TrayCards.Single(c =>
+                        c.DefinitionReference.DefinitionId.Equals(GydionCardContent.Cantrip));
+                    foreach (var side in new[] { GuardsDigital.Core.Participants.TeamSide.Red, GuardsDigital.Core.Participants.TeamSide.Blue })
+                    {
+                        var owner = saved.Heroes.First(h => h.TeamSide == side);
+                        var row = new HeroOverviewViewModel(owner.HeroId, owner.TeamSide, owner.ContentId,
+                            owner.HeroDisplayName, owner.Level, owner.Coins, owner.ItemBonuses, owner.TurnSlots,
+                            new[] { casting }, owner.IsViewed);
+                        view.Render(new HeroOverviewsViewModel(saved.Version, saved.Heroes.Select(h => h.HeroId.Equals(owner.HeroId) ? row : h)));
+                        root.Hud.Layout(); yield return null; yield return null;
+                        var mini = view.Root.Query<VisualElement>("gd-discard-card").ToList().Single();
+                        UiPlayer.PointAt(mini); yield return null; yield return null;
+                        AssertSideColumn(view.HoverPreviewRoot);
+                        yield return UiPlayer.CaptureScreen("tmp/w002-top-tray-" + side + "-" + width + ".png");
+                        UiPlayer.PointAway(mini);
+                    }
+                    view.Render(saved); yield return null;
+                    Assert.That(runtime.Host.Version, Is.EqualTo(version), "Inspection cannot submit commands.");
+                }
+                root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
+            }
+            finally
+            {
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                if (addedMouse) InputSystem.RemoveDevice(mouse);
+                if (addedKeyboard) InputSystem.RemoveDevice(keyboard);
+                MatchSceneCompositionRoot.NextComposedSeat = null;
+                UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "restore after side-column inspection");
+            }
+        }
+
+        private static void AssertSideColumn(VisualElement preview)
+        {
+            var shelf = preview.Q("gd-castable-spells");
+            Assert.That(shelf, Is.Not.Null);
+            Assert.That(shelf.Query<VisualElement>("gd-spell-face").ToList(), Has.Count.EqualTo(3));
+            var face = shelf.parent;
+            Assert.That(shelf.worldBound.xMin, Is.GreaterThanOrEqualTo(face.worldBound.xMax));
+            Assert.That(shelf.worldBound.yMin, Is.EqualTo(face.worldBound.yMin).Within(1f));
+            var viewport = ConfiguredMatchHudRenderer.PanelViewport;
+            foreach (var bounds in new[] { face.worldBound, shelf.worldBound })
+            {
+                Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(0f));
+                Assert.That(bounds.yMin, Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+                Assert.That(bounds.xMax, Is.LessThanOrEqualTo(viewport.x));
+                Assert.That(bounds.yMax, Is.LessThanOrEqualTo(viewport.y));
+            }
+        }
+
+        [UnityTest]
         public IEnumerator EscapeClosesInspectionAndSpellbookWithoutSubmittingACommand()
         {
             var keyboardAdded = false;

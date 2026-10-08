@@ -1109,7 +1109,7 @@ namespace GuardsDigital.Presentation.Match
         /// into trusted host state.
         /// </summary>
         public void HoverCardPip(
-            CardDefinitionReference? reference, UnityEngine.Vector2 screenPosition)
+            HeroId owner, CardDefinitionReference? reference, UnityEngine.Vector2 screenPosition)
         {
             if (!reference.HasValue)
             {
@@ -1117,12 +1117,24 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var definition = client.Projection.Definitions.FirstOrDefault(value =>
+            var projection = client.Projection;
+            var inspection = (projection as IExperimentalReadModel)?.CardInspections
+                .FirstOrDefault(value => value.Hero.Equals(owner));
+            var current = HeroOverviewsView?.Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(owner))
+                ?.CurrentCard?.Card;
+            if (inspection == null || (!inspection.HandCards.Contains(reference.Value) &&
+                (current == null || !current.DefinitionReference.Equals(reference.Value))))
+            {
+                hud.HideCardPipPreview();
+                return;
+            }
+            var definition = projection.Definitions.FirstOrDefault(value =>
                 value.Reference.Equals(reference.Value));
             if (definition == null)
                 hud.HideCardPipPreview();
             else
-                hud.ShowCardPipPreview(definition, screenPosition);
+                hud.ShowCardPipPreview(definition, screenPosition,
+                    SpellbookPresentation.CastableSpells(projection, owner, definition));
         }
 
         public void HoverDefenseModifier(

@@ -247,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
                 input.AddHeroSelectors(new[] { selector });
                 CardDefinitionReference? shown = null;
                 var notifications = 0;
-                input.CardPipHoverChanged = (reference, _) =>
+                input.CardPipHoverChanged = (owner, reference, _) =>
                 {
                     shown = reference;
                     notifications++;

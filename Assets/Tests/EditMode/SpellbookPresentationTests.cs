@@ -181,6 +181,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Named(shelf, "gd-castable-spell-caption"), Is.Empty,
                 "availability is the face's dimmed treatment; the printed card needs no duplicate label");
             Assert.That(Named(shelf, "gd-castable-spells-label"), Is.Empty);
+            DirectorHandsUnityView.PopulatePeekPreview(
+                preview, card, new VisualElement(), isRightSideGroup: true, sideSpells: true);
+            shelf = Named(preview, "gd-castable-spells").Single();
+            Assert.That(shelf.style.left.value.value, Is.GreaterThan(CardFootprint.Width),
+                "Read-only unavailable and teammate-hand previews use the side column.");
+            Assert.That(shelf.style.top.value.value, Is.Zero);
+            Assert.That(Named(shelf, "gd-spell-greyed").Count(), Is.EqualTo(1));
         }
 
         /// <summary>

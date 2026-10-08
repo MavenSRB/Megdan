@@ -833,7 +833,11 @@ namespace GuardsDigital.Presentation.Match
                 HudElements.OnPointedAt(button, pointedAt =>
                 {
                     if (pointedAt)
+                    {
                         CastableSpellHoverView.Attach(button, card.CastableSpells);
+                        if (isUnavailableGroup || Model?.ViewedHand?.IsReadOnly == true)
+                            CastableSpellHoverView.PlaceBeside(button);
+                    }
                     else
                         CastableSpellHoverView.Detach(button);
                 });
@@ -2054,7 +2058,8 @@ namespace GuardsDigital.Presentation.Match
                 card,
                 anchor,
                 isUnavailableGroup,
-                dimUnavailable: true);
+                dimUnavailable: true,
+                sideSpells: isUnavailableGroup || Model?.ViewedHand?.IsReadOnly == true);
             AddTeammateSignal(hoverPreview[0], SuggestedBy?.Invoke(card.CardInstanceId));
         }
 
@@ -2067,7 +2072,8 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel card,
             VisualElement anchor,
             bool isRightSideGroup = false,
-            bool dimUnavailable = true)
+            bool dimUnavailable = true,
+            bool sideSpells = false)
         {
             preview.Clear();
             var face = BuildStandaloneCard(card);
@@ -2082,6 +2088,10 @@ namespace GuardsDigital.Presentation.Match
             }
             var spellShelfHeight = CastableSpellHoverView.HeightFor(card.CastableSpells);
             CastableSpellHoverView.Attach(face, card.CastableSpells);
+            if (sideSpells) CastableSpellHoverView.PlaceBeside(face);
+            var previewWidth = CardFootprint.Width + (sideSpells && spellShelfHeight > 0f
+                ? CastableSpellHoverView.Gap + CastableSpellHoverView.WidthFor(card.CastableSpells) : 0f);
+            var previewHeight = sideSpells ? Mathf.Max(CardFootprint.Height, spellShelfHeight) : CardFootprint.Height;
             IgnorePickingRecursively(face);
             preview.Add(face);
             preview.style.display = DisplayStyle.Flex;
@@ -2091,18 +2101,18 @@ namespace GuardsDigital.Presentation.Match
             var rightLimit = isRightSideGroup
                 ? Mathf.Max(
                     CardFootprint.ExteriorOutlineWidth,
-                    viewport.x - CardFootprint.Width - CardFootprint.ExteriorOutlineWidth)
+                    viewport.x - previewWidth - CardFootprint.ExteriorOutlineWidth)
                 : Mathf.Max(
                     CardFootprint.ExteriorOutlineWidth,
                     Mathf.Min(
                         viewport.x,
                         ConfiguredMatchHudRenderer.CompactHandRightEdge) -
-                    CardFootprint.Width - CardFootprint.ExteriorOutlineWidth);
+                    previewWidth - CardFootprint.ExteriorOutlineWidth);
             preview.style.left = Mathf.Clamp(
                 bounds.xMin,
                 CardFootprint.ExteriorOutlineWidth,
                 rightLimit);
-            var topOverhang = spellShelfHeight > 0f
+            var topOverhang = !sideSpells && spellShelfHeight > 0f
                 ? spellShelfHeight + CastableSpellHoverView.Gap
                 : 0f;
             preview.style.top = Mathf.Clamp(
@@ -2110,7 +2120,7 @@ namespace GuardsDigital.Presentation.Match
                 ConfiguredMatchHudRenderer.StatusBarHeight + 4f + topOverhang,
                 Mathf.Max(
                     ConfiguredMatchHudRenderer.StatusBarHeight + 4f + topOverhang,
-                    viewport.y - CardFootprint.Height - CardFootprint.ExteriorOutlineWidth));
+                    viewport.y - previewHeight - CardFootprint.ExteriorOutlineWidth));
         }
 
         private void ClearPeekPreview()
