@@ -273,9 +273,17 @@ Result: real keyboard Escape invokes the inspection CLOSE, spellbook CLOSE, or H
 
 Historical evidence: [9.98 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-998-escape-closes-the-active-screen).
 
-### [ ] 9.99 Normalize hero-token ring width and eliminate source-color bleed
+### [x] 9.99 Normalize hero-token ring width and eliminate source-color bleed
 
 Authorized 2026-10-08 by the board screenshots: every player-color token ring reads at one thickness across heroes and the original orange edge cannot show through a yellow or other player-color rim, including beneath status pips. Closing check: geometry/pixel regression failing on the current mixed team-baked/team-neutral presentation, focused token Edit/Play Mode checks, and a fresh visual inspection. T2. Preserve token art, identity and pointer footprint; no rule change.
+
+Result: team-baked and neutral portraits now share the 0.66 face radius inside the unchanged 0.81 outer radius, giving each player-colour ring a 0.15 band. Baked source images sample only the inner 0.875 of their circular artwork, removing the original printed orange/blue edge; neutral art retains its existing sample. Focused token Edit checks passed 54/54, and rendered mixed-source/pointer/tray-layout Play checks passed 4/4, including pixel assertions along yellow Mrak's unobscured lower ring. Fresh yellow-Mrak and neutral-NebKher close captures were inspected: equal apparent thickness, no orange seam beneath the yellow rim. Pointer radius, selected artwork, rules and wire remain unchanged. Completed 2026-10-08.
+
+Historical evidence: [9.99 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-999-uniform-hero-token-rings).
+
+### [ ] 9.100 Cut the integrated Windows playtest package
+
+Authorized 2026-10-08 by "after u r done cut out the build", after 9.99. Outcome: one local Windows playtest package containing the completed Defense, tray, Escape and token-ring outcomes, with the existing roster, rules, wire and snapshot contracts. Use the established version-stamp, build/launch smoke, clean copy, launcher/read-me/manifest and ZIP checks; verify the packaged executable and preserve older packages. Closing check: 9.96-9.99 evidence plus the applicable package gate on the final source, exact packaged revision, manifest, private folder/ZIP integrity and launch smoke. T3 packaging gate. No publication or remote operation.
 
 ## Queued by 9.13, not authorized
 

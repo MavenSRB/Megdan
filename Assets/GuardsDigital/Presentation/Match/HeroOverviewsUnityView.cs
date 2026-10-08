@@ -1598,7 +1598,7 @@ namespace GuardsDigital.Presentation.Match
                 var token = HeroTokenArtwork.ResolveToken(hero.ContentId, hero.TeamSide, out var portrait);
                 if (portrait != null)
                 {
-                    // Match the board's baked-first/neutral-second decision and wider neutral rim.
+                    // Match the board's baked-first/neutral-second face selection and common rim.
                     var faceSize = (HeroPortraitSize * scale) * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
                     icon.style.width = faceSize;
                     icon.style.height = faceSize;

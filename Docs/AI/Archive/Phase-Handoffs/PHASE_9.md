@@ -976,3 +976,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.98 | Physical Escape follows the existing CLOSE action on card inspection and spellbook, or CANCEL on pre-match Host/Join menus, independent of keyboard focus. A held press closes at most one HUD surface; no match command is submitted. New real-input Play checks passed 2/2 and affected inspection/spellbook/lobby journeys passed 3/3. The spellbook journey now waits for a requested viewport resize before measuring unchanged layout. [Definition](../../Roadmap/PHASE_9.md#x-998-make-escape-use-the-active-screens-close-action). | `milestone/9.98` |
+## Milestone 9.99 Uniform hero-token rings
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.99 | Team-baked and neutral board portraits share a 0.15 player-colour rim with unchanged 0.81 outer/pointer radius. Baked image UVs crop inside their original orange/blue printed edge; source art and neutral sampling are untouched. Focused Edit passed 54/54; rendered mixed-source, pointer-footprint, named-tray and rail-fit Play passed 4/4, including lower yellow-rim pixel assertions. Fresh yellow-Mrak and neutral-NebKher close crops were inspected with equal apparent ring thickness and no orange bleed. No rule or wire change. [Definition](../../Roadmap/PHASE_9.md#x-999-normalize-hero-token-ring-width-and-eliminate-source-color-bleed). | `milestone/9.99` |

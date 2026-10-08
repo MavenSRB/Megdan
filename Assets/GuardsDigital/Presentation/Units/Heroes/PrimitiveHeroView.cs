@@ -510,7 +510,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 meshRenderer = gameObject.AddComponent<MeshRenderer>();
             }
 
-            ReplaceOwnedMesh(CreateTokenMesh(token.FaceRadius));
+            ReplaceOwnedMesh(CreateTokenMesh(token.FaceRadius, HeroTokenArtwork.SourceInsetFor(token.FaceKind)));
             meshFilter.sharedMesh = ownedMesh;
 
             // The rim is lit exactly as the prism it replaces was, so this project's team colour reads
@@ -578,7 +578,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// two submeshes so one renderer carries both without a second object to keep in step.
         ///
         /// The face's texture coordinates map the disc onto the prepared token's own inscribed circle,
-        /// inset by <see cref="HeroTokenArtwork.FaceInset"/>. The mesh is a disc rather than a quad for
+        /// inset by the source-kind-specific crop. The mesh is a disc rather than a quad for
         /// the same reason: the prepared face is a circle with cleared corners, the shader that draws
         /// it is opaque, and a quad would render those corners as black.
         ///
@@ -591,7 +591,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// ring that fits this piece is measured from the lowest vertices, which are still a full
         /// perimeter at the original radius on the original plane.</para>
         /// </summary>
-        private static Mesh CreateTokenMesh(float faceRadius)
+        private static Mesh CreateTokenMesh(float faceRadius, float sourceInset)
         {
             var segments = HeroTokenArtwork.Segments;
             var rimRadius = HeroTokenArtwork.TokenOuterRadius;
@@ -610,8 +610,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 var z = Mathf.Sin(angle);
                 vertices[1 + segment] = new Vector3(x * faceRadius, depth, z * faceRadius);
                 uv[1 + segment] = new Vector2(
-                    0.5f + (0.5f * HeroTokenArtwork.FaceInset * x),
-                    0.5f + (0.5f * HeroTokenArtwork.FaceInset * z));
+                    0.5f + (0.5f * sourceInset * x),
+                    0.5f + (0.5f * sourceInset * z));
                 normals[1 + segment] = Vector3.up;
                 vertices[1 + segments + segment] = new Vector3(x * rimRadius, depth, z * rimRadius);
                 uv[1 + segments + segment] = new Vector2(0.5f, 0.5f);

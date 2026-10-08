@@ -88,6 +88,14 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(materials[0].color, Is.EqualTo(HeroTokenArtwork.TeamRim(team)));
                 Assert.That(new Vector2(mesh.vertices[1].x, mesh.vertices[1].z).magnitude,
                     Is.EqualTo(faceRadius).Within(0.0001f));
+                Assert.That(new Vector2(mesh.vertices[1 + HeroTokenArtwork.Segments].x,
+                    mesh.vertices[1 + HeroTokenArtwork.Segments].z).magnitude - faceRadius,
+                    Is.EqualTo(0.15f).Within(0.0001f),
+                    "every source-art kind has the same physical player-colour ring");
+                Assert.That(mesh.uv[1].x,
+                    Is.EqualTo(0.5f + 0.5f * HeroTokenArtwork.SourceInsetFor(
+                        baked != null ? TokenFaceKind.TeamBaked : TokenFaceKind.TeamNeutral)).Within(0.0001f),
+                    "the face UV excludes the source rim for team-baked artwork");
                 Assert.That(board.SelectionRadius, Is.EqualTo(HeroTokenArtwork.TokenOuterRadius));
                 board.EnsureVisual();
                 Assert.That(mesh == null, Is.True, "Rebinding retires its owned mesh.");

@@ -51,21 +51,29 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public const float TokenOuterRadius = RuntimeTeamIdentity.TokenOuterRadius;
 
         /// <summary>
-        /// The official face's radius, inside the rim. This is the TEAM-BAKED radius; a team-neutral
-        /// face uses <see cref="RuntimeTeamIdentity.NeutralFaceRadius"/> and carries a wider ring,
-        /// because it has no team-coloured field of its own to state the side a second time.
+        /// The shared artwork-backed face radius inside the player-colour rim.
         /// </summary>
-        public const float FaceRadius = RuntimeTeamIdentity.TeamBakedFaceRadius;
+        public const float FaceRadius = RuntimeTeamIdentity.TokenFaceRadius;
 
         /// <summary>
-        /// How much of the source face's inscribed circle the disc samples.
+        /// How much of a neutral source face's inscribed circle the disc samples.
         ///
         /// The prepared token is a circle inscribed in its square with transparent corners, and the
         /// mesh is drawn with an opaque shader, so the disc must stay inside that circle rather than
         /// reach its very edge - a sample landing on the transparent border would pull the cleared
-        /// pixels in as black. One and a half percent is under half a source pixel of the ring.
+        /// pixels in as black. The small margin avoids sampling those cleared edge pixels.
         /// </summary>
         public const float FaceInset = 0.985f;
+
+        /// <summary>
+        /// Team-baked art contains its old orange or blue printed rim. Crop inside that rim before
+        /// drawing the face so no source-team colour peeks through the player's new accent ring.
+        /// The original rim begins around 0.90 of the source radius; 0.875 leaves a pixel buffer.
+        /// </summary>
+        public const float TeamBakedFaceInset = 0.875f;
+
+        public static float SourceInsetFor(TokenFaceKind kind) =>
+            kind == TokenFaceKind.TeamBaked ? TeamBakedFaceInset : FaceInset;
 
         /// <summary>
         /// How many segments the disc and its rim are built from. Sixty-four is under a tenth of a
@@ -108,8 +116,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// </summary>
         /// <remarks>
         /// Resolution order and its whole point: the team-baked face first, so the six shipped
-        /// heroes resolve to exactly the file and radius they always did; then the team-neutral
-        /// face, drawn inside a wider team ring; then nothing, and the caller keeps the prism. The
+        /// heroes resolve to their prepared file; then the team-neutral face, drawn inside the
+        /// same-width player-colour ring; then nothing, and the caller keeps the prism. The
         /// ORDER is the zero-regression guarantee, and it is asserted in the harness against the
         /// shipped six rather than argued for here.
         /// </remarks>

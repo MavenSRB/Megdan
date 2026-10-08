@@ -9,6 +9,7 @@ using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -24,6 +25,63 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class HeroTrayRefinementTests
     {
+        [UnityTest]
+        public IEnumerator BakedAndNeutralBoardHeroesShareOneRimWithoutTheBakedSourceEdge()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            var registered = RegisteredHeroRoster.ForThisBuild;
+            RegisteredHero Hero(string id) => registered.Single(candidate => candidate.ContentId.Value == id);
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { Hero("nebkher"), Hero("wasp"), Hero("mrak") },
+                new[] { Hero("hanu"), Hero("trinkets"), Hero("mortimer") });
+            yield return LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var runtime = Root().Runtime;
+            foreach (var pair in new[]
+            {
+                (Content: "mrak", Kind: TokenFaceKind.TeamBaked),
+                (Content: "nebkher", Kind: TokenFaceKind.TeamNeutral)
+            })
+            {
+                var heroId = runtime.Host.Projection.Setup.Heroes.Single(candidate =>
+                    candidate.ContentId.Value == pair.Content).HeroId;
+                var token = runtime.BoardView.HeroViews.Single(candidate =>
+                    candidate.Occupancy.HeroId.Equals(heroId));
+                Assert.That(token.HasTokenVisual, Is.True, pair.Content + " prepared face is required here");
+                var mesh = token.GetComponent<MeshFilter>().sharedMesh;
+                var face = new Vector2(mesh.vertices[1].x, mesh.vertices[1].z).magnitude;
+                var outside = new Vector2(mesh.vertices[1 + HeroTokenArtwork.Segments].x,
+                    mesh.vertices[1 + HeroTokenArtwork.Segments].z).magnitude;
+                Assert.That(outside - face, Is.EqualTo(0.15f).Within(0.0001f));
+                Assert.That(mesh.uv[1].x,
+                    Is.EqualTo(0.5f + 0.5f * HeroTokenArtwork.SourceInsetFor(pair.Kind)).Within(0.0001f));
+                yield return BoardPieceCapturePlayModeTests.Capture(runtime.BoardView,
+                    "tmp/999-ring-" + pair.Content, new[] { token.Coordinate });
+                if (pair.Content == "mrak")
+                {
+                    var pixels = new Texture2D(2, 2);
+                    try
+                    {
+                        Assert.That(ImageConversion.LoadImage(pixels,
+                            System.IO.File.ReadAllBytes("tmp/999-ring-mrak-close.png")), Is.True);
+                        // The close camera centers Mrak at 960,540 in its 1920x1080 image.
+                        // Along the unobscured lower arc, every sample across the rim must read
+                        // player yellow, not the source token's orange.
+                        for (var radius = 150; radius <= 178; radius += 2)
+                        {
+                            var pixel = pixels.GetPixel(960, 540 - radius);
+                            Assert.That(pixel.r > 0.86f && pixel.g > 0.75f && pixel.b < 0.4f,
+                                Is.True, "yellow ring at lower radius " + radius + " was " + pixel);
+                        }
+                    }
+                    finally
+                    {
+                        Object.Destroy(pixels);
+                    }
+                }
+            }
+        }
+
         [UnityTest]
         public IEnumerator ShuffledLobbySeatsKeepFixedTrayOrderColorsAndPlayerNames()
         {

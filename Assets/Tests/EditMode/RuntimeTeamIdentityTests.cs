@@ -161,21 +161,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
-        // Zero visual regression for the shipped roster.
+        // Preserve shipped face selection and outer footprint while normalizing its ring.
         // ---------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Every shipped hero, on the team it is dealt to today, resolves to exactly the face,
-        /// radius and ring it resolved to before this milestone existed.
+        /// Every shipped hero still resolves to its prepared face and the same outer footprint,
+        /// but now uses the common 0.15-wide player-colour ring.
         /// </summary>
         /// <remarks>
-        /// The values are transcribed from milestone 8.11b's own constants rather than read back
-        /// from the type under test, so this fails if the type's numbers move even if it stays
-        /// self-consistent. That is the whole point: the six shipped heroes' board must not move by
-        /// a pixel because a selector they do not use was added.
+        /// The values are explicit rather than read back from the type under test, so this fails
+        /// if the new shared radius or the original outer footprint moves unexpectedly.
         /// </remarks>
         [Test]
-        public void TheShippedRosterResolvesExactlyAsItDidBeforeTheSelector()
+        public void TheShippedRosterKeepsItsFacesAndOuterFootprintWithUniformRims()
         {
             foreach (var contentId in ShippedContentIds)
             {
@@ -195,14 +193,14 @@ namespace GuardsDigital.Tests.EditMode
                         Is.EqualTo($"Private/Heroes/{contentId}-{pair.Suffix}"),
                         "Milestone 8.11b's resource path, unchanged.");
                     Assert.That(
-                        token.FaceRadius, Is.EqualTo(0.72f).Within(0f),
-                        "Milestone 8.11b's face radius, unchanged.");
+                        token.FaceRadius, Is.EqualTo(0.66f).Within(0f),
+                        "Every artwork-backed hero now has the same face radius.");
                     Assert.That(
                         RuntimeTeamIdentity.TokenOuterRadius, Is.EqualTo(0.81f).Within(0f),
                         "Milestone 8.11b's outer radius, unchanged.");
                     Assert.That(
-                        token.RingWidth, Is.EqualTo(0.09f).Within(0.0001f),
-                        "The rim band the shipped six carry.");
+                        token.RingWidth, Is.EqualTo(0.15f).Within(0.0001f),
+                        "The player-colour band is one width across the roster.");
                 }
 
                 // The team-baked face is preferred wherever one exists, EVEN IF a neutral face is
@@ -252,15 +250,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// A neutral face states its team in a WIDER ring, because it is the only thing stating it.
+        /// Team-neutral and team-baked faces state their player colour in equally wide rings.
         /// </summary>
         /// <remarks>
-        /// An official face says its team three times - the source set's own ring, the flat
-        /// team-coloured field milestone 8.30i1 measured inside it, and this project's rim on top.
-        /// A white token says it once, so the ring is sized for the whole job.
+        /// Team-baked and neutral faces use one ring width, while the source-art crop prevents a
+        /// baked orange or blue edge from becoming a second visible ring.
         /// </remarks>
         [Test]
-        public void ANeutralTokenStatesItsTeamInAWiderRing()
+        public void BakedAndNeutralTokensUseTheSameRingWidth()
         {
             var content = new HeroContentId("dodger");
             var neutral = RuntimeTeamIdentity.ResolveToken(content, TeamSide.Red, false, true);
@@ -268,11 +265,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(neutral.FaceKind, Is.EqualTo(TokenFaceKind.TeamNeutral));
             Assert.That(
-                neutral.RingWidth, Is.GreaterThan(baked.RingWidth),
-                "The ring carries the whole team statement on a white token.");
+                neutral.RingWidth, Is.EqualTo(baked.RingWidth).Within(0.0001f),
+                "The ring must look equally thick for both source-art kinds.");
             Assert.That(
-                neutral.FaceRadius, Is.LessThan(baked.FaceRadius),
-                "It is widened by insetting the face, so the piece stays one size on the board.");
+                neutral.FaceRadius, Is.EqualTo(baked.FaceRadius).Within(0.0001f),
+                "The common outer footprint and face radius imply one band thickness.");
             Assert.That(
                 RuntimeTeamIdentity.TokenOuterRadius - neutral.FaceRadius,
                 Is.EqualTo(neutral.RingWidth).Within(0.0001f));

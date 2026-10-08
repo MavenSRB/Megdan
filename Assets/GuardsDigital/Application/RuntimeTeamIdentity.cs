@@ -22,9 +22,8 @@ namespace GuardsDigital.Application
     /// its team with a RING in this project's own Red or Blue, read from the authoritative
     /// <see cref="TeamSide"/>. That ring is not new - it has been on the board since milestone 4.4
     /// as the generated prism's colour and since 8.11b as the token's rim, and it is already the
-    /// only thing on a token that is derived rather than drawn. So a team-neutral face needs no new
-    /// visual vocabulary at all: it needs the ring it already has, widened, because a neutral face
-    /// carries no team-coloured field of its own where an official face does. Nothing tints the
+    /// only thing on a token that is derived rather than drawn. Team-baked and team-neutral faces
+    /// now use the same ring width so every player accent has the same visible weight. Nothing tints the
     /// portrait: a tint over artwork would dim the white background the directive asks for and
     /// would make a hero's face read differently on the two teams, which is a cost the ring does
     /// not have.</para>
@@ -51,22 +50,18 @@ namespace GuardsDigital.Application
         public const float TokenOuterRadius = 0.81f;
 
         /// <summary>
-        /// The face radius inside the ring of a TEAM-BAKED token - the shipped six's exact value
-        /// since milestone 8.11b, and the reason their pieces do not move by a pixel.
+        /// One face radius for every artwork-backed hero token. The outer radius and pointer
+        /// footprint remain unchanged; the resulting player-colour ring is 0.15 world units.
         /// </summary>
-        public const float TeamBakedFaceRadius = 0.72f;
+        public const float TokenFaceRadius = 0.66f;
+
+        /// <summary>Compatibility name for the common artwork-backed face radius.</summary>
+        public const float TeamBakedFaceRadius = TokenFaceRadius;
 
         /// <summary>
         /// The face radius inside the ring of a TEAM-NEUTRAL token.
         /// </summary>
-        /// <remarks>
-        /// Smaller, so the ring is wider. An official face already states its team twice - the
-        /// source set's own orange or light-blue ring, and the flat team-coloured field milestone
-        /// 8.30i1 measured inside it - and the project's rim is a third statement on top. A white
-        /// token states it exactly once, in this ring, so the ring carries the whole job and is
-        /// sized for it: 0.15 of band against the baked face's 0.09.
-        /// </remarks>
-        public const float NeutralFaceRadius = 0.66f;
+        public const float NeutralFaceRadius = TokenFaceRadius;
 
         /// <summary>
         /// This project's own board colour for a team, as straight RGBA in 0..1.
@@ -135,10 +130,9 @@ namespace GuardsDigital.Application
         /// <param name="hasNeutralFace">Whether a prepared white-background face exists.</param>
         /// <remarks>
         /// <b>The baked face wins where it exists, and that ordering is the zero-regression
-        /// guarantee.</b> The six shipped heroes resolve to exactly the face and exactly the radius
-        /// they resolved to before this milestone, so their board is not changed by a selector they
-        /// do not use. A hero with only a white token resolves to it and states its team in the
-        /// wider ring. A hero with neither keeps the generated prism, which has read the team from
+        /// guarantee.</b> The six shipped heroes still resolve to their prepared faces, while
+        /// all artwork-backed heroes now share the same ring width. A hero with only a white token
+        /// resolves to it. A hero with neither keeps the generated prism, which has read the team from
         /// <see cref="TeamSide"/> since milestone 4.4 and needed nothing from this milestone.
         /// </remarks>
         public static TokenPresentation ResolveToken(
