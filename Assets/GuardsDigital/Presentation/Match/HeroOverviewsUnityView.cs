@@ -685,12 +685,12 @@ namespace GuardsDigital.Presentation.Match
                 ? MatchHudTheme.SelectedOutline
                 : new Color(0f, 0f, 0f, 0f);
 
-            var playerName = HudElements.Text(string.Empty, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            var playerName = HudElements.Text(string.Empty, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold);
             playerName.name = "gd-hero-player-name";
             playerName.pickingMode = PickingMode.Ignore;
             playerName.style.position = Position.Absolute;
             // Overlay the border; names must not increase any tray's layout footprint.
-            playerName.style.top = -6f;
+            playerName.style.top = -4f;
             playerName.style.maxWidth = 140f;
             playerName.style.minWidth = 42f;
             playerName.style.height = 16f;

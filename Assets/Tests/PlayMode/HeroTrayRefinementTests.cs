@@ -134,11 +134,12 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(plate.tooltip, Is.EqualTo(name));
                     Assert.That(rail.resolvedStyle.paddingTop, Is.EqualTo(12f),
                         "Names must not enlarge the original slim tray.");
-                    Assert.That(plate.worldBound.yMin, Is.LessThanOrEqualTo(rail.worldBound.yMin + rail.resolvedStyle.borderTopWidth),
-                        "The lowered banner sits on the top border.");
+                    Assert.That(plate.style.top.value.value, Is.EqualTo(-4f));
+                    Assert.That(plate.resolvedStyle.fontSize, Is.EqualTo(12f),
+                        "The user requested slightly larger name text.");
                     Assert.That(plate.worldBound.height, Is.EqualTo(16f).Within(0.1f));
                     Assert.That(plate.worldBound.yMax,
-                        Is.LessThanOrEqualTo(rail.Q("gd-hero-identity-plate").worldBound.yMin + 4f),
+                        Is.LessThanOrEqualTo(rail.Q("gd-hero-identity-plate").worldBound.yMin + 6f),
                         "The lowered banner may overlap the identity border, but not its portrait or text.");
                     Assert.That(plate.worldBound.yMax, Is.LessThanOrEqualTo(portrait.worldBound.yMin + 1f));
                     Assert.That(plate.worldBound.yMax,
@@ -151,7 +152,7 @@ namespace GuardsDigital.Tests.PlayMode
                         "the label sits over the portrait toward its outer edge");
                 }
             }
-            yield return UiPlayer.CaptureScreen("tmp/w004-lowered-banner-" + width + ".png");
+            yield return UiPlayer.CaptureScreen("tmp/w004-larger-banner-" + width + ".png");
             }
             runtime.HeroOverviewsView.SetPlayerNames(System.Array.Empty<SeatRosterEntry>());
             Assert.That(root.Hud.RootElement.Query<Label>("gd-hero-player-name").ToList()
