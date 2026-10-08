@@ -10,6 +10,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-005 | Restored both whole blue side zones on the alternate map; revision-2 identity, movement/travel and rendered-map regressions. | `work/W-005` |
 | W-006 | Simplified tied Initiative to candidate card faces with per-player ping accents and hero-token preference markers. | `work/W-006` |
 | W-007 | Retained `WHO ACTS FIRST?` and centred each selector's hero token above their highlighted card. | `work/W-007` |
+| W-008 | Published prepared runtime card faces/shine maps, card backs and spell-card artwork through Git LFS to private Gitea. | `work/W-008` |
+
+### [x] W-008 Publish prepared card artwork to private Gitea
+
+Approved by the user's 2026-10-09 instruction to push the card art to the private `maven/guards-digital` Gitea repository.
+Outcome: tracked the prepared runtime card faces and shine maps, card backs and spell-card artwork with all 2,709 PNGs stored through Git LFS; retained their Unity metadata and source-name text sidecars. Boards, hero portraits, hero-selection art, markers, tokens and source-reference corpora remain excluded.
+Scope: publication policy, Git LFS routing and `Assets/Resources/Private/Cards`, `CardBacks` and `Spells` only. No gameplay, rules, package or other private asset changed.
+Closing checks: exact 6,579-file private-resource inventory; 2,709/2,709 staged PNGs verified as LFS pointers with zero raw PNG blobs; excluded-path audit; living-document validation and diff review. No Unity launch.
+
+Historical evidence: completion commit addressed by immutable `work/W-008`; exact checks, results and limitations live in its body.
 
 ### [x] W-007 Tied-Initiative title and centred selector token
 

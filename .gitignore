@@ -16,11 +16,15 @@
 /Docs/Guards of Atlantis II - Tabletopia Cards/
 /Docs/Guards of Atlantis II - Map References/
 
-# Private prepared board, hero-token, and card artwork; project-local preparation tools write it from
-# the corpus above, and it is never committed or distributed. Its absence is the tracked project's
-# normal state.
-/Assets/Resources/Private/
-/Assets/Resources/Private.meta
+# Private prepared board and hero-token artwork remains local. W-008 explicitly publishes only the
+# prepared runtime card faces/shine maps, card backs and spell cards to the private project remote.
+/Assets/Resources/Private/*
+!/Assets/Resources/Private/Cards/
+!/Assets/Resources/Private/Cards.meta
+!/Assets/Resources/Private/CardBacks/
+!/Assets/Resources/Private/CardBacks.meta
+!/Assets/Resources/Private/Spells/
+!/Assets/Resources/Private/Spells.meta
 
 # IDE and generated solution files
 /.vs/
