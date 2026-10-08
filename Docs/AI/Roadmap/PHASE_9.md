@@ -225,6 +225,10 @@ Completed 2026-10-08.
 
 Historical evidence: [9.91 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-991-item-aware-defense-shield-completion).
 
+### [~] 9.92 Package the item-aware Defense shield without broad-suite reruns
+
+Authorized 2026-10-08 by the user: put 9.91 into the current private Windows playtest build without rerunning the broad test program because this is a focused change. Reuse 9.91's focused projection/wire 16/16, affected Edit Mode 46/46 and in-game journey 1/1 evidence; explicitly omit the offline harness and unfiltered Unity suites. Stamp a distinct package, run only the artifact-facing build/launch interaction smoke, copy without logs/debug material, generate checksums, verify the ZIP byte-for-byte against the loose package, and smoke the packaged executable from its own folder. Preserve 9.90 and all unrelated private files; publish nothing.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
