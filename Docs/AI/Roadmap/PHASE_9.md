@@ -260,6 +260,10 @@ Completed 2026-10-08.
 
 Historical evidence: [9.89 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-989-ping-and-end-turn-cue-completion).
 
+### [~] 9.90 Package the ping and End Turn cue update without broad-suite reruns
+
+Authorized 2026-10-08 by the user: put 9.89 into a new private Windows playtest build without rerunning the full test program because it is the only source change since 9.88. Reuse 9.89's focused 29/29 Edit Mode and 6/6 Play Mode evidence and explicitly omit the offline harness and unfiltered Unity suites. Stamp a distinct package, run only artifact-facing build/launch interaction and rendered-board smokes, copy without logs/debug material, generate per-file and ZIP checksums, verify the ZIP byte-for-byte against the loose package, and smoke the packaged executable from its own folder. Preserve 9.88 and all unrelated private files; publish nothing.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
