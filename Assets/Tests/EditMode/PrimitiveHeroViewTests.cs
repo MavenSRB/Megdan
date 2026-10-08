@@ -68,6 +68,8 @@ namespace GuardsDigital.Tests.EditMode
         public void CardStatePipsAreSeparatedVerticalRectanglesCenteredAlongTokenEdgeAndRemainColliderFree()
         {
             var gameObject = new GameObject("Primitive Hero Card State Test");
+            var previousScreenUp = BoardChoiceCue.ScreenUpInWorld;
+            BoardChoiceCue.SetScreenUp(Vector3.forward);
             try
             {
                 var view = gameObject.AddComponent<PrimitiveHeroView>();
@@ -94,21 +96,38 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(index => indicator.transform.GetChild(index).localPosition)
                     .ToArray();
                 Assert.That(pipCentres, Has.Length.EqualTo(5));
-                Assert.That(pipCentres[0].x, Is.EqualTo(0f).Within(Tolerance));
-                Assert.That(pipCentres[0].z, Is.GreaterThan(0f), "The current card stays on the top rim.");
-                var handCentres = pipCentres.Skip(1).OrderBy(centre => centre.x).ToArray();
+                var currentDirection = new Vector2(pipCentres[0].x, pipCentres[0].z).normalized;
+                Assert.That(new Vector2(pipCentres[0].x, pipCentres[0].z).magnitude,
+                    Is.EqualTo(rimRadius).Within(Tolerance));
+                var handAxis = pipCentres.Skip(1)
+                    .Select(centre => new Vector2(centre.x, centre.z).normalized)
+                    .Aggregate(Vector2.zero, (sum, direction) => sum + direction)
+                    .normalized;
+                var handCentres = pipCentres.Skip(1)
+                    .OrderBy(centre => Vector2.SignedAngle(
+                        handAxis, new Vector2(centre.x, centre.z).normalized))
+                    .ToArray();
+                Assert.That(Vector2.Dot(currentDirection, handAxis), Is.EqualTo(-1f).Within(Tolerance),
+                    "The current card is centered opposite the hand along the camera-relative token edge.");
                 Assert.That(handCentres.All(centre =>
                         Mathf.Abs(new Vector2(centre.x, centre.z).magnitude - rimRadius) < Tolerance),
-                    Is.True, "Hand cards follow the curved lower token edge.");
-                Assert.That(handCentres.Average(centre => centre.x), Is.EqualTo(0f).Within(Tolerance),
-                    "The full hand row is centered on the token rather than biased to the right.");
+                    Is.True, "Hand cards follow the curved token edge.");
+                var signedAngles = handCentres.Select(centre => Vector2.SignedAngle(
+                    handAxis, new Vector2(centre.x, centre.z).normalized)).ToArray();
+                for (var index = 0; index < signedAngles.Length / 2; index++)
+                {
+                    Assert.That(signedAngles[index] + signedAngles[signedAngles.Length - 1 - index],
+                        Is.EqualTo(0f).Within(0.001f),
+                        "The hand arc stays centered around its camera-relative edge axis.");
+                }
                 Assert.That(handCentres.Zip(handCentres.Skip(1),
                         (left, right) => Vector3.Distance(left, right))
                     .All(gap => Mathf.Abs(gap -
                         (HeroCardStateIndicator.PipWidth + HeroCardStateIndicator.PipGap)) < Tolerance),
                     Is.True, "Every rectangular pip has the same visible separation.");
-                Assert.That(handCentres.All(centre => centre.z < 0f), Is.True,
-                    "Hand cards remain on the lower edge.");
+                Assert.That(handCentres.All(centre => Vector2.Dot(
+                        new Vector2(centre.x, centre.z).normalized, handAxis) > 0f), Is.True,
+                    "Every hand card remains on the same camera-relative token edge.");
                 var handPips = Enumerable.Range(1, indicator.transform.childCount - 1)
                     .Select(index => indicator.transform.GetChild(index))
                     .ToArray();
@@ -145,6 +164,7 @@ namespace GuardsDigital.Tests.EditMode
             }
             finally
             {
+                BoardChoiceCue.SetScreenUp(previousScreenUp);
                 Object.DestroyImmediate(gameObject);
             }
         }

@@ -241,6 +241,31 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
 
+            // Authority has already resolved both the move and the resumed attack. Presentation keeps
+            // the mover at its prior coordinate until the attack spotlight, causal defeat, and any
+            // route cue have played. Advance the same three shipped clocks deterministically instead
+            // of requiring the old one-frame teleport or depending on batch-mode frame rate.
+            const float PresentationFrame = 1f / 60f;
+            var presentationFrames = 0;
+            while (!MinionView(movedId).Occupancy.Coordinate.Equals(destination) &&
+                   presentationFrames < 600)
+            {
+                runtime.SpotlightPresenter.Tick(PresentationFrame);
+                runtime.KineticView.Tick(PresentationFrame);
+                if (runtime.SpotlightPresenter.Stage.IsContinueArmed)
+                {
+                    Assert.That(runtime.SpotlightPresenter.Continue(), Is.True,
+                        "The journey advances the attack presentation once its viewer gate opens.");
+                }
+
+                runtime.BoardView.AdvanceDefeatFades(PresentationFrame);
+                presentationFrames++;
+            }
+
+            Assert.That(presentationFrames, Is.LessThan(600),
+                "The attack, defeat, and consequent movement presentation must finish within ten " +
+                "seconds of presentation time.");
+
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "Both questions are answered. Remaining: " + Remaining(runtime));
             Assert.That(OccupantAt(runtime, destination), Is.True,

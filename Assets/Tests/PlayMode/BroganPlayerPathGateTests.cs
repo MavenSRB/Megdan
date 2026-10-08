@@ -127,6 +127,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string EffectInvokedGuardJourney =
             "Fortify_KeepsTheMinionAnEnemyUltimateDefeatedByPayingABasicCard";
 
+        private const string HeroModifierHoverJourney =
+            "HeroModifiersStayVisibleWithCardPipsAndHoverContributorsOutsideAttacks";
+
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
         // components. Read it beside Docs/AI/Rules/HERO_BROGAN.md's inventory table, which is in the
@@ -476,6 +479,7 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         Prove(HeroPieceSpawnAndIdentity, Spawn),
                         Prove(HeroPiecePointerSelection, Spawn),
+                        Prove(HeroPiecePointerSelection, HeroModifierHoverJourney),
                         Prove(PresentationRebuild, Spawn),
                         Prove(HeroPieceMovement, TrayCommitAndWalk),
                         Prove(HeroPieceDefeatAndRespawn, DefeatAndRespawn)
