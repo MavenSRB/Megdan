@@ -91,6 +91,8 @@ namespace GuardsDigital.Presentation.Match
             var source = HudElements.Text(label, 11f, MatchHudTheme.PrimaryText,
                 bold ? FontStyle.Bold : FontStyle.Normal);
             source.style.flexGrow = 1f;
+            source.style.height = RowHeight;
+            source.style.unityTextAlign = TextAnchor.MiddleLeft;
             source.style.whiteSpace = WhiteSpace.NoWrap;
             source.style.overflow = Overflow.Hidden;
             var color = value >= 0
@@ -98,6 +100,8 @@ namespace GuardsDigital.Presentation.Match
                 : new Color(1f, 0.30f, 0.20f, 1f);
             var amount = HudElements.Text(MatchHudTheme.Signed(value), 12f, color, FontStyle.Bold);
             amount.style.flexShrink = 0f;
+            amount.style.height = RowHeight;
+            amount.style.unityTextAlign = TextAnchor.MiddleRight;
             row.Add(source);
             row.Add(amount);
             Root.Add(row);

@@ -241,6 +241,10 @@ Completed: `Total` is contained; card pips are 150% with gap/shield clearance; p
 
 Historical evidence: [9.93 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-993-defense-and-token-legibility-completion).
 
+### [~] 9.94 Center Defense text and ping owners, then refresh the build
+
+Authorized 2026-10-08 from packaged-player screenshots: vertically center both labels within each fixed Defense breakdown row without resizing or moving the panel; place every ping-owner portrait with its vertical center on the ticker's top edge while preserving stable multi-sender horizontal ordering. Run only the focused Defense and shared-ping checks plus artifact-facing build/package checks, preserve 9.93, and publish nothing.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.

@@ -59,11 +59,18 @@ namespace GuardsDigital.Tests.PlayMode
                 "Ping tokens are smaller than the former 34.72-unit badges and never block the board.");
             Assert.That(TeammateSignalsUnityView.PingOwnerPortraitScale, Is.EqualTo(0.48f),
                 "the sender token is a modest step up from 0.42 without returning to the old 0.62 size");
-            var tileScreen = pointer.EventCamera.WorldToScreenPoint(tile.transform.position);
-            var tilePanel = RuntimePanelUtils.ScreenToPanel(pingOwners.panel,
-                new Vector2(tileScreen.x, Screen.height - tileScreen.y));
-            Assert.That(pingOwners.worldBound.yMax, Is.LessThan(tilePanel.y),
-                "The sender row sits on top of the ping instead of covering its centre.");
+            var pingLineY = Enumerable.Range(0, 6).Select(index =>
+            {
+                var angle = (30f + 60f * index) * Mathf.Deg2Rad;
+                var world = tile.transform.TransformPoint(new Vector3(
+                    tile.OuterRadius * Mathf.Cos(angle), 0.05f,
+                    tile.OuterRadius * Mathf.Sin(angle)));
+                var screen = pointer.EventCamera.WorldToScreenPoint(world);
+                return RuntimePanelUtils.ScreenToPanel(pingOwners.panel,
+                    new Vector2(screen.x, Screen.height - screen.y)).y;
+            }).Min();
+            Assert.That(pingOwners.worldBound.center.y, Is.EqualTo(pingLineY).Within(1.5f),
+                "Every sender token is vertically centred on the ping ticker line.");
             Assert.That(TeammateSignalsUnityView.PingSteadyLineWidth, Is.GreaterThan(2f));
             Assert.That(TeammateSignalsUnityView.PingWaveLineWidth, Is.GreaterThan(2.5f));
             var before = host.Version;

@@ -19,8 +19,6 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 9.89. The restored ping owner is smaller than 9.58's 0.62-scale badge.</summary>
         public const float PingOwnerPortraitScale = 0.48f;
 
-        private const float PingOwnerPortraitGap = 4f;
-
         private ConfiguredMatchSceneRuntime runtime;
         private Camera boardCamera;
         private HexTileView[] tiles;
@@ -147,7 +145,7 @@ namespace GuardsDigital.Presentation.Match
                     badgeHeight = signal.Badges.Children()
                         .Select(badge => badge.style.height.value.value).DefaultIfEmpty(0f).Max();
                 signal.Badges.style.left = centre.x - badgeWidth * 0.5f;
-                signal.Badges.style.top = signal.Points.Min(p => p.y) - badgeHeight - PingOwnerPortraitGap;
+                signal.Badges.style.top = signal.Points.Min(p => p.y) - badgeHeight * 0.5f;
                 signal.Ring.MarkDirtyRepaint();
             }
         }

@@ -77,6 +77,14 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(view.LastRect.height, Is.EqualTo(expectedHeight),
                 "the one-pixel divider and both four-pixel margins must be inside the panel");
+            var total = view.Root.Q<VisualElement>("gd-hero-defense-total-row");
+            var labels = total.Children().OfType<Label>().ToArray();
+            Assert.That(labels, Has.Length.EqualTo(2));
+            Assert.That(labels, Has.All.Matches<Label>(label =>
+                label.style.height.value.value == 23f),
+                "both text boxes fill the fixed row so their middle alignment has a vertical area");
+            Assert.That(labels[0].style.unityTextAlign.value, Is.EqualTo(TextAnchor.MiddleLeft));
+            Assert.That(labels[1].style.unityTextAlign.value, Is.EqualTo(TextAnchor.MiddleRight));
         }
 
         private static ValueContributionProjection Project(ValueContribution value, string label) =>
