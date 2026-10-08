@@ -9,6 +9,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
 | W-005 | Restored both whole blue side zones on the alternate map; revision-2 identity, movement/travel and rendered-map regressions. | `work/W-005` |
 | W-006 | Simplified tied Initiative to candidate card faces with per-player ping accents and hero-token preference markers. | `work/W-006` |
+| W-007 | Retained `WHO ACTS FIRST?` and centred each selector's hero token above their highlighted card. | `work/W-007` |
+
+### [x] W-007 Tied-Initiative title and centred selector token
+
+Approved by the user's follow-up to W-006: retain the title `WHO ACTS FIRST?` and place each selecting hero token in the middle above its chosen card.
+Outcome: the title is the tied-card screen's only upper text. Each public preference retains the W-006 player-colour ping accent, while its hero token now occupies a stable centred row over the selected card. Eyebrow, explanatory and participant sentences, button captions and viewer-only selection treatment remain absent; candidate hover still uses the standing board/plaque identity channel.
+Scope: W-006 tied-Initiative layout correction and focused coverage only. No Initiative rules, agreement semantics, other decision families, commands, wire/snapshot contract or package changed.
+Closing checks: T2 focused decision-window Edit Mode regressions; affected real-input Play Mode journey; non-batch 2560x1440 capture with title, token/card centring and unclipped-panel geometry checks plus visual review; living-document validation and diff review. No broad-risk trigger or unrelated full suites. W-004 remains at its independent visual-approval gate.
+
+Historical evidence: completion commit addressed by immutable `work/W-007`; exact checks, results and limitations live in its body.
 
 ### [x] W-006 Tied-Initiative card selection markers
 

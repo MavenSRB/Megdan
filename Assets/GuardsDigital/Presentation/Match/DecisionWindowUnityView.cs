@@ -662,12 +662,18 @@ namespace GuardsDigital.Presentation.Match
             expandedHost.style.width = StyleKeyword.Auto;
             expandedHost.style.height = StyleKeyword.Auto;
             var tiedInitiative = Model.Family == DecisionWindowFamily.TiedInitiative;
-            expandedHeader.style.display = tiedInitiative ? DisplayStyle.None : DisplayStyle.Flex;
+            expandedHeader.style.display = DisplayStyle.Flex;
+            expandedHeader.Q("gd-decision-window-header-balance").style.display =
+                tiedInitiative ? DisplayStyle.None : DisplayStyle.Flex;
+            minimiseControl.style.display = tiedInitiative
+                ? DisplayStyle.None
+                : Model.IsMinimisable ? DisplayStyle.Flex : DisplayStyle.None;
             expandedEyebrow.text = Model.Eyebrow;
-            expandedEyebrow.style.display = string.IsNullOrEmpty(Model.Eyebrow)
+            expandedEyebrow.style.display = tiedInitiative || string.IsNullOrEmpty(Model.Eyebrow)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
             expandedTitle.text = Model.Title;
+            expandedTitle.style.marginTop = tiedInitiative ? 0f : 2f;
             expandedQuestion.text = Model.Question;
             expandedQuestion.style.display = tiedInitiative || string.IsNullOrEmpty(Model.Question)
                 ? DisplayStyle.None
@@ -1365,8 +1371,10 @@ namespace GuardsDigital.Presentation.Match
             };
             badges.style.position = Position.Absolute;
             badges.style.top = -18f;
-            badges.style.left = 8f;
+            badges.style.left = 0f;
+            badges.style.right = 0f;
             badges.style.flexDirection = FlexDirection.Row;
+            badges.style.justifyContent = Justify.Center;
             foreach (var selector in selectors)
             {
                 var hero = SelectionHero?.Invoke(selector);

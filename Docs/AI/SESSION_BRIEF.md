@@ -14,11 +14,11 @@ Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-006**.
+- Last completed work: **W-007**.
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-006 simplified the tied-Initiative decision to its candidate card faces: no upper explanatory text or button captions remain, and each current preference is shown by that participant's stable ping accent and small hero token on the selected card. Source and targeted render/input evidence are validated; the existing W003 package is unchanged. W-004's lower banner with slightly larger text remains awaiting user visual approval. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
+W-007 retained `WHO ACTS FIRST?` as the tied-Initiative screen's only upper text and centred each selector's hero token above their highlighted card. Focused input/render evidence and the refreshed 2560x1440 capture are green; the existing W003 package is unchanged. W-004's lower banner with slightly larger text remains awaiting user visual approval. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

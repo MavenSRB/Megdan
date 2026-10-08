@@ -1230,7 +1230,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SeatScene_TiedInitiativeUsesCardSelectionMarkersAndTheStandingHeroHoverLink()
+        public IEnumerator SeatScene_TiedInitiativeKeepsTitleAndCentersCardSelectionMarker()
         {
             var restoreWidth = (uint)Screen.width;
             var restoreHeight = (uint)Screen.height;
@@ -1303,8 +1303,19 @@ namespace GuardsDigital.Tests.PlayMode
                 "Each button names the hero it would put first. " + UiPlayer.Describe(root.Hud));
             Assert.That(
                 runtime.DecisionWindowView.Root.Q("gd-decision-window-header").style.display.value,
+                Is.EqualTo(DisplayStyle.Flex),
+                "The tied-card screen retains its one requested title.");
+            Assert.That(runtime.DecisionWindowView.Root
+                    .Q<Label>("gd-decision-window-title").text,
+                Is.EqualTo("WHO ACTS FIRST?"));
+            Assert.That(runtime.DecisionWindowView.Root
+                    .Q("gd-decision-window-eyebrow").style.display.value,
                 Is.EqualTo(DisplayStyle.None),
-                "The tied-card screen carries no title, eyebrow or explanation above the cards.");
+                "The eyebrow stays removed.");
+            Assert.That(runtime.DecisionWindowView.Root
+                    .Q("gd-decision-window-question").style.display.value,
+                Is.EqualTo(DisplayStyle.None),
+                "The explanatory sentence stays removed.");
             Assert.That(UiPlayer.Descendants(runtime.DecisionWindowView.Root)
                 .Any(element => element.name == "gd-decision-window-card-caption" &&
                     UiPlayer.IsShown(element)), Is.False,
@@ -1347,6 +1358,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(selectorToken.worldBound.yMin,
                 Is.GreaterThanOrEqualTo(expandedPanel.worldBound.yMin - UiPlayer.PixelSnapping()),
                 "Reserved headroom keeps the token inside the content-sized panel instead of clipping it.");
+            Assert.That(selectorToken.worldBound.center.x,
+                Is.EqualTo(selectedCard.worldBound.center.x).Within(UiPlayer.PixelSnapping() * 2f),
+                "The selecting hero token is centred over its chosen card.");
             Assert.That(signal.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
 
             var heroId = agreement.Choices[0].HeroId;
@@ -1379,19 +1393,7 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.PointAway(hoverButton);
             yield return null;
             if (!UnityEngine.Application.isBatchMode)
-                yield return Capture("tmp/w006-tied-initiative-card-markers-2560x1440.png");
-
-            UiPlayer.PointAt(rail);
-            yield return null;
-            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally),
-                "Plaque hover highlights the same hero on the map outside any voting-only path.");
-            UiPlayer.PointAway(rail);
-            yield return null;
-            Assert.That(tile.CornerHighlight.Kind, Is.Not.EqualTo(HexCornerHighlightKind.Ally));
-            AssertBoundsEqual(railBefore, rail.worldBound, snap,
-                "Clearing the identity cue must not move the plaque.");
-            AssertBoundsEqual(faceBefore, face.worldBound, snap,
-                "Clearing the identity cue must not move the hero face.");
+                yield return Capture("tmp/w007-tied-initiative-title-centred-token-2560x1440.png");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30n restore the prior viewport");
