@@ -24,10 +24,13 @@ namespace GuardsDigital.Presentation.Match
             Root.style.position = Position.Absolute;
             Root.style.display = DisplayStyle.None;
             Root.style.width = Width;
+            Root.style.justifyContent = Justify.Center;
             Root.style.paddingLeft = 10f;
             Root.style.paddingRight = 10f;
-            Root.style.paddingTop = 9f;
-            Root.style.paddingBottom = 9f;
+            // Live UI Toolkit bounds leave the centred child stack two pixels low with symmetric
+            // declared padding. Preserve the same 18-pixel budget while optically centring it.
+            Root.style.paddingTop = 7f;
+            Root.style.paddingBottom = 11f;
             HudElements.Border(Root, MatchHudTheme.PanelBorder, 1f, 4f);
         }
 
@@ -41,6 +44,8 @@ namespace GuardsDigital.Presentation.Match
             Root.Clear();
             var title = HudElements.Text("DEFENSE MODIFIER", 10f, MatchHudTheme.MutedText, FontStyle.Bold);
             title.name = "gd-hero-defense-modifier-title";
+            title.style.height = 15f;
+            title.style.unityTextAlign = TextAnchor.MiddleLeft;
             title.style.marginBottom = 5f;
             Root.Add(title);
 
@@ -63,9 +68,9 @@ namespace GuardsDigital.Presentation.Match
             AddRow("Total", model.Total, "gd-hero-defense-total-row", true);
             IgnorePicking(Root);
 
-            var height = 9f + 15f + 5f +
+            var height = 7f + 15f + 5f +
                 (model.Contributions.Count(value => value.Kind != ValueContributionKind.ItemModifier) +
-                 (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + TotalDividerHeight + 9f;
+                 (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + TotalDividerHeight + 11f;
             LastRect = CalculateRect(panelPointer, safeRegion, height);
             Root.style.left = LastRect.x;
             Root.style.top = LastRect.y;

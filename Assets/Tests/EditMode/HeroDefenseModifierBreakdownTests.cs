@@ -75,8 +75,16 @@ namespace GuardsDigital.Tests.EditMode
                 new Vector2(400f, 400f),
                 new Rect(0f, 0f, 1200f, 800f));
 
+            Assert.That(view.Root.style.justifyContent.value, Is.EqualTo(Justify.Center),
+                "the complete title-to-Total stack is centered, not only the text inside each row");
             Assert.That(view.LastRect.height, Is.EqualTo(expectedHeight),
                 "the one-pixel divider and both four-pixel margins must be inside the panel");
+            Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-total-divider").ToList(),
+                Has.Count.EqualTo(1));
+            var title = view.Root.Q<Label>("gd-hero-defense-modifier-title");
+            Assert.That(title.style.height.value.value, Is.EqualTo(15f),
+                "the title must occupy exactly the height already budgeted by the panel");
+            Assert.That(title.style.unityTextAlign.value, Is.EqualTo(TextAnchor.MiddleLeft));
             var total = view.Root.Q<VisualElement>("gd-hero-defense-total-row");
             var labels = total.Children().OfType<Label>().ToArray();
             Assert.That(labels, Has.Length.EqualTo(2));

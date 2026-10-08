@@ -62,6 +62,29 @@ namespace GuardsDigital.Tests.PlayMode
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var version = runtime.ReadModel.Version;
             Assert.That(runtime.ReadModel.PendingAttackTargetChoice, Is.Null);
+            var emptyHero = board.HeroViews.First(value => value.gameObject.activeSelf);
+            var emptyPreview = new HeroDefenseModifierProjection(
+                emptyHero.Occupancy.HeroId,
+                emptyHero.Body,
+                new ValueContributionProjection[0]);
+            pointer.enabled = false;
+            try
+            {
+                Root().Hud.ShowDefenseModifierBreakdown(
+                    emptyPreview, Camera.main.WorldToScreenPoint(emptyHero.transform.position));
+                yield return null;
+                yield return null;
+                var emptyPanel = Root().Hud.DefenseModifierBreakdown.Root;
+                var emptyTitle = emptyPanel.Q<Label>("gd-hero-defense-modifier-title");
+                var emptyTotal = emptyPanel.Q<VisualElement>("gd-hero-defense-total-row");
+                Assert.That(
+                    emptyTitle.worldBound.yMin - emptyPanel.worldBound.yMin,
+                    Is.EqualTo(emptyPanel.worldBound.yMax - emptyTotal.worldBound.yMax).Within(1f),
+                    "the empty live panel keeps equal outer breathing room above its title and below Total");
+                yield return UiPlayer.CaptureScreen("tmp/995-defense-empty-balanced.png");
+                Root().Hud.HideDefenseModifierBreakdown();
+            }
+            finally { pointer.enabled = true; }
             var hero = board.HeroViews.First(value => board.Model.HeroDefenseModifiers
                 .Any(preview => preview.HeroId.Equals(value.Occupancy.HeroId) &&
                     preview.HeroBody == value.Body && preview.Contributions.Count > 0));

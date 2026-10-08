@@ -243,6 +243,10 @@ Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-994-center-
 
 Historical evidence: [9.94 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-994-defense-row-and-ping-line-centering-completion).
 
+### [~] 9.95 Vertically balance the Defense breakdown
+
+Authorized 2026-10-08 from the packaged-player screenshot: the height formula budgets a 15-pixel header, but the unbounded label resolves taller and shifts the complete stack down. Give the header that exact height and middle alignment while retaining the divider and unchanged panel size/placement. Run focused layout and exact in-game/package checks only, preserve 9.94, and publish nothing.
+
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.
