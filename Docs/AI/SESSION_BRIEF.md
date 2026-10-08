@@ -10,15 +10,15 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /49. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private package: [9.100](Roadmap/PHASE_9.md#x-9100-cut-the-integrated-windows-playtest-package), `Builds/Playtest-9.100-ui-playtest.zip`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-- Last completed work: **W-002**.
+- Last completed work: **W-003**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
-No implementation is currently authorized. Select the next bounded outcome through [current work](Roadmap/CURRENT_WORK.md). No build requested.
+No implementation is currently authorized. Select the next bounded outcome through [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

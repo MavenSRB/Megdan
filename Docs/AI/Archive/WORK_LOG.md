@@ -6,6 +6,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | --- | --- | --- |
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
+| W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
 
 ### [x] W-001 Transition to iteration and PvE design
 
@@ -27,3 +28,13 @@ Closing checks: focused preview/visibility/placement Edit Mode regressions, real
 Completed: requested preview surfaces share the typed spell column; own-hand layout remains above. Player names have a reserved non-overlapping line. Focused checks and rendered review passed; no package built.
 
 Historical evidence: completion commit addressed by immutable `work/W-002`; exact results, initial failure/correction and limitations live in its body.
+
+### [x] W-003 Package the completed inspection fixes
+
+Approved by the user's request for a new build after W-002. Outcome: a private Windows package containing the completed spell-preview and player-name fixes, with a distinct build stamp and launch instructions.
+Scope: package identity, build once, artifact validation and local packaging; no gameplay changes or publication. Preserve prior packages.
+Closing checks: reuse W-002's 46 Edit/6 Play green checks and visual evidence; compare against 9.100; fresh player interaction, host-plus-two-client and board-render smokes on one binary; package file/ZIP hashes and packaged launch; documentation validation. No broad-risk trigger or full-suite run.
+
+Completed: `Builds/Playtest-W003-inspection-fixes.zip`; all artifact checks passed and prior packages preserved.
+
+Historical evidence: completion commit addressed by immutable `work/W-003`; exact artifact identity, checks and limitations live in its body.
