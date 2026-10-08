@@ -243,9 +243,11 @@ Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-994-center-
 
 Historical evidence: [9.94 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-994-defense-row-and-ping-line-centering-completion).
 
-### [~] 9.95 Vertically balance the Defense breakdown
+### [x] 9.95 Vertically balance the Defense breakdown
 
-Authorized 2026-10-08 from the packaged-player screenshot: the height formula budgets a 15-pixel header, but the unbounded label resolves taller and shifts the complete stack down. Give the header that exact height and middle alignment while retaining the divider and unchanged panel size/placement. Run focused layout and exact in-game/package checks only, preserve 9.94, and publish nothing.
+Completed. [Definition/evidence](PHASE_9_PRESENTATION_COMPLETED.md#x-995-vertically-balance-the-defense-breakdown).
+
+Historical evidence: [9.95 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-995-defense-breakdown-vertical-balance-completion).
 
 ## Queued by 9.13, not authorized
 

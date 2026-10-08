@@ -954,3 +954,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.94 | Defense labels fill their unchanged rows and align vertically in the middle. Ping portraits are centered on the ticker edge with stable multi-sender order and spacing. Focused Edit passed 3/3 and exact in-game cases 2/2 with fresh captures reviewed. Private `Playtest-9.94-ui-centering` at wire `/49` and schema 59 passed exact/package smokes; all 184 ZIP files match the loose 584325500-byte package with no forbidden content, SHA-256 `165fbf3349e76bfb88baaf41e9f1423fc12d72a03fa7f87dec03edba3fab08b5`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-994-center-defense-text-and-ping-owners-then-refresh-the-build). | `milestone/9.94` |
+
+## Milestone 9.95 Defense breakdown vertical-balance completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.95 | The header uses its budgeted 15-pixel height and the complete title-to-Total stack is centered. Live empty-state bounds have equal outer breathing room after measured correction, with the same panel size and placement. Focused Edit passed 3/3 and the exact in-game case 1/1 with a fresh capture reviewed. Private `Playtest-9.95-defense-balance` at wire `/49` and schema 59 passed exact/package smokes; all 184 ZIP files match the loose 584325951-byte package with no forbidden content, SHA-256 `a88cdc9ef5a15e4fe1fa4acbf40e07b81272cf95f0f97e9d675a94e9988b44db`. Broad suites were omitted by user direction. [Definition](../../Roadmap/PHASE_9.md#x-995-vertically-balance-the-defense-breakdown). | `milestone/9.95` |

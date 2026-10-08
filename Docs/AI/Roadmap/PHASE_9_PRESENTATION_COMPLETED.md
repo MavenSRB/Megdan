@@ -130,3 +130,13 @@ Result: each Defense label now fills the existing 23-unit row and uses middle-le
 Completed 2026-10-08.
 
 Historical evidence: [9.94 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-994-defense-row-and-ping-line-centering-completion).
+
+### [x] 9.95 Vertically balance the Defense breakdown
+
+Authorized 2026-10-08 from the packaged-player screenshot: the height formula budgets a 15-pixel header, but the unbounded label resolves taller and shifts the complete stack down. Give the header that exact height and middle alignment while retaining the divider and unchanged panel size/placement. Run focused layout and exact in-game/package checks only, preserve 9.94, and publish nothing.
+
+Result: the header now occupies its budgeted 15 pixels with middle-left text, and the root centers the complete title-to-Total stack. A live measurement first exposed 14.7 versus 4.0 pixels of outer breathing room and then 10.7 versus 6.7; preserving the same 18-pixel padding budget as 7 above and 11 below produced the final equal live bounds without resizing or moving the panel. Focused Edit passed 3/3 and the exact in-game case passed 1/1 after its empty projection was held open without mutating game state; the fresh full-frame capture was visually reviewed. Stamped source `9af97e28` produced `Builds/Playtest-9.95-defense-balance` and its ZIP at wire `/49`, schema 59, stamp `1.0-9.95-defense-balance+20261008132125-9af97e28`. Exact-player and packaged-player six-marker smokes passed. All 184 ZIP files match the loose 584325951-byte package byte-for-byte with no log/debug/DoNotShip entry; the 102366960-byte ZIP SHA-256 is `a88cdc9ef5a15e4fe1fa4acbf40e07b81272cf95f0f97e9d675a94e9988b44db`. Broad suites were omitted by user direction. Package 9.94 remains preserved; nothing was published.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.95 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-995-defense-breakdown-vertical-balance-completion).
