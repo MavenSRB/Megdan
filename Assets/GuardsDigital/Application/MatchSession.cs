@@ -330,6 +330,8 @@ namespace GuardsDigital.Application
                 case DirectorCommandKind.RetrieveOneAfterReveal:
                     return DispatchResult.From(round.TryRetrieveOneAfterReveal(
                         command.HeroId, command.CardInstanceId));
+                case DirectorCommandKind.RetractCommitment:
+                    return DispatchResult.From(round.TryRetractCommitment(command.HeroId));
                 case DirectorCommandKind.Pass:
                     return DispatchResult.From(round.TryPass(command.HeroId));
                 case DirectorCommandKind.ChooseTiedActor:

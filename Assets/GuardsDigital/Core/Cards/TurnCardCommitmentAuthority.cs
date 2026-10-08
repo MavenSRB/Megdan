@@ -21,7 +21,8 @@ namespace GuardsDigital.Core.Cards
         DuplicateCard = 10,
         NoTwoCardCommitment = 11,
         CardNotInTwoCardCommitment = 12,
-        NotCurrentRetrievalHero = 13
+        NotCurrentRetrievalHero = 13,
+        NoFacedownCommitment = 14
     }
 
     public enum TurnCardCommitmentEventKind
@@ -31,7 +32,8 @@ namespace GuardsDigital.Core.Cards
         HeroPassed = 2,
         CardRevealed = 3,
         RevealCompleted = 4,
-        CardRetrievedAfterReveal = 5
+        CardRetrievedAfterReveal = 5,
+        CommitmentRetracted = 6
     }
 
     public enum TurnCardCommitmentStatus
@@ -316,6 +318,27 @@ namespace GuardsDigital.Core.Cards
             {
                 new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.CardRetrievedAfterReveal, heroId, cardId)
             });
+        }
+
+        /// <summary>User-approved digital withdrawal before the final shared response.</summary>
+        public TurnCardCommitmentResult TryRetractCommitment(HeroId heroId)
+        {
+            if (!IsExpectedHero(heroId)) return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.HeroNotFound);
+            if (IsRevealed || expectedHeroIds.All(HasResponded))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.TurnAlreadyRevealed);
+            if (!committedCards.TryGetValue(heroId, out var first))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.NoFacedownCommitment);
+            var ids = secondCommittedCards.TryGetValue(heroId, out var second)
+                ? new[] { first, second } : new[] { first };
+            var cards = ids.Select(id => instances.Single(c => c.Id.Equals(id))).ToArray();
+            if (cards.Any(c => !c.OwnerId.Equals(heroId) || !IsFacedownCommitted(c)))
+                return TurnCardCommitmentResult.Reject(TurnCardCommitmentRejectionReason.CommittedCardStateChanged);
+            foreach (var card in cards)
+                if (!CardLifecycleAuthority.TryRetractFacedown(card))
+                    throw new InvalidOperationException("Validated commitment could not return to hand.");
+            committedCards.Remove(heroId); secondCommittedCards.Remove(heroId);
+            return TurnCardCommitmentResult.Accept(new[] {
+                new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.CommitmentRetracted, heroId) });
         }
 
         public TurnCardCommitmentStatus GetStatus(HeroId heroId)

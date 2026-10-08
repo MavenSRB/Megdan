@@ -305,6 +305,12 @@ namespace GuardsDigital.Tests.PlayMode
                 "and drawing its own card faces again. " + UiPlayer.Describe(hud));
 
             // and it is answerable on the same visible surface, by clicking a real printed face.
+            yield return UiPlayer.WaitForDecisionWindow(runtime, hud);
+            Assert.That(UiPlayer.Descendants(hud.RootElement).Count(element =>
+                element.name == "gd-effect-card" && UiPlayer.IsShown(element) &&
+                UiPlayer.IsOutsideDecisionWindow(element)), Is.Zero,
+                "Restore leaves one decision surface, with no stale duplicate card row.");
+            yield return UiPlayer.CaptureScreen("tmp/982-restored-wasp-choice-after.png");
             var faceName = restoredChoices[0].Card.DisplayName.ToUpperInvariant();
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
             yield return null;

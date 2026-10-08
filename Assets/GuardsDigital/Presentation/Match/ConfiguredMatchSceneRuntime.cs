@@ -294,8 +294,15 @@ namespace GuardsDigital.Presentation.Match
             // own the conductor. This first attempt handles an interruption (whose stage is gone),
             // while SceneStarted retries at each actual scene boundary. The predicate above releases
             // only when the framed attack's lunge has entered playback.
-            SpotlightPresenter.CuesReleased += () => DecisionWindowPresenter.ResumePresentation();
-            KineticView.SceneStarted += () => DecisionWindowPresenter.ResumePresentation();
+            void ResumeDecisionPresentation()
+            {
+                DecisionWindowPresenter.ResumePresentation();
+                // The window can take over a restored choice without a new projection.
+                // Refresh the fallback row too, so only one surface owns that question.
+                RoundPresenter.Refresh();
+            }
+            SpotlightPresenter.CuesReleased += ResumeDecisionPresentation;
+            KineticView.SceneStarted += ResumeDecisionPresentation;
 
             BoardView.BindIntentHandlers(
                 // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click

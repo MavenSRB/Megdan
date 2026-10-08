@@ -523,8 +523,12 @@ Completed 2026-10-07. Implemented stable player colours, preserved tray geometry
 
 Historical evidence: [9.81 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-981-player-signals-completion).
 
-### [ ] 9.82 Retract an unrevealed card commitment
+### [x] 9.82 Retract an unrevealed card commitment
 
 Authorized 2026-10-07 as the next outcome after 9.81. A player may undo their own committed card and return it to hand while at least one player has not yet committed. Acceptance of the final commitment closes this opportunity atomically; revealed cards cannot be withdrawn. Use the existing player Undo affordance and preserve seat authorization, hidden-card privacy, deterministic replay and reconnect consistency.
 
-Closing checks: focused rules/application tests for retraction, recommitment, final-commit race ordering, non-owner rejection and replay/snapshot behavior; affected private-session tests and a real-control presentation journey. Inspect the rules authority and existing Undo boundary before implementation. No other undo-boundary changes, builds or publication. Approved sequence: 9.81 -> 9.82, separate validation and local commits.
+Closing checks: focused rules/application tests for retraction, recommitment, final-commit race ordering, non-owner rejection and replay/snapshot behavior; affected private-session tests and a real-control presentation journey. Printed rulebook p.7 was inspected directly: final participation triggers the shared reveal; pre-reveal withdrawal is the user-approved digital convenience, not a printed claim. A typed withdrawal command preserves other commitments and snapshot/replay support; two-card commitments retract together. Retain spent commitment allowance, never refund the bank. T3 selected because the command/event and card-lifecycle addition reaches the existing player Undo control: focused checks precede both unfiltered Unity suites. No other undo-boundary changes, builds or publication. Approved sequence: 9.81 -> 9.82, separate validation and local commits.
+
+Historical evidence: [9.82 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-982-commitment-withdrawal-completion).
+
+The restore closing check also requires exactly one visible card-choice surface after a deferred decision window resumes. Preserve the standalone strip fallback when no window owns the question; fix the shared presentation handoff without changing authority, choices or card rules.

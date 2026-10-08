@@ -269,7 +269,15 @@ namespace GuardsDigital.Application
             var retained=new HashSet<string>(result.Select(d=>d.Id));
             if (turn.Length>0)
                 foreach(var entry in clock.Entries.Where(e=>(e.Id==turn || e.Id.StartsWith(turn+":response:",StringComparison.Ordinal)))) retained.Add(entry.Id);
-            clock.Retain(retained);
+            var retainedClocks = new HashSet<string>(retained);
+            // Retraction reopens this same commitment allowance, never a fresh budget.
+            if (p.Phase == RoundResolutionPhase.AwaitingCommitments)
+            {
+                var prefix = "commitment:" + p.RoundIndex + ":" + p.TurnIndex + ":";
+                foreach (var entry in clock.Entries.Where(e => e.Kind == MatchClockKind.Commitment &&
+                    e.Id.StartsWith(prefix, StringComparison.Ordinal))) retainedClocks.Add(entry.Id);
+            }
+            clock.Retain(retainedClocks);
             foreach(var key in timedVoteTallies.Keys.Where(k=>!retained.Contains(k)).ToArray()) timedVoteTallies.Remove(key);
             var current = new HashSet<string>(result.Select(d=>d.Id));
             var running = new HashSet<string>(result.Where(d=>IsClockReady(d.Seat,p.Version)).Select(d=>d.Id));

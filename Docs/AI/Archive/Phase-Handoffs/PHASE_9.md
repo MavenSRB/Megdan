@@ -866,3 +866,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.81 | Stable player-coloured tokens/trays; private inward hex cursors; persistent outward shared-edge pings; player-coloured acting ripples; host-only session ripple speed/intensity. Actual game visual inspection and T2 validation; exact checks and limitations in the commit body. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-981-player-colours-and-allied-cursorping-ripples). | `milestone/9.81` |
+
+## Milestone 9.82 commitment-withdrawal completion
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 9.82 | Existing player Undo withdraws only the owner's unrevealed commitment before final acceptance, preserving others, replay, privacy, reconnect and spent timer budgets. DEV-011 records the digital convenience. T3 evidence and limitations live in the commit body. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-982-retract-an-unrevealed-card-commitment). | `milestone/9.82` |

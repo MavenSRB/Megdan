@@ -386,6 +386,7 @@ namespace GuardsDigital.Tests.EditMode
             for (var driven = 0; driven < 400 && acting == null; driven += 5)
             {
                 OwnerScopedProjectionTests.DriveThroughSeats(host, 5);
+                if (host.Projection.Phase == RoundResolutionPhase.AwaitingCommitments) continue;
                 acting = host.Seats.Seats.FirstOrDefault(value =>
                     host.ProjectionForSeat(value.Id).IsSeatUndoAvailable);
             }

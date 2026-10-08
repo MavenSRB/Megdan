@@ -1444,9 +1444,19 @@ namespace GuardsDigital.Application
         /// Milestone 8.35f. Whether this seat may step back one command right now, and why not when
         /// it may not. The refusal detail is the same sentence the availability answers.
         /// </summary>
+        private static bool CanRetractCommitment(MatchSessionProjection projection, GuardsDigital.Core.Units.Heroes.HeroId hero) =>
+            projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+            projection.Commitments.Any(c => c.Status == TurnCardCommitmentStatus.AwaitingResponse) &&
+            projection.Commitments.Any(c => c.HeroId.Equals(hero) && c.Status == TurnCardCommitmentStatus.CardCommittedFacedown);
+
         private bool CanSeatUndo(MatchSeat seat, out string detail)
         {
             var projection = session.Projection;
+            if (CanRetractCommitment(projection, seat.HeroId))
+            {
+                detail = string.Empty;
+                return true;
+            }
             if (!projection.IsHistoryAvailable)
             {
                 detail = "This session has no retained history to step back through.";
@@ -1557,7 +1567,9 @@ namespace GuardsDigital.Application
                 try
                 {
                     DuringSubmissionForTest?.Invoke();
-                    inner = Execute(MatchSubmission.ForUndo());
+                    inner = Execute(CanRetractCommitment(session.Projection, bound.HeroId)
+                        ? MatchSubmission.ForCommand(DirectorCommand.RetractCommitment(bound.HeroId))
+                        : MatchSubmission.ForUndo());
                 }
                 finally
                 {

@@ -218,11 +218,12 @@ namespace GuardsDigital.Presentation.Interaction
                         (view.ActingHeroMarker != null && view.ActingHeroMarker.IsVisible) != active)
                         throw new InvalidOperationException("Aura inspection state did not render: " + state);
                     var scale = state.EndsWith("minimum", StringComparison.Ordinal)
-                        ? 1f - KineticTiming.MarkPulseAmplitude : 1f;
+                        ? 1f : 1.2f;
                     if (active) view.ActingHeroMarker.transform.localScale = Vector3.one * scale;
-                    if (active && effect && view.ActingHeroMarker.VisibleRadius * scale *
-                        (1f - ActingHeroMarker.RingWidthRatio) <= piece.ActiveEffectMarker.VisibleRadius)
-                        throw new InvalidOperationException("The active ring overlaps or sits inside the aura.");
+                    if (active && Mathf.Abs(view.ActingHeroMarker.VisibleRadius - piece.SelectionRadius) > 0.0001f)
+                        throw new InvalidOperationException("The acting ripple must start at the token outline.");
+                    if (active) view.ActingHeroMarker.GetComponent<MeshRenderer>().sharedMaterial.color =
+                        view.ActingHeroMarker.RingColor * 0.75f;
                     Texture2D frame = null;
                     try
                     {

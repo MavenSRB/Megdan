@@ -135,6 +135,7 @@ namespace GuardsDigital.Tests.EditMode
             var forged = new[]
             {
                 DirectorCommand.CommitCard(victim.HeroId, victimsCard.Id),
+                DirectorCommand.RetractCommitment(victim.HeroId),
                 DirectorCommand.CommitTwoCards(victim.HeroId, victimsCard.Id, victimsOtherCard.Id),
                 DirectorCommand.RetrieveOneAfterReveal(victim.HeroId, victimsCard.Id),
                 DirectorCommand.Pass(victim.HeroId),
@@ -237,13 +238,14 @@ namespace GuardsDigital.Tests.EditMode
                 "A command claims one kind of identity or none, never both.");
             Assert.That(heroClaiming, Is.EquivalentTo(new[]
             {
+                DirectorCommandKind.RetractCommitment,
                 DirectorCommandKind.CommitCard,
                 DirectorCommandKind.CommitTwoCards,
                 DirectorCommandKind.RetrieveOneAfterReveal,
                 DirectorCommandKind.Pass,
                 DirectorCommandKind.RespawnHero,
                 DirectorCommandKind.ResolveCardWithoutRespawn
-            }), "These six are the answers a hero gives about itself.");
+            }), "These commands are the answers a hero gives about itself.");
             Assert.That(teamClaiming,
                 Is.EquivalentTo(new[] { DirectorCommandKind.ChooseTiedActor }));
 

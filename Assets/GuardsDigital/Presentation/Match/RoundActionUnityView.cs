@@ -433,6 +433,7 @@ namespace GuardsDigital.Presentation.Match
         /// current answer rather than the previous projection's.</para>
         /// </summary>
         public Func<DecisionWindowFamily> YieldedDecisionFamily { get; set; }
+        private DecisionWindowFamily renderedYieldedFamily;
 
         private DecisionWindowFamily Yielded =>
             YieldedDecisionFamily?.Invoke() ?? DecisionWindowFamily.None;
@@ -488,12 +489,14 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(RoundActionViewModel model)
         {
-            if (ReferenceEquals(Model, model))
+            var yieldedFamily = Yielded;
+            if (ReferenceEquals(Model, model) && renderedYieldedFamily == yieldedFamily)
             {
                 return;
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+            renderedYieldedFamily = yieldedFamily;
             if (activeDefensePreview != null &&
                 (activeDefensePreview.Version != Model.Version ||
                  !Model.DefenseChoices.Any(value =>
@@ -1871,7 +1874,8 @@ namespace GuardsDigital.Presentation.Match
             var control = CreateCornerControl(
                 SeatUndoGlyph, RequestSeatUndo, "gd-seat-undo-control",
                 ConfiguredMatchHudRenderer.SeatUndoControlSide, SeatUndoGlyphFontSize);
-            control.tooltip = SeatUndoTooltip;
+            control.tooltip = Model.Phase == RoundResolutionPhase.AwaitingCommitments
+                ? "Withdraw your commitment before everyone has committed" : SeatUndoTooltip;
             seatUndoHost.Add(control);
         }
 

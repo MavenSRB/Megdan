@@ -263,7 +263,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test] public void OrdinarySeatUndoCannotRefundTheLiveResolutionClock()
         {
             var h=Create(10,20);
-            OwnerScopedProjectionTests.DriveThroughSeats(h,1200,p=>p.PendingTurnRelease==null && h.Seats.Seats.Any(seat=>h.ProjectionForSeat(seat.Id).IsSeatUndoAvailable));
+            OwnerScopedProjectionTests.DriveThroughSeats(h,1200,p=>p.Phase==RoundResolutionPhase.ResolvingTurn && p.PendingTurnRelease==null && h.Seats.Seats.Any(seat=>h.ProjectionForSeat(seat.Id).IsSeatUndoAvailable));
             var seat=h.Seats.Seats.First(seat=>h.ProjectionForSeat(seat.Id).IsSeatUndoAvailable);
             Ready(h);h.AdvanceClock(TimeSpan.FromSeconds(2).Ticks);var before=h.ClockState;
             var result=h.ClientForSeat(seat.Id).SubmitUndo(new SeatUndoSubmission(new SubmissionId("timed-seat-undo"),h.Version));

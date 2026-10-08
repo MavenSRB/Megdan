@@ -24,6 +24,17 @@ namespace GuardsDigital.Core.Cards
             return true;
         }
 
+        /// <summary>Returns an unrevealed turn commitment to its original hand state.</summary>
+        public static bool TryRetractFacedown(CardInstance card)
+        {
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            if (card.State.Location != CardLocation.TurnArea || !card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
+                card.State.FaceOrientation != CardFaceOrientation.FaceDown) return false;
+            card.ApplyState(CardStateFacts.InitialInHand());
+            return true;
+        }
+
         public static bool TryReveal(CardInstance card)
         {
             if (card == null)

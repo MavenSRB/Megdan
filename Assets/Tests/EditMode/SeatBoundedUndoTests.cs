@@ -151,7 +151,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 foreach (var seat in host.Seats.Seats)
                 {
-                    if (!host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable)
+                    if (host.Projection.Phase == RoundResolutionPhase.AwaitingCommitments || !host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable)
                     {
                         continue;
                     }
@@ -611,7 +611,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 foreach (var seat in harness.MatchHost.Seats.Seats)
                 {
-                    if (!harness.MatchHost.ProjectionForSeat(seat.Id).IsSeatUndoAvailable)
+                    if (harness.MatchHost.Projection.Phase == RoundResolutionPhase.AwaitingCommitments || !harness.MatchHost.ProjectionForSeat(seat.Id).IsSeatUndoAvailable)
                     {
                         continue;
                     }
@@ -760,6 +760,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 found = host.Seats.Seats.FirstOrDefault(seat =>
+                    host.Projection.Phase != RoundResolutionPhase.AwaitingCommitments &&
                     host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable);
                 return found != null;
             });
@@ -774,6 +775,7 @@ namespace GuardsDigital.Tests.EditMode
             walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 900, _ =>
             {
                 found = host.Seats.Seats.FirstOrDefault(seat =>
+                    host.Projection.Phase != RoundResolutionPhase.AwaitingCommitments &&
                     host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable);
                 return found != null;
             });

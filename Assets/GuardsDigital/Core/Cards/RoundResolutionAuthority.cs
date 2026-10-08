@@ -1671,6 +1671,9 @@ namespace GuardsDigital.Core.Cards
             return RoundResolutionResult.Accept(events);
         }
 
+        public RoundResolutionResult TryRetractCommitment(HeroId heroId) =>
+            ExecuteCommitment(() => CurrentCommitmentAuthority.TryRetractCommitment(heroId));
+
         public RoundResolutionResult TryPass(HeroId heroId)
         {
             return ExecuteCommitment(() => CurrentCommitmentAuthority.TryPass(heroId));

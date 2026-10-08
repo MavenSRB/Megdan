@@ -285,7 +285,9 @@ namespace GuardsDigital.Core.Diagnostics
             var references = ruleEvent.HasHeroId
                 ? JoinReferences(roundReference, $"hero={ruleEvent.HeroId.Value}")
                 : roundReference;
-            var detail = ruleEvent.Kind == TurnCardCommitmentEventKind.CardCommittedFacedown
+            var detail = ruleEvent.Kind == TurnCardCommitmentEventKind.CommitmentRetracted
+                ? "facedown commitment withdrawn;card identity hidden"
+                : ruleEvent.Kind == TurnCardCommitmentEventKind.CardCommittedFacedown
                 ? "facedown commitment accepted;card identity hidden"
                 : ruleEvent.Kind == TurnCardCommitmentEventKind.HeroPassed
                     ? "empty-hand Pass accepted"

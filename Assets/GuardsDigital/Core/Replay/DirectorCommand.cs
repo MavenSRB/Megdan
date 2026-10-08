@@ -95,7 +95,8 @@ namespace GuardsDigital.Core.Replay
         /// </summary>
         ChooseActingBody = 25,
         CommitTwoCards = 26,
-        RetrieveOneAfterReveal = 27
+        RetrieveOneAfterReveal = 27,
+        RetractCommitment = 28
     }
 
 
@@ -286,6 +287,9 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand RetrieveOneAfterReveal(HeroId heroId, CardInstanceId cardId) =>
             new DirectorCommand(DirectorCommandKind.RetrieveOneAfterReveal, heroId, cardId);
+
+        public static DirectorCommand RetractCommitment(HeroId heroId) =>
+            new DirectorCommand(DirectorCommandKind.RetractCommitment, heroId);
 
         public static DirectorCommand Pass(HeroId heroId) =>
             new DirectorCommand(DirectorCommandKind.Pass, heroId);

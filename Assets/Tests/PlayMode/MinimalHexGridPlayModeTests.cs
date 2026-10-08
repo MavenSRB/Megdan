@@ -3870,7 +3870,7 @@ namespace GuardsDigital.Tests.PlayMode
                 // side rather than from the picture.
                 Assert.That(
                     renderer.sharedMaterials[0].color,
-                    Is.EqualTo(HeroTokenArtwork.TeamRim(hero.TeamSide)));
+                    Is.EqualTo(hero.IdentityAccent));
             }
 
             Assert.That(
@@ -5870,7 +5870,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(blueView.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(meshBefore));
             Assert.That(
                 blueView.GetComponent<MeshRenderer>().sharedMaterials[0].color,
-                Is.EqualTo(HeroTokenArtwork.TeamRim(TeamSide.Blue)));
+                Is.EqualTo(blueView.IdentityAccent));
             Assert.That(
                 Object.FindObjectsByType<PrimitiveHeroView>()
                     .Count(value => value.Occupancy.HeroId.Equals(blueHeroId)),

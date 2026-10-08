@@ -468,8 +468,10 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(row => row.Hero.Equals(takahide));
             Assert.That(safe.OtherGoldCards, Is.Empty,
                 "Known Gold faces stay withheld together so the facedown arrival cannot be identified by elimination.");
-            Assert.That(safe.ConcealedOtherGoldCount, Is.EqualTo(3),
-                "The facedown resting Gold and the two basic deck Golds occupy the dedicated anonymous group.");
+            Assert.That(safe.ConcealedOtherGoldCount, Is.EqualTo(2),
+                "Only the two basic deck Golds occupy the dedicated anonymous group.");
+            Assert.That(safe.ConcealedOtherCount, Is.EqualTo(1),
+                "The resolved facedown Gold remains anonymous in Unavailable, not in the deck group.");
 
             var oldWidth = (uint)Screen.width;
             var oldHeight = (uint)Screen.height;
@@ -519,7 +521,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Unavailable cards occupy the upper-right area.");
             Assert.That(goldSection.worldBound.yMin, Is.GreaterThan(handSection.worldBound.yMin + 1f),
                 "Other Golds occupy their own box below the available hand.");
-            Assert.That(goldSection.Query<VisualElement>("gd-inspected-card-back").ToList(), Has.Count.EqualTo(3));
+            Assert.That(goldSection.Query<VisualElement>("gd-inspected-card-back").ToList(), Has.Count.EqualTo(2));
             Assert.That(goldSection.Query<VisualElement>("gd-inspected-card").ToList(), Is.Empty);
             yield return UiPlayer.CaptureScreen("tmp/9-77-takahide-facedown-gold-1920.png");
             inspection.Root.RemoveFromHierarchy();

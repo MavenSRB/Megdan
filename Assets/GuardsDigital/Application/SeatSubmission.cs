@@ -389,6 +389,7 @@ namespace GuardsDigital.Application
         public static readonly IReadOnlyList<DirectorCommandKind> HeroClaimingKinds =
             Array.AsReadOnly(new[]
             {
+                DirectorCommandKind.RetractCommitment,
                 DirectorCommandKind.CommitCard,
                 DirectorCommandKind.CommitTwoCards,
                 DirectorCommandKind.RetrieveOneAfterReveal,

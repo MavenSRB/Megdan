@@ -49,6 +49,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly IReadOnlyList<DirectorCommand> Specimens = new[]
         {
             DirectorCommand.CommitCard(new HeroId("hero-wasp"), new CardInstanceId("wasp-card-01")),
+            DirectorCommand.RetractCommitment(new HeroId("hero-emmitt")),
             DirectorCommand.CommitTwoCards(new HeroId("hero-emmitt"),
                 new CardInstanceId("emmitt-card-01"), new CardInstanceId("emmitt-card-02")),
             DirectorCommand.RetrieveOneAfterReveal(new HeroId("hero-emmitt"),

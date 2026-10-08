@@ -99,6 +99,7 @@ namespace GuardsDigital.Application
                     writer.Write(command.HeroId.Value);
                     writer.Write(command.CardInstanceId.Value);
                     return;
+                case DirectorCommandKind.RetractCommitment:
                 case DirectorCommandKind.Pass:
                     writer.Write(command.HeroId.Value);
                     return;
@@ -255,6 +256,12 @@ namespace GuardsDigital.Application
                         return true;
                     }
 
+                    case DirectorCommandKind.RetractCommitment:
+                    {
+                        if (!TryReadId(reader, out var hero)) return false;
+                        command = DirectorCommand.RetractCommitment(new HeroId(hero));
+                        return true;
+                    }
                     case DirectorCommandKind.Pass:
                     {
                         if (!TryReadId(reader, out var hero))

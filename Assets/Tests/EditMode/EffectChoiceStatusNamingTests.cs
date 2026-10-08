@@ -50,6 +50,28 @@ namespace GuardsDigital.Tests.EditMode
         /// journey met under the action heading, and the one milestone 8.15a draws as whole faces.
         /// </summary>
         [Test]
+        public void ReusedModelYieldsAndRestoresCardChoicesWhenWindowOwnershipChanges()
+        {
+            var session = ConfiguredMatchFixtures.CreateRadiusDiscardRiderSession(out var minionId);
+            AttackTheAdjacentMinion(session, WaspCardContent.Shock, minionId);
+            AnswerFirstSelection(session);
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var family = DecisionWindowFamily.None;
+            var view = new RoundActionUnityView { YieldedDecisionFamily = () => family };
+            view.Render(model);
+            var count = Descendants(view.Root).Count(element => element.name == "gd-effect-card");
+            Assert.That(count, Is.GreaterThan(0));
+            family = DecisionWindowFamily.CardChoice;
+            view.Render(model);
+            Assert.That(Descendants(view.Root).Count(element => element.name == "gd-effect-card"), Is.Zero,
+                "The cached model must not leave duplicate choices when the deferred window takes ownership.");
+            family = DecisionWindowFamily.None;
+            view.Render(model);
+            Assert.That(Descendants(view.Root).Count(element => element.name == "gd-effect-card"), Is.EqualTo(count),
+                "The fallback returns when the window releases the same model.");
+        }
+
+        [Test]
         public void ThePageTenDiscardChooser_IsFramelessAndNarratesWhyTheCardIsChosen()
         {
             var session = ConfiguredMatchFixtures.CreateRadiusDiscardRiderSession(out var minionId);
