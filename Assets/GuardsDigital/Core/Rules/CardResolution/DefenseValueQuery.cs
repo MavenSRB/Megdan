@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -222,20 +223,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var defenderTeam = participants.GetTeamForHero(defenderId).Side;
             var defenderCoordinate = defenderOccupancies[0].Coordinate;
-            var contributions = new List<ValueContribution>();
-            foreach (var minion in board.Minions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
-            {
-                var distance = HexDistanceQuery.Calculate(defenderCoordinate, minion.Coordinate);
-                var amount = GetMinionDefenseModifier(defenderTeam, minion.TeamSide, minion.MinionType, distance);
-                if (amount != 0)
-                {
-                    contributions.Add(new ValueContribution(
-                        ValueContributionKind.MinionDefenseModifier,
-                        minion.MinionId,
-                        PrintedValueChannel.Defense,
-                        amount));
-                }
-            }
+            var contributions = CalculateMinionContributions(
+                defenderTeam, defenderCoordinate, board.Minions).ToList();
 
             // An action-scoped counts-as token is still a token in the board register. Its
             // effective minion type contributes from the ordinary melee profile, but only while
@@ -266,6 +255,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
+            return Array.AsReadOnly(contributions.ToArray());
+        }
+
+        /// <summary>
+        /// The standard-minion part of p.14, evaluated from public board facts. Both live combat
+        /// and an idle hero's modifier preview use this same query; no card is presumed selected.
+        /// </summary>
+        public static IReadOnlyList<ValueContribution> CalculateMinionContributions(
+            TeamSide defenderTeam,
+            HexCoordinate defenderCoordinate,
+            IEnumerable<MinionOccupancy> minions)
+        {
+            if (defenderTeam != TeamSide.Red && defenderTeam != TeamSide.Blue)
+                throw new ArgumentOutOfRangeException(nameof(defenderTeam));
+            if (minions == null) throw new ArgumentNullException(nameof(minions));
+            var contributions = new List<ValueContribution>();
+            foreach (var minion in minions.OrderBy(value => value.MinionId.Value, StringComparer.Ordinal))
+            {
+                var distance = HexDistanceQuery.Calculate(defenderCoordinate, minion.Coordinate);
+                var amount = GetMinionDefenseModifier(defenderTeam, minion.TeamSide, minion.MinionType, distance);
+                if (amount != 0)
+                    contributions.Add(new ValueContribution(
+                        ValueContributionKind.MinionDefenseModifier, minion.MinionId,
+                        PrintedValueChannel.Defense, amount));
+            }
             return Array.AsReadOnly(contributions.ToArray());
         }
 

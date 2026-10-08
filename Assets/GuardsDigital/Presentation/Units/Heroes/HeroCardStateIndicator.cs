@@ -32,7 +32,8 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public const int OverlaySortingOrder = 100;
         public const float PipWidth = 0.12f;
         public const float PipDepth = 0.18f;
-        public const float PipGap = 0.06f;
+        public const float PipSpacing = 0.28f;
+        public const float PipGap = PipSpacing - PipWidth;
         private const float InnerWidth = 0.08f;
         private const float InnerDepth = 0.14f;
 
@@ -82,7 +83,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             }
 
             var total = hand.Count + concealedHandCount;
-            var chord = PipWidth + PipGap;
+            var chord = PipSpacing;
             var step = rimRadius <= 0f
                 ? 0f
                 : 2f * Mathf.Asin(Mathf.Min(1f, chord / (2f * rimRadius)));

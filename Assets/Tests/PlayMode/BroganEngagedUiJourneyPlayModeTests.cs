@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
@@ -46,6 +47,67 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class BroganEngagedUiJourneyPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator HeroModifiersStayVisibleWithCardPipsAndHoverContributorsOutsideAttacks()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);
+            MatchSceneCompositionRoot.NextComposedSeat = Root().Runtime.Host.Seats.Seats[0].Id;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedEngagedStagedBrogan;
+            Root().ConfigureExperiments(new ExperimentalMatchOptions(
+                teammateCoordination: true, enemyCardInformation: true));
+            yield return null;
+            yield return null;
+            var runtime = Root().Runtime;
+            var board = runtime.BoardView;
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var version = runtime.ReadModel.Version;
+            Assert.That(runtime.ReadModel.PendingAttackTargetChoice, Is.Null);
+            var hero = board.HeroViews.First(value => board.Model.HeroDefensePreviews
+                .Any(preview => preview.HeroId.Equals(value.Occupancy.HeroId) &&
+                    preview.HeroBody == value.Body && preview.MinionContributions.Count > 0));
+            var preview = board.Model.HeroDefensePreviews.Single(value =>
+                value.HeroId.Equals(hero.Occupancy.HeroId) && value.HeroBody == hero.Body);
+            Assert.That(hero.CardStateIndicator, Is.Not.Null);
+            var pips = hero.CardStateIndicator.PipCount;
+            Assert.That(pips, Is.GreaterThan(0));
+            var subjects = new[] { hero.Coordinate }.Concat(board.Model.Minions
+                .Where(minion => preview.MinionContributions.Any(value =>
+                    value.SourceMinionId.Equals(minion.MinionId))).Select(value => value.Coordinate)).ToArray();
+            pointer.enabled = false;
+            try
+            {
+                board.SetHoveredHero(default);
+                board.SetHoveredCoordinate(null);
+                foreach (var body in board.HeroViews.Where(value => value.gameObject.activeSelf))
+                    Assert.That(body.DefenseModifierShield?.IsVisible, Is.True);
+                Assert.That(hero.DefenseModifierShield.Modifier,
+                    Is.EqualTo(preview.MinionContributions.Sum(value => value.Amount)));
+                var shield = hero.DefenseModifierShield;
+                var screen = Camera.main.WorldToScreenPoint(hero.transform.position);
+                var badge = Camera.main.WorldToScreenPoint(shield.transform.position);
+                Assert.That(badge.x, Is.LessThan(screen.x), "The real camera sees the shield on the left.");
+                yield return BoardPieceCapturePlayModeTests.Capture(board, "tmp/984-normal", subjects);
+
+                Physics.SyncTransforms();
+                Assert.That(pointer.RefreshHoverFromPointerRay(
+                    new Ray(hero.transform.position + Vector3.up * 10f, Vector3.down)), Is.True);
+                foreach (var minion in Object.FindObjectsByType<StandardMinionView>())
+                {
+                    var source = preview.MinionContributions.FirstOrDefault(value =>
+                        value.SourceMinionId.Equals(minion.BoundMinionId));
+                    Assert.That(minion.DefenseContributionAmount, Is.EqualTo(source?.Amount ?? 0));
+                }
+                yield return BoardPieceCapturePlayModeTests.Capture(board, "tmp/984-hover", subjects);
+                board.SetHoveredCoordinate(null);
+                Assert.That(hero.DefenseModifierShield.IsVisible, Is.True);
+                Assert.That(hero.CardStateIndicator.PipCount, Is.EqualTo(pips));
+                Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
+                Assert.That(Object.FindObjectsByType<StandardMinionView>()
+                    .All(value => value.DefenseContributionAmount == 0), Is.True);
+            }
+            finally { pointer.enabled = true; }
+        }
+
         /// <summary>
         /// Onslaught: "Target a unit adjacent to you. After the attack: Move into the space it
         /// occupied."
@@ -122,6 +184,11 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);
             var root = Root();
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedEngagedStagedBrogan;
+            root.ConfigureExperiments(new ExperimentalMatchOptions(
+                teammateCoordination: true, enemyCardInformation: true));
+            yield return null;
+            yield return null;
             var runtime = root.Runtime;
             var hud = root.Hud;
             var broganId = BroganSeat(runtime).HeroId;
@@ -229,6 +296,17 @@ namespace GuardsDigital.Tests.PlayMode
                 "The shield contains only the authoritative signed net minion modifier.");
             Assert.That(modifierText.text, Does.Not.Contain("DEF"));
 
+            pointerInput.enabled = false;
+            try
+            {
+                yield return BoardPieceCapturePlayModeTests.Capture(
+                    runtime.BoardView, "tmp/984-attack-hover",
+                    new[] { hero.Coordinate }.Concat(runtime.BoardView.Model.Minions.Where(minion =>
+                        heroPreview.MinionContributions.Any(value =>
+                            value.SourceMinionId.Equals(minion.MinionId))).Select(value => value.Coordinate)).ToArray());
+            }
+            finally { pointerInput.enabled = true; }
+
             yield return UiPlayer.CaptureScreen(
                 "tmp/944-captures/hero-hover-defense-contributors.png");
             runtime.BoardView.SetHoveredCoordinate(null);
@@ -238,8 +316,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(minionViewAfterExit.GetComponent<SpriteRenderer>().color,
                     Is.EqualTo(Color.white), "Hover exit clears every miniature tint.");
             }
-            Assert.That(modifierShield.gameObject.activeSelf, Is.False,
-                "Hover exit clears the number-only shield with the contribution highlights.");
+            Assert.That(modifierShield.gameObject.activeSelf, Is.True,
+                "Hover exit clears contribution highlights and keeps the persistent shield.");
             yield return UiPlayer.CaptureScreen(
                 "tmp/944-captures/hero-hover-defense-cleared.png");
             var minion = Object.FindObjectsByType<StandardMinionView>()

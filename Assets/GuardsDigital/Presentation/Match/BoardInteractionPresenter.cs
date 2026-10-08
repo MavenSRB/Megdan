@@ -167,7 +167,8 @@ namespace GuardsDigital.Presentation.Match
                     // Milestone 9.21i. The engine's settled acting body of the selected actor, so the
                     // acting cue stands on the body that acts and follows it wherever the engine moves it.
                     FocusedActingBody(projection),
-                    CreateMinionBattlePicks(projection));
+                    CreateMinionBattlePicks(projection),
+                    HeroMinionDefenseQuery.Create(projection));
             }
 
             view.Render(lastViewModel);

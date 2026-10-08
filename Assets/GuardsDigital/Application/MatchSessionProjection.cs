@@ -200,10 +200,10 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
-    /// The minion Defense modifiers that would apply if one currently legal hero Attack target were
-    /// selected, whether the target comes from the ordinary Attack choice or a typed Attack-intent
-    /// effect choice such as Charge. The rules query computes these before presentation sees them;
-    /// hovering merely selects one already-projected candidate.
+    /// Immutable minion Defense modifiers at one hero body. Attack choices and typed Attack-intent
+    /// effects such as Charge project their legal targets with this shape. HeroMinionDefenseQuery
+    /// also uses it for the public, persistent reading outside a choice. The rules query computes
+    /// contributions before presentation sees them; this shape itself grants no targeting authority.
     /// </summary>
     public sealed class AttackTargetDefensePreviewProjection
     {
