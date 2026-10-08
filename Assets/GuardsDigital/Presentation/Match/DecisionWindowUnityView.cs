@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Units.Heroes;
 using UnityEngine;
@@ -50,6 +51,12 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The space between two answer faces.</summary>
         public const float CardGap = 8f;
+
+        /// <summary>
+        /// Space reserved above tied cards for the ping-owner token. The token overlaps the card's
+        /// top edge but never clips against the content-sized panel.
+        /// </summary>
+        public const float InitiativeMarkerHeadroom = 24f;
 
         /// <summary>The space between the cards the question is ABOUT and the answers to it.</summary>
         public const float ContextGap = 24f;
@@ -220,6 +227,7 @@ namespace GuardsDigital.Presentation.Match
 
         private readonly VisualElement expandedHost;
         private readonly VisualElement dockedHost;
+        private readonly VisualElement expandedHeader;
         private readonly Label expandedEyebrow;
         private readonly Label expandedTitle;
         private readonly Label expandedQuestion;
@@ -275,7 +283,7 @@ namespace GuardsDigital.Presentation.Match
                 MatchHudTheme.BandCornerRadius);
             Root.Add(expandedHost);
 
-            var header = new VisualElement { name = "gd-decision-window-header" };
+            var header = expandedHeader = new VisualElement { name = "gd-decision-window-header" };
             header.style.flexDirection = FlexDirection.Row;
             header.style.alignItems = Align.FlexStart;
             header.style.justifyContent = Justify.SpaceBetween;
@@ -510,6 +518,15 @@ namespace GuardsDigital.Presentation.Match
 
         public DecisionWindowViewModel Model { get; private set; }
 
+        /// <summary>Resolves the same projected hero identity the ping and rail surfaces draw.</summary>
+        public Func<HeroId, HeroOverviewViewModel> SelectionHero { get; set; }
+
+        /// <summary>Resolves the stable per-player accent shared with a pinged hex.</summary>
+        public Func<HeroId, Color> SelectionAccent { get; set; }
+
+        /// <summary>Supplies the ping pulse period and intensity used by card selection markers.</summary>
+        public Func<SignalVisualSettings> SelectionVisuals { get; set; }
+
         /// <summary>The viewer pressed one drawn control; the presenter decides what that submits.</summary>
         public event Action<DecisionWindowControlViewModel> ControlActivated;
 
@@ -589,6 +606,11 @@ namespace GuardsDigital.Presentation.Match
 
         private void Rebuild()
         {
+            // A pressed preference rebuilds the complete card controls. UI Toolkit can remove the
+            // focused old Button without dispatching FocusOut, so clear its cross-surface identity
+            // cue before replacing it; the pointer/focus events of the new control may then set it
+            // again from the current surface rather than leaving a stale board highlight behind.
+            HeroHighlighted?.Invoke(default);
             if (Model == null || selectedRuneDecisionKey != Model.DecisionKey)
             {
                 selectedRuneForSlots = 0;
@@ -639,17 +661,19 @@ namespace GuardsDigital.Presentation.Match
             // `maxWidth`/`maxHeight` are 100% of it - and the root centres whatever is smaller.
             expandedHost.style.width = StyleKeyword.Auto;
             expandedHost.style.height = StyleKeyword.Auto;
+            var tiedInitiative = Model.Family == DecisionWindowFamily.TiedInitiative;
+            expandedHeader.style.display = tiedInitiative ? DisplayStyle.None : DisplayStyle.Flex;
             expandedEyebrow.text = Model.Eyebrow;
             expandedEyebrow.style.display = string.IsNullOrEmpty(Model.Eyebrow)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
             expandedTitle.text = Model.Title;
             expandedQuestion.text = Model.Question;
-            expandedQuestion.style.display = string.IsNullOrEmpty(Model.Question)
+            expandedQuestion.style.display = tiedInitiative || string.IsNullOrEmpty(Model.Question)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
             expandedCount.text = Model.Count ?? string.Empty;
-            expandedCount.style.display = string.IsNullOrEmpty(Model.Count)
+            expandedCount.style.display = tiedInitiative || string.IsNullOrEmpty(Model.Count)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
 
@@ -666,9 +690,11 @@ namespace GuardsDigital.Presentation.Match
                 expandedStatements.Add(line);
             }
 
-            expandedStatements.style.display = Model.Statements.Count == 0
+            expandedStatements.style.display = tiedInitiative || Model.Statements.Count == 0
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
+            expandedBody.style.marginTop = tiedInitiative ? 0f : 10f;
+            expandedControls.style.paddingTop = tiedInitiative ? InitiativeMarkerHeadroom : 0f;
 
             foreach (var card in Model.ContextCards)
             {
@@ -1243,6 +1269,11 @@ namespace GuardsDigital.Presentation.Match
                 : control.Label + " - " + control.ValueChip;
             element.Add(BuildFace(control.Card, control.ShineSlot));
 
+            if (Model.Family == DecisionWindowFamily.TiedInitiative && control.Selectors.Count > 0)
+            {
+                AddInitiativeSelectionSignal(element, control.Selectors);
+            }
+
             var caption = HudElements.Text(
                 control.Label, CaptionFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
             caption.name = "gd-decision-window-card-caption";
@@ -1272,7 +1303,10 @@ namespace GuardsDigital.Presentation.Match
                     MatchHudTheme.ButtonCornerRadius);
             }
 
-            element.Add(caption);
+            if (Model.Family != DecisionWindowFamily.TiedInitiative)
+            {
+                element.Add(caption);
+            }
 
             if (!string.IsNullOrEmpty(control.ValueChip))
             {
@@ -1299,12 +1333,142 @@ namespace GuardsDigital.Presentation.Match
                     DefenseBreakdownPointedAt?.Invoke(pointedAt ? hovered : null, anchor));
             }
 
-            if (control.IsChosen)
+            if (control.IsChosen && Model.Family != DecisionWindowFamily.TiedInitiative)
             {
                 HudElements.MarkSelectedWithoutResizing(element, true);
             }
 
             return element;
+        }
+
+        private void AddInitiativeSelectionSignal(
+            VisualElement anchor,
+            IReadOnlyList<HeroId> selectors)
+        {
+            var colours = selectors.Select(selector =>
+                    SelectionAccent?.Invoke(selector) ?? Color.white)
+                .ToArray();
+            var signal = new InitiativeCardSignal(colours, SelectionVisuals)
+            {
+                name = "gd-initiative-card-signal"
+            };
+            signal.style.position = Position.Absolute;
+            signal.style.left = -5f;
+            signal.style.right = -5f;
+            signal.style.top = -5f;
+            signal.style.bottom = -5f;
+
+            var badges = new VisualElement
+            {
+                name = "gd-initiative-card-selectors",
+                pickingMode = PickingMode.Ignore
+            };
+            badges.style.position = Position.Absolute;
+            badges.style.top = -18f;
+            badges.style.left = 8f;
+            badges.style.flexDirection = FlexDirection.Row;
+            foreach (var selector in selectors)
+            {
+                var hero = SelectionHero?.Invoke(selector);
+                if (hero == null)
+                {
+                    continue;
+                }
+
+                var badge = HeroOverviewsUnityView.BuildSharedHeroPortrait(
+                    hero,
+                    SelectionAccent?.Invoke(selector) ?? MatchHudTheme.TeamFace(hero.TeamSide),
+                    TeammateSignalsUnityView.PingOwnerPortraitScale);
+                badge.userData = selector;
+                badge.pickingMode = PickingMode.Ignore;
+                foreach (var child in badge.Children())
+                {
+                    child.pickingMode = PickingMode.Ignore;
+                }
+                badges.Add(badge);
+            }
+            signal.Add(badges);
+            anchor.Add(signal);
+        }
+
+        /// <summary>
+        /// A rectangular card counterpart to the pinged hex perimeter: a steady segmented player
+        /// outline plus the same fading pulse. The authoritative preference stays in the model; this
+        /// element only paints the identities already projected there.
+        /// </summary>
+        private sealed class InitiativeCardSignal : VisualElement
+        {
+            private readonly Color[] colours;
+            private readonly Func<SignalVisualSettings> visuals;
+
+            internal InitiativeCardSignal(
+                IEnumerable<Color> colours,
+                Func<SignalVisualSettings> visuals)
+            {
+                this.colours = colours.ToArray();
+                this.visuals = visuals;
+                pickingMode = PickingMode.Ignore;
+                generateVisualContent += Paint;
+                schedule.Execute(MarkDirtyRepaint).Every(33);
+            }
+
+            private void Paint(MeshGenerationContext context)
+            {
+                if (colours.Length == 0)
+                {
+                    return;
+                }
+
+                var settings = visuals?.Invoke() ?? SignalVisualSettings.Default;
+                var phase = Mathf.Repeat(
+                    Time.unscaledTime * 1000f / settings.PeriodMilliseconds,
+                    1f);
+                var bounds = contentRect;
+                var inset = TeammateSignalsUnityView.PingWaveLineWidth;
+                var points = new[]
+                {
+                    new Vector2(bounds.xMin + inset, bounds.yMin + inset),
+                    new Vector2(bounds.xMax - inset, bounds.yMin + inset),
+                    new Vector2(bounds.xMax - inset, bounds.yMax - inset),
+                    new Vector2(bounds.xMin + inset, bounds.yMax - inset)
+                };
+                var painter = context.painter2D;
+                for (var edge = 0; edge < points.Length; edge++)
+                {
+                    var colour = colours[edge * colours.Length / points.Length];
+                    Stroke(
+                        painter,
+                        points[edge],
+                        points[(edge + 1) % points.Length],
+                        colour,
+                        0.90f,
+                        TeammateSignalsUnityView.PingSteadyLineWidth);
+                    Stroke(
+                        painter,
+                        points[edge],
+                        points[(edge + 1) % points.Length],
+                        colour,
+                        (1f - phase) * settings.IntensityPercent / 100f,
+                        TeammateSignalsUnityView.PingWaveLineWidth);
+                }
+            }
+
+            private static void Stroke(
+                Painter2D painter,
+                Vector2 from,
+                Vector2 to,
+                Color colour,
+                float opacity,
+                float width)
+            {
+                colour.a = opacity;
+                painter.strokeColor = colour;
+                painter.lineWidth = width;
+                painter.BeginPath();
+                painter.MoveTo(from);
+                painter.LineTo(to);
+                painter.Stroke();
+            }
         }
 
         /// <summary>

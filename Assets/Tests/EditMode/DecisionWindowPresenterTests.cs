@@ -535,6 +535,68 @@ namespace GuardsDigital.Tests.EditMode
                 Describe(model));
             Assert.That(model.Controls.Select(control => control.Card), Has.All.Not.Null,
                 "and shows the tied card itself.");
+            Assert.That(model.Statements, Is.Empty,
+                "Selection state is painted on the candidate cards, not repeated as text above them.");
+            Assert.That(model.Controls.SelectMany(control => control.Selectors), Is.Empty,
+                "Before anybody states a preference no card carries an owner marker.");
+
+            var agreementSeat = host.Seats.Seats.Single(value =>
+                value.HeroId.Equals(onTheSide.HeroId));
+            var teamAgreement = host.ProjectionForSeat(agreementSeat.Id).TeamAgreement;
+            Assert.That(teamAgreement, Is.Not.Null,
+                "A seat on the choosing side receives the public preference agreement.");
+            var participants = teamAgreement.Participants;
+            Assert.That(participants, Has.Count.EqualTo(2),
+                "Only the two tied candidate owners state this preference.");
+            var firstCandidate = teamAgreement.Candidates[0].CardInstanceId;
+            var secondCandidate = teamAgreement.Candidates[1].CardInstanceId;
+
+            void Prefer(int participantIndex, CardInstanceId candidate, string suffix)
+            {
+                var participant = participants[participantIndex];
+                var seat = host.Seats.Seats.Single(value =>
+                    value.HeroId.Equals(participant.HeroId));
+                var seatProjection = host.ProjectionForSeat(seat.Id);
+                var command = seatProjection.TeamAgreement.AuthorizedCommands.Single(value =>
+                    value.PreferredCardInstanceId.Equals(candidate));
+                var result = host.ClientForSeat(seat.Id).SubmitAgreement(
+                    new TeamAgreementSubmission(
+                        new SubmissionId("initiative-card-markers-" + suffix),
+                        seatProjection.Version,
+                        command));
+                Assert.That(result.Accepted, Is.True, result.Detail);
+            }
+
+            Prefer(0, firstCandidate, "first");
+            var marked = DecisionWindowPresenter.CreateViewModel(
+                host.ProjectionForSeat(host.Seats.Seats.Single(value =>
+                    value.HeroId.Equals(participants[0].HeroId)).Id),
+                participants[0].HeroId);
+            Assert.That(marked.Statements, Is.Empty);
+            Assert.That(marked.Controls.Single(control =>
+                    control.AgreementCommand.PreferredCardInstanceId.Equals(firstCandidate)).Selectors,
+                Is.EqualTo(new[] { participants[0].HeroId }));
+
+            Prefer(0, secondCandidate, "revised");
+            var revisedSeat = host.Seats.Seats.Single(value =>
+                value.HeroId.Equals(participants[0].HeroId));
+            var revised = DecisionWindowPresenter.CreateViewModel(
+                host.ProjectionForSeat(revisedSeat.Id), participants[0].HeroId);
+            Assert.That(revised.Controls.Single(control =>
+                    control.AgreementCommand.PreferredCardInstanceId.Equals(firstCandidate)).Selectors,
+                Is.Empty,
+                "Revising a preference removes the old card marker.");
+            Assert.That(revised.Controls.Single(control =>
+                    control.AgreementCommand.PreferredCardInstanceId.Equals(secondCandidate)).Selectors,
+                Is.EqualTo(new[] { participants[0].HeroId }),
+                "and moves that hero identity to the newly preferred card.");
+
+            Prefer(1, firstCandidate, "teammate");
+            var split = DecisionWindowPresenter.CreateViewModel(
+                host.ProjectionForSeat(revisedSeat.Id), participants[0].HeroId);
+            Assert.That(split.Controls.SelectMany(control => control.Selectors),
+                Is.EquivalentTo(participants.Select(participant => participant.HeroId)),
+                "Several simultaneous statements stay visible on the cards they actually name.");
         }
 
         [Test]

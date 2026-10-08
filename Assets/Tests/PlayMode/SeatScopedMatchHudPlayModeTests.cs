@@ -1230,7 +1230,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SeatScene_TiedInitiativeUsesOneHeroNameRowAndTheStandingHeroHoverLink()
+        public IEnumerator SeatScene_TiedInitiativeUsesCardSelectionMarkersAndTheStandingHeroHoverLink()
         {
             var restoreWidth = (uint)Screen.width;
             var restoreHeight = (uint)Screen.height;
@@ -1301,12 +1301,53 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(window.Controls.Select(control => control.Label),
                 Has.All.EndsWith(" ACTS FIRST"),
                 "Each button names the hero it would put first. " + UiPlayer.Describe(root.Hud));
+            Assert.That(
+                runtime.DecisionWindowView.Root.Q("gd-decision-window-header").style.display.value,
+                Is.EqualTo(DisplayStyle.None),
+                "The tied-card screen carries no title, eyebrow or explanation above the cards.");
+            Assert.That(UiPlayer.Descendants(runtime.DecisionWindowView.Root)
+                .Any(element => element.name == "gd-decision-window-card-caption" &&
+                    UiPlayer.IsShown(element)), Is.False,
+                "The former ACTS FIRST button captions are gone; the card face is the control.");
+            Assert.That(runtime.DecisionWindowView.Root
+                .Query<VisualElement>("gd-initiative-card-signal").ToList(), Is.Empty,
+                "No card claims an owner before this seat states a preference.");
             Assert.That(buttons.Select(button => button.worldBound.width).Max() -
                 buttons.Select(button => button.worldBound.width).Min(),
                 Is.LessThanOrEqualTo(UiPlayer.PixelSnapping() * 2f));
             Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
                 .Any(element => element.name == "gd-card-choice" && UiPlayer.IsShown(element)), Is.True,
                 "The ordinary hand stays visible under the Initiative row.");
+
+            UiPlayer.Click(buttons[0]);
+            yield return null;
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            window = runtime.DecisionWindowPresenter.Model;
+            buttons = window.Controls
+                .Select(control => runtime.DecisionWindowView.ElementFor(control))
+                .ToList();
+            var selectedControl = window.Controls.Single(control =>
+                control.Selectors.Contains(runtime.Seat.HeroId));
+            var selectedCard = runtime.DecisionWindowView.ElementFor(selectedControl);
+            var signal = selectedCard.Q("gd-initiative-card-signal");
+            Assert.That(signal, Is.Not.Null,
+                "The clicked preference is shown on that card itself.");
+            var selectors = signal.Q("gd-initiative-card-selectors");
+            Assert.That(selectors, Is.Not.Null);
+            Assert.That(selectors.Children().Select(child => (HeroId)child.userData),
+                Does.Contain(runtime.Seat.HeroId),
+                "The marker carries the selecting hero's token, not a text summary.");
+            var selectorToken = selectors.Children().Single(child =>
+                child.userData is HeroId selector && selector.Equals(runtime.Seat.HeroId));
+            var expandedPanel = runtime.DecisionWindowView.Root.Q("gd-decision-window-expanded");
+            Assert.That(selectorToken.worldBound.yMin, Is.LessThan(selectedCard.worldBound.yMin),
+                "The hero token sits above the selected card face.");
+            Assert.That(selectorToken.worldBound.yMin,
+                Is.GreaterThanOrEqualTo(expandedPanel.worldBound.yMin - UiPlayer.PixelSnapping()),
+                "Reserved headroom keeps the token inside the content-sized panel instead of clipping it.");
+            Assert.That(signal.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
 
             var heroId = agreement.Choices[0].HeroId;
             var coordinate = runtime.BoardView.Model.Heroes.Single(hero =>
@@ -1322,7 +1363,11 @@ namespace GuardsDigital.Tests.PlayMode
             var faceBefore = face.worldBound;
             var snap = UiPlayer.PixelSnapping();
 
-            UiPlayer.PointAt(buttons[0]);
+            var hoverControl = runtime.DecisionWindowPresenter.Model.Controls[0];
+            var hoverButton = runtime.DecisionWindowView.ElementFor(hoverControl);
+            Assert.That(hoverButton, Is.Not.Null,
+                "The current decision rebuild still draws the candidate used by the identity link.");
+            UiPlayer.PointAt(hoverButton);
             yield return null;
             Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally));
             Assert.That(rail.resolvedStyle.borderTopWidth,
@@ -1331,9 +1376,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "The plaque must not flinch under the ivory identity cue.");
             AssertBoundsEqual(faceBefore, face.worldBound, snap,
                 "The hero face must remain stationary under the ivory identity cue.");
+            UiPlayer.PointAway(hoverButton);
+            yield return null;
             if (!UnityEngine.Application.isBatchMode)
-                yield return Capture("tmp/milestone-8-30n2-stationary-hero-highlight-2560x1440.png");
-            UiPlayer.PointAway(buttons[0]);
+                yield return Capture("tmp/w006-tied-initiative-card-markers-2560x1440.png");
 
             UiPlayer.PointAt(rail);
             yield return null;

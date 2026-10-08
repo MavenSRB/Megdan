@@ -154,6 +154,11 @@ namespace GuardsDigital.Presentation.Match
             // so the ended match reads the same on all six screens.
             VictoryScreenView = new VictoryScreenUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView(() => client.Projection);
+            DecisionWindowView.SelectionHero = heroId =>
+                HeroOverviewsView.Model?.Heroes.FirstOrDefault(hero => hero.HeroId.Equals(heroId));
+            DecisionWindowView.SelectionAccent = heroId =>
+                PlayerAccent.For(client.Projection.Participants, heroId);
+            DecisionWindowView.SelectionVisuals = () => DisplaySignalVisuals;
             // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
             // "the same log for everyone", so there is no scoped-out composition for it to skip.

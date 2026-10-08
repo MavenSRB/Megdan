@@ -111,7 +111,8 @@ namespace GuardsDigital.Presentation.Match
             DefenseBreakdownViewModel defenseBreakdown = null,
             int runeOrdinal = 0,
             int turnSlotIndex = 0,
-            SpellCardViewModel spell = null)
+            SpellCardViewModel spell = null,
+            IEnumerable<HeroId> selectors = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -153,6 +154,14 @@ namespace GuardsDigital.Presentation.Match
             Hero = hero;
             UpgradeOption = upgradeOption;
             DefenseBreakdown = defenseBreakdown;
+            var selectorRows = (selectors ?? Enumerable.Empty<HeroId>()).ToArray();
+            if (selectorRows.Any(selector => !selector.IsDefined) ||
+                selectorRows.Distinct().Count() != selectorRows.Length)
+            {
+                throw new ArgumentException(
+                    "Selection markers require distinct, defined heroes.", nameof(selectors));
+            }
+            Selectors = Array.AsReadOnly(selectorRows);
             if (spell != null && card != null)
             {
                 throw new ArgumentException("A control is one face: a card or a spell, never both.", nameof(spell));
@@ -200,6 +209,13 @@ namespace GuardsDigital.Presentation.Match
         /// strip's own preference row had and this window inherits rather than loses.
         /// </summary>
         public HeroId Hero { get; }
+
+        /// <summary>
+        /// The teammates whose current tied-Initiative statement names this candidate. The view
+        /// paints each identity directly on the card with the same player accent and hero token as a
+        /// pinged hex; an empty list means nobody currently points at it.
+        /// </summary>
+        public IReadOnlyList<HeroId> Selectors { get; }
 
         /// <summary>The words on the control - the consequence, never the mechanism.</summary>
         public string Label { get; }

@@ -8,6 +8,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
 | W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
 | W-005 | Restored both whole blue side zones on the alternate map; revision-2 identity, movement/travel and rendered-map regressions. | `work/W-005` |
+| W-006 | Simplified tied Initiative to candidate card faces with per-player ping accents and hero-token preference markers. | `work/W-006` |
+
+### [x] W-006 Tied-Initiative card selection markers
+
+Approved by the user's 2026-10-09 instruction to remove the upper text from the `WHO ACTS FIRST?` screen, clarified to show only what each participant selected using the pinged-hex effect, player colour and hero token above the card.
+Outcome: the expanded tied-Initiative window shows only the candidate card faces. Each stated preference paints that participant's stable player accent around the selected face with the established steady-plus-pulse timing and places their small hero portrait above it; simultaneous different preferences remain visible and revising a statement moves the identity marker. The prior title, eyebrow, explanation, participant sentences, button captions and viewer-only selection outline are absent. Candidate hover still links to the standing board/plaque identity cue, and rebuilding after a click clears removed-control focus so that cue cannot stick.
+Scope: tied-Initiative presentation and focused coverage only. No Initiative rules, agreement semantics, other decision families, coordination commands, wire/snapshot contract or package changed.
+Closing checks: T2 focused presenter/view Edit Mode regressions; real-input seat-scoped Play Mode journey; non-batch 2560x1440 capture with token/card/panel geometry checks and visual review; living-document validation and diff review. No broad-risk trigger or unrelated full suites. W-004 remains at its independent visual-approval gate.
+
+Historical evidence: completion commit addressed by immutable `work/W-006`; exact checks, results and limitations live in its body.
 
 ### [x] W-005 Restore both alternate-map blue side zones
 

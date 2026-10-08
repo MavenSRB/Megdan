@@ -499,7 +499,6 @@ namespace GuardsDigital.Presentation.Match
 
             var side = agreement?.ChoosingSide ?? pending.OwningSide;
             var controls = new List<DecisionWindowControlViewModel>();
-            var statements = new List<string>();
             string key;
 
             if (agreement != null)
@@ -517,6 +516,12 @@ namespace GuardsDigital.Presentation.Match
                     candidate.Kind == TeamAgreementCommandKind.PreferInitiativeCandidate))
                 {
                     var hero = CandidateHero(command.PreferredCardInstanceId);
+                    var selectors = agreement.Participants
+                        .Where(participant => participant.HasStatement &&
+                            participant.PreferredCardInstanceId.Equals(command.PreferredCardInstanceId))
+                        .Select(participant => participant.HeroId)
+                        .OrderBy(selector => selector.Value, StringComparer.Ordinal)
+                        .ToArray();
                     controls.Add(new DecisionWindowControlViewModel(
                         ActsFirstLabel(HeroName(projection, hero)),
                         agreementCommand: command,
@@ -525,14 +530,9 @@ namespace GuardsDigital.Presentation.Match
                         // withdrawn: the control stays live with the same command behind it.
                         isChosen: mine != null && mine.HasStatement &&
                             mine.PreferredCardInstanceId.Equals(command.PreferredCardInstanceId),
-                        hero: hero));
+                        hero: hero,
+                        selectors: selectors));
                 }
-
-                statements.AddRange(agreement.Participants
-                    .Where(participant => participant.HasStatement)
-                    .Select(participant =>
-                        HeroName(projection, participant.HeroId) + " prefers " +
-                        HeroName(projection, CandidateHero(participant.PreferredCardInstanceId))));
                 key = "initiative/" + agreement.ProposalId;
             }
             else
@@ -568,8 +568,7 @@ namespace GuardsDigital.Presentation.Match
                 Scoped("WHO ACTS FIRST?", MinionChoiceLabels.TeamLabel(side), viewerHeroId),
                 "TIED INITIATIVE · " + MinionChoiceLabels.TeamLabel(side),
                 "These cards tie on Initiative. Choose which hero takes the turn first.",
-                controls: controls,
-                statements: statements);
+                controls: controls);
         }
 
         // ---------------------------------------------------------------------------------------
