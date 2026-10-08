@@ -257,9 +257,13 @@ Result: the current 9.95 source already renders balanced at the reference viewpo
 
 Historical evidence: [9.96 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-996-defense-breakdown-rendered-balance-verification).
 
-### [ ] 9.97 Bind tray positions and player-name plates to lobby seats
+### [x] 9.97 Bind tray positions and player-name plates to lobby seats
 
 Authorized 2026-10-08: Red 1/2/3 occupy top/middle/bottom with red/orange/yellow, and Blue 1/2/3 occupy top/middle/bottom with blue/cyan/teal, independent of hero selection. Show each public lobby player name in a small plate at the tray's top edge above its portrait, as far toward that portrait's outer edge as the mirrored layout allows. Long names truncate visibly with their full text on hover; unnamed seats remain clean. Closing check: shuffled-hero lineup and named-roster regressions, focused Edit/Play Mode checks and rendered inspection of both rails. T2. No seat authority or wire change.
+
+Result: both rails now sort by seat identity, preserving the fixed per-seat palette even when hero selection is shuffled. Live lobby roster names are supplied to the tray at HUD attach, with an outward top-edge plate, ellipsis and full-name tooltip; offline unnamed trays stay bare. Shuffled 3v3/long-name and live host-lobby Play checks passed 2/2, focused presentation Edit checks 158/158, and six-rail fit Play check 1/1. A rendered tray capture is retained privately. No seat, rule or wire change. Completed 2026-10-08.
+
+Historical evidence: [9.97 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-997-seat-ordered-named-hero-trays).
 
 ### [ ] 9.98 Make Escape use the active screen's close action
 

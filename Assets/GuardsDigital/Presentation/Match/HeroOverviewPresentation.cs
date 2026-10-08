@@ -1238,7 +1238,7 @@ namespace GuardsDigital.Presentation.Match
                     projection.Version,
                     projection.Setup.Heroes
                         .OrderBy(hero => hero.TeamSide)
-                        .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                        .ThenBy(hero => PlayerVisualIdentity.Index(projection.Participants, hero.HeroId))
                         .Select(hero => Build(
                             projection,
                             activeEffectCapabilities,

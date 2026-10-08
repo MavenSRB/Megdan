@@ -835,6 +835,15 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(UiPlayer.IsShown(driver.View.Root), Is.False,
                     "The live match replaces the lobby after every seated player is ready.");
 
+                foreach (var seat in runtime.Host.Seats.Seats)
+                {
+                    var name = remotes[0].Machine.Roster.Single(row => row.Seat.Equals(seat.Id)).PlayerName;
+                    var tray = UiPlayer.Descendants(runtime.HeroOverviewsView.Root).Single(element =>
+                        element.name == "gd-hero-rail" && element.userData is HeroId id && id.Equals(seat.HeroId));
+                    Assert.That(tray.Q<Label>("gd-hero-player-name").text, Is.EqualTo(name),
+                        "the actual lobby name follows its player into the host's live tray");
+                }
+
                 var composition = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
                 var director = composition.Hud.RootElement.Q<Button>("gd-director-toggle");
                 Assert.That(director, Is.Not.Null);

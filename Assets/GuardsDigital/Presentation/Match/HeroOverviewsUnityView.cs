@@ -55,6 +55,10 @@ namespace GuardsDigital.Presentation.Match
             new Dictionary<object, VisualElement>();
         private readonly Dictionary<HeroId, VisualElement> heroRails =
             new Dictionary<HeroId, VisualElement>();
+        private readonly Dictionary<HeroId, Label> playerNamePlates =
+            new Dictionary<HeroId, Label>();
+        private readonly Dictionary<HeroId, string> playerNames =
+            new Dictionary<HeroId, string>();
         private readonly Dictionary<HeroId, Color> heroRailRestingTopColors =
             new Dictionary<HeroId, Color>();
 
@@ -127,6 +131,27 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement HoverPreviewRoot => preview;
 
         public HeroOverviewsViewModel Model { get; private set; }
+
+        /// <summary>The public lobby roster supplies names for the same hero identities this rail draws.</summary>
+        public void SetPlayerNames(IReadOnlyList<SeatRosterEntry> roster)
+        {
+            playerNames.Clear();
+            if (roster != null)
+                foreach (var row in roster)
+                    if (row != null && row.Hero.IsDefined && !string.IsNullOrEmpty(row.PlayerName))
+                        playerNames[row.Hero] = row.PlayerName;
+
+            foreach (var pair in playerNamePlates)
+                ApplyPlayerName(pair.Value, pair.Key);
+        }
+
+        private void ApplyPlayerName(Label plate, HeroId hero)
+        {
+            playerNames.TryGetValue(hero, out var name);
+            plate.text = name ?? string.Empty;
+            plate.tooltip = name ?? string.Empty;
+            plate.style.display = string.IsNullOrEmpty(name) ? DisplayStyle.None : DisplayStyle.Flex;
+        }
 
         /// <summary>The two rails' current rects, for the pointer-blocking decision.</summary>
         public IEnumerable<VisualElement> BlockingRegions => new[] { redColumn, blueColumn };
@@ -522,6 +547,7 @@ namespace GuardsDigital.Presentation.Match
             revealAnchors.Clear();
             withheldOwners.Clear();
             heroRails.Clear();
+            playerNamePlates.Clear();
             heroRailRestingTopColors.Clear();
             redColumn.Clear();
             blueColumn.Clear();
@@ -586,7 +612,7 @@ namespace GuardsDigital.Presentation.Match
             rail.userData = hero.HeroId;
             rail.style.marginBottom = 8f;
             HudElements.Padding(rail, 9f);
-            rail.style.paddingTop = 8f;
+            rail.style.paddingTop = 12f;
             rail.style.paddingBottom = 8f;
             var accent = colourRead == null ? MatchHudTheme.TeamFace(hero.TeamSide)
                 : PlayerAccent.For(colourRead().Participants, hero.HeroId);
@@ -653,6 +679,31 @@ namespace GuardsDigital.Presentation.Match
             rail.style.borderTopColor = hero.IsViewed
                 ? MatchHudTheme.SelectedOutline
                 : new Color(0f, 0f, 0f, 0f);
+
+            var playerName = HudElements.Text(string.Empty, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            playerName.name = "gd-hero-player-name";
+            playerName.pickingMode = PickingMode.Ignore;
+            playerName.style.position = Position.Absolute;
+            playerName.style.top = 2f;
+            playerName.style.width = 120f;
+            playerName.style.height = 11f;
+            playerName.style.overflow = Overflow.Hidden;
+            playerName.style.whiteSpace = WhiteSpace.NoWrap;
+            playerName.style.textOverflow = TextOverflow.Ellipsis;
+            playerName.style.backgroundColor = body;
+            if (hero.TeamSide == TeamSide.Red)
+            {
+                playerName.style.left = 8f;
+                playerName.style.unityTextAlign = TextAnchor.MiddleLeft;
+            }
+            else
+            {
+                playerName.style.right = 8f;
+                playerName.style.unityTextAlign = TextAnchor.MiddleRight;
+            }
+            playerNamePlates.Add(hero.HeroId, playerName);
+            ApplyPlayerName(playerName, hero.HeroId);
+            rail.Add(playerName);
 
             // Milestone 8.7a, by the user's 2026-08-21 decision: the rail on the right edge of the
             // screen is the one on the left mirrored, rather than the same rail repeated. Everything in

@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -22,6 +24,65 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class HeroTrayRefinementTests
     {
+        [UnityTest]
+        public IEnumerator ShuffledLobbySeatsKeepFixedTrayOrderColorsAndPlayerNames()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            var registered = RegisteredHeroRoster.ForThisBuild;
+            MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.ThreeVersusThreeQuick;
+            MatchSceneCompositionRoot.NextComposedLineup = new HeroLineup(
+                new[] { "wasp", "xargatha", "arien" }
+                    .Select(id => registered.Single(hero => hero.ContentId.Value == id)),
+                new[] { "trinkets", "mortimer", "hanu" }
+                    .Select(id => registered.Single(hero => hero.ContentId.Value == id)));
+            yield return LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            UiPlayer.SetPlayerViewport(2560u, 1440u, "fixed hero tray positions");
+            var root = Root();
+            var runtime = root.Runtime;
+            var seats = runtime.Host.Seats.Seats;
+            var roster = seats.Select((seat, index) => new SeatRosterEntry(
+                seat.Id, seat.HeroId, seat.TeamSide, SeatOccupancyState.Claimed,
+                playerName: index == 0 ? "WWWMMMMMMMMMMMMM" : "Player " + (index + 1))).ToArray();
+            runtime.HeroOverviewsView.SetPlayerNames(roster);
+            root.Hud.Layout();
+            yield return null;
+            yield return null;
+
+            foreach (var team in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var column = root.Hud.RootElement.Q(team == TeamSide.Red
+                    ? "gd-hero-rail-red" : "gd-hero-rail-blue");
+                var expected = seats.Where(seat => seat.TeamSide == team)
+                    .OrderBy(seat => seat.Id.Value).ToArray();
+                var rails = column.Children().Where(element => element.name == "gd-hero-rail").ToArray();
+                Assert.That(rails.Select(rail => (HeroId)rail.userData),
+                    Is.EqualTo(expected.Select(seat => seat.HeroId)),
+                    team + " 1/2/3 must stay top/middle/bottom regardless of selected hero names");
+                for (var index = 0; index < rails.Length; index++)
+                {
+                    var rail = rails[index];
+                    var seat = expected[index];
+                    var accent = PlayerAccent.For(runtime.ReadModel.Participants, seat.HeroId);
+                    Assert.That(team == TeamSide.Red ? rail.style.borderLeftColor.value :
+                        rail.style.borderRightColor.value, Is.EqualTo(accent));
+                    var plate = rail.Q<Label>("gd-hero-player-name");
+                    var portrait = rail.Q("gd-hero-medallion");
+                    var name = roster.Single(row => row.Seat.Equals(seat.Id)).PlayerName;
+                    Assert.That(plate.text, Is.EqualTo(name));
+                    Assert.That(plate.tooltip, Is.EqualTo(name));
+                    Assert.That(plate.worldBound.yMax, Is.LessThanOrEqualTo(portrait.worldBound.yMin + 1f));
+                    Assert.That(team == TeamSide.Red
+                        ? plate.worldBound.xMin <= portrait.worldBound.xMin
+                        : plate.worldBound.xMax >= portrait.worldBound.xMax, Is.True,
+                        "the label sits over the portrait toward its outer edge");
+                }
+            }
+            yield return UiPlayer.CaptureScreen("tmp/997-seat-ordered-named-trays.png");
+            runtime.HeroOverviewsView.SetPlayerNames(System.Array.Empty<SeatRosterEntry>());
+            Assert.That(root.Hud.RootElement.Query<Label>("gd-hero-player-name").ToList()
+                .All(label => label.style.display.value == DisplayStyle.None), Is.True);
+        }
+
         [UnityTest]
         public IEnumerator PlayerTokenAndPlaqueClicksKeepOwnCardsPlayable()
         {

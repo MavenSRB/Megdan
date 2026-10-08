@@ -966,3 +966,8 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.96 | Current source's compact and expanded Defense panels are visibly balanced at the reference viewport; a rendered pixel regression now guards zero, one and four contribution rows. No production layout changed. [Definition](../../Roadmap/PHASE_9.md#x-996-center-the-defense-breakdowns-visible-content-at-every-row-count). | `milestone/9.96` |
+## Milestone 9.97 Seat-ordered named hero trays
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.97 | Red and Blue hero rails follow lobby seats 1/2/3 from top to bottom with fixed red/orange/yellow and blue/cyan/teal accents. Public lobby player names occupy small outward plates above portraits with ellipsis and full-name hover; unnamed seats show no plate. Shuffled-lineup/live-host Play checks passed 2/2, focused Edit passed 158/158, and six-rail fit Play passed 1/1. A private rendered capture is retained; no rule or wire change. [Definition](../../Roadmap/PHASE_9.md#x-997-bind-tray-positions-and-player-name-plates-to-lobby-seats). | `milestone/9.97` |

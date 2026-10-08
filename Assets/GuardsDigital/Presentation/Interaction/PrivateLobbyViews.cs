@@ -1901,6 +1901,8 @@ namespace GuardsDigital.Presentation.Interaction
                 presenter.Refresh();
                 if (onlineHudAttached)
                 {
+                    compositionRoot.Runtime.HeroOverviewsView.SetPlayerNames(
+                        session != null ? session.Roster : machine.Roster);
                     compositionRoot.Runtime.RefreshAll();
                 }
 
