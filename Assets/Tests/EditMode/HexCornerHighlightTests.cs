@@ -449,8 +449,9 @@ namespace GuardsDigital.Tests.EditMode
                 BoardChoiceCue.SetScreenUp(Quaternion.Euler(0f, cameraHeading, 0f) * Vector3.forward);
                 token.transform.rotation = Quaternion.Euler(0f, 25f, 0f);
                 var pips = HeroCardStateIndicator.GetOrCreate(token.transform);
-                pips.SetVisible(true, CardColor.Blue,
-                    new[] { CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green }, 0, 1f, 0.15f);
+                pips.SetVisible(true, new HeroCardPip(CardColor.Blue),
+                    new[] { CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green }
+                        .Select(color => new HeroCardPip(color)), 0, 1f, 0.15f);
                 var pipPositions = pips.Renderers.Select(value => value.transform.position).ToArray();
                 var pipColours = pips.Renderers.Select(value => value.sharedMaterial.color).ToArray();
                 // Each pip has an outer and inner renderer; hand pips follow the current pip.

@@ -6,6 +6,7 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine;
 using UnityEngine.UIElements;
 namespace GuardsDigital.Tests.EditMode
 {
@@ -17,6 +18,20 @@ namespace GuardsDigital.Tests.EditMode
             var host = HeroCardInspectionTests.Create(true, true);
             var colours = host.Projection.Participants.Heroes.Select(h => PlayerAccent.For(host.Projection.Participants, h.Id)).ToArray();
             Assert.That(colours.Distinct().Count(), Is.EqualTo(colours.Length));
+            var expected = new[]
+            {
+                new Color32(255, 59, 48, 255),
+                new Color32(255, 149, 0, 255),
+                new Color32(255, 214, 10, 255),
+                new Color32(47, 128, 255, 255),
+                new Color32(32, 215, 255, 255),
+                new Color32(32, 201, 151, 255)
+            };
+            foreach (var hero in host.Projection.Participants.Heroes)
+            {
+                var index = PlayerVisualIdentity.Index(host.Projection.Participants, hero.Id);
+                Assert.That((Color32)PlayerAccent.For(host.Projection.Participants, hero.Id), Is.EqualTo(expected[index]));
+            }
             var view = new HeroOverviewsUnityView(() => host.Projection);
             var presenter = new HeroOverviewsPresenter(new LocalDirectorMatchClient(host), view);
             presenter.Refresh();

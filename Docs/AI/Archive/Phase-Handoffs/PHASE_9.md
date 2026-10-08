@@ -895,3 +895,9 @@ Return to the [active Phase 9 definitions](../../Roadmap/PHASE_9.md).
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 9.84a | Approved taller outlined shield, enlarged 30% and centered on the left rim; unchanged-size pips separated by clear gaps. Actual-scene normal/Attack hover inspection and focused T2 evidence in the commit body; merge delegated to the separate task. [Definition](../../Roadmap/PHASE_9.md#x-984a-match-the-hero-shield-to-the-discussion-mockup). | `milestone/9.84a` |
+
+## Milestone 9.85 player-accent palette completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.85 | Stable warm-side player accents are red/orange/yellow and cool-side accents blue/cyan/teal. Exact palette/index coverage and the focused coordination-presentation fixture passed 14/14; the merged pip-spacing regression was brought onto the identity-bearing pip API exposed by compilation. [Definition](../../Roadmap/PHASE_9.md#x-985-replace-the-six-player-accents-with-two-coherent-team-palettes). | `milestone/9.85` |

@@ -210,6 +210,27 @@ Authorized 2026-10-08: replace the flat squat badge with the mockup's taller tap
 
 Historical evidence: [9.84a completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-984a-approved-token-shield-and-pip-spacing-completion).
 
+### [x] 9.85 Replace the six player accents with two coherent team palettes
+
+Authorized 2026-10-08 after integration: warm-team player identities are red, orange and yellow; cool-team identities are blue, cyan and teal. Preserve stable owner-based indexing, team identity, signal geometry, visibility and every rule/input contract. Closing check: an exact six-colour regression plus the focused coordination-presentation fixture. T1; no wire, snapshot, rule or content change.
+
+Result: the stable warm-side slots are red `#FF3B30`, orange `#FF9500` and yellow `#FFD60A`; the stable cool-side slots are blue `#2F80FF`, cyan `#20D7FF` and teal `#20C997`. Exact palette/index coverage and the full focused coordination-presentation fixture passed 14/14. The integrated pip-spacing test was also updated to the merged identity-bearing `HeroCardPip` API after Unity compilation exposed the stale call. No rule, command, content, snapshot or wire change.
+
+Completed 2026-10-08.
+
+Historical evidence: [9.85 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-985-player-accent-palette-completion).
+
+### [~] 9.86 Animate Movement over its actual resolved route
+
+Authorized 2026-10-08: a Movement flourish visits the ordered spaces actually committed by authority instead of sliding directly from origin to destination. Preserve Fast Travel as direct presentation and keep rules/state independent of animation. Carry the bounded public route through the match-log projection and private wire, bumping the protocol because the row grows. Closing checks: multi-step fold, codec round trip/refusal bounds, seat parity, direct Fast Travel and kinetic waypoint order. T2.
+
+### [ ] 9.87 Show attack, heavy-minion defeat and Lane Push in causal order
+
+Authorized 2026-10-08 from the reported heavy-minion kill: presentation must start the attack, show the defeated heavy minion dying, and only then move the wave to its pushed positions. Do not delay or change authoritative resolution. Preserve ordinary defeat, queued attacks, reconnect/first-sight suppression and non-push refreshes. Closing checks: an ordered heavy-defeat regression, focused kinetic/board regressions and a rendered Play Mode journey. T2.
+
+### [ ] 9.88 Validate and package the integrated Windows playtest build
+
+Authorized 2026-10-08 after the preceding integrated corrections. Run required documentation and source checks, the full applicable T3 gate, produce a Windows package and ZIP from the validated main revision, generate its SHA-256 digest, inspect package contents and smoke-launch the packaged executable. Preserve private/untracked material and publish nothing. T3.
 ## Queued by 9.13, not authorized
 
 On 2026-10-02 the user authorized a housekeeping sequence - **9.14 -> 9.26 -> the documentation closure of 8.35z70 ([cleanup shard](PHASE_8_CLEANUP.md)) with the session-brief trim** - by quoting the agent's recommendation back as the instruction ("A small housekeeping pass when convenient: 9.14, Mortimer's card name, 9.26, the slow bot test case, closing the stale Tali entry, and trimming the brief"). Executed one at a time with separate validation and commits; nothing else is authorized by it - no other queued item, no parked item, no package.

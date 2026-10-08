@@ -14,9 +14,10 @@ FILL WITH BOTS uses host-owned seats. Player gates cover 2v2/3v3 human-plus-bot 
 
 ## Current authorization and next route
 
-- Current completed milestone: **9.84a**.
+- Current completed milestone: **9.85**.
 
-- Active authorized milestone: **none**.
+- Active authorized milestone: **9.86**.
+- Authorized sequence: **9.85 -> 9.86 -> 9.87 -> 9.88**, approved 2026-10-08: replace the six player accents with warm red/orange/yellow and cool blue/cyan/teal; animate Movement over the authoritative resolved route; show attack, heavy-minion defeat, then Lane Push in that order; validate and cut the integrated Windows package. Execute serially with separate validation and local commits.
 - Separate hero sequence: **9.45 -> 9.46 -> 9.47 -> 9.48 -> 9.49 -> 9.50 -> 9.51 -> 9.52 -> 9.53 -> 9.54**, authorized 2026-10-04. [Its owner](Roadmap/PHASE_9_FINAL_TWO_HEROES.md) preserves outcomes, dependencies, settled E1-E3/N1-N4 and EM-Q3. Execute serially with separate validation and commits.
 - This sequence uses one implementation agent.
 - Authorized sequence: **9.70 -> 9.71**, approved 2026-10-07. Execute serially: configurable host Waves/Lives replace Short/Long modes, then Experimental one-Life hero base cost with unchanged coin schedules and yellow-only Tier-number tray badges.
