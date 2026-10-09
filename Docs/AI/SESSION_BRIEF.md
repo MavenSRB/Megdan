@@ -10,15 +10,15 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /50 carries visible live card modifiers. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-- Last completed work: **W-012**.
+- Last completed work: **W-013**.
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-012 added live card modifiers with individually inspected anchors on 600 faces; level-up previews remain clean. [Display/value boundaries](Project/CARD_VALUE_OVERLAYS.md) include unresolved target/body choices. W-004's lower name banner remains at its separate visual-approval gate. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
+W013 contains the current implementation as-is, including the W-004 banner candidate without closing its separate design-approval gate. Proposed Shift breakdowns, decision summaries and diagrams remain unimplemented. [Display/value boundaries](Project/CARD_VALUE_OVERLAYS.md) are unchanged; no further build or implementation is authorized. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

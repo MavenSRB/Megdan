@@ -15,6 +15,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-010 | Corrected Gydion setup so all twenty-two spells start faceup in the removed/discarded spell pile. | `work/W-010` |
 | W-011 | Added a background-free, pointer-transparent large red `10` through `1` overlay for the final seconds of allowance or bank. | `work/W-011` |
 | W-012 | Individually anchored live white value modifiers on all 600 card faces, with shared rendering and level-up exclusion. | `work/W-012` |
+| W-013 | Current-source private Windows package, including live card modifiers; verified exact artifact and ZIP. | `work/W-013` |
+
+### [x] W-013 Package current implementation as-is
+
+Approved: explicit as-is build request; package source 482322ea including the current banner candidate, without adding proposed Shift breakdowns, decision summaries or diagrams. This authorizes packaging the candidate, not separate W-004 visual approval.
+Scope: private Windows package/version only; preserve older packages and unrelated user files. Reuse unaffected focused source evidence; one build through the mandatory launcher; exact-artifact player, host-plus-two-client, board-render and packaged-launch smokes; manifest/file/ZIP integrity; documentation validation and local commit.
+Outcome: W013 ZIP and extracted folder are available locally, with 184 files verified. No remote publication, gameplay changes or extra UI features.
+
+Historical evidence: completion commit addressed by immutable `work/W-013`; exact source, artifact identity, checks and limitations live in its body.
 
 ### [x] W-012 Dynamic modifiers beside printed card values
 
