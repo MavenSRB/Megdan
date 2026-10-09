@@ -451,7 +451,7 @@ namespace GuardsDigital.Application
         // refuses it. Snapshot schema 59 and experimental envelope 5 are unchanged.
         // 9.81: cursor markers and host-owned presentation settings; prior wire versions reject.
         // Milestone 9.86, version 48: NetworkMatchLogRow appends a bounded ordered Movement route.
-        public const int Version = 49;
+        public const int Version = 50;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

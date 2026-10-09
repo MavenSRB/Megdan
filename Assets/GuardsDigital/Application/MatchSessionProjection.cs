@@ -944,7 +944,7 @@ namespace GuardsDigital.Application
         }
     }
 
-    public sealed class MatchSessionProjection : IMatchReadModel
+    public sealed class MatchSessionProjection : IMatchReadModel, ICardValueReadModel
     {
         private readonly Lazy<string> diagnosticSnapshot;
         private readonly Lazy<IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry>> matchLog;
@@ -1100,9 +1100,11 @@ namespace GuardsDigital.Application
             IEnumerable<HeroActingBody> actingBodies = null,
             IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null,
             IEnumerable<DirectorCommand> pendingRevealRetrieval = null,
-            IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null)
+            IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null,
+            IEnumerable<CardValuePreview> cardValues = null)
         {
             Version = version;
+            CardValues = Array.AsReadOnly((cardValues ?? Array.Empty<CardValuePreview>()).ToArray());
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             SelectedMap = selectedMap ?? throw new ArgumentNullException(nameof(selectedMap));
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
@@ -1626,6 +1628,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<AttackTargetDefensePreviewProjection>
             PendingAttackTargetDefensePreviews { get; }
         public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
+        public IReadOnlyList<CardValuePreview> CardValues { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
 

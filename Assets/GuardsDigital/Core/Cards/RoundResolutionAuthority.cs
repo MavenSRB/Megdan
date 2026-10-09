@@ -733,6 +733,19 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
+        public IReadOnlyList<CardValuePreview> ReadCardValuePreviews()
+        {
+            if (board == null || cardActions == null) return Array.Empty<CardValuePreview>();
+            var modifications = CurrentTurnAuthority?.CurrentModifications() ??
+                cardActions.CurrentModifications(timing, participants, TieBreakerState,
+                    CurrentUltimates(), GuardsDigital.Core.Rules.Modifications.RuleObject.None);
+            var roster = EffectRosterState.Of(turnSlots.AsReadOnly(), HeroDefeatHistory,
+                cardActions.CoinLedger, this, this, this, this, TeamLives, this, this, this, this);
+            return CardValuePreviewQuery.Read(definitions, instances, participants, board, HeroItems,
+                modifications, roster, RoundIndex, TurnIndex, markers,
+                CurrentTurnAuthority?.PendingAttackResolution);
+        }
+
         /// <summary>
         /// Milestone 7.1's per-hero Level, held here because p.15 changes a Level at the end of a
         /// round, which is this authority's boundary, and because it is round-scoped state the round's

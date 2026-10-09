@@ -657,7 +657,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // loudly rather than answered with a silent zero.
             ITokenPlacementAuthority spaces = null,
             IObstaclePlacementAuthority obstacles = null,
-            MarkerAttachmentRegister markers = null)
+            MarkerAttachmentRegister markers = null,
+            bool beforeTargetSelection = false)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -668,7 +669,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var result = new List<ValueContribution>();
             foreach (var declaration in action.RosterValueContributions
-                .Where(value => value.Channel == channel))
+                .Where(value => value.Channel == channel &&
+                    (!beforeTargetSelection || !NeedsAttackTarget(value.Query))))
             {
                 var matches = MatchCount(
                     declaration, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
@@ -722,6 +724,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>Milestone 9.30e. The queries answered from the cards alone.</summary>
+        public static bool NeedsAttackTarget(RosterValueQueryKind query) =>
+            query == RosterValueQueryKind.TargetPlayedAttackCardThisTurn ||
+            query == RosterValueQueryKind.FriendlyUnitAdjacentToTargetExcludingActor ||
+            query == RosterValueQueryKind.EnemyUnitsAdjacentToActorExcludingTarget ||
+            query == RosterValueQueryKind.AttackTargetHeroAdjacentToThreeOrMoreObstacles ||
+            query == RosterValueQueryKind.AttackTargetInStraightLineFromActorAndOwnedObstacle;
+
         private static bool ReadsOnlyTheCards(RosterValueQueryKind query) =>
             query == RosterValueQueryKind.OtherSpellsRemovedFromSpellbook;
 

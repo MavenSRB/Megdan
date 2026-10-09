@@ -56,6 +56,8 @@ namespace GuardsDigital.Tests.EditMode
                         populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>()),
                     // Milestone 9.30b: the spellbook's starting state.
                     CardInstance.CreateInSpellbook(populator.Create<CardInstanceId>(),
+                        populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>()),
+                    CardInstance.CreateRemovedFromSpellbook(populator.Create<CardInstanceId>(),
                         populator.Create<CardDefinitionReference>(), populator.Create<GuardsDigital.Core.Units.Heroes.HeroId>())
                 });
             foreach (var card in cards)
@@ -435,6 +437,7 @@ namespace GuardsDigital.Tests.EditMode
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 { "Cards", "owner-scoped (F-ER2-07): the seat's own cards plus the public ones" },
+                { "CardValues", "only already-visible card faces; CardValuePreviewTests checks seat privacy and wire parity" },
                 { "PlacedTokens", "FacedownTokenMask (8.61d); compared by FacedownTokenMask_CarriesEveryTokenFactButItsFace" },
                 { "AvailableClearOptions", "FacedownTokenMask (8.61d); compared by FacedownTokenMask_CarriesEveryTokenFactButItsFace" },
                 { "PendingSkillResolution", "SeatPendingSurface.NarrowResolution (8.40f); compared by NarrowResolution_CopiesEveryFrameFactButWhatItWithholds" },
@@ -844,6 +847,11 @@ namespace GuardsDigital.Tests.EditMode
                     GuardsDigital.Core.Components.MarkerReturnCondition.RetainedAtRoundEndAndDefeat);
             var overlaid = Rebuild(source, new Dictionary<string, object>(StringComparer.Ordinal)
             {
+                // W-012: compact +/-15 boundary and Int32 escape retain every bit of every channel.
+                ["cardValues"] = source.Cards.SelectMany(card => new[]
+                    { int.MinValue, -16, -15, 15, 16, int.MaxValue }.Select((bonus, index) =>
+                        new CardValuePreview(card.OwnerId, card.DefinitionReference,
+                            (PrintedValueChannel)(index + 1), bonus))).ToArray(),
                 // Milestone 9.32h: one gold card lies facedown in its owner's discard pile (Bushido's p.10
                 // swap, owed by 9.32g), so every seat's hand summary counts it by its known colour.
                 ["cards"] = source.Cards.Select(card => new CardInstance(

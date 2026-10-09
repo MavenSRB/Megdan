@@ -14,6 +14,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-009 | Reused the typed small-spell hover preview on Gydion's level-up candidates. | `work/W-009` |
 | W-010 | Corrected Gydion setup so all twenty-two spells start faceup in the removed/discarded spell pile. | `work/W-010` |
 | W-011 | Added a background-free, pointer-transparent large red `10` through `1` overlay for the final seconds of allowance or bank. | `work/W-011` |
+| W-012 | Individually anchored live white value modifiers on all 600 card faces, with shared rendering and level-up exclusion. | `work/W-012` |
+
+### [x] W-012 Dynamic modifiers beside printed card values
+
+Approved: inspect cards individually and place dynamic white signed modifiers directly right of each printed value, entirely inside the card; cover every rendering except level-up previews and leave screenshots for review.
+Outcome: 578 hero fronts and 22 spells have manually inspected source-pixel anchors. Shared hero/spell faces, hands, decisions, inspection, rail/pip hovers and spell companions use current typed Core value queries, including items, active effects and contextual creep Defense. Digits fit the remaining right-edge space; zero values disappear; level-up candidates/comparison hands/companions stay clean. Unresolved target/body-dependent effects are not guessed. See the [display/value contract](../Project/CARD_VALUE_OVERLAYS.md).
+Scope: read-only host/seat/wire projections and presentation; immutable printed artwork, rules and snapshot v59 remain unchanged. Wire /50 uses sparse, bounded, lossless values. No build or remote publication was requested or performed.
+Closing checks: all-face anchor coverage, all-hero query coverage, six-channel item/effect refresh, targeted Defense and Undo parity, seat visibility and complete wire-copy boundary cases, late-game frame margin, level-up/presenter regressions and actual Unity bounds/white-digit captures. Friendly and enemy creep screenshots exercise real game-state calculations; multi-digit gallery captures are explicitly layout-test values. Player-experience, rules-authority, maintainability and privacy review completed. Living-document validation and diff review close the record.
+
+Historical evidence: completion commit addressed by immutable `work/W-012`; exact checks, results, corrected failures and limitations live in its body.
 
 ### [x] W-011 Final-ten-second map countdown
 

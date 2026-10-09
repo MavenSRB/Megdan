@@ -37,6 +37,8 @@ namespace GuardsDigital.Presentation.Match
             if (ConfiguredSpellArtwork.TryLoadFront(spell.DefinitionReference, out var texture))
             {
                 content.Add(Artwork("gd-spell-artwork", texture, spell.IsGreyed));
+                CardValueOverlay.AddArtwork(content, spell.DefinitionReference, spell.Face,
+                    spell.ValueBonuses, SpellCardFootprint.Width * scale, SpellCardFootprint.Height * scale);
             }
             else
             {
@@ -175,11 +177,18 @@ namespace GuardsDigital.Presentation.Match
             band.Add(name);
             face.Add(band);
 
-            var action = HudElements.Text(
-                spell.Face.PrimaryActionLabel +
-                (spell.Face.PrimaryValue == null ? string.Empty : "  " + spell.Face.PrimaryValue.Label) +
-                (spell.Face.SpatialValue == null ? string.Empty : "  " + spell.Face.SpatialValue.Label),
-                Mathf.Max(7f, 13f * scale), ink, FontStyle.Bold);
+            var action = new VisualElement();
+            action.style.flexDirection = FlexDirection.Row;
+            action.style.justifyContent = Justify.Center;
+            action.style.alignItems = Align.Center;
+            action.Add(HudElements.Text(spell.Face.PrimaryActionLabel,
+                Mathf.Max(7f, 13f * scale), ink, FontStyle.Bold));
+            foreach (var value in new[] { spell.Face.PrimaryValue, spell.Face.SpatialValue })
+            {
+                if (value == null) continue;
+                action.Add(HudElements.Text("  " + value.Label, Mathf.Max(7f, 13f * scale), ink, FontStyle.Bold));
+                CardValueOverlay.AddInline(action, spell.ValueBonuses, value.Channel, Mathf.Max(7f, 12f * scale));
+            }
             action.name = "gd-spell-primary";
             action.style.unityTextAlign = TextAnchor.MiddleCenter;
             action.style.marginTop = 6f * scale;

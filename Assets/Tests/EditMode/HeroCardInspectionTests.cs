@@ -81,7 +81,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(row.Cards.Count(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Color == CardColor.Gold), Is.EqualTo(3));
             Assert.That(row.Cards.All(r => full.Definitions.Single(d => d.Reference.Equals(r)).Progression.Tier <= CardTier.I), Is.True);
             var book = view.CardInspections.Single(r => r.Hero.Equals(gydion));
-            Assert.That(book.Spellbook.Count, Is.EqualTo(22));
+            Assert.That(book.Spellbook, Is.Empty, "W-010: every spell starts faceup in the removed pile.");
+            Assert.That(view.Cards.Count(card => card.OwnerId.Equals(gydion) &&
+                card.State.Location == CardLocation.RemovedFromSpellbook), Is.EqualTo(22));
             Assert.That(book.Cards.Count, Is.EqualTo(5));
             Assert.That(book.Cards.Intersect(book.Spellbook), Is.Empty);
             Assert.That(typeof(HeroCardInspection).GetProperties().Select(p => p.Name),

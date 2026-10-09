@@ -17,6 +17,7 @@ namespace GuardsDigital.Presentation.Match
         public const float SafeMargin = 8f;
 
         private CardDefinitionReference definitionReference;
+        private string valueKey = string.Empty;
         private IReadOnlyList<SpellCardViewModel> shownSpells = Array.Empty<SpellCardViewModel>();
 
         public HeroCardPipPreviewUnityView()
@@ -42,11 +43,15 @@ namespace GuardsDigital.Presentation.Match
         public Rect LastRect { get; private set; }
 
         public void Show(CardDefinition definition, Vector2 panelPointer, Rect safeRegion,
-            IReadOnlyList<SpellCardViewModel> spells = null)
+            IReadOnlyList<SpellCardViewModel> spells = null,
+            IReadOnlyList<CardValuePreview> values = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             spells = spells ?? Array.Empty<SpellCardViewModel>();
-            if (!definitionReference.Equals(definition.Reference) ||
+            var nextValueKey = string.Join(";", (values ?? Array.Empty<CardValuePreview>())
+                .Select(v => v.Channel + ":" + v.Bonus)) + "|" +
+                string.Join(";", spells.SelectMany(s => s.ValueBonuses).Select(v => v.Channel + ":" + v.Bonus));
+            if (valueKey != nextValueKey || !definitionReference.Equals(definition.Reference) ||
                 !shownSpells.Select(spell => (spell.DefinitionReference, spell.IsGreyed))
                     .SequenceEqual(spells.Select(spell => (spell.DefinitionReference, spell.IsGreyed))))
             {
@@ -60,7 +65,8 @@ namespace GuardsDigital.Presentation.Match
                     TrayCardGroup.Available,
                     0,
                     false,
-                    false);
+                    false,
+                    valueBonuses: values);
                 var face = new VisualElement
                 {
                     name = "gd-hero-token-card-pip-face",
@@ -75,6 +81,7 @@ namespace GuardsDigital.Presentation.Match
                 Root.Add(face);
                 definitionReference = definition.Reference;
                 shownSpells = spells.ToArray();
+                valueKey = nextValueKey;
             }
 
             var size = new Vector2(CardFootprint.Width + (spells.Count == 0 ? 0f :

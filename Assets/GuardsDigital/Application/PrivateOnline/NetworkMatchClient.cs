@@ -343,7 +343,7 @@ namespace GuardsDigital.Application
     /// record. While the session is not actionable the retained view is deliberately stripped of
     /// every offer and pending answer.
     /// </summary>
-    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel
+    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel
     {
         private readonly IMatchReadModel trusted;
         private readonly MatchContentCatalogs catalogs;
@@ -723,6 +723,8 @@ namespace GuardsDigital.Application
             Array.AsReadOnly(PublicDetail.HeroDefenseModifiers.Select(row =>
                 new HeroDefenseModifierProjection(
                     new HeroId(row.HeroId), row.HeroBody, row.Contributions.Select(ToContribution))).ToArray());
+        public IReadOnlyList<CardValuePreview> CardValues =>
+            PublicDetail?.CardValues ?? Array.Empty<CardValuePreview>();
         public PendingDefenseResponseChoice PendingDefenseChoice
         {
             get

@@ -2244,6 +2244,8 @@ namespace GuardsDigital.Presentation.Match
             // that broke "13" across two lines would be showing a value the card does not print.
             initiativeLabel.style.whiteSpace = WhiteSpace.NoWrap;
             flag.Add(initiativeLabel);
+            flag.style.flexDirection = FlexDirection.Row;
+            CardValueOverlay.AddInline(flag, card.ValueBonuses, PrintedValueChannel.Initiative);
             flag.tooltip = initiative?.AssistiveLabel ?? "Prints no Initiative";
             band.Add(flag);
 
@@ -2327,6 +2329,7 @@ namespace GuardsDigital.Presentation.Match
 
                 first = false;
                 band.Add(label);
+                CardValueOverlay.AddInline(band, card.ValueBonuses, value.Channel);
             }
 
             return band;
@@ -2372,6 +2375,7 @@ namespace GuardsDigital.Presentation.Match
                 var amount = HudElements.Text(value.AmountLabel, 18f, ink, FontStyle.Bold);
                 amount.style.marginLeft = 3f;
                 plate.Add(amount);
+                CardValueOverlay.AddInline(plate, card.ValueBonuses, value.Channel);
                 plate.tooltip = value.AssistiveLabel;
                 band.Add(plate);
             }
@@ -2441,6 +2445,7 @@ namespace GuardsDigital.Presentation.Match
                     spatial.Label, 9.5f, MatchHudTheme.RulesPanelBackground, FontStyle.Bold);
                 label.style.marginLeft = 5f;
                 badge.Add(label);
+                CardValueOverlay.AddInline(badge, card.ValueBonuses, spatial.Channel);
                 badge.tooltip = spatial.AssistiveLabel;
                 panel.Add(badge);
             }

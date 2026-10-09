@@ -950,7 +950,7 @@ namespace GuardsDigital.Application
     /// projection reports, so a client never decides its own legality and the two can never
     /// disagree.</para>
     /// </remarks>
-    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel
+    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel
     {
         private readonly SeatPendingSurface pending;
         private readonly IReadOnlyList<CardInstance> visibleCards;
@@ -1046,6 +1046,12 @@ namespace GuardsDigital.Application
             TeamVictoryTallies = source.TeamVictoryTallies;
             HeroProgression = source.HeroProgression;
             HeroDefenseModifiers = source.HeroDefenseModifiers;
+            // Values travel only for faces this seat can already read. Never add hidden instance IDs.
+            CardValues = Array.AsReadOnly(source.CardValues.Where(value =>
+                visibleCards.Concat(AlliedHandCards).Any(card => card.OwnerId.Equals(value.Owner) &&
+                    card.DefinitionReference.Equals(value.Definition)) ||
+                CardInspections.Any(inspection => inspection.Hero.Equals(value.Owner) &&
+                    inspection.Cards.Concat(inspection.Spellbook).Contains(value.Definition))).ToArray());
             Outcome = source.Outcome;
             OwnCards = ownCards;
             PublicCards = publicCards;
@@ -1122,6 +1128,7 @@ namespace GuardsDigital.Application
 
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
         public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
+        public IReadOnlyList<CardValuePreview> CardValues { get; }
 
         /// <summary>
         /// Milestone 8.53. The match scoreboard - identical to every other seat's and to the

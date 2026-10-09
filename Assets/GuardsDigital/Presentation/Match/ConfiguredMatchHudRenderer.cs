@@ -602,7 +602,8 @@ namespace GuardsDigital.Presentation.Match
         /// mapping used by every HUD pointer boundary.
         /// </summary>
         public void ShowCardPipPreview(CardDefinition definition, Vector2 screenPosition,
-            IReadOnlyList<SpellCardViewModel> spells = null)
+            IReadOnlyList<SpellCardViewModel> spells = null,
+            IReadOnlyList<CardValuePreview> values = null)
         {
             if (cardPipPreview == null || root == null || definition == null || victoryScreenStanding)
             {
@@ -616,7 +617,7 @@ namespace GuardsDigital.Presentation.Match
             var safe = CameraSafeLayout.IsValid
                 ? CameraSafeLayout.UpperRegion
                 : new Rect(0f, 0f, viewport.x, viewport.y);
-            cardPipPreview.Show(definition, panelPoint, safe, spells);
+            cardPipPreview.Show(definition, panelPoint, safe, spells, values);
         }
 
         public void HideCardPipPreview()

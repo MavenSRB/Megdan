@@ -231,7 +231,8 @@ namespace GuardsDigital.Presentation.Match
             bool isAwaitedAnswer = false,
             bool isDimmedByResolution = false,
             bool isFacedown = false,
-            IReadOnlyList<SpellCardViewModel> castableSpells = null)
+            IReadOnlyList<SpellCardViewModel> castableSpells = null,
+            IReadOnlyList<CardValuePreview> valueBonuses = null)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -274,6 +275,7 @@ namespace GuardsDigital.Presentation.Match
             IsDimmedByResolution = isDimmedByResolution;
             IsFacedown = isFacedown;
             CastableSpells = castableSpells ?? Array.Empty<SpellCardViewModel>();
+            ValueBonuses = valueBonuses ?? Array.Empty<CardValuePreview>();
             ColorName = MatchHudTheme.ColorName(color);
             // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
             // assignment history names its turn from the moment that turn starts - so a card in play
@@ -312,6 +314,12 @@ namespace GuardsDigital.Presentation.Match
         /// fallback shape.
         /// </summary>
         public CardDefinitionReference DefinitionReference { get; }
+        public IReadOnlyList<CardValuePreview> ValueBonuses { get; }
+
+        public TrayCardViewModel WithoutValueBonuses() => new TrayCardViewModel(
+            CardInstanceId, DefinitionReference, DisplayName, Color, Face, Group, PlayedTurnIndex,
+            IsSelectable, IsSelected, IsActiveEffectSource, IsResolving, IsAwaitedAnswer,
+            IsDimmedByResolution, IsFacedown, CastableSpells.Select(s => s.WithoutValueBonuses()).ToArray());
         public string DisplayName { get; }
         public CardColor Color { get; }
         public string ColorName { get; }
@@ -1644,7 +1652,8 @@ namespace GuardsDigital.Presentation.Match
                 isDimmedByResolution,
                 // Milestone 9.32g: a seat that holds the card may read it, facedown or not.
                 CardLifecycleAuthority.IsFacedownRestingCard(card),
-                SpellbookPresentation.CastableSpells(projection, card.OwnerId, definition));
+                SpellbookPresentation.CastableSpells(projection, card.OwnerId, definition),
+                CardValueReadModel.ForCard(projection, card.OwnerId, card.DefinitionReference));
         }
 
         /// <summary>
@@ -1675,7 +1684,7 @@ namespace GuardsDigital.Presentation.Match
                 // comment above already says so - so every candidate it builds is card-scope's leveling
                 // upgrade case, unconditionally.
                 isAwaitedAnswer: true,
-                castableSpells: castableSpells);
+                castableSpells: castableSpells?.Select(spell => spell.WithoutValueBonuses()).ToArray());
 
         /// <summary>
         /// Milestone 8.5a: one card definition read into the four value homes and the printed words its

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
@@ -127,9 +128,37 @@ namespace GuardsDigital.Application
                 writer.Write(modifier.HeroBody);
                 WriteContributions(writer, modifier.Contributions);
             }
+            // Identity once per face, not once per numeric channel. A late-game inspection can
+            // include many upgraded cards; repeated definition/revision strings consume the frame.
+            var valueFaces = projection.CardValues.GroupBy(value => (value.Owner, value.Definition)).ToArray();
+            var knownFaces = projection.OwnCards.Concat(projection.PublicCards)
+                .Select(card => (card.OwnerId, card.DefinitionReference)).Distinct().ToArray();
+            writer.Write(valueFaces.Length);
+            foreach (var face in valueFaces)
+            {
+                var knownIndex = Array.IndexOf(knownFaces, (face.Key.Owner, face.Key.Definition));
+                writer.Write(checked((ushort)(knownIndex + 1)));
+                if (knownIndex < 0)
+                {
+                    // Inspection-only faces carry no hidden instance. Transmit their public identity.
+                    writer.Write(face.Key.Owner.Value);
+                    writer.Write(face.Key.Definition.DefinitionId.Value);
+                    writer.Write(face.Key.Definition.ContentRevision);
+                }
+                writer.Write((byte)face.Count());
+                foreach (var value in face)
+                {
+                    // Three channel bits and five signed-delta bits; 31 escapes to an exact Int32.
+                    var delta = value.Bonus >= -15 && value.Bonus <= 15
+                        ? (value.Bonus << 1) ^ (value.Bonus >> 31) : 31;
+                    writer.Write((byte)(((int)value.Channel << 5) | delta));
+                    if (delta == 31) writer.Write(value.Bonus);
+                }
+            }
         }
 
-        public static bool TryRead(BinaryReader reader, out NetworkProjectionDetailRecord record)
+        public static bool TryRead(BinaryReader reader, IReadOnlyList<NetworkCardRow> knownCards,
+            out NetworkProjectionDetailRecord record)
         {
             record = null;
             if (!TryReadTeamAgreement(reader, out var teamAgreement) ||
@@ -347,6 +376,39 @@ namespace GuardsDigital.Application
                     heroId, heroBody, contributions));
             }
 
+            if (!TryReadCount(reader, out var cardValueCount)) return false;
+            var cardValues = new List<CardValuePreview>(cardValueCount);
+            var cardValueKeys = new HashSet<string>(StringComparer.Ordinal);
+            var knownFaces = knownCards.Select(card => (card.OwnerHeroId, card.DefinitionId,
+                card.ContentRevision)).Distinct().ToArray();
+            for (var index = 0; index < cardValueCount; index++)
+            {
+                var knownIndex = reader.ReadUInt16() - 1;
+                if (knownIndex < -1 || knownIndex >= knownFaces.Length) return false;
+                var owner = knownIndex < 0 ? reader.ReadString() : knownFaces[knownIndex].OwnerHeroId;
+                var definition = knownIndex < 0 ? reader.ReadString() : knownFaces[knownIndex].DefinitionId;
+                var revision = knownIndex < 0 ? reader.ReadString() : knownFaces[knownIndex].ContentRevision;
+                if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(definition) ||
+                    string.IsNullOrWhiteSpace(revision) ||
+                    !cardValueKeys.Add(owner + "|" + definition + "|" + revision))
+                    return false;
+                var channels = reader.ReadByte();
+                if (channels < 1 || channels > 6) return false;
+                var seen = new HashSet<byte>();
+                for (var channelIndex = 0; channelIndex < channels; channelIndex++)
+                {
+                    var packed = reader.ReadByte();
+                    var channel = (byte)(packed >> 5);
+                    var delta = packed & 31;
+                    var bonus = delta == 31 ? reader.ReadInt32() : (delta >> 1) ^ -(delta & 1);
+                    if (channel < 1 || channel > 6 || !seen.Add(channel)) return false;
+                    cardValues.Add(new CardValuePreview(
+                        new GuardsDigital.Core.Units.Heroes.HeroId(owner),
+                        new CardDefinitionReference(new CardDefinitionId(definition), revision),
+                        (PrintedValueChannel)channel, bonus));
+                }
+            }
+
             record = new NetworkProjectionDetailRecord(
                 teamAgreement,
                 completedRounds,
@@ -373,7 +435,8 @@ namespace GuardsDigital.Application
                 Array.AsReadOnly(clears.ToArray()),
                 holdOffer,
                 undoMarker,
-                Array.AsReadOnly(heroDefenseModifiers.ToArray()));
+                Array.AsReadOnly(heroDefenseModifiers.ToArray()),
+                Array.AsReadOnly(cardValues.ToArray()));
             return true;
         }
 

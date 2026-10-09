@@ -1452,7 +1452,8 @@ namespace GuardsDigital.Application
                         return false;
                     }
 
-                    if (!NetworkProjectionDetailCodec.TryRead(reader, out var detail))
+                    if (!NetworkProjectionDetailCodec.TryRead(reader,
+                        ownCards.Concat(publicCards).ToArray(), out var detail))
                     {
                         return false;
                     }

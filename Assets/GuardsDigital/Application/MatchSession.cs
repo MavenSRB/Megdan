@@ -1080,7 +1080,8 @@ namespace GuardsDigital.Application
                     ? commitment.GetRevealedCards(retrievalHero).Select(cardId =>
                         DirectorCommand.RetrieveOneAfterReveal(retrievalHero, cardId))
                     : null,
-                CreateHeroDefenseModifiers(turnModifications));
+                CreateHeroDefenseModifiers(turnModifications),
+                round.ReadCardValuePreviews());
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

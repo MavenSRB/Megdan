@@ -21,6 +21,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement otherGoldGrid;
         private readonly ScrollView rowScroll;
         private HeroCardInspection inspection;
+        private string valueKey = string.Empty;
         private HeroId hero;
         private CardDefinition hoveredDefinition;
         private VisualElement hoveredFace;
@@ -128,7 +129,7 @@ namespace GuardsDigital.Presentation.Match
             if (!IsOpen) return;
             var next = Find(hero);
             if (next == null) { Close(); return; }
-            if (inspection.HandCards.SequenceEqual(next.HandCards) &&
+            if (valueKey == CurrentValueKey() && inspection.HandCards.SequenceEqual(next.HandCards) &&
                 inspection.OtherCards.SequenceEqual(next.OtherCards) &&
                 inspection.OtherGoldCards.SequenceEqual(next.OtherGoldCards) &&
                 inspection.ConcealedHandCount == next.ConcealedHandCount &&
@@ -139,7 +140,9 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
             inspection = next;
+            var offset = rowScroll.scrollOffset;
             DrawCards();
+            rowScroll.scrollOffset = offset;
         }
 
         private HeroCardInspection Find(HeroId id)
@@ -161,8 +164,14 @@ namespace GuardsDigital.Presentation.Match
                 .OrderBy(value => value.Progression.Color).ThenBy(value => value.Progression.Tier)
                 .ThenBy(value => value.Id.Value, StringComparer.Ordinal).ToArray();
 
+        private string CurrentValueKey() => read() is ICardValueReadModel values
+            ? string.Join("|", values.CardValues.Where(value => value.Owner.Equals(hero))
+                .Select(value => value.Definition + "/" + value.Channel + "=" + value.Bonus))
+            : string.Empty;
+
         private void DrawCards()
         {
+            valueKey = CurrentValueKey();
             ClearSpellPreview();
             handGrid.Clear();
             otherGrid.Clear();
@@ -184,7 +193,8 @@ namespace GuardsDigital.Presentation.Match
                 // Presentation-only identity: this window has no card submission/suggestion callbacks.
                 var model = new TrayCardViewModel(new CardInstanceId("inspection:" + definition.Id.Value),
                     definition.Reference, definition.DisplayName, definition.Progression.Color,
-                    CurrentRoundCards.ReadFace(definition), TrayCardGroup.Available, 0, false, false);
+                    CurrentRoundCards.ReadFace(definition), TrayCardGroup.Available, 0, false, false,
+                    valueBonuses: CardValueReadModel.ForCard(read(), inspection.Hero, definition.Reference));
                 var face = new VisualElement { name = "gd-inspected-card", tooltip = definition.DisplayName };
                 ConfiguredCardFaceView.Build(face, model);
                 // Shared hand faces include lifecycle captions/tooltips; inspection shows only printed faces.
@@ -232,7 +242,8 @@ namespace GuardsDigital.Presentation.Match
             var top = Mathf.Max(bounds.yMin, Root.worldBound.yMin + 48f);
             var origin = Root.WorldToLocal(new Vector2(bounds.xMin, top));
             SpellPreview.Show(hoveredDefinition, Root.WorldToLocal(hoveredFace.worldBound.center),
-                new Rect(origin.x, origin.y, bounds.width, bounds.yMax - top), spells);
+                new Rect(origin.x, origin.y, bounds.width, bounds.yMax - top), spells,
+                CardValueReadModel.ForCard(read(), hero, hoveredDefinition.Reference));
         }
 
         private static VisualElement BuildSection(string name, string heading, out VisualElement grid, bool framed = false)

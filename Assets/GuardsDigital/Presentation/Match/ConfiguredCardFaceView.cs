@@ -178,6 +178,8 @@ namespace GuardsDigital.Presentation.Match
                     out _))
             {
                 BuildArtwork(content, card, texture);
+                CardValueOverlay.AddArtwork(content, card.DefinitionReference, card.Face,
+                    card.ValueBonuses, CardFootprint.Width, CardFootprint.Height);
                 if (card.IsSelected)
                 {
                     AddSelectionOutline(surface);

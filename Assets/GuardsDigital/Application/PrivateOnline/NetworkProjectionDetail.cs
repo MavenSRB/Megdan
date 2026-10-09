@@ -54,9 +54,11 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkClearOptionRow> availableClearOptions,
             NetworkActionOfferRow availableHoldOffer,
             NetworkUndoMarkerRow undoMarker = null,
-            IReadOnlyList<NetworkHeroDefenseModifierRow> heroDefenseModifiers = null)
+            IReadOnlyList<NetworkHeroDefenseModifierRow> heroDefenseModifiers = null,
+            IReadOnlyList<GuardsDigital.Core.Cards.CardValuePreview> cardValues = null)
         {
             UndoMarker = undoMarker;
+            CardValues = cardValues ?? Array.Empty<GuardsDigital.Core.Cards.CardValuePreview>();
             HeroDefenseModifiers = heroDefenseModifiers ?? Array.Empty<NetworkHeroDefenseModifierRow>();
             TeamAgreement = teamAgreement;
             CompletedRounds = completedRounds;
@@ -95,6 +97,7 @@ namespace GuardsDigital.Application
         public NetworkAttackTargetChoiceRow PendingAttackTargetChoice { get; }
         public IReadOnlyList<NetworkAttackTargetDefensePreviewRow> PendingAttackTargetDefensePreviews { get; }
         public IReadOnlyList<NetworkHeroDefenseModifierRow> HeroDefenseModifiers { get; }
+        public IReadOnlyList<GuardsDigital.Core.Cards.CardValuePreview> CardValues { get; }
         public NetworkDefenseChoiceRow PendingDefenseChoice { get; }
         public NetworkDefensePreviewRow PendingDefensePreview { get; }
         public NetworkSkillResolutionRow PendingSkillResolution { get; }

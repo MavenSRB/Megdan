@@ -633,6 +633,7 @@ namespace GuardsDigital.Presentation.Match
             // hand being chosen FOR, which is one hero either way.
             var handPreview = DirectorHandsPresenter.BuildTray(projection, description.HeroId, null)
                 .Where(card => card.Group == TrayCardGroup.Available)
+                .Select(card => card.WithoutValueBonuses())
                 .ToArray();
 
             return new DecisionWindowViewModel(

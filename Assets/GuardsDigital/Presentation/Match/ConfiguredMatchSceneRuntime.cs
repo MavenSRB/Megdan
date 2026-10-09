@@ -1139,7 +1139,8 @@ namespace GuardsDigital.Presentation.Match
                 hud.HideCardPipPreview();
             else
                 hud.ShowCardPipPreview(definition, screenPosition,
-                    SpellbookPresentation.CastableSpells(projection, owner, definition));
+                    SpellbookPresentation.CastableSpells(projection, owner, definition),
+                    CardValueReadModel.ForCard(projection, owner, definition.Reference));
         }
 
         public void HoverDefenseModifier(

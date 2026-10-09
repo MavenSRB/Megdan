@@ -6,6 +6,8 @@ Canonical active shard for the configured match panel, standing regions, card tr
 
 [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) owns board-facing surfaces; [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) owns the passive presentation contract. Every HUD reading derives from projection, owns no serialized lifetime, and redraws after restore, replay, Undo or restart. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 
+Live card modifiers: [display and value contract](CARD_VALUE_OVERLAYS.md).
+
 ## The panel and its regions
 
 Every surface sits on one runtime UI Toolkit panel. `ConfiguredMatchHudRenderer` owns the session-free drawing surface: code lays out five absolute regions from viewport functions and answers pointer blocking from live bounds, with those rects as fallback.
@@ -68,7 +70,7 @@ A card sourcing any `ActiveEffectPhase.Active` instance takes the violet slot ou
 
 The card the current turn is being resolved from is drawn at full strength. It carries no commitment command - the round is past choosing - and it takes no focus stop, but "carries no command" and "is spent" are different facts, and the shared unavailable treatment was saying the second about the first. It carries the gold shine; the rest of the hand dims until nothing resolves.
 
-Which region a value belongs to is decided by the action it is printed on and by its `PrintedValueChannel`, never by the card's name and never by reading the sentence: the primary action is the one whose origin says `PrintedPrimary`, the secondary strip is every other action the card itself prints, the two qualifiers a label can carry are p.13's Ranged classification and p.14's Block, and p.16's Ultimate - which prints no Initiative and has no action at all - reads its icon from the permanent ability instead. That rule is what keeps this build without a printed-text parser, and `MatchHudPresentationTests` asserts the four regions partition the definition's printed values exactly, each drawn once.
+The [typed value-region contract](CARD_VALUE_OVERLAYS.md#printed-value-ownership) governs icon ownership.
 
 The words themselves are never colour-coded, exactly as a printed card's are not, and `CardSourceContent` still distinguishes transcribed words, a read face printing none, and a synthetic fixture with no source face. Transcriptions display verbatim; [RULES_LEDGER.md](../RULES_LEDGER.md) owns their current source-verification status. Every plate a card draws - flag, bands, badge - shifts the card's own colour away from its text colour, so measured contrast can only rise.
 

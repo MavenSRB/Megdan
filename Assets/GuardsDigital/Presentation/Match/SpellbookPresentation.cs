@@ -22,7 +22,9 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class SpellCardViewModel
     {
-        public SpellCardViewModel(CardDefinition definition, bool isGreyed = false, string caption = null)
+        private readonly CardDefinition definition;
+        public SpellCardViewModel(CardDefinition definition, bool isGreyed = false, string caption = null,
+            IReadOnlyList<CardValuePreview> valueBonuses = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (!definition.Progression.IsSpell)
@@ -31,6 +33,8 @@ namespace GuardsDigital.Presentation.Match
             }
 
             DefinitionReference = definition.Reference;
+            this.definition = definition;
+            ValueBonuses = valueBonuses ?? Array.Empty<CardValuePreview>();
             DisplayName = definition.DisplayName;
             Color = definition.Progression.Color;
             Tier = definition.Progression.Tier;
@@ -46,6 +50,11 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public CardDefinitionReference DefinitionReference { get; }
+        public IReadOnlyList<CardValuePreview> ValueBonuses { get; }
+        public SpellCardViewModel WithoutValueBonuses() => new SpellCardViewModel(definition, IsGreyed, Caption);
+        public SpellCardViewModel WithValueBonuses(IMatchReadModel projection, HeroId owner) =>
+            new SpellCardViewModel(definition, IsGreyed, Caption,
+                CardValueReadModel.ForCard(projection, owner, DefinitionReference));
         public string DisplayName { get; }
         public CardColor Color { get; }
         public CardTier Tier { get; }
@@ -215,7 +224,8 @@ namespace GuardsDigital.Presentation.Match
                         removed,
                         removed
                             ? spell.DisplayName.ToUpperInvariant() + " - REMOVED"
-                            : spell.DisplayName.ToUpperInvariant()));
+                            : spell.DisplayName.ToUpperInvariant(),
+                        CardValueReadModel.ForCard(projection, owner, spell.Reference)));
                 }
             }
 
@@ -245,7 +255,7 @@ namespace GuardsDigital.Presentation.Match
             var definition = projection.Definitions.FirstOrDefault(value =>
                 value != null && value.Reference.Equals(instance.DefinitionReference));
             return definition != null && definition.Progression.IsSpell
-                ? new SpellCardViewModel(definition)
+                ? new SpellCardViewModel(definition).WithValueBonuses(projection, instance.OwnerId)
                 : null;
         }
 
@@ -289,7 +299,8 @@ namespace GuardsDigital.Presentation.Match
                     .Select(reference => projection.Definitions.FirstOrDefault(value => value.Reference.Equals(reference)))
                     .Where(definition => definition != null && definition.Progression.IsSpell)
                     .OrderBy(definition => order.TryGetValue(definition.Reference, out var index) ? index : int.MaxValue)
-                    .Select(definition => new SpellCardViewModel(definition)).ToArray());
+                    .Select(definition => new SpellCardViewModel(definition)
+                        .WithValueBonuses(projection, heroId)).ToArray());
             var backs = (summary?.SpellbookBacks ?? Array.Empty<SpellbookBackCount>())
                 .Select(back => new
                 {
@@ -357,7 +368,8 @@ namespace GuardsDigital.Presentation.Match
                 card.State.Location == CardLocation.RemovedFromSpellbook);
             if (!taken)
             {
-                return new SpellCardViewModel(spell, true, isRemoved ? name + " - REMOVED" : name);
+                return new SpellCardViewModel(spell, true, isRemoved ? name + " - REMOVED" : name)
+                    .WithValueBonuses(projection, owner);
             }
 
             // A CAST is captioned with what the spell would count now; a removal casts nothing, so
@@ -366,7 +378,7 @@ namespace GuardsDigital.Presentation.Match
                 spell, false,
                 kind == SyntheticSpellbookCapabilities.SpellArmKind.Cast && owner.IsDefined
                     ? CountedCaption(projection, spell, owner, name)
-                    : name);
+                    : name).WithValueBonuses(projection, owner);
         }
 
         /// <summary>
@@ -402,7 +414,8 @@ namespace GuardsDigital.Presentation.Match
         {
             var definition = projection?.Definitions.FirstOrDefault(value =>
                 value.Reference.Equals(spell.DefinitionReference));
-            return definition == null ? spell : new SpellCardViewModel(definition, spell.IsGreyed, caption);
+            return definition == null ? spell : new SpellCardViewModel(
+                definition, spell.IsGreyed, caption, spell.ValueBonuses);
         }
 
         /// <summary>
@@ -464,11 +477,12 @@ namespace GuardsDigital.Presentation.Match
         private static IReadOnlyList<SpellCardViewModel> Faces(
             IMatchReadModel projection, IReadOnlyDictionary<CardDefinitionReference, int> order, IEnumerable<CardInstance> cards) =>
             Array.AsReadOnly(cards
-                .Select(card => projection.Definitions.FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference)))
-                .Where(definition => definition != null && definition.Progression.IsSpell)
-                .OrderBy(definition => order.TryGetValue(definition.Reference, out var index) ? index : int.MaxValue)
-                .ThenBy(definition => definition.Id.Value, StringComparer.Ordinal)
-                .Select(definition => new SpellCardViewModel(definition))
+                .Select(card => new { card.OwnerId, Definition = projection.Definitions
+                    .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference)) })
+                .Where(value => value.Definition != null && value.Definition.Progression.IsSpell)
+                .OrderBy(value => order.TryGetValue(value.Definition.Reference, out var index) ? index : int.MaxValue)
+                .ThenBy(value => value.Definition.Id.Value, StringComparer.Ordinal)
+                .Select(value => new SpellCardViewModel(value.Definition).WithValueBonuses(projection, value.OwnerId))
                 .ToArray());
 
         /// <summary>The content order the projection lists definitions in - a book's printed order.</summary>
