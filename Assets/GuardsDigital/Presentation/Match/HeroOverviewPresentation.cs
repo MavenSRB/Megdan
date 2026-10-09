@@ -316,6 +316,11 @@ namespace GuardsDigital.Presentation.Match
         public CardDefinitionReference DefinitionReference { get; }
         public IReadOnlyList<CardValuePreview> ValueBonuses { get; }
 
+        public TrayCardViewModel WithValueBonuses(IReadOnlyList<CardValuePreview> values) => new TrayCardViewModel(
+            CardInstanceId, DefinitionReference, DisplayName, Color, Face, Group, PlayedTurnIndex,
+            IsSelectable, IsSelected, IsActiveEffectSource, IsResolving, IsAwaitedAnswer,
+            IsDimmedByResolution, IsFacedown, CastableSpells, values);
+
         public TrayCardViewModel WithoutValueBonuses() => new TrayCardViewModel(
             CardInstanceId, DefinitionReference, DisplayName, Color, Face, Group, PlayedTurnIndex,
             IsSelectable, IsSelected, IsActiveEffectSource, IsResolving, IsAwaitedAnswer,

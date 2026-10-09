@@ -309,6 +309,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(log[0].SubjectHeroId, Is.EqualTo(new HeroId("brogan")));
                 Assert.That(log[0].TargetHeroId, Is.EqualTo(new HeroId("sabina")));
                 Assert.That(log[0].Outcome, Is.EqualTo(expected), resolved);
+                Assert.That(log[0].ResolvedAttackTotal, Is.EqualTo(4), resolved);
             }
         }
 

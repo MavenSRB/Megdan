@@ -72,7 +72,7 @@ The card the current turn is being resolved from is drawn at full strength. It c
 
 The [typed value-region contract](CARD_VALUE_OVERLAYS.md#printed-value-ownership) governs icon ownership.
 
-The words themselves are never colour-coded, exactly as a printed card's are not, and `CardSourceContent` still distinguishes transcribed words, a read face printing none, and a synthetic fixture with no source face. Transcriptions display verbatim; [RULES_LEDGER.md](../RULES_LEDGER.md) owns their current source-verification status. Every plate a card draws - flag, bands, badge - shifts the card's own colour away from its text colour, so measured contrast can only rise.
+The [printed ink and source-text contract](CARD_VALUE_OVERLAYS.md#printed-ink-and-source-text) governs face text and contrast.
 
 The card's printed colour is not written on its face (2026-08-21): wearing and spelling it says one thing twice in the space the text needs. `ColorName` stays on the view model and in each card's hover and assistive reading, where 7.8a keeps a rail turn slot's colour; nothing here means something by colour alone.
 

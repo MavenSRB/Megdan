@@ -38,7 +38,8 @@ namespace GuardsDigital.Application
             string blockingHeroId = null,
             string blockingCardInstanceId = null,
             IEnumerable<CardMoveFact> cardMoves = null,
-            IEnumerable<HexCoordinate> movementRoute = null)
+            IEnumerable<HexCoordinate> movementRoute = null,
+            int? resolvedAttackTotal = null)
         {
             CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
             MovementRoute = Array.AsReadOnly((movementRoute ?? Enumerable.Empty<HexCoordinate>()).ToArray());
@@ -59,6 +60,7 @@ namespace GuardsDigital.Application
             DestinationR = destinationR;
             Outcome = outcome;
             Amount = amount;
+            ResolvedAttackTotal = resolvedAttackTotal;
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
         }
@@ -80,6 +82,7 @@ namespace GuardsDigital.Application
         public int DestinationR { get; }
         public int Outcome { get; }
         public int Amount { get; }
+        public int? ResolvedAttackTotal { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel; protocol version 8). Present only on a
@@ -147,7 +150,8 @@ namespace GuardsDigital.Application
                 entry.BlockingHeroId.Value,
                 entry.BlockingCardInstanceId.Value,
                 entry.CardMoves,
-                entry.MovementRoute);
+                entry.MovementRoute,
+                entry.ResolvedAttackTotal);
         }
 
         /// <summary>
@@ -167,7 +171,8 @@ namespace GuardsDigital.Application
             if (row == null) throw new ArgumentNullException(nameof(row));
 
             writer.Write(row.Sequence);
-            writer.Write(row.Kind);
+            // /51: reserve a kind bit for the optional total, avoiding a presence byte on every row.
+            writer.Write(row.Kind | (row.ResolvedAttackTotal.HasValue ? 1 << 30 : 0));
             writer.Write(row.RoundIndex);
             writer.Write(row.TurnIndex);
             WriteOptional(writer, row.SubjectHeroId);
@@ -217,6 +222,7 @@ namespace GuardsDigital.Application
                 writer.Write(space.Q);
                 writer.Write(space.R);
             }
+            if (row.ResolvedAttackTotal.HasValue) writer.Write(row.ResolvedAttackTotal.Value);
         }
 
         internal static bool TryRead(BinaryReader reader, out NetworkMatchLogRow row)
@@ -225,7 +231,9 @@ namespace GuardsDigital.Application
             if (reader == null) throw new ArgumentNullException(nameof(reader));
 
             var sequence = reader.ReadInt32();
-            var kind = reader.ReadInt32();
+            var encodedKind = reader.ReadInt32();
+            var hasResolvedAttackTotal = (encodedKind & (1 << 30)) != 0;
+            var kind = encodedKind & ~(1 << 30);
             if (sequence < 1 ||
                 !Enum.IsDefined(typeof(MatchLogEntryKind), kind) ||
                 kind == (int)MatchLogEntryKind.None)
@@ -277,12 +285,13 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            int? resolvedAttackTotal = hasResolvedAttackTotal ? (int?)reader.ReadInt32() : null;
             row = new NetworkMatchLogRow(
                 sequence, kind, roundIndex, turnIndex,
                 subjectHero, targetHero, subjectMinion, subjectCard, subjectTeam,
                 hasOrigin, originQ, originR,
                 hasDestination, destinationQ, destinationR,
-                outcome, amount, blockingHero, blockingCard, cardMoves, movementRoute);
+                outcome, amount, blockingHero, blockingCard, cardMoves, movementRoute, resolvedAttackTotal);
             return true;
         }
 
@@ -394,7 +403,8 @@ namespace GuardsDigital.Application
                     ? default
                     : new CardInstanceId(row.BlockingCardInstanceId),
                 cardMoves: row.CardMoves,
-                movementRoute: row.MovementRoute);
+                movementRoute: row.MovementRoute,
+                resolvedAttackTotal: row.ResolvedAttackTotal);
         }
 
         private static void WriteOptional(BinaryWriter writer, string value)

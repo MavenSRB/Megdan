@@ -8,12 +8,24 @@ The shared hero-card and spell-card renderers place white signed nonzero deltas 
 
 Hand/decision faces, inspection, token-pip and rail hover previews, spellbook and casting companions share the treatment. Level-up candidates, their comparison hand and their spell companions remain unmodified. A changed live value refreshes the face, including after Undo; inspection keeps its scroll position. Zero modifiers disappear rather than leaving `+0` labels.
 
-Values come from the host's existing Core queries: items, applicable active modifications, card-declared contributions and body-specific minion Defense. A bound attack uses its recorded total and the targeted defender body. Before a target or a multi-body actor is selected, no target/body-dependent bonus is promised; unresolved action text is not simulated by presentation. The labels are current-state deltas, not a prediction of every later choice. Only already-visible faces receive values in a seat projection; no hidden card instance is added. Snapshot/replay rules remain unchanged. Wire /50 carries a sparse, compact value projection.
+Values come from the host's existing Core queries: items, applicable active modifications, card-declared contributions and body-specific minion Defense. A bound attack uses its recorded total and the targeted defender body. Before a target or a multi-body actor is selected, no target/body-dependent bonus is promised; unresolved action text is not simulated by presentation. Outside resolved animation scenes, the labels are current-state deltas, not a prediction of every later choice. Only already-visible faces receive values in a seat projection; no hidden card instance is added. Snapshot/replay rules remain unchanged. Wire /50 carries a sparse, compact value projection.
+
+## Resolved animation values (W-015)
+
+Attack spotlight hero/spell faces retain the authoritative resolved Attack total from their own public log row, minus the printed value. They do not recalculate conditional attack bonuses from post-resolution positions or cleared pending context. The captured value survives projection refreshes and queued animation playback, and is discarded with its scene on exit/Undo. Other channels retain their existing captured values. Missing historical totals keep the previous live-value fallback; minion attacks have no calculated numeric total and do not invent one. This does not extend an effect's gameplay lifetime.
+
+Shared modifier numerals use modest white outline weight with a dark shadow for contrast. Anchors, right-edge fitting and level-up exclusion are unchanged.
 
 ## Printed value ownership
 
 Which region a value belongs to is decided by the action it is printed on and by its `PrintedValueChannel`, never by the card's name and never by reading the sentence: the primary action is the one whose origin says `PrintedPrimary`, the secondary strip is every other action the card itself prints, the two qualifiers a label can carry are p.13's Ranged classification and p.14's Block, and p.16's Ultimate - which prints no Initiative and has no action at all - reads its icon from the permanent ability instead. That rule is what keeps this build without a printed-text parser, and `MatchHudPresentationTests` asserts the four regions partition the definition's printed values exactly, each drawn once.
 
+## Printed ink and source text
+
+The words themselves are never colour-coded, exactly as a printed card's are not, and `CardSourceContent` still distinguishes transcribed words, a read face printing none, and a synthetic fixture with no source face. Transcriptions display verbatim; [RULES_LEDGER.md](../RULES_LEDGER.md) owns their current source-verification status. Every plate a card draws - flag, bands, badge - shifts the card's own colour away from its text colour, so measured contrast can only rise.
+
 ## Wire and visibility
 
 Wire protocol `guards-private-online/50` adds visibility-scoped nonzero card-value deltas. Rows reuse already-transmitted card identities where possible, with explicit owner/versioned-face identities for authorized inspection-only faces. Compact signed values retain an Int32 escape; existing frame limits and retained history are unchanged. Earlier peers are rejected by the admission tuple. Snapshot schema remains v59. See [online architecture](PRIVATE_ONLINE_ARCHITECTURE.md) for transport and historical compatibility amendments.
+
+Current wire `/51` additionally carries nullable `ResolvedAttackTotal` on public match-log rows. A reserved kind bit signals an appended Int32, avoiding an extra presence byte on every retained row. Absence remains distinct from a resolved zero or negative total. Earlier peers are refused before decoding; snapshot schema, retained history and frame budgets remain unchanged.

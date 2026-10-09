@@ -305,7 +305,8 @@ namespace GuardsDigital.Core.Diagnostics
             HeroId blockingHeroId = default,
             CardInstanceId blockingCardInstanceId = default,
             IEnumerable<CardMoveFact> cardMoves = null,
-            IEnumerable<HexCoordinate> movementRoute = null)
+            IEnumerable<HexCoordinate> movementRoute = null,
+            int? resolvedAttackTotal = null)
         {
             if (sequence < 1)
             {
@@ -337,6 +338,7 @@ namespace GuardsDigital.Core.Diagnostics
             HasDestination = hasDestination;
             Outcome = outcome;
             Amount = amount;
+            ResolvedAttackTotal = resolvedAttackTotal;
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
             CardMoves = Array.AsReadOnly((cardMoves ?? Enumerable.Empty<CardMoveFact>()).ToArray());
@@ -391,6 +393,9 @@ namespace GuardsDigital.Core.Diagnostics
         /// </summary>
         public int Amount { get; }
 
+        /// <summary>The recorded Attack total for this resolved row; null means not recorded, not zero.</summary>
+        public int? ResolvedAttackTotal { get; }
+
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). On a <see cref="MatchLogEntryKind.BlockedAction"/>
         /// line, the hero controlling the standing rule modification that refused the step - the
@@ -419,7 +424,7 @@ namespace GuardsDigital.Core.Diagnostics
             new MatchLogEntry(
                 Sequence, Kind, RoundIndex, TurnIndex, SubjectHeroId, TargetHeroId, SubjectMinionId,
                 SubjectCardInstanceId, SubjectTeamId, Origin, Destination, HasOrigin, HasDestination,
-                Outcome, Amount, BlockingHeroId, BlockingCardInstanceId, cardMoves, MovementRoute);
+                Outcome, Amount, BlockingHeroId, BlockingCardInstanceId, cardMoves, MovementRoute, ResolvedAttackTotal);
 
         public bool Equals(MatchLogEntry other)
         {
@@ -439,6 +444,7 @@ namespace GuardsDigital.Core.Diagnostics
                 (!HasDestination || Destination.Equals(other.Destination)) &&
                 Outcome == other.Outcome &&
                 Amount == other.Amount &&
+                ResolvedAttackTotal == other.ResolvedAttackTotal &&
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
                 BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
                 CardMoves.SequenceEqual(other.CardMoves) &&
@@ -457,6 +463,7 @@ namespace GuardsDigital.Core.Diagnostics
                 hashCode = (hashCode * 397) ^ TurnIndex;
                 hashCode = (hashCode * 397) ^ (int)Outcome;
                 hashCode = (hashCode * 397) ^ Amount;
+                hashCode = (hashCode * 397) ^ ResolvedAttackTotal.GetHashCode();
                 return hashCode;
             }
         }

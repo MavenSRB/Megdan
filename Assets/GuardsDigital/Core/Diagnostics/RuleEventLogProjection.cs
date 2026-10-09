@@ -422,7 +422,8 @@ namespace GuardsDigital.Core.Diagnostics
                     $"zones={ruleEvent.FastTravelEvent.OriginZoneId.Value}->{ruleEvent.FastTravelEvent.DestinationZoneId.Value}");
             }
 
-            if (ruleEvent.AttackTotal > 0)
+            if (ruleEvent.AttackTotal != 0 ||
+                ruleEvent.Kind == CardActionResolutionEventKind.AttackTotalCalculated)
             {
                 detailParts.Add($"attack={ruleEvent.AttackTotal}");
             }

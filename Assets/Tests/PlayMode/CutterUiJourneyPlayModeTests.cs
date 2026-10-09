@@ -740,6 +740,21 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(step),
                 "and she is still standing where the printed Move put her, which is the space the " +
                 "narrowing was measured from. " + Remaining(runtime));
+
+            // The live attack has cleared, but the animation must retain the earned +2.
+            for (var frame = 0; frame < 180 &&
+                 runtime.SpotlightPresenter.Stage.Phase != AttackSpotlightPhase.Held; frame++)
+            {
+                runtime.KineticView.Tick(1f / 60f);
+                runtime.SpotlightPresenter.Tick(1f / 60f);
+                yield return null;
+            }
+            Assert.That(runtime.SpotlightPresenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held));
+            var captured = runtime.SpotlightPresenter.Stage.Current.AttackCard;
+            Assert.That(captured, Is.Not.Null);
+            Assert.That(captured.ValueBonuses.Single(value => value.Channel == PrintedValueChannel.Attack).Bonus,
+                Is.EqualTo(2), "The completed lunge's movement bonus belongs to this animation.");
+            yield return UiPlayer.CaptureScreen("tmp/w015-cutter-resolved-lunge.png");
         }
 
         /// <summary>

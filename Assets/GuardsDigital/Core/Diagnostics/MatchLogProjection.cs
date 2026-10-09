@@ -239,6 +239,7 @@ namespace GuardsDigital.Core.Diagnostics
         private sealed class AttackFold
         {
             public MatchLogOutcome Outcome;
+            public int? Total;
         }
 
         private sealed class DefenseFold
@@ -337,6 +338,15 @@ namespace GuardsDigital.Core.Diagnostics
                 return;
             }
 
+            if (type == ActionPrefix + nameof(CardActionResolutionEventKind.AttackTotalCalculated))
+            {
+                var resolution = Required(references, "resolution", entry);
+                if (!attacks.TryGetValue(resolution, out var fold))
+                    attacks[resolution] = fold = new AttackFold();
+                fold.Total = detail.ContainsKey("attack") ? (int?)Number(detail, "attack") : null;
+                return;
+            }
+
             if (type == AttackSuccessful || type == AttackSuccessfullyDefended)
             {
                 var resolution = Required(references, "resolution", entry);
@@ -358,7 +368,9 @@ namespace GuardsDigital.Core.Diagnostics
                     targetHeroId: Optional(references, "target", value => new HeroId(value)),
                     subjectMinionId: Optional(references, "minion", value => new MinionId(value)),
                     subjectCardInstanceId: Card(references),
-                    outcome: fold.Outcome));
+                    outcome: fold.Outcome,
+                    resolvedAttackTotal: detail.ContainsKey("attack")
+                        ? (int?)Number(detail, "attack") : fold.Total));
                 return;
             }
 

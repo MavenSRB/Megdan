@@ -1172,6 +1172,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "MatchLogEntry.BlockingCardInstanceId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.BlockingHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "MatchLogEntry.TargetHeroId", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
+                { "MatchLogEntry.ResolvedAttackTotal", Covered("NetworkMatchLogCodec_CarriesEveryFieldOfAnEntry") },
                 { "DirectorCommand.SystemTransitionDefinitionId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "DirectorCommand.SecondCardInstanceId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },
                 { "MinionBattleChoiceCommand.HeroId", Covered("NetworkCommandCodec_CarriesEveryFieldOfEveryFactory") },

@@ -518,7 +518,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(scene.AttackCard, Is.Not.Null);
         }
 
-        private static AttackSpotlightScene SceneFor(CardDefinition definition)
+        [Test]
+        public void AResolvedSpellAttackRetainsItsOwnBonus()
+        {
+            var definition = GydionCardContent.SpellDefinitions.Single(d => d.Id.Equals(GydionCardContent.MagicMissile));
+            var printed = CurrentRoundCards.ReadFace(definition).PrimaryValue.Amount;
+            var scene = SceneFor(definition, printed + 2);
+            Assert.That(scene.AttackSpell.ValueBonuses.Single(v => v.Channel == PrintedValueChannel.Attack).Bonus,
+                Is.EqualTo(2));
+        }
+
+        private static AttackSpotlightScene SceneFor(CardDefinition definition, int? resolvedAttackTotal = null)
         {
             var view = new CapturingSpotlightView();
             var card = new CardInstance(
@@ -528,7 +538,7 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
 
             client.Projection = new SpotlightReadModel(
-                new[] { Round(1), Attack(5, Attacker, Defender, AttackCard) },
+                new[] { Round(1), Attack(5, Attacker, Defender, AttackCard, resolvedAttackTotal: resolvedAttackTotal) },
                 new[] { card },
                 new[] { definition });
             presenter.Refresh();
@@ -734,6 +744,37 @@ namespace GuardsDigital.Tests.EditMode
                 Contains.Item(KineticCueKind.Lunge));
         }
 
+        [TestCase(6)]
+        [TestCase(4)]
+        [TestCase(0)]
+        [TestCase(-1)]
+        public void ResolvedCutterAttackKeepsItsOwnTotalThroughTheSpotlight(int total)
+        {
+            var view = new CapturingSpotlightView();
+            var client = Primed(view, out var presenter);
+            var definition = CutterCardContent.Definition(CutterCardContent.DaringStrike);
+            var card = CardInstance.CreateInHand(AttackCard, definition.Reference, Attacker);
+            var references = "round=1;turn=1;resolution=lunge;hero=" + Attacker.Value +
+                ";target=" + Defender.Value + ";card=" + AttackCard.Value + ";action=primary-attack";
+            var rows = MatchLogProjection.Derive(new[] {
+                new RuleEventLogEntry(2, "Action.AttackStarted", references, "step=start"),
+                new RuleEventLogEntry(3, "Action.AttackTotalCalculated", references, "step=total;attack=" + total),
+                new RuleEventLogEntry(4, "Action.AttackSuccessful", references, "step=done")
+            }).Select(CopyCompletenessTests.RoundTripLogEntry).ToArray();
+            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition });
+            presenter.Refresh();
+            var captured = presenter.Stage.Current.AttackCard;
+            Assert.That(captured.ValueBonuses.FirstOrDefault(v => v.Channel == PrintedValueChannel.Attack)?.Bonus ?? 0,
+                Is.EqualTo(total - 4), "Resolved movement/target bonus must survive cleared live attack context.");
+            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition });
+            presenter.Refresh();
+            Assert.That(presenter.Stage.Current.AttackCard, Is.SameAs(captured));
+            TickBy(presenter, AttackSpotlightTiming.EnterSeconds + 0.8f);
+            Assert.That(presenter.Stage.Current.AttackCard, Is.SameAs(captured));
+            presenter.Interrupt(ConductedSceneInterruption.ProjectionRewound);
+            Assert.That(presenter.Stage.Current, Is.Null);
+        }
+
         // ---- Helpers.
 
         private static SpotlightClient Primed(
@@ -773,13 +814,13 @@ namespace GuardsDigital.Tests.EditMode
             HeroId attacker,
             HeroId defender,
             CardInstanceId card,
-            MatchLogOutcome outcome = MatchLogOutcome.AttackSuccessful) =>
+            MatchLogOutcome outcome = MatchLogOutcome.AttackSuccessful, int? resolvedAttackTotal = null) =>
             new MatchLogEntry(
                 sequence, MatchLogEntryKind.Attack, 1, 1,
                 subjectHeroId: attacker,
                 targetHeroId: defender,
                 subjectCardInstanceId: card,
-                outcome: outcome);
+                outcome: outcome, resolvedAttackTotal: resolvedAttackTotal);
 
         private static MatchLogEntry Defense(
             int sequence,

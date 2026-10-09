@@ -92,7 +92,7 @@ namespace GuardsDigital.Presentation.Match
                     if (measured > available - 2f * sx)
                         size *= (available - 2f * sx) / measured;
                     label.style.fontSize = size;
-                    label.style.unityTextOutlineWidth = Mathf.Max(0.35f, size / 36f);
+                    ApplyWeight(label, size);
                 }
                 label.RegisterCallback<AttachToPanelEvent>(_ => label.schedule.Execute(Fit));
             }
@@ -108,11 +108,19 @@ namespace GuardsDigital.Presentation.Match
             label.style.marginTop = label.style.marginBottom = 0f;
             label.style.paddingLeft = label.style.paddingRight = 0f;
             label.style.paddingTop = label.style.paddingBottom = 0f;
-            label.style.unityTextOutlineColor = Color.black;
-            label.style.unityTextOutlineWidth = Mathf.Max(0.35f, size / 36f);
+            ApplyWeight(label, size);
             label.tooltip = value.Channel + ": " + Signed(value.Bonus) +
                 " from current game state. Unchosen targets and not-yet-applied action text may change this.";
             return label;
+        }
+
+        private static void ApplyWeight(Label label, float size)
+        {
+            // Expand the white ink, not the black edge: heavier numerals without moving their anchors.
+            label.style.unityTextOutlineColor = Color.white;
+            label.style.unityTextOutlineWidth = Mathf.Max(0.35f, size / 48f);
+            label.style.textShadow = new TextShadow { color = Color.black,
+                offset = Vector2.zero, blurRadius = Mathf.Max(1f, size / 12f) };
         }
 
         public static void AddInline(VisualElement parent, IReadOnlyList<CardValuePreview> values,

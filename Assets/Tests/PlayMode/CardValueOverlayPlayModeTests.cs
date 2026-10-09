@@ -125,7 +125,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Assert.That(card.Query<Label>().ToList().Count(l => l.name.StartsWith("gd-card-bonus-")),
                             Is.GreaterThan(0));
                     }
-                    yield return UiPlayer.CaptureScreen("tmp/w012-rendered-bonuses-" + amount + ".png");
+                    yield return UiPlayer.CaptureScreen("tmp/w015-rendered-bonuses-" + amount + ".png");
                 }
             }
             finally { shelf.RemoveFromHierarchy(); }

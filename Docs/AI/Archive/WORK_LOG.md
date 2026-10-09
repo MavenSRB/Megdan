@@ -17,6 +17,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-012 | Individually anchored live white value modifiers on all 600 card faces, with shared rendering and level-up exclusion. | `work/W-012` |
 | W-013 | Current-source private Windows package, including live card modifiers; verified exact artifact and ZIP. | `work/W-013` |
 | W-014 | Removed the breathing gold perimeter from awaited cards while preserving interaction and standing wait cues. | `work/W-014` |
+| W-015 | Retained resolved attack bonuses on spotlight cards and thickened shared white modifier numerals. | `work/W-015` |
+
+### [x] W-015 Resolved spotlight attack values and heavier modifiers
+
+Approved: fix Cutter's missing movement bonus during the post-resolution attack animation and make white modifier numbers slightly thicker.
+Outcome: animation hero/spell faces use their own recorded resolved Attack total; Cutter's completed Daring Strike retains +2. Shared white numerals gain modest stroke weight with dark contrast, without changing individual anchors, fitting or level-up exclusion. Public log transport is wire /51; snapshot v59 and gameplay rules are unchanged.
+Scope and acceptance: T2 focused log/wire/copy/spotlight regressions, real Cutter lunge and animation exit checks, multi-digit render bounds and visual inspection. No new package or breakdown UI. W013 is unchanged. Exact failing-to-passing checks, captures, limitations and review evidence live in `work/W-015`.
+
+Historical evidence: completion commit addressed by immutable `work/W-015`; exact checks and limitations live in its body.
 
 ### [x] W-014 Remove the breathing gold card outline
 

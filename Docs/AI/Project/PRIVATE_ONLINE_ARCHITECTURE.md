@@ -1,6 +1,6 @@
 # Minimum Private-Online Architecture Decision
 
-**Current compatibility:** wire /50, snapshot v59. [Card-value projection contract](CARD_VALUE_OVERLAYS.md#wire-and-visibility). Numbered amendments below retain historical versions.
+**Current compatibility:** wire /51, snapshot v59. [Card-value projection contract](CARD_VALUE_OVERLAYS.md#wire-and-visibility). Numbered amendments below retain historical versions.
 
 Canonical decision record for milestone 8.29. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md). Reassess this record before any dependency upgrade, provider change, public distribution, non-Windows bring-up, dedicated hosting, host migration, account system, matchmaking, or scale beyond six invited players.
 
