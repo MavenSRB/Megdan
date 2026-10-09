@@ -47,7 +47,7 @@ Board hero pieces and rail portraits resolve prepared artwork through the same b
 
 Private card fronts are prepared through `Tools/Prepare-CardArtwork.ps1`; `-Check` verifies dimensions and source-byte equality. The importer covers every configured hero and preserves existing metadata/overlays. Catalog identities and printed rules are unchanged; missing private resources still use the typed generated fallback. Extracted images stay ignored and local.
 
-END TURN and the seat's UNDO use `HudElements.Control`'s shared chip, border, radius, text colour and hover/press motion, not overpainted pewter cloth. Their corner geometry and authority paths are unchanged. END TURN retains its sole-action outline and disabled tooltip; unavailable seat Undo stays absent.
+END TURN and the seat's UNDO use `HudElements.Control`'s shared chip, border, radius, text colour and hover/press motion, not overpainted pewter cloth. Their corner geometry and authority paths are unchanged. END TURN retains its sole-action outline and disabled metadata; unavailable seat Undo stays absent. Small text hover popups are suppressed globally at the HUD root, including unavailable-action explanations and nested labels. Full card previews and defense modifier breakdowns remain available; tooltip metadata is preserved without drawing a popup.
 
 - The board is the primary focus.
 - Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.

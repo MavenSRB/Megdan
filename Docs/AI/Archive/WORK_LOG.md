@@ -19,6 +19,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-014 | Removed the breathing gold perimeter from awaited cards while preserving interaction and standing wait cues. | `work/W-014` |
 | W-015 | Retained resolved attack bonuses on spotlight cards and thickened shared white modifier numerals. | `work/W-015` |
 | W-016 | Kept hand and right-side unavailable cards fully bright, preserving inspection and command restrictions. | `work/W-016` |
+| W-017 | Suppressed generic small text tooltips while preserving full-card previews and defense modifier breakdowns. | `work/W-017` |
+
+### [x] W-017 Remove small text hover popups
+
+Approved: remove all small text tooltips, including unavailable-action explanations; explicitly preserve defense modifier breakdowns and full card previews.
+Outcome: the shared HUD tooltip lookup respects an ancestor-wide suppression barrier without erasing labels or changing input, gameplay or either defense breakdown surface. No new build.
+Acceptance: T2 tooltip suppression regressions, preserved typed defense rows and totals, live enabled/disabled/nested hover checks, full-card preview and click, defense modifier and defense-card breakdown journeys, targeted non-batch visual inspection and documentation validation.
+
+Historical evidence: completion commit addressed by immutable `work/W-017`; exact checks, initial failure/recovery, results and limitations live in its body.
 
 ### [x] W-016 Keep hand and right-side cards fully bright
 

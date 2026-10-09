@@ -6,7 +6,9 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.35z19.
+    /// W-017: Install suppresses all small text popups at the HUD root. The hidden layer remains
+    /// composition-compatible; metadata and independent full-card previews are unchanged.
+    /// The following describes its original 8.35z19 implementation, not current display policy.
     ///
     /// <para><b>Why this exists.</b> Dozens of call sites across this HUD set <c>VisualElement.tooltip</c>
     /// - the greyed-control reasons in <see cref="ActionUnavailabilityLabels"/>, the TIEBREAKER rail
@@ -117,11 +119,13 @@ namespace GuardsDigital.Presentation.Match
         /// Wires this layer to the HUD it serves. <paramref name="root"/> is the HUD's own root -
         /// never disabled, never itself a pick target (<c>ConfiguredMatchHudRenderer.Build</c> sets
         /// <c>pickingMode = Ignore</c> on it already) - so registering here rather than on any one
-        /// control is what makes "every existing tooltip string, zero per-site changes" true.
+        /// control keeps the suppression policy global without erasing per-control metadata.
         /// </summary>
         public void Install(VisualElement root)
         {
             hudRoot = root ?? throw new ArgumentNullException(nameof(root));
+            // Small text popups are retired across the HUD; metadata and full card previews remain.
+            hudRoot.AddToClassList(RuntimeTooltipCandidateLookup.SuppressTooltipClass);
             hudRoot.RegisterCallback<PointerMoveEvent>(OnPointerMove, TrickleDown.TrickleDown);
             hudRoot.RegisterCallback<PointerDownEvent>(_ => ApplyCommand(plan.Hide()), TrickleDown.TrickleDown);
             // Best-effort: root's own pickingMode is Ignore, so this may not fire for every way the
@@ -389,6 +393,7 @@ namespace GuardsDigital.Presentation.Match
 
         public static VisualElement Find(VisualElement hovered)
         {
+            VisualElement candidate = null;
             var node = hovered;
             while (node != null)
             {
@@ -397,15 +402,15 @@ namespace GuardsDigital.Presentation.Match
                     return null;
                 }
 
-                if (!string.IsNullOrEmpty(node.tooltip))
+                if (candidate == null && !string.IsNullOrEmpty(node.tooltip))
                 {
-                    return node;
+                    candidate = node;
                 }
 
                 node = node.parent;
             }
 
-            return null;
+            return candidate;
         }
     }
 }

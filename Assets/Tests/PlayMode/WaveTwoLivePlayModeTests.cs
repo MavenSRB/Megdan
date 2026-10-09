@@ -95,112 +95,41 @@ namespace GuardsDigital.Tests.PlayMode
                 "shorter roster must not have dropped it.");
         }
 
-        /// <summary>
-        /// Milestone 8.35z19. THE claim the whole milestone exists to settle: a tooltip renders at
-        /// all outside the Editor, and it answers a control that has been disabled - which is where
-        /// milestone 8.35s put every blocked-action reason.
-        /// </summary>
+        /// <summary>Small text popups stay retired, including disabled and nested controls.</summary>
         [UnityTest]
-        public IEnumerator TheTooltipPopup_RendersOverADisabledControlAndClampsInsideThePanel()
+        public IEnumerator SmallTextTooltips_StayHiddenOverEnabledDisabledAndNestedControls()
         {
             yield return LoadConfiguredScene(MatchFormat.Default);
-            var hud = Root().Hud;
-            var hudRoot = hud.RootElement;
-            var panel = hudRoot.panel;
-            Assert.That(panel, Is.Not.Null, "The HUD must be attached to a live panel to render.");
-
+            var hudRoot = Root().Hud.RootElement;
+            Assert.That(hudRoot.panel, Is.Not.Null);
             var popup = hudRoot.Q<VisualElement>("gd-runtime-tooltip");
-            Assert.That(popup, Is.Not.Null,
-                "ConfiguredMatchHudRenderer.Build installs the runtime tooltip layer, so its popup " +
-                "is part of every composed HUD.");
-            Assert.That(popup.style.display.value, Is.EqualTo(DisplayStyle.None),
-                "Nothing is hovered yet, so the popup starts hidden.");
-
-            // A DISABLED control carrying a tooltip - the case milestone 8.35s created and the one
-            // the layer is deliberately built not to depend on the disabled element handling.
-            var probe = new Button { text = "PROBE", tooltip = "Blocked by WASP's MAGNETIC DAGGER." };
-            probe.name = "gd-tooltip-probe";
+            Assert.That(popup, Is.Not.Null);
+            var probe = new Button { text = "PROBE", tooltip = "Unavailable action explanation." };
+            var label = new Label("Value") { tooltip = "Current card details." };
+            probe.Add(label);
             probe.style.position = Position.Absolute;
             probe.style.left = 40f;
             probe.style.top = 40f;
-            probe.style.width = 120f;
-            probe.style.height = 30f;
-            probe.SetEnabled(false);
+            probe.style.width = 160f;
+            probe.style.height = 60f;
             hudRoot.Add(probe);
             yield return null;
             yield return null;
 
-            Assert.That(probe.enabledInHierarchy, Is.False, "The probe must really be disabled.");
-
-            SendPointerMove(probe, probe.worldBound.center);
-
-            // The layer shows after its own 400 ms delay; give the scheduler real time to run it.
-            var waited = 0f;
-            while (waited < 2f && popup.style.display.value != DisplayStyle.Flex)
+            foreach (var disabled in new[] { false, true })
             {
-                waited += Time.deltaTime;
-                yield return null;
+                probe.SetEnabled(!disabled);
+                foreach (var target in new VisualElement[] { probe, label })
+                {
+                    SendPointerMove(target, target.worldBound.center);
+                    yield return new WaitForSecondsRealtime(0.65f);
+                    Assert.That(popup.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+                    Assert.That(popup.resolvedStyle.opacity, Is.EqualTo(0f));
+                }
             }
 
-            Assert.That(popup.style.display.value, Is.EqualTo(DisplayStyle.Flex),
-                "The popup never rendered over a disabled control, which is the exact claim this " +
-                "milestone exists to settle.");
-            var text = popup.Q<Label>();
-            Assert.That(text, Is.Not.Null);
-            Assert.That(text.text, Is.EqualTo("Blocked by WASP's MAGNETIC DAGGER."),
-                "The popup shows the disabled control's own tooltip string, read as a plain " +
-                "property rather than by asking the disabled element to handle anything.");
-
-            // DISPLAYED IS NOT THE SAME AS VISIBLE, and the two are deliberately separated here.
-            // The layer flips `display` to Flex at a provisional position with opacity still 0,
-            // lets that forced layout fire GeometryChangedEvent, and only then clamps the anchor
-            // and raises opacity - so nothing is ever painted at the unclamped spot. A popup that
-            // displayed and stayed at opacity 0 would be exactly as invisible to a player as the
-            // Editor-only tooltip this milestone replaces, so the reveal is waited for on its own
-            // rather than sampled at the instant display flipped (which is 0 by construction).
-            var revealed = 0f;
-            while (revealed < 2f && popup.resolvedStyle.opacity <= 0f)
-            {
-                revealed += Time.deltaTime;
-                yield return null;
-            }
-
-            Assert.That(popup.resolvedStyle.opacity, Is.GreaterThan(0f),
-                "The popup displayed but never became visible: it stayed at the provisional " +
-                "opacity 0, so PositionAndReveal did not run and a player would see nothing.");
-
-            // NO DOUBLE ANIMATION: the popup opts out of the ambient sweep both by its own pre-set
-            // transition and by class, so a live HUD must show exactly one opacity transition on it.
-            Assert.That(popup.ClassListContains(HudAmbientLife.OptOutClass), Is.True,
-                "The popup must stay opted out of HudAmbientLife's ambient ease-in sweep.");
-            Assert.That(popup.resolvedStyle.transitionProperty.Count, Is.EqualTo(1),
-                "One transition, on opacity alone - a second would be the ambient sweep having " +
-                "claimed this element as well.");
-
-            // CLAMPING: driven at the far bottom-right corner, the popup must stay inside the panel
-            // rather than hanging off it.
-            var viewport = hudRoot.worldBound;
-            var corner = new Vector2(viewport.xMax - 2f, viewport.yMax - 2f);
-            probe.style.left = viewport.width - 130f;
-            probe.style.top = viewport.height - 40f;
-            yield return null;
-            SendPointerMove(probe, corner);
-
-            waited = 0f;
-            while (waited < 2f)
-            {
-                waited += Time.deltaTime;
-                yield return null;
-            }
-
-            var box = popup.worldBound;
-            Assert.That(box.xMax, Is.LessThanOrEqualTo(viewport.xMax + 0.5f),
-                "The popup hung off the right edge of the panel instead of clamping.");
-            Assert.That(box.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f),
-                "The popup hung off the bottom edge of the panel instead of clamping.");
-            Assert.That(box.xMin, Is.GreaterThanOrEqualTo(viewport.xMin - 0.5f));
-            Assert.That(box.yMin, Is.GreaterThanOrEqualTo(viewport.yMin - 0.5f));
-
+            Assert.That(label.tooltip, Is.EqualTo("Current card details."),
+                "Retiring the popup does not erase underlying metadata.");
             probe.RemoveFromHierarchy();
         }
 

@@ -17,6 +17,24 @@ namespace GuardsDigital.Tests.EditMode
         private const string KeyA = "candidate-a";
         private const string KeyB = "candidate-b";
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void InstalledHud_SuppressesTextTooltipsEvenOnNestedOrDisabledControls(bool disabled)
+        {
+            var root = new VisualElement { tooltip = "HUD label" };
+            var control = new Button { tooltip = "Unavailable action explanation" };
+            var label = new Label("Card value") { tooltip = "Current card details" };
+            root.Add(control);
+            control.Add(label);
+            control.SetEnabled(!disabled);
+            new RuntimeTooltipLayer().Install(root);
+            Assert.That(RuntimeTooltipCandidateLookup.Find(label), Is.Null);
+            Assert.That(RuntimeTooltipCandidateLookup.Find(control), Is.Null);
+            Assert.That(RuntimeTooltipCandidateLookup.Find(root), Is.Null);
+            Assert.That(label.tooltip, Is.EqualTo("Current card details"),
+                "Metadata is retained; only the small popup is retired.");
+        }
+
         [Test]
         public void ANewCandidate_GoesPendingAndAsksForTheShowDelay()
         {

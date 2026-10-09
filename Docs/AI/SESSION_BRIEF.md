@@ -14,11 +14,11 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-016**.
+- Last completed work: **W-017**.
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-016 is complete: player hand cards and the unavailable cards on the right remain fully bright, including hover previews, without changing availability. W013 remains the current package and does not include W-014 through W-016; no new build is authorized. Proposed Shift breakdowns and decision summaries remain unimplemented. See [current work](Roadmap/CURRENT_WORK.md).
+W-017 is complete: generic small text tooltips are suppressed; full card previews and defense modifier breakdowns remain. W013 remains the current package and does not include W-014 through W-017; no new build is authorized. Proposed Shift breakdowns and decision summaries remain unimplemented. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

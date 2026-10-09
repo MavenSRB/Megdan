@@ -2331,6 +2331,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "Every layer of the reveal is pointer-transparent, not merely its outer wrapper.");
 
+            yield return new WaitForSecondsRealtime(0.65f);
+            Assert.That(root.Hud.RootElement.Q<VisualElement>("gd-runtime-tooltip").resolvedStyle.display,
+                Is.EqualTo(DisplayStyle.None), "The full card preview must not acquire a small text popup.");
+            Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            if (!UnityEngine.Application.isBatchMode)
+                yield return UiPlayer.CaptureScreen("tmp/w017-card-preview-no-tooltip.png");
+
             var pickedThroughPreview = card.panel.Pick(card.worldBound.center);
             Assert.That(pickedThroughPreview, Is.Not.Null);
             Assert.That(

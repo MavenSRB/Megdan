@@ -34,6 +34,9 @@ namespace GuardsDigital.Tests.EditMode
                 });
             var view = new HeroDefenseModifierBreakdownUnityView();
             var safe = new Rect(200f, 60f, 1300f, 800f);
+            var hud = new VisualElement();
+            new RuntimeTooltipLayer().Install(hud);
+            hud.Add(view.Root);
 
             view.Show(model, new Vector2(260f, 400f), safe);
 
