@@ -16,6 +16,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-011 | Added a background-free, pointer-transparent large red `10` through `1` overlay for the final seconds of allowance or bank. | `work/W-011` |
 | W-012 | Individually anchored live white value modifiers on all 600 card faces, with shared rendering and level-up exclusion. | `work/W-012` |
 | W-013 | Current-source private Windows package, including live card modifiers; verified exact artifact and ZIP. | `work/W-013` |
+| W-014 | Removed the breathing gold perimeter from awaited cards while preserving interaction and standing wait cues. | `work/W-014` |
+
+### [x] W-014 Remove the breathing gold card outline
+
+Approved: remove the breathing gold treatment shown around awaited hand cards.
+Outcome: awaited/eligible card semantics, commands, assistive text, selection outlines and hand-resolution dimming are unchanged, but card faces no longer draw or join the animated gold perimeter. The standing rail/header wait cues remain; the breathing-host cap now reflects the six-rail bound.
+Scope: shared card-face presentation and focused regression coverage only. No gameplay, rules, commands, card art, package or unrelated wait cue changed.
+Closing checks: 163/163 focused Edit Mode checks and 1/1 real-input Play Mode tray journey; `tmp/w014-awaited-cards.png` was freshly captured at the live commitment prompt. Direct local-file preview repeatedly failed in the environment ACL helper, so independent visual inspection of that capture remains an explicit tooling limitation. Living-document validation and diff review passed; no unrelated suites.
+
+Historical evidence: completion commit addressed by immutable `work/W-014`; exact checks, initial compiler correction and limitations live in its body.
 
 ### [x] W-013 Package current implementation as-is
 

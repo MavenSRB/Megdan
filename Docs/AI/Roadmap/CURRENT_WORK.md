@@ -2,13 +2,6 @@
 
 Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSION_BRIEF.md). Completed records move to [work history](../Archive/WORK_LOG.md).
 
-### [~] W-014 Remove the breathing gold card outline
-
-Approved: remove the breathing gold treatment shown around awaited hand cards.
-Outcome: awaited/eligible card semantics, commands, assistive text, selection outlines and hand-resolution dimming remain unchanged, but card faces no longer draw or join the animated gold outline family. Existing rail/header wait cues remain.
-Scope: shared card-face presentation and focused regression coverage only; no gameplay, rules, commands, card art, package or unrelated wait-cue changes.
-Closing checks: focused Edit Mode card/HUD presentation regressions, affected Play Mode card-interaction check, targeted visual inspection, living-document validation and diff review. T2; no unrelated suites.
-
 ### [!] W-004 Compact player-name banner for approval
 
 Approved: restore original slim tray geometry and replace the expanded name row with a small top-border banner. Show the rendered result for approval. W-013's later explicit as-is build request authorizes packaging the candidate without closing this separate design-approval gate.
