@@ -10,10 +10,20 @@ using GuardsDigital.Core.Rules.Progression;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    [Flags]
+    public enum CardValuePreviewSources
+    {
+        None = 0,
+        Items = 1,
+        Minions = 2,
+        ActiveEffects = 4,
+        CardEffects = 8,
+        All = Items | Minions | ActiveEffects | CardEffects
+    }
+
     /// <summary>
-    /// Reads the existing value queries, without performing actions or predicting unchosen targets.
-    /// A bound combat uses its actual target and recorded Attack total. Before a target exists,
-    /// target-dependent card text is deliberately not advertised as a guaranteed bonus.
+    /// Reads the existing value queries, without performing actions or predicting unchosen targets,
+    /// then exposes only the contribution categories selected for presentation.
     /// </summary>
     public static class CardValuePreviewQuery
     {
@@ -22,27 +32,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants, AdjacentMoveAuthority board, HeroItemState items,
             RuleModificationSet modifications, EffectRosterState roster, int roundIndex,
             int turnIndex, GuardsDigital.Core.Components.MarkerAttachmentRegister markers,
-            PendingAttackResolution attack)
+            PendingAttackResolution attack, CardValuePreviewSources sources = CardValuePreviewSources.All)
         {
+            if ((sources & ~CardValuePreviewSources.All) != 0)
+                throw new ArgumentOutOfRangeException(nameof(sources));
+            if (sources == CardValuePreviewSources.None)
+                return Array.Empty<CardValuePreview>();
+
             var results = new List<CardValuePreview>();
             foreach (var card in cards)
             {
                 var definition = definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
                 // Zero deltas are implicit. Keep the seat/wire projection sparse even late in a match.
-                void Add(PrintedValueChannel channel, int printed, int total)
+                void Add(PrintedValueChannel channel, ValueResult value)
                 {
-                    if (total != printed)
-                        results.Add(new CardValuePreview(card.OwnerId, definition.Reference, channel,
-                            checked(total - printed)));
+                    var bonus = DisplayedBonus(value.Contributions, sources);
+                    if (bonus != 0)
+                        results.Add(new CardValuePreview(card.OwnerId, definition.Reference, channel, bonus));
                 }
+
                 if (definition.Initiative.IsDefined)
                 {
                     var printed = PrintedValueQuery.CalculatePrintedInitiative(card, definitions);
-                    var value = ItemBonusQuery.Apply(printed, items, card.OwnerId, modifications);
-                    Add(PrintedValueChannel.Initiative, definition.Initiative.Value,
-                        value.Total + modifications.ValueContributions(
-                            RuleObject.ForHero(card.OwnerId), PrintedValueChannel.Initiative).Sum(c => c.Amount));
+                    var withItems = ItemBonusQuery.Apply(printed, items, card.OwnerId, modifications);
+                    Add(PrintedValueChannel.Initiative, new ValueResult(
+                        PrintedValueChannel.Initiative,
+                        withItems.Contributions.Concat(modifications.ValueContributions(
+                            RuleObject.ForHero(card.OwnerId), PrintedValueChannel.Initiative))));
                 }
+
                 foreach (var action in definition.ActionDefinitions)
                 {
                     var offer = new ActionOffer(card.Id, definition.Reference, action.Id, card.OwnerId,
@@ -98,21 +116,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 value = Basic(offer, definitions, items, modifications, printed.Channel);
                                 break;
                         }
-                        Add(printed.Channel, printed.Amount, value.Total);
+                        Add(printed.Channel, value);
                     }
                 }
+
                 if (definition.UltimateRule != null)
                     foreach (var printed in definition.UltimateRule.PrintedValues)
                     {
                         var offer = new ActionOffer(card.Id, definition.Reference,
                             definition.UltimateRule.EffectSourceId, card.OwnerId,
                             ActionInvocationContext.TextGranted, true);
-                        var value = Basic(offer, definitions, items, modifications, printed.Channel);
-                        Add(printed.Channel, printed.Amount, value.Total);
+                        Add(printed.Channel, Basic(offer, definitions, items, modifications, printed.Channel));
                     }
             }
             return Array.AsReadOnly(results.ToArray());
         }
+
+        private static int DisplayedBonus(
+            IEnumerable<ValueContribution> contributions, CardValuePreviewSources sources) =>
+            (contributions ?? throw new ArgumentNullException(nameof(contributions)))
+                .Where(contribution => IsVisible(contribution.Kind, sources))
+                .Sum(contribution => contribution.Amount);
+
+        private static bool IsVisible(ValueContributionKind kind, CardValuePreviewSources sources) =>
+            kind == ValueContributionKind.ItemModifier && sources.HasFlag(CardValuePreviewSources.Items) ||
+            kind == ValueContributionKind.MinionDefenseModifier && sources.HasFlag(CardValuePreviewSources.Minions) ||
+            kind == ValueContributionKind.ActiveEffectModifier && sources.HasFlag(CardValuePreviewSources.ActiveEffects) ||
+            (kind == ValueContributionKind.CardTextModifier ||
+             kind == ValueContributionKind.ContinuousSourceModifier) &&
+                sources.HasFlag(CardValuePreviewSources.CardEffects);
 
         private static ValueResult Basic(ActionOffer offer, IReadOnlyList<CardDefinition> definitions,
             HeroItemState items, RuleModificationSet modifications, PrintedValueChannel channel)

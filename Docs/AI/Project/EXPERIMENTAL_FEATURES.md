@@ -1,4 +1,4 @@
-# Experimental features: turn timer and teammate coordination
+# Experimental features
 
 Canonical designs and acceptance requirements; implementation status belongs to the owning roadmap. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is authorized now in an isolated worktree, in the sequence recorded by the session brief; reconcile final hero changes before merging. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
 
@@ -6,7 +6,7 @@ The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these 
 
 ## Experimental menu
 
-The host-game screen gains an **Experimental** button opening per-match feature toggles. Map selection is a standard host-screen setting, outside this menu; it remains available with every experiment off. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. User-selected defaults (2026-10-05): card commitment **120s**, card resolution **30s**, response **30s**, card upgrade **120s**, team bank per wave **300s**. Each is editable per game in whole seconds; accept 1–86400 for allowances and 0–86400 for the bank, with invalid input refused. Mockup life counts remain illustrative.
+The host-game screen has an **Experimental** button opening a dedicated, scrollable popup of immutable per-match feature toggles; the host form itself remains compact. Map selection is a standard host-screen setting, outside this menu; it remains available with every experiment off. Every new hosted game resets experiments to off. The first feature is **Turn timer**; enabling it reveals the duration settings below. A separate **Teammate coordination** toggle enables allied card inspection and right-click suggestions as specified below; either feature can be enabled independently. This design record does not authorize implementation. User-selected defaults (2026-10-05): card commitment **120s**, card resolution **30s**, response **30s**, card upgrade **120s**, team bank per wave **300s**. Each is editable per game in whole seconds; accept 1–86400 for allowances and 0–86400 for the bank, with invalid input refused. Mockup life counts remain illustrative.
 
 | Setting | What it times |
 | --- | --- |
@@ -216,3 +216,10 @@ Life cost 1, then applies existing additions. Tier-based assist coins and the de
 Level reward do not change. Tray badges retain their Tier 1/2/3 number but become yellow-only;
 situational Life modifiers never alter it. The immutable setting follows restart, replay, Undo,
 restore, projections and reconnect. Disabled play remains official.
+## Modifier presentation controls
+
+W-019 adds seven independent host options, all off for every fresh hosted game. The hero-token Defense shield always includes the net standard-minion contribution, including an effective token that the typed rules currently make a minion. Its **Items**, **Active effects**, and **Card effects** options add those categories independently. The card-face group separately exposes **Items**, **Minion contribution**, **Active effects**, and **Card effects**.
+
+“Card effects” means typed `CardTextModifier` contributions plus persistent card/continuous rule sources; it does not reclassify temporary Active effects or held items. The shield has no selected action card, so it can include only hero-wide card/continuous modifiers that apply without choosing a Defense offer. A card face may include action-specific card text when the existing Core query can establish it from current public state. A resolved action total never bypasses these filters.
+
+These options change presentation projections only. Combat, actions, item bonus multiplication, minion adjacency, effect lifetime, Undo, replay, and rules authority remain unchanged. The selected combination is immutable match identity under private wire 52 and experimental envelope 6; Core snapshot schema 59 is unchanged. Joined clients receive the host's exact options, and restore refuses a snapshot captured with a different combination.

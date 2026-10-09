@@ -4918,6 +4918,8 @@ namespace GuardsDigital.Tests.EditMode
                 inner.ActiveEffectSourceCardInstanceIds;
             public virtual bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
                 inner.IsActiveEffectSource(cardInstanceId);
+            public virtual IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+                inner.StandingActiveEffectSourceCardInstanceIds;
             public virtual TeamAgreementProjection TeamAgreement => inner.TeamAgreement;
             public virtual IReadOnlyList<CardInstance> Cards => inner.Cards;
             public virtual IReadOnlyList<SeatHandSummary> HandSummaries => inner.HandSummaries;

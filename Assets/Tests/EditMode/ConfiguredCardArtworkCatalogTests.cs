@@ -611,7 +611,7 @@ namespace GuardsDigital.Tests.EditMode
                     "Selection is a conditional overlay and does not become a permanent frame.");
 
                 Assert.That(face.tooltip, Is.EqualTo(card.AssistiveLabel));
-                Assert.That(face.tooltip, Does.Contain("ACTIVE EFFECT IN EFFECT"));
+                Assert.That(face.tooltip, Does.Contain("ACTIVE EFFECT REMAINS"));
                 Assert.That(face.tooltip, Does.Not.Contain("Private/Cards"),
                     "No resource address reaches player-facing hover text.");
             }

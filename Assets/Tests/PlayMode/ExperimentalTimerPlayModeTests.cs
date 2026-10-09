@@ -178,16 +178,29 @@ namespace GuardsDigital.Tests.PlayMode
             menu.Root.Q<Toggle>("experimental-timer").value=true;
             menu.Root.Q<Toggle>("experimental-coordination").value=true;
             menu.Root.Q<Toggle>("experimental-hero-defeat-base-one").value=true;
+            foreach (var name in new[]
+            {
+                "experimental-shield-items", "experimental-shield-active-effects",
+                "experimental-shield-card-effects", "experimental-card-modifiers-items",
+                "experimental-card-modifiers-minions", "experimental-card-modifiers-active-effects",
+                "experimental-card-modifiers-card-effects"
+            })
+                menu.Root.Q<Toggle>(name).value = true;
             yield return null;yield return null;
             Assert.That(menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")).Count(),Is.EqualTo(5));
             var commitment=menu.Root.Q<IntegerField>("experimental-duration-0");
             commitment.value=125; commitment.value=0;
             Assert.That(menu.CurrentEntry().Experiments.CardCommitmentSeconds,Is.EqualTo(125));
             Assert.That(menu.CurrentEntry().Experiments.HeroDefeatBaseLifeCostIsOne,Is.True);
+            Assert.That(menu.CurrentEntry().Experiments.CardModifiersMinions,Is.True);
+            Assert.That(menu.CurrentEntry().Experiments.HeroShieldCardEffects,Is.True);
             Assert.That(menu.Root.Q<Label>("experimental-duration-error").text,Is.Not.Empty);
             foreach(var field in menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")))
                 Assert.That(field.resolvedStyle.color,Is.EqualTo(Color.black));
-            yield return UiPlayer.CaptureScreen("tmp/964a-host-menu-1920.png");
+            yield return UiPlayer.CaptureScreen("tmp/w019-experimental-popup-1920.png");
+            UiPlayer.Click(menu.Root.Q<Button>("experimental-close"));
+            yield return null;
+            Assert.That(UiPlayer.IsShown(menu.Root.Q<VisualElement>("experimental-menu-popup")), Is.False);
             menu.Root.RemoveFromHierarchy();
         }
     }

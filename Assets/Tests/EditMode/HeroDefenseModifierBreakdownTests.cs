@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -14,7 +15,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class HeroDefenseModifierBreakdownTests
     {
         [Test]
-        public void ShiftPanelKeepsEveryCreepSeparateAggregatesLiveItemsAndShowsExactTotal()
+        public void ShiftPanelShowsEveryContributionSelectedIntoTheShieldProjection()
         {
             var model = new HeroDefenseModifierProjection(
                 new HeroId("hero"),
@@ -30,7 +31,11 @@ namespace GuardsDigital.Tests.EditMode
                     Project(new ValueContribution(ValueContributionKind.ItemModifier,
                         new CardInstanceId("shield-one"), PrintedValueChannel.Defense, 2), "Shield One"),
                     Project(new ValueContribution(ValueContributionKind.ItemModifier,
-                        new CardInstanceId("shield-two"), PrintedValueChannel.Defense, 2), "Shield Two")
+                        new CardInstanceId("shield-two"), PrintedValueChannel.Defense, 2), "Shield Two"),
+                    Project(new ValueContribution(ValueContributionKind.ActiveEffectModifier,
+                        new ActiveEffectId("blessing"), PrintedValueChannel.Defense, 2), "Active blessing"),
+                    Project(ValueContribution.FromContinuousSource("ultimate-card-effect",
+                        PrintedValueChannel.Defense, -1), "Ultimate card effect")
                 });
             var view = new HeroDefenseModifierBreakdownUnityView();
             var safe = new Rect(200f, 60f, 1300f, 800f);
@@ -44,13 +49,22 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-creep-row").ToList(),
                 Has.Count.EqualTo(3), "each creep or effective creep-like source owns one row");
             Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-items-row").ToList(),
-                Has.Count.EqualTo(1), "items collapse only after their live amounts are summed");
+                Has.Count.EqualTo(1), "selected items retain the existing aggregated row.");
+            Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-active-effect-row").ToList(),
+                Has.Count.EqualTo(1));
+            Assert.That(view.Root.Query<VisualElement>("gd-hero-defense-card-effect-row").ToList(),
+                Has.Count.EqualTo(1));
             var text = DescendantsAndSelf(view.Root).OfType<Label>().Select(value => value.text).ToArray();
             Assert.That(text, Does.Contain("Blue Melee creep"));
             Assert.That(text, Does.Contain("Red Heavy creep"));
             Assert.That(text, Does.Contain("Ward token (creep)"));
+            Assert.That(text, Does.Not.Contain("Shield One"));
+            Assert.That(text, Does.Not.Contain("Shield Two"));
             Assert.That(text, Does.Contain("+4"));
-            Assert.That(text, Does.Contain("+5"));
+            Assert.That(text, Does.Contain("Active blessing"));
+            Assert.That(text, Does.Contain("Ultimate card effect"));
+            Assert.That(text, Does.Contain("+6"));
+            Assert.That(model.Total, Is.EqualTo(6));
             Assert.That(view.LastRect.xMin,
                 Is.GreaterThanOrEqualTo(safe.xMin + HeroDefenseModifierBreakdownUnityView.SafeMargin));
             Assert.That(view.LastRect.xMax,

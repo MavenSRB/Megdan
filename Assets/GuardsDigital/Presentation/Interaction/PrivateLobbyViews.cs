@@ -140,6 +140,13 @@ namespace GuardsDigital.Presentation.Interaction
         private Toggle enemyInfoToggle;
         private Toggle minionBattleCapToggle;
         private Toggle heroDefeatBaseLifeCostToggle;
+        private Toggle heroShieldItemsToggle;
+        private Toggle heroShieldActiveEffectsToggle;
+        private Toggle heroShieldCardEffectsToggle;
+        private Toggle cardModifiersItemsToggle;
+        private Toggle cardModifiersMinionsToggle;
+        private Toggle cardModifiersActiveEffectsToggle;
+        private Toggle cardModifiersCardEffectsToggle;
         private IntegerField minionBattleCapField;
         private VisualElement minionBattleCapSettings;
         private Toggle timerToggle;
@@ -154,6 +161,7 @@ namespace GuardsDigital.Presentation.Interaction
         private bool hasRememberedTimerValues;
         private VisualElement timerSettings;
         private VisualElement experimentalPanel;
+        private VisualElement experimentalOverlay;
         private PrivateLobbyRole renderedRole = PrivateLobbyRole.None;
         private PrivateLobbyModel renderedModel;
         private readonly Label selectionStatus;
@@ -316,16 +324,48 @@ namespace GuardsDigital.Presentation.Interaction
             mapSelector.style.fontSize = 18; mapSelector.style.marginBottom = 6;
             mapSelector.style.color = Color.black; mapSelector.labelElement.style.color = Color.white;
             hostMenu.Add(mapSelector);
-            experimentalPanel = new VisualElement { name = "experimental-menu" };
-            experimentalPanel.style.display = DisplayStyle.None;
-            experimentalPanel.style.marginTop = 6;
-            var experimentalButton = new Button(() => experimentalPanel.style.display =
-                experimentalPanel.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None)
-                { text = "EXPERIMENTAL", name = "experimental-button" };
+            experimentalOverlay = new VisualElement { name = "experimental-menu-popup" };
+            experimentalOverlay.style.position = Position.Absolute;
+            experimentalOverlay.style.left = 0f;
+            experimentalOverlay.style.top = 0f;
+            experimentalOverlay.style.right = 0f;
+            experimentalOverlay.style.bottom = 0f;
+            experimentalOverlay.style.display = DisplayStyle.None;
+            experimentalOverlay.style.alignItems = Align.Center;
+            experimentalOverlay.style.justifyContent = Justify.Center;
+            experimentalOverlay.style.backgroundColor = new Color(0f, 0f, 0f, 0.72f);
+            experimentalPanel = new ScrollView(ScrollViewMode.Vertical) { name = "experimental-menu" };
+            experimentalPanel.style.width = 720f;
+            experimentalPanel.style.maxHeight = new StyleLength(new Length(82f, LengthUnit.Percent));
+            experimentalPanel.style.paddingLeft = 18f;
+            experimentalPanel.style.paddingRight = 18f;
+            experimentalPanel.style.paddingTop = 16f;
+            experimentalPanel.style.paddingBottom = 16f;
+            experimentalPanel.style.backgroundColor = PanelBackground;
+            HudElements.Border(experimentalPanel, PanelEdge, 2f, 4f);
+            var experimentalButton = new Button(() =>
+            {
+                experimentalOverlay.style.display = DisplayStyle.Flex;
+                experimentalOverlay.BringToFront();
+            }) { text = "EXPERIMENTAL", name = "experimental-button" };
             experimentalButton.style.height = 36;
             experimentalButton.style.fontSize = 18;
             ApplyButtonChrome(experimentalButton);
             hostMenu.Add(experimentalButton);
+            var experimentalHeader = new VisualElement { name = "experimental-popup-header" };
+            experimentalHeader.style.flexDirection = FlexDirection.Row;
+            experimentalHeader.style.alignItems = Align.Center;
+            experimentalHeader.style.justifyContent = Justify.SpaceBetween;
+            var experimentalTitle = Caption("EXPERIMENTAL SETTINGS", 22, "experimental-popup-title");
+            experimentalTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
+            experimentalHeader.Add(experimentalTitle);
+            var experimentalClose = new Button(() => experimentalOverlay.style.display = DisplayStyle.None)
+                { text = "CLOSE", name = "experimental-close" };
+            experimentalClose.style.width = 120f;
+            experimentalClose.style.height = 34f;
+            ApplyButtonChrome(experimentalClose);
+            experimentalHeader.Add(experimentalClose);
+            experimentalPanel.Add(experimentalHeader);
             coordinationToggle = new Toggle("Teammate coordination") { name = "experimental-coordination" };
             coordinationToggle.style.fontSize = 18;
             coordinationToggle.style.color = Color.white;
@@ -375,6 +415,33 @@ namespace GuardsDigital.Presentation.Interaction
             heroDefeatBaseLifeCostToggle.style.fontSize = 18;
             heroDefeatBaseLifeCostToggle.style.color = Color.white;
             experimentalPanel.Add(heroDefeatBaseLifeCostToggle);
+
+            var shieldHeading = Caption("HERO SHIELD MODIFIERS", 16, "experimental-shield-heading");
+            shieldHeading.style.marginTop = 8f;
+            experimentalPanel.Add(shieldHeading);
+            var shieldHelp = Caption("Minion contribution is always shown. Optionally add:", 14,
+                "experimental-shield-help");
+            shieldHelp.style.whiteSpace = WhiteSpace.Normal;
+            experimentalPanel.Add(shieldHelp);
+            heroShieldItemsToggle = ExperimentalToggle("Items", "experimental-shield-items");
+            heroShieldActiveEffectsToggle = ExperimentalToggle("Active effects", "experimental-shield-active-effects");
+            heroShieldCardEffectsToggle = ExperimentalToggle("Card effects", "experimental-shield-card-effects");
+            experimentalPanel.Add(heroShieldItemsToggle);
+            experimentalPanel.Add(heroShieldActiveEffectsToggle);
+            experimentalPanel.Add(heroShieldCardEffectsToggle);
+
+            var cardsHeading = Caption("CARD MODIFIERS", 16, "experimental-card-modifiers-heading");
+            cardsHeading.style.marginTop = 8f;
+            experimentalPanel.Add(cardsHeading);
+            cardModifiersItemsToggle = ExperimentalToggle("Items", "experimental-card-modifiers-items");
+            cardModifiersMinionsToggle = ExperimentalToggle("Minion contribution", "experimental-card-modifiers-minions");
+            cardModifiersActiveEffectsToggle = ExperimentalToggle("Active effects", "experimental-card-modifiers-active-effects");
+            cardModifiersCardEffectsToggle = ExperimentalToggle("Card effects", "experimental-card-modifiers-card-effects");
+            experimentalPanel.Add(cardModifiersItemsToggle);
+            experimentalPanel.Add(cardModifiersMinionsToggle);
+            experimentalPanel.Add(cardModifiersActiveEffectsToggle);
+            experimentalPanel.Add(cardModifiersCardEffectsToggle);
+
             timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
             timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
             timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
@@ -395,7 +462,8 @@ namespace GuardsDigital.Presentation.Interaction
             }
             timerSettings.Add(durationError); experimentalPanel.Add(timerSettings);
             timerToggle.RegisterValueChangedCallback(change=>timerSettings.style.display=change.newValue?DisplayStyle.Flex:DisplayStyle.None);
-            hostMenu.Add(experimentalPanel);
+            experimentalOverlay.Add(experimentalPanel);
+            Root.Add(experimentalOverlay);
             entry.Add(hostMenu);
 
             joinMenu = new VisualElement { name = JoinMenuName };
@@ -514,6 +582,14 @@ namespace GuardsDigital.Presentation.Interaction
             Root.RegisterCallback<GeometryChangedEvent>(_ => HideHeroOverview());
         }
 
+        private static Toggle ExperimentalToggle(string label, string name)
+        {
+            var toggle = new Toggle(label) { name = name };
+            toggle.style.fontSize = 18;
+            toggle.style.color = Color.white;
+            return toggle;
+        }
+
         public VisualElement Root { get; }
 
         /// <summary>Raised when a player presses one of the controls this view drew.</summary>
@@ -545,7 +621,11 @@ namespace GuardsDigital.Presentation.Interaction
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
                         timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value,
                         minionBattleCapToggle.value,minionBattleCapField.value,
-                        heroDefeatBaseLifeCostToggle.value), mapChoices[mapSelector.index].Reference,
+                        heroDefeatBaseLifeCostToggle.value,
+                        heroShieldItemsToggle.value,heroShieldActiveEffectsToggle.value,heroShieldCardEffectsToggle.value,
+                        cardModifiersItemsToggle.value,cardModifiersMinionsToggle.value,
+                        cardModifiersActiveEffectsToggle.value,cardModifiersCardEffectsToggle.value),
+                    mapChoices[mapSelector.index].Reference,
                     waveCountField.value, lifeCountField.value)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
@@ -568,13 +648,20 @@ namespace GuardsDigital.Presentation.Interaction
                 enemyInfoToggle.SetValueWithoutNotify(false);
                 minionBattleCapToggle.SetValueWithoutNotify(false);
                 heroDefeatBaseLifeCostToggle.SetValueWithoutNotify(false);
+                heroShieldItemsToggle.SetValueWithoutNotify(false);
+                heroShieldActiveEffectsToggle.SetValueWithoutNotify(false);
+                heroShieldCardEffectsToggle.SetValueWithoutNotify(false);
+                cardModifiersItemsToggle.SetValueWithoutNotify(false);
+                cardModifiersMinionsToggle.SetValueWithoutNotify(false);
+                cardModifiersActiveEffectsToggle.SetValueWithoutNotify(false);
+                cardModifiersCardEffectsToggle.SetValueWithoutNotify(false);
                 minionBattleCapField.SetValueWithoutNotify(1);
                 minionBattleCapSettings.style.display = DisplayStyle.None;
                 timerToggle.SetValueWithoutNotify(false); timerSettings.style.display=DisplayStyle.None;
                 for(int i=0;i<timerFields.Count;i++)
                     timerFields[i].SetValueWithoutNotify(hasRememberedTimerValues
                         ? rememberedTimerValues[i] : timerDefaults[i]);
-                experimentalPanel.style.display = DisplayStyle.None;
+                experimentalOverlay.style.display = DisplayStyle.None;
             }
             page = value;
             if (renderedModel != null)

@@ -21,7 +21,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-016 | Kept hand and right-side unavailable cards fully bright, preserving inspection and command restrictions. | `work/W-016` |
 | W-017 | Suppressed generic small text tooltips while preserving full-card previews and defense modifier breakdowns. | `work/W-017` |
 | W-018 | Kept same-identity last-minion death and Lane Push movement in causal presentation order. | `work/W-018` |
+| W-019 | Added independent Experimental modifier-display controls in a dedicated popup and continuous dormant-to-active source-card reminders. | `work/W-019` |
 
+### [x] W-019 Experimental modifier displays and Active-effect source reminders
+
+Approved: add seven independent default-off per-match controls in a dedicated Experimental popup. Hero shields always retain net minion Defense and may independently add items, Active effects, and card/continuous effects; card faces independently expose items, minions, Active effects, and card/continuous effects. A source card's violet Active-effect reminder begins when its first standing effect is created, remains through dormant and active phases, and ends with its final sourced instance; hero/radius and value treatment remain mechanically active-only.
+Outcome: host settings, experimental snapshot identity, private wire /52, sparse card values, hero-shield rows, spotlight capture, staged sandbox recomposition, seat projection, and shared presentation now follow those contracts. The Experimental launcher opens a centered, scrollable popup with a dimmed backdrop and Close action, leaving the host form compact. Authoritative gameplay totals, effect activation, rules, Core snapshot v59, and W013 package are unchanged.
+Acceptance: T2 focused dotnet and Unity regressions cover independent/default-off categories, wire/snapshot equality and rejection, popup binding, card/shield/spotlight projection, standing-versus-active effect visibility, creation/activation/expiry/restore/private-seat paths, and accessibility wording. Final Unity evidence passed 132/132 popup/settings Edit Mode, 3/3 affected Play Mode, 3/3 non-batch visual paths, 182/182 standing-source Edit Mode, 1/1 standing-source Play Mode, 1/1 dormant-source visual, and 151/151 final presentation checks. Popup, `+1` card overlays, shield rows, and dormant-source capture were rendered; the popup/card/shield captures were visually inspected. Living-document validation and diff review close the record. No build or remote publication.
+
+Historical evidence: completion commit addressed by immutable `work/W-019`; exact checks, corrected failures, results and limitations live in its body.
 ### [x] W-018 Keep a last-minion kill at its original space
 
 Approved from the user's report that the prior correction still pushed the wave first and then struck the respawned minion in a different zone.

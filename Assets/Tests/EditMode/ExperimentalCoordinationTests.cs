@@ -79,6 +79,42 @@ namespace GuardsDigital.Tests.EditMode
             return MatchHost.Compose(new MatchSessionInitialState(state.Scenario, state.Setup, state.AvailableMaps,
                 state.InitialConfiguration, state.InitialTiming, state.StagedProgression, options));
         }
+        [Test]
+        public void ModifierDisplayOptionsDefaultOffAndRoundTripAsIndependentSnapshotIdentity()
+        {
+            var disabled = ExperimentalMatchOptions.Disabled;
+            Assert.That(new[]
+            {
+                disabled.HeroShieldItems, disabled.HeroShieldActiveEffects, disabled.HeroShieldCardEffects,
+                disabled.CardModifiersItems, disabled.CardModifiersMinions,
+                disabled.CardModifiersActiveEffects, disabled.CardModifiersCardEffects
+            }, Has.All.False);
+            var options = new ExperimentalMatchOptions(
+                heroShieldItems: true, heroShieldActiveEffects: false, heroShieldCardEffects: true,
+                cardModifiersItems: false, cardModifiersMinions: true,
+                cardModifiersActiveEffects: false, cardModifiersCardEffects: true);
+            using (var stream = new System.IO.MemoryStream())
+            using (var writer = new System.IO.BinaryWriter(stream))
+            {
+                ExperimentalWireCodec.WriteOptions(writer, options);
+                writer.Flush();
+                stream.Position = 0;
+                using (var reader = new System.IO.BinaryReader(stream))
+                {
+                    Assert.That(ExperimentalWireCodec.ReadOptions(reader), Is.EqualTo(options));
+                    Assert.That(stream.Position, Is.EqualTo(stream.Length));
+                }
+            }
+            var host = Create(options);
+            var snapshot = host.CaptureSnapshot();
+            Assert.That(snapshot.StartsWith("guards-experimental/6:"), Is.True);
+            Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.True);
+            var other = Create(new ExperimentalMatchOptions(cardModifiersMinions: true));
+            var before = other.CaptureSnapshot();
+            Assert.That(other.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.False);
+            Assert.That(other.CaptureSnapshot(), Is.EqualTo(before));
+        }
+
         [TestCase("")] [TestCase("marker-test")]
         public void MarkerOnlyUpdatesPreserveGameplayProjectionAndLogIdentity(string key)
         {
@@ -205,7 +241,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var host = Create(options);
             var snapshot = host.CaptureSnapshot();
-            Assert.That(snapshot.StartsWith("guards-experimental/5:"), Is.True);
+            Assert.That(snapshot.StartsWith("guards-experimental/6:"), Is.True);
             Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.True);
             var other = Create(new ExperimentalMatchOptions(
                 minionBattleRemovalCapEnabled: true,
@@ -233,7 +269,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var host = Create(options);
             var snapshot = host.CaptureSnapshot();
-            Assert.That(snapshot.StartsWith("guards-experimental/5:"), Is.True);
+            Assert.That(snapshot.StartsWith("guards-experimental/6:"), Is.True);
             Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.True);
             var official = Create(ExperimentalMatchOptions.Disabled);
             var before = official.CaptureSnapshot();

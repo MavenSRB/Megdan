@@ -630,6 +630,12 @@ namespace GuardsDigital.Application
         public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
             ActiveEffectSourceCardInstanceIds.Contains(cardInstanceId);
 
+        public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+            wire == null
+                ? trusted.StandingActiveEffectSourceCardInstanceIds
+                : Array.AsReadOnly(wire.StandingActiveEffectSourceCardInstanceIds.Select(
+                    value => new CardInstanceId(value)).ToArray());
+
         public IReadOnlyList<CardInstance> Cards => wire == null ? trusted.Cards :
             Array.AsReadOnly(wire.OwnCards.Concat(wire.PublicCards).Select(ToCard).ToArray());
 

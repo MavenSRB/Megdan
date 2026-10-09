@@ -75,6 +75,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ADormantInstance_IsAStandingSourceButNotAMechanicallyActiveOne()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADormantActiveEffect(
+                out var sourceCardId);
+            var effect = RestoredMatch(session).Round.Timing.Effects
+                .Single(value => value.SourceCardInstanceId.Equals(sourceCardId));
+
+            Assert.That(effect.Phase, Is.EqualTo(ActiveEffectPhase.Dormant));
+            Assert.That(session.Projection.IsActiveEffectSource(sourceCardId), Is.False,
+                "Dormant future rules must not feed active values or target auras.");
+            Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds
+                .Contains(sourceCardId), Is.True,
+                "The source-card reminder begins when the future effect is created.");
+            Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds,
+                Does.Contain(sourceCardId));
+        }
+
+        [Test]
         public void ARestoredPosition_DerivesTheSameSourcesRatherThanRememberingThem()
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out _);
@@ -85,11 +103,14 @@ namespace GuardsDigital.Tests.EditMode
             ConfiguredMatchFixtures.PlayOutTheRestOfTheRound(session);
             Assert.That(session.Projection.ActiveEffectSourceCardInstanceIds, Is.Empty,
                 "The position moved on, so a restore that merely remembered would be caught here.");
+            Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds, Is.Empty);
 
             Assert.That(session.RestoreSnapshot(snapshot).Accepted, Is.True);
             Assert.That(session.Projection.ActiveEffectSourceCardInstanceIds, Is.EqualTo(before),
                 "A restored position derives the same live sources from the lifecycle it preserved - " +
                 "no presentation-owned lifetime, and nothing new on the wire to remember it with.");
+            Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds,
+                Is.EqualTo(before));
         }
 
         [Test]

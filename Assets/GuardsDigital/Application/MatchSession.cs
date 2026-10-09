@@ -1081,7 +1081,8 @@ namespace GuardsDigital.Application
                         DirectorCommand.RetrieveOneAfterReveal(retrievalHero, cardId))
                     : null,
                 CreateHeroDefenseModifiers(turnModifications),
-                round.ReadCardValuePreviews());
+                round.ReadCardValuePreviews(CardValueSources(Experiments)),
+                CreateStandingActiveEffectSourceCards(round));
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;
@@ -1140,6 +1141,28 @@ namespace GuardsDigital.Application
 
             return Array.AsReadOnly(round.Timing.Effects
                 .Where(effect => effect.Phase == GuardsDigital.Core.Timing.ActiveEffectPhase.Active)
+                .Select(effect => effect.SourceCardInstanceId)
+                .Distinct()
+                .OrderBy(id => id.Value, StringComparer.Ordinal)
+                .ToArray());
+        }
+
+        /// <summary>
+        /// Which cards still source an unended Active-effect instance. This deliberately includes
+        /// dormant future effects so their violet card reminder begins at creation and remains
+        /// continuous through activation; rules and target auras still use active instances only.
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> CreateStandingActiveEffectSourceCards(
+            RoundResolutionAuthority round)
+        {
+            if (round == null)
+            {
+                return Array.Empty<CardInstanceId>();
+            }
+
+            return Array.AsReadOnly(round.Timing.Effects
+                .Where(effect => effect.Phase !=
+                    GuardsDigital.Core.Timing.ActiveEffectPhase.Ended)
                 .Select(effect => effect.SourceCardInstanceId)
                 .Distinct()
                 .OrderBy(id => id.Value, StringComparer.Ordinal)
@@ -1334,6 +1357,23 @@ namespace GuardsDigital.Application
                 .ToArray());
         }
 
+        internal static CardValuePreviewSources CardValueSources(ExperimentalMatchOptions options)
+        {
+            var sources = CardValuePreviewSources.None;
+            if (options.CardModifiersItems) sources |= CardValuePreviewSources.Items;
+            if (options.CardModifiersMinions) sources |= CardValuePreviewSources.Minions;
+            if (options.CardModifiersActiveEffects) sources |= CardValuePreviewSources.ActiveEffects;
+            if (options.CardModifiersCardEffects) sources |= CardValuePreviewSources.CardEffects;
+            return sources;
+        }
+
+        internal static bool IncludeHeroShieldSupplement(
+            ExperimentalMatchOptions options, ValueContributionKind kind) =>
+            kind == ValueContributionKind.ItemModifier && options.HeroShieldItems ||
+            kind == ValueContributionKind.ActiveEffectModifier && options.HeroShieldActiveEffects ||
+            (kind == ValueContributionKind.CardTextModifier ||
+             kind == ValueContributionKind.ContinuousSourceModifier) && options.HeroShieldCardEffects;
+
         private IReadOnlyList<HeroDefenseModifierProjection> CreateHeroDefenseModifiers(
             RuleModificationSet modifications)
         {
@@ -1350,15 +1390,21 @@ namespace GuardsDigital.Application
                             board,
                             liveModifications)
                         .ToList();
-                    var bonusPerItem = ItemBonusMultiplierQuery.BonusPerItem(
-                        hero.HeroId, liveModifications);
-                    contributions.AddRange(round.HeroItems.GetItems(hero.HeroId)
-                        .Where(item => item.Icon == PrintedValueChannel.Defense)
-                        .Select(item => new ValueContribution(
-                            ValueContributionKind.ItemModifier,
-                            item.SourceCardInstanceId,
-                            PrintedValueChannel.Defense,
-                            bonusPerItem)));
+                    if (IncludeHeroShieldSupplement(Experiments, ValueContributionKind.ItemModifier))
+                    {
+                        var bonusPerItem = ItemBonusMultiplierQuery.BonusPerItem(
+                            hero.HeroId, liveModifications);
+                        contributions.AddRange(round.HeroItems.GetItems(hero.HeroId)
+                            .Where(item => item.Icon == PrintedValueChannel.Defense)
+                            .Select(item => new ValueContribution(
+                                ValueContributionKind.ItemModifier,
+                                item.SourceCardInstanceId,
+                                PrintedValueChannel.Defense,
+                                bonusPerItem)));
+                    }
+                    contributions.AddRange(liveModifications.ValueContributions(
+                            RuleObject.ForHero(hero.HeroId), PrintedValueChannel.Defense)
+                        .Where(value => IncludeHeroShieldSupplement(Experiments, value.Kind)));
                     return new HeroDefenseModifierProjection(
                         hero.HeroId,
                         hero.Body,

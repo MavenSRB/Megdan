@@ -337,6 +337,8 @@ namespace GuardsDigital.Application
                     value.Channel != PrintedValueChannel.Defense ||
                     value.Kind != ValueContributionKind.MinionDefenseModifier &&
                     value.Kind != ValueContributionKind.ItemModifier &&
+                    value.Kind != ValueContributionKind.CardTextModifier &&
+                    value.Kind != ValueContributionKind.ActiveEffectModifier &&
                     value.Kind != ValueContributionKind.ContinuousSourceModifier) ||
                 rows.Where(value => value.SourceMinionId.IsDefined)
                     .Select(value => value.SourceMinionId).Distinct().Count() !=
@@ -344,12 +346,15 @@ namespace GuardsDigital.Application
                 rows.Where(value => value.SourceCardInstanceId.IsDefined)
                     .Select(value => value.SourceCardInstanceId).Distinct().Count() !=
                     rows.Count(value => value.SourceCardInstanceId.IsDefined) ||
+                rows.Where(value => value.Contribution.SourceActiveEffectId.IsDefined)
+                    .Select(value => value.Contribution.SourceActiveEffectId).Distinct().Count() !=
+                    rows.Count(value => value.Contribution.SourceActiveEffectId.IsDefined) ||
                 rows.Where(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId))
                     .Select(value => value.SourceContinuousSourceId).Distinct().Count() !=
                     rows.Count(value => !string.IsNullOrEmpty(value.SourceContinuousSourceId)))
             {
                 throw new ArgumentException(
-                    "Defense modifier rows require unique non-zero typed creep, item, or effective-piece contributions.",
+                    "Defense modifier rows require unique non-zero typed minion, item, Active-effect, card, or continuous-source contributions.",
                     nameof(contributions));
             }
 
@@ -362,6 +367,7 @@ namespace GuardsDigital.Application
         public int HeroBody { get; }
         public IReadOnlyList<ValueContributionProjection> Contributions { get; }
         public int Total => Contributions.Sum(value => value.Amount);
+
     }
 
     public sealed class FastTravelOptionProjection
@@ -1101,7 +1107,8 @@ namespace GuardsDigital.Application
             IEnumerable<GuardsDigital.Core.Rules.Victory.TeamVictoryTally> teamVictoryTallies = null,
             IEnumerable<DirectorCommand> pendingRevealRetrieval = null,
             IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null,
-            IEnumerable<CardValuePreview> cardValues = null)
+            IEnumerable<CardValuePreview> cardValues = null,
+            IEnumerable<CardInstanceId> standingActiveEffectSourceCardInstanceIds = null)
         {
             Version = version;
             CardValues = Array.AsReadOnly((cardValues ?? Array.Empty<CardValuePreview>()).ToArray());
@@ -1269,6 +1276,18 @@ namespace GuardsDigital.Application
                 throw new ArgumentException(
                     "A source card appears once however many of its Active effects are live.",
                     nameof(activeEffectSourceCardInstanceIds));
+            }
+            StandingActiveEffectSourceCardInstanceIds = Array.AsReadOnly(
+                (standingActiveEffectSourceCardInstanceIds ?? ActiveEffectSourceCardInstanceIds)
+                    .ToArray());
+            if (StandingActiveEffectSourceCardInstanceIds.Distinct().Count() !=
+                    StandingActiveEffectSourceCardInstanceIds.Count ||
+                ActiveEffectSourceCardInstanceIds.Any(id =>
+                    !StandingActiveEffectSourceCardInstanceIds.Contains(id)))
+            {
+                throw new ArgumentException(
+                    "Standing Active-effect sources are unique and include every active source.",
+                    nameof(standingActiveEffectSourceCardInstanceIds));
             }
 
             // Milestone 8.35u. One description per open item, because rulebook p.15 now asks every
@@ -1717,6 +1736,13 @@ namespace GuardsDigital.Application
         /// same list from the same lifecycle, with nothing new on the wire.</para>
         /// </summary>
         public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
+
+        /// <summary>
+        /// Source cards whose Active-effect instance is dormant or active. Ended instances do not
+        /// stand. This is the continuous card-level reminder; mechanically active values and board
+        /// targets continue to read <see cref="ActiveEffectSourceCardInstanceIds"/>.
+        /// </summary>
+        public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds { get; }
 
         /// <summary>Director mode answers team choices directly and therefore has no agreement view.</summary>
         public TeamAgreementProjection TeamAgreement => null;

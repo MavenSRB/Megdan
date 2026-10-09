@@ -1003,6 +1003,8 @@ namespace GuardsDigital.Application
             pending = pendingSurface;
             visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
             ActiveEffectSourceCardInstanceIds = source.ActiveEffectSourceCardInstanceIds;
+            StandingActiveEffectSourceCardInstanceIds =
+                source.StandingActiveEffectSourceCardInstanceIds;
             Seat = seat;
             Version = version;
             Setup = source.Setup;
@@ -1205,6 +1207,8 @@ namespace GuardsDigital.Application
 
         public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
             ActiveEffectSourceCardInstanceIds.Contains(cardInstanceId);
+
+        public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds { get; }
 
         public IEnumerable<MarkerAttachment> MarkersHeldBy(HeroId holderHeroId) =>
             HeldMarkers.Where(marker => marker.HolderHeroId.Equals(holderHeroId));

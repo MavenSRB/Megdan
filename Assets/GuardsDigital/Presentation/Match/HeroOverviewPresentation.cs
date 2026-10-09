@@ -295,7 +295,7 @@ namespace GuardsDigital.Presentation.Match
                                 : "AVAILABLE";
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
-                (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty) +
+                (isActiveEffectSource ? " - ACTIVE EFFECT REMAINS" : string.Empty) +
                 // Milestone 8.75e. NOTHING follows about which of a two-text card's printed lines is
                 // live. Milestone 8.75b appended one; the user dropped that reading along with the
                 // corner badge it explained ("Drop the badge and rely on the coin strip alone"), so
@@ -362,7 +362,7 @@ namespace GuardsDigital.Presentation.Match
         public bool IsSelected { get; }
 
         /// <summary>
-        /// Milestone 8.5b: whether the authority reports at least one live Active effect sourced by
+        /// Whether the authority reports at least one unended dormant or active effect sourced by
         /// this card instance.
         ///
         /// It is a projected fact, not a guess: a card whose definition could create an effect, or a
@@ -793,7 +793,7 @@ namespace GuardsDigital.Presentation.Match
                 ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - facedown"
                 : isOccupied
                 ? $"Turn {ordinal}: {MatchHudTheme.ColorName(color)} card - {playedCard.DisplayName}" +
-                    (IsActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty) +
+                    (IsActiveEffectSource ? " - ACTIVE EFFECT REMAINS" : string.Empty) +
                     (playedCard.IsFacedown ? " - FACEDOWN" : string.Empty)
                 : $"Turn {ordinal}: empty";
             if (TurnSlotMarker != null)
@@ -1650,9 +1650,9 @@ namespace GuardsDigital.Presentation.Match
                 playedTurnIndex,
                 isSelectable,
                 isSelected,
-                // Milestone 8.5b: asked of the projection, never derived here. Presentation does not
-                // know what an Active effect is, only which cards the authority says are sourcing one.
-                projection.IsActiveEffectSource(card.Id),
+                // Asked of the projection, never derived here. Presentation does not know whether an
+                // effect is dormant or active, only which cards still source an unended one.
+                projection.StandingActiveEffectSourceCardInstanceIds.Contains(card.Id),
                 isResolving,
                 isAwaitedAnswer,
                 isDimmedByResolution,

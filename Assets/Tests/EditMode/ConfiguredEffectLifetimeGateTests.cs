@@ -132,6 +132,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(run.Phase(Immunity), Is.EqualTo(ActiveEffectPhase.Dormant));
             Assert.That(run.Phase(Permission), Is.EqualTo(ActiveEffectPhase.Dormant),
                 "Neither keyword names the turn it was written in, so neither applies anything yet.");
+            Assert.That(run.Session.Projection.ActiveEffectSourceCardInstanceIds,
+                Has.None.EqualTo(FeintCardId).And.None.EqualTo(BulwarkCardId),
+                "Dormant future effects do not feed mechanically active presentation.");
+            Assert.That(run.Session.Projection.StandingActiveEffectSourceCardInstanceIds,
+                Has.Member(FeintCardId).And.Member(BulwarkCardId),
+                "Both delayed timing forms light their source cards as soon as they are created.");
             Assert.That(run.CardState(FeintCardId).ResolutionStatus,
                 Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(run.CardState(BulwarkCardId).ResolutionStatus,
@@ -170,6 +176,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Two anchors inside one turn, and the reveal is the earlier of them.");
             Assert.That(run.Phase(Immunity), Is.EqualTo(ActiveEffectPhase.Active));
             Assert.That(run.Phase(Permission), Is.EqualTo(ActiveEffectPhase.Active));
+            Assert.That(run.Session.Projection.ActiveEffectSourceCardInstanceIds,
+                Has.Member(FeintCardId).And.Member(BulwarkCardId));
+            Assert.That(run.Session.Projection.StandingActiveEffectSourceCardInstanceIds,
+                Has.Member(FeintCardId).And.Member(BulwarkCardId),
+                "Activation changes rules applicability without interrupting the card indicator.");
         }
 
         [Test]

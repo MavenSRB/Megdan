@@ -3136,6 +3136,48 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Capture("tmp/milestone-8-5b-ended.png");
         }
 
+        [UnityTest]
+        public IEnumerator Scene_MarksADormantNextTurnSourceCardBeforeItActivates()
+        {
+            yield return LoadShowcaseScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            yield return null;
+
+            var bulwark = runtime.Cards.Single(card => card.Id.Value == "red-bulwark-card");
+            var blueHeroId = runtime.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var blue = runtime.Cards
+                .Where(card => card.State.Location == CardLocation.Hand &&
+                    card.OwnerId.Equals(blueHeroId))
+                .OrderBy(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Initiative.Value)
+                .First();
+            foreach (var card in new[] { bulwark, blue })
+            {
+                Assert.That(runtime.SelectCommitmentCard(card.Id), Is.True);
+                Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+            }
+
+            Assert.That(runtime.SubmitAction(
+                new ActionDefinitionId("primary-modification-skill")), Is.True);
+            Assert.That(runtime.SubmitEffectChoiceOption(
+                new EffectNodeId("bulwark-move-through-permission")), Is.True);
+            yield return null;
+
+            Assert.That(runtime.ActiveEffectSourceCardInstanceIds, Is.Empty,
+                "The Next Turn permission has not reached its activation checkpoint.");
+            Assert.That(runtime.StandingActiveEffectSourceCardInstanceIds,
+                Has.Member(bulwark.Id),
+                "Its source-card reminder starts at creation rather than after the next commitment.");
+            Assert.That(runtime.SelectViewedHero(bulwark.OwnerId), Is.True);
+            yield return null;
+            AssertOneCardIsMarkedActive(hud, "while its Next Turn effect is dormant");
+            yield return Capture("tmp/w019-dormant-next-turn-source.png");
+        }
+
         /// <summary>
         /// Ends the current turn, however many projected stops that takes and whether or not the action
         /// already closed it. Nothing here assumes a turn shape - only that the round moves on.

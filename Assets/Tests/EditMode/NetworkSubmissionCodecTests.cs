@@ -508,6 +508,8 @@ namespace GuardsDigital.Tests.EditMode
                 HeroRespawnTests.CreatePendingRespawnSession()));
             AssertProjectionsRoundTrip(new MatchHost(
                 ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause()));
+            AssertProjectionsRoundTrip(new MatchHost(
+                ConfiguredMatchFixtures.CreateSessionWithADormantActiveEffect(out _)));
         }
 
         private static void AssertProjectionsRoundTrip(IMatchHost host)
@@ -585,6 +587,9 @@ namespace GuardsDigital.Tests.EditMode
                         value.HeroId.Value + ":" + value.Level + ":" + value.Coins)));
                 Assert.That(record.ActiveEffectSourceCardInstanceIds,
                     Is.EqualTo(projection.ActiveEffectSourceCardInstanceIds.Select(id => id.Value)));
+                Assert.That(record.StandingActiveEffectSourceCardInstanceIds,
+                    Is.EqualTo(projection.StandingActiveEffectSourceCardInstanceIds
+                        .Select(id => id.Value)));
 
                 Assert.That(record.DecisionOwner.FamilyId, Is.EqualTo(
                     projection.DecisionOwner.IsDefined ? projection.DecisionOwner.FamilyId.Value : null));

@@ -1709,7 +1709,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The Skill completed, so its card is resolved history and its slot is occupied.");
             Assert.That(slot.IsActiveEffectSource, Is.True);
             Assert.That(slot.ActiveLabel, Is.EqualTo("ACTIVE"));
-            Assert.That(slot.AssistiveLabel, Does.Contain("ACTIVE EFFECT IN EFFECT"));
+            Assert.That(slot.AssistiveLabel, Does.Contain("ACTIVE EFFECT REMAINS"));
             Assert.That(owner.CurrentCard, Is.Null, "and it is not also in the marker.");
 
             var outlines = Descendants(view.Root)
@@ -1929,7 +1929,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(active.Select(card => card.CardInstanceId), Is.EqualTo(new[] { sourceCardId }),
                 "Exactly the card the authority named, and no card that merely could create an effect.");
             Assert.That(active[0].ActiveLabel, Is.EqualTo("ACTIVE"));
-            Assert.That(active[0].AssistiveLabel, Does.Contain("ACTIVE EFFECT IN EFFECT"));
+            Assert.That(active[0].AssistiveLabel, Does.Contain("ACTIVE EFFECT REMAINS"));
             foreach (var card in hand.TrayCards.Where(card => !card.IsActiveEffectSource))
             {
                 Assert.That(card.ActiveLabel, Is.Empty);
@@ -1964,6 +1964,31 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(MatchHudTheme.ActiveEffectAccent, Is.Not.EqualTo(MatchHudTheme.Face(color)),
                     $"and it is not {color}'s own face, so it cannot be read as a card colour.");
             }
+        }
+
+        [Test]
+        public void ACardWhoseNextTurnEffectIsDormant_AlreadyKeepsTheVioletIndicator()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADormantActiveEffect(
+                out var sourceCardId);
+            Assert.That(session.Projection.IsActiveEffectSource(sourceCardId), Is.False,
+                "The future effect is not mechanically active yet.");
+            Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds
+                .Contains(sourceCardId), Is.True);
+
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.SelectViewedHero(session.Projection.Cards
+                .Single(card => card.Id.Equals(sourceCardId)).OwnerId);
+
+            var card = view.Model.ViewedHand.TrayCards
+                .Single(value => value.CardInstanceId.Equals(sourceCardId));
+            Assert.That(card.IsActiveEffectSource, Is.True,
+                "The violet card reminder begins at creation, before next-turn activation.");
+            Assert.That(card.ActiveLabel, Is.EqualTo("ACTIVE"));
+            Assert.That(card.AssistiveLabel, Does.Contain("ACTIVE EFFECT REMAINS"));
+            Assert.That(Descendants(view.Root)
+                .Count(element => element.name == "gd-card-active"), Is.EqualTo(1));
         }
 
         [Test]

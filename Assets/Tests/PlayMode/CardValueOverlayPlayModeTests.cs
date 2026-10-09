@@ -21,7 +21,7 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class CardValueOverlayPlayModeTests
     {
         [UnityTest]
-        public IEnumerator RealCreepModifierReachesHandAndInspection()
+        public IEnumerator RealCreepModifierAppearsOnHandAndInspectionWhenEnabled()
         {
             var roster = RegisteredHeroRoster.ForThisBuild;
             var wasp = roster.Single(h => h.ContentId.Value == "wasp");
@@ -46,24 +46,26 @@ namespace GuardsDigital.Tests.PlayMode
                         side, StandardMinionType.Melee, new HexCoordinate(-2, 1)) });
                 yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
                 var root = ArienUiJourneyPlayModeTests.Root();
+                root.ConfigureExperiments(new ExperimentalMatchOptions(cardModifiersMinions: true));
+                yield return null; yield return null;
                 root.Runtime.SelectViewedHero(owner);
                 UiPlayer.SetPlayerViewport(1920u, 1080u, "live creep card bonus");
                 root.Hud.Layout(); yield return null; yield return null;
-                var expected = side == TeamSide.Red ? 1 : -1;
                 var card = root.Runtime.HandsView.Model.ViewedHand.TrayCards.Single(c =>
                     c.DefinitionReference.DefinitionId.Equals(WaspCardContent.MagneticDagger));
+                var expected = side == TeamSide.Red ? 1 : -1;
                 Assert.That(card.ValueBonuses.Single(v => v.Channel == PrintedValueChannel.Defense).Bonus,
                     Is.EqualTo(expected));
                 Assert.That(root.Runtime.HandsView.Root.Query<Label>("gd-card-bonus-defense").ToList()
                     .Any(label => label.text == CardValueOverlay.Signed(expected)), Is.True);
-                yield return UiPlayer.CaptureScreen("tmp/w012-live-creep-" + side + "-hand.png");
+                yield return UiPlayer.CaptureScreen("tmp/w019-minion-enabled-" + side + "-hand.png");
                 var inspection = root.Runtime.HeroOverviewsView.CardInspection;
                 inspection.UseTrustedLocalHeroPerspective = true;
                 Assert.That(inspection.Open(owner, "Wasp"), Is.True);
                 root.Hud.Layout(); yield return null; yield return null;
                 Assert.That(inspection.Root.Query<Label>("gd-card-bonus-defense").ToList()
                     .Any(label => label.text == CardValueOverlay.Signed(expected)), Is.True);
-                yield return UiPlayer.CaptureScreen("tmp/w012-live-creep-" + side + "-inspection.png");
+                yield return UiPlayer.CaptureScreen("tmp/w019-minion-enabled-" + side + "-inspection.png");
                 inspection.Close();
             }
         }

@@ -25,14 +25,18 @@ namespace GuardsDigital.Application
                 return coordination.Submit(CurrentSeats().Find(seat), command, session.Projection, CurrentSeats());
             }
         }
-        private const string ExperimentalSnapshotPrefix = "guards-experimental/5:";
+        private const string ExperimentalSnapshotPrefix = "guards-experimental/6:";
         private string CaptureExperimentalSnapshot()
         {
             lock (gate)
             {
                 var payload = session.CaptureSnapshot();
                 if (!Experiments.TeammateCoordination && !Experiments.TurnTimer && !Experiments.EnemyCardInformation &&
-                    !Experiments.MinionBattleRemovalCapEnabled && !Experiments.HeroDefeatBaseLifeCostIsOne) return payload;
+                    !Experiments.MinionBattleRemovalCapEnabled && !Experiments.HeroDefeatBaseLifeCostIsOne &&
+                    !Experiments.HeroShieldItems && !Experiments.HeroShieldActiveEffects &&
+                    !Experiments.HeroShieldCardEffects && !Experiments.CardModifiersItems &&
+                    !Experiments.CardModifiersMinions && !Experiments.CardModifiersActiveEffects &&
+                    !Experiments.CardModifiersCardEffects) return payload;
                 using (var stream = new System.IO.MemoryStream())
                 using (var writer = new System.IO.BinaryWriter(stream, System.Text.Encoding.UTF8))
                 {
@@ -47,7 +51,11 @@ namespace GuardsDigital.Application
         {
             if (payload == null || !payload.StartsWith(ExperimentalSnapshotPrefix, StringComparison.Ordinal))
                 return Experiments.TeammateCoordination || Experiments.TurnTimer || Experiments.EnemyCardInformation ||
-                    Experiments.MinionBattleRemovalCapEnabled || Experiments.HeroDefeatBaseLifeCostIsOne
+                    Experiments.MinionBattleRemovalCapEnabled || Experiments.HeroDefeatBaseLifeCostIsOne ||
+                    Experiments.HeroShieldItems || Experiments.HeroShieldActiveEffects ||
+                    Experiments.HeroShieldCardEffects || Experiments.CardModifiersItems ||
+                    Experiments.CardModifiersMinions || Experiments.CardModifiersActiveEffects ||
+                    Experiments.CardModifiersCardEffects
                         ? "Experimental settings are missing from this snapshot." : payload;
             try
             {

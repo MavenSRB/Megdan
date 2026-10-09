@@ -481,6 +481,8 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
                 Array.Empty<CardInstanceId>();
             public bool IsActiveEffectSource(CardInstanceId cardInstanceId) => false;
+            public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+                Array.Empty<CardInstanceId>();
             public TeamAgreementProjection TeamAgreement => null;
             public IReadOnlyList<CardInstance> Cards { get; set; } = Array.Empty<CardInstance>();
             public IReadOnlyList<SeatHandSummary> HandSummaries => Array.Empty<SeatHandSummary>();

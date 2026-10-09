@@ -1142,6 +1142,8 @@ namespace GuardsDigital.Presentation.Interaction
         private HexCornerHighlightTemplate cornerHighlightTemplate;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
+        private MatchSessionInitialState retainedSandboxInitialState;
+        private SandboxStagingDescription retainedSandboxDescription;
 
         /// <summary>
         /// Milestone 8.35z37. The seat views and selectors THIS root generated, so a
@@ -1989,8 +1991,14 @@ namespace GuardsDigital.Presentation.Interaction
             // The composed initial state is carried to the runtime rather than recomposed there,
             // because staging mutates the configuration in place (a staged hand is a real card
             // moved by CardLifecycleAuthority) and composing it twice would deal the hands twice.
-            MatchSessionInitialState stagedInitialState = null;
-            ComposedSandboxStaging = TakeRequestedSandboxStaging();
+            var stagedInitialState = retainedSandboxInitialState;
+            retainedSandboxInitialState = null;
+            var requestedSandboxStaging = TakeRequestedSandboxStaging();
+            if (stagedInitialState != null && requestedSandboxStaging != null)
+                throw new InvalidOperationException(
+                    "A retained sandbox recompose cannot also request new sandbox staging.");
+            ComposedSandboxStaging = requestedSandboxStaging ?? retainedSandboxDescription;
+            retainedSandboxDescription = null;
             var stagedObstacles = NextComposedStagedObstacles;
             NextComposedStagedObstacles = null;
             if (stagedObstacles != null && ComposedSandboxStaging == null)
@@ -2003,13 +2011,14 @@ namespace GuardsDigital.Presentation.Interaction
             if ((stagedBodies != null || stagedSupplies != null) && ComposedSandboxStaging == null)
                 throw new InvalidOperationException(
                     "Staged hero bodies require a Director sandbox composition.");
-            if (ComposedSandboxStaging != null)
+            if (ComposedSandboxStaging != null && stagedInitialState == null)
             {
                 stagedInitialState = SandboxMatchComposition.Compose(
                     ComposedSandboxStaging, map, setup, configuration, new[] { map },
                     stagedObstacles, stagedBodies, stagedSupplies);
-                setup = stagedInitialState.Setup;
             }
+            if (stagedInitialState != null)
+                setup = stagedInitialState.Setup;
             // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
             // staged Brogan-with-an-ally match deals three - so any such seat gets a generated view
             // and a generated pointer selector before the board is rebuilt. It is the same answer the
@@ -2331,7 +2340,13 @@ namespace GuardsDigital.Presentation.Interaction
         public void ConfigureExperiments(ExperimentalMatchOptions options)
         {
             experiments = options ?? ExperimentalMatchOptions.Disabled;
-            if (ComposedPlan != null) Recompose(ComposedPlan);
+            if (ComposedPlan == null) return;
+            if (runtime?.IsSandbox == true)
+            {
+                retainedSandboxInitialState = runtime.InitialState;
+                retainedSandboxDescription = ComposedSandboxStaging;
+            }
+            Recompose(ComposedPlan);
         }
 
         public IMatchHost ComposeForLineup(HeroLineup lineup)

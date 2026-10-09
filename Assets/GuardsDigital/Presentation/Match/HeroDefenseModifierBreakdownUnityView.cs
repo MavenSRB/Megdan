@@ -49,9 +49,11 @@ namespace GuardsDigital.Presentation.Match
             title.style.marginBottom = 5f;
             Root.Add(title);
 
-            foreach (var contribution in model.Contributions.Where(value =>
-                         value.Kind != ValueContributionKind.ItemModifier))
-                AddRow(contribution.SourceLabel, contribution.Amount, "gd-hero-defense-creep-row");
+            var displayed = model.Contributions
+                .Where(value => value.Kind != ValueContributionKind.ItemModifier)
+                .ToArray();
+            foreach (var contribution in displayed)
+                AddRow(contribution.SourceLabel, contribution.Amount, ContributionRowName(contribution));
 
             var itemTotal = model.Contributions
                 .Where(value => value.Kind == ValueContributionKind.ItemModifier)
@@ -69,8 +71,7 @@ namespace GuardsDigital.Presentation.Match
             IgnorePicking(Root);
 
             var height = 7f + 15f + 5f +
-                (model.Contributions.Count(value => value.Kind != ValueContributionKind.ItemModifier) +
-                 (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + TotalDividerHeight + 11f;
+                (displayed.Length + (itemTotal != 0 ? 1 : 0) + 1) * RowHeight + TotalDividerHeight + 11f;
             LastRect = CalculateRect(panelPointer, safeRegion, height);
             Root.style.left = LastRect.x;
             Root.style.top = LastRect.y;
@@ -83,6 +84,20 @@ namespace GuardsDigital.Presentation.Match
         {
             Root.Clear();
             Root.style.display = DisplayStyle.None;
+        }
+
+        private static string ContributionRowName(ValueContributionProjection contribution)
+        {
+            if (contribution.Kind == ValueContributionKind.MinionDefenseModifier ||
+                contribution.Kind == ValueContributionKind.ContinuousSourceModifier &&
+                contribution.SourceContinuousSourceId.StartsWith("effective-minion-token:",
+                    StringComparison.Ordinal))
+                return "gd-hero-defense-creep-row";
+            if (contribution.Kind == ValueContributionKind.ItemModifier)
+                return "gd-hero-defense-items-row";
+            if (contribution.Kind == ValueContributionKind.ActiveEffectModifier)
+                return "gd-hero-defense-active-effect-row";
+            return "gd-hero-defense-card-effect-row";
         }
 
         private void AddRow(string label, int value, string name, bool bold = false)

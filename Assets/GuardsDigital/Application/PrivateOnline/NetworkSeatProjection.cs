@@ -72,7 +72,8 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkTeamVictoryTallyRow> teamVictoryTallies = null,
             ExperimentalMatchOptions experiments = null, IReadOnlyList<NetworkCardRow> alliedHandCards = null,
             IReadOnlyList<TeammateMarker> teammateMarkers = null, long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null,
-            IReadOnlyList<HeroCardInspection> cardInspections = null)
+            IReadOnlyList<HeroCardInspection> cardInspections = null,
+            IReadOnlyList<string> standingActiveEffectSourceCardInstanceIds = null)
         {
             Version = version;
             TeamVictoryTallies = teamVictoryTallies ?? Array.Empty<NetworkTeamVictoryTallyRow>();
@@ -110,7 +111,20 @@ namespace GuardsDigital.Application
             PublicCards = publicCards;
             HeroProgression = heroProgression;
             Scoreboard = scoreboard;
-            ActiveEffectSourceCardInstanceIds = activeEffectSourceCardInstanceIds;
+            ActiveEffectSourceCardInstanceIds = activeEffectSourceCardInstanceIds ??
+                throw new ArgumentNullException(nameof(activeEffectSourceCardInstanceIds));
+            StandingActiveEffectSourceCardInstanceIds =
+                standingActiveEffectSourceCardInstanceIds ?? activeEffectSourceCardInstanceIds;
+            if (ActiveEffectSourceCardInstanceIds.Distinct().Count() !=
+                    ActiveEffectSourceCardInstanceIds.Count ||
+                StandingActiveEffectSourceCardInstanceIds.Distinct().Count() !=
+                    StandingActiveEffectSourceCardInstanceIds.Count ||
+                ActiveEffectSourceCardInstanceIds.Any(id =>
+                    !StandingActiveEffectSourceCardInstanceIds.Contains(id)))
+            {
+                throw new ArgumentException(
+                    "Active-effect source lists are unique and every active source is standing.");
+            }
             DecisionOwner = decisionOwner;
             DecisionContractFamilyId = decisionContractFamilyId;
             DecisionContractCommands = decisionContractCommands;
@@ -204,6 +218,7 @@ namespace GuardsDigital.Application
         public IReadOnlyList<NetworkScoreboardRow> Scoreboard { get; }
 
         public IReadOnlyList<string> ActiveEffectSourceCardInstanceIds { get; }
+        public IReadOnlyList<string> StandingActiveEffectSourceCardInstanceIds { get; }
         public NetworkDecisionOwnerRecord DecisionOwner { get; }
 
         /// <summary>The standing decision's family, and <c>null</c> unless this seat owns it.</summary>
@@ -904,6 +919,12 @@ namespace GuardsDigital.Application
                     writer.Write(cardId.Value);
                 }
 
+                writer.Write(projection.StandingActiveEffectSourceCardInstanceIds.Count);
+                foreach (var cardId in projection.StandingActiveEffectSourceCardInstanceIds)
+                {
+                    writer.Write(cardId.Value);
+                }
+
                 writer.Write(projection.DecisionOwner.IsDefined);
                 if (projection.DecisionOwner.IsDefined)
                 {
@@ -1401,6 +1422,23 @@ namespace GuardsDigital.Application
                         activeSources.Add(id);
                     }
 
+                    if (!TryReadCount(reader, out var standingCount))
+                    {
+                        return false;
+                    }
+
+                    var standingSources = new List<string>(standingCount);
+                    for (var index = 0; index < standingCount; index++)
+                    {
+                        var id = reader.ReadString();
+                        if (string.IsNullOrWhiteSpace(id))
+                        {
+                            return false;
+                        }
+
+                        standingSources.Add(id);
+                    }
+
                     NetworkDecisionOwnerRecord owner_;
                     if (reader.ReadBoolean())
                     {
@@ -1499,7 +1537,8 @@ namespace GuardsDigital.Application
                         contractCommands,
                         authorizedCommands,
                         detail,
-                        Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration, clock, cardInspections);
+                        Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration, clock, cardInspections,
+                        Array.AsReadOnly(standingSources.ToArray()));
                     return true;
                 }
             }

@@ -194,12 +194,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test] public void EnemyOnlyOptionPersistsAndRejectsMismatchedRestoreAtomically()
         {
             var host = Create(false, true); var snapshot = host.CaptureSnapshot();
-            Assert.That(snapshot.StartsWith("guards-experimental/5:"), Is.True);
+            Assert.That(snapshot.StartsWith("guards-experimental/6:"), Is.True);
             Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.True);
             var disabled = Create(false, false); var before = disabled.CaptureSnapshot();
             Assert.That(disabled.Submit(MatchSubmission.ForSnapshotRestore(snapshot)).Accepted, Is.False);
             Assert.That(disabled.CaptureSnapshot(), Is.EqualTo(before));
-            Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot.Replace("guards-experimental/5:", "guards-experimental/4:"))).Accepted, Is.False);
+            Assert.That(host.Submit(MatchSubmission.ForSnapshotRestore(snapshot.Replace("guards-experimental/6:", "guards-experimental/4:"))).Accepted, Is.False);
             Assert.That(host.CaptureSnapshot(), Is.EqualTo(snapshot));
             Assert.That(new ExperimentalMatchOptions().EnemyCardInformation, Is.False);
             Assert.That(host.Experiments, Is.Not.EqualTo(disabled.Experiments));

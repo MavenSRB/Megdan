@@ -145,6 +145,7 @@ namespace GuardsDigital.Application
         GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
         IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
         bool IsActiveEffectSource(CardInstanceId cardInstanceId);
+        IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds { get; }
 
         /// <summary>
         /// The host-published public agreement standing over tied Initiative or Minion Battle, or

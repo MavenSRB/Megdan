@@ -8,17 +8,17 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /51 carries visible live card modifiers and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
+Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
 Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-- Last completed work: **W-018**.
+- Last completed work: **W-019**.
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-018 is complete: a last minion immediately reused by Lane Push respawn now dies at its old space before that miniature and the pushed wave appear in the new Battle Zone; the strike-start latch also survives a lunge between board-driver observations. W013 remains the current package and does not include W-014 through W-018; no new build is authorized. Proposed Shift breakdowns and decision summaries remain unimplemented. See [current work](Roadmap/CURRENT_WORK.md).
+W-019 is complete: seven independent default-off Experimental controls in a dedicated popup configure shield and card modifier categories; the shield always retains its net minion contribution. An Active-effect source card keeps its violet reminder from dormant creation through expiry, while hero/radius and value treatment remain active-only. W013 remains the current package and does not include W-014 through W-019; no new build is authorized. W-004 remains the next presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

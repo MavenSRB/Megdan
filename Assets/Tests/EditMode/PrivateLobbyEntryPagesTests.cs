@@ -59,6 +59,33 @@ namespace GuardsDigital.Tests.EditMode
                 "2V2", "3V3", "HOST", PrivateLobbyUnityView.CancelLabel
             }));
             Assert.That(Shown(view.Root.Q<Button>("experimental-button")), Is.True);
+            var experimentalPopup = view.Root.Q<VisualElement>("experimental-menu-popup");
+            Assert.That(experimentalPopup, Is.Not.Null);
+            Assert.That(Shown(experimentalPopup), Is.False);
+            Assert.That(view.Root.Q<Button>("experimental-close"), Is.Not.Null);
+            Assert.That(Named(view, PrivateLobbyUnityView.HostMenuName)
+                .Query<VisualElement>("experimental-menu").ToList(), Is.Empty,
+                "Experimental controls live in their own popup, not in the crowded host form.");
+            var modifierToggleNames = new[]
+            {
+                "experimental-shield-items", "experimental-shield-active-effects",
+                "experimental-shield-card-effects", "experimental-card-modifiers-items",
+                "experimental-card-modifiers-minions", "experimental-card-modifiers-active-effects",
+                "experimental-card-modifiers-card-effects"
+            };
+            Assert.That(modifierToggleNames.Select(name => view.Root.Q<Toggle>(name)),
+                Has.All.Not.Null);
+            Assert.That(modifierToggleNames.Select(name => view.Root.Q<Toggle>(name).value),
+                Has.All.False);
+            foreach (var name in modifierToggleNames) view.Root.Q<Toggle>(name).value = true;
+            var modifierOptions = view.CurrentEntry().Experiments;
+            Assert.That(new[]
+            {
+                modifierOptions.HeroShieldItems, modifierOptions.HeroShieldActiveEffects,
+                modifierOptions.HeroShieldCardEffects, modifierOptions.CardModifiersItems,
+                modifierOptions.CardModifiersMinions, modifierOptions.CardModifiersActiveEffects,
+                modifierOptions.CardModifiersCardEffects
+            }, Has.All.True);
             Assert.That(ShownFields(view).Select(field => field.label), Is.EqualTo(new[] { "NAME", "PORT", "SESSION ID" }));
             Assert.That(((IntegerField)Named(view, PrivateLobbyUnityView.WaveCountFieldName)).value,
                 Is.EqualTo(3));

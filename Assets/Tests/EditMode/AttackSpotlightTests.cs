@@ -519,13 +519,13 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AResolvedSpellAttackRetainsItsOwnBonus()
+        public void AResolvedSpellAttackDoesNotInventANonItemOrEffectBonus()
         {
             var definition = GydionCardContent.SpellDefinitions.Single(d => d.Id.Equals(GydionCardContent.MagicMissile));
             var printed = CurrentRoundCards.ReadFace(definition).PrimaryValue.Amount;
             var scene = SceneFor(definition, printed + 2);
-            Assert.That(scene.AttackSpell.ValueBonuses.Single(v => v.Channel == PrintedValueChannel.Attack).Bonus,
-                Is.EqualTo(2));
+            Assert.That(scene.AttackSpell.ValueBonuses, Is.Empty,
+                "A resolved total is not itself an item or typed rule-source modifier.");
         }
 
         private static AttackSpotlightScene SceneFor(CardDefinition definition, int? resolvedAttackTotal = null)
@@ -748,7 +748,7 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase(4)]
         [TestCase(0)]
         [TestCase(-1)]
-        public void ResolvedCutterAttackKeepsItsOwnTotalThroughTheSpotlight(int total)
+        public void ResolvedCutterAttackKeepsItsItemOrEffectOverlayInsteadOfItsTotal(int total)
         {
             var view = new CapturingSpotlightView();
             var client = Primed(view, out var presenter);
@@ -761,12 +761,14 @@ namespace GuardsDigital.Tests.EditMode
                 new RuleEventLogEntry(3, "Action.AttackTotalCalculated", references, "step=total;attack=" + total),
                 new RuleEventLogEntry(4, "Action.AttackSuccessful", references, "step=done")
             }).Select(CopyCompletenessTests.RoundTripLogEntry).ToArray();
-            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition });
+            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition },
+                new[] { new CardValuePreview(Attacker, definition.Reference, PrintedValueChannel.Attack, 2) });
             presenter.Refresh();
             var captured = presenter.Stage.Current.AttackCard;
             Assert.That(captured.ValueBonuses.FirstOrDefault(v => v.Channel == PrintedValueChannel.Attack)?.Bonus ?? 0,
-                Is.EqualTo(total - 4), "Resolved movement/target bonus must survive cleared live attack context.");
-            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition });
+                Is.EqualTo(2), "The item/effect overlay survives; the resolved total does not replace it.");
+            client.Projection = new SpotlightReadModel(rows, new[] { card }, new[] { definition },
+                new[] { new CardValuePreview(Attacker, definition.Reference, PrintedValueChannel.Attack, 2) });
             presenter.Refresh();
             Assert.That(presenter.Stage.Current.AttackCard, Is.SameAs(captured));
             TickBy(presenter, AttackSpotlightTiming.EnterSeconds + 0.8f);
@@ -929,7 +931,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>Resources.Load</c>, which is engine-native and would put every case in this fixture
         /// behind a Unity launch.
         /// </summary>
-        private sealed class SpotlightReadModel : IMatchReadModel
+        private sealed class SpotlightReadModel : IMatchReadModel, ICardValueReadModel
         {
             private static long published;
             private readonly long version;
@@ -937,17 +939,20 @@ namespace GuardsDigital.Tests.EditMode
             public SpotlightReadModel(
                 IReadOnlyList<MatchLogEntry> log,
                 IReadOnlyList<CardInstance> cards = null,
-                IReadOnlyList<CardDefinition> definitions = null)
+                IReadOnlyList<CardDefinition> definitions = null,
+                IReadOnlyList<CardValuePreview> cardValues = null)
             {
                 LogRows = log ?? Array.Empty<MatchLogEntry>();
                 CardList = cards ?? Array.Empty<CardInstance>();
                 DefinitionList = definitions ?? Array.Empty<CardDefinition>();
+                CardValues = cardValues ?? Array.Empty<CardValuePreview>();
                 version = ++published;
             }
 
             public IReadOnlyList<MatchLogEntry> LogRows { get; }
             public IReadOnlyList<CardInstance> CardList { get; }
             public IReadOnlyList<CardDefinition> DefinitionList { get; }
+            public IReadOnlyList<CardValuePreview> CardValues { get; }
 
             public long Version => version;
             public bool IsInputEnabled => true;
@@ -1004,6 +1009,8 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<CardInstanceId>();
 
             public bool IsActiveEffectSource(CardInstanceId cardInstanceId) => false;
+            public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+                Array.Empty<CardInstanceId>();
             public TeamAgreementProjection TeamAgreement => null;
             public IReadOnlyList<CardInstance> Cards => CardList;
             public IReadOnlyList<SeatHandSummary> HandSummaries => Array.Empty<SeatHandSummary>();

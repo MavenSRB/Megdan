@@ -613,6 +613,9 @@ namespace GuardsDigital.Tests.EditMode
             public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
                 inner.IsActiveEffectSource(cardInstanceId);
 
+            public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+                inner.StandingActiveEffectSourceCardInstanceIds;
+
             public TeamAgreementProjection TeamAgreement => inner.TeamAgreement;
             public IReadOnlyList<CardInstance> Cards => inner.Cards;
             public IReadOnlyList<SeatHandSummary> HandSummaries => inner.HandSummaries;

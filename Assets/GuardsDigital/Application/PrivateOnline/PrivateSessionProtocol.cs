@@ -452,7 +452,10 @@ namespace GuardsDigital.Application
         // 9.81: cursor markers and host-owned presentation settings; prior wire versions reject.
         // Milestone 9.86, version 48: NetworkMatchLogRow appends a bounded ordered Movement route.
         // W-015: resolved public attack totals survive into animation scenes; snapshot v59 unchanged.
-        public const int Version = 51;
+        // W-019, version 52: seven immutable modifier-display toggles extend Experimental options,
+        // and the public seat projection distinguishes standing from mechanically active
+        // Active-effect source cards. Earlier peers would misread the enclosing projection.
+        public const int Version = 52;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

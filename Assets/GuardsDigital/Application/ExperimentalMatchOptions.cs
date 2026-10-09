@@ -10,7 +10,11 @@ namespace GuardsDigital.Application
             int cardCommitmentSeconds = 120, int cardResolutionSeconds = 30,
             int responseSeconds = 30, int cardUpgradeSeconds = 120, int teamBankSeconds = 300,
             bool enemyCardInformation = false, bool minionBattleRemovalCapEnabled = false,
-            int minionBattleRemovalCap = 0, bool heroDefeatBaseLifeCostIsOne = false)
+            int minionBattleRemovalCap = 0, bool heroDefeatBaseLifeCostIsOne = false,
+            bool heroShieldItems = false, bool heroShieldActiveEffects = false,
+            bool heroShieldCardEffects = false, bool cardModifiersItems = false,
+            bool cardModifiersMinions = false, bool cardModifiersActiveEffects = false,
+            bool cardModifiersCardEffects = false)
         {
             Validate(cardCommitmentSeconds, nameof(cardCommitmentSeconds));
             Validate(cardResolutionSeconds, nameof(cardResolutionSeconds));
@@ -24,6 +28,13 @@ namespace GuardsDigital.Application
             MinionBattleRemovalCapEnabled = minionBattleRemovalCapEnabled;
             MinionBattleRemovalCap = minionBattleRemovalCapEnabled ? minionBattleRemovalCap : 0;
             HeroDefeatBaseLifeCostIsOne = heroDefeatBaseLifeCostIsOne;
+            HeroShieldItems = heroShieldItems;
+            HeroShieldActiveEffects = heroShieldActiveEffects;
+            HeroShieldCardEffects = heroShieldCardEffects;
+            CardModifiersItems = cardModifiersItems;
+            CardModifiersMinions = cardModifiersMinions;
+            CardModifiersActiveEffects = cardModifiersActiveEffects;
+            CardModifiersCardEffects = cardModifiersCardEffects;
             CardCommitmentSeconds = cardCommitmentSeconds;
             CardResolutionSeconds = cardResolutionSeconds;
             ResponseSeconds = responseSeconds;
@@ -41,6 +52,13 @@ namespace GuardsDigital.Application
         public bool MinionBattleRemovalCapEnabled { get; }
         public int MinionBattleRemovalCap { get; }
         public bool HeroDefeatBaseLifeCostIsOne { get; }
+        public bool HeroShieldItems { get; }
+        public bool HeroShieldActiveEffects { get; }
+        public bool HeroShieldCardEffects { get; }
+        public bool CardModifiersItems { get; }
+        public bool CardModifiersMinions { get; }
+        public bool CardModifiersActiveEffects { get; }
+        public bool CardModifiersCardEffects { get; }
         public int CardCommitmentSeconds { get; }
         public int CardResolutionSeconds { get; }
         public int ResponseSeconds { get; }
@@ -52,12 +70,23 @@ namespace GuardsDigital.Application
             MinionBattleRemovalCapEnabled == other.MinionBattleRemovalCapEnabled &&
             MinionBattleRemovalCap == other.MinionBattleRemovalCap &&
             HeroDefeatBaseLifeCostIsOne == other.HeroDefeatBaseLifeCostIsOne &&
+            HeroShieldItems == other.HeroShieldItems &&
+            HeroShieldActiveEffects == other.HeroShieldActiveEffects &&
+            HeroShieldCardEffects == other.HeroShieldCardEffects &&
+            CardModifiersItems == other.CardModifiersItems &&
+            CardModifiersMinions == other.CardModifiersMinions &&
+            CardModifiersActiveEffects == other.CardModifiersActiveEffects &&
+            CardModifiersCardEffects == other.CardModifiersCardEffects &&
             CardCommitmentSeconds == other.CardCommitmentSeconds && CardResolutionSeconds == other.CardResolutionSeconds &&
             ResponseSeconds == other.ResponseSeconds && CardUpgradeSeconds == other.CardUpgradeSeconds &&
             TeamBankSeconds == other.TeamBankSeconds;
         public override bool Equals(object obj) => Equals(obj as ExperimentalMatchOptions);
         public override int GetHashCode() => (TeammateCoordination ? 1 : 0) ^ (TurnTimer ? 2 : 0) ^ (EnemyCardInformation ? 4 : 0) ^
-            (MinionBattleRemovalCapEnabled ? 8 : 0) ^ (HeroDefeatBaseLifeCostIsOne ? 16 : 0) ^ MinionBattleRemovalCap ^
+            (MinionBattleRemovalCapEnabled ? 8 : 0) ^ (HeroDefeatBaseLifeCostIsOne ? 16 : 0) ^
+            (HeroShieldItems ? 32 : 0) ^ (HeroShieldActiveEffects ? 64 : 0) ^
+            (HeroShieldCardEffects ? 128 : 0) ^ (CardModifiersItems ? 256 : 0) ^
+            (CardModifiersMinions ? 512 : 0) ^ (CardModifiersActiveEffects ? 1024 : 0) ^
+            (CardModifiersCardEffects ? 2048 : 0) ^ MinionBattleRemovalCap ^
             CardCommitmentSeconds ^ CardResolutionSeconds ^ ResponseSeconds ^ CardUpgradeSeconds ^ TeamBankSeconds;
     }
 }

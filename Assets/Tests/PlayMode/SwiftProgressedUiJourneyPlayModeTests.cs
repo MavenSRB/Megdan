@@ -1360,21 +1360,14 @@ namespace GuardsDigital.Tests.PlayMode
             var markCard = runtime.Cards.Single(card =>
                 card.OwnerId.Equals(swiftId) &&
                 card.DefinitionReference.DefinitionId.Equals(SwiftCardContent.MarkForDeath));
-            // **MEASURED ASYMMETRY, RECORDED RATHER THAN ASSERTED AWAY.** Delayed Jump's standing
-            // End-of-turn promise DOES register as an Active effect source on its own card, and the
-            // journey above asserts exactly that. This bounty does NOT:
-            // `ActiveEffectSourceCardInstanceIds` is EMPTY here while Mark for Death sits in the
-            // turn area with its promise standing, so a player reading her board cannot see that the
-            // next Defeat in radius will pay. Milestone 8.38c1 records why the mechanism differs -
-            // the bounty is spent at p.13's own reward site rather than dispatched through the
-            // checkpoint system - but the READING is a separate question from the dispatch, and the
-            // gate binds `ActiveEffectReading` to this journey. Raised as an open question against
-            // 8.38c1 in the 8.38f block rather than papered over; what this journey proves is that
-            // the promise SURVIVES and PAYS across the turn boundary, which is below.
+            // The source-card reminder begins as soon as the promise stands, while the original
+            // active-only list remains empty until the next-turn activation anchor. That split keeps
+            // the player warned without lighting the target/radius or active-value surfaces early.
             Assert.That(runtime.ActiveEffectSourceCardInstanceIds, Is.Empty,
-                "Recording the measured state: the bounty stands but is not a readable Active " +
-                "effect source. If this ever becomes non-empty the asymmetry is fixed and this " +
-                "assertion is what will say so.");
+                "The next-turn bounty is not mechanically active on the turn that created it.");
+            Assert.That(runtime.StandingActiveEffectSourceCardInstanceIds,
+                Does.Contain(markCard.Id),
+                "The source card stays violet continuously from creation through activation.");
 
             if (runtime.IsTurnActive)
             {

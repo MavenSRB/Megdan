@@ -12,6 +12,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 using NUnit.Framework;
@@ -20,10 +21,32 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class CardValuePreviewTests
     {
-        [TestCase(0, -1)]
-        [TestCase(1, 0)]
-        [TestCase(2, 1)]
-        public void DefenseCombinesRealItemsAndEnemyCreep(int itemCount, int expected)
+        [Test]
+        public void ExperimentalOptionsSelectEveryCardAndShieldCategoryIndependently()
+        {
+            var options = new ExperimentalMatchOptions(
+                heroShieldItems: true, heroShieldActiveEffects: false, heroShieldCardEffects: true,
+                cardModifiersItems: false, cardModifiersMinions: true,
+                cardModifiersActiveEffects: false, cardModifiersCardEffects: true);
+            Assert.That(MatchSession.CardValueSources(options), Is.EqualTo(
+                CardValuePreviewSources.Minions | CardValuePreviewSources.CardEffects));
+            Assert.That(MatchSession.IncludeHeroShieldSupplement(
+                options, ValueContributionKind.ItemModifier), Is.True);
+            Assert.That(MatchSession.IncludeHeroShieldSupplement(
+                options, ValueContributionKind.ActiveEffectModifier), Is.False);
+            Assert.That(MatchSession.IncludeHeroShieldSupplement(
+                options, ValueContributionKind.CardTextModifier), Is.True);
+            Assert.That(MatchSession.IncludeHeroShieldSupplement(
+                options, ValueContributionKind.ContinuousSourceModifier), Is.True);
+            Assert.That(MatchSession.IncludeHeroShieldSupplement(
+                options, ValueContributionKind.MinionDefenseModifier), Is.False,
+                "minions are unconditional base rows, not optional supplements");
+        }
+
+        [TestCase(0, 0)]
+        [TestCase(1, 1)]
+        [TestCase(2, 2)]
+        public void DefenseCardsCanShowItemsWithoutEnemyMinionModifiers(int itemCount, int expected)
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var owner = new HeroId(StagedBoardParticipants.RedHeroIdValue);
@@ -46,7 +69,8 @@ namespace GuardsDigital.Tests.EditMode
                     new CardInstanceId("item-" + index), slot.Position, PrintedValueChannel.Defense, index + 1))));
             var readings = CardValuePreviewQuery.Read(configuration.CardDefinitions,
                 configuration.CardInstances, configuration.Participants, board, items,
-                RuleModificationSet.Empty, EffectRosterState.Absent, 1, 1, null, null);
+                RuleModificationSet.Empty, EffectRosterState.Absent, 1, 1, null, null,
+                CardValuePreviewSources.Items);
             var card = configuration.CardInstances.First(c => c.OwnerId.Equals(owner) &&
                 configuration.CardDefinitions.Single(d => d.Reference.Equals(c.DefinitionReference))
                     .ActionDefinitions.Any(a => a.Kind == ActionKind.Defense &&
@@ -55,16 +79,24 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(readings.SingleOrDefault(r => r.Owner.Equals(owner) &&
                 r.Definition.Equals(card.DefinitionReference) && r.Channel == PrintedValueChannel.Defense)?.Bonus ?? 0,
                 Is.EqualTo(expected));
+            var minionOnly = CardValuePreviewQuery.Read(configuration.CardDefinitions,
+                configuration.CardInstances, configuration.Participants, board, items,
+                RuleModificationSet.Empty, EffectRosterState.Absent, 1, 1, null, null,
+                CardValuePreviewSources.Minions);
+            Assert.That(minionOnly.Single(r => r.Owner.Equals(owner) &&
+                r.Definition.Equals(card.DefinitionReference) && r.Channel == PrintedValueChannel.Defense).Bonus,
+                Is.EqualTo(-1));
         }
 
         [Test]
-        public void TargetedBodyAndDefenseWindowUseIdenticalTotalsAndUndoRefreshes()
+        public void TargetedBodyAndDefenseWindowDoNotLeakMinionTotalsOntoCardsAndUndoRefreshes()
         {
             var session = HeroBodiesBoard.CreateSessionAtTheAttackTargetChoice(out _, out var blue, out _);
             var original = Describe(session.Projection);
             var choice = session.Projection.PendingAttackTargetChoice;
             HeroBodiesBoard.Accept(session, DirectorCommand.ChooseAttackTarget(
                 choice.ResolutionId, choice.ChoiceId, blue, 2));
+            var sawMinionDifference = false;
             foreach (var defense in session.Projection.PendingDefensePreview.Choices
                 .Where(c => c.CardInstanceId.HasValue && c.DefenseTotal.HasValue))
             {
@@ -72,10 +104,15 @@ namespace GuardsDigital.Tests.EditMode
                 var definition = session.Projection.Definitions.Single(d => d.Reference.Equals(card.DefinitionReference));
                 var printed = definition.ActionDefinitions.SelectMany(a => a.BaseValues)
                     .Single(v => v.Channel == PrintedValueChannel.Defense).Amount;
-                Assert.That(CardValueReadModel.ForCard(session.Projection, card.OwnerId, card.DefinitionReference)
-                    .SingleOrDefault(v => v.Channel == PrintedValueChannel.Defense)?.Bonus ?? 0,
-                    Is.EqualTo(defense.DefenseTotal.Value - printed));
+                var displayed = CardValueReadModel.ForCard(
+                        session.Projection, card.OwnerId, card.DefinitionReference)
+                    .SingleOrDefault(v => v.Channel == PrintedValueChannel.Defense)?.Bonus ?? 0;
+                Assert.That(displayed, Is.Zero,
+                    "The staged defender has no Defense item or explicit rule modifier.");
+                sawMinionDifference |= defense.DefenseTotal.Value - printed != displayed;
             }
+            Assert.That(sawMinionDifference, Is.True,
+                "The authoritative Defense total still includes the targeted body's minion modifier.");
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(Describe(session.Projection), Is.EqualTo(original));
         }
@@ -88,7 +125,8 @@ namespace GuardsDigital.Tests.EditMode
             HeroBodiesBoard.Accept(session, DirectorCommand.ChooseAttackTarget(
                 pending.ResolutionId, pending.ChoiceId, defender, 2));
             var host = new MatchHost(session);
-            Assert.That(host.Projection.CardValues, Is.Not.Empty, "Exercise nonzero wire data, not just the empty form.");
+            Assert.That(host.Projection.CardValues, Is.Empty,
+                "The staged nonzero minion modifier is not a card-face modifier; populated wire encoding is covered by CopyCompletenessTests.");
             foreach (var seat in host.Seats.Seats)
             {
                 var local = host.ProjectionForSeat(seat.Id);
@@ -128,7 +166,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void EveryChannelCombinesItemsAndActiveEffectsAndRefreshesWhenRemoved()
+        public void EveryChannelShowsItemsAndActiveEffectsAndRefreshesWhenRemoved()
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var owner = new HeroId(StagedBoardParticipants.RedHeroIdValue);
@@ -145,15 +183,40 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(HeroDashboard.RulebookLayout.TryFindSlotAccepting(channel, out var slot), Is.True);
                 var items = HeroItemState.Restore(configuration.Participants, new HeroItemRestoreState(
                     new[] { new HeroItem(owner, new CardInstanceId("item"), slot.Position, channel, 1) }));
-                var mods = new RuleModificationSet(new[] { AppliedRuleModification.FromActiveEffect(
-                    RuleModification.ForValue(channel, 2), RuleObject.ForHero(owner),
-                    new GuardsDigital.Core.Timing.ActiveEffectId("effect"), owner, TeamSide.Red, 1) },
+                var mods = new RuleModificationSet(new[]
+                    {
+                        AppliedRuleModification.FromActiveEffect(
+                            RuleModification.ForValue(channel, 2), RuleObject.ForHero(owner),
+                            new ActiveEffectId("effect"), owner, TeamSide.Red, 1),
+                        AppliedRuleModification.FromContinuousSource(
+                            RuleModification.ForValue(channel, 4), RuleObject.ForHero(owner),
+                            new ContinuousRuleSource("card-effect", ContinuousRuleSourceKind.Ultimate,
+                                owner, "test-value", "hero", new CardInstanceId("source-card")),
+                            TeamSide.Red, 2)
+                    },
                     Array.Empty<AppliedObstacleOverlay>(), configuration.TieBreakerState);
+                var itemValues = CardValuePreviewQuery.Read(configuration.CardDefinitions,
+                    configuration.CardInstances, configuration.Participants, board, items, mods,
+                    EffectRosterState.Absent, 1, 1, null, null, CardValuePreviewSources.Items);
+                Assert.That(itemValues.Any(v => v.Owner.Equals(owner) && v.Channel == channel && v.Bonus == 1),
+                    Is.True, "item: " + channel);
+                var effectValues = CardValuePreviewQuery.Read(configuration.CardDefinitions,
+                    configuration.CardInstances, configuration.Participants, board, items, mods,
+                    EffectRosterState.Absent, 1, 1, null, null, CardValuePreviewSources.ActiveEffects);
+                Assert.That(effectValues.Any(v => v.Owner.Equals(owner) && v.Channel == channel && v.Bonus == 2),
+                    Is.True, "Active effect: " + channel);
+                var cardEffectValues = CardValuePreviewQuery.Read(configuration.CardDefinitions,
+                    configuration.CardInstances, configuration.Participants, board, items, mods,
+                    EffectRosterState.Absent, 1, 1, null, null, CardValuePreviewSources.CardEffects);
+                Assert.That(cardEffectValues.Any(v => v.Owner.Equals(owner) && v.Channel == channel && v.Bonus == 4),
+                    Is.True, "card effect: " + channel);
                 var values = CardValuePreviewQuery.Read(configuration.CardDefinitions,
                     configuration.CardInstances, configuration.Participants, board, items, mods,
-                    EffectRosterState.Absent, 1, 1, null, null);
-                Assert.That(values.Any(v => v.Owner.Equals(owner) && v.Channel == channel && v.Bonus == 3),
-                    Is.True, channel.ToString());
+                    EffectRosterState.Absent, 1, 1, null, null,
+                    CardValuePreviewSources.Items | CardValuePreviewSources.ActiveEffects |
+                    CardValuePreviewSources.CardEffects);
+                Assert.That(values.Any(v => v.Owner.Equals(owner) && v.Channel == channel && v.Bonus == 7),
+                    Is.True, "combined: " + channel);
                 var cleared = CardValuePreviewQuery.Read(configuration.CardDefinitions,
                     configuration.CardInstances, configuration.Participants, board, emptyItems,
                     RuleModificationSet.Empty, EffectRosterState.Absent, 1, 1, null, null);

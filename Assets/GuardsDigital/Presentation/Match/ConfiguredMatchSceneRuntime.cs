@@ -99,12 +99,20 @@ namespace GuardsDigital.Presentation.Match
             // never damage the match being played (see ShadowSessionBotLookahead). This is the only
             // description of "the same match" the composition has, and rebuilding it from the scene a
             // second time would be a second deal.
-            InitialState = stagedInitialState ??
-                new MatchSessionInitialState(
+            InitialState = stagedInitialState == null
+                ? new MatchSessionInitialState(
                     scenario,
                     setup,
                     maps,
-                    configuration, experiments: experiments);
+                    configuration, experiments: experiments)
+                : new MatchSessionInitialState(
+                    stagedInitialState.Scenario,
+                    stagedInitialState.Setup,
+                    stagedInitialState.AvailableMaps,
+                    stagedInitialState.InitialConfiguration,
+                    stagedInitialState.InitialTiming,
+                    stagedInitialState.StagedProgression,
+                    experiments);
             host = MatchHost.Compose(InitialState);
             session = new LocalDirectorMatchClient(host);
             IsSandbox = stagedInitialState != null;
@@ -838,6 +846,10 @@ namespace GuardsDigital.Presentation.Match
 
         public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
             client.Projection.IsActiveEffectSource(cardInstanceId);
+
+        public IReadOnlyList<CardInstanceId> StandingActiveEffectSourceCardInstanceIds =>
+            client.Projection.StandingActiveEffectSourceCardInstanceIds;
+
         public RoundResolutionPhase Phase => client.Projection.Phase;
         public int RoundIndex => client.Projection.RoundIndex;
         public int TurnIndex => client.Projection.TurnIndex;

@@ -1,6 +1,6 @@
 # Minimum Private-Online Architecture Decision
 
-**Current compatibility:** wire /51, snapshot v59. [Card-value projection contract](CARD_VALUE_OVERLAYS.md#wire-and-visibility). Numbered amendments below retain historical versions.
+**Current compatibility:** wire /52, snapshot v59. [Card-value projection contract](CARD_VALUE_OVERLAYS.md#wire-and-visibility). Numbered amendments below retain historical versions.
 
 Canonical decision record for milestone 8.29. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md). Reassess this record before any dependency upgrade, provider change, public distribution, non-Windows bring-up, dedicated hosting, host migration, account system, matchmaking, or scale beyond six invited players.
 
@@ -134,6 +134,8 @@ The ten current pending families each have deterministic disconnect-before-answe
 **Milestone 9.70 setup identity assessment.** Before listening, the host settles team size, map and bounded positive Wave/Life counts. Official pp.5-6 tuples keep their IDs; other 2v2/3v3 tuples use `custom-<players>p-w<waves>-l<lives>`. Mismatch still refuses admission, while a current client may reconstruct the identity, recompose and retry once. Existing format and Wave/Life fields carry the values, so wire 43, snapshot 59 and experimental envelope 4 stay fixed. Protocol equality never bypasses exact-format matching or claims compatibility with older peers.
 
 **Milestone 9.71 option identity assessment.** The one-Life hero base-cost flag is immutable experimental identity. Host, director and joined-seat clients project it through one typed contract; reconnect cannot substitute a default. Its wire field advances the protocol to 44 and restore field advances the experimental envelope to 5, rejecting older or mismatched peers atomically. Core snapshot schema remains 59.
+
+**W-019 modifier-display identity assessment.** Seven independent default-off presentation toggles are immutable experimental match identity: shield Items/Active effects/Card effects, and card-face Items/Minion contribution/Active effects/Card effects. Wire 52 and experimental envelope 6 carry them; wire 52 also carries the public standing Active-effect source-card list separately from mechanically active sources, so remote seats keep the same continuous dormant-to-active violet reminder without lighting targets or values early. Older peers and mismatched snapshot settings are rejected before interpreting the remaining payload. Core snapshot schema stays 59 because these settings and source-card visibility alter projections only.
 
 ## Lightweight threat model and limitations
 

@@ -733,7 +733,7 @@ namespace GuardsDigital.Core.Cards
 
         public ActiveEffectLifecycle Timing => timing;
 
-        public IReadOnlyList<CardValuePreview> ReadCardValuePreviews()
+        public IReadOnlyList<CardValuePreview> ReadCardValuePreviews(CardValuePreviewSources sources = CardValuePreviewSources.All)
         {
             if (board == null || cardActions == null) return Array.Empty<CardValuePreview>();
             var modifications = CurrentTurnAuthority?.CurrentModifications() ??
@@ -743,7 +743,7 @@ namespace GuardsDigital.Core.Cards
                 cardActions.CoinLedger, this, this, this, this, TeamLives, this, this, this, this);
             return CardValuePreviewQuery.Read(definitions, instances, participants, board, HeroItems,
                 modifications, roster, RoundIndex, TurnIndex, markers,
-                CurrentTurnAuthority?.PendingAttackResolution);
+                CurrentTurnAuthority?.PendingAttackResolution, sources);
         }
 
         /// <summary>

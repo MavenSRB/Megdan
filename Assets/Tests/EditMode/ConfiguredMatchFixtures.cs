@@ -1764,6 +1764,25 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateSessionWithALiveActiveEffect(out CardInstanceId sourceCardId)
         {
+            return CreateSessionWithBulwarkEffect(
+                "bulwark-defense-bonus", out sourceCardId);
+        }
+
+        /// <summary>
+        /// The same configured Skill stopped after creating its dormant Next Turn permission.
+        /// The source card is therefore standing for presentation but supplies no live rules yet.
+        /// </summary>
+        public static MatchSession CreateSessionWithADormantActiveEffect(
+            out CardInstanceId sourceCardId)
+        {
+            return CreateSessionWithBulwarkEffect(
+                "bulwark-move-through-permission", out sourceCardId);
+        }
+
+        private static MatchSession CreateSessionWithBulwarkEffect(
+            string optionNodeId,
+            out CardInstanceId sourceCardId)
+        {
             var bulwarkCardId = new CardInstanceId("red-bulwark-card");
             var session = CreateConfiguredSession();
             var blue = session.Projection.Cards
@@ -1791,7 +1810,7 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             AnswerEffectChoiceSelection(session, choice.SelectInvocations
                 .Single(candidate => candidate.Candidate.OptionNodeId.Equals(
-                    new GuardsDigital.Core.Effects.EffectNodeId("bulwark-defense-bonus"))));
+                    new GuardsDigital.Core.Effects.EffectNodeId(optionNodeId))));
 
             sourceCardId = bulwarkCardId;
             return session;

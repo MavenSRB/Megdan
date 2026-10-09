@@ -406,8 +406,7 @@ namespace GuardsDigital.Presentation.Match
                 defender.Kind == KineticSubjectKind.Hero
                     ? HeroName(projection, entry.TargetHeroId)
                     : MinionName(projection, entry.SubjectMinionId),
-                CaptureCard(projection, entry.SubjectCardInstanceId, resolving: true, turnIndex: entry.TurnIndex,
-                    resolvedAttackTotal: entry.ResolvedAttackTotal),
+                CaptureCard(projection, entry.SubjectCardInstanceId, resolving: true, turnIndex: entry.TurnIndex),
                 CaptureCard(
                     projection,
                     FindDefenseCard(log, entryIndex, entry),
@@ -542,8 +541,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static TrayCardViewModel CaptureCard(
-            IMatchReadModel projection, CardInstanceId cardInstanceId, bool resolving, int turnIndex,
-            int? resolvedAttackTotal = null)
+            IMatchReadModel projection, CardInstanceId cardInstanceId, bool resolving, int turnIndex)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -590,33 +588,11 @@ namespace GuardsDigital.Presentation.Match
                     0,
                     isSelectable: false,
                     isSelected: false);
-            return resolvedAttackTotal.HasValue
-                ? captured.WithValueBonuses(ResolvedAttackBonuses(instance.OwnerId, captured.DefinitionReference,
-                    captured.Face, captured.ValueBonuses, resolvedAttackTotal.Value)) : captured;
+            return captured;
         }
 
-        private static SpellCardViewModel CaptureSpell(IMatchReadModel projection, MatchLogEntry entry)
-        {
-            var spell = SpellbookPresentation.FaceOfCard(projection, entry.SubjectCardInstanceId);
-            if (spell == null || !entry.ResolvedAttackTotal.HasValue) return spell;
-            var definition = projection.Definitions.Single(d => d.Reference.Equals(spell.DefinitionReference));
-            return new SpellCardViewModel(definition, spell.IsGreyed, spell.Caption,
-                ResolvedAttackBonuses(entry.SubjectHeroId, definition.Reference, spell.Face,
-                    spell.ValueBonuses, entry.ResolvedAttackTotal.Value));
-        }
-
-        private static IReadOnlyList<CardValuePreview> ResolvedAttackBonuses(HeroId owner,
-            CardDefinitionReference reference, TrayCardFaceViewModel face,
-            IReadOnlyList<CardValuePreview> live, int total)
-        {
-            var printed = face.PrimaryValue?.Channel == PrintedValueChannel.Attack
-                ? face.PrimaryValue : face.SecondaryValues.FirstOrDefault(v => v.Channel == PrintedValueChannel.Attack);
-            if (printed == null) return live;
-            var values = live.Where(v => v.Channel != PrintedValueChannel.Attack).ToList();
-            var delta = checked(total - printed.Amount);
-            if (delta != 0) values.Add(new CardValuePreview(owner, reference, PrintedValueChannel.Attack, delta));
-            return values.AsReadOnly();
-        }
+        private static SpellCardViewModel CaptureSpell(IMatchReadModel projection, MatchLogEntry entry) =>
+            SpellbookPresentation.FaceOfCard(projection, entry.SubjectCardInstanceId);
 
         private static string HeroName(IMatchReadModel projection, HeroId heroId)
         {

@@ -544,6 +544,8 @@ namespace GuardsDigital.Tests.EditMode
                 { "ActiveEffectSourceCardInstanceIds",
                     nameof(NetworkSeatProjectionRecord.ActiveEffectSourceCardInstanceIds) },
                 { "IsActiveEffectSource", "derived: a lookup over ActiveEffectSourceCardInstanceIds" },
+                { "StandingActiveEffectSourceCardInstanceIds",
+                    nameof(NetworkSeatProjectionRecord.StandingActiveEffectSourceCardInstanceIds) },
                 { "TeamAgreement", nameof(NetworkProjectionDetailRecord.TeamAgreement) },
                 { "Cards", "carried as OwnCards plus PublicCards" },
                 // Milestone 9.30b. The seat record has carried every hero's hand and deck counts
