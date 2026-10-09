@@ -11,6 +11,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-006 | Simplified tied Initiative to candidate card faces with per-player ping accents and hero-token preference markers. | `work/W-006` |
 | W-007 | Retained `WHO ACTS FIRST?` and centred each selector's hero token above their highlighted card. | `work/W-007` |
 | W-008 | Published prepared runtime card faces/shine maps, card backs and spell-card artwork through Git LFS to private Gitea. | `work/W-008` |
+| W-009 | Reused the typed small-spell hover preview on Gydion's level-up candidates. | `work/W-009` |
+
+### [x] W-009 Gydion spell previews on level-up candidates
+
+Approved by the user's instruction that Gydion's level-up candidates use the same small spell-card hover mechanism as his other card surfaces.
+Outcome: every offered Gydion upgrade card carries its visibility-safe typed spell companions and shows the shared compact spell faces on hover/focus in both the composed Decision window and the retained round-action fallback. The preview stays within the level-up dialog and does not hide or replace the selectable card.
+Scope: presentation and focused regression coverage only. No spell rules, level-up resolution, content, command, wire/snapshot contract or package changed.
+Closing checks: real-offer regression failed before the projection fix and passed afterward; 51/51 affected Edit Mode checks and 1/1 focused Play Mode journey passed; non-batch 2560x1440 capture and visual review passed; living-document validation and diff review. No broad-risk trigger or unrelated suites.
+
+Historical evidence: completion commit addressed by immutable `work/W-009`; exact checks, results and limitations live in its body.
 
 ### [x] W-008 Publish prepared card artwork to private Gitea
 

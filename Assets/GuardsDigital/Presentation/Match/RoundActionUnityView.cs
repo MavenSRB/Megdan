@@ -1188,11 +1188,12 @@ namespace GuardsDigital.Presentation.Match
             control.style.backgroundColor = Color.clear;
             upgradeOptionControls.Add(
                 new KeyValuePair<SystemTransitionOptionViewModel, VisualElement>(option, control));
-            HudElements.OnPointedAt(control, pointedAt =>
-                ForwardUpgradeOptionHighlight(pointedAt ? option : null));
             HudElements.ApplyButtonMotion(control);
 
-            control.Add(DirectorHandsUnityView.BuildStandaloneCard(option.Card));
+            var face = DirectorHandsUnityView.BuildStandaloneCard(option.Card);
+            control.Add(face);
+            HudElements.OnPointedAt(control, pointedAt =>
+                ForwardUpgradeOptionPointedAt(option, pointedAt));
             control.Add(BuildUpgradeOptionFacts(option));
             control.tooltip = option.Detail.Length > 0
                 ? $"{option.Label} - {option.Detail}"
@@ -1351,6 +1352,39 @@ namespace GuardsDigital.Presentation.Match
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Reports the complete hover/focus state of one drawn upgrade card. The live control and
+        /// pointer-less UI drivers share this entry so the item highlight and Gydion's typed spell
+        /// companion cannot drift into two different readings of the same pointed-at card.
+        /// </summary>
+        public void ForwardUpgradeOptionPointedAt(
+            SystemTransitionOptionViewModel option,
+            bool pointedAt)
+        {
+            var entry = upgradeOptionControls.FirstOrDefault(candidate =>
+                ReferenceEquals(candidate.Key, option) ||
+                (option != null &&
+                 candidate.Key.SourceCardInstanceId.Equals(option.SourceCardInstanceId) &&
+                 candidate.Key.Card?.CardInstanceId.Equals(option.Card?.CardInstanceId ?? default) == true));
+            if (entry.Value == null)
+            {
+                return;
+            }
+
+            var liveOption = entry.Key;
+            ForwardUpgradeOptionHighlight(pointedAt ? liveOption : null);
+            if (liveOption.Card?.CastableSpells.Count <= 0)
+            {
+                return;
+            }
+
+            var face = entry.Value.Q<VisualElement>("gd-card-preview");
+            if (pointedAt)
+                CastableSpellHoverView.Attach(face, liveOption.Card.CastableSpells);
+            else
+                CastableSpellHoverView.Detach(face);
         }
 
         private Button BuildTransitionOption(SystemTransitionOptionViewModel option)

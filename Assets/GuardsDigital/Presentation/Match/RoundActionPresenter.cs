@@ -1107,7 +1107,8 @@ namespace GuardsDigital.Presentation.Match
                 projection?.PendingSystemTransitionDescription,
                 projection?.Definitions,
                 projection?.Setup?.Heroes,
-                projection?.DecisionContract);
+                projection?.DecisionContract,
+                projection);
 
         // Milestone 8.75e. The `tieBreaker` argument milestone 8.75b threaded to here is gone with the
         // corner badge it fed: a p.15 upgrade candidate drew the live coin face so the card would read
@@ -1116,7 +1117,15 @@ namespace GuardsDigital.Presentation.Match
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<QuickGameHeroSetupState> heroes,
-            PendingDecisionContract contract)
+            PendingDecisionContract contract) =>
+            CreateSystemTransitionPrompt(description, definitions, heroes, contract, null);
+
+        private static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<QuickGameHeroSetupState> heroes,
+            PendingDecisionContract contract,
+            IMatchReadModel projection)
         {
             if (description == null || description.Options.Count == 0)
             {
@@ -1154,7 +1163,13 @@ namespace GuardsDigital.Presentation.Match
                         // take a mandatory decision off the screen.
                         CurrentRoundCards.DeckCard(
                             option.TakenCardInstanceId,
-                            Definition(definitions, option.TakenCard)),
+                            Definition(definitions, option.TakenCard),
+                            projection == null
+                                ? null
+                                : SpellbookPresentation.CastableSpells(
+                                    projection,
+                                    description.HeroId,
+                                    Definition(definitions, option.TakenCard))),
                         DefinitionName(definitions, option.UpgradedCard),
                         option.ItemIcon,
                         option.SetAsideCardInstanceId.IsDefined

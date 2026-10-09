@@ -14,11 +14,11 @@ Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-008**.
-- Active authorized work: **None**.
-- Next proposed work: **W-004**.
+- Last completed work: **W-009**.
+- Active authorized work: **W-010**.
+- Next proposed work: **W-011**.
 
-W-008 published only the prepared runtime card faces/shine maps, card backs and spell-card artwork to the user's private Gitea repository, with binary PNGs stored through Git LFS. Boards, hero portraits, markers, tokens and source-reference corpora remain excluded. W-004's lower banner with slightly larger text remains awaiting user visual approval. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
+W-009 completed Gydion's level-up card hover by reusing the existing small castable-spell preview. W-010 now applies the user's corrected setup ruling: every Gydion spell starts faceup in the removed/discarded spell pile; W-011 then adds the final-ten-second map countdown. W-004's lower name banner remains at its visual-approval gate. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

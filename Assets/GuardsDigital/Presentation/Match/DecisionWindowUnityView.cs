@@ -604,6 +604,33 @@ namespace GuardsDigital.Presentation.Match
                 .Select(entry => entry.Value)
                 .FirstOrDefault();
 
+        /// <summary>
+        /// Reports hover/focus over one drawn level-up card. The live control and pointer-less UI
+        /// drivers share this entry, so Gydion's typed spell companion is the same on the expanded
+        /// decision window and on the strip fallback.
+        /// </summary>
+        public void ForwardUpgradeOptionPointedAt(
+            DecisionWindowControlViewModel control,
+            bool pointedAt)
+        {
+            var entry = drawnControls.FirstOrDefault(candidate =>
+                ReferenceEquals(candidate.Key, control) ||
+                (control?.UpgradeOption != null && candidate.Key.UpgradeOption != null &&
+                 candidate.Key.UpgradeOption.SourceCardInstanceId.Equals(
+                     control.UpgradeOption.SourceCardInstanceId) &&
+                 candidate.Key.Card?.CardInstanceId.Equals(control.Card?.CardInstanceId ?? default) == true));
+            if (entry.Value == null || entry.Key.Card?.CastableSpells.Count <= 0)
+            {
+                return;
+            }
+
+            var face = entry.Value.Q<VisualElement>("gd-card-preview");
+            if (pointedAt)
+                CastableSpellHoverView.Attach(face, entry.Key.Card.CastableSpells);
+            else
+                CastableSpellHoverView.Detach(face);
+        }
+
         private void Rebuild()
         {
             // A pressed preference rebuilds the complete card controls. UI Toolkit can remove the
@@ -1782,6 +1809,8 @@ namespace GuardsDigital.Presentation.Match
                 ? control.Label
                 : control.Label + " - " + control.Detail;
             element.Add(BuildFace(control.Card, CardShineSlot.None));
+            HudElements.OnPointedAt(element, pointedAt =>
+                ForwardUpgradeOptionPointedAt(captured, pointedAt));
             element.Add(RoundActionUnityView.BuildUpgradeOptionFacts(control.UpgradeOption));
             return element;
         }

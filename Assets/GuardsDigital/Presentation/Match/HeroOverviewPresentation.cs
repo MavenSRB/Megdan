@@ -1659,7 +1659,8 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static TrayCardViewModel DeckCard(
             CardInstanceId cardInstanceId,
-            CardDefinition definition) =>
+            CardDefinition definition,
+            IReadOnlyList<SpellCardViewModel> castableSpells = null) =>
             new TrayCardViewModel(
                 cardInstanceId,
                 definition?.Reference ?? default,
@@ -1673,7 +1674,8 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35m: this class's whole point is "a surface that offers it" - the doc
                 // comment above already says so - so every candidate it builds is card-scope's leveling
                 // upgrade case, unconditionally.
-                isAwaitedAnswer: true);
+                isAwaitedAnswer: true,
+                castableSpells: castableSpells);
 
         /// <summary>
         /// Milestone 8.5a: one card definition read into the four value homes and the printed words its

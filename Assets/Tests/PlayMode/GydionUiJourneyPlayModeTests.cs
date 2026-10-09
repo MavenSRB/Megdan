@@ -1221,12 +1221,34 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SystemTransitionPrompt?.Kind, Is.EqualTo(SystemTransitionPromptKind.LevelUpUpgrade));
             var upgrade = runtime.RoundView.Model.SystemTransitionPrompt.Options
                 .First(option => option.Card != null && option.ItemIcon != PrintedValueChannel.None);
+            Assert.That(upgrade.Card.CastableSpells, Is.Not.Empty,
+                "A Gydion upgrade candidate carries the same typed spell companions as that card in his hand.");
             var before = runtime.Projection.HeroProgression.Single(value => value.HeroId.Equals(gydion));
             var previous = before.ItemBonuses.Where(value => value.Key == upgrade.ItemIcon)
                 .Select(value => value.Value).SingleOrDefault();
-            UiPlayer.EnsureVisible(UpgradeButton(root, upgrade));
+            var upgradeCardId = upgrade.Card.CardInstanceId;
+            var upgradeButton = UpgradeButton(root, upgrade);
+            UiPlayer.EnsureVisible(upgradeButton);
             yield return null;
-            UiPlayer.Click(UpgradeButton(root, upgrade));
+            upgrade = runtime.RoundView.Model.SystemTransitionPrompt.Options.Single(option =>
+                option.Card?.CardInstanceId.Equals(upgradeCardId) == true);
+            upgradeButton = UpgradeButton(root, upgrade);
+            Assert.That(upgradeButton.Q<VisualElement>("gd-card-preview"), Is.Not.Null);
+            var windowControl = runtime.DecisionWindowView.Model.Controls.Single(control =>
+                control.UpgradeOption?.Card.CardInstanceId.Equals(upgradeCardId) == true);
+            runtime.DecisionWindowView.ForwardUpgradeOptionPointedAt(windowControl, true);
+            var spellShelf = upgradeButton.Q<VisualElement>("gd-castable-spells");
+            Assert.That(spellShelf, Is.Not.Null,
+                "Hovering the offered card shows the shared small-spell companion.");
+            Assert.That(spellShelf.Query<VisualElement>("gd-castable-spell").ToList().Count,
+                Is.EqualTo(upgrade.Card.CastableSpells.Count));
+            yield return null;
+            if (!UnityEngine.Application.isBatchMode)
+                yield return UiPlayer.CaptureScreen("tmp/w009-gydion-level-up-spell-hover-2560x1440.png");
+            runtime.DecisionWindowView.ForwardUpgradeOptionPointedAt(windowControl, false);
+            yield return null;
+            Assert.That(upgradeButton.Q<VisualElement>("gd-castable-spells"), Is.Null);
+            UiPlayer.Click(upgradeButton);
             yield return null;
             Assert.That(runtime.Cards.Single(card => card.Id.Equals(upgrade.Card.CardInstanceId)).State.Location,
                 Is.EqualTo(CardLocation.Hand));
