@@ -91,10 +91,26 @@ namespace GuardsDigital.Core.Cards
                 CardFaceOrientation.FaceDown);
         }
 
+        /// <summary>
+        /// A spell that setup explicitly places in the public discarded-spell pile: unplayed,
+        /// unresolved and faceup, matching the destination shape of
+        /// <see cref="CardLifecycleAuthority.TryRemoveFromSpellbookFaceup"/>.
+        /// </summary>
+        public static CardStateFacts InitialRemovedFromSpellbook()
+        {
+            return new CardStateFacts(
+                CardLocation.RemovedFromSpellbook,
+                false,
+                CardResolutionStatus.None,
+                CardFaceOrientation.FaceUp);
+        }
+
         public bool IsInitialInHand => Equals(InitialInHand());
 
         /// <summary>Milestone 9.30b: whether this is exactly the shape <see cref="InitialInSpellbook"/> states.</summary>
         public bool IsInitialInSpellbook => Equals(InitialInSpellbook());
+
+        public bool IsInitialRemovedFromSpellbook => Equals(InitialRemovedFromSpellbook());
 
         /// <summary>Milestone 7.5: whether this is exactly the shape <see cref="InitialInDeck"/> states.</summary>
         public bool IsInitialInDeck => Equals(InitialInDeck());

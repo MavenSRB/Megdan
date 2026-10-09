@@ -12,6 +12,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-007 | Retained `WHO ACTS FIRST?` and centred each selector's hero token above their highlighted card. | `work/W-007` |
 | W-008 | Published prepared runtime card faces/shine maps, card backs and spell-card artwork through Git LFS to private Gitea. | `work/W-008` |
 | W-009 | Reused the typed small-spell hover preview on Gydion's level-up candidates. | `work/W-009` |
+| W-010 | Corrected Gydion setup so all twenty-two spells start faceup in the removed/discarded spell pile. | `work/W-010` |
+
+### [x] W-010 Gydion starts with all spells discarded
+
+Approved by the user's correction that Gydion should start with all of his spells discarded.
+Outcome: standard Gydion setup now creates all twenty-two spells unplayed and faceup in the existing public `RemovedFromSpellbook` zone, leaving the spellbook empty and the HUD at `SPELLBOOK 0 | 22`. Prepare Spells returns them through the standing lifecycle. Deliberate action fixtures explicitly prepare the book; the progressed Tier III fixture remains an explicitly progressed state.
+Scope: superseded GY-Q1 setup state, exact setup validation, content authority and affected regressions. Casting, refill effects, public visibility, stable instances, commands, snapshot/wire schema and package remain unchanged.
+Closing checks: the 2-case standard-setup regression failed against the old full book and passed after correction; Gydion dealing plus spellbook lifecycle passed 64/64 Edit Mode; affected standard/progressed UI and Prepare Spells paths passed 7/7 Play Mode; living-document validation and diff review. No broad-risk trigger or unrelated suites.
+
+Historical evidence: completion commit addressed by immutable `work/W-010`; exact checks, results and limitations live in its body.
 
 ### [x] W-009 Gydion spell previews on level-up candidates
 

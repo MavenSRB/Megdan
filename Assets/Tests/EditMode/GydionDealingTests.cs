@@ -25,7 +25,7 @@ namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
     /// Milestone 9.30i: Gydion the Archwizard dealt into both formats - eighteen fronts dealt, Cheap
-    /// Trick boxed (p.20), all twenty-two spells in his book (GY-Q1) - with every handler his fronts
+    /// Trick boxed (p.20), all twenty-two spells faceup in his removed pile (corrected GY-Q1) - with every handler his fronts
     /// and spells name registered, the printed four-star, six-role picker row, the casting fronts
     /// composed from the shard's inventory table and Printed clauses, his decision labels, a cast and a
     /// refill from a dealt hand on the staged board, and the bots answering every decision family his
@@ -37,7 +37,7 @@ namespace GuardsDigital.Tests.EditMode
 
         [TestCase(2)]
         [TestCase(3)]
-        public void SelectedGydion_DealsEighteenFrontsAndPutsAllTwentyTwoSpellsInHisBook(int perTeam)
+        public void SelectedGydion_DealsEighteenFrontsAndStartsAllTwentyTwoSpellsRemovedFaceup(int perTeam)
         {
             var gydion = RegisteredHeroRoster.ForThisBuild.Single(hero => hero.ContentId.Value == "gydion");
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(32));
@@ -53,8 +53,14 @@ namespace GuardsDigital.Tests.EditMode
             var configuration = MatchConfiguration.CreateForLineupForInternalTest(format, lineup, TeamSide.Red);
             var cards = configuration.CardInstances.Where(card =>
                 card.OwnerId.Value == gydion.HeroIdValue).ToArray();
-            var fronts = cards.Where(card => card.State.Location != CardLocation.Spellbook).ToArray();
+            var spellIds = GydionCardContent.SpellDefinitions
+                .Select(spell => spell.Id)
+                .ToHashSet();
+            var fronts = cards.Where(card =>
+                !spellIds.Contains(card.DefinitionReference.DefinitionId)).ToArray();
             var book = cards.Where(card => card.State.Location == CardLocation.Spellbook).ToArray();
+            var removed = cards.Where(card =>
+                card.State.Location == CardLocation.RemovedFromSpellbook).ToArray();
 
             Assert.That(fronts.Select(card => card.DefinitionReference),
                 Is.EquivalentTo(GydionCardContent.DealtDefinitions.Select(card => card.Reference)));
@@ -66,9 +72,13 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(card => card.DefinitionReference.DefinitionId),
                 Is.EquivalentTo(GydionCardContent.StartingHand));
             Assert.That(fronts.Count(card => card.State.Location == CardLocation.Deck), Is.EqualTo(13));
-            Assert.That(book.Select(card => card.DefinitionReference),
+            Assert.That(book, Is.Empty, "Corrected GY-Q1: the book starts empty.");
+            Assert.That(removed.Select(card => card.DefinitionReference),
                 Is.EquivalentTo(GydionCardContent.SpellDefinitions.Select(spell => spell.Reference)),
-                "GY-Q1: all twenty-two spells, Wish included, are in the book at setup.");
+                "Corrected GY-Q1: all twenty-two spells, Wish included, start discarded.");
+            Assert.That(removed.Select(card => card.State.FaceOrientation),
+                Is.All.EqualTo(CardFaceOrientation.FaceUp),
+                "The discarded spell pile is the existing public faceup removed zone.");
 
             // The match composes on the build's own catalogs, and every seat reads his book's size.
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -83,8 +93,12 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var summary = host.ProjectionForSeat(seat.Id).HandSummaries
                     .Single(value => value.HeroId.Value == gydion.HeroIdValue);
-                Assert.That(summary.SpellbookCount, Is.EqualTo(22), seat.HeroId.Value);
+                Assert.That(summary.SpellbookCount, Is.Zero, seat.HeroId.Value);
                 Assert.That(summary.HandCount, Is.EqualTo(5), seat.HeroId.Value);
+                Assert.That(host.ProjectionForSeat(seat.Id).Cards.Count(card =>
+                        card.OwnerId.Equals(summary.HeroId) &&
+                        card.State.Location == CardLocation.RemovedFromSpellbook),
+                    Is.EqualTo(22), seat.HeroId.Value + ": every seat sees the faceup removed spells.");
             }
         }
 
@@ -538,6 +552,15 @@ namespace GuardsDigital.Tests.EditMode
             gydion = gydionSetup.HeroId;
             var gydionId = gydion;
             wasp = setup.Heroes.Single(hero => !hero.HeroId.Equals(gydionId)).HeroId;
+            var stagedGydion = gydion;
+            foreach (var spell in configuration.CardInstances.Where(card =>
+                card.OwnerId.Equals(stagedGydion) &&
+                card.State.Location == CardLocation.RemovedFromSpellbook))
+            {
+                Assert.That(CardLifecycleAuthority.TryReturnToSpellbook(spell), Is.True,
+                    "The action fixture explicitly prepares Gydion's book after corrected setup.");
+            }
+
             return new MatchSession(new MatchSessionInitialState(
                 Scenario(configuration, map, setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate))),
                 setup, new[] { map }));

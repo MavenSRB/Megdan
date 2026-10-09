@@ -225,9 +225,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restored.RedHand.DealtDefinitions.Select(definition => definition.Id),
                 Is.EqualTo(hand.DealtDefinitions.Select(definition => definition.Id)));
 
-            // Exactly that location, for exactly spells: a spell dealt to the hand and an action card
-            // put in the book are both refused at setup.
+            // Either exact spell resting state is admitted for a spell; hand is not. An action card
+            // still cannot use a spell zone.
             var showcase = configuration.CardDefinitions;
+            var removedSpell = CardInstance.CreateRemovedFromSpellbook(
+                new CardInstanceId("spell-removed-at-setup"),
+                SyntheticSpellbook.Definitions[0].Reference, Owner);
+            Assert.That(removedSpell.State, Is.EqualTo(CardStateFacts.InitialRemovedFromSpellbook()));
+            Assert.DoesNotThrow(() => CardInitialSetupValidator.Validate(showcase, new[] { removedSpell }));
             var spellInHand = CardInstance.CreateInHand(
                 new CardInstanceId("spell-in-hand"), SyntheticSpellbook.Definitions[0].Reference, Owner);
             Assert.That(() => CardInitialSetupValidator.Validate(showcase, new[] { spellInHand }),

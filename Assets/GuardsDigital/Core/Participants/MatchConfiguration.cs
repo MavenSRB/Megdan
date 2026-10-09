@@ -635,8 +635,8 @@ namespace GuardsDigital.Core.Participants
                 case Setup.QuickGameSetupConfiguration.RazzleHeroIdValue:
                     return Cards.Verified.RazzleCardContent.CreateHand(heroId, instancePrefix);
                 // Milestone 9.30i. The TWENTY-NINTH hero; Cheap Trick, his p.20 Handicap, is boxed by
-                // his set's own ReturnedToBoxAtSetup, and his twenty-two spells start in his
-                // spellbook (GY-Q1).
+                // his set's own ReturnedToBoxAtSetup, and his twenty-two spells start faceup in his
+                // removed/discarded spell pile (corrected GY-Q1).
                 case Setup.QuickGameSetupConfiguration.GydionHeroIdValue:
                     return Cards.Verified.GydionCardContent.CreateHand(heroId, instancePrefix);
                 // Milestone 9.32h. The THIRTIETH hero; Shameful Display, his p.20 Handicap, is boxed by
@@ -2272,8 +2272,8 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
-        /// Milestone 9.30i. Wasp on Red against Gydion with his p.6 starting hand and all twenty-two
-        /// spells in his book (GY-Q1).
+        /// Wasp on Red against Gydion with his p.6 starting hand and all twenty-two spells faceup in
+        /// his removed/discarded spell pile (corrected GY-Q1).
         /// </summary>
         public static MatchConfiguration CreateStagedGydionForInternalTest(
             TeamSide initialTieBreakerSide) =>

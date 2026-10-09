@@ -56,15 +56,17 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentException("Card instance references an unresolved definition ID or content revision.", nameof(instances));
                 }
 
-                // Milestone 9.30b. A spell card starts in one place and only a spell starts there: its
-                // owner's spellbook, unplayed and facedown. Widened for exactly that location and that
-                // kind of card, so a spell dealt to a hand and an action card put in the book are both
-                // refused.
+                // A spell may start in either spell lifecycle resting place: facedown in its owner's
+                // book, or faceup in the public removed/discarded-spell pile when hero setup says so.
+                // No spell may be dealt to a hand/deck, and no action card may use either spell zone.
                 if (definition.Progression.IsSpell)
                 {
-                    if (!instance.State.IsInitialInSpellbook)
+                    if (!instance.State.IsInitialInSpellbook &&
+                        !instance.State.IsInitialRemovedFromSpellbook)
                     {
-                        throw new ArgumentException("A spell card starts in its owner's spellbook, unplayed and facedown.", nameof(instances));
+                        throw new ArgumentException(
+                            "A spell card starts in its owner's spellbook facedown or removed from it faceup.",
+                            nameof(instances));
                     }
 
                     continue;

@@ -43,7 +43,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinitionId CloudKill { get; } = Id("cloud-kill");
         public static CardDefinitionId Wish { get; } = Id("wish");
 
-        /// <summary>The twenty-two spell definitions, in the shard's order (GY-Q1: all in the book).</summary>
+        /// <summary>The twenty-two spell definitions, in the shard's order.</summary>
         public static IReadOnlyList<CardDefinition> SpellDefinitions => LazySpells.Value;
 
         /// <summary>

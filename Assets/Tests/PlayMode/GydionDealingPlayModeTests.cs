@@ -168,7 +168,7 @@ namespace GuardsDigital.Tests.PlayMode
                 var shortcut = root.Hud.RootElement.Q<Button>("gd-hand-spellbook");
                 var trayChip = root.Hud.RootElement.Q<Button>("gd-spellbook-chip");
                 Assert.That(UiPlayer.IsShown(shortcut), Is.True, "Gydion's joined seat keeps the hand shortcut");
-                Assert.That(shortcut.text, Is.EqualTo("SPELLBOOK 22 | 0"));
+                Assert.That(shortcut.text, Is.EqualTo("SPELLBOOK 0 | 22"));
                 Assert.That(shortcut.text, Is.EqualTo(trayChip.text));
                 Assert.That(shortcut.resolvedStyle.backgroundColor, Is.EqualTo(trayChip.resolvedStyle.backgroundColor));
                 Assert.That(shortcut.resolvedStyle.color, Is.EqualTo(trayChip.resolvedStyle.color));
@@ -189,8 +189,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(castable, Is.Not.Null,
                     "the joined Gydion player sees Cantrip's declared spells on pointer rest");
                 Assert.That(castable.Query<VisualElement>("gd-spell-face").ToList().Count, Is.EqualTo(3));
-                Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Is.Empty,
-                    "all three spells begin in the book");
+                Assert.That(castable.Query<VisualElement>("gd-spell-greyed").ToList(), Has.Count.EqualTo(3),
+                    "corrected setup starts all three declared spells removed");
                 var castableFaces = castable.Query<VisualElement>("gd-spell-face").ToList();
                 Assert.That(castable.worldBound.yMax,
                     Is.LessThanOrEqualTo(runtime.HandsView.HoverPreviewRoot.Q("gd-card-preview").worldBound.yMin + 1f),
@@ -201,13 +201,17 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return UiPlayer.CaptureScreen("tmp/9-74-gydion-cast-hover-all-in-book.png");
 
                 var removedIndex = 0;
-                var removedDefinition = runtime.Host.Projection.Definitions.Single(definition =>
-                    definition.Reference.Equals(cantripModel.CastableSpells[removedIndex].DefinitionReference));
                 var oneRemovedSpells = cantripModel.CastableSpells.Select((spell, index) =>
-                    index == removedIndex
-                        ? new SpellCardViewModel(removedDefinition, isGreyed: true,
-                            caption: removedDefinition.DisplayName.ToUpperInvariant() + " - REMOVED")
-                        : spell).ToArray();
+                {
+                    var definition = runtime.Host.Projection.Definitions.Single(candidate =>
+                        candidate.Reference.Equals(spell.DefinitionReference));
+                    return new SpellCardViewModel(
+                        definition,
+                        isGreyed: index == removedIndex,
+                        caption: index == removedIndex
+                            ? definition.DisplayName.ToUpperInvariant() + " - REMOVED"
+                            : null);
+                }).ToArray();
                 var oneRemovedCantrip = new TrayCardViewModel(
                     cantripModel.CardInstanceId,
                     cantripModel.DefinitionReference,
@@ -324,7 +328,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SceneOneFortyTwo_DealsHisStartingHandAFullBookAndHisPreparedFaces()
+        public IEnumerator SceneOneFortyTwo_DealsHisStartingHandWithAllSpellsRemovedFaceupAndHisPreparedFaces()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedGydion);
@@ -346,13 +350,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(standee.HeroContentId.Value.Value, Is.EqualTo(GydionCardContent.ContentSetId));
             Assert.That(standee.HasTokenVisual, Is.True, "His standee wears his prepared team face.");
 
-            // The configuration arm: p.6's five in hand, thirteen in the deck, twenty-two in the book.
+            // The configuration arm: p.6's five in hand, thirteen in the deck, twenty-two discarded spells.
             Assert.That(HandOf(runtime, gydion).Select(definition => definition.Id),
                 Is.EquivalentTo(GydionCardContent.StartingHand));
             Assert.That(runtime.Cards.Count(card => card.OwnerId.Equals(gydion) && card.State.Location == CardLocation.Deck),
                 Is.EqualTo(13));
-            Assert.That(InTheBook(runtime), Is.EqualTo(22), "GY-Q1: every spell, Wish included.");
-            Assert.That(Chip(root), Is.EqualTo("SPELLBOOK 22 | 0"));
+            Assert.That(InTheBook(runtime), Is.Zero, "Corrected GY-Q1: the book starts empty.");
+            Assert.That(runtime.Cards.Count(card => card.OwnerId.Equals(gydion) &&
+                    card.State.Location == CardLocation.RemovedFromSpellbook &&
+                    card.State.FaceOrientation == CardFaceOrientation.FaceUp),
+                Is.EqualTo(22), "Every spell, Wish included, starts discarded faceup.");
+            Assert.That(Chip(root), Is.EqualTo("SPELLBOOK 0 | 22"));
             Assert.That(runtime.Cards.Any(card => card.DefinitionReference.DefinitionId.Equals(GydionCardContent.CheapTrick)),
                 Is.False, "Cheap Trick stays boxed (p.20).");
 
@@ -423,6 +431,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 yield return UiPlayer.CaptureScreen("tmp/9-30j-gydion/starting-hand-2560x1440.png");
 
+                StageTheBook(runtime, System.Array.Empty<CardDefinitionId>());
                 yield return Begin(root, GydionCardContent.Cantrip);
                 Assert.That(runtime.DecisionWindowView.Model.Controls.Count(control => control.Spell != null), Is.EqualTo(3),
                     Remaining(runtime));

@@ -38,7 +38,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 GydionCardContent.DealtDefinitions.Concat(GydionCardContent.SpellDefinitions),
                 cards.Where(card => card.State.Location == CardLocation.Hand),
                 cards.Where(card => card.State.Location == CardLocation.Deck),
-                GydionCardContent.CreateSpellbook(owner, prefix));
+                GydionCardContent.SpellDefinitions.Select(spell => CardInstance.CreateInSpellbook(
+                    new CardInstanceId(prefix + "-" + spell.Id.Value), spell.Reference, owner)));
         }
     }
 }

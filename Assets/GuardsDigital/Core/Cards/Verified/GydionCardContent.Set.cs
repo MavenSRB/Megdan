@@ -8,8 +8,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>
     /// Milestone 9.30i. Gydion's printed set reconciled against his shard's nineteen-row inventory
     /// table and twenty-two-row Spells table, his boxed Handicap (Cheap Trick), and the dealing: his
-    /// p.6 starting hand, the deck the rest of the fronts form, and his spellbook, which setup fills
-    /// with all twenty-two spells (GY-Q1).
+    /// p.6 starting hand, the deck the rest of the fronts form, and his spell lifecycle, whose public
+    /// removed pile setup fills with all twenty-two spells (corrected GY-Q1).
     /// </summary>
     public static partial class GydionCardContent
     {
@@ -37,7 +37,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// The action fronts a match deals into his hand and deck: every front but the boxed Handicap.
-        /// His spells are not dealt; setup puts them in the spellbook (<see cref="CreateSpellbook"/>).
+        /// His spells are not dealt; setup puts them in the removed spell pile (<see cref="CreateSpellbook"/>).
         /// </summary>
         public static IReadOnlyList<CardDefinition> DealtDefinitions => LazyDealtDefinitions.Value;
 
@@ -63,19 +63,19 @@ namespace GuardsDigital.Core.Cards.Verified
                 .ToArray());
         }
 
-        /// <summary>GY-Q1: all twenty-two spells, Wish included, in his spellbook at setup.</summary>
+        /// <summary>Corrected GY-Q1: all twenty-two spells, Wish included, discarded faceup at setup.</summary>
         public static IReadOnlyList<CardInstance> CreateSpellbook(HeroId ownerId, string instanceIdPrefix)
         {
             RequireOwnerAndPrefix(ownerId, instanceIdPrefix);
             return Array.AsReadOnly(SpellDefinitions
-                .Select(spell => CardInstance.CreateInSpellbook(
+                .Select(spell => CardInstance.CreateRemovedFromSpellbook(
                     new CardInstanceId($"{instanceIdPrefix}-{spell.Id.Value}"), spell.Reference, ownerId))
                 .ToArray());
         }
 
         /// <summary>
         /// His hand as setup leaves it: the dealt fronts and the spells as the hand's definitions, p.6's
-        /// five in hand, thirteen in the deck, twenty-two in the book.
+        /// five in hand, thirteen in the deck, twenty-two discarded faceup from the book.
         /// </summary>
         public static ConfiguredHand CreateHand(HeroId ownerId, string instanceIdPrefix)
         {

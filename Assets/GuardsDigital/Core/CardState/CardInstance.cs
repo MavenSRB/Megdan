@@ -101,6 +101,16 @@ namespace GuardsDigital.Core.Cards
             return new CardInstance(id, definitionReference, ownerId, CardStateFacts.InitialInSpellbook());
         }
 
+        /// <summary>Creates a spell in setup's public faceup discarded-spell pile.</summary>
+        public static CardInstance CreateRemovedFromSpellbook(
+            CardInstanceId id,
+            CardDefinitionReference definitionReference,
+            HeroId ownerId)
+        {
+            return new CardInstance(
+                id, definitionReference, ownerId, CardStateFacts.InitialRemovedFromSpellbook());
+        }
+
         internal bool TryApplyLocationTransition(ActionCardStateTransition transition)
         {
             if (!transition.IsDefined || State.Location != transition.RequiredLocation)

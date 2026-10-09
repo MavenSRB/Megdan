@@ -204,6 +204,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadStagedScene(scene);
             Assert.That(Gydion(Root().Runtime), Is.EqualTo(cachedGydion.Value));
             Assert.That(SpaceOf(Root().Runtime, cachedGydion.Value), Is.EqualTo(GydionSpace));
+            StageTheBook(Root().Runtime, Array.Empty<CardDefinitionId>());
         }
 
         /// <summary>
@@ -223,6 +224,13 @@ namespace GuardsDigital.Tests.PlayMode
             var restored = AuthoritativeSnapshotSerializer.Deserialize(
                 runtime.ContentCatalogs, authoritative, runtime.InitialState.Scenario.CardDefinitions,
                 runtime.InitialState.AvailableMaps, runtime.InitialState.Setup.Minions);
+            foreach (var card in restored.Cards.Where(value => value.OwnerId.Equals(gydion) &&
+                value.State.Location == CardLocation.RemovedFromSpellbook))
+            {
+                Assert.That(CardLifecycleAuthority.TryReturnToSpellbook(card), Is.True,
+                    "The staged journey explicitly prepares the book after corrected setup.");
+            }
+
             foreach (var spell in removed)
             {
                 var card = restored.Cards.Single(value => value.OwnerId.Equals(gydion) &&
