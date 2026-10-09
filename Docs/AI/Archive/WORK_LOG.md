@@ -20,6 +20,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-015 | Retained resolved attack bonuses on spotlight cards and thickened shared white modifier numerals. | `work/W-015` |
 | W-016 | Kept hand and right-side unavailable cards fully bright, preserving inspection and command restrictions. | `work/W-016` |
 | W-017 | Suppressed generic small text tooltips while preserving full-card previews and defense modifier breakdowns. | `work/W-017` |
+| W-018 | Kept same-identity last-minion death and Lane Push movement in causal presentation order. | `work/W-018` |
+
+### [x] W-018 Keep a last-minion kill at its original space
+
+Approved from the user's report that the prior correction still pushed the wave first and then struck the respawned minion in a different zone.
+Outcome: when Lane Push removes the attacked last minion and immediately reuses that miniature identity at a new spawn, the real respawn stays hidden behind a death echo at the old space. All other pushed-wave relocation waits on the same echo. The framed strike is latched when its kinetic scene starts, closing the transient-lunge race; Undo/restore cancels the held death and respawn. Authoritative Attack and Lane Push timing, rules, commands, wire /51, snapshot v59 and content are unchanged. No new build.
+Acceptance: T2 same-identity death/respawn and Undo regressions; affected defeat, kinetic, conductor, spotlight, minion-view and pointer checks; rendered real-scene last-minion Attack, after-Attack completion, Lane Push respawn, old-space strike and release; documentation validation and diff review.
+
+Historical evidence: completion commit addressed by immutable `work/W-018`; exact checks, observed failures/corrections, results and limitations live in its body.
 
 ### [x] W-017 Remove small text hover popups
 

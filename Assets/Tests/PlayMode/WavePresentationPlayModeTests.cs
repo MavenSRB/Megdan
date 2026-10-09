@@ -4,8 +4,12 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Transitions;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -171,6 +175,120 @@ namespace GuardsDigital.Tests.PlayMode
                 "Shock's first rider question is still the real board-target chooser.");
             yield return UiPlayer.CaptureScreen(
                 "tmp/943-captures/attack-before-after-attack-question.png");
+        }
+
+        [UnityTest]
+        public IEnumerator LastMinionAttack_DiesAtItsOldSpaceBeforeItsSameIdentityRespawns()
+        {
+            yield return LoadEngagedScene();
+            var initial = Root().Runtime;
+            var attackerId = HeroOf(initial, TeamSide.Red);
+            var attackerAt = initial.Heroes.Single(hero => hero.HeroId.Equals(attackerId)).Coordinate;
+            var target = initial.Projection.Minions
+                .Where(minion => minion.TeamSide == TeamSide.Blue &&
+                    minion.MinionType != StandardMinionType.Heavy)
+                .OrderBy(minion => HexDistanceQuery.Calculate(attackerAt, minion.Coordinate))
+                .ThenBy(minion => minion.MinionId.Value)
+                .First();
+            Assert.That(HexDistanceQuery.Calculate(attackerAt, target.Coordinate), Is.LessThanOrEqualTo(4),
+                "The staged last minion starts inside Shock's printed Range 4.");
+
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                heroes: new[]
+                {
+                    new SandboxHeroStaging(attackerId, hand: new[] { WaspCardContent.Shock })
+                },
+                removedMinions: initial.Projection.Minions
+                    .Where(minion => minion.TeamSide == target.TeamSide &&
+                        !minion.MinionId.Equals(target.MinionId))
+                    .Select(minion => minion.MinionId));
+            yield return LoadEngagedScene();
+
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var defenderHeroId = HeroOf(runtime, TeamSide.Blue);
+            Commit(runtime, TeamSide.Red, WaspCardContent.Shock);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.StopProjectiles);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(attackerId));
+
+            var attack = runtime.RoundView.Model.Actions.Single(value =>
+                ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
+            Assert.That(runtime.RoundPresenter.Submit(attack), Is.True);
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds,
+                Does.Contain(target.MinionId));
+            var targetView = Object.FindObjectsByType<StandardMinionView>().Single(value =>
+                value.Occupancy != null && value.Occupancy.MinionId.Equals(target.MinionId));
+            var oldCoordinate = targetView.Occupancy.Coordinate;
+            var oldPosition = targetView.transform.position;
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), hud,
+                targetView.transform.position), Is.True);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "Shock finishes its printed after-attack rider before the requested Lane Push.");
+            var defenderHero = Object.FindObjectsByType<PrimitiveHeroView>().Single(value =>
+                value.Occupancy.HeroId.Equals(defenderHeroId));
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), hud,
+                defenderHero.transform.position), Is.True,
+                "The enemy hero in Shock's disk answers on the board.");
+            var discard = runtime.RoundView.Model.EffectChoices.First(value =>
+                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            Assert.That(runtime.SubmitProjectedCommand(discard.Command), Is.True,
+                "The chosen hero discards one projected hand card, completing Shock's rider.");
+            Assert.That(runtime.PendingEffectChoice, Is.Null);
+
+            var respawned = runtime.BoardView.Model.Minions.Single(value =>
+                value.MinionId.Equals(target.MinionId));
+            Assert.That(respawned.Coordinate, Is.Not.EqualTo(oldCoordinate),
+                "The attack reproduced the reported edge: Lane Push reused the killed miniature's " +
+                "identity at a spawn in the new Battle Zone inside the same projection.");
+            Assert.That(targetView.gameObject.activeSelf, Is.False,
+                "The real respawn must stay hidden while the old-space death is pending.");
+            var ghost = runtime.BoardView.MinionDefeatGhostFor(targetView);
+            Assert.That(ghost, Is.Not.Null);
+            Assert.That(ghost.transform.position, Is.EqualTo(oldPosition),
+                "The visible target remains where the player actually struck it.");
+
+            if (runtime.SpotlightPresenter.Stage.Phase == AttackSpotlightPhase.Requested)
+            {
+                runtime.KineticView.Tick(0f);
+            }
+
+            TickBy(runtime.SpotlightPresenter,
+                AttackSpotlightTiming.EnterSeconds +
+                AttackSpotlightTiming.PostZoomBeatSeconds + 0.05f);
+            var attacker = KineticSubject.ForHero(attackerId);
+            for (var step = 0; step < 64 &&
+                !runtime.KineticView.Playback.LungeTargetFor(attacker).IsDefined; step++)
+            {
+                runtime.KineticView.Tick(0.25f);
+            }
+
+            Assert.That(runtime.KineticView.Playback.LungeTargetFor(attacker),
+                Is.EqualTo(KineticSubject.ForMinion(target.MinionId)),
+                "The framed strike still names the killed minion.");
+            Assert.That(ghost.transform.position, Is.EqualTo(oldPosition),
+                "At the strike itself the minion has not jumped to the next zone.");
+            Assert.That(targetView.gameObject.activeSelf, Is.False);
+            yield return UiPlayer.CaptureGameView("w018", "last-minion-strike-old-space");
+
+            const float PresentationFrame = 1f / 60f;
+            for (var step = 0; step < 120 &&
+                runtime.BoardView.MinionDefeatGhostFor(targetView) != null; step++)
+            {
+                runtime.KineticView.Tick(PresentationFrame);
+                runtime.BoardView.AdvanceDefeatFades(PresentationFrame);
+            }
+
+            Assert.That(runtime.BoardView.MinionDefeatGhostFor(targetView), Is.Null,
+                "The old-space death releases after the strike within two seconds of presentation " +
+                "time; a surviving ghost would mean the attack gate never opened.");
+            Assert.That(targetView.gameObject.activeSelf, Is.True);
+            Assert.That(targetView.Occupancy.Coordinate, Is.EqualTo(respawned.Coordinate),
+                "Only then does the reused miniature appear at its new Battle-Zone spawn.");
         }
 
         /// <summary>

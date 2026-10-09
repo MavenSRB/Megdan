@@ -326,6 +326,117 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void LastMinionDefeat_ThatRespawnsTheSameIdentity_DiesBeforeTheNewWaveAppears()
+        {
+            var targetObject = new GameObject("Last defeated minion");
+            var waveObject = new GameObject("Pushed wave minion");
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var targetBefore = MinionState("last", new HexCoordinate(0, 0));
+                var targetRespawned = MinionState("last", new HexCoordinate(3, 0));
+                var waveBefore = MinionState("wave", new HexCoordinate(1, 0));
+                var waveAfter = MinionState("wave", new HexCoordinate(2, 0));
+                var targetView = targetObject.AddComponent<StandardMinionView>();
+                var waveView = waveObject.AddComponent<StandardMinionView>();
+                targetView.Configure(targetBefore, HexWorldLayout.DefaultOuterRadius);
+                waveView.Configure(waveBefore, HexWorldLayout.DefaultOuterRadius);
+                var view = new BoardInteractionUnityView(
+                    Array.Empty<PrimitiveHeroView>(), Array.Empty<HexTileView>(), material,
+                    new[] { targetView, waveView });
+                var attackStillPlaying = true;
+                view.DeferDefeatFades = () => attackStillPlaying;
+                view.IsDefeatedMinionAwaitingPresentation = id => id.Equals(targetBefore.MinionId);
+
+                view.Render(BoardModel(
+                    1, Array.Empty<HeroOccupancy>(), new[] { targetBefore, waveBefore }));
+                var oldPosition = targetView.transform.position;
+                view.Render(BoardModel(
+                    2, Array.Empty<HeroOccupancy>(), new[] { targetRespawned, waveAfter }));
+
+                Assert.That(targetView.gameObject.activeSelf, Is.False,
+                    "The respawned authoritative miniature must not appear in the new zone yet.");
+                var ghost = view.MinionDefeatGhostFor(targetView);
+                Assert.That(ghost, Is.Not.Null,
+                    "A same-identity remove+respawn still owes the killed minion its death echo.");
+                Assert.That(ghost.transform.position, Is.EqualTo(oldPosition),
+                    "The strike and death remain at the space where the minion was actually killed.");
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(waveBefore.Coordinate),
+                    "The rest of the pushed wave also waits behind the causal death.");
+
+                view.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
+                Assert.That(ghost.Progress01, Is.Zero,
+                    "The attack gate holds the old-space death echo until the strike starts.");
+                Assert.That(targetView.gameObject.activeSelf, Is.False);
+
+                attackStillPlaying = false;
+                view.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds);
+
+                Assert.That(view.ActiveDefeatFadeCount, Is.Zero);
+                Assert.That(targetView.gameObject.activeSelf, Is.True);
+                Assert.That(targetView.Occupancy.Coordinate, Is.EqualTo(targetRespawned.Coordinate),
+                    "Only after the death finishes may the reused miniature appear at its respawn.");
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(waveAfter.Coordinate),
+                    "The consequent Lane Push catches up in the same release.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(targetObject);
+                Object.DestroyImmediate(waveObject);
+            }
+        }
+
+        [Test]
+        public void SameIdentityRespawnHold_UndoBackToTheOldSpaceCancelsTheDeathAndRespawn()
+        {
+            var targetObject = new GameObject("Last defeated minion");
+            var waveObject = new GameObject("Pushed wave minion");
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var targetBefore = MinionState("last", new HexCoordinate(0, 0));
+                var targetRespawned = MinionState("last", new HexCoordinate(3, 0));
+                var waveBefore = MinionState("wave", new HexCoordinate(1, 0));
+                var waveAfter = MinionState("wave", new HexCoordinate(2, 0));
+                var targetView = targetObject.AddComponent<StandardMinionView>();
+                var waveView = waveObject.AddComponent<StandardMinionView>();
+                targetView.Configure(targetBefore, HexWorldLayout.DefaultOuterRadius);
+                waveView.Configure(waveBefore, HexWorldLayout.DefaultOuterRadius);
+                var view = new BoardInteractionUnityView(
+                    Array.Empty<PrimitiveHeroView>(), Array.Empty<HexTileView>(), material,
+                    new[] { targetView, waveView })
+                {
+                    DeferDefeatFades = () => true,
+                    IsDefeatedMinionAwaitingPresentation = id => id.Equals(targetBefore.MinionId)
+                };
+
+                view.Render(BoardModel(
+                    1, Array.Empty<HeroOccupancy>(), new[] { targetBefore, waveBefore }));
+                view.Render(BoardModel(
+                    2, Array.Empty<HeroOccupancy>(), new[] { targetRespawned, waveAfter }));
+                Assert.That(targetView.gameObject.activeSelf, Is.False);
+                Assert.That(view.MinionDefeatGhostFor(targetView), Is.Not.Null);
+
+                view.Render(BoardModel(
+                    3, Array.Empty<HeroOccupancy>(), new[] { targetBefore, waveBefore }));
+
+                Assert.That(view.MinionDefeatGhostFor(targetView), Is.Null,
+                    "Undo/restore to the old board truth cancels the decorative death immediately.");
+                Assert.That(targetView.gameObject.activeSelf, Is.True);
+                Assert.That(targetView.Occupancy.Coordinate, Is.EqualTo(targetBefore.Coordinate));
+                Assert.That(waveView.Occupancy.Coordinate, Is.EqualTo(waveBefore.Coordinate),
+                    "No deferred pushed-wave position survives the reverted projection.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(targetObject);
+                Object.DestroyImmediate(waveObject);
+            }
+        }
+
+        [Test]
         public void MinionDefeatGhost_IsCancelledImmediately_WhenTheMinionReappearsBeforeItsFadeFinishes()
         {
             var minionObject = new GameObject("Projected Minion");

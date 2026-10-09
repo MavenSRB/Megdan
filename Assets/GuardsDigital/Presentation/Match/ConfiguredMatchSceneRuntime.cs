@@ -294,6 +294,30 @@ namespace GuardsDigital.Presentation.Match
                     strikeStarted = true;
                 return scene != null && (SpotlightPresenter.DefersCues || !strikeStarted);
             };
+            BoardView.IsDefeatedMinionAwaitingPresentation = minionId =>
+            {
+                var scene = SpotlightPresenter.Stage.Current;
+                return scene != null &&
+                    !scene.WasDefended &&
+                    scene.Defender.Kind == KineticSubjectKind.Minion &&
+                    scene.Defender.MinionId.Equals(minionId);
+            };
+            void RememberFramedStrikeStart()
+            {
+                var scene = SpotlightPresenter.Stage.Current;
+                if (scene == null ||
+                    !KineticView.Playback.LungeTargetFor(scene.Attacker).Equals(scene.Defender))
+                {
+                    return;
+                }
+
+                fadingAttack = scene;
+                strikeStarted = true;
+            }
+            // SceneStarted fires after playback.Begin. Latch the attack there so a short lunge that
+            // begins and ends between defeat-driver Updates cannot leave the death held forever.
+            // The predicate above remains the fallback for compositions that tick the board directly.
+            KineticView.SceneStarted += RememberFramedStrikeStart;
             SpotlightPresenter.CuesReleased += () => KineticPresenter.Resume();
             // Queue release is not necessarily attack start: an earlier reveal or flight can still
             // own the conductor. This first attempt handles an interruption (whose stage is gone),

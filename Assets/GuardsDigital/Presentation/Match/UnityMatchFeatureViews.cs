@@ -66,6 +66,8 @@ namespace GuardsDigital.Presentation.Match
         // until the defeat ghost finishes, then catch up to the latest projection.
         private readonly Dictionary<StandardMinionView, MinionOccupancy> deferredMinionMoves =
             new Dictionary<StandardMinionView, MinionOccupancy>();
+        private readonly HashSet<StandardMinionView> deferredMinionReappearances =
+            new HashSet<StandardMinionView>();
 
         // Milestone 8.35z63. The one violet tint and the one hex mesh every Active-effect
         // disk is painted with, generated on first use so a board with nothing running allocates
@@ -1024,6 +1026,7 @@ namespace GuardsDigital.Presentation.Match
         public void ReplaceMinionViews(IEnumerable<StandardMinionView> currentMinions)
         {
             deferredMinionMoves.Clear();
+            deferredMinionReappearances.Clear();
             minions = Array.AsReadOnly((currentMinions ??
                     throw new ArgumentNullException(nameof(currentMinions)))
                 .Where(value => value != null)
@@ -1098,17 +1101,62 @@ namespace GuardsDigital.Presentation.Match
             var startsDefeat = minions.Any(minion =>
                 minion.gameObject.activeSelf &&
                 minion.BoundMinionId.IsDefined &&
-                !projectedMinions.ContainsKey(minion.BoundMinionId));
+                (!projectedMinions.TryGetValue(minion.BoundMinionId, out var projected) ||
+                 minion.Occupancy != null &&
+                 !minion.Occupancy.Coordinate.Equals(projected.Coordinate) &&
+                 IsDefeatedMinionAwaitingPresentation?.Invoke(minion.BoundMinionId) == true));
 
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
                 if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
                 {
-                    minion.gameObject.SetActive(true);
-                    ReleaseMinionDefeatGhost(minion);
                     var moved = minion.Occupancy != null &&
                         !minion.Occupancy.Coordinate.Equals(state.Coordinate);
+                    if (deferredMinionReappearances.Contains(minion))
+                    {
+                        if (!moved)
+                        {
+                            // Undo/restore returned the miniature to the old board state while its
+                            // decorative death was pending. Truth wins immediately: cancel the echo
+                            // and the held respawn rather than hiding a standing authoritative piece.
+                            deferredMinionMoves.Remove(minion);
+                            deferredMinionReappearances.Remove(minion);
+                            ReleaseMinionDefeatGhost(minion);
+                            minion.Configure(state, minion.OuterRadius);
+                            minion.gameObject.SetActive(true);
+                        }
+                        else
+                        {
+                            deferredMinionMoves[minion] = state;
+                            minion.gameObject.SetActive(false);
+                        }
+
+                        projectedMinions.Remove(state.MinionId);
+                        continue;
+                    }
+
+                    var respawnedDefeatTarget = moved &&
+                        IsDefeatedMinionAwaitingPresentation?.Invoke(boundId) == true;
+                    if (respawnedDefeatTarget)
+                    {
+                        // The authoritative remove+respawn completed inside one projection, keeping
+                        // the miniature's stable identity. Preserve its old drawing as the defeated
+                        // echo and withhold the real view at the new spawn until that echo finishes.
+                        SpawnMinionDefeatGhost(minion);
+                        deferredMinionMoves[minion] = state;
+                        deferredMinionReappearances.Add(minion);
+                        minion.SetTargetCue(
+                            BoardTargetCueState.None,
+                            BoardTargetConsequenceIntent.None);
+                        minion.SetPickBadges(null);
+                        minion.gameObject.SetActive(false);
+                        projectedMinions.Remove(state.MinionId);
+                        continue;
+                    }
+
+                    minion.gameObject.SetActive(true);
+                    ReleaseMinionDefeatGhost(minion);
                     if (deferredMinionMoves.ContainsKey(minion))
                     {
                         deferredMinionMoves[minion] = state;
@@ -1131,6 +1179,7 @@ namespace GuardsDigital.Presentation.Match
                 else
                 {
                     deferredMinionMoves.Remove(minion);
+                    deferredMinionReappearances.Remove(minion);
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
@@ -1161,13 +1210,15 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var pair in deferredMinionMoves)
             {
-                if (pair.Key.gameObject.activeSelf)
+                if (pair.Key.gameObject.activeSelf || deferredMinionReappearances.Contains(pair.Key))
                 {
                     pair.Key.Configure(pair.Value, pair.Key.OuterRadius);
+                    pair.Key.gameObject.SetActive(true);
                 }
             }
 
             deferredMinionMoves.Clear();
+            deferredMinionReappearances.Clear();
         }
         /// <summary>
         /// Milestone 6.2d: draws one piece per projected token and nothing else.
@@ -1688,6 +1739,15 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Presentation-only hold while the attack camera travels to its strike.
         /// Authoritative pieces still deactivate immediately; only their non-interactive echoes wait.</summary>
         public Func<bool> DeferDefeatFades { get; set; }
+
+        /// <summary>
+        /// Identifies the minion whose resolved Attack is still on the presentation stage. A Lane
+        /// Push may remove that miniature and immediately reuse the same stable identity at a spawn
+        /// in the new Battle Zone, so projection presence alone cannot distinguish the respawn from
+        /// an ordinary move. Composition supplies the framed Attack's defender; rules state remains
+        /// independent of this presentation-only hold.
+        /// </summary>
+        public Func<MinionId, bool> IsDefeatedMinionAwaitingPresentation { get; set; }
 
         /// <summary>The in-flight ghost for a hero, or null when it is not currently fading. Exposed for
         /// tests; the driver never needs it, since <see cref="AdvanceDefeatFades"/> ticks every ghost by
