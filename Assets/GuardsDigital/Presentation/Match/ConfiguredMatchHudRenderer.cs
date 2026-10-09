@@ -508,6 +508,7 @@ namespace GuardsDigital.Presentation.Match
         private Label tieBreakerRailBannerLabel;
         private TeamSide? tieBreakerRailBannerSide;
         private MatchStatusBarUnityView statusBar;
+        private FinalSecondsCountdownUnityView finalSecondsCountdown;
         private MatchLogUnityView matchLog;
         private DirectorHandsUnityView hands;
         private RoundActionUnityView round;
@@ -704,12 +705,17 @@ namespace GuardsDigital.Presentation.Match
             LayoutEndTurnControl();
         }
 
-        public void RenderClock(GuardsDigital.Application.MatchClockState state) => statusBar?.RenderClock(state);
+        public void RenderClock(GuardsDigital.Application.MatchClockState state)
+        {
+            statusBar?.RenderClock(state);
+            finalSecondsCountdown?.Render(state);
+        }
 
         public void RenderHeader(MatchHudHeaderViewModel model)
         {
             header = model ?? throw new ArgumentNullException(nameof(model));
             statusBar?.Render(header);
+            finalSecondsCountdown?.Render(header.Clock);
             // Milestone 8.35z47 (user visual decision, 2026-09-07 item 3: "MATCH THE WARM TONE").
             // The tray that unrolls from the band takes the ground the band just painted. This is
             // the only place the strip renders, so it is the only place the two can be handed the
@@ -1479,6 +1485,9 @@ namespace GuardsDigital.Presentation.Match
             root.Add(cardPipPreview.Root);
             defenseModifierBreakdown = new HeroDefenseModifierBreakdownUnityView();
             root.Add(defenseModifierBreakdown.Root);
+
+            finalSecondsCountdown = new FinalSecondsCountdownUnityView();
+            root.Add(finalSecondsCountdown.Root);
 
             // Milestone 8.35z19 (placeholder id). Added LAST, after every other surface,
             // so its popup always paints above whatever it is explaining - a drop-down, a hover

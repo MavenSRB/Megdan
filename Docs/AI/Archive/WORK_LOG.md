@@ -13,6 +13,17 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-008 | Published prepared runtime card faces/shine maps, card backs and spell-card artwork through Git LFS to private Gitea. | `work/W-008` |
 | W-009 | Reused the typed small-spell hover preview on Gydion's level-up candidates. | `work/W-009` |
 | W-010 | Corrected Gydion setup so all twenty-two spells start faceup in the removed/discarded spell pile. | `work/W-010` |
+| W-011 | Added a background-free, pointer-transparent large red `10` through `1` overlay for the final seconds of allowance or bank. | `work/W-011` |
+
+### [x] W-011 Final-ten-second map countdown
+
+Approved by the user's instruction to reuse the large red phase-message typography for a map-wide `10` through `1` countdown during the last ten seconds of turn allowance or team bank, without a background or input obstruction.
+Outcome: the existing projected clock now drives one centred large blood-red outlined number for displayed seconds 10 through 1. The host and every descendant ignore picking, so hover, card selection and a real commitment command pass through it. It has no plate or background. Simultaneous allowances follow the header's shared latest expiry; mixed displayed clocks warn on the earliest final-ten deadline.
+Scope: match presentation over `MatchClockState` only. No clock accounting, readiness, expiry, gameplay command, wire/snapshot contract or package changed.
+Digit size: the user's follow-up enlarged the countdown from the transient banner's 150 units to 260 units while preserving the same red/outline treatment.
+Closing checks: real-HUD overlay regression failed before implementation and passed afterward; focused countdown and phase-banner Edit Mode checks passed 19/19; full experimental-timer Play Mode fixture passed 2/2 including pointer transparency and command passage; non-batch 2560x1440 capture and visual review passed; living-document validation and diff review. No unrelated suites.
+
+Historical evidence: completion commit addressed by immutable `work/W-011`; exact checks, results and limitations live in its body.
 
 ### [x] W-010 Gydion starts with all spells discarded
 

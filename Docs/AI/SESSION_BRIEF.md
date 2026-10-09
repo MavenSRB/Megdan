@@ -14,11 +14,11 @@ Current private package: **W003**, `Builds/Playtest-W003-inspection-fixes.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-010**.
-- Active authorized work: **W-011**.
+- Last completed work: **W-011**.
+- Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-010 applied the user's corrected setup ruling: every Gydion spell starts faceup in the removed/discarded spell pile and Prepare Spells remains the route into the book. W-011 now adds the final-ten-second map countdown. W-004's lower name banner remains at its visual-approval gate. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
+W-011 added the background-free, pointer-transparent `10` through `1` map countdown over the existing authoritative turn/bank clock. W-010 corrected Gydion setup so every spell starts faceup in the removed/discarded spell pile. W-004's lower name banner remains at its visual-approval gate. No new build is authorized; see [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

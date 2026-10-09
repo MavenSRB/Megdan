@@ -17,6 +17,67 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class ExperimentalTimerPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator FinalTenSecondCountdown_CoversTheMapWithoutTakingCardCommands()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root = ArienUiJourneyPlayModeTests.Root();
+            var runtime = root.Runtime;
+            var owner = runtime.Host.Seats.Seats[0].HeroId;
+            var clock = new MatchClockState(
+                true, 1, 1,
+                TimeSpan.FromSeconds(20).Ticks,
+                TimeSpan.FromSeconds(20).Ticks,
+                new[]
+                {
+                    new MatchClockEntry(
+                        "final-ten", MatchClockKind.Commitment, owner, TeamSide.Red,
+                        TimeSpan.FromSeconds(10).Ticks, running: true)
+                });
+
+            root.Hud.RenderClock(clock);
+            yield return null;
+            yield return null;
+
+            var overlay = root.Hud.RootElement.Q("gd-final-seconds-countdown");
+            Assert.That(overlay, Is.Not.Null);
+            Assert.That(UiPlayer.IsShown(overlay), Is.True);
+            Assert.That(overlay.Q<Label>("gd-final-seconds-countdown-value")?.text, Is.EqualTo("10"));
+            Assert.That(overlay.pickingMode, Is.EqualTo(PickingMode.Ignore));
+            Assert.That(overlay.Query<VisualElement>().ToList()
+                .All(element => element.pickingMode == PickingMode.Ignore), Is.True);
+
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                var oldWidth = (uint)Screen.width;
+                var oldHeight = (uint)Screen.height;
+                UiPlayer.SetPlayerViewport(2560, 1440, "W-011 countdown capture");
+                root.Hud.Layout();
+                yield return null;
+                yield return null;
+                yield return UiPlayer.CaptureScreen("tmp/w011-final-ten-countdown-2560x1440.png");
+                UiPlayer.SetPlayerViewport(oldWidth, oldHeight, "W-011 restore viewport");
+                root.Hud.Layout();
+                yield return null;
+                yield return null;
+            }
+
+            var version = runtime.Host.Version;
+            var card = runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList().First();
+            UiPlayer.Click(card);
+            yield return null;
+            var confirm = root.Hud.RootElement.Q<Button>("gd-confirm-control");
+            Assert.That(UiPlayer.IsShown(confirm), Is.True,
+                "The full-map countdown behaves as absent to the card pointer.");
+            UiPlayer.Click(confirm);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Host.Version, Is.GreaterThan(version),
+                "The commitment command passes while the countdown is painted.");
+
+        }
+
         [UnityTest] public IEnumerator NormalAndBankClocksFitTheUnchangedHeaderAtBothViewports()
         {
             MatchSceneCompositionRoot.NextComposedSeat=null;

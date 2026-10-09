@@ -2,12 +2,6 @@
 
 Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSION_BRIEF.md). Completed records move to [work history](../Archive/WORK_LOG.md).
 
-### [~] W-011 Final-ten-second map countdown
-
-Approved next in sequence: during the last ten seconds of the active turn allowance or team bank, show `10` through `1` in the existing large red phase-banner typography, centred across the map with no background.
-Scope: presentation over the existing authoritative clock projection only. The full-screen layer and descendants ignore picking so pointer hover, click, drag and commands behave as if it is absent; no clock duration, readiness, expiry, command, wire/snapshot or package changes.
-Closing checks: focused clock/view regressions for normal and bank countdowns, integer/visibility boundaries, pointer transparency and ordinary command passage, plus a non-batch visual capture. T2; no unrelated suites.
-
 ### [!] W-004 Compact player-name banner for approval
 
 Approved: restore original slim tray geometry and replace the expanded name row with a small top-border banner. Show the rendered result to the user for approval before any new build.
