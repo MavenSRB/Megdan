@@ -23,6 +23,7 @@ namespace GuardsDigital.Tests.PlayMode
             root.ConfigureExperiments(ExperimentalMatchOptions.Disabled);
             yield return null; yield return null;
             var runtime = root.Runtime; var host = runtime.Host;
+            yield return UiPlayer.CaptureScreen("tmp/w014-awaited-cards.png");
             var card = runtime.HandsView.Model.ViewedHand.PlayableTrayCards.First().CardInstanceId;
             UiPlayer.Click(runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList().First());
             yield return null; yield return null;

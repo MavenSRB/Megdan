@@ -103,7 +103,7 @@ namespace GuardsDigital.Presentation.Match
         public bool PulseBoardMarks { get; }
 
         /// <summary>
-        /// The heroes whose gold tray and card shine should be breathing with light.
+        /// The heroes whose gold tray should be breathing with light.
         ///
         /// <para>Read per hero from <see cref="AwaitedInputQuery.IsHeroAwaited"/> - the same predicate
         /// milestone 8.35m's tray shine already lights a tray with, so the breath lights exactly the

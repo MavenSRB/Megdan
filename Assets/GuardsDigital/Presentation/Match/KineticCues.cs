@@ -378,7 +378,7 @@ namespace GuardsDigital.Presentation.Match
 
 
         /// <summary>
-        /// Milestone 8.35z39. One full breath of an awaited card's or tray's own outline -
+        /// One full breath of an awaited tray's own outline -
         /// dark, bright, dark. The user asked for "a breathing light around the whole thing", at the
         /// slow 2-3s the original circling light was specified at and this inherits unchanged.
         /// </summary>

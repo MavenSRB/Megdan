@@ -15,10 +15,10 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 ## Current authorization and next route
 
 - Last completed work: **W-013**.
-- Active authorized work: **None**.
+- Active authorized work: **W-014**.
 - Next proposed work: **W-004**.
 
-W013 contains the current implementation as-is, including the W-004 banner candidate without closing its separate design-approval gate. Proposed Shift breakdowns, decision summaries and diagrams remain unimplemented. [Display/value boundaries](Project/CARD_VALUE_OVERLAYS.md) are unchanged; no further build or implementation is authorized. See [current work](Roadmap/CURRENT_WORK.md).
+W-014 removes the breathing gold outline from awaited cards while preserving the quieter rail/header wait cues and card interaction semantics. W013 remains the current package and includes the W-004 banner candidate without closing its separate design-approval gate. Proposed Shift breakdowns, decision summaries and diagrams remain unimplemented. [Display/value boundaries](Project/CARD_VALUE_OVERLAYS.md) are unchanged; no build is authorized. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

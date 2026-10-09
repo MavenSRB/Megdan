@@ -68,7 +68,7 @@ Every complete tray, Defense, effect-choice, Upgrade and current/turn/discard/Ul
 
 A card sourcing any `ActiveEffectPhase.Active` instance takes the violet slot outline and, on generated fallback, the word `ACTIVE`; prepared fronts keep that word in typed hover text. `MatchSessionProjection.ActiveEffectSourceCardInstanceIds` derives the unique sources from authority, so presentation infers nothing and restore, replay and Undo rebuild the same answer. The always-reserved slot changes only colour, stays outside the invariant black perimeter, and remains independent of cyan selection and orange confirmation.
 
-The card the current turn is being resolved from is drawn at full strength. It carries no commitment command - the round is past choosing - and it takes no focus stop, but "carries no command" and "is spent" are different facts, and the shared unavailable treatment was saying the second about the first. It carries the gold shine; the rest of the hand dims until nothing resolves.
+The card the current turn is being resolved from is drawn at full strength. It carries no commitment command - the round is past choosing - and it takes no focus stop, but "carries no command" and "is spent" are different facts, and the shared unavailable treatment was saying the second about the first. The rest of the hand dims until nothing resolves. Awaited and eligible cards keep their commands, assistive reading, selection treatment and full-strength focus, but draw no gold perimeter and do not join the breathing-shine animation; the standing rail/header cues carry that wait signal.
 
 The [typed value-region contract](CARD_VALUE_OVERLAYS.md#printed-value-ownership) governs icon ownership.
 

@@ -637,25 +637,16 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 AssertArtworkFootprint(face);
-                // Milestone 8.35m: `CurrentRoundCards.DeckCard` sets `IsAwaitedAnswer`
-                // unconditionally true (see its own doc comment - "a surface that offers it"
-                // is card-scope's leveling-upgrade case by construction), so the shared
-                // `ConfiguredCardFaceView.Build` conditionally adds its "gd-card-awaited-shine"
-                // ring here on purpose. That ring is neither the generated shell
-                // ("gd-card-frame") nor the lifecycle strip ("gd-card-history") this case
-                // guards against - it is the SEVENTH amendment's legitimate resolution-focus
-                // overlay, present only while `IsAwaitedAnswer` holds, exactly like
-                // "gd-card-selection-outline" is present only while a card is selected. This
-                // fixture stages a deck-offered card, which is always an awaited answer, so the
-                // shine belongs in the expected set rather than being a chrome regression.
+                // Awaited-answer state remains true for this deck-offered card, but W-014 removes
+                // the synthetic gold perimeter from every card surface. The artwork footprint
+                // therefore contains only the card's invariant visual structure.
                 Assert.That(Descendants(face).Select(element => element.name),
                     Is.EquivalentTo(new[]
                     {
                         "gd-card-preview",
                         "gd-card-exterior-outline",
                         "gd-card-content-clip",
-                        "gd-card-artwork",
-                        "gd-card-awaited-shine"
+                        "gd-card-artwork"
                     }));
                 Assert.That(face.style.borderTopWidth.value, Is.Zero);
                 Assert.That(face.style.borderRightWidth.value, Is.Zero);

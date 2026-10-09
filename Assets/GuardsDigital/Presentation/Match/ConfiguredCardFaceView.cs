@@ -191,19 +191,9 @@ namespace GuardsDigital.Presentation.Match
                 HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
             }
 
-            // Milestone 8.35m (the SEVENTH amendment's card scope and resolution focus). Added here,
-            // the one shared builder every card face goes through - the hand tray's own cards, a
-            // Defense/effect-choice/removal-prevention/leveling offer, and a hover reveal alike - so a
-            // card cannot shine on one surface and not another the way two independent readings could
-            // drift apart. The glow sits outside the black exterior perimeter and the cyan selection
-            // outline as its own concentric ring, so a card a player has already selected and a card
-            // that is the awaited answer both stay visible at once rather than one treatment replacing
-            // the other.
-            if (card.IsAwaitedAnswer)
-            {
-                AddAwaitedShineOutline(surface);
-            }
-
+            // Awaited-answer state remains part of the view model for commands and assistive text,
+            // but card faces deliberately carry no gold perimeter. The standing rail/header cues
+            // keep the wait visible without surrounding every eligible card with animated chrome.
             // Milestone 8.75e. NOTHING is drawn here for a card whose printed text the Tie Breaker
             // coin selects. Milestone 8.75b put a `SUN` / `MOON` corner badge on every such face; the
             // user, reading her cards in the first live playtest of the twenty-two-hero build, asked
@@ -227,52 +217,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return surface;
-        }
-
-        /// <summary>
-        /// The SEVENTH amendment's gold "shine", the same warm family the top bar and every hero tray
-        /// wear while the match waits on the viewer - <see cref="MatchHudTheme.ShineGlow"/> - drawn as
-        /// its own ring outside <see cref="AddExteriorOutline"/>'s black perimeter, wide enough that it
-        /// never competes with <see cref="AddSelectionOutline"/> sitting at the content edge.
-        /// </summary>
-        private static void AddAwaitedShineOutline(VisualElement surface)
-        {
-            var shine = new VisualElement
-            {
-                name = "gd-card-awaited-shine",
-                pickingMode = PickingMode.Ignore,
-                focusable = false
-            };
-            // Milestone 8.35z9. The shared marker, so the circling sweep can find this ring without
-            // knowing it is a card - see MatchHudTheme.AwaitedShineClass for why a class and not a name.
-            shine.AddToClassList(MatchHudTheme.AwaitedShineClass);
-            var inset = -(CardFootprint.ExteriorOutlineWidth + 3f);
-            shine.style.position = Position.Absolute;
-            shine.style.left = inset;
-            shine.style.top = inset;
-            shine.style.right = inset;
-            shine.style.bottom = inset;
-            shine.style.backgroundColor = Color.clear;
-            // Milestone 8.35z47. THE BAND FILLS THE SPACE IT ALREADY RESERVED, and that is
-            // the whole change: the ring's box has always stood `-inset` units clear of the card
-            // surface, and it drew a 3-unit line inside that space and left the rest empty.
-            //
-            // A reference unit is one pixel at 2560x1440, so that line was 2.25 real pixels at
-            // 1920x1080 and 1.5 in a typical Editor Game View. The breath moves its brightness by
-            // 2.22x - correctly, and measurably - but a 2.22x swing carried on one-and-a-half pixels
-            // is not a light a player can see, which is exactly what the user reported looking at:
-            // "Saw no breathing, just solid colors." Nothing about the clock or the curve was wrong.
-            //
-            // Drawing the band at the full width of its own reserve costs no geometry: the element is
-            // absolutely positioned and its box does not move, so the hand's overlap, the card's own
-            // footprint and every bound measured on either are untouched. Only the number of pixels
-            // the breath is written across changes.
-            HudElements.Border(
-                shine,
-                MatchHudTheme.ShineGlow,
-                -inset,
-                CornerRadius(CardFootprint.Width) + CardFootprint.ExteriorOutlineWidth + 3f);
-            surface.Add(shine);
         }
 
         private static void AddSelectionOutline(VisualElement surface)

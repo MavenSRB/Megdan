@@ -36,29 +36,10 @@ namespace GuardsDigital.Presentation.Match
         public const float FlashScalePunch = 0.14f;
 
         /// <summary>
-        /// The most awaited outlines lit at once. The amendment gates this pass on the recorded perf
-        /// thresholds and asks for "few animated elements at once".
-        ///
-        /// <para><b>Milestone 8.35x-allcardsbreath raised this from 8, the LIVE ACCEPTANCE VERDICT
-        /// corrective.</b> The user reported "Not all cards are being animated when waiting for
-        /// submission" - a screenshot with one gold-framed breathing card and the rest static - and
-        /// the cause was this cap. It was sized on "a hand of five cards plus A TRAY" - singular -
-        /// which was the realistic worst case before milestone 8.25 made the shipped match the
-        /// official six-player line-up. Rulebook p.7's commitment is public and simultaneous, so
-        /// every hero's own outstanding commitment shines that hero's rail at once
-        /// (<see cref="AwaitedInputQuery.IsHeroAwaited"/>): six rails, plus the viewed hero's own
-        /// five-card hand, is ELEVEN elements sharing this one budget on the very first round of
-        /// every match a player actually gets - not the rare case, the opening frame. Because
-        /// <see cref="FindAwaitedShineHosts"/> collects hosts in document order and stops at this
-        /// cap, and hero rails are mounted before the hand tray in
-        /// <c>ConfiguredMatchHudRenderer.Build</c>, the six rails filled the old budget first and
-        /// the viewer's own hand cards arriving after them in the query were silently never handed
-        /// to <see cref="Light"/> at all - left at the full resting gold painted once and never
-        /// touched again, which is indistinguishable from "static" beside the few cards that fit.
-        /// Sixteen is the true eleven-element worst case with the same two-element headroom the
-        /// original 8 kept above its own six-element estimate.</para>
+        /// The most awaited outlines lit at once. W-014 removes hand cards from this animation
+        /// family, leaving at most the six hero rails; two spare slots retain the bounded headroom.
         /// </summary>
-        public const int MaxBreathingShineElements = 16;
+        public const int MaxBreathingShineElements = 8;
 
         private const string OverlayName = "gd-kinetic-overlay";
         // Milestone 8.35z9 retired `ShineElementName = "gd-card-shine"` from here: that name belongs
@@ -584,14 +565,9 @@ namespace GuardsDigital.Presentation.Match
         /// Milestone 8.35z39. Breathes the OWN OUTLINE of every element wearing the awaited
         /// gold, for each hero the match is currently waiting on.
         ///
-        /// <para><b>What this replaced.</b> Until now a 10-pixel gold dot was parented into each of
-        /// those elements and walked around its perimeter on a 2.4s loop - the treatment the user
-        /// rejected in as many words: "i dont like the little light that goes around, i want a
-        /// breathing light around the whole thing (Card(s), hero tray). But light, not just yellow
-        /// color." Nothing here travels any more and no element is added to the HUD at all: the ring
-        /// the card already wore and the frame the rail already wore simply get brighter and dimmer,
-        /// so the light is around the whole element by construction rather than by an object moving
-        /// fast enough to suggest it.</para>
+        /// <para>The animation now applies only to the standing rail frame. W-014 removes the
+        /// card-perimeter host entirely, so awaited cards never enter this traversal while the
+        /// quieter rail signal keeps its established cadence.</para>
         ///
         /// <para><b>"Light, not just yellow color" is the BRIGHTNESS axis, and only that</b> - and it
         /// travels DOWNWARD from the gold, which an offline measurement settled. The first version of

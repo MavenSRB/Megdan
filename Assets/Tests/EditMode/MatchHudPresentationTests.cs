@@ -2027,8 +2027,8 @@ namespace GuardsDigital.Tests.EditMode
                 "but it is the card being played, so it is not dimmed as though it were spent.");
             Assert.That(
                 Descendants(resolvingButton).Any(element => element.name == "gd-card-awaited-shine"),
-                Is.True,
-                "Milestone 8.35m: the card in focus carries the same gold shine a legal answer does.");
+                Is.False,
+                "The resolving card stays at full strength without the retired gold perimeter.");
             foreach (var other in buttons.Where(button => !ReferenceEquals(button, resolvingButton)))
             {
                 // Milestone 8.35m, the SEVENTH amendment's resolution focus, supersedes the reading
@@ -6475,9 +6475,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(MatchHudTheme.ShineGlow));
         }
 
-        /// <summary>Card scope: every hand card offered for commitment is a legal answer, and shines.</summary>
+        /// <summary>Every offered hand card stays actionable without drawing the retired gold perimeter.</summary>
         [Test]
-        public void EveryHandCardOfferedForCommitment_CarriesTheCardScopeGoldShine()
+        public void EveryHandCardOfferedForCommitment_HasNoBreathingGoldPerimeter()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new DirectorHandsUnityView();
@@ -6498,13 +6498,18 @@ namespace GuardsDigital.Tests.EditMode
                 element.name == "gd-card-choice" &&
                 element.tooltip.StartsWith(firstName, StringComparison.Ordinal));
             Assert.That(Descendants(control).Any(element => element.name == "gd-card-awaited-shine"),
-                Is.True,
-                "The rendered card carries the same gold ring the top bar and the tray both wear.");
+                Is.False,
+                "Awaited semantics and assistive text stay intact without drawing the retired gold ring.");
+            Assert.That(
+                Descendants(control).Any(element =>
+                    element.ClassListContains(MatchHudTheme.AwaitedShineClass)),
+                Is.False,
+                "The card must not join the rail/header breathing animation family.");
         }
 
-        /// <summary>Card scope: every offered Defense card is a legal answer, and shines - undimmed.</summary>
+        /// <summary>Every offered Defense card remains an awaited, undimmed legal answer.</summary>
         [Test]
-        public void EveryOfferedDefenseCard_CarriesTheCardScopeGoldShine()
+        public void EveryOfferedDefenseCard_RemainsAwaitedAndUndimmed()
         {
             var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
             var view = new RoundActionUnityView();
@@ -6516,12 +6521,12 @@ namespace GuardsDigital.Tests.EditMode
                 choice => choice.Card.IsAwaitedAnswer));
             Assert.That(offered, Has.All.Matches<TypedInvocationViewModel>(
                 choice => !choice.Card.IsDimmedByResolution),
-                "A candidate that becomes a legal answer mid-resolution shines and is never dimmed.");
+                "A candidate that becomes a legal answer mid-resolution is never dimmed.");
         }
 
-        /// <summary>Card scope: every p.15 upgrade candidate is a legal answer, and shines.</summary>
+        /// <summary>Every p.15 upgrade candidate remains an awaited legal answer.</summary>
         [Test]
-        public void EveryLevelUpUpgradeCandidate_CarriesTheCardScopeGoldShine()
+        public void EveryLevelUpUpgradeCandidate_RemainsAwaited()
         {
             var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -6535,12 +6540,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Resolution focus: the viewer's own resolving card shines while the rest of the hand dims,
-        /// and the dim lifts once that resolution - and, post-8.35g, the release it now waits behind -
-        /// ends.
+        /// Resolution focus: the viewer's own resolving card stays at full strength without a gold
+        /// perimeter while the rest of the hand dims; the dim lifts once that resolution - and,
+        /// post-8.35g, the release it now waits behind - ends.
         /// </summary>
         [Test]
-        public void TheResolvingCard_ShinesWhileTheRestOfTheHandDims_UntilItResolvesAndReleases()
+        public void TheResolvingCard_StaysFullStrengthWithoutGoldWhileTheRestDims_UntilRelease()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
             PlayTurns(session, 2);
@@ -6569,7 +6574,8 @@ namespace GuardsDigital.Tests.EditMode
                 element.tooltip.StartsWith(resolving.DisplayName, StringComparison.Ordinal));
             Assert.That(
                 Descendants(resolvingControl).Any(element => element.name == "gd-card-awaited-shine"),
-                Is.True);
+                Is.False,
+                "Resolution focus uses full strength and sibling dimming, not a gold perimeter.");
             var otherControl = Descendants(view.Root).First(element =>
                 element.name == "gd-card-choice" &&
                 element.tooltip.StartsWith(others[0].DisplayName, StringComparison.Ordinal));
@@ -6612,31 +6618,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35z9. THE GUARD THAT DID NOT EXIST, and whose absence let the circling shine
-        /// sweep animate nothing at all for four milestones.
-        ///
-        /// <para><c>KineticCueUnityView</c> collected its sweep hosts by asking for <c>Image</c>
-        /// elements NAMED <c>gd-card-shine</c> - milestone 8.30d's prepared printed-artwork overlay,
-        /// a different family entirely from the awaited-answer gold, which is a
-        /// <c>VisualElement</c> called <c>gd-card-awaited-shine</c> on a card and no child element
-        /// at all on a rail. Wrong name and wrong type, so the query returned an empty list, the
-        /// caller returned early, and the sweep silently did nothing. Live, that read as trays and
-        /// cards lighting statically while nothing ever circled them.</para>
-        ///
-        /// <para>The claim under test is the one nothing asserted: a composed HUD showing an awaited
-        /// card AND a lit tray yields a NON-EMPTY host set. A zero-host silent failure cannot be
-        /// reshipped past this.</para>
+        /// W-014 keeps the standing rail's awaited animation but removes cards from that visual
+        /// family. A composed HUD with both an awaited card and an awaited rail must therefore find
+        /// the rail host while finding no host beneath the hand.
         /// </summary>
-        /// <remarks>
-        /// Milestone 8.35z39 kept this case wholesale and changed only the names it types.
-        /// The treatment it guards moved from a travelling mark to a breath on each host's own
-        /// outline, but the failure it exists to prevent is identical and is not about either: a
-        /// composed HUD that yields NO hosts animates nothing, silently, and looks exactly like a
-        /// HUD whose lights are simply at rest. Everything downstream of the host set - what is
-        /// lit, and how - changed; that a non-empty host set is found did not.
-        /// </remarks>
         [Test]
-        public void TheAwaitedShine_FindsItsHostsOnAComposedHudWithALitTrayAndAShiningCard()
+        public void TheAwaitedShine_FindsTheLitRailButDoesNotClaimAwaitedCards()
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
             var actingId = session.Projection.SelectedActor.ActorId;
@@ -6645,7 +6632,7 @@ namespace GuardsDigital.Tests.EditMode
             var handPresenter = new DirectorHandsPresenter(session, handView);
             handPresenter.SelectViewedHero(actingId);
             Assert.That(handView.Model.ViewedHand.TrayCards.Any(card => card.IsAwaitedAnswer),
-                Is.True, "The fixture must actually draw a shining card, or this proves nothing.");
+                Is.True, "The fixture must contain an awaited card while proving its visual ring is absent.");
 
             var railView = new HeroOverviewsUnityView();
             new HeroOverviewsPresenter(session, railView).Refresh();
@@ -6663,11 +6650,11 @@ namespace GuardsDigital.Tests.EditMode
                 "The breath must find the elements wearing the awaited gold. An empty host " +
                 "set is the exact silent failure this case exists to make impossible.");
             Assert.That(
-                hosts.Any(host => HudElements.IsSelfOrDescendant(handView.Root, host)), Is.True,
-                "The shining card is one of them.");
+                hosts.Any(host => HudElements.IsSelfOrDescendant(handView.Root, host)), Is.False,
+                "Awaited cards no longer join the breathing gold host set.");
             Assert.That(
                 hosts.Any(host => HudElements.IsSelfOrDescendant(railView.Root, host)), Is.True,
-                "and so is the lit tray, which is why the marker is a class and not an element name.");
+                "The standing rail remains the quieter animated wait cue.");
             Assert.That(hosts.Count, Is.LessThanOrEqualTo(KineticCueUnityView.MaxBreathingShineElements),
                 "The recorded 'few animated elements at once' bound still holds.");
 
