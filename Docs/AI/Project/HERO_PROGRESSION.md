@@ -12,7 +12,7 @@ This shard owns what the engine implements. The declared content model and its r
 
 ### Level-up comparison presentation
 
-The leveling seat's current hand appears above the upgrade choices at 85 percent of the standard card footprint. These comparison cards are fully opaque even when ordinary play dims the same card. Hover opens a full-size, pointer-transparent face without an unavailable-action veil or a gameplay command; leaving or replacing the decision clears it. The level-up panel reserves both rows and retains vertical scrolling on short viewports, without shrinking the complete upgrade faces or moving the standing hero rails. Each upgrade's bottom reward overlay remains centered and reads `GAINS:` with the projected item icon and amount, or `NO ITEM` when applicable. The view does not derive or change the reward rules.
+The leveling seat's current hand appears above the upgrade choices at 85 percent of the standard card footprint. These comparison cards are fully opaque, like ordinary hand cards. Hover opens a full-size, pointer-transparent face without an unavailable-action veil or a gameplay command; leaving or replacing the decision clears it. The level-up panel reserves both rows and retains vertical scrolling on short viewports, without shrinking the complete upgrade faces or moving the standing hero rails. Each upgrade's bottom reward overlay remains centered and reads `GAINS:` with the projected item icon and amount, or `NO ITEM` when applicable. The view does not derive or change the reward rules.
 
 ### Authoritative progression
 

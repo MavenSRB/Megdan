@@ -435,7 +435,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator UnavailableCardGroup_RetainsDimmingAndCannotCommitAcrossRefreshAndSessionReplacementAtBothDesktopViewports()
+        public IEnumerator UnavailableCardGroup_StaysBrightAndCannotCommitAcrossRefreshAndSessionReplacementAtBothDesktopViewports()
         {
             var restoreWidth = (uint)Screen.width;
             var restoreHeight = (uint)Screen.height;
@@ -486,7 +486,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(controls, Has.All.Matches<Button>(control =>
                     control.enabledSelf && control.focusable));
                 Assert.That(controls.All(control => UiPlayer.Descendants(control).Count(element =>
-                    element.name == "gd-card-unavailable-veil") == 1), Is.True);
+                    element.name == "gd-card-unavailable-veil") == 0), Is.True);
+                Assert.That(controls.All(control => control.resolvedStyle.opacity == 1f), Is.True);
 
                 var group = Named(root.Hud.RootElement, "gd-unavailable-card-group");
                 var stated = root.Hud.UnavailableCardGroupRect;
@@ -524,8 +525,8 @@ namespace GuardsDigital.Tests.PlayMode
                 var preview = Named(root.Hud.RootElement, "gd-hand-hover-preview");
                 Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
                 Assert.That(UiPlayer.Descendants(preview).Count(element =>
-                    element.name == "gd-card-unavailable-veil"), Is.EqualTo(1),
-                    "Inspecting the whole face retains the unavailable dimming.");
+                    element.name == "gd-card-unavailable-veil"), Is.EqualTo(0),
+                    "Inspecting the whole face retains full brightness.");
                 UiPlayer.PointAway(unavailable);
                 yield return null;
 
@@ -539,12 +540,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
                     .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
 
-                if (!UnityEngine.Application.isBatchMode)
-                {
-                    yield return Capture(
-                        "tmp/milestone-8-30l-unavailable-" + viewport.Width + "x" +
-                        viewport.Height + ".png");
-                }
+                yield return UiPlayer.CaptureScreen("tmp/w016-right-cards-" + viewport.Width + ".png");
 
                 var seat = runtime.Seat.Id;
                 yield return ComposeForSeat(seat);
@@ -783,6 +779,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "Every still-held card remains in the established left-hand fan.");
             Assert.That(leftHandCards[^1].tooltip, Does.Contain(resolving.DisplayName),
                 "The resolving card stays in that hand as its rightmost, fully exposed face.");
+            Assert.That(leftHandCards.All(card => card.resolvedStyle.opacity == 1f), Is.True,
+                "Every held card stays fully bright while its sibling resolves.");
+            Assert.That(leftHandCards.All(card => card.Q("gd-card-unavailable-veil") == null), Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/w016-resolving-hand.png");
             Assert.That(UiPlayer.Descendants(unavailable)
                     .Count(element => element.name == "gd-card-choice"),
                 Is.EqualTo(runtime.HandsView.Model.ViewedHand.UnavailableTrayCards.Count),

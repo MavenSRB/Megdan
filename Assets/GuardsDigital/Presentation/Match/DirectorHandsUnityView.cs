@@ -784,26 +784,12 @@ namespace GuardsDigital.Presentation.Match
             // shared unavailable treatment was saying the second about the first.
             if (!card.IsSelectable && card.Group != TrayCardGroup.Available)
             {
-                if (card.IsResolving)
-                {
-                    HudElements.MarkInPlay(button);
-                }
-                else
-                {
-                    if (compactPeekMode && isUnavailableGroup)
-                    {
-                        HudElements.MarkUnavailableOpaqueInspectable(button);
-                        button.focusable = !contextOnly;
-                    }
-                    else if (compactPeekMode)
-                    {
-                        HudElements.MarkUnavailableOpaque(button);
-                    }
-                    else
-                    {
-                        HudElements.MarkUnavailable(button);
-                    }
-                }
+                // Full-strength faces remain commandless; spent cards retain keyboard inspection.
+                HudElements.MarkInPlay(button);
+                if (!card.IsResolving && compactPeekMode && isUnavailableGroup)
+                    button.focusable = !contextOnly;
+                else if (!card.IsResolving)
+                    button.SetEnabled(false);
             }
 
             // The complete face already carries its printed words. Keep the tooltip to the concise
@@ -1030,7 +1016,7 @@ namespace GuardsDigital.Presentation.Match
             //
             // The card KEEPS everything else. The overlay is still built, so the regions, their hit
             // targets, their tooltips, the assistive reading and the layout are untouched; the card
-            // still stands at full strength above a dimmed hand, because being the committed card is a
+            // still stands at full strength alongside the other hand cards; being the committed card is a
             // true and wanted thing to say. It simply stops wearing the colour that means "act now"
             // while it is not the viewer's turn to act.
             var lit = card.IsAwaitedAnswer;
@@ -2072,20 +2058,12 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel card,
             VisualElement anchor,
             bool isRightSideGroup = false,
-            bool dimUnavailable = true,
+            bool dimUnavailable = true, // Compatibility argument; W-016 keeps every peek fully bright.
             bool sideSpells = false)
         {
             preview.Clear();
             var face = BuildStandaloneCard(card);
-            if (isRightSideGroup && dimUnavailable)
-            {
-                HudElements.MarkUnavailableOpaqueInspectable(face);
-                face.focusable = false;
-            }
-            if (!dimUnavailable)
-            {
-                face.style.opacity = 1f;
-            }
+            face.style.opacity = 1f;
             var spellShelfHeight = CastableSpellHoverView.HeightFor(card.CastableSpells);
             CastableSpellHoverView.Attach(face, card.CastableSpells);
             if (sideSpells) CastableSpellHoverView.PlaceBeside(face);

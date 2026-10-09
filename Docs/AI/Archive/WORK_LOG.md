@@ -18,6 +18,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-013 | Current-source private Windows package, including live card modifiers; verified exact artifact and ZIP. | `work/W-013` |
 | W-014 | Removed the breathing gold perimeter from awaited cards while preserving interaction and standing wait cues. | `work/W-014` |
 | W-015 | Retained resolved attack bonuses on spotlight cards and thickened shared white modifier numerals. | `work/W-015` |
+| W-016 | Kept hand and right-side unavailable cards fully bright, preserving inspection and command restrictions. | `work/W-016` |
+
+### [x] W-016 Keep hand and right-side cards fully bright
+
+Approved: never dim player hand cards; also remove dimming from unavailable cards on the right.
+Outcome: shared hero-card faces ignore legacy resolution dimming; the right-side fan and hover previews have no dark veil. Commands, click/drag guards, inspection, layout and spellbook availability treatment are unchanged. No new build.
+Acceptance: focused renderer/hand/spell regressions, actual resolving-hand brightness, right-side brightness and input refusal across viewport/refresh/session replacement, plus visual inspection and documentation validation.
+
+Historical evidence: completion commit addressed by immutable `work/W-016`; exact checks, red-to-green transitions and limitations live in its body.
 
 ### [x] W-015 Resolved spotlight attack values and heavier modifiers
 

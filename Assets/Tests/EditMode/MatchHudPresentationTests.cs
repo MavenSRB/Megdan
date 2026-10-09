@@ -764,7 +764,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void UnavailableCards_RetainDimmingAndRebuildWithoutDuplicatesCommandsOrHiddenIdentityLeaks()
+        public void UnavailableCards_StayBrightAndRebuildWithoutDuplicatesCommandsOrHiddenIdentityLeaks()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
             PlayTurns(session, 2);
@@ -799,7 +799,7 @@ namespace GuardsDigital.Tests.EditMode
                     "carries no command.");
                 Assert.That(control.focusable, Is.True);
                 Assert.That(Descendants(control).Count(element =>
-                    element.name == "gd-card-unavailable-veil"), Is.EqualTo(1));
+                    element.name == "gd-card-unavailable-veil"), Is.EqualTo(0));
                 Assert.That(control.tooltip, Does.Contain(expected[index].HistoryLabel),
                     "The card keeps its existing projected lifecycle reading even when temporary " +
                     "commitment state removes its command.");
@@ -1238,7 +1238,7 @@ namespace GuardsDigital.Tests.EditMode
                 "The right-side card remains inspectable while its model carries no command.");
             Assert.That(button.focusable, Is.True);
             Assert.That(Descendants(button).Count(element =>
-                element.name == "gd-card-unavailable-veil"), Is.EqualTo(1));
+                element.name == "gd-card-unavailable-veil"), Is.EqualTo(0));
             Assert.That(
                 button.parent.style.top.value.value,
                 Is.EqualTo(0f), "and it is not lifted.");
@@ -2031,16 +2031,12 @@ namespace GuardsDigital.Tests.EditMode
                 "The resolving card stays at full strength without the retired gold perimeter.");
             foreach (var other in buttons.Where(button => !ReferenceEquals(button, resolvingButton)))
             {
-                // Milestone 8.35m, the SEVENTH amendment's resolution focus, supersedes the reading
-                // this case pinned before it: a held future-turn card no longer keeps its normal
-                // opacity while a sibling resolves - it dims, so the eye lands on the one card whose
-                // text is running. It is still not presented as genuinely unavailable: the dim is a
-                // plain opacity reading, never the unavailable veil a spent card wears.
+                // W-016: availability and sibling resolution never reduce card readability.
                 Assert.That(other.style.opacity.value,
-                    Is.EqualTo(MatchHudTheme.DimmedByResolutionOpacity));
+                    Is.EqualTo(1f));
                 Assert.That(
                     Descendants(other).Any(element => element.name == "gd-card-awaited-shine"),
-                    Is.False, "A dimmed card never also shines.");
+                    Is.False, "The retired gold perimeter stays absent.");
                 Assert.That(Descendants(other)
                         .Any(element => element.name == "gd-card-unavailable-veil"), Is.False,
                     "A held future-turn card is not presented as genuinely unavailable.");
@@ -3358,7 +3354,7 @@ namespace GuardsDigital.Tests.EditMode
                         .Where(element => element.name == "gd-card-choice")
                         .Single(element => element.tooltip.Contains(unavailableCard.DisplayName));
                     Assert.That(unavailable.enabledSelf, Is.False);
-                    Assert.That(unavailable.style.opacity.value, Is.EqualTo(0.45f));
+                    Assert.That(unavailable.style.opacity.value, Is.EqualTo(1f));
                     Assert.That(Descendants(unavailable)
                         .Any(element => element.name == "gd-card-history"), Is.False,
                         "Lifecycle remains in the typed tooltip rather than a generated strip.");
@@ -6540,12 +6536,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Resolution focus: the viewer's own resolving card stays at full strength without a gold
-        /// perimeter while the rest of the hand dims; the dim lifts once that resolution - and,
-        /// post-8.35g, the release it now waits behind - ends.
+        /// W-016: every hand card stays full strength before and after resolution/release.
+        /// Legacy resolution-focus metadata must not drive opacity on any rendered face.
         /// </summary>
         [Test]
-        public void TheResolvingCard_StaysFullStrengthWithoutGoldWhileTheRestDims_UntilRelease()
+        public void TheWholeHand_StaysFullStrengthWithoutGoldThroughResolutionAndRelease()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
             PlayTurns(session, 2);
@@ -6563,11 +6558,11 @@ namespace GuardsDigital.Tests.EditMode
                 "The card in focus is never also the thing that dims.");
 
             var others = hand.TrayCards.Where(card => card.Group == TrayCardGroup.Available).ToArray();
-            Assert.That(others, Is.Not.Empty, "The fixture leaves other held cards to dim.");
+            Assert.That(others, Is.Not.Empty, "The fixture leaves other held cards to inspect.");
             Assert.That(others, Has.All.Matches<TrayCardViewModel>(card => card.IsDimmedByResolution),
-                "Every other hand card dims while one resolves.");
+                "Legacy resolution-focus metadata remains present, but must not dim the face.");
             Assert.That(others, Has.All.Matches<TrayCardViewModel>(card => !card.IsAwaitedAnswer),
-                "A dimmed card never also shines.");
+                "Sibling cards carry no awaited-answer marker.");
 
             var resolvingControl = Descendants(view.Root).First(element =>
                 element.name == "gd-card-choice" &&
@@ -6575,12 +6570,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Descendants(resolvingControl).Any(element => element.name == "gd-card-awaited-shine"),
                 Is.False,
-                "Resolution focus uses full strength and sibling dimming, not a gold perimeter.");
+                "Every card stays full strength without a gold perimeter.");
             var otherControl = Descendants(view.Root).First(element =>
                 element.name == "gd-card-choice" &&
                 element.tooltip.StartsWith(others[0].DisplayName, StringComparison.Ordinal));
             Assert.That(otherControl.style.opacity.value,
-                Is.EqualTo(MatchHudTheme.DimmedByResolutionOpacity));
+                Is.EqualTo(1f));
 
             var resolutionPreview = new VisualElement();
             DirectorHandsUnityView.PopulatePeekPreview(
@@ -6589,8 +6584,7 @@ namespace GuardsDigital.Tests.EditMode
                 new VisualElement(),
                 dimUnavailable: false);
             Assert.That(resolutionPreview.ElementAt(0).style.opacity.value, Is.EqualTo(1f),
-                "Hover inspection restores a resolution-dimmed card to full brightness without " +
-                "changing the authoritative resting state.");
+                "Hover inspection retains the resting face's full brightness.");
             Assert.That(others[0].IsDimmedByResolution, Is.True,
                 "Presentation-only inspection never changes the projected resolution fact.");
 
@@ -6614,7 +6608,7 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             Assert.That(view.Model.ViewedHand.TrayCards,
                 Has.None.Matches<TrayCardViewModel>(card => card.IsDimmedByResolution),
-                "The dim lifts once the resolution - and the release - end.");
+                "Legacy focus metadata clears once resolution and release end.");
         }
 
         /// <summary>

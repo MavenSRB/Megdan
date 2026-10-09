@@ -405,7 +405,8 @@ namespace GuardsDigital.Presentation.Match
         public bool IsAwaitedAnswer { get; }
 
         /// <summary>
-        /// Milestone 8.35m's resolution focus: whether this card is dimmed because a DIFFERENT card in
+        /// Legacy 8.35m resolution-focus metadata; W-016 renderers ignore it and keep faces bright.
+        /// Originally this meant the card was dimmed because a DIFFERENT card in
         /// the same hand is <see cref="IsResolving"/> right now, so the eye lands on the one card whose
         /// text is running rather than wandering the rest of the hand. Only the ordinary hand's other
         /// Available cards ever carry this - never the resolving card itself, which shines instead of

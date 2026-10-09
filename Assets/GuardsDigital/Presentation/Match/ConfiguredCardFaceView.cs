@@ -206,15 +206,8 @@ namespace GuardsDigital.Presentation.Match
             // because the content branches on them and the decision window's face choice names them,
             // but no card surface reads either one.
 
-            // The rest of the hand while the viewer's own card resolves - never the resolving card
-            // itself (excluded by construction, see `TrayCardViewModel.IsDimmedByResolution`) and never
-            // an offered candidate on a different surface, which is what keeps a mid-resolution Defense
-            // choice shining rather than dimmed without this method needing to ask which surface it is
-            // drawing for.
-            if (card.IsDimmedByResolution)
-            {
-                surface.style.opacity = MatchHudTheme.DimmedByResolutionOpacity;
-            }
+            // W-016: card readability never depends on action availability or a sibling resolving.
+            surface.style.opacity = 1f;
 
             return surface;
         }
