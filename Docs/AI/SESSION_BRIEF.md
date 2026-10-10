@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-09
+Last updated: 2026-10-10
 
 ## Purpose and authority
 
@@ -14,13 +14,13 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-019**.
-- Active authorized work: **None**.
-- Next proposed work: **W-004**.
+- Last completed work: **W-020**.
+- Active authorized work: **W-021**, first of the approved PvE implementation sequence W-021 to W-024.
+- Next proposed work: **W-021**.
 
-W-019 is complete: seven independent default-off Experimental controls in a dedicated popup configure shield and card modifier categories; the shield always retains its net minion contribution. An Active-effect source card keeps its violet reminder from dormant creation through expiry, while hero/radius and value treatment remain active-only. W013 remains the current package and does not include W-014 through W-019; no new build is authorized. W-004 remains the next presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
+W-020 is complete: the first PvE slice's rules are approved as PVE-D01 to PVE-D23 in [PvE design](Project/PVE_DESIGN.md). The user approved W-021 to W-024 as one serial sequence: a separate PvE test executable (skeleton, rules and engine hooks, presentation, package) that reuses existing code through additive default-off hooks while existing-mode behavior, snapshot v59, wire /52 and the W013 package stay unchanged. W013 remains the current package and does not include W-014 through W-020. W-004 remains a paused presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
 
-Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
+Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is approved and in progress; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
 ## Durable boundaries
 

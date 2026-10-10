@@ -10,8 +10,12 @@ Record new reports here with status, observable outcome, evidence/reproduction, 
 | --- | --- | --- | --- |
 | Existing game playtest feedback | Intake | Iterate, test and fix the private game | Concrete report/request; reproduce, fix and verify affected paths. No unspecific repair campaign. |
 | Large maps | Planned expansion; not yet selected for implementation | Add large maps to the existing game | Existing 9.62 plan below; reviewed setup and lane rules, then bounded implementation and map/player-count gates. |
-| PvE design | Direction selected; decisions open | Define a smallest playable encounter | Resolve [design questions](../Project/PVE_DESIGN.md) with the user, then select an implementation slice. |
-| PvE implementation | Not yet scoped | Build the agreed first encounter | Approved rules and bounded request; [delivery stages](PVE.md). |
+| PvE design | First slice approved (W-020); later questions open | Approved [decisions](../Project/PVE_DESIGN.md) for the single-player test encounter | Open questions in the design owner need user decisions before implementation. |
+| PvE implementation | Approved sequence W-021 to W-024 | Separate PvE test executable | [Current work](CURRENT_WORK.md) records; [delivery stages](PVE.md). |
+| PvE level lowering | Deferred by user 2026-10-10 | Lower a hero's level between rounds (the "-1" test control) | Needs a state-derivable revert of upgrade, item and Ultimate placement; refused when inconsistent. Focused progression, snapshot and Undo checks. |
+| PvE later content | Proposed; not authorized | Win condition, real enemy content and balance, co-op, boss cards, enemy skills, Vorty's truncated note | User decisions recorded in the design owner first. |
+| Living-document hard thresholds | Pre-existing at `work/W-019` (found 2026-10-10); not yet scheduled | Living-document validation passes again | `CURRENT_IMPLEMENTATION.md`, `EXPERIMENTAL_FEATURES.md`, `MATCH_HUD.md` and `PRIVATE_ONLINE_ARCHITECTURE.md` exceed the 4,500-word project-leaf limit. Closing check: move precise authority into indexed shards per governance (no compression) until the validator reports no hard-threshold error. |
+| `HeroDefeatBaseLifeCostIsOne` restore loss | Defect found 2026-10-10; not yet scheduled | The experiment survives rollback and checkpoint Undo | It is bound only on fresh composition and string restore (`MatchAggregate` lines ~346 and ~402), not on authoritative deserialization. Closing check: an experiment match keeps base Life cost 1 after rollback and after Undo past the checkpoint interval. |
 
 ## Carried-forward work
 

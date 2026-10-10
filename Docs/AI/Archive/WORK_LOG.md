@@ -22,7 +22,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-017 | Suppressed generic small text tooltips while preserving full-card previews and defense modifier breakdowns. | `work/W-017` |
 | W-018 | Kept same-identity last-minion death and Lane Push movement in causal presentation order. | `work/W-018` |
 | W-019 | Added independent Experimental modifier-display controls in a dedicated popup and continuous dormant-to-active source-card reminders. | `work/W-019` |
+| W-020 | Recorded the approved first PvE slice (PVE-D01 to PVE-D23) and routed the W-021 to W-024 implementation sequence. | `work/W-020` |
 
+### [x] W-020 Record the approved PvE decisions
+
+Approved: record the first-slice PvE decisions agreed with the user in the 2026-10-10 design interview of Vorty's draft, and route the approved implementation sequence W-021 to W-024.
+Outcome: the PvE design owner holds PVE-D01 to PVE-D23 (isolation, participation, map, objective, round loop, enemy identity and cards, movement, defense, ties, defeat, spawning, seeded plans, granted levels, data-driven content, presentation, placement data, hero respawn, forced discard, enemy ties, lost cards, coin grants, pre-battle triggers) with exact behavior, departures, examples and closing checks; open questions and the deferred level-lowering control are recorded; the PvE plan, backlog and brief route the sequence. A found restore defect in an existing experiment is recorded in the backlog.
+Acceptance: T0 living-document validation and diff review. No code, Unity launch or build.
+
+Historical evidence: completion commit addressed by immutable `work/W-020`; exact checks, results and limitations live in its body.
 ### [x] W-019 Experimental modifier displays and Active-effect source reminders
 
 Approved: add seven independent default-off per-match controls in a dedicated Experimental popup. Hero shields always retain net minion Defense and may independently add items, Active effects, and card/continuous effects; card faces independently expose items, minions, Active effects, and card/continuous effects. A source card's violet Active-effect reminder begins when its first standing effect is created, remains through dormant and active phases, and ends with its final sourced instance; hero/radius and value treatment remain mechanically active-only.
