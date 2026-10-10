@@ -1,0 +1,30 @@
+{
+    "name": "GuardsDigital.Pve.EditModeTests",
+    "rootNamespace": "GuardsDigital.Tests.Pve",
+    "references": [
+        "GuardsDigital.Pve",
+        "GuardsDigital.Pve.Presentation",
+        "GuardsDigital.Core",
+        "GuardsDigital.Core.CardState",
+        "GuardsDigital.Application",
+        "GuardsDigital.Presentation",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR || GUARDS_PVE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

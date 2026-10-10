@@ -1256,6 +1256,14 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         public static SandboxStagingDescription NextComposedSandboxStaging { get; set; }
 
+        /// <summary>
+        /// W-021. A whole match composed outside this scene - the separate PvE executable's
+        /// encounter - or <c>null</c> for every existing composition. A one-shot on the same terms as
+        /// the hooks above, consumed and reset by the composition. See
+        /// <see cref="ExternalMatchComposition"/>.
+        /// </summary>
+        public static ExternalMatchComposition NextComposedExternalMatch { get; set; }
+
         /// <summary>One-shot Director fixture obstacles; never a player command or serialized staging field.</summary>
         public static IReadOnlyList<ObstacleOccupancy> NextComposedStagedObstacles { get; set; }
 
@@ -1364,6 +1372,10 @@ namespace GuardsDigital.Presentation.Interaction
             // of 6.6a's three modes were controls with nothing to act on. Blue Sentinel and Blue Feint
             // carry those capabilities now, so the scene keeps them at five.
             var content = TakeRequestedCardContent();
+            // W-021. Consumed here with the other one-shots so a forgotten request cannot reach a
+            // later load; applied below, after the dealt defaults it replaces were composed.
+            var external = NextComposedExternalMatch;
+            NextComposedExternalMatch = null;
             // ELEVENTH amendment. The format is settled here, before anything is composed, because
             // this is the only moment at which it can be: the runtime below is built once and every
             // later surface reads it. A staged arm ignores it - a staged board's subject is one
@@ -2017,6 +2029,17 @@ namespace GuardsDigital.Presentation.Interaction
                     ComposedSandboxStaging, map, setup, configuration, new[] { map },
                     stagedObstacles, stagedBodies, stagedSupplies);
             }
+            // W-021. An external composition states its whole initial state, configuration and map
+            // included, so the dealt defaults above are replaced rather than staged upon.
+            if (external != null)
+            {
+                if (stagedInitialState != null || ComposedSandboxStaging != null)
+                    throw new InvalidOperationException(
+                        "An external composition cannot also request sandbox staging.");
+                stagedInitialState = external.InitialState;
+                configuration = external.InitialState.InitialConfiguration;
+                map = catalog.Load(external.InitialState.Scenario.SelectedMap);
+            }
             if (stagedInitialState != null)
                 setup = stagedInitialState.Setup;
             // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
@@ -2042,6 +2065,19 @@ namespace GuardsDigital.Presentation.Interaction
             mapView.ConfiguredMinionViewsChanged += RebindConfiguredMinionViews;
             mapView.ConfigureSceneBindings(eventCamera, heroViews);
             mapView.Rebuild(map, setup);
+            if (external != null)
+            {
+                // W-021. The rebuild stands every setup hero on its setup space. A hero an external
+                // initial state leaves off the board is not standing yet, and a piece drawn now would
+                // be read by the first refresh as a hero that just left - a defeat it never had.
+                var standing = new HashSet<HeroId>(
+                    external.InitialState.Scenario.InitialHeroes.Select(value => value.HeroId));
+                foreach (var view in heroViews.Where(view =>
+                             view != null && !standing.Contains(view.Occupancy.HeroId)))
+                {
+                    view.gameObject.SetActive(false);
+                }
+            }
 
             // Use the sets the rebuild published rather than re-discovering children. In Play Mode a
             // retired view is destroyed with the deferred Destroy and remains reachable through a
@@ -2173,6 +2209,10 @@ namespace GuardsDigital.Presentation.Interaction
                 hud.ShowSandboxStaging(
                     SandboxStagingSummary.Describe(ComposedSandboxStaging));
             }
+
+            // W-021. Told last, so the external composer sees the runtime every surface above is
+            // already bound to.
+            external?.Composed?.Invoke(runtime);
         }
 
         private void AdoptHeroBodyView(PrimitiveHeroView view)

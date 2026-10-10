@@ -1,0 +1,25 @@
+{
+    "name": "GuardsDigital.Pve.Presentation",
+    "rootNamespace": "GuardsDigital.Pve.Presentation",
+    "references": [
+        "GuardsDigital.Pve",
+        "GuardsDigital.Core",
+        "GuardsDigital.Core.CardState",
+        "GuardsDigital.Application",
+        "GuardsDigital.Network",
+        "GuardsDigital.Presentation",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR || GUARDS_PVE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

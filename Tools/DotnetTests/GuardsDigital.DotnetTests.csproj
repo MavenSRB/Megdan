@@ -23,11 +23,15 @@
     <ProjectReference Include="Assemblies/Application/GuardsDigital.Application.csproj" />
     <ProjectReference Include="Assemblies/Network/GuardsDigital.Network.csproj" />
     <ProjectReference Include="Assemblies/Presentation/GuardsDigital.Presentation.csproj" />
+    <ProjectReference Include="Assemblies/Pve/GuardsDigital.Pve.csproj" />
 
     <Compile Include="Shims/**/*.cs" />
     <Compile Include="HarnessTests/**/*.cs" />
     <Compile Include="../../Assets/Tests/EditMode/*.cs"
              Exclude="@(UnityOnlyTest)" />
+    <!-- W-021. The separate PvE executable's engine-free tests; Unity compiles them as their own
+         GuardsDigital.Pve.EditModeTests assembly, so they use public APIs only. -->
+    <Compile Include="../../Assets/Tests/PveEditMode/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

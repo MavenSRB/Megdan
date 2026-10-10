@@ -524,6 +524,24 @@ namespace GuardsDigital.Core.Participants
             string heroIdValue, string instancePrefix) =>
             CreateVerifiedHand(heroIdValue, instancePrefix);
 
+        /// <summary>
+        /// W-021. A configuration composed by a caller outside this file from hands it built itself -
+        /// the separate PvE executable's encounter is the first - validated exactly as every dealt
+        /// configuration is: initial card state, item-slot icons and effect definitions.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Restore"/> rebuilds a configuration that was validated when it was first
+        /// composed and therefore skips validation; a fresh composition must not, which is why this
+        /// is its own entry rather than a restore state built by hand. It adds no rule and changes no
+        /// existing composition.
+        /// </remarks>
+        public static MatchConfiguration CreateValidatedFromHands(
+            MatchParticipants participants,
+            IEnumerable<ConfiguredHand> hands,
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed) =>
+            new MatchConfiguration(participants, hands, tieBreakerState, setupSeed, true);
+
         private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix)
         {
             var heroId = new HeroId(heroIdValue);

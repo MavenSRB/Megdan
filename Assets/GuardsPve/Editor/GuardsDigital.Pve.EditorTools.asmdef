@@ -1,0 +1,16 @@
+{
+    "name": "GuardsDigital.Pve.EditorTools",
+    "rootNamespace": "GuardsDigital.Pve.EditorTools",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

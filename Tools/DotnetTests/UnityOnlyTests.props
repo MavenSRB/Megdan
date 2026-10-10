@@ -5,6 +5,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/CardValueOverlayTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FinalSecondsCountdownTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ExperimentalCoordinationPresentationTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/PlayerAccentSideTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ActionUnavailabilityTooltipTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ActiveEffectBoardTreatmentTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ApplicationArchitectureBoundaryTests.cs" />

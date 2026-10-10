@@ -42,10 +42,11 @@ namespace GuardsDigital.Tests.Harness
         [TestCase("Application", "Application", "GuardsDigital.Application")]
         [TestCase("Network", "Network", "GuardsDigital.Network")]
         [TestCase("Presentation", "Presentation", "GuardsDigital.Presentation")]
-        public void ProjectIdentityAndDependenciesMatchTheUnityBoundary(string folder, string source, string name)
+        [TestCase("Pve", "Rules", "GuardsDigital.Pve", "GuardsPve")]
+        public void ProjectIdentityAndDependenciesMatchTheUnityBoundary(string folder, string source, string name, string root = "GuardsDigital")
         {
             var project = XDocument.Load(Path.Combine(RepositoryRoot, "Tools", "DotnetTests", "Assemblies", folder, name + ".csproj"));
-            using var asmdef = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryRoot, "Assets", "GuardsDigital", source, name + ".asmdef")));
+            using var asmdef = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryRoot, "Assets", root, source, name + ".asmdef")));
             Assert.That(project.Descendants("AssemblyName").Single().Value, Is.EqualTo(asmdef.RootElement.GetProperty("name").GetString()));
             var actual = project.Descendants("ProjectReference").Select(element => Path.GetFileNameWithoutExtension(element.Attribute("Include").Value));
             var expected = asmdef.RootElement.GetProperty("references").EnumerateArray().Select(element => element.GetString())

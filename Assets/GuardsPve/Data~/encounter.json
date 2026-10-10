@@ -1,0 +1,23 @@
+{
+  "map": "official-single-lane",
+  "mapRevision": 1,
+  "creeps": [
+    { "hex": "-3,2", "type": "melee" },
+    { "hex": "-5,4", "type": "melee" },
+    { "hex": "-3,4", "type": "melee" }
+  ],
+  "heroPlacement": [ "-4,2", "-2,2", "-5,3", "-2,3", "-4,4" ],
+  "spawns": [
+    { "round": 1, "hex": "-1,-2", "enemyType": "raider" },
+    { "round": 1, "hex": "1,-1", "enemyType": "raider" },
+    { "round": 1, "hex": "-7,2", "enemyType": "raider" },
+    { "round": 1, "hex": "0,4", "enemyType": "raider" },
+    { "round": 1, "hex": "-9,7", "enemyType": "raider" },
+    { "round": 1, "hex": "-2,7", "enemyType": "raider" },
+    { "round": 1, "hex": "-7,10", "enemyType": "raider" },
+    { "round": 2, "hex": "0,-4", "enemyType": "brute" },
+    { "round": 2, "hex": "-6,0", "enemyType": "brute" },
+    { "round": 2, "hex": "0,6", "enemyType": "brute" },
+    { "round": 2, "hex": "-11,8", "enemyType": "brute" }
+  ]
+}

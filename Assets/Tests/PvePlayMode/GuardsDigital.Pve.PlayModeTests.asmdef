@@ -1,0 +1,28 @@
+{
+    "name": "GuardsDigital.Pve.PlayModeTests",
+    "rootNamespace": "GuardsDigital.Tests.Pve.PlayMode",
+    "references": [
+        "GuardsDigital.Pve",
+        "GuardsDigital.Pve.Presentation",
+        "GuardsDigital.Core",
+        "GuardsDigital.Core.CardState",
+        "GuardsDigital.Application",
+        "GuardsDigital.Presentation",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_EDITOR || GUARDS_PVE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

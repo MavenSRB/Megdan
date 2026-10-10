@@ -23,7 +23,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-018 | Kept same-identity last-minion death and Lane Push movement in causal presentation order. | `work/W-018` |
 | W-019 | Added independent Experimental modifier-display controls in a dedicated popup and continuous dormant-to-active source-card reminders. | `work/W-019` |
 | W-020 | Recorded the approved first PvE slice (PVE-D01 to PVE-D23) and routed the W-021 to W-024 implementation sequence. | `work/W-020` |
+| W-021 | Separate PvE executable skeleton: isolated assemblies, validated content, static encounter composed into the existing match scene, existing mode unchanged. | `work/W-021` |
 
+### [x] W-021 PvE skeleton executable and static encounter
+
+Approved: a separate PvE executable that composes a static encounter on the existing match scene, with existing-mode behavior unchanged (first step of the approved W-021 to W-024 sequence).
+Outcome: PvE code lives in `Assets/GuardsPve` (engine-free rules assembly, presentation assembly, editor build entry, launcher scene, non-imported content data) behind the `UNITY_EDITOR || GUARDS_PVE` define constraint. Placeholder enemy and approved-layout content load from JSON and are validated with readable messages. The composer builds the encounter through public APIs: chosen heroes on the placement spaces, enemies as Red heroes holding synthetic orange/purple cards, round-2 enemies off the board, creeps as Blue minions and a seed-derived Tie Breaker. The launcher's setup screen composes it and hands it to the existing match scene through a one-shot external composition, which leaves off-board heroes undrawn. Additive shared changes: a validated configuration-from-hands factory, the external-composition one-shot and further per-side seat colours. An existing-mode snapshot golden was pinned before any shared change.
+Acceptance: T2 focused dotnet and Unity checks with build gates: golden, colour, conformance and PvE Edit Mode tests; PvE launcher Play Mode journey; existing player smoke; PvE build smoke with isolation, content-data and assembly checks; living-document validation and diff review. A pre-existing unrelated test failure was recorded in the backlog.
+
+Historical evidence: completion commit addressed by immutable `work/W-021`; exact checks, observed failures, results and limitations live in its body.
 ### [x] W-020 Record the approved PvE decisions
 
 Approved: record the first-slice PvE decisions agreed with the user in the 2026-10-10 design interview of Vorty's draft, and route the approved implementation sequence W-021 to W-024.

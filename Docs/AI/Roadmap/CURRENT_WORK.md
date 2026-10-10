@@ -4,14 +4,7 @@ Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSI
 
 W-020 to W-024 form one approved serial sequence (user, 2026-10-10): record the PvE decisions, then skeleton, rules, presentation and package. Each item closes with its own local commit; nothing is pushed.
 
-### [~] W-021 PvE skeleton executable and static encounter
-
-Approved: a separate PvE executable that composes a static encounter (chosen heroes on the placement spaces, enemies and creeps placed, no enemy decisions) on the existing match scene, with existing-mode behavior unchanged.
-Outcome: PvE assemblies outside `Assets/GuardsDigital`, enemy and encounter content with validation, composer, launcher scene and PvE build entry; additive result/configuration factories, one-shot external composition and a per-side accent palette.
-Scope: no PvE rules hooks, enemy decisions or overlays yet; existing scene, build settings, snapshot v59, wire /52 and package unchanged.
-Closing checks: existing-mode seeded snapshot golden captured before any shared change and unchanged after; focused composer/content/assembly-boundary/palette checks; PvE launcher Play Mode composition; existing player smoke; PvE build smoke; PvE assemblies absent from the existing build.
-
-### [ ] W-022 PvE rules and engine hooks
+### [~] W-022 PvE rules and engine hooks
 
 Approved: implement PVE-D03 to PVE-D23 rules over additive default-off engine hooks.
 Outcome: restore-stable mode rules; end-of-round step availability; coin suppression; placement-space respawn; placement and level-grant system transitions on existing commands; discard-or-defeat policy; plan derivation, enemy controller, tie prompts, encounter session guard/Undo and loss detection.
