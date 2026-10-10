@@ -25,6 +25,14 @@ Each hook is unused by every existing composition, which therefore behaves as be
 | Validated configuration from hands | `MatchConfiguration.CreateValidatedFromHands` | Composes a configuration from caller-built hands with the same initial-card, item-slot and effect validation every dealt configuration receives. |
 | External match composition | `MatchSceneCompositionRoot.NextComposedExternalMatch`, `ExternalMatchComposition` | A one-shot whole initial state (configuration and map included) that replaces the dealt defaults. Heroes the initial state leaves off the board are not drawn at load, so the first refresh shows no false defeat. A callback receives the composed runtime. |
 | Further seat colours | `PlayerAccent` | A side's fourth and later seats take colours from that side's own further palette. Each side's first three seats keep their existing colours. |
+| Mode rules (W-022) | `MatchModeRules` on `MatchSessionInitialState`; bound by `MatchAggregate` on every rebuild and in its shared deserialize step (snapshot restore, rollback, checkpoint Undo); passed to `AuthoritativeSnapshotSerializer.Deserialize` | Never serialized. A match without them is unchanged. |
+| End-of-round steps | `RoundResolutionAuthority.BindModeRules` | Lane Push, Level Up and Pity Coins report not applicable. The Minion Battle step still runs (so pre-battle triggers fire, PVE-D23) and is inert with no Red minions. |
+| No coins | `HeroCoinLedger.GainsAddNothing`, bound through the attack backend | Every Defeat award and coin grant is accepted and adds nothing; a card grant still reports done (PVE-D22). |
+| Respawn spaces | `HeroRespawnRules.CreateChoice` reference spaces via `CardActionResolutionAuthority.RespawnReferenceSpacesFor` | Blue respawns onto empty placement spaces, otherwise the nearest empty ones (PVE-D18). |
+| Round-start placement | `ModeRoundStartPlacementRules`, one transition per scheduled round (`mode-round-start-placement/round-N`) | Begun with the ordinary Begin System Transition command and answered with the ordinary answer command. Only at turn 1 of its round before anyone commits. Designated spaces fall back to the nearest empty spaces, pausing only on ties. |
+| Granted level | `HeroLevelUpStepRules` for `mode-grant-level/<hero>`; outcome `LevelGranted` | Raises one level without spending, then the ordinary Upgrade a Card answer. Only before that hero's first commitment of a round (PVE-D14). |
+| Discard or defeat | `ModeDiscardPolicy` in the chosen-card and owned-card discard handlers, reading the bound rules through `EffectRosterState.ModeRules` | A Red hero discards only a Defense card; with none, the step publishes the defeated-hero fact and the ordinary Defeat follows (PVE-D19). |
+| Refusal results | `MatchCommandResult.Refused`, `MatchSessionOperationResult.Refused` | Let the PvE session refuse a command in the session's own terms. |
 
 ## Encounter composition (W-021)
 
@@ -38,9 +46,30 @@ Each hook is unused by every existing composition, which therefore behaves as be
 - **Creeps.** Blue standard minions on the encounter's creep spaces.
 - **Tie Breaker.** Derived from the setup seed.
 - **Life and Wave counters.** Exist because the engine counts them, and are never part of a PvE ending.
-- **Static encounter (W-021).** Heroes stand on the placement spaces in the order chosen; round-1 enemies stand on their spawns; round-2 enemies are participants off the board.
+- **Starting board.** Round-1 enemies stand on their spawns. The heroes and later enemies are participants off the board until the round-start placement puts them on it.
+- **Mode rules.** `PveEncounterComposer.ModeRules` states the encounter's rules for the engine (see the hooks above).
 
 `PveSeed` derives plan choices with an explicit SplitMix64 mix of seed, round and enemy identity, so Mono and .NET agree and nothing is stored.
+
+## Encounter rules layer (W-022)
+
+- **`PveEnemyController`** reads the match and names one command at a time. It owns no state, so restart, Undo and replay need nothing from it. It covers:
+  - round-start placement and enemy commitments from `PvePlans` (seed, round and enemy; a removed planned card is replaced per PVE-D21);
+  - each enemy's first applicable option, holding otherwise;
+  - movement to the destination nearest its targets within the stop distance, cheapest first;
+  - attack targets in the card's listed order;
+  - the weakest sufficient purple Defense, otherwise declining;
+  - declining every enemy respawn, and advancing the end of round.
+- **Ties.** Equal enemy targets, destinations, blocked spawns and enemy Initiative ties become a `PvePrompt` the player answers. An enemy Initiative tie in which at most one tied enemy stands is settled without asking, because off-board enemies do nothing and only one order is observable.
+- **Fallback.** Any other enemy decision takes that enemy's weakest purple card where a card is asked for, otherwise the first command its seat may submit, and is noted `PVE_FALLBACK`.
+- **`PveEncounterSession`** wraps the Director session. It refuses:
+  - commands for enemies, and commitments while a transition is paused;
+  - anything except the prompt's answers while a prompt stands;
+  - anything while enemies still owe steps;
+  - anything after the loss.
+
+  `Step` and `RunAutomatic` take the automatic commands. Undo walks back over automatic commands to the last player command. Restart clears that record. Snapshot restore is refused.
+- **Loss.** The encounter is lost when no Blue creep stands, or when the engine ends the match.
 
 ## Content data
 
@@ -62,4 +91,4 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 ## Current limits
 
-W-021 is the static skeleton only: enemies take no decisions, and nothing yet blocks commands for Red heroes. Placement, granted levels, spawning, enemy plans and their display, the remaining PvE rules, ties and the loss ending arrive in W-022 and W-023. The encounter currently runs on the existing HUD unchanged, whose rails are laid out for three heroes per side.
+W-022 adds the rules and the session but no presentation: the launcher still hands the match to the existing HUD without the encounter session, overlays or pacing, which arrive in W-023. Placeholder content is untuned. A creep, being an ordinary minion, falls to any single hit (PVE-D04), so a passive player usually loses within the first round. Equal-Initiative enemies of one type tie often, so the player is asked to order them.

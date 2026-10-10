@@ -6,13 +6,13 @@
       "displayName": "Raider",
       "level": 1,
       "orangeCards": [
-        { "key": "A", "name": "Advance", "initiative": 9, "copies": 1, "move": 3,
-          "options": [ { "kind": "move", "target": "minion" } ] },
+        { "key": "A", "name": "Advance", "initiative": 9, "copies": 1, "move": 2,
+          "options": [ { "kind": "move", "target": "hero" } ] },
         { "key": "B", "name": "Slash", "initiative": 7, "copies": 2, "attack": 3, "move": 2,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "hero" } ] },
         { "key": "C", "name": "Heavy Blow", "initiative": 4, "copies": 1, "attack": 5,
-          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] }
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] }
       ],
       "purpleCards": [ { "key": "P", "name": "Parry", "initiative": 1, "defense": 4 } ],
       "plans": [ "A B C B", "A C B B", "A B B C" ]
@@ -28,7 +28,7 @@
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "minion" } ] },
         { "key": "C", "name": "Hurl", "initiative": 3, "copies": 1, "attack": 4, "range": 2,
-          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] },
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] },
         { "key": "X", "name": "Dozing Off", "initiative": 1, "copies": 1, "idle": true }
       ],
       "purpleCards": [

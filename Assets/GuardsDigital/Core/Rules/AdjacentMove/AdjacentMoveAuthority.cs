@@ -1175,6 +1175,13 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return true;
         }
 
+        /// <summary>
+        /// W-022, PVE-D05/D12. A mode's round-start placement of a hero not yet on the board: the same
+        /// board mutation as <see cref="CommitValidatedHeroRespawn"/>, named for what it is.
+        /// </summary>
+        internal bool CommitValidatedOffBoardHeroPlacement(HeroId heroId, HexCoordinate destination) =>
+            CommitValidatedHeroRespawn(heroId, destination);
+
         // The validated authority-level minion position mutation required before Object Push
         // (6.4), Lane Push (6.9-6.11), and minion Respawn can move minions. No player-facing
         // command or session exposure exists yet; consumers arrive with those milestones.

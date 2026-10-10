@@ -134,7 +134,8 @@ namespace GuardsDigital.Core.Snapshots
             MatchContentCatalogs catalogs,
             ComponentDefinitionCatalog components,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions,
-            int? minionBattleRemovalCap)
+            int? minionBattleRemovalCap,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null)
         {
             var roundIndex = reader.ReadInt32();
             var turnIndex = reader.ReadInt32();
@@ -223,7 +224,7 @@ namespace GuardsDigital.Core.Snapshots
             var transitionRules = lanePushAuthority == null
                 ? GuardsDigital.Core.Rules.Transitions.DeclaredSystemTransitionStepRules.Instance
                 : GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateRules(
-                    lanePushAuthority, levelUpRules);
+                    lanePushAuthority, levelUpRules, modeRules, board, participants);
             var systemTransitions = ReadSystemTransitions(reader, transitions, transitionRules);
             var heroProgression = ReadHeroProgression(reader);
             var heroItems = ReadHeroItems(reader);

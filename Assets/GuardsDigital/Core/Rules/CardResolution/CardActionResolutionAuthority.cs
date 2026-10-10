@@ -406,6 +406,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
             attackDefenseBackend.BindHeroDefeatBaseLifeCost(baseCostIsOne);
         }
 
+        private MatchModeRules modeRules;
+
+        /// <summary>
+        /// W-022. The rules a separate game mode composed this match with, or <c>null</c> for every
+        /// existing match. Application composition binds them on each fresh or restored authority,
+        /// as it binds the experiment above.
+        /// </summary>
+        public MatchModeRules ModeRules => modeRules;
+
+        public void BindModeRules(MatchModeRules rules)
+        {
+            modeRules = rules;
+            attackDefenseBackend.BindCoinGainsAddNothing(rules?.CoinGainsAddNothing == true);
+        }
+
+        /// <summary>
+        /// W-022, PVE-D18. The spaces a hero of <paramref name="side"/> respawns onto in place of its
+        /// Throne's spawn points, or <c>null</c> when the match names none.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> RespawnReferenceSpacesFor(TeamSide side) =>
+            modeRules != null && side != TeamSide.None && modeRules.RespawnOverrideSide == side
+                ? modeRules.RespawnOverrideSpaces
+                : null;
+
         /// <summary>
         /// Hands the Attack backend the round's typed hero-Defeat history. The round owns and persists
         /// it; the backend is merely the one p.13 path that can append a completed outcome.

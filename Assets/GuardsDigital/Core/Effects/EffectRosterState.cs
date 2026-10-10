@@ -84,6 +84,8 @@ namespace GuardsDigital.Core.Effects
         private readonly ICurrentTurnCardHistory currentTurnCardHistory;
         private readonly IResolvedCardOrderSwap resolvedCardOrderSwap;
 
+        private readonly GuardsDigital.Core.Setup.IMatchModeRulesSource modeRulesSource;
+
         private EffectRosterState()
         {
         }
@@ -100,8 +102,10 @@ namespace GuardsDigital.Core.Effects
             IDeckCardSwap deckCardSwap,
             IUnresolvedCardSwap unresolvedCardSwap,
             ICurrentTurnCardHistory currentTurnCardHistory,
-            IResolvedCardOrderSwap resolvedCardOrderSwap)
+            IResolvedCardOrderSwap resolvedCardOrderSwap,
+            GuardsDigital.Core.Setup.IMatchModeRulesSource modeRulesSource)
         {
+            this.modeRulesSource = modeRulesSource;
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
             this.coins = coins;
@@ -142,13 +146,20 @@ namespace GuardsDigital.Core.Effects
             IDeckCardSwap deckCardSwap = null,
             IUnresolvedCardSwap unresolvedCardSwap = null,
             ICurrentTurnCardHistory currentTurnCardHistory = null,
-            IResolvedCardOrderSwap resolvedCardOrderSwap = null) =>
+            IResolvedCardOrderSwap resolvedCardOrderSwap = null,
+            GuardsDigital.Core.Setup.IMatchModeRulesSource modeRules = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
                 soloVictory, resolvedTurnSlotSwap, itemCardSwap, teamVictory, teamLives, deckCardSwap,
-                unresolvedCardSwap, currentTurnCardHistory, resolvedCardOrderSwap);
+                unresolvedCardSwap, currentTurnCardHistory, resolvedCardOrderSwap, modeRules);
+
+        /// <summary>
+        /// W-022. The mode rules the match is bound to, or <c>null</c> for every existing match and
+        /// for any state composed without a source.
+        /// </summary>
+        public GuardsDigital.Core.Setup.MatchModeRules ModeRules => modeRulesSource?.ModeRules;
 
         public bool IsAvailable => turnSlots != null;
 

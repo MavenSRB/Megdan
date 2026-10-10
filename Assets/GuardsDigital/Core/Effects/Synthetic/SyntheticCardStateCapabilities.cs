@@ -235,6 +235,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.DeclinedOptional();
                 }
 
+                // W-022, PVE-D19. A side a mode names discards only a Defense card, and is defeated
+                // instead when it holds none.
+                var modeDiscard = ModeDiscardPolicy.Applies(context, chooser);
+                if (modeDiscard && ModeDiscardPolicy.DefenseCardsInHand(context, chooser).Count == 0)
+                {
+                    return ModeDiscardPolicy.DefeatInstead(chooser);
+                }
+
                 // Milestone 8.40f. A sentence that has already named the card has nothing to ask, so
                 // it discards directly rather than opening a one-candidate prompt - see
                 // RestrictToCardParameter. The named card is still checked against the SAME criteria
@@ -274,6 +282,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.CardState.Instances,
                     chooser,
                     substitutes);
+                if (modeDiscard)
+                {
+                    offer = ModeDiscardPolicy.Restrict(offer, ModeDiscardPolicy.DefenseCardsInHand(context, chooser));
+                }
 
                 // Rulebook `if able`: a hero with no card to give does not give one, and the action
                 // goes on. This is deliberately not ImpossibleMandatory - that would stop the enclosing
@@ -316,6 +328,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // of faulting the command that carries it.
                 var chooser = Chooser(context);
                 if (!chooser.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // W-022, PVE-D19. Only a Defense card answers a mode-restricted discard.
+                if (ModeDiscardPolicy.Applies(context, chooser) &&
+                    !ModeDiscardPolicy.DefenseCardsInHand(context, chooser).Contains(selected[0].CardInstanceId))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }

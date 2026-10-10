@@ -14,11 +14,11 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-021**.
-- Active authorized work: **W-022**, the PvE rules step of the approved sequence W-021 to W-024.
-- Next proposed work: **W-022**.
+- Last completed work: **W-022**.
+- Active authorized work: **W-023**, the PvE presentation step of the approved sequence W-021 to W-024.
+- Next proposed work: **W-023**.
 
-W-021 is complete: a separate PvE executable composes a static test encounter into the existing match scene through additive, default-off hooks, with the existing mode pinned by a snapshot golden and its player free of PvE assemblies; see [PvE implementation](Project/PVE_IMPLEMENTATION.md). First-slice rules are PVE-D01 to PVE-D23 in [PvE design](Project/PVE_DESIGN.md). W-022 (rules and engine hooks), W-023 (presentation) and W-024 (package) remain in the approved sequence. Existing-mode behavior, snapshot v59, wire /52 and the W013 package stay unchanged; W013 does not include W-014 through W-021. W-004 remains a paused presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
+W-022 is complete: the PvE rules run headlessly over restore-stable mode rules and additive, default-off engine hooks (placement, granted levels, no coins, respawn spaces, discard-or-defeat), with an enemy controller and an encounter session; the existing mode stays pinned by its snapshot golden. The separate PvE executable composes the encounter into the existing match scene; see [PvE implementation](Project/PVE_IMPLEMENTATION.md). First-slice rules are PVE-D01 to PVE-D23 in [PvE design](Project/PVE_DESIGN.md). W-023 (presentation, including an enemy card editor) and W-024 (package) remain in the approved sequence. Existing-mode behavior, snapshot v59, wire /52 and the W013 package stay unchanged; W013 does not include W-014 through W-022. W-004 remains a paused presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is approved and in progress; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

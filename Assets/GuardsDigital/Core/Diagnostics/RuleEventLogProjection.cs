@@ -270,6 +270,8 @@ namespace GuardsDigital.Core.Diagnostics
                     return $"returned={outcome.UpgradedCardInstanceId.Value};" +
                         $"taken={outcome.TakenCardInstanceId.Value};" +
                         $"setAside={(outcome.SetAsideCardInstanceId.IsDefined ? outcome.SetAsideCardInstanceId.Value : "none")}";
+                case GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.LevelGranted:
+                    return $"granted level={outcome.Level.Value}";
                 case GuardsDigital.Core.Rules.Progression.HeroLevelUpOutcomeKind.ItemGained:
                     return $"card={outcome.Item.SourceCardInstanceId.Value};" +
                         $"slot={outcome.Item.Slot};icon={outcome.Item.Icon}";

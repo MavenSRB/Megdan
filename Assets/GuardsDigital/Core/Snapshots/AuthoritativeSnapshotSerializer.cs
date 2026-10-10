@@ -612,7 +612,8 @@ namespace GuardsDigital.Core.Snapshots
             IEnumerable<BoardMapDefinition> currentMapDefinitions,
             IEnumerable<QuickGameMinionSetupState> minions,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionCatalog transitions = null,
-            int? minionBattleRemovalCap = null)
+            int? minionBattleRemovalCap = null,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null)
         {
             if (catalogs == null) throw new ArgumentNullException(nameof(catalogs));
             var capabilities = catalogs.Capabilities;
@@ -622,7 +623,7 @@ namespace GuardsDigital.Core.Snapshots
             // synthetic catalog refused a paused Lane Push as a transition this build no longer has,
             // which is the right refusal for the wrong reason.
             transitions = transitions ??
-                GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateCatalog();
+                GuardsDigital.Core.Rules.Transitions.MatchSystemTransitions.CreateCatalog(modeRules);
             if (string.IsNullOrWhiteSpace(payload))
             {
                 throw new SnapshotLoadException(
@@ -672,7 +673,7 @@ namespace GuardsDigital.Core.Snapshots
                     var cards = ReadCards(reader, definitions, participants);
                     var round = ReadRound(
                         reader, definitions, cards, participants, board, catalogs, components,
-                        transitions, minionBattleRemovalCap);
+                        transitions, minionBattleRemovalCap, modeRules);
                     if (stream.Position != stream.Length)
                     {
                         throw Malformed("Snapshot contains unexpected trailing data.");

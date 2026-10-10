@@ -4364,6 +4364,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var chooser = Chooser(context);
+                // W-022, PVE-D19. A side a mode names discards only a Defense card, and is defeated
+                // instead when it holds none.
+                var modeDiscard = ModeDiscardPolicy.Applies(context, chooser);
+                if (modeDiscard && ModeDiscardPolicy.DefenseCardsInHand(context, chooser).Count == 0)
+                {
+                    return ModeDiscardPolicy.DefeatInstead(chooser);
+                }
+
                 var offer = ColorRestrictedDiscard.Offer(
                     HandCriteria(chooser),
                     EffectChooserRole.None,
@@ -4371,6 +4379,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.CardState.Instances,
                     chooser,
                     SyntheticCardStateCapabilities.DiscardSubstitutes(context, chooser));
+                if (modeDiscard)
+                {
+                    offer = ModeDiscardPolicy.Restrict(offer, ModeDiscardPolicy.DefenseCardsInHand(context, chooser));
+                }
 
                 return offer != null
                     ? EffectExecutionResult.NeedsChoice(offer)
@@ -4391,6 +4403,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 // Re-derived rather than trusted, exactly as its sibling re-derives: a card played or
                 // discarded between the offer and the answer is refused instead of spent twice.
+                if (ModeDiscardPolicy.Applies(context, Chooser(context)) &&
+                    !ModeDiscardPolicy.DefenseCardsInHand(context, Chooser(context)).Contains(selected[0].CardInstanceId))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 var result = ColorRestrictedDiscard.Resolve(
                     HandCriteria(Chooser(context)),
                     selected[0].CardInstanceId,

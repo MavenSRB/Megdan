@@ -70,6 +70,25 @@ namespace GuardsDigital.Application
         public CardActionResolutionRejectionReason CardActionRejectionReason { get; }
         public IReadOnlyList<RoundResolutionEvent> Events { get; }
         public MatchSessionProjection Projection { get; }
+
+        /// <summary>
+        /// W-022. A command refused before it reached the match - the separate PvE executable's
+        /// session refuses commands its mode does not allow - reported in the session's own terms with
+        /// the unchanged projection. No existing session constructs one.
+        /// </summary>
+        public static MatchCommandResult Refused(
+            DirectorCommand command, string detail, MatchSessionProjection projection) =>
+            new MatchCommandResult(
+                false,
+                command,
+                MatchSessionRejectionReason.CommandUnavailable,
+                detail,
+                default,
+                default,
+                default,
+                default,
+                System.Array.Empty<RoundResolutionEvent>(),
+                projection);
     }
 
     public sealed class MatchSessionOperationResult
@@ -90,6 +109,10 @@ namespace GuardsDigital.Application
         public MatchSessionRejectionReason RejectionReason { get; }
         public string Detail { get; }
         public MatchSessionProjection Projection { get; }
+
+        /// <summary>W-022. An operation a mode's session refuses; see <see cref="MatchCommandResult.Refused"/>.</summary>
+        public static MatchSessionOperationResult Refused(string detail, MatchSessionProjection projection) =>
+            new MatchSessionOperationResult(false, MatchSessionRejectionReason.CommandUnavailable, detail, projection);
     }
 
     public interface IMatchSession

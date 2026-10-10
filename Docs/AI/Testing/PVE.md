@@ -12,6 +12,8 @@ Focused harness run:
 
 Unity Edit Mode: a request filter of `GuardsDigital.Tests.Pve` selects every PvE Edit Mode fixture, including the Unity-only ones.
 
+The encounter fixtures play headlessly through a test driver with a deterministic, deliberately passive player: first placement, first card, Hold, no Defense, the first answer to each prompt. A hero-hunting variant of the placeholder catalog (minion options removed) keeps the creeps alive long enough to reach later rounds. The fixtures prove that mechanics work, not balance or usability.
+
 ## Existing-mode identity
 
 `GuardsDigital.Tests.EditMode.ExistingModeIdentityGoldenTests` drives the official six-player match through seats with a fixed seed and compares authoritative snapshot hashes at fixed command counts with values pinned before the PvE sequence. Run it after any change to shared code. A PvE change never re-pins it. A deliberate existing-mode rule or snapshot change re-pins it in the same commit, stating the reason.

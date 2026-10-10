@@ -27,7 +27,7 @@ namespace GuardsDigital.Tests.Pve
                 PveTestContent.OfficialMap());
 
         [Test]
-        public void FiveChosenHeroesStandOnThePlacementSpacesAsBlue()
+        public void FiveChosenHeroesAreBlueAndStartOffTheBoardForTheirPlacement()
         {
             var encounter = Compose();
             var projection = MatchHost.Compose(encounter.InitialState).Projection;
@@ -36,11 +36,13 @@ namespace GuardsDigital.Tests.Pve
             foreach (var hero in encounter.Heroes)
             {
                 Assert.That(projection.Participants.GetTeamForHero(hero).Side, Is.EqualTo(TeamSide.Blue));
+                Assert.That(projection.Heroes.Any(value => value.HeroId.Equals(hero)), Is.False,
+                    "PVE-D05: heroes are placed by the player at round 1.");
             }
 
-            Assert.That(
-                encounter.Heroes.Select(hero => projection.Heroes.Single(value => value.HeroId.Equals(hero)).Coordinate),
-                Is.EqualTo(PveTestContent.Encounter().HeroPlacement));
+            var rules = encounter.InitialState.ModeRules;
+            Assert.That(rules.PlayerPlacementSpaces, Is.EqualTo(PveTestContent.Encounter().HeroPlacement));
+            Assert.That(rules.RoundStartPlacements.Count(value => value.Round == 1), Is.EqualTo(5));
         }
 
         [Test]
@@ -126,7 +128,7 @@ namespace GuardsDigital.Tests.Pve
             var host = MatchHost.Compose(Compose().InitialState);
             var session = new LocalDirectorMatchClient(host);
             var before = session.CaptureSnapshot();
-            var hero = new HeroId("hero-arien");
+            var hero = new HeroId("pve-enemy-01");
             var card = session.Projection.Cards.First(value =>
                 value.OwnerId.Equals(hero) && value.State.Location == CardLocation.Hand);
 

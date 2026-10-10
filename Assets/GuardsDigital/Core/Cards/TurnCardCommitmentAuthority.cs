@@ -555,6 +555,12 @@ namespace GuardsDigital.Core.Cards
             events.Add(new TurnCardCommitmentEvent(TurnCardCommitmentEventKind.RevealCompleted));
         }
 
+        /// <summary>W-022. Whether this hero has committed or passed this turn.</summary>
+        public bool HasHeroResponded(HeroId heroId) => HasResponded(heroId);
+
+        /// <summary>W-022. Whether any hero has committed or passed this turn.</summary>
+        public bool HasAnyResponse => committedCards.Count > 0 || passedHeroes.Count > 0;
+
         private bool HasResponded(HeroId heroId)
         {
             return committedCards.ContainsKey(heroId) || passedHeroes.Contains(heroId);

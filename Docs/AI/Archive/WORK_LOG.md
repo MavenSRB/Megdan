@@ -24,7 +24,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-019 | Added independent Experimental modifier-display controls in a dedicated popup and continuous dormant-to-active source-card reminders. | `work/W-019` |
 | W-020 | Recorded the approved first PvE slice (PVE-D01 to PVE-D23) and routed the W-021 to W-024 implementation sequence. | `work/W-020` |
 | W-021 | Separate PvE executable skeleton: isolated assemblies, validated content, static encounter composed into the existing match scene, existing mode unchanged. | `work/W-021` |
+| W-022 | PvE rules: restore-stable mode rules and additive engine hooks, enemy controller, encounter session, seeded plans and loss; existing mode unchanged. | `work/W-022` |
 
+### [x] W-022 PvE rules and engine hooks
+
+Approved: implement PVE-D03 to PVE-D23 over additive default-off engine hooks (second step of the approved W-021 to W-024 sequence).
+Outcome: `MatchModeRules` travel on the initial state and are bound after every rebuild and restore (snapshot restore, rollback, checkpoint Undo), never serialized. They switch off Lane Push, Level Up and Pity Coins; make every coin gain add nothing; send Blue respawns to the placement spaces; add round-start placement and per-hero granted-level transitions on the existing commands; and apply discard-or-defeat to enemies. The PvE layer derives seeded plans and drives enemies one command at a time (first applicable option, movement toward targets, weakest sufficient purple Defense, never respawning, end-of-round advance). Player-decided ties become prompts. A session guards player commands, groups Undo back to the last player command and detects the loss. Placeholder enemies now hunt heroes first.
+Acceptance: T2 focused harness and Unity Edit Mode checks (encounter flow, determinism, Undo, restart, guard, loss, hook behavior, restore and checkpoint-Undo survival, discard policy), the existing-mode golden and affected existing suites, a full dotnet harness run, living-document validation and diff review. Pre-existing stale protocol-version expectations were recorded in the backlog.
+
+Historical evidence: completion commit addressed by immutable `work/W-022`; exact checks, observed failures, results and limitations live in its body.
 ### [x] W-021 PvE skeleton executable and static encounter
 
 Approved: a separate PvE executable that composes a static encounter on the existing match scene, with existing-mode behavior unchanged (first step of the approved W-021 to W-024 sequence).

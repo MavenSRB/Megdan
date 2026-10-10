@@ -28,7 +28,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.Victory.ITeamVictoryTally,
             GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
             IResolvedTurnSlotSwap, IResolvedCardOrderSwap, IItemCardSwap, IDeckCardSwap, IUnresolvedCardSwap,
-            ICurrentTurnCardHistory
+            ICurrentTurnCardHistory,
+            GuardsDigital.Core.Setup.IMatchModeRulesSource
     {
         public const int TurnsPerRound = 4;
 
@@ -55,7 +56,8 @@ namespace GuardsDigital.Core.Cards
         private readonly List<CompletedRoundRecord> completedRounds = new List<CompletedRoundRecord>();
         private readonly List<EndOfRoundStageOutcome> endOfRoundOutcomes =
             new List<EndOfRoundStageOutcome>();
-        private readonly EndOfRoundStageAvailability endOfRoundStageAvailability;
+        private EndOfRoundStageAvailability endOfRoundStageAvailability;
+        private GuardsDigital.Core.Setup.MatchModeRules modeRules;
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private readonly AdjacentMoveAuthority board;
         private readonly int? minionBattleRemovalCap;
@@ -254,7 +256,7 @@ namespace GuardsDigital.Core.Cards
             // the resolved-slot swap is: it edits the turn slot and the selected card together.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this, this,
-                TeamLives, this, this, this, this));
+                TeamLives, this, this, this, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -290,6 +292,57 @@ namespace GuardsDigital.Core.Cards
             TurnIndex = 1;
             Phase = RoundResolutionPhase.AwaitingCommitments;
             CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(this.instances, this.participants);
+        }
+
+        /// <summary>
+        /// W-022. The rules a separate game mode composed this match with, or <c>null</c> for every
+        /// existing match. Application composition binds them after every composition and restore, as it
+        /// binds the experiments, and they are never serialized.
+        /// </summary>
+        public GuardsDigital.Core.Setup.MatchModeRules ModeRules => modeRules;
+
+        public void BindModeRules(GuardsDigital.Core.Setup.MatchModeRules rules)
+        {
+            modeRules = rules;
+            cardActions?.BindModeRules(rules);
+            if (rules == null || rules.UnavailableEndOfRoundStages.Count == 0)
+            {
+                return;
+            }
+
+            var current = endOfRoundStageAvailability;
+            endOfRoundStageAvailability = new EndOfRoundStageAvailability(
+                Enum.GetValues(typeof(EndOfRoundStage))
+                    .Cast<EndOfRoundStage>()
+                    .Where(stage => stage != EndOfRoundStage.Complete &&
+                        current.IsAvailable(stage) &&
+                        !rules.IsUnavailable(stage)));
+        }
+
+        /// <summary>
+        /// W-022, PVE-D05/D12/D14. Whether a mode's transition may begin now. Both belong to a round's
+        /// start - the first turn's commitments, with nothing paused - and a placement additionally
+        /// to its own round before anyone has committed, a granted level to a hero who has not yet
+        /// committed and can rise.
+        /// </summary>
+        public bool CanBeginModeTransition(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId definitionId)
+        {
+            if (modeRules == null || Phase != RoundResolutionPhase.AwaitingCommitments || TurnIndex != 1 ||
+                systemTransitions.IsRunning || CurrentCommitmentAuthority == null)
+            {
+                return false;
+            }
+
+            if (GuardsDigital.Core.Setup.MatchModeRules.TryReadPlacementRound(definitionId, out var round))
+            {
+                return round == RoundIndex && !CurrentCommitmentAuthority.HasAnyResponse;
+            }
+
+            return GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out var hero) &&
+                modeRules.LevelGrantHeroes.Contains(hero) &&
+                !CurrentCommitmentAuthority.HasHeroResponded(hero) &&
+                levelUp != null && levelUp.CanGrantLevel(hero);
         }
 
         public int RoundIndex { get; private set; }
@@ -740,7 +793,7 @@ namespace GuardsDigital.Core.Cards
                 cardActions.CurrentModifications(timing, participants, TieBreakerState,
                     CurrentUltimates(), GuardsDigital.Core.Rules.Modifications.RuleObject.None);
             var roster = EffectRosterState.Of(turnSlots.AsReadOnly(), HeroDefeatHistory,
-                cardActions.CoinLedger, this, this, this, this, TeamLives, this, this, this, this);
+                cardActions.CoinLedger, this, this, this, this, TeamLives, this, this, this, this, this);
             return CardValuePreviewQuery.Read(definitions, instances, participants, board, HeroItems,
                 modifications, roster, RoundIndex, TurnIndex, markers,
                 CurrentTurnAuthority?.PendingAttackResolution, sources);
@@ -1080,6 +1133,16 @@ namespace GuardsDigital.Core.Cards
                     RoundResolutionRejectionReason.SystemTransitionNotBegunByCommand);
             }
 
+            // W-022. A mode's transitions belong to a round's start; outside it they are refused as
+            // a commitment-phase command would be.
+            var isModeTransition =
+                GuardsDigital.Core.Setup.MatchModeRules.TryReadPlacementRound(definitionId, out _) ||
+                GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out _);
+            if (isModeTransition && !CanBeginModeTransition(definitionId))
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.NotAwaitingCommitments);
+            }
+
             var instanceId = new GuardsDigital.Core.Rules.Transitions.SystemTransitionInstanceId(
                 $"round-{RoundIndex}-turn-{TurnIndex}-{definitionId.Value}");
             var result = systemTransitions.TryBegin(definitionId, instanceId);
@@ -1088,10 +1151,12 @@ namespace GuardsDigital.Core.Cards
                 return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
             }
 
-            return RoundResolutionResult.Accept(new[]
-            {
-                RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result)
-            });
+            // W-022. A granted level reports what it did as a purchased one does.
+            var begun = GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out _)
+                ? DrainLevelUpEvents()
+                : new List<RoundResolutionEvent>();
+            begun.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
+            return RoundResolutionResult.Accept(begun);
         }
 
         /// <summary>
@@ -1469,7 +1534,9 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 9.32a. The p.10 swap with the deck, as the composed round binds it.
                 authority,
                 // Milestone 9.32b. And the swap of an unresolved card.
-                authority, authority, authority));
+                authority, authority, authority,
+                // W-022. The mode rules the restored round is bound to after restore.
+                authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:
@@ -2726,8 +2793,11 @@ namespace GuardsDigital.Core.Cards
         private bool IsPausedLevelUp() =>
             levelUp != null &&
             systemTransitions.PendingStep != null &&
-            systemTransitions.PendingStep.DefinitionId.Equals(
-                GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId);
+            (systemTransitions.PendingStep.DefinitionId.Equals(
+                    GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId) ||
+                // W-022. A mode's granted level pauses on the same upgrade answer.
+                GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(
+                    systemTransitions.PendingStep.DefinitionId, out _));
 
         /// <summary>
         /// The tail every end-of-round stage shares: report what the stage did, stop if it paused or

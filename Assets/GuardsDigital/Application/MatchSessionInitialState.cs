@@ -20,9 +20,11 @@ namespace GuardsDigital.Application
             MatchConfiguration initialConfiguration = null,
             ActiveEffectLifecycle initialTiming = null,
             MatchStagedProgression stagedProgression = null,
-            ExperimentalMatchOptions experiments = null)
+            ExperimentalMatchOptions experiments = null,
+            MatchModeRules modeRules = null)
         {
             Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
+            ModeRules = modeRules;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             // Milestone 9.21j. A seat whose hero declares several bodies (Razzle, RZ-Q1) carries that
             // supply onto the board from here, the one place every configured and staged match's
@@ -60,6 +62,13 @@ namespace GuardsDigital.Application
         }
 
         public ExperimentalMatchOptions Experiments { get; }
+
+        /// <summary>
+        /// W-022. The rules a separate game mode composed this match with, or <c>null</c> for every
+        /// existing match. Carried here because this is what every rebuild and restore starts from, so a
+        /// restart, an Undo and a rollback all bind the same rules again; never serialized.
+        /// </summary>
+        public MatchModeRules ModeRules { get; }
 
         public InitialScenarioDescription Scenario { get; }
 

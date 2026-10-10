@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Rules.LanePush;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions.Synthetic;
@@ -35,7 +36,60 @@ namespace GuardsDigital.Core.Rules.Transitions
         /// coin ledger to spend from - and its definition then falls through to the declared rules,
         /// which refuse a derived step rather than guessing at one.
         /// </summary>
+        /// <summary>
+        /// W-022. The catalog above plus the transitions a separate game mode declares; with no mode
+        /// rules it is exactly the catalog above.
+        /// </summary>
+        public static SystemTransitionCatalog CreateCatalog(GuardsDigital.Core.Setup.MatchModeRules modeRules) =>
+            modeRules == null
+                ? CreateCatalog()
+                : new SystemTransitionCatalog(new[]
+                    {
+                        SyntheticSystemTransitions.BoundedFourStep,
+                        LanePushSystemTransition.Definition,
+                        HeroLevelUpSystemTransition.Definition
+                    }.Concat(modeRules.TransitionDefinitions));
+
+        /// <summary>
+        /// W-022. The rules above plus a mode's: each round-start placement runs on
+        /// <see cref="ModeRoundStartPlacementRules"/> over the match's board, and each granted level on
+        /// the same <paramref name="levelUp"/> rules a purchased level uses. With no mode rules it is
+        /// exactly the rule set above.
+        /// </summary>
         public static ISystemTransitionStepRules CreateRules(
+            LanePushTransitionAuthority lanePush,
+            HeroLevelUpStepRules levelUp,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            GuardsDigital.Core.Participants.MatchParticipants participants)
+        {
+            if (modeRules == null) return CreateRules(lanePush, levelUp);
+            var rules = new List<KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>>(
+                Named(lanePush, levelUp));
+            if (board != null && participants != null)
+            {
+                var placement = new ModeRoundStartPlacementRules(modeRules, board, participants);
+                rules.AddRange(modeRules.PlacementRounds.Select(round =>
+                    new KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>(
+                        GuardsDigital.Core.Setup.MatchModeRules.PlacementTransitionId(round), placement)));
+            }
+
+            if (levelUp != null)
+            {
+                rules.AddRange(modeRules.LevelGrantHeroes.Select(hero =>
+                    new KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>(
+                        GuardsDigital.Core.Setup.MatchModeRules.LevelGrantTransitionId(hero), levelUp)));
+            }
+
+            return new SystemTransitionStepRuleSet(rules);
+        }
+
+        public static ISystemTransitionStepRules CreateRules(
+            LanePushTransitionAuthority lanePush,
+            HeroLevelUpStepRules levelUp) =>
+            new SystemTransitionStepRuleSet(Named(lanePush, levelUp));
+
+        private static IEnumerable<KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>> Named(
             LanePushTransitionAuthority lanePush,
             HeroLevelUpStepRules levelUp)
         {
@@ -52,7 +106,7 @@ namespace GuardsDigital.Core.Rules.Transitions
                     HeroLevelUpSystemTransition.DefinitionId, levelUp));
             }
 
-            return new SystemTransitionStepRuleSet(rules);
+            return rules;
         }
     }
 }

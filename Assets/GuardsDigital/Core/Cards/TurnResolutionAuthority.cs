@@ -785,7 +785,9 @@ namespace GuardsDigital.Core.Cards
                         initiative.SelectedActor.CardInstanceId,
                         participants,
                         cardActions.Board,
-                        CurrentModifications());
+                        CurrentModifications(),
+                        cardActions.RespawnReferenceSpacesFor(
+                            participants.GetTeamForHero(initiative.SelectedActor.ActorId).Side));
 
         /// <summary>
         /// Milestone 9.21b. "Which of you acts" (RZ-Q4): standing while the selected hero stands on

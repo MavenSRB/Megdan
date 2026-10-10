@@ -4,17 +4,10 @@ Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSI
 
 W-020 to W-024 form one approved serial sequence (user, 2026-10-10): record the PvE decisions, then skeleton, rules, presentation and package. Each item closes with its own local commit; nothing is pushed.
 
-### [~] W-022 PvE rules and engine hooks
-
-Approved: implement PVE-D03 to PVE-D23 rules over additive default-off engine hooks.
-Outcome: restore-stable mode rules; end-of-round step availability; coin suppression; placement-space respawn; placement and level-grant system transitions on existing commands; discard-or-defeat policy; plan derivation, enemy controller, tie prompts, encounter session guard/Undo and loss detection.
-Scope: rules and session layer; no new command kinds or wire change; no presentation beyond what tests need.
-Closing checks: per hook a default-off regression, rules-on behavior and restore/rollback/checkpoint-Undo survival; deterministic headless encounter; existing-mode golden, codec, seat and pinned constants; full Edit Mode and Play Mode gate.
-
-### [ ] W-023 PvE presentation
+### [~] W-023 PvE presentation
 
 Approved: player-facing PvE journey.
-Outcome: setup screen, placement and level-grant panel, enemy plan strips with card hover, placeholder enemy tokens, tie prompts, paced enemy actions and loss screen; HUD rail and status options for more than three heroes.
+Outcome: setup screen, placement and level-grant panel, enemy plan strips with card hover, placeholder enemy tokens, tie prompts, paced enemy actions and loss screen; HUD rail and status options for more than three heroes. Added by the user on 2026-10-10: an enemy card editor on the setup screen (Initiative, Movement, Attack, Range and Defense per card), saved to the content JSON, so different values can be tested. The user also directed that the sequence finishes once it works, without usability or balance testing.
 Scope: PvE assemblies plus additive, default-off presentation hooks.
 Closing checks: focused Play Mode journey, non-batch visual capture, existing HUD layout regressions with options off, full Play Mode gate.
 

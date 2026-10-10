@@ -338,8 +338,13 @@ namespace GuardsDigital.Application
                 rebuiltConfiguration.CardDefinitions,
                 rebuiltConfiguration.CardInstances);
             var rebuiltTransitions = new SystemTransitionAuthority(
-                MatchSystemTransitions.CreateCatalog(),
-                MatchSystemTransitions.CreateRules(rebuiltLanePushAuthority, rebuiltLevelUp));
+                MatchSystemTransitions.CreateCatalog(initialState.ModeRules),
+                MatchSystemTransitions.CreateRules(
+                    rebuiltLanePushAuthority,
+                    rebuiltLevelUp,
+                    initialState.ModeRules,
+                    rebuiltBoard,
+                    rebuiltConfiguration.Participants));
             var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
             var rebuiltCardActions = new CardActionResolutionAuthority(
                 rebuiltConfiguration.ContentCatalogs, rebuiltBoard, rebuiltMarkers);
@@ -378,6 +383,8 @@ namespace GuardsDigital.Application
                     initialState.Experiments.MinionBattleRemovalCapEnabled
                         ? initialState.Experiments.MinionBattleRemovalCap
                         : (int?)null));
+            // W-022. Bound on the fresh graph exactly as on every restored one (below).
+            rebuiltRound.BindModeRules(initialState.ModeRules);
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,
@@ -433,7 +440,12 @@ namespace GuardsDigital.Application
                 initialState.Setup.Minions,
                 minionBattleRemovalCap: initialState.Experiments.MinionBattleRemovalCapEnabled
                     ? initialState.Experiments.MinionBattleRemovalCap
-                    : (int?)null);
+                    : (int?)null,
+                modeRules: initialState.ModeRules);
+
+            // W-022. Bound here rather than by each caller, so a snapshot restore, a rollback and a
+            // checkpoint Undo all rebind the same mode rules; existing matches bind null.
+            restored.Round.BindModeRules(initialState.ModeRules);
 
             if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
             {

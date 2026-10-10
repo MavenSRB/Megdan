@@ -112,7 +112,9 @@ namespace GuardsDigital.Presentation.Match
                     stagedInitialState.InitialConfiguration,
                     stagedInitialState.InitialTiming,
                     stagedInitialState.StagedProgression,
-                    experiments);
+                    experiments,
+                    // W-022. A staged state composed with mode rules keeps them.
+                    stagedInitialState.ModeRules);
             host = MatchHost.Compose(InitialState);
             session = new LocalDirectorMatchClient(host);
             IsSandbox = stagedInitialState != null;

@@ -343,7 +343,31 @@ namespace GuardsDigital.Core.Rules.Consequences
             Amount = amount;
             BalanceBefore = balanceBefore;
             BalanceAfter = balanceAfter;
+            AddsNothing = false;
         }
+
+        private CoinGrantOperation(
+            HeroId recipientHeroId,
+            TeamId recipientTeamId,
+            CoinGrantKind grantKind,
+            int amount,
+            int balance)
+            : this(recipientHeroId, recipientTeamId, grantKind, amount, balance, balance + amount)
+        {
+            BalanceAfter = balance;
+            AddsNothing = true;
+        }
+
+        /// <summary>
+        /// W-022, PVE-D22. A grant a mode accepts as done while adding nothing: it names the recipient
+        /// and the printed amount, and the balance stays where it was.
+        /// </summary>
+        internal static CoinGrantOperation AddingNothing(
+            HeroId recipientHeroId, TeamId recipientTeamId, CoinGrantKind grantKind, int amount, int balance) =>
+            new CoinGrantOperation(recipientHeroId, recipientTeamId, grantKind, amount, balance);
+
+        /// <summary>True only for a grant a mode accepted while adding nothing (PVE-D22).</summary>
+        public bool AddsNothing { get; }
 
         public HeroId RecipientHeroId { get; }
 
@@ -633,6 +657,18 @@ namespace GuardsDigital.Core.Rules.Consequences
             scoreboard = matchScoreboard;
         }
 
+        /// <summary>
+        /// W-022, PVE-D11/D14/D22. A mode without coins: every Defeat award and every grant is
+        /// accepted and adds nothing, so a card's "if they do" still proceeds and no balance, reward
+        /// or scoreboard count moves. False - every existing match - changes nothing.
+        /// </summary>
+        public bool GainsAddNothing { get; private set; }
+
+        public void SetGainsAddNothing(bool value)
+        {
+            GainsAddNothing = value;
+        }
+
         public static HeroCoinLedger Restore(
             MatchParticipants participants,
             HeroCoinLedgerRestoreState state)
@@ -730,6 +766,13 @@ namespace GuardsDigital.Core.Rules.Consequences
             }
 
             var balanceBefore = GetCoins(heroId);
+            if (GainsAddNothing)
+            {
+                operation = CoinGrantOperation.AddingNothing(
+                    heroId, participants.GetTeamForHero(heroId).Id, grantKind, amount, balanceBefore);
+                return true;
+            }
+
             var candidateBalance = (long)balanceBefore + amount;
             if (candidateBalance > int.MaxValue)
             {
@@ -830,6 +873,13 @@ namespace GuardsDigital.Core.Rules.Consequences
             if (awardedOutcomeIds.Contains(outcome.Id))
             {
                 return DefeatRewardResult.Reject(DefeatRewardRejectionReason.OutcomeAlreadyAwarded);
+            }
+
+            if (GainsAddNothing)
+            {
+                // W-022, PVE-D11. The Defeat is still awarded exactly once; it pays nobody.
+                awardedOutcomeIds.Add(outcome.Id);
+                return DefeatRewardResult.Accept(Array.Empty<CoinResourceOperation>());
             }
 
             var plannedBalances = new Dictionary<HeroId, int>(coinBalances);

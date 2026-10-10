@@ -237,9 +237,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 coinLedger = seed != null
                     ? HeroCoinLedger.Restore(participants, seed)
                     : new HeroCoinLedger(participants);
+                coinLedger.SetGainsAddNothing(coinGainsAddNothing);
             }
 
             return coinLedger;
+        }
+
+        private bool coinGainsAddNothing;
+
+        /// <summary>
+        /// W-022, PVE-D11/D14/D22. A mode without coins: the ledger this backend holds, and any it
+        /// creates later, accepts every gain while adding nothing. Bound after every composition and
+        /// restore; false - every existing match - changes nothing.
+        /// </summary>
+        internal void BindCoinGainsAddNothing(bool value)
+        {
+            coinGainsAddNothing = value;
+            coinLedger?.SetGainsAddNothing(value);
         }
 
         internal GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems => heroItems;
@@ -1625,7 +1639,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActorId,
                 coins,
                 0);
-            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            if (coinLedger == null) { coinLedger = new HeroCoinLedger(participants); coinLedger.SetGainsAddNothing(coinGainsAddNothing); }
             if (DefeatReplacementQuery.TryApply(
                 BoardObjectReference.ForMinion(targetMinionId), RuleActivity.Attack,
                 RuleObject.ForHero(resolution.ActorId), adjacentMoveAuthority, participants, modifications))
@@ -2047,7 +2061,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actorId,
                 coins,
                 0);
-            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            if (coinLedger == null) { coinLedger = new HeroCoinLedger(participants); coinLedger.SetGainsAddNothing(coinGainsAddNothing); }
 
             // Milestone 9.2, ruling W4. The rulebook's Defeat entry: "You can never defeat a friendly
             // unit. No exceptions." A selection that offered one is a composition defect, refused
@@ -2551,7 +2565,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 completedResolution.ActorId,
                 defeatCoins,
                 assistCoins);
-            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            if (coinLedger == null) { coinLedger = new HeroCoinLedger(participants); coinLedger.SetGainsAddNothing(coinGainsAddNothing); }
 
             // p.13, first line: "Remove the defeated hero from the board." The prevention question is
             // asked through milestone 6.6's shared decision rather than answered here, so the hero path

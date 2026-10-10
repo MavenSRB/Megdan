@@ -97,10 +97,10 @@ namespace GuardsDigital.Pve.Composition
     /// and the Tie Breaker from the seed (PVE-D13).
     /// </summary>
     /// <remarks>
-    /// <para>W-021 composes the static encounter: heroes stand on the placement spaces in the order
-    /// chosen and round-1 enemies on their spawns. Round-2 enemies are participants that start off
-    /// the board. Life counters exist only because the engine counts them; PvE never shows or
-    /// spends them toward an ending (PVE-D04).</para>
+    /// <para>Round-1 enemies stand on their spawns; the heroes and later enemies are participants
+    /// off the board until the mode's round-start placement puts them on it (PVE-D05/D12). Life
+    /// counters exist only because the engine counts them; PvE never shows or spends them toward an
+    /// ending (PVE-D04).</para>
     /// </remarks>
     public static class PveEncounterComposer
     {
@@ -165,7 +165,6 @@ namespace GuardsDigital.Pve.Composition
                 var space = encounter.HeroPlacement[index];
                 heroSetups.Add(HeroSetup(map, heroId, registered.ContentId, registered.DisplayName,
                     blueTeam, TeamSide.Blue, blueHeroSpawn, space));
-                standing.Add(new HeroOccupancy(heroId, space));
             }
 
             var participants = new MatchParticipants(teams, players, heroes);
@@ -194,9 +193,38 @@ namespace GuardsDigital.Pve.Composition
                 map.Reference,
                 standing,
                 Array.Empty<ObstacleOccupancy>());
-            var initialState = new MatchSessionInitialState(scenario, quickSetup, new[] { map }, configuration);
+            var initialState = new MatchSessionInitialState(
+                scenario, quickSetup, new[] { map }, configuration, modeRules: ModeRules(encounter, blueHeroes, enemies));
             return new PveComposedEncounter(setup, encounter, catalog, initialState, blueHeroes, enemies);
         }
+
+        /// <summary>
+        /// The encounter's rules for the engine: no Lane Push, Level Up or Pity Coins (PVE-D03), no
+        /// coins (PVE-D11/D14/D22), Blue respawning onto the placement spaces (PVE-D18), Blue heroes
+        /// placed by the player in round 1 and later enemies entering on their spawns (PVE-D05/D12),
+        /// granted levels for the heroes (PVE-D14) and Red's discard-or-defeat (PVE-D19).
+        /// </summary>
+        public static MatchModeRules ModeRules(
+            PveEncounterDefinition encounter, IReadOnlyList<HeroId> heroes, IReadOnlyList<PveEnemyRecord> enemies) =>
+            new MatchModeRules(
+                unavailableEndOfRoundStages: new[]
+                {
+                    EndOfRoundStage.ResolveRequestedLanePush,
+                    EndOfRoundStage.LevelUpAndUpgrade,
+                    EndOfRoundStage.CollectPityCoins
+                },
+                coinGainsAddNothing: true,
+                respawnOverrideSide: TeamSide.Blue,
+                respawnOverrideSpaces: encounter.HeroPlacement,
+                playerPlacementSpaces: encounter.HeroPlacement,
+                roundStartPlacements: heroes
+                    .Select(hero => new ModeHeroPlacement(hero, 1, ModeHeroPlacementKind.PlayerChoice))
+                    .Concat(enemies
+                        .Where(enemy => enemy.Spawn.Round > 1)
+                        .Select(enemy => new ModeHeroPlacement(
+                            enemy.HeroId, enemy.Spawn.Round, ModeHeroPlacementKind.Designated, enemy.Spawn.Coordinate))),
+                levelGrantHeroes: heroes,
+                defeatInsteadOfDiscardSide: TeamSide.Red);
 
         public static IReadOnlyList<string> ValidateSetup(PveEncounterSetup setup, PveEncounterDefinition encounter)
         {

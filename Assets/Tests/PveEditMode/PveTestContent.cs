@@ -21,9 +21,9 @@ namespace GuardsDigital.Tests.Pve
             new PveEnemyType("raider", "Raider", 1,
                 new[]
                 {
-                    new PveOrangeCard("A", "Advance", 9, 1, null, 0, 3, new[]
+                    new PveOrangeCard("A", "Advance", 9, 1, null, 0, 2, new[]
                     {
-                        new PveCardOption(PveOptionKind.Move, PveTargetKind.Minion)
+                        new PveCardOption(PveOptionKind.Move, PveTargetKind.Hero)
                     }),
                     new PveOrangeCard("B", "Slash", 7, 2, 3, 0, 2, new[]
                     {
@@ -33,8 +33,8 @@ namespace GuardsDigital.Tests.Pve
                     }),
                     new PveOrangeCard("C", "Heavy Blow", 4, 1, 5, 0, null, new[]
                     {
-                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion),
-                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero)
+                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero),
+                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion)
                     })
                 },
                 new[] { new PvePurpleCard("P", "Parry", 1, 4) },
@@ -59,8 +59,8 @@ namespace GuardsDigital.Tests.Pve
                     }),
                     new PveOrangeCard("C", "Hurl", 3, 1, 4, 2, null, new[]
                     {
-                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion),
-                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero)
+                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero),
+                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion)
                     }),
                     new PveOrangeCard("X", "Dozing Off", 1, 1, null, 0, null, null, isIdle: true)
                 },
@@ -76,6 +76,20 @@ namespace GuardsDigital.Tests.Pve
                     new[] { "A", "C", "X", "B" }
                 })
         });
+
+        /// <summary>The placeholder types with every minion option removed, so the creeps outlive a passive player.</summary>
+        internal static PveEnemyCatalog HeroHuntingCatalog() => new PveEnemyCatalog("placeholder-test",
+            Catalog().Types.Select(type => new PveEnemyType(type.Id, type.DisplayName, type.Level,
+                type.OrangeCards.Select(card =>
+                {
+                    var options = card.Options.Where(option => option.Target == PveTargetKind.Hero).ToArray();
+                    return new PveOrangeCard(card.Key, card.Name, card.Initiative, card.Copies,
+                        options.Any(option => option.Kind == PveOptionKind.Attack) ? card.AttackValue : null,
+                        card.AttackRange,
+                        options.Any(option => option.Kind == PveOptionKind.Move) ? card.MoveValue : null,
+                        options, card.IsIdle);
+                }),
+                type.PurpleCards, type.Plans)));
 
         internal static PveEncounterDefinition Encounter() => new PveEncounterDefinition(
             "official-single-lane",

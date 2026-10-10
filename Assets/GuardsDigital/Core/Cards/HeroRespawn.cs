@@ -137,7 +137,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId cardInstanceId,
             MatchParticipants participants,
             AdjacentMoveAuthority board,
-            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications,
+            IReadOnlyList<HexCoordinate> referenceSpaces = null)
         {
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
             if (board.IsHeroOnBoard(heroId))
@@ -162,6 +163,21 @@ namespace GuardsDigital.Core.Cards
                         space.Id.Equals(spawn.SpaceId)).Coordinate
                 })
                 .ToArray();
+
+            // W-022, PVE-D18. A mode may name the spaces a side respawns onto instead of its Throne's
+            // spawn points. They take the spawn points' place in everything below - empty ones are
+            // offered, otherwise the nearest empty spaces to them - and each keeps the side's first
+            // Throne spawn as its informational anchor. No existing match names any.
+            if (referenceSpaces != null && referenceSpaces.Count > 0 && heroSpawns.Length > 0)
+            {
+                var anchor = heroSpawns
+                    .OrderBy(value => value.Spawn.Id.Value, StringComparer.Ordinal)
+                    .First()
+                    .Spawn;
+                heroSpawns = referenceSpaces
+                    .Select(coordinate => new { Spawn = anchor, Coordinate = coordinate })
+                    .ToArray();
+            }
 
             var emptySpawns = heroSpawns
                 .Where(value => IsEmptyFor(board, value.Coordinate, heroId, modifications))
