@@ -61,6 +61,48 @@ namespace GuardsDigital.Pve.Presentation
                         (plan ?? string.Empty).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)))));
         }
 
+        /// <summary>The enemy content as the JSON <see cref="LoadCatalog"/> reads back unchanged.</summary>
+        public static string SaveCatalog(PveEnemyCatalog catalog)
+        {
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            var dto = new CatalogDto
+            {
+                contentStatus = catalog.ContentStatus,
+                enemyTypes = catalog.Types.Select(type => new EnemyTypeDto
+                {
+                    id = type.Id,
+                    displayName = type.DisplayName,
+                    level = type.Level,
+                    orangeCards = type.OrangeCards.Select(card => new OrangeCardDto
+                    {
+                        key = card.Key,
+                        name = card.Name,
+                        initiative = card.Initiative,
+                        copies = card.Copies,
+                        attack = card.AttackValue ?? 0,
+                        range = card.AttackRange,
+                        move = card.MoveValue ?? 0,
+                        idle = card.IsIdle,
+                        options = card.Options.Select(option => new OptionDto
+                        {
+                            kind = option.Kind.ToString().ToLowerInvariant(),
+                            target = option.Target.ToString().ToLowerInvariant(),
+                            stopDistance = option.StopDistance
+                        }).ToArray()
+                    }).ToArray(),
+                    purpleCards = type.PurpleCards.Select(card => new PurpleCardDto
+                    {
+                        key = card.Key,
+                        name = card.Name,
+                        initiative = card.Initiative,
+                        defense = card.Defense
+                    }).ToArray(),
+                    plans = type.Plans.Select(plan => string.Join(" ", plan)).ToArray()
+                }).ToArray()
+            };
+            return JsonUtility.ToJson(dto, true);
+        }
+
         public static PveEncounterDefinition LoadEncounter(string json)
         {
             var source = JsonUtility.FromJson<EncounterDto>(json ?? string.Empty)

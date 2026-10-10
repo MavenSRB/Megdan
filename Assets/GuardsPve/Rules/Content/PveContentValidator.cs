@@ -31,6 +31,15 @@ namespace GuardsDigital.Pve.Content
             return errors;
         }
 
+        /// <summary>The enemy content alone, as the setup screen's card editor saves it.</summary>
+        public static IReadOnlyList<string> ValidateCatalog(PveEnemyCatalog catalog)
+        {
+            var errors = new List<string>();
+            if (catalog == null) errors.Add("Enemy content is missing.");
+            else ValidateCatalog(catalog, errors);
+            return errors;
+        }
+
         private static void ValidateCatalog(PveEnemyCatalog catalog, List<string> errors)
         {
             if (catalog.Types.Count == 0) errors.Add("Enemy content declares no enemy type.");

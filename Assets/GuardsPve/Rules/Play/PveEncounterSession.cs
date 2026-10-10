@@ -196,8 +196,8 @@ namespace GuardsDigital.Pve.Play
 
         public string CaptureSnapshot() => inner.CaptureSnapshot();
 
-        /// <summary>The commands an enemy's seat may submit now, read from the host's seat projection.</summary>
-        private IReadOnlyList<DirectorCommand> AuthorizedFor(HeroId hero)
+        /// <summary>The commands a hero's seat may submit now, read from the host's seat projection.</summary>
+        public IReadOnlyList<DirectorCommand> AuthorizedFor(HeroId hero)
         {
             if (host == null) return Array.Empty<DirectorCommand>();
             var seat = host.Seats.FindByHero(hero);

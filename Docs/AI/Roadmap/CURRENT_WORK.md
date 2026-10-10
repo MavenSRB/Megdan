@@ -4,14 +4,7 @@ Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSI
 
 W-020 to W-024 form one approved serial sequence (user, 2026-10-10): record the PvE decisions, then skeleton, rules, presentation and package. Each item closes with its own local commit; nothing is pushed.
 
-### [~] W-023 PvE presentation
-
-Approved: player-facing PvE journey.
-Outcome: setup screen, placement and level-grant panel, enemy plan strips with card hover, placeholder enemy tokens, tie prompts, paced enemy actions and loss screen; HUD rail and status options for more than three heroes. Added by the user on 2026-10-10: an enemy card editor on the setup screen (Initiative, Movement, Attack, Range and Defense per card), saved to the content JSON, so different values can be tested. The user also directed that the sequence finishes once it works, without usability or balance testing.
-Scope: PvE assemblies plus additive, default-off presentation hooks.
-Closing checks: focused Play Mode journey, non-batch visual capture, existing HUD layout regressions with options off, full Play Mode gate.
-
-### [ ] W-024 PvE test package
+### [~] W-024 PvE test package
 
 Approved: package and smoke the PvE executable.
 Outcome: verified private PvE ZIP with content data beside the executable.

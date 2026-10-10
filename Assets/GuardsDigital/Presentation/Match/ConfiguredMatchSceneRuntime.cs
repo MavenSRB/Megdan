@@ -52,7 +52,10 @@ namespace GuardsDigital.Presentation.Match
             // TWELFTH amendment. Optional and appended, so every existing composition and fixture
             // keeps its exact call - the same reason 8.20a's heroOverviews and 8.35y's kinetics
             // were appended rather than inserted.
-            MatchSessionInitialState stagedInitialState = null, ExperimentalMatchOptions experiments = null)
+            MatchSessionInitialState stagedInitialState = null, ExperimentalMatchOptions experiments = null,
+            // W-023. A separate game mode's session wrapped around the Director session - the PvE
+            // executable's encounter session. Null, every existing composition, keeps the session.
+            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -116,7 +119,8 @@ namespace GuardsDigital.Presentation.Match
                     // W-022. A staged state composed with mode rules keeps them.
                     stagedInitialState.ModeRules);
             host = MatchHost.Compose(InitialState);
-            session = new LocalDirectorMatchClient(host);
+            var directorSession = new LocalDirectorMatchClient(host);
+            session = sessionDecorator?.Invoke(host, directorSession) ?? directorSession;
             IsSandbox = stagedInitialState != null;
 
             // Milestone 8.31. The admission tuple this composition publishes: what another process

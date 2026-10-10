@@ -33,6 +33,7 @@ Each hook is unused by every existing composition, which therefore behaves as be
 | Granted level | `HeroLevelUpStepRules` for `mode-grant-level/<hero>`; outcome `LevelGranted` | Raises one level without spending, then the ordinary Upgrade a Card answer. Only before that hero's first commitment of a round (PVE-D14). |
 | Discard or defeat | `ModeDiscardPolicy` in the chosen-card and owned-card discard handlers, reading the bound rules through `EffectRosterState.ModeRules` | A Red hero discards only a Defense card; with none, the step publishes the defeated-hero fact and the ordinary Defeat follows (PVE-D19). |
 | Refusal results | `MatchCommandResult.Refused`, `MatchSessionOperationResult.Refused` | Let the PvE session refuse a command in the session's own terms. |
+| Session decorator (W-023) | `ExternalMatchComposition.SessionDecorator`, passed by the root to `ConfiguredMatchSceneRuntime` | Wraps the Director session, so the HUD, Undo and Restart all talk to the encounter session. Only an external composition sets one. |
 
 ## Encounter composition (W-021)
 
@@ -71,6 +72,19 @@ Each hook is unused by every existing composition, which therefore behaves as be
   `Step` and `RunAutomatic` take the automatic commands. Undo walks back over automatic commands to the last player command. Restart clears that record. Snapshot restore is refused.
 - **Loss.** The encounter is lost when no Blue creep stands, or when the engine ends the match.
 
+## Presentation (W-023)
+
+- **Session and overlay.** The launcher's external composition wraps the Director session in `PveEncounterSession` and attaches `PveEncounterView` to the composed runtime. The existing HUD is otherwise unchanged and drives Blue heroes as in Director mode; its commands pass through the session's guard.
+- **`PveEncounterView`** draws its own overlay panel:
+  - round, turn, seed and what happened last;
+  - placement buttons for the round-1 placement, and `+1 level` buttons in the round-start window (the upgrade choice itself appears in the HUD's existing level-up region);
+  - answer buttons for enemy tie prompts;
+  - a loss banner with Restart (same seed) and New setup.
+- **Plans beside tokens.** A plan strip beside each standing enemy's token shows its four planned Initiatives and actions, with the current turn bracketed. Hovering it lists every orange and purple card with its numbers.
+- **Pacing.** Enemy steps run one at a time at `StepSeconds` intervals, each followed by a refresh.
+- **Rails.** The overlay hides the HUD's enemy rail and scales a Blue rail of more than three heroes to fit, from outside the HUD.
+- **Enemy card editor.** The setup screen's enemy card editor (`PveCardEditor`, user request 2026-10-10) edits each card's Initiative, Movement, Attack, Range and Defense, validates the catalog and saves `enemies.json` through `PveContentLoader.SaveCatalog`. A 0 Movement or Attack removes that option.
+
 ## Content data
 
 `enemies.json` lists enemy types:
@@ -91,4 +105,4 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 ## Current limits
 
-W-022 adds the rules and the session but no presentation: the launcher still hands the match to the existing HUD without the encounter session, overlays or pacing, which arrive in W-023. Placeholder content is untuned. A creep, being an ordinary minion, falls to any single hit (PVE-D04), so a passive player usually loses within the first round. Equal-Initiative enemies of one type tie often, so the player is asked to order them.
+Presentation is functional rather than finished: placements and prompts are buttons rather than board clicks, enemies use the existing hero pieces with their plan strip as label, and the existing HUD still shows Life and Wave counters that PvE does not use. Placeholder content is untuned. A creep, being an ordinary minion, falls to any single hit (PVE-D04), so a passive player usually loses within the first round. Equal-Initiative enemies of one type tie often, so the player is asked to order them.

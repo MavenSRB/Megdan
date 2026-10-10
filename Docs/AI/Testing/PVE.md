@@ -22,7 +22,10 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 
 ## Play Mode
 
-`Assets/Tests/PvePlayMode` holds `GuardsDigital.Pve.PlayModeTests` (namespace `GuardsDigital.Tests.Pve.PlayMode`). They load the launcher scene by path in play mode, because it is not in Build Settings. A request filter of `GuardsDigital.Tests.Pve.PlayMode` selects them.
+`Assets/Tests/PvePlayMode` holds `GuardsDigital.Pve.PlayModeTests` (namespace `GuardsDigital.Tests.Pve.PlayMode`). They load the launcher scene by path in play mode, because it is not in Build Settings. A request filter of `GuardsDigital.Tests.Pve.PlayMode` selects them. They cover:
+- the launcher composing into the match scene with the encounter session and overlay;
+- the paced enemy commitments after placement and the plan strips;
+- the enemy card editor's fields.
 
 ## Build gate
 

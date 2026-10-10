@@ -2143,7 +2143,9 @@ namespace GuardsDigital.Presentation.Interaction
                 cornerHighlightTemplate,
                 // TWELFTH amendment: the staged initial state, or null for the dealt match the
                 // runtime composes for itself exactly as it always has.
-                stagedInitialState, experiments);
+                stagedInitialState, experiments,
+                // W-023. Only an external composition wraps the session.
+                external?.SessionDecorator);
 
             // Milestone 8.35y. The configured match scene has never had a frame loop - every
             // surface redraws on a projection change - so the kinetic pass brings its own, on this

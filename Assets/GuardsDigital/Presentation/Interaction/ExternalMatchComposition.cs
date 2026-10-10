@@ -19,8 +19,10 @@ namespace GuardsDigital.Presentation.Interaction
     {
         public ExternalMatchComposition(
             MatchSessionInitialState initialState,
-            Action<ConfiguredMatchSceneRuntime> composed = null)
+            Action<ConfiguredMatchSceneRuntime> composed = null,
+            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null)
         {
+            SessionDecorator = sessionDecorator;
             InitialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
             if (initialState.InitialConfiguration == null)
             {
@@ -36,5 +38,11 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>Invoked once with the runtime after the scene finished composing it.</summary>
         public Action<ConfiguredMatchSceneRuntime> Composed { get; }
+
+        /// <summary>
+        /// W-023. Wraps the Director session the runtime composes, so every surface - the HUD, Undo
+        /// and Restart included - talks to the mode's session. Null keeps the Director session.
+        /// </summary>
+        public Func<IMatchHost, IMatchSession, IMatchSession> SessionDecorator { get; }
     }
 }

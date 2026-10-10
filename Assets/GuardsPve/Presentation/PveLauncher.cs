@@ -37,6 +37,11 @@ namespace GuardsDigital.Pve.Presentation
         /// <summary>The encounter the last Start composed; read by tests and the smoke.</summary>
         public static PveComposedEncounter LastComposed { get; private set; }
 
+        /// <summary>The overlay attached to the last composed encounter.</summary>
+        public static PveEncounterView LastView { get; private set; }
+
+        private PveCardEditor editor;
+
         private void Start()
         {
             string loadProblem = null;
@@ -82,8 +87,14 @@ namespace GuardsDigital.Pve.Presentation
             }
 
             LastComposed = composedEncounter;
-            MatchSceneCompositionRoot.NextComposedExternalMatch =
-                new ExternalMatchComposition(composedEncounter.InitialState, composed);
+            MatchSceneCompositionRoot.NextComposedExternalMatch = new ExternalMatchComposition(
+                composedEncounter.InitialState,
+                runtime =>
+                {
+                    LastView = PveEncounterView.Attach(runtime);
+                    composed?.Invoke(runtime);
+                },
+                (host, director) => new GuardsDigital.Pve.Play.PveEncounterSession(composedEncounter, host, director));
             SceneManager.LoadScene(MatchSceneName, LoadSceneMode.Single);
             return Array.Empty<string>();
         }
@@ -173,6 +184,14 @@ namespace GuardsDigital.Pve.Presentation
             reroll.style.fontSize = 16;
             seedRow.Add(reroll);
 
+            var editButton = new Button(ToggleEditor) { text = "EDIT ENEMY CARDS", name = "pve-edit-cards" };
+            editButton.style.marginTop = 16;
+            editButton.style.width = 320;
+            editButton.style.fontSize = 16;
+            column.Add(editButton);
+            editorHost = new VisualElement { name = "pve-card-editor-host" };
+            column.Add(editorHost);
+
             var start = new Button(OnStartClicked) { text = "START ENCOUNTER" };
             start.name = "pve-start";
             start.style.marginTop = 24;
@@ -183,6 +202,33 @@ namespace GuardsDigital.Pve.Presentation
             column.Add(start);
             column.Add(problemLabel);
             Refresh();
+        }
+
+        private VisualElement editorHost;
+
+        /// <summary>Shows or hides the enemy card editor (user request 2026-10-10).</summary>
+        private void ToggleEditor()
+        {
+            if (editor != null)
+            {
+                editorHost.Clear();
+                editor = null;
+                return;
+            }
+
+            editor = new PveCardEditor(
+                () =>
+                {
+                    PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var fresh, out _);
+                    return fresh;
+                },
+                saved =>
+                {
+                    catalog = saved;
+                    var problems = PveContentValidator.Validate(catalog, encounter, map);
+                    problemLabel.text = problems.Count == 0 ? string.Empty : string.Join("\n", problems);
+                });
+            editorHost.Add(editor.Build());
         }
 
         private void Toggle(string heroIdValue)

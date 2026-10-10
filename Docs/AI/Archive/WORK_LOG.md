@@ -25,7 +25,21 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-020 | Recorded the approved first PvE slice (PVE-D01 to PVE-D23) and routed the W-021 to W-024 implementation sequence. | `work/W-020` |
 | W-021 | Separate PvE executable skeleton: isolated assemblies, validated content, static encounter composed into the existing match scene, existing mode unchanged. | `work/W-021` |
 | W-022 | PvE rules: restore-stable mode rules and additive engine hooks, enemy controller, encounter session, seeded plans and loss; existing mode unchanged. | `work/W-022` |
+| W-023 | PvE presentation: encounter session behind the HUD, paced enemies, plan strips, placement, level and prompt buttons, loss banner and an enemy card editor. | `work/W-023` |
 
+### [x] W-023 PvE presentation
+
+Approved: the player-facing PvE journey (third step of the approved W-021 to W-024 sequence), plus the user's 2026-10-10 request for editable enemy cards; the user directed that it finishes once it works, without usability or balance testing.
+Outcome: an optional session decorator lets the external composition put `PveEncounterSession` behind the existing HUD, Undo and Restart. `PveEncounterView` paces enemy steps and shows:
+- round, turn and seed;
+- placement, granted-level and tie-prompt buttons;
+- a plan strip beside each standing enemy with its cards on hover;
+- a loss banner with Restart and New setup.
+
+It also hides the HUD's enemy rail and scales a Blue rail of more than three heroes. The setup screen gains an enemy card editor that validates and saves the content JSON. The passive test player moved into the PvE assembly for reuse by the smoke.
+Acceptance: T2 focused Unity Play Mode and Edit Mode checks plus the PvE harness; existing-mode Play Mode coordination checks; living-document validation and diff review. Full Unity suites are recorded in the W-024 package gate.
+
+Historical evidence: completion commit addressed by immutable `work/W-023`; exact checks, observed failures, results and limitations live in its body.
 ### [x] W-022 PvE rules and engine hooks
 
 Approved: implement PVE-D03 to PVE-D23 over additive default-off engine hooks (second step of the approved W-021 to W-024 sequence).
