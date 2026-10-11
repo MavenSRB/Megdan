@@ -126,6 +126,49 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(hand.Instances.Count, Is.EqualTo(4 + expectedCount));
         }
 
+        [TestCase("melee", true)]
+        [TestCase("melee", false)]
+        [TestCase("ranged", true)]
+        [TestCase("ranged", false)]
+        [TestCase("heavy", true)]
+        [TestCase("heavy", false)]
+        public void WeakAttackAttacksInReachOtherwiseMoves(string typeId, bool inReach)
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
+            var type = catalog.Find(typeId);
+            var weak = type.OrangeCards.Where(card => card.AttackValue.HasValue)
+                .OrderBy(card => card.AttackValue.Value).First();
+            Assert.That(weak.MoveValue, Is.GreaterThan(0));
+            Assert.That(weak.Options.Last().Kind, Is.EqualTo(PveOptionKind.Move));
+            Assert.That(weak.Options.Take(weak.Options.Count - 1).All(option => option.Kind == PveOptionKind.Attack), Is.True);
+            var plan = new[] { weak.Key }.Concat(type.OrangeHand.Where(key => key != weak.Key)).ToArray();
+            var immediate = new PveEnemyType(type.Id, type.DisplayName, type.Level,
+                type.OrangeCards, type.PurpleCards, new[] { plan }, type.TokenType);
+            var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
+                new[] { new PveCreepPlacement(PveTestContent.Hex("-3,2"), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
+                new[] { PveTestContent.Hex("-5,3") },
+                new[] { new PveSpawn(1, PveTestContent.Hex(inReach ? "-4,2" : "-1,-2"), typeId) });
+            var driver = PveTestDriver.Start(heroes: new[] { "hero-brogan" }, encounter: encounter,
+                catalog: new PveEnemyCatalog("placeholder-test", new[] { immediate }));
+            for (var index = 0; index < 200; index++)
+            {
+                var step = driver.Session.Peek();
+                if (driver.Session.Controller.IsEnemy(driver.Match.SelectedActor.ActorId) &&
+                    step.Kind == GuardsDigital.Pve.Play.PveStepKind.Command && step.Command.ActionDefinitionId.IsDefined)
+                {
+                    Assert.That(driver.Match.RoundIndex, Is.EqualTo(1));
+                    Assert.That(driver.Match.TurnIndex, Is.EqualTo(1), "The first plan slot is the weaker attack.");
+                    Assert.That(step.Command.ActionDefinitionId, Is.EqualTo(inReach
+                        ? GuardsDigital.Pve.Composition.PveCardFactory.AttackActionId
+                        : GuardsDigital.Pve.Composition.PveCardFactory.MovementActionId));
+                    Assert.That(driver.Session.Step(out _).Accepted, Is.True);
+                    return;
+                }
+                Assert.That(driver.Advance(), Is.True, "The fixture must reach the enemy action.");
+            }
+            Assert.Fail("No enemy action was reached.");
+        }
+
         private static string Describe(PveOrangeCard card) =>
             $"{card.Key}/{card.Initiative}/{card.Copies}/{card.AttackValue}/{card.AttackRange}/{card.MoveValue}/" +
             $"{card.IsIdle}/" + string.Join(",", card.Options.Select(option =>

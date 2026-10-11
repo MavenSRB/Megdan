@@ -57,10 +57,11 @@ namespace GuardsDigital.Tests.Pve
                         new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion),
                         new PveCardOption(PveOptionKind.Move, PveTargetKind.Minion)
                     }),
-                    new PveOrangeCard("C", "Hurl", 3, 1, 4, 2, null, new[]
+                    new PveOrangeCard("C", "Hurl", 3, 1, 4, 2, 1, new[]
                     {
                         new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero),
-                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion)
+                        new PveCardOption(PveOptionKind.Attack, PveTargetKind.Minion),
+                        new PveCardOption(PveOptionKind.Move, PveTargetKind.Hero, 2)
                     }),
                     new PveOrangeCard("X", "Dozing Off", 1, 1, null, 0, null, null, isIdle: true)
                 },

@@ -48,8 +48,9 @@
         { "key": "B", "name": "Smash", "initiative": 5, "copies": 1, "attack": 6, "move": 1,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "minion" } ] },
-        { "key": "C", "name": "Hurl", "initiative": 3, "copies": 1, "attack": 4, "range": 2,
-          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] },
+        { "key": "C", "name": "Hurl", "initiative": 3, "copies": 1, "attack": 4, "range": 2, "move": 1,
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
+                       { "kind": "move", "target": "hero", "stopDistance": 2 } ] },
         { "key": "X", "name": "Dozing Off", "initiative": 1, "copies": 1, "idle": true }
       ],
       "purpleCards": [

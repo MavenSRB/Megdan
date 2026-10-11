@@ -68,6 +68,12 @@ Supersedes PVE-D24's full hero plaque and PVE-D16's map plan strip: enemy rows s
 
 Supersedes PVE-D24's all-hero targeting identity and the subsequently proposed both-categories interpretation. Heavy counts as a hero; Melee and Ranged count as minions for targeting and effects. Change enemy type classification, not any card definition. Keep one authoritative identity per enemy and preserve existing turns, decks, combat, Defense and defeat rules. This is a PvE category override, not the tabletop p.17 replacement of all rules and qualities. Existing modes remain unchanged. Closing checks: hero-only, minion-only and combined targeting/effects, no duplicate targets, ownership, combat preservation and restore/replay stability.
 
+PVE-D30 amendment (Approved, user side conversation 2026-10-12): supersedes the preceding minion-only mapping. Melee and Ranged count as BOTH heroes and minions for targeting/effects; Heavy counts as a hero only. A combined query/effect counts or affects each enemy once. Preserve decks, turns, Defense and combat. No card definitions change for category work. Shared targeting/effect engine support is explicitly authorized, including identity-only minion consumers such as High Voltage, with real-card execution and persistence validation. W-034's separately authorized PvE fallback content change remains in scope.
+
+## PVE-D31 Weak-attack movement fallback (Approved, user 2026-10-12)
+
+Every enemy type's lower-value attack card lists Movement after its attack options, so it moves only when no attack option applies. Melee Slash retains Move 2 toward creeps, stopping adjacent; Ranged Shoot retains Move 1 toward heroes, stopping at range 3. Heavy Hurl (Attack 4, range 2) gains Move 1 toward heroes, stopping at range 2, following its hero/minion attack options. Stronger cards, other values, plans and hand sizes remain unchanged. This expressly authorizes this PvE card-content change independently of W-033's no-card-change category request. Closing checks: shipped data, fallback ordering, attack precedence and movement when out of reach.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

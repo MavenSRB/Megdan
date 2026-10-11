@@ -35,6 +35,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-030 | Playable PvE Blue team requires exactly three chosen heroes, retaining five placement choices. | `work/W-030` |
 | W-031 | PvE three-player Host/Join, owner-private hero control, host enemy/shared choices and reserved-seat reconnect. | `work/W-031` |
 | W-032 | Compact nameless enemy rows with four public slots, Heavy Defense cards and bidirectional map/rail hover; removed floating map strips. | `work/W-032` |
+| W-034 | All weaker enemy attacks have movement fallback; Heavy Hurl gains Move 1 toward heroes stopping at range 2. | `work/W-034` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -313,3 +314,9 @@ Closing checks: T2 compact geometry, correct public slots and Defense counts, no
 Completed: 64-unit rows show only standing enemies (seven initially), disappearing on removal and appearing on spawn; Heavy has two purple Defense miniatures with spent cards dimmed, other types none. Full-card previews and linked hover remain functional. Review of player experience, rules authority, maintainability and risk found no further in-scope defects. Existing packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-032`; exact checks/results and limitations live in its body.
+
+### [x] W-034 Weak enemy attack movement fallback
+
+Approved: every weaker enemy attack offers Movement if neither attack option applies (PVE-D31). Completed: Slash and Shoot retain their existing fallback; Hurl gains Move 1 toward heroes, stopping at range 2, after both attack options. Stronger cards, other values, plans and hand sizes are unchanged. Closing checks: all three shipped types choose Attack in reach and Movement out of reach on the first weak-card slot; composition, save and affected PvE flow regressions. T1, content-only production change; no UI/shared engine/package change. Review of behavior, rules authority, maintainability and risk found no further in-scope defect. Category work remains separately approved as W-033 with its superseding both-categories mapping.
+
+Historical evidence: completion commit addressed by immutable `work/W-034`; exact checks/results and limitations live in its body.
