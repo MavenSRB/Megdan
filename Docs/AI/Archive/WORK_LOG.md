@@ -28,6 +28,17 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-023 | PvE presentation: encounter session behind the HUD, paced enemies, plan strips, placement, level and prompt buttons, loss banner and an enemy card editor. | `work/W-023` |
 | W-024 | PvE test package: the separate PvE executable zipped with its content data, smoked as built and as extracted, existing-mode build free of PvE assemblies. | `work/W-024` |
 | W-026 | PvE playtest fixes: the HUD plays Blue only, enemy ties read as enemy decisions, paced steps wait for animations; an enemy-turn stall and colliding enemy card faces fixed. | `work/W-026` |
+| W-020 | Published the remaining prepared runtime board, hero, hero-selection, marker and token artwork through Git LFS to private Gitea. | `work/W-020` |
+
+Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-020 Publish remaining prepared runtime artwork to private Gitea
+
+Approved: the user confirmed permission on 2026-10-11 to publish the remaining prepared runtime artwork to the private `maven/guards-digital` Gitea repository.
+Outcome: tracked `HeroSelection`, `Heroes`, `Markers`, `OfficialBoard` and `Tokens`, including their Unity metadata, with all 133 PNGs stored through Git LFS. Raw card/map reference corpora, source ZIPs, screenshots, builds, logs and other excluded material remain local.
+Acceptance: exact 278-path staged inventory; 133/133 staged PNGs verified as LFS pointers with zero raw PNG blobs; zero out-of-scope staged paths; both Git LFS integrity checks, living-document validation and diff review passed. No Unity launch because publication metadata and existing runtime resources changed without executable behavior.
+
+Historical evidence: completion commit addressed by immutable `work/W-020`; exact checks, results and limitations live in its body.
 
 ### [x] W-024 PvE test package
 

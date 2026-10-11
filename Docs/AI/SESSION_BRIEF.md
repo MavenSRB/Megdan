@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-10
+Last updated: 2026-10-11
 
 ## Purpose and authority
 
@@ -18,7 +18,7 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 - Active authorized work: **none**.
 - Next proposed work: **W-004**.
 
-W-026 fixed the user's 2026-10-11 playtest report: the HUD plays Blue only and enemy ties read as enemy decisions. W-023 made the PvE encounter playable in the separate executable (paced enemies, plan strips, placement, granted levels, tie prompts, loss banner, enemy card editor). Its rules run over restore-stable mode rules and additive, default-off engine hooks (placement, granted levels, no coins, respawn spaces, discard-or-defeat), with an enemy controller and an encounter session; the existing mode stays pinned by its snapshot golden. The separate PvE executable composes the encounter into the existing match scene; see [PvE implementation](Project/PVE_IMPLEMENTATION.md). First-slice rules are PVE-D01 to PVE-D23 in [PvE design](Project/PVE_DESIGN.md). W-024 closed the approved sequence with the PvE test package, rebuilt after W-026. Existing-mode behavior, snapshot v59, wire /52 and the W013 package stay unchanged; W013 does not include W-014 through W-026. W-004 remains a paused presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
+W-026 fixed the user's 2026-10-11 playtest report: the HUD plays Blue only and enemy ties read as enemy decisions. W-023 made the PvE encounter playable in the separate executable (paced enemies, plan strips, placement, granted levels, tie prompts, loss banner, enemy card editor). Its rules run over restore-stable mode rules and additive, default-off engine hooks (placement, granted levels, no coins, respawn spaces, discard-or-defeat), with an enemy controller and an encounter session; the existing mode stays pinned by its snapshot golden. The separate PvE executable composes the encounter into the existing match scene; see [PvE implementation](Project/PVE_IMPLEMENTATION.md). First-slice rules are PVE-D01 to PVE-D23 in [PvE design](Project/PVE_DESIGN.md). W-024 closed the approved sequence with the PvE test package, rebuilt after W-026. The remaining prepared runtime board, hero, hero-selection, marker and token artwork is tracked through Git LFS for the private project remote (`5b3b12b7`, recorded there as W-020); raw reference corpora, source ZIPs, screenshots, builds and logs remain excluded. Two completed records carry the identifier W-020; see the note in [work history](Archive/WORK_LOG.md). Existing-mode behavior, snapshot v59, wire /52 and the W013 package stay unchanged; W013 remains the current multiplayer package and does not include W-014 through W-026 or the LFS artwork publication. W-004 remains a paused presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is approved and in progress; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
@@ -26,7 +26,7 @@ Phase 9 is closed as a development container. Current direction: playtest, itera
 
 - Existing rules and reused tabletop behavior: [rules ledger](RULES_LEDGER.md). Original PvE decisions: [PvE design](Project/PVE_DESIGN.md).
 - Preserve authoritative state, privacy, command/choice, snapshot, Undo and replay contracts.
-- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook and W-008 prepared card artwork; all other excluded or untracked material remains private.
+- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook and prepared runtime artwork authorized under W-008 and W-020; raw reference corpora, source ZIPs, screenshots, builds, logs and all other excluded or untracked material remain private.
 - Build requests use changed/affected checks plus exact-artifact smokes; untouched green coverage is reused under [testing policy](Testing/POLICY.md).
 - Unfinished legacy items and prerequisites remain in the [shared backlog](Roadmap/BACKLOG.md); parked coverage and risks are not passes.
 

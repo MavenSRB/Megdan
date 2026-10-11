@@ -12,19 +12,32 @@
 # Local validation output
 /tmp/
 
-# Private local card and map references; preserve in place, never commit or distribute
+# Local source card and map references; preserve in place, never commit or distribute
 /Docs/Guards of Atlantis II - Tabletopia Cards/
 /Docs/Guards of Atlantis II - Map References/
+/Docs/Guards of Atlantis II - Tabletopia Cards.zip
+/Publisher-Screenshots/
+/*.log
 
-# Private prepared board and hero-token artwork remains local. W-008 explicitly publishes only the
-# prepared runtime card faces/shine maps, card backs and spell cards to the private project remote.
+# Prepared runtime artwork is published to the private project remote through Git LFS.
+# Keep the parent deny rule so any new category remains excluded until explicitly reviewed.
 /Assets/Resources/Private/*
 !/Assets/Resources/Private/Cards/
 !/Assets/Resources/Private/Cards.meta
 !/Assets/Resources/Private/CardBacks/
 !/Assets/Resources/Private/CardBacks.meta
+!/Assets/Resources/Private/HeroSelection/
+!/Assets/Resources/Private/HeroSelection.meta
+!/Assets/Resources/Private/Heroes/
+!/Assets/Resources/Private/Heroes.meta
+!/Assets/Resources/Private/Markers/
+!/Assets/Resources/Private/Markers.meta
+!/Assets/Resources/Private/OfficialBoard/
+!/Assets/Resources/Private/OfficialBoard.meta
 !/Assets/Resources/Private/Spells/
 !/Assets/Resources/Private/Spells.meta
+!/Assets/Resources/Private/Tokens/
+!/Assets/Resources/Private/Tokens.meta
 
 # IDE and generated solution files
 /.vs/

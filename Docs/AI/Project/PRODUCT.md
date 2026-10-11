@@ -11,6 +11,7 @@ Use [PvE design](PVE_DESIGN.md) for original-mode decisions and [workflow](../RO
 ## Rights and distribution boundary
 
 - On 2026-08-13, the user stated that they have relevant permission to publish this source repository and the included rulebook. This records the user's authorization for those artifacts; it is not a legal determination or authorization for builds, marketing, monetization, or excluded reference material.
+- On 2026-10-11, the user confirmed permission to publish the remaining prepared runtime board, hero, hero-selection, marker and token artwork to the private `maven/guards-digital` Gitea repository. Raw card/map reference corpora, source ZIPs, screenshots, builds, logs and other excluded material remain outside that authorization.
 - The game remains private and noncommercial, for the user and friends.
 - "Guards Digital" is a working title. Final naming is gated on authorization and publisher agreement.
 - Do not create a public build download, marketing campaign, monetization, telemetry, or store listing before separate authorization. The public source repository and tracked rulebook are the current bounded exception.
