@@ -41,7 +41,12 @@ Docs/AI/Archive/Pre-Governance/config.toml binary
 # Public rulebook, stored through Git LFS under explicit distribution permission
 "Docs/Guards of Atlantis II - 2nd Printing_web.pdf" filter=lfs diff=lfs merge=lfs -text
 
-# Prepared runtime card artwork, privately published under W-008
+# Prepared runtime artwork, published to the private project remote under W-008 and W-020
 /Assets/Resources/Private/Cards/**/*.png filter=lfs diff=lfs merge=lfs -text
 /Assets/Resources/Private/CardBacks/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/HeroSelection/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/Heroes/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/Markers/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/OfficialBoard/**/*.png filter=lfs diff=lfs merge=lfs -text
 /Assets/Resources/Private/Spells/**/*.png filter=lfs diff=lfs merge=lfs -text
+/Assets/Resources/Private/Tokens/**/*.png filter=lfs diff=lfs merge=lfs -text

@@ -22,6 +22,15 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-017 | Suppressed generic small text tooltips while preserving full-card previews and defense modifier breakdowns. | `work/W-017` |
 | W-018 | Kept same-identity last-minion death and Lane Push movement in causal presentation order. | `work/W-018` |
 | W-019 | Added independent Experimental modifier-display controls in a dedicated popup and continuous dormant-to-active source-card reminders. | `work/W-019` |
+| W-020 | Published the remaining prepared runtime board, hero, hero-selection, marker and token artwork through Git LFS to private Gitea. | `work/W-020` |
+
+### [x] W-020 Publish remaining prepared runtime artwork to private Gitea
+
+Approved: the user confirmed permission on 2026-10-11 to publish the remaining prepared runtime artwork to the private `maven/guards-digital` Gitea repository.
+Outcome: tracked `HeroSelection`, `Heroes`, `Markers`, `OfficialBoard` and `Tokens`, including their Unity metadata, with all 133 PNGs stored through Git LFS. Raw card/map reference corpora, source ZIPs, screenshots, builds, logs and other excluded material remain local.
+Acceptance: exact 278-path staged inventory; 133/133 staged PNGs verified as LFS pointers with zero raw PNG blobs; zero out-of-scope staged paths; both Git LFS integrity checks, living-document validation and diff review passed. No Unity launch because publication metadata and existing runtime resources changed without executable behavior.
+
+Historical evidence: completion commit addressed by immutable `work/W-020`; exact checks, results and limitations live in its body.
 
 ### [x] W-019 Experimental modifier displays and Active-effect source reminders
 

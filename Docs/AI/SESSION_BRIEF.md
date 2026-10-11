@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-09
+Last updated: 2026-10-11
 
 ## Purpose and authority
 
@@ -14,11 +14,11 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-019**.
+- Last completed work: **W-020**.
 - Active authorized work: **None**.
 - Next proposed work: **W-004**.
 
-W-019 is complete: seven independent default-off Experimental controls in a dedicated popup configure shield and card modifier categories; the shield always retains its net minion contribution. An Active-effect source card keeps its violet reminder from dormant creation through expiry, while hero/radius and value treatment remain active-only. W013 remains the current package and does not include W-014 through W-019; no new build is authorized. W-004 remains the next presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
+W-020 is complete: the remaining prepared runtime board, hero, hero-selection, marker and token artwork is tracked through Git LFS for the private project remote. Raw reference corpora, source ZIPs, screenshots, builds and logs remain excluded. W013 remains the current package and does not include W-014 through W-020; no new build is authorized. W-004 remains the next presentation-approval gate. See [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. No new PvE mechanics or implementation slice is settled. The next conversation can define the PvE experience or select concrete playtest feedback. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
@@ -26,7 +26,7 @@ Phase 9 is closed as a development container. Current direction: playtest, itera
 
 - Existing rules and reused tabletop behavior: [rules ledger](RULES_LEDGER.md). Original PvE decisions: [PvE design](Project/PVE_DESIGN.md).
 - Preserve authoritative state, privacy, command/choice, snapshot, Undo and replay contracts.
-- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook and W-008 prepared card artwork; all other excluded or untracked material remains private.
+- Scope stays private/noncommercial for the user and friends. Remote publication is limited to tracked source, the authorized rulebook and prepared runtime artwork authorized under W-008 and W-020; raw reference corpora, source ZIPs, screenshots, builds, logs and all other excluded or untracked material remain private.
 - Build requests use changed/affected checks plus exact-artifact smokes; untouched green coverage is reused under [testing policy](Testing/POLICY.md).
 - Unfinished legacy items and prerequisites remain in the [shared backlog](Roadmap/BACKLOG.md); parked coverage and risks are not passes.
 
