@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Pve.Content
 {
@@ -117,11 +118,13 @@ namespace GuardsDigital.Pve.Content
             int level,
             IEnumerable<PveOrangeCard> orangeCards,
             IEnumerable<PvePurpleCard> purpleCards,
-            IEnumerable<IEnumerable<string>> plans)
+            IEnumerable<IEnumerable<string>> plans,
+            StandardMinionType? tokenType = null)
         {
             Id = id;
             DisplayName = displayName;
             Level = level;
+            TokenType = tokenType;
             OrangeCards = Array.AsReadOnly((orangeCards ?? Enumerable.Empty<PveOrangeCard>()).ToArray());
             PurpleCards = Array.AsReadOnly((purpleCards ?? Enumerable.Empty<PvePurpleCard>()).ToArray());
             Plans = Array.AsReadOnly((plans ?? Enumerable.Empty<IEnumerable<string>>())
@@ -133,6 +136,8 @@ namespace GuardsDigital.Pve.Content
         public string Id { get; }
         public string DisplayName { get; }
         public int Level { get; }
+        /// <summary>Presentation identity only; these enemies still obey hero rules.</summary>
+        public StandardMinionType? TokenType { get; }
         public IReadOnlyList<PveOrangeCard> OrangeCards { get; }
         public IReadOnlyList<PvePurpleCard> PurpleCards { get; }
 

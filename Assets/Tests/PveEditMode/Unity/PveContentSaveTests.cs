@@ -11,7 +11,7 @@ namespace GuardsDigital.Tests.Pve
         [Test]
         public void SavedEnemyContentLoadsBackUnchanged()
         {
-            var stated = PveTestContent.Catalog();
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var stated, out _);
             var reloaded = PveContentLoader.LoadCatalog(PveContentLoader.SaveCatalog(stated));
 
             Assert.That(PveContentValidator.ValidateCatalog(reloaded), Is.Empty);
@@ -19,6 +19,7 @@ namespace GuardsDigital.Tests.Pve
             foreach (var type in stated.Types)
             {
                 var loaded = reloaded.Find(type.Id);
+                Assert.That(loaded.TokenType, Is.EqualTo(type.TokenType));
                 Assert.That(loaded.OrangeCards.Select(card =>
                         (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle,
                             string.Join(",", card.Options.Select(option => option.Kind + ":" + option.Target + ":" + option.StopDistance)))),
@@ -30,6 +31,18 @@ namespace GuardsDigital.Tests.Pve
                 Assert.That(loaded.Plans.Select(plan => string.Join(" ", plan)),
                     Is.EqualTo(type.Plans.Select(plan => string.Join(" ", plan))));
             }
+        }
+
+        [Test]
+        public void CardEditorPreservesTokenIdentityAndUnknownTokenIsRefused()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var editor = new PveCardEditor(() => catalog, null);
+            editor.Build();
+            Assert.That(editor.Edited().Types.Select(type => type.TokenType),
+                Is.EqualTo(catalog.Types.Select(type => type.TokenType)));
+            Assert.Throws<System.FormatException>(() => PveContentLoader.LoadCatalog(
+                PveContentLoader.SaveCatalog(catalog).Replace("\"tokenType\": \"melee\"", "\"tokenType\": \"unknown\"")));
         }
     }
 }

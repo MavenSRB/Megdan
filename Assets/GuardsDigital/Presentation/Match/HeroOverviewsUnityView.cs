@@ -132,6 +132,9 @@ namespace GuardsDigital.Presentation.Match
 
         public HeroOverviewsViewModel Model { get; private set; }
 
+        /// <summary>Optional public plan presentation; absent for ordinary hero rails.</summary>
+        public Func<HeroOverviewViewModel, IReadOnlyList<HeroTurnSlotViewModel>> TurnSlotsOverride { get; set; }
+
         /// <summary>The public lobby roster supplies names for the same hero identities this rail draws.</summary>
         public void SetPlayerNames(IReadOnlyList<SeatRosterEntry> roster)
         {
@@ -1034,7 +1037,7 @@ namespace GuardsDigital.Presentation.Match
             slots.style.backgroundColor = new Color(0.065f, 0.076f, 0.085f, 0.92f);
             HudElements.Border(slots, new Color(frame.r, frame.g, frame.b, 0.58f), 1f, 7f);
             var first = true;
-            foreach (var slot in hero.TurnSlots)
+            foreach (var slot in TurnSlotsOverride?.Invoke(hero) ?? hero.TurnSlots)
             {
                 var column = new VisualElement();
                 column.style.flexDirection = FlexDirection.Column;

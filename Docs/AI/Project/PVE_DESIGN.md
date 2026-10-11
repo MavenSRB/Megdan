@@ -36,6 +36,14 @@ Status: **Approved**. Approval reference: user design session 2026-10-10. Mode a
 | PVE-D22 Coin grants | A card-text coin gain counts as done but adds nothing; its "if you do" text proceeds. | Coin effects are neutralized. | "Gain 2 coins; if you do, move 1": the move happens, balance stays 0. | Conditional branch proceeds; balance unchanged. |
 | PVE-D23 Pre-Minion-Battle triggers | Effects timed "end of round, before the Minion Battle" still fire at that point. | None. | A standing end-of-round trigger fires in PvE. | The trigger fires with the Minion Battle inert. |
 
+## PVE-D24 Enemy types and presentation (Approved, user 2026-10-11)
+
+PvE only. Supersedes PVE-D16's placeholder token presentation: enemies use the actual game's red Melee, Ranged and Heavy token artwork on the map and a scrollable enemy left rail with public plans/cards, status and board highlighting. The rail reuses the hero plaque and its four card slots, filled with all four planned cards at round start; hovering a slot uses the shared full card preview. These are the four turns within a round, not four future rounds. They remain heroes under PVE-D06; artwork does not change their rules.
+
+Melee replaces Raider, keeping its card values and plans, but every Attack tries a Blue creep before a hero; Movement pursues creeps. Heavy replaces Brute with its previous cards and priorities unchanged. Ranged is level 1 with A Aim (Initiative 8, Move 2 toward heroes, stop distance 3), B Shoot (two copies, Initiative 6, Attack 3 Range 3, then Move 1 toward heroes stopping at 3), C Power Shot (Initiative 3, Attack 5 Range 3). Both Ranged Attack cards try heroes then creeps. Purple P Guard has Initiative 1, Defense 2. Plans: `A B C B`, `A C B B`, `A B B C`. This is approved placeholder test content, not settled balance.
+
+Keep PVE-D17's coordinates and ordering. Round 1 alternates Melee/Ranged starting with Melee (four/three); round 2 alternates Heavy/Ranged starting with Heavy (two/two). Closing checks: shipped catalog values, priority order, plan multiplicity, spawn mapping, save/editor round-trip, matching map/rail art and projected standing/waiting/defeated status, hover and Undo/Restart presentation.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

@@ -102,6 +102,64 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(overlay.Q<Label>("pve-plan-" + encounter.Enemies[0].HeroId.Value)?.resolvedStyle.display,
                 Is.EqualTo(DisplayStyle.Flex), "A standing enemy shows its plan beside its token.");
 
+            var rail = overlay.Q<ScrollView>("pve-enemy-rail");
+            Assert.That(rail, Is.Not.Null);
+            foreach (var enemy in encounter.Enemies)
+            {
+                var row = rail.Q("pve-enemy-" + enemy.HeroId.Value);
+                Assert.That(row, Is.Not.Null);
+                var sprite = GuardsDigital.Presentation.Units.Minions.StandardMinionArtCatalog.Load(
+                    TeamSide.Red, enemy.Type.TokenType.Value);
+                Assert.That(row.Q("gd-hero-icon").style.backgroundImage.value.sprite, Is.SameAs(sprite));
+                var slots = row.Query<VisualElement>("gd-turn-slot").ToList();
+                Assert.That(slots.Count, Is.EqualTo(4), "Every enemy uses the hero rail's four card slots.");
+                var plan = PvePlans.PlanFor(encounter, enemy, System.Math.Max(1, enemy.Spawn.Round));
+                for (var turn = 0; turn < 4; turn++)
+                {
+                    Assert.That(slots[turn].tooltip, Does.Contain(enemy.Type.FindOrange(plan[turn]).Name),
+                        "All four planned cards are public before Blue commits.");
+                    Assert.That(slots[turn].Q<Label>("pve-plan-initiative").text,
+                        Is.EqualTo(enemy.Type.FindOrange(plan[turn]).Initiative.ToString()));
+                }
+                Assert.That(row.Q<Label>("pve-enemy-reading").text,
+                    Does.Contain(enemy.Spawn.Round == 1 ? "On board" : "Spawn round 2"));
+                if (enemy.Spawn.Round == 1)
+                {
+                    var view = composed.BoardView.HeroViews.First(value => value.Occupancy.HeroId.Equals(enemy.HeroId));
+                    Assert.That(view.HasTokenVisual, Is.True);
+                    Assert.That(view.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture, Is.SameAs(sprite.texture));
+                }
+            }
+            var firstRow = rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value);
+            var firstSlot = firstRow.Q("gd-turn-slot");
+            using (var hover = PointerEnterEvent.GetPooled()) { hover.target = firstSlot; firstSlot.SendEvent(hover); }
+            yield return null;
+            Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            yield return new WaitForEndOfFrame();
+            var hoverCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w027-enemy-card-hover.png", hoverCapture.EncodeToPNG());
+            Object.Destroy(hoverCapture);
+            using (var leave = PointerLeaveEvent.GetPooled()) { leave.target = firstSlot; firstSlot.SendEvent(leave); }
+            yield return null;
+            Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+            // Capture the changed rail and official enemy tokens in the real composed scene.
+            yield return new WaitForEndOfFrame();
+            var capture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.Directory.CreateDirectory("tmp");
+            System.IO.File.WriteAllBytes("tmp/w027-enemy-rail.png", capture.EncodeToPNG());
+            Object.Destroy(capture);
+
+            Assert.That(session.Undo().Accepted, Is.True);
+            composed.RefreshAll();
+            yield return null;
+            Assert.That(session.Restart().Accepted, Is.True);
+            composed.RefreshAll();
+            yield return null;
+            yield return null;
+            Assert.That(rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value)
+                .Q<Label>("pve-enemy-reading").text, Does.Contain("On board"));
+
             foreach (var hero in session.Projection.Participants.Heroes)
             {
                 Assert.DoesNotThrow(() => PlayerAccent.For(session.Projection.Participants, hero.Id), hero.Id.Value);
@@ -121,10 +179,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             }
 
             yield return null;
-            var initiative = root.Q<IntegerField>("pve-edit-raider-A-init");
+            var initiative = root.Q<IntegerField>("pve-edit-melee-A-init");
             Assert.That(initiative, Is.Not.Null, "The editor lists every card's numbers.");
-            Assert.That(root.Q<IntegerField>("pve-edit-raider-B-attack"), Is.Not.Null);
-            Assert.That(root.Q<IntegerField>("pve-edit-brute-P-defense"), Is.Not.Null);
+            Assert.That(root.Q<IntegerField>("pve-edit-melee-B-attack"), Is.Not.Null);
+            Assert.That(root.Q<IntegerField>("pve-edit-heavy-P-defense"), Is.Not.Null);
+            Assert.That(root.Q<IntegerField>("pve-edit-ranged-B-range"), Is.Not.Null);
             Assert.That(root.Q<Button>("pve-card-editor-save"), Is.Not.Null);
         }
 

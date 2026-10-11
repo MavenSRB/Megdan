@@ -85,13 +85,13 @@ Each hook is unused by every existing composition, which therefore behaves as be
   - a loss banner with Restart (same seed) and New setup.
 - **Plans beside tokens.** A plan strip beside each standing enemy's token shows its four planned Initiatives and actions, with the current turn bracketed. Hovering it lists every orange and purple card with its numbers.
 - **Pacing.** Enemy steps run one at a time at `StepSeconds` intervals, each followed by a refresh. From W-026 a step also waits, for at most three seconds, until `ConfiguredMatchSceneRuntime.IsClockInputReady` reports the board's animations and attack spotlight settled; the launch smoke turns the wait off.
-- **Rails.** The overlay hides the HUD's enemy rail and scales a Blue rail of more than three heroes to fit, from outside the HUD.
+- **Rails and tokens (W-027).** The overlay replaces the three-seat enemy rail with a scrollable left rail using `HeroOverviewsUnityView`: the same hero plaque, four card slots, discard area, card inspection and full-card hover. Its optional `TurnSlotsOverride` supplies all four public planned cards at round start; past occupied slots use actual resolved cards. Each plaque adds standing/acting/defeated/spawn status and remaining Defense count; no item/coin/reward display. Board and rail hover share identity highlighting. Melee/Ranged/Heavy artwork is selected by typed `tokenType` content, saved by the card editor, and applied through the optional `PrimitiveHeroView.SetTokenFaceOverride` presentation hook. Enemy identity and rules stay those of heroes. A Blue rail of more than three heroes is scaled to fit, from outside the HUD.
 - **Enemy card editor.** The setup screen's enemy card editor (`PveCardEditor`, user request 2026-10-10) edits each card's Initiative, Movement, Attack, Range and Defense, validates the catalog and saves `enemies.json` through `PveContentLoader.SaveCatalog`. A 0 Movement or Attack removes that option.
 
 ## Content data
 
 `enemies.json` lists enemy types:
-- id, display name and level (this slice supports level 1);
+- id, display name, optional token type (melee/ranged/heavy) and level (this slice supports level 1);
 - orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance;
 - purple cards: key, name, Initiative, Defense;
 - plans, one space-separated string per plan.
@@ -99,6 +99,8 @@ Each hook is unused by every existing composition, which therefore behaves as be
 `encounter.json` names the map revision, creep spaces and types, hero placement spaces and spawns (round, space, type). Spaces are written `"q,r"`. Absent numbers are written as 0.
 
 `PveContentValidator` refuses invalid content with readable messages before composition. The launcher shows them instead of starting.
+
+The shipped placeholder catalog contains Melee, Ranged and Heavy. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 in the design owner states the approved values, plans and spawn mix.
 
 ## Launch, smoke and build
 
@@ -108,4 +110,4 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 ## Current limits
 
-Presentation is functional rather than finished: placements and prompts are buttons rather than board clicks, enemies use the existing hero pieces with their plan strip as label, and the existing HUD still shows Life and Wave counters that PvE does not use. Placeholder content is untuned. A creep, being an ordinary minion, falls to any single hit (PVE-D04), so a passive player usually loses within the first round. Equal-Initiative enemies of one type tie often, so the player is asked to order them.
+Presentation is functional rather than finished: placements and prompts are buttons rather than board clicks, map plan-strip hover remains a text reading of card values and priorities, and the existing HUD still shows Life and Wave counters that PvE does not use. Placeholder content is untuned. A creep, being an ordinary minion, falls to any single hit (PVE-D04). Equal-Initiative enemies of one type tie often, so the player is asked to order them.

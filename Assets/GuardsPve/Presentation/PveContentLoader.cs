@@ -58,7 +58,8 @@ namespace GuardsDigital.Pve.Presentation
                     (type.purpleCards ?? new PurpleCardDto[0]).Select(card =>
                         new PvePurpleCard(card.key, card.name, card.initiative, card.defense)),
                     (type.plans ?? new string[0]).Select(plan =>
-                        (plan ?? string.Empty).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)))));
+                        (plan ?? string.Empty).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)),
+                    string.IsNullOrWhiteSpace(type.tokenType) ? (StandardMinionType?)null : ParseMinion(type.tokenType))));
         }
 
         /// <summary>The enemy content as the JSON <see cref="LoadCatalog"/> reads back unchanged.</summary>
@@ -73,6 +74,7 @@ namespace GuardsDigital.Pve.Presentation
                     id = type.Id,
                     displayName = type.DisplayName,
                     level = type.Level,
+                    tokenType = type.TokenType?.ToString().ToLowerInvariant(),
                     orangeCards = type.OrangeCards.Select(card => new OrangeCardDto
                     {
                         key = card.Key,
@@ -184,6 +186,7 @@ namespace GuardsDigital.Pve.Presentation
             public string id;
             public string displayName;
             public int level;
+            public string tokenType;
             public OrangeCardDto[] orangeCards;
             public PurpleCardDto[] purpleCards;
             public string[] plans;

@@ -21,6 +21,30 @@ namespace GuardsDigital.Tests.EditMode
         private const float Tolerance = 0.0001f;
 
         [Test]
+        public void TokenOverridePreservesOccupancySurvivesRefreshAndCanBeCleared()
+        {
+            var piece = new GameObject("External token face test");
+            try
+            {
+                var view = piece.AddComponent<PrimitiveHeroView>();
+                var occupancy = view.Occupancy;
+                var face = StandardMinionArtCatalog.Load(TeamSide.Red,
+                    GuardsDigital.Core.Setup.StandardMinionType.Ranged).texture;
+                view.SetTokenFaceOverride(face);
+                Assert.That(view.HasTokenVisual, Is.True);
+                var mesh = piece.GetComponent<MeshFilter>().sharedMesh;
+                view.SetTokenFaceOverride(face);
+                Assert.That(piece.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(mesh), "Repeated binding must not allocate.");
+                view.EnsureVisual();
+                Assert.That(piece.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture, Is.SameAs(face));
+                Assert.That(view.Occupancy, Is.EqualTo(occupancy));
+                view.SetTokenFaceOverride(null);
+                Assert.That(view.HasTokenVisual, Is.False);
+            }
+            finally { Object.DestroyImmediate(piece); }
+        }
+
+        [Test]
         public void Configure_PlacesViewFromAuthoritativeOccupancy()
         {
             var gameObject = new GameObject("Primitive Hero Test");

@@ -2,24 +2,43 @@
   "contentStatus": "placeholder-test",
   "enemyTypes": [
     {
-      "id": "raider",
-      "displayName": "Raider",
+      "id": "melee",
+      "displayName": "Melee",
+      "tokenType": "melee",
       "level": 1,
       "orangeCards": [
         { "key": "A", "name": "Advance", "initiative": 9, "copies": 1, "move": 2,
-          "options": [ { "kind": "move", "target": "hero" } ] },
+          "options": [ { "kind": "move", "target": "minion" } ] },
         { "key": "B", "name": "Slash", "initiative": 7, "copies": 2, "attack": 3, "move": 2,
-          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
-                       { "kind": "move", "target": "hero" } ] },
+          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" },
+                       { "kind": "move", "target": "minion" } ] },
         { "key": "C", "name": "Heavy Blow", "initiative": 4, "copies": 1, "attack": 5,
-          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] }
+          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] }
       ],
       "purpleCards": [ { "key": "P", "name": "Parry", "initiative": 1, "defense": 4 } ],
       "plans": [ "A B C B", "A C B B", "A B B C" ]
     },
     {
-      "id": "brute",
-      "displayName": "Brute",
+      "id": "ranged",
+      "displayName": "Ranged",
+      "tokenType": "ranged",
+      "level": 1,
+      "orangeCards": [
+        { "key": "A", "name": "Aim", "initiative": 8, "copies": 1, "move": 2,
+          "options": [ { "kind": "move", "target": "hero", "stopDistance": 3 } ] },
+        { "key": "B", "name": "Shoot", "initiative": 6, "copies": 2, "attack": 3, "range": 3, "move": 1,
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
+                       { "kind": "move", "target": "hero", "stopDistance": 3 } ] },
+        { "key": "C", "name": "Power Shot", "initiative": 3, "copies": 1, "attack": 5, "range": 3,
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] }
+      ],
+      "purpleCards": [ { "key": "P", "name": "Guard", "initiative": 1, "defense": 2 } ],
+      "plans": [ "A B C B", "A C B B", "A B B C" ]
+    },
+    {
+      "id": "heavy",
+      "displayName": "Heavy",
+      "tokenType": "heavy",
       "level": 1,
       "orangeCards": [
         { "key": "A", "name": "Lumber", "initiative": 6, "copies": 1, "move": 2,

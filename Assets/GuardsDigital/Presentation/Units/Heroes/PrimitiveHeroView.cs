@@ -78,6 +78,15 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Material ownedMaterial;
         private Material ownedRimMaterial;
         private Color? identityAccent;
+        private Texture2D tokenFaceOverride;
+
+        /// <summary>Optional presentation-only face; preserves the unit's identity and board behavior.</summary>
+        public void SetTokenFaceOverride(Texture2D face)
+        {
+            if (tokenFaceOverride == face) return;
+            tokenFaceOverride = face;
+            EnsureVisual();
+        }
         public Color IdentityAccent => identityAccent ?? GuardsDigital.Presentation.Match.MatchHudTheme.TeamFace(teamSide);
         public void SetIdentityAccent(Color colour)
         {
@@ -229,6 +238,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
             spawnPointId = template.spawnPointId;
             heroContentId = template.heroContentId;
             heroDisplayName = template.heroDisplayName;
+            tokenFaceOverride = template.tokenFaceOverride;
             baseRadius = template.baseRadius;
             height = template.height;
             verticalOffset = template.verticalOffset;
@@ -490,13 +500,18 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// </summary>
         private bool TryApplyTokenVisual()
         {
-            var contentId = HeroContentId;
-            if (!contentId.HasValue)
+            var face = tokenFaceOverride;
+            var faceRadius = HeroTokenArtwork.FaceRadius;
+            var sourceInset = HeroTokenArtwork.FaceInset;
+            if (face == null)
             {
-                return false;
+                var contentId = HeroContentId;
+                if (!contentId.HasValue) return false;
+                var token = HeroTokenArtwork.ResolveToken(contentId.Value, teamSide, out face);
+                if (face == null) return false;
+                faceRadius = token.FaceRadius;
+                sourceInset = HeroTokenArtwork.SourceInsetFor(token.FaceKind);
             }
-            var token = HeroTokenArtwork.ResolveToken(contentId.Value, teamSide, out var face);
-            if (face == null) return false;
 
             var meshFilter = GetComponent<MeshFilter>();
             if (meshFilter == null)
@@ -510,7 +525,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 meshRenderer = gameObject.AddComponent<MeshRenderer>();
             }
 
-            ReplaceOwnedMesh(CreateTokenMesh(token.FaceRadius, HeroTokenArtwork.SourceInsetFor(token.FaceKind)));
+            ReplaceOwnedMesh(CreateTokenMesh(faceRadius, sourceInset));
             meshFilter.sharedMesh = ownedMesh;
 
             // The rim is lit exactly as the prism it replaces was, so this project's team colour reads

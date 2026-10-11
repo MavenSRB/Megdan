@@ -29,6 +29,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-024 | PvE test package: the separate PvE executable zipped with its content data, smoked as built and as extracted, existing-mode build free of PvE assemblies. | `work/W-024` |
 | W-026 | PvE playtest fixes: the HUD plays Blue only, enemy ties read as enemy decisions, paced steps wait for animations; an enemy-turn stall and colliding enemy card faces fixed. | `work/W-026` |
 | W-020 | Published the remaining prepared runtime board, hero, hero-selection, marker and token artwork through Git LFS to private Gitea. | `work/W-020` |
+| W-027 | Melee/Ranged/Heavy enemies, approved target priorities and spawn mix, official tokens and shared hero rails with four public planned cards. | `work/W-027` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -253,3 +254,12 @@ Closing checks: reuse W-002's 46 Edit/6 Play green checks and visual evidence; c
 Completed: `Builds/Playtest-W003-inspection-fixes.zip`; all artifact checks passed and prior packages preserved.
 
 Historical evidence: completion commit addressed by immutable `work/W-003`; exact artifact identity, checks and limitations live in its body.
+
+### [x] W-027 PvE enemy identities, tokens and left rail
+
+Approved: show enemies with the same hero plaque and four card slots prefilled at round start, shared card hover, status and board highlighting; use official red Melee/Ranged/Heavy tokens on the map. Replace Raider/Brute with Melee/Heavy, add the user-approved Ranged cards and alternating spawn mix. Ranged attacks heroes first; Melee prioritizes Blue creeps. Exact content decision: PVE-D24.
+Scope: PvE content/presentation and two optional shared presentation hooks; no rules-engine, wire or snapshot changes, build or publication.
+Closing checks: T2 focused shipped content/priority, save/editor round-trip, shared token and hero-rail regressions, existing-mode identity golden, rendered scene/card-hover and Undo/Restart checks, visual inspection, documentation validation and diff check.
+Completed: three types, matching map/rail art and shared four-slot public plans are implemented and checked. W024 remains the prior package; no new binary built.
+
+Historical evidence: completion commit addressed by immutable `work/W-027`; exact results, test-fixture correction and limitations live in its body.

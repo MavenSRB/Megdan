@@ -31,8 +31,10 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(shipped.Creeps.Select(creep => (creep.Coordinate, creep.MinionType)),
                 Is.EqualTo(approved.Creeps.Select(creep => (creep.Coordinate, creep.MinionType))));
             Assert.That(shipped.HeroPlacement, Is.EqualTo(approved.HeroPlacement));
-            Assert.That(shipped.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate, spawn.EnemyTypeId)),
-                Is.EqualTo(approved.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate, spawn.EnemyTypeId))));
+            Assert.That(shipped.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate)),
+                Is.EqualTo(approved.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate))));
+            Assert.That(shipped.Spawns.Select(spawn => spawn.EnemyTypeId), Is.EqualTo(new[]
+                { "melee", "ranged", "melee", "ranged", "melee", "ranged", "melee", "heavy", "ranged", "heavy", "ranged" }));
         }
 
         [Test]
@@ -41,21 +43,86 @@ namespace GuardsDigital.Tests.Pve
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var shipped, out _);
             var stated = PveTestContent.Catalog();
 
-            Assert.That(shipped.Types.Select(type => type.Id), Is.EqualTo(stated.Types.Select(type => type.Id)));
-            foreach (var type in stated.Types)
+            Assert.That(shipped.Types.Select(type => type.Id), Is.EqualTo(new[] { "melee", "ranged", "heavy" }));
+            foreach (var pair in new[] { ("melee", "raider"), ("heavy", "brute") })
             {
-                var loaded = shipped.Find(type.Id);
+                var type = stated.Find(pair.Item2);
+                var loaded = shipped.Find(pair.Item1);
                 Assert.That(loaded.Plans.Select(plan => string.Join(" ", plan)),
                     Is.EqualTo(type.Plans.Select(plan => string.Join(" ", plan))), type.Id);
-                Assert.That(loaded.OrangeCards.Select(Describe), Is.EqualTo(type.OrangeCards.Select(Describe)), type.Id);
+                Assert.That(loaded.OrangeCards.Select(card => (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle)),
+                    Is.EqualTo(type.OrangeCards.Select(card => (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle))));
+                if (pair.Item1 == "heavy")
+                    Assert.That(loaded.OrangeCards.Select(Describe), Is.EqualTo(type.OrangeCards.Select(Describe)));
                 Assert.That(loaded.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense)),
                     Is.EqualTo(type.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense))), type.Id);
             }
+            Assert.That(shipped.Types.Select(type => type.TokenType.ToString()), Is.EqualTo(new[] { "Melee", "Ranged", "Heavy" }));
+            foreach (var typeId in new[] { "melee", "ranged" })
+            {
+                var preferred = typeId == "melee" ? PveTargetKind.Minion : PveTargetKind.Hero;
+                foreach (var card in shipped.Find(typeId).OrangeCards)
+                {
+                    var attacks = card.Options.Where(option => option.Kind == PveOptionKind.Attack).ToArray();
+                    if (attacks.Length > 0) Assert.That(attacks[0].Target, Is.EqualTo(preferred), card.Name);
+                    foreach (var move in card.Options.Where(option => option.Kind == PveOptionKind.Move))
+                        Assert.That(move.Target, Is.EqualTo(preferred), card.Name);
+                }
+            }
+            var ranged = shipped.Find("ranged");
+            Assert.That(ranged.OrangeCards.Select(Describe), Is.EqualTo(new[]
+            {
+                "A/8/1//0/2/False/Move:Hero:3",
+                "B/6/2/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:3",
+                "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1"
+            }));
+            Assert.That(ranged.PurpleCards.Single().Defense, Is.EqualTo(2));
+            Assert.That(ranged.Plans.Select(plan => string.Join(" ", plan)),
+                Is.EqualTo(new[] { "A B C B", "A C B B", "A B B C" }));
         }
 
         private static string Describe(PveOrangeCard card) =>
             $"{card.Key}/{card.Initiative}/{card.Copies}/{card.AttackValue}/{card.AttackRange}/{card.MoveValue}/" +
             $"{card.IsIdle}/" + string.Join(",", card.Options.Select(option =>
                 option.Kind + ":" + option.Target + ":" + option.StopDistance));
+
+        [TestCase("melee", true)]
+        [TestCase("ranged", false)]
+        public void AttackPriorityChoosesThePreferredKindWhenBothAreLegal(string typeId, bool creepFirst)
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
+            var type = catalog.Find(typeId);
+            var immediateAttack = new PveEnemyType(type.Id, type.DisplayName, type.Level,
+                type.OrangeCards, type.PurpleCards, new[] { new[] { "B", "A", "C", "B" } }, type.TokenType);
+            var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
+                new[] { new PveCreepPlacement(new GuardsDigital.Core.Board.HexCoordinate(-3, 2), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
+                new[] { new GuardsDigital.Core.Board.HexCoordinate(-5, 3) },
+                new[] { new PveSpawn(1, new GuardsDigital.Core.Board.HexCoordinate(-4, 2), typeId) });
+            var driver = PveTestDriver.Start(heroes: new[] { "hero-brogan" }, encounter: encounter,
+                catalog: new PveEnemyCatalog("placeholder-test", new[] { immediateAttack }));
+            for (var index = 0; index < 200; index++)
+            {
+                var pending = driver.Match.PendingAttackTargetChoice;
+                var step = driver.Session.Peek();
+                if (pending != null && driver.Session.Controller.IsEnemy(pending.ChooserId))
+                {
+                    Assert.That(pending.LegalTargetHeroIds, Is.Not.Empty);
+                    Assert.That(pending.LegalTargetMinionIds, Is.Not.Empty);
+                    Assert.That(step.Kind, Is.EqualTo(GuardsDigital.Pve.Play.PveStepKind.Command));
+                    Assert.That(step.Command.MinionId.IsDefined, Is.EqualTo(creepFirst));
+                    Assert.That(step.Command.HeroId.IsDefined, Is.EqualTo(!creepFirst));
+                    return;
+                }
+                if (step.Kind == GuardsDigital.Pve.Play.PveStepKind.Command)
+                    Assert.That(driver.Session.Step(out _).Accepted, Is.True);
+                else
+                {
+                    var answer = driver.PlayerAnswer();
+                    Assert.That(answer, Is.Not.Null);
+                    Assert.That(driver.Session.Execute(answer).Accepted, Is.True);
+                }
+            }
+            Assert.Fail("The enemy never reached its attack target choice.");
+        }
     }
 }
