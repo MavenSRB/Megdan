@@ -26,7 +26,23 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-021 | Separate PvE executable skeleton: isolated assemblies, validated content, static encounter composed into the existing match scene, existing mode unchanged. | `work/W-021` |
 | W-022 | PvE rules: restore-stable mode rules and additive engine hooks, enemy controller, encounter session, seeded plans and loss; existing mode unchanged. | `work/W-022` |
 | W-023 | PvE presentation: encounter session behind the HUD, paced enemies, plan strips, placement, level and prompt buttons, loss banner and an enemy card editor. | `work/W-023` |
+| W-026 | PvE playtest fixes: the HUD plays Blue only, enemy ties read as enemy decisions, paced steps wait for animations; an enemy-turn stall and colliding enemy card faces fixed. | `work/W-026` |
 
+### [x] W-026 PvE playtest fixes
+
+Approved: the user's 2026-10-11 playtest report on the first W-024 candidate package ("sometimes I play as the bot and sometimes it plays automatically", "friendly creeps are counted as enemy", find other defects from W-021 to W-023). The user kept the player settling enemy ties (PVE-D10/D12/D20) but asked that it read as a choice made for an enemy, and deferred hero token artwork: the private source corpus is not in this checkout.
+Outcome: a default-off Director player side, set only by the external composition, makes the existing HUD play Blue:
+- the tray follows only Blue heroes and cannot be pointed at an enemy;
+- while an enemy owns the moment there is no turn control and no decision window;
+- board outlines read from Blue.
+
+Enemy ties carry an `ENEMY DECISION` banner naming the enemy and edge its plan strip. Paced enemy steps wait, at most three seconds, for the board's animations. Random-play checks found and the item fixes:
+- an enemy turn that stalled behind a Blue hero's Removal prevention;
+- enemy card copies sharing one face, which made inspecting that enemy throw.
+
+Acceptance: T2 - offline control-boundary regression (a 500-game sweep run once, seven seeded cases kept), Unity Edit Mode presenter perspective regression with a no-side baseline and every match-scene presenter refreshed, affected existing presenter suites and the existing-mode golden, PvE Play Mode journey; living-document validation and diff review.
+
+Historical evidence: completion commit addressed by immutable `work/W-026`; exact checks, observed failures, results and limitations live in its body.
 ### [x] W-023 PvE presentation
 
 Approved: the player-facing PvE journey (third step of the approved W-021 to W-024 sequence), plus the user's 2026-10-10 request for editable enemy cards; the user directed that it finishes once it works, without usability or balance testing.

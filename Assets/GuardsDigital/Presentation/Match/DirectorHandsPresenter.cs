@@ -218,6 +218,7 @@ namespace GuardsDigital.Presentation.Match
         private HeroId pinnedAgainstAwaitedHeroId;
         private HeroId lastViewedHeroId;
         private bool useTrustedLocalHeroPerspective;
+        private TeamSide? playerSide;
 
 
         /// <summary>
@@ -276,6 +277,27 @@ namespace GuardsDigital.Presentation.Match
 
 
         /// <summary>
+        /// W-026. The one side this Director plays while a mode's own controller plays the other. The
+        /// tray then follows only that side's heroes - the one owing a commitment, owning the standing
+        /// decision or acting - keeps the last of them drawn while the other side acts, and is never
+        /// pointed at a hero of the other side. Null, every existing composition, follows every hero
+        /// exactly as before.
+        /// </summary>
+        public TeamSide? PlayerSide
+        {
+            get => playerSide;
+            set
+            {
+                if (playerSide == value) return;
+                playerSide = value;
+                pinnedHeroId = default;
+                pinnedAgainstAwaitedHeroId = default;
+                lastProjection = null;
+                lastViewModel = null;
+            }
+        }
+
+        /// <summary>
         /// The hero whose tray is currently drawn (milestone 7.8a).
         ///
         /// For the Director it defaults to the hero the match is waiting on - the one still owing a
@@ -300,7 +322,8 @@ namespace GuardsDigital.Presentation.Match
         {
             var projection = session.Projection;
             if (!heroId.IsDefined || (!session.IsDirector && !CanInspect(projection, heroId)) ||
-                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)) ||
+                (playerSide.HasValue && !DirectorPlayerSide.IsOnSide(projection, heroId, playerSide.Value)))
             {
                 return false;
             }
@@ -373,7 +396,45 @@ namespace GuardsDigital.Presentation.Match
             return homeHeroId.IsDefined ? homeHeroId : awaited;
         }
 
-        private static HeroId Awaited(IMatchReadModel projection)
+        private HeroId Awaited(IMatchReadModel projection) =>
+            playerSide.HasValue ? AwaitedOnSide(projection, playerSide.Value) : AwaitedHero(projection);
+
+        /// <summary>
+        /// W-026. The side's own hero the match is waiting on: the first still owing a commitment, the
+        /// one owning the standing decision, the one deciding the turn - and otherwise, while the other
+        /// side acts, the side's hero last drawn, or its first.
+        /// </summary>
+        private HeroId AwaitedOnSide(IMatchReadModel projection, TeamSide side)
+        {
+            var heroes = projection.Setup.Heroes
+                .Where(hero => hero.TeamSide == side)
+                .OrderBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                .ToArray();
+            if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+            {
+                var owing = heroes.FirstOrDefault(hero =>
+                    projection.GetCommitment(hero.HeroId).Status == TurnCardCommitmentStatus.AwaitingResponse);
+                if (owing != null) return owing.HeroId;
+            }
+
+            var owner = projection.DecisionOwner;
+            if (owner.IsDefined)
+            {
+                var deciding = owner.HeroIds.FirstOrDefault(hero => DirectorPlayerSide.IsOnSide(projection, hero, side));
+                if (deciding.IsDefined) return deciding;
+            }
+
+            if (projection.SelectedActor.IsDefined)
+            {
+                var acting = DelegatedActionPresentation.DecidingHeroFor(projection);
+                if (DirectorPlayerSide.IsOnSide(projection, acting, side)) return acting;
+            }
+
+            if (DirectorPlayerSide.IsOnSide(projection, lastViewedHeroId, side)) return lastViewedHeroId;
+            return heroes.FirstOrDefault()?.HeroId ?? default;
+        }
+
+        private static HeroId AwaitedHero(IMatchReadModel projection)
         {
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {

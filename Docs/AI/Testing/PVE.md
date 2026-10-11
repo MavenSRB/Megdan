@@ -4,7 +4,7 @@ Recipes for the separate PvE executable. Tiers, evidence and full-suite triggers
 
 ## Engine-free PvE tests
 
-`Assets/Tests/PveEditMode/*.cs` hold the engine-free PvE fixtures (namespace `GuardsDigital.Tests.Pve`). Unity compiles them as `GuardsDigital.Pve.EditModeTests`. The dotnet harness compiles the same top-level files with its `GuardsDigital.Pve` project, so they use public APIs only. Unity-only PvE Edit Mode tests live under `Assets/Tests/PveEditMode/Unity/`, which the harness does not compile.
+`Assets/Tests/PveEditMode/*.cs` hold the engine-free PvE fixtures (namespace `GuardsDigital.Tests.Pve`). Unity compiles them as `GuardsDigital.Pve.EditModeTests`. The dotnet harness compiles the same top-level files with its `GuardsDigital.Pve` project, so they use public APIs only. Unity-only PvE Edit Mode tests live under `Assets/Tests/PveEditMode/Unity/`, which the harness does not compile. W-026 adds `PveControlBoundaryTests` (offline: random legal Blue play never meets an automatic step that decides for a Blue hero, and no attack or minion Defense modifier reads a side's own units as enemies) and the Unity-only `PveDirectorPerspectiveTests` (the existing Director presenters with Blue as player side never draw an enemy as the player's own; without a side they still follow every hero).
 
 Focused harness run:
 

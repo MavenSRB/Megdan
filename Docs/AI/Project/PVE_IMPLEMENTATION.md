@@ -34,6 +34,7 @@ Each hook is unused by every existing composition, which therefore behaves as be
 | Discard or defeat | `ModeDiscardPolicy` in the chosen-card and owned-card discard handlers, reading the bound rules through `EffectRosterState.ModeRules` | A Red hero discards only a Defense card; with none, the step publishes the defeated-hero fact and the ordinary Defeat follows (PVE-D19). |
 | Refusal results | `MatchCommandResult.Refused`, `MatchSessionOperationResult.Refused` | Let the PvE session refuse a command in the session's own terms. |
 | Session decorator (W-023) | `ExternalMatchComposition.SessionDecorator`, passed by the root to `ConfiguredMatchSceneRuntime` | Wraps the Director session, so the HUD, Undo and Restart all talk to the encounter session. Only an external composition sets one. |
+| Director player side (W-026) | `ExternalMatchComposition.DirectorPlayerSide`, passed by the root to `ConfiguredMatchSceneRuntime`, which sets `DirectorHandsPresenter.PlayerSide`, `RoundActionPresenter.DirectorPlayerSide`, `DecisionWindowPresenter.DirectorPlayerSide` and `BoardInteractionUnityView.PerspectiveSide`; shared reading in `DirectorPlayerSide` | The Director plays one side. The tray follows only that side's heroes and cannot be pointed at another; while the other side owns the standing moment there is no turn control and no decision window; board outlines read from that side. Only an external composition names a side; a seat ignores it. |
 
 ## Encounter composition (W-021)
 
@@ -43,7 +44,8 @@ Each hook is unused by every existing composition, which therefore behaves as be
 - **Enemy cards.** Synthetic-fixture card definitions from `PveCardFactory`:
   - an orange card is one printed primary Attack (adjacent or Ranged) and one printed secondary Movement, neither replaceable;
   - an idle card prints no action;
-  - a purple card prints a reaction Defense discarded on use.
+  - a purple card prints a reaction Defense discarded on use;
+  - each copy of an orange card is its own definition (`pve-<type>-<key>`, then `-2`, `-3` for later copies) with identical content, because the existing HUD's card inspection holds every face of a hero once (W-026: two copies sharing one face made inspecting that enemy throw).
 - **Creeps.** Blue standard minions on the encounter's creep spaces.
 - **Tie Breaker.** Derived from the setup seed.
 - **Life and Wave counters.** Exist because the engine counts them, and are never part of a PvE ending.
@@ -63,6 +65,7 @@ Each hook is unused by every existing composition, which therefore behaves as be
   - declining every enemy respawn, and advancing the end of round.
 - **Ties.** Equal enemy targets, destinations, blocked spawns and enemy Initiative ties become a `PvePrompt` the player answers. An enemy Initiative tie in which at most one tied enemy stands is settled without asking, because off-board enemies do nothing and only one order is observable.
 - **Fallback.** Any other enemy decision takes that enemy's weakest purple card where a card is asked for, otherwise the first command its seat may submit, and is noted `PVE_FALLBACK`.
+- **Blue decisions come first.** A standing decision a Blue hero owns - a Removal prevention during an enemy's turn, say - holds the enemy's turn until the player answers it (W-026: the controller had acted past it, the engine refused, and the encounter stalled).
 - **`PveEncounterSession`** wraps the Director session. It refuses:
   - commands for enemies, and commitments while a transition is paused;
   - anything except the prompt's answers while a prompt stands;
@@ -74,14 +77,14 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 ## Presentation (W-023)
 
-- **Session and overlay.** The launcher's external composition wraps the Director session in `PveEncounterSession` and attaches `PveEncounterView` to the composed runtime. The existing HUD is otherwise unchanged and drives Blue heroes as in Director mode; its commands pass through the session's guard.
+- **Session and overlay.** The launcher's external composition wraps the Director session in `PveEncounterSession` and attaches `PveEncounterView` to the composed runtime. The existing HUD drives Blue heroes as in Director mode, with Blue as its player side (W-026): it never follows, offers or outlines an enemy as the player's own. Its commands pass through the session's guard.
 - **`PveEncounterView`** draws its own overlay panel:
   - round, turn, seed and what happened last;
   - placement buttons for the round-1 placement, and `+1 level` buttons in the round-start window (the upgrade choice itself appears in the HUD's existing level-up region);
-  - answer buttons for enemy tie prompts;
+  - answer buttons for enemy tie prompts, under an `ENEMY DECISION - you choose for ...` banner naming the enemy, whose plan strip is edged while the prompt stands (W-026);
   - a loss banner with Restart (same seed) and New setup.
 - **Plans beside tokens.** A plan strip beside each standing enemy's token shows its four planned Initiatives and actions, with the current turn bracketed. Hovering it lists every orange and purple card with its numbers.
-- **Pacing.** Enemy steps run one at a time at `StepSeconds` intervals, each followed by a refresh.
+- **Pacing.** Enemy steps run one at a time at `StepSeconds` intervals, each followed by a refresh. From W-026 a step also waits, for at most three seconds, until `ConfiguredMatchSceneRuntime.IsClockInputReady` reports the board's animations and attack spotlight settled; the launch smoke turns the wait off.
 - **Rails.** The overlay hides the HUD's enemy rail and scales a Blue rail of more than three heroes to fit, from outside the HUD.
 - **Enemy card editor.** The setup screen's enemy card editor (`PveCardEditor`, user request 2026-10-10) edits each card's Initiative, Movement, Attack, Range and Defense, validates the catalog and saves `enemies.json` through `PveContentLoader.SaveCatalog`. A 0 Movement or Attack removes that option.
 

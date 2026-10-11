@@ -55,7 +55,10 @@ namespace GuardsDigital.Presentation.Match
             MatchSessionInitialState stagedInitialState = null, ExperimentalMatchOptions experiments = null,
             // W-023. A separate game mode's session wrapped around the Director session - the PvE
             // executable's encounter session. Null, every existing composition, keeps the session.
-            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null)
+            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null,
+            // W-026. The one side a Director plays while that mode's controller plays the other.
+            // Null, every existing composition, keeps the Director answering for every hero.
+            TeamSide? directorPlayerSide = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -200,6 +203,15 @@ namespace GuardsDigital.Presentation.Match
             DecisionWindowPresenter = new DecisionWindowPresenter(
                 client, DecisionWindowView, Seat?.HeroId ?? default);
             VictoryScreenPresenter = new VictoryScreenPresenter(client, VictoryScreenView);
+            // W-026. Only the Director's composition plays one side; a seat is scoped already.
+            if (Seat == null && directorPlayerSide.HasValue)
+            {
+                DirectorPlayerSide = directorPlayerSide;
+                HandsPresenter.PlayerSide = directorPlayerSide;
+                RoundPresenter.DirectorPlayerSide = directorPlayerSide;
+                DecisionWindowPresenter.DirectorPlayerSide = directorPlayerSide;
+                BoardView.PerspectiveSide = directorPlayerSide;
+            }
 
             // Milestone 8.35z8 (SIXTH amendment part b, "old M7"). Composed independently of
             // MatchFeatureCoordinator/RoundActionPresenter, deliberately: the fizzle notice reads
@@ -734,6 +746,12 @@ namespace GuardsDigital.Presentation.Match
         /// looking at.
         /// </summary>
         public bool IsSandbox { get; }
+
+        /// <summary>
+        /// W-026. The one side this Director plays while a mode's own controller plays the other, or
+        /// null - every existing composition - when the Director answers for every hero.
+        /// </summary>
+        public TeamSide? DirectorPlayerSide { get; }
 
         public MatchContentCatalogs ContentCatalogs { get; }
 

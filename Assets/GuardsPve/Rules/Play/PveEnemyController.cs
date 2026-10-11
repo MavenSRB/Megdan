@@ -270,10 +270,22 @@ namespace GuardsDigital.Pve.Play
             }
 
             var owner = match.DecisionOwner;
-            var ownerEnemy = owner.HeroIds.FirstOrDefault(IsEnemy);
-            if (owner.IsDefined && ownerEnemy.IsDefined)
+            if (owner.IsDefined)
             {
-                return FallbackStep(match, ownerEnemy, authorizedFor);
+                var ownerEnemy = owner.HeroIds.FirstOrDefault(IsEnemy);
+                if (ownerEnemy.IsDefined) return FallbackStep(match, ownerEnemy, authorizedFor);
+                if (owner.IsTeamOwned && owner.TeamSide == TeamSide.Red)
+                {
+                    foreach (var enemy in encounter.Enemies)
+                    {
+                        var step = FallbackStep(match, enemy.HeroId, authorizedFor);
+                        if (step.Kind == PveStepKind.Command) return step;
+                    }
+                }
+
+                // W-026. Any other standing decision is a Blue hero's (a Removal prevention during an
+                // enemy's turn, say): the enemy's turn waits for it rather than acting past it.
+                return PveStep.AwaitingPlayer;
             }
 
             var actor = match.SelectedActor;

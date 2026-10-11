@@ -7,7 +7,9 @@
     W-021. The PvE twin of Tools/Invoke-PlayerBuildSmoke.ps1, with the same fixed parameterless
     shape and Unity discovery. It builds through GuardsDigital.Pve.EditorTools.PveBuildEntryPoint,
     launches Builds/PveWin64/GuardsDigitalPvE.exe with -guardsPveSmokeTest, and requires the
-    player's GUARDS_PVE_SMOKE markers and exit code.
+    player's GUARDS_PVE_SMOKE markers and exit code: the encounter composed with its session and
+    overlay, an enemy acted, and play reached round 2's spawns or the encounter's loss (a passive
+    player may lose; the gate proves the mode runs, not its balance).
 
     It also checks the isolation contract (PVE-D01): the PvE player carries the PvE assemblies and
     its content data, and an existing-mode player under Builds/Win64Smoke - when one is present -
@@ -28,7 +30,7 @@ $playerLog = [System.IO.Path]::Combine($projectRoot, 'tmp', 'pve-build-smoke-pla
 $outputDirectory = [System.IO.Path]::Combine($projectRoot, 'Builds', 'PveWin64')
 $executablePath = [System.IO.Path]::Combine($outputDirectory, 'GuardsDigitalPvE.exe')
 $existingManaged = [System.IO.Path]::Combine($projectRoot, 'Builds', 'Win64Smoke', 'GuardsDigitalSmoke_Data', 'Managed')
-$requiredMarkers = @('GUARDS_PVE_SMOKE: BEGIN', 'GUARDS_PVE_SMOKE: COMPOSED', 'GUARDS_PVE_SMOKE: PASS')
+$requiredMarkers = @('GUARDS_PVE_SMOKE: BEGIN', 'GUARDS_PVE_SMOKE: COMPOSED', 'GUARDS_PVE_SMOKE: ENEMY_ACTED', 'GUARDS_PVE_SMOKE: PASS')
 
 $override = [System.Environment]::GetEnvironmentVariable('GUARDS_UNITY_PATH')
 if (-not [string]::IsNullOrWhiteSpace($override)) {
@@ -103,7 +105,10 @@ if ($player.ExitCode -ne 0) { Write-Output "FAIL: the PvE player exited $($playe
 foreach ($marker in $requiredMarkers) {
     if ($playerOutput -notmatch [regex]::Escape($marker)) { Write-Output "FAIL: missing marker '$marker'."; $failed = $true }
 }
-foreach ($line in ($playerOutput -split "`r?`n" | Where-Object { $_ -match 'GUARDS_PVE_SMOKE: (COMPOSED|FAIL)' })) {
+if ($playerOutput -notmatch 'GUARDS_PVE_SMOKE: (ROUND_2_SPAWNED|LOST)') {
+    Write-Output "FAIL: the encounter reached neither round 2's spawns nor its loss."; $failed = $true
+}
+foreach ($line in ($playerOutput -split "`r?`n" | Where-Object { $_ -match 'GUARDS_PVE_SMOKE: (COMPOSED|ROUND_2_SPAWNED|LOST|FAIL)' })) {
     Write-Output "  $($line.Trim())"
 }
 foreach ($pattern in @('Shader.*not found', 'Failed to load', 'NullReferenceException')) {

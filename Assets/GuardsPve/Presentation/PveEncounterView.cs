@@ -30,6 +30,15 @@ namespace GuardsDigital.Pve.Presentation
     {
         /// <summary>Seconds between enemy steps; the launch smoke shortens it.</summary>
         public float StepSeconds { get; set; } = 0.45f;
+
+        /// <summary>
+        /// W-026. Whether an enemy step waits for the board's animations and attack spotlight to
+        /// settle - for at most <see cref="MaxPresentationWaitSeconds"/> - so a step is never drawn on
+        /// top of the one before it. The launch smoke, which draws nothing, turns it off.
+        /// </summary>
+        public bool WaitsForPresentation { get; set; } = true;
+
+        public const float MaxPresentationWaitSeconds = 3f;
         public const string LauncherSceneName = "PveLauncher";
 
         private ConfiguredMatchSceneRuntime runtime;
@@ -39,11 +48,14 @@ namespace GuardsDigital.Pve.Presentation
         private VisualElement root;
         private VisualElement panel;
         private Label status;
+        private Label promptBanner;
         private Label message;
         private VisualElement actions;
         private Label cardDetail;
         private readonly Dictionary<HeroId, Label> strips = new Dictionary<HeroId, Label>();
         private float nextStepAt;
+        private float presentationWaitStartedAt = -1f;
+        private HeroId promptedEnemy;
         private string lastActionText = string.Empty;
         private long renderedVersion = -1;
         private string renderedPrompt;
@@ -108,6 +120,19 @@ namespace GuardsDigital.Pve.Presentation
             status = Text(15, FontStyle.Bold, Color.white);
             status.name = "pve-status";
             panel.Add(status);
+            // W-026. An enemy's tie is the player's to settle (PVE-D10/D12/D20); this says so in so
+            // many words, so it never reads as a decision of the player's own hero.
+            promptBanner = Text(14, FontStyle.Bold, Color.black);
+            promptBanner.name = "pve-prompt-banner";
+            promptBanner.style.backgroundColor = new Color(1f, 0.62f, 0.15f, 1f);
+            promptBanner.style.paddingLeft = 6;
+            promptBanner.style.paddingRight = 6;
+            promptBanner.style.paddingTop = 3;
+            promptBanner.style.paddingBottom = 3;
+            promptBanner.style.marginTop = 4;
+            promptBanner.style.whiteSpace = WhiteSpace.Normal;
+            promptBanner.style.display = DisplayStyle.None;
+            panel.Add(promptBanner);
             message = Text(13, FontStyle.Normal, new Color(1f, 0.85f, 0.4f));
             message.name = "pve-message";
             message.style.whiteSpace = WhiteSpace.Normal;
@@ -135,7 +160,8 @@ namespace GuardsDigital.Pve.Presentation
         private void Update()
         {
             if (session == null) return;
-            if (session.Status == PveEncounterStatus.Ongoing && Time.unscaledTime >= nextStepAt)
+            if (session.Status == PveEncounterStatus.Ongoing && Time.unscaledTime >= nextStepAt &&
+                PresentationSettled())
             {
                 var result = session.Step(out var step);
                 if (step.Kind == PveStepKind.Command)
@@ -157,6 +183,24 @@ namespace GuardsDigital.Pve.Presentation
             RenderPanel();
         }
 
+        /// <summary>
+        /// W-026. Whether the board has finished drawing the last step, or has been waited on long
+        /// enough. When the next step is not the enemies' own there is nothing to wait for.
+        /// </summary>
+        private bool PresentationSettled()
+        {
+            if (!WaitsForPresentation || session.Peek().Kind != PveStepKind.Command || runtime.IsClockInputReady)
+            {
+                presentationWaitStartedAt = -1f;
+                return true;
+            }
+
+            if (presentationWaitStartedAt < 0f) presentationWaitStartedAt = Time.unscaledTime;
+            if (Time.unscaledTime - presentationWaitStartedAt < MaxPresentationWaitSeconds) return false;
+            presentationWaitStartedAt = -1f;
+            return true;
+        }
+
         private void LateUpdate()
         {
             if (session == null) return;
@@ -174,6 +218,9 @@ namespace GuardsDigital.Pve.Presentation
                 ? "ENCOUNTER LOST - every creep is defeated"
                 : $"PvE  Round {match.RoundIndex}  Turn {match.TurnIndex}  -  seed {session.Encounter.Setup.Seed}";
             status.style.color = lost ? new Color(1f, 0.4f, 0.35f) : Color.white;
+            promptedEnemy = prompt?.Enemy ?? default;
+            promptBanner.style.display = prompt == null || lost ? DisplayStyle.None : DisplayStyle.Flex;
+            promptBanner.text = prompt == null ? string.Empty : PromptBannerText(match, prompt);
             if (renderedVersion == match.Version && renderedPrompt == promptText && !lost)
             {
                 message.text = MessageFor(match, prompt);
@@ -196,7 +243,7 @@ namespace GuardsDigital.Pve.Presentation
                 foreach (var answer in prompt.Answers)
                 {
                     var command = answer;
-                    actions.Add(ActionButton(AnswerLabel(match, command), () => Submit(command)));
+                    actions.Add(ActionButton(AnswerLabel(match, prompt, command), () => Submit(command)));
                 }
 
                 return;
@@ -231,6 +278,11 @@ namespace GuardsDigital.Pve.Presentation
                 }
             }
         }
+
+        private string PromptBannerText(IMatchReadModel match, PvePrompt prompt) =>
+            prompt.Enemy.IsDefined
+                ? "ENEMY DECISION - you choose for " + HeroName(match, prompt.Enemy).ToUpperInvariant()
+                : "ENEMY DECISION - you choose for the enemies";
 
         private string MessageFor(IMatchReadModel match, PvePrompt prompt)
         {
@@ -300,6 +352,17 @@ namespace GuardsDigital.Pve.Presentation
 
                 var point = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screen.x, Screen.height - screen.y));
                 strip.style.display = DisplayStyle.Flex;
+                // W-026. The enemy a standing prompt decides for is marked on the board as well.
+                var edge = promptedEnemy.Equals(enemy.HeroId) ? 2f : 0f;
+                var edgeColour = new Color(1f, 0.95f, 0.3f, 1f);
+                strip.style.borderTopWidth = edge;
+                strip.style.borderBottomWidth = edge;
+                strip.style.borderLeftWidth = edge;
+                strip.style.borderRightWidth = edge;
+                strip.style.borderTopColor = edgeColour;
+                strip.style.borderBottomColor = edgeColour;
+                strip.style.borderLeftColor = edgeColour;
+                strip.style.borderRightColor = edgeColour;
                 strip.style.left = point.x - 60;
                 strip.style.top = point.y - 52;
                 strip.text = PlanText(match, enemy);
@@ -382,19 +445,22 @@ namespace GuardsDigital.Pve.Presentation
             }
         }
 
-        private string AnswerLabel(IMatchReadModel match, DirectorCommand command)
+        private string AnswerLabel(IMatchReadModel match, PvePrompt prompt, DirectorCommand command)
         {
+            var enemy = prompt.Enemy.IsDefined ? HeroName(match, prompt.Enemy) + " " : string.Empty;
             switch (command.Kind)
             {
                 case DirectorCommandKind.ChooseAttackTarget:
-                    return command.HeroId.IsDefined ? "Target " + HeroName(match, command.HeroId) : "Target creep " + command.MinionId.Value;
+                    return enemy + "attacks " + (command.HeroId.IsDefined
+                        ? HeroName(match, command.HeroId)
+                        : "creep " + command.MinionId.Value);
                 case DirectorCommandKind.ChooseMovementDestination:
-                    return "Move to " + command.Coordinate.Q + "," + command.Coordinate.R;
+                    return enemy + "moves to " + command.Coordinate.Q + "," + command.Coordinate.R;
                 case DirectorCommandKind.AnswerSystemTransitionStep:
-                    return "Enter at " + SpaceOf(command.SystemTransitionChoice.OptionId);
+                    return enemy + "enters at " + SpaceOf(command.SystemTransitionChoice.OptionId);
                 case DirectorCommandKind.ChooseTiedActor:
                     var owner = match.Cards.FirstOrDefault(value => value.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
-                    return HeroName(match, owner) + " first";
+                    return HeroName(match, owner) + " acts first";
                 default:
                     return command.Kind.ToString();
             }

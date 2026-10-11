@@ -73,6 +73,25 @@ namespace GuardsDigital.Presentation.Match
         public HeroId HomeHeroId => homeHeroId;
 
         /// <summary>
+        /// W-026. The one side this Director plays while a mode's own controller plays the other.
+        /// While the other side owns the standing moment the panel narrates it and offers no control,
+        /// because every press would be the controller's to make. Null, every existing composition,
+        /// offers the Director every control as before.
+        /// </summary>
+        public TeamSide? DirectorPlayerSide
+        {
+            get => directorPlayerSide;
+            set
+            {
+                if (directorPlayerSide == value) return;
+                directorPlayerSide = value;
+                lastProjection = null;
+            }
+        }
+
+        private TeamSide? directorPlayerSide;
+
+        /// <summary>
         /// Milestone 8.35z4. Binds this panel's viewer identity once the interactive lobby admits the
         /// seat, exactly as <see cref="DirectorHandsPresenter.SetHomeHero"/> has always done for the
         /// tray. Until this existed the field was <c>readonly</c> and a networked client's round
@@ -1694,13 +1713,34 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                lastViewModel = CreateViewModel(
-                    projection, clearModeActionDefinitionId, clearSelection, session.IsDirector,
-                    homeHeroId);
+                lastViewModel = directorPlayerSide.HasValue && session.IsDirector &&
+                    !global::GuardsDigital.Presentation.Match.DirectorPlayerSide.OwnsTheMoment(
+                        projection, directorPlayerSide.Value)
+                    ? CreateNarrationOnlyViewModel(projection)
+                    : CreateViewModel(
+                        projection, clearModeActionDefinitionId, clearSelection, session.IsDirector,
+                        homeHeroId);
             }
 
             return lastViewModel;
         }
+
+        /// <summary>
+        /// W-026. The panel while the side a Director does not play owns the moment: the same status
+        /// line, and no control.
+        /// </summary>
+        private static RoundActionViewModel CreateNarrationOnlyViewModel(IMatchReadModel projection) =>
+            new RoundActionViewModel(
+                projection.Version,
+                projection.RoundIndex,
+                projection.TurnIndex,
+                projection.Phase,
+                FormatStatus(projection, default, out _),
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>());
 
         private static TypedInvocationViewModel CreateEndTurnInvocation(IMatchReadModel projection)
         {

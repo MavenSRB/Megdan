@@ -2145,7 +2145,9 @@ namespace GuardsDigital.Presentation.Interaction
                 // runtime composes for itself exactly as it always has.
                 stagedInitialState, experiments,
                 // W-023. Only an external composition wraps the session.
-                external?.SessionDecorator);
+                external?.SessionDecorator,
+                // W-026. Only an external composition plays one side.
+                external?.DirectorPlayerSide);
 
             // Milestone 8.35y. The configured match scene has never had a frame loop - every
             // surface redraws on a projection change - so the kinetic pass brings its own, on this

@@ -27,11 +27,22 @@ namespace GuardsDigital.Pve.Composition
         public static CardDefinitionId OrangeId(PveEnemyType type, PveOrangeCard card) =>
             new CardDefinitionId("pve-" + type.Id + "-" + card.Key.ToLowerInvariant());
 
+        /// <summary>
+        /// W-026. Each copy of an orange card is its own face: the existing HUD's card inspection, like
+        /// a printed hero deck, holds every face of a hero once. The first copy keeps
+        /// <see cref="OrangeId(PveEnemyType, PveOrangeCard)"/>; later copies add their number.
+        /// </summary>
+        public static CardDefinitionId OrangeId(PveEnemyType type, PveOrangeCard card, int copy) =>
+            copy <= 1
+                ? OrangeId(type, card)
+                : new CardDefinitionId(OrangeId(type, card).Value + "-" + copy.ToString(CultureInfo.InvariantCulture));
+
         public static CardDefinitionId PurpleId(PveEnemyType type, PvePurpleCard card) =>
             new CardDefinitionId("pve-" + type.Id + "-" + card.Key.ToLowerInvariant());
 
         public static IReadOnlyList<CardDefinition> CreateDefinitions(PveEnemyType type) =>
-            type.OrangeCards.Select(card => CreateOrange(type, card))
+            type.OrangeCards.SelectMany(card => Enumerable.Range(1, card.Copies)
+                    .Select(copy => CreateOrange(type, card, OrangeId(type, card, copy))))
                 .Concat(type.PurpleCards.Select(card => CreatePurple(type, card)))
                 .ToArray();
 
@@ -50,7 +61,7 @@ namespace GuardsDigital.Pve.Composition
                     instances.Add(CardInstance.CreateInHand(
                         new CardInstanceId(instancePrefix + "-" + card.Key.ToLowerInvariant() + "-" +
                             copy.ToString(CultureInfo.InvariantCulture)),
-                        new CardDefinitionReference(OrangeId(type, card), ContentRevision),
+                        new CardDefinitionReference(OrangeId(type, card, copy), ContentRevision),
                         owner));
                 }
             }
@@ -66,7 +77,7 @@ namespace GuardsDigital.Pve.Composition
             return new ConfiguredHand(definitions, instances, new CardInstance[0]);
         }
 
-        private static CardDefinition CreateOrange(PveEnemyType type, PveOrangeCard card)
+        private static CardDefinition CreateOrange(PveEnemyType type, PveOrangeCard card, CardDefinitionId id)
         {
             var actions = new List<ActionDefinition>();
             if (card.AttackValue.HasValue)
@@ -101,7 +112,7 @@ namespace GuardsDigital.Pve.Composition
             }
 
             return new CardDefinition(
-                OrangeId(type, card),
+                id,
                 ContentRevision,
                 card.Name,
                 new InitiativeValue(card.Initiative),

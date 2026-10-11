@@ -409,6 +409,13 @@ namespace GuardsDigital.Presentation.Match
         public Func<HeroId, Color> IdentityColour { get; set; }
         public Func<SignalVisualSettings> SignalVisuals { get; set; }
 
+        /// <summary>
+        /// W-026. The side a target outline is read from when a Director plays only one side: a
+        /// piece of that side is outlined as friendly and any other as an enemy, whoever is choosing.
+        /// Null - every existing composition - reads the outline from the choosing hero's side.
+        /// </summary>
+        public TeamSide? PerspectiveSide { get; set; }
+
         public void Render(BoardInteractionViewModel model) => Render(model, false);
 
         private void Render(BoardInteractionViewModel model, bool refreshHover)
@@ -1458,6 +1465,7 @@ namespace GuardsDigital.Presentation.Match
 
         private TeamSide? ChoosingTeamSide(BoardInteractionViewModel model)
         {
+            if (PerspectiveSide.HasValue) return PerspectiveSide;
             if (!model.FocusedHeroId.IsDefined) return null;
             var view = HeroViewFor(model.FocusedHeroId);
             return view == null ? (TeamSide?)null : view.TeamSide;

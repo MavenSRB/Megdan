@@ -42,7 +42,14 @@ namespace GuardsDigital.Pve.Play
         {
             foreach (var type in catalog.Types)
             {
-                foreach (var card in type.OrangeCards) byDefinition[PveCardFactory.OrangeId(type, card)] = (type, card, null);
+                foreach (var card in type.OrangeCards)
+                {
+                    for (var copy = 1; copy <= card.Copies; copy++)
+                    {
+                        byDefinition[PveCardFactory.OrangeId(type, card, copy)] = (type, card, null);
+                    }
+                }
+
                 foreach (var card in type.PurpleCards) byDefinition[PveCardFactory.PurpleId(type, card)] = (type, null, card);
             }
         }

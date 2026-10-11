@@ -6,6 +6,7 @@ W-020 to W-024 form one approved serial sequence (user, 2026-10-10): record the 
 
 ### [~] W-024 PvE test package
 
+Depends on W-026: the 2026-10-11 candidate package (`Builds/Playtest-W024-pve-test.zip`) was superseded by the playtest report and is rebuilt after W-026.
 Approved: package and smoke the PvE executable.
 Outcome: verified private PvE ZIP with content data beside the executable.
 Scope: no existing-mode package.

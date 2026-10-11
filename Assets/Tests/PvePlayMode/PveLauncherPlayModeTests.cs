@@ -50,6 +50,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var session = composed.Session as PveEncounterSession;
             Assert.That(session, Is.Not.Null, "The HUD talks to the encounter session.");
             Assert.That(PveLauncher.LastView, Is.Not.Null, "The PvE overlay is attached.");
+            // W-026. The HUD plays Blue: it follows, offers and outlines from Blue's side only.
+            Assert.That(composed.DirectorPlayerSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(composed.BoardView.PerspectiveSide, Is.EqualTo(TeamSide.Blue));
             Assert.That(model.Heroes.Count(hero => Side(model, hero.HeroId) == TeamSide.Blue), Is.EqualTo(0),
                 "Heroes wait for their round-1 placement.");
             Assert.That(model.Heroes.Count(hero => Side(model, hero.HeroId) == TeamSide.Red), Is.EqualTo(7));
@@ -73,9 +76,19 @@ namespace GuardsDigital.Tests.Pve.PlayMode
 
             Assert.That(session.Projection.Heroes.Count(hero => Side(session.Projection, hero.HeroId) == TeamSide.Blue), Is.EqualTo(5));
 
-            // The paced driver then commits every enemy's planned card.
+            // The paced driver then commits every enemy's planned card, and the tray never shows an
+            // enemy's hand as the player's while it does (W-026).
             deadline = Time.realtimeSinceStartup + 30f;
-            while (session.Peek().Kind == PveStepKind.Command && Time.realtimeSinceStartup < deadline) yield return null;
+            while (session.Peek().Kind == PveStepKind.Command && Time.realtimeSinceStartup < deadline)
+            {
+                Assert.That(session.Controller.IsEnemy(composed.ViewedHeroId), Is.False,
+                    "The tray shows " + composed.ViewedHeroId.Value + " while the enemies commit.");
+                yield return null;
+            }
+
+            Assert.That(encounter.Heroes.Contains(composed.ViewedHeroId), Is.True, "The tray shows one of the player's heroes.");
+            Assert.That(composed.BoardView.HeroViews.Where(view => view != null && encounter.Heroes.Contains(view.Occupancy.HeroId))
+                .All(view => view.gameObject.activeInHierarchy), Is.True, "Every placed hero is drawn on the board.");
             foreach (var enemy in encounter.Enemies)
             {
                 Assert.That(session.Projection.Commitments.Single(value => value.HeroId.Equals(enemy.HeroId)).Status,
@@ -85,6 +98,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null;
             var overlay = PveLauncher.LastView.GetComponent<UIDocument>().rootVisualElement;
             Assert.That(overlay.Q<Label>("pve-status").text, Does.Contain("Round 1"));
+            Assert.That(overlay.Q<Label>("pve-prompt-banner"), Is.Not.Null, "An enemy decision has its own banner.");
             Assert.That(overlay.Q<Label>("pve-plan-" + encounter.Enemies[0].HeroId.Value)?.resolvedStyle.display,
                 Is.EqualTo(DisplayStyle.Flex), "A standing enemy shows its plan beside its token.");
 

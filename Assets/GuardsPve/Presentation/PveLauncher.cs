@@ -94,7 +94,9 @@ namespace GuardsDigital.Pve.Presentation
                     LastView = PveEncounterView.Attach(runtime);
                     composed?.Invoke(runtime);
                 },
-                (host, director) => new GuardsDigital.Pve.Play.PveEncounterSession(composedEncounter, host, director));
+                (host, director) => new GuardsDigital.Pve.Play.PveEncounterSession(composedEncounter, host, director),
+                // W-026 (PVE-D02). The player directs Blue; the HUD never follows or offers an enemy.
+                GuardsDigital.Core.Participants.TeamSide.Blue);
             SceneManager.LoadScene(MatchSceneName, LoadSceneMode.Single);
             return Array.Empty<string>();
         }

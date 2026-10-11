@@ -76,6 +76,25 @@ namespace GuardsDigital.Presentation.Match
         /// <inheritdoc />
         public HeroId HomeHeroId => homeHeroId;
 
+        /// <summary>
+        /// W-026. The one side this Director plays while a mode's own controller plays the other: a
+        /// window opens only for a decision that side owns, as a seat's opens only for its own. Null,
+        /// every existing composition, draws every question for the Director as before.
+        /// </summary>
+        public TeamSide? DirectorPlayerSide
+        {
+            get => directorPlayerSide;
+            set
+            {
+                if (directorPlayerSide == value) return;
+                directorPlayerSide = value;
+                lastProjection = null;
+                manualStateKey = null;
+            }
+        }
+
+        private TeamSide? directorPlayerSide;
+
         public event Action<IMatchReadModel> SessionProjectionChanged;
 
         /// <summary>
@@ -230,7 +249,11 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                var next = CreateViewModel(projection, homeHeroId);
+                var next = directorPlayerSide.HasValue && session.IsDirector &&
+                    !global::GuardsDigital.Presentation.Match.DirectorPlayerSide.OwnsTheMoment(
+                        projection, directorPlayerSide.Value)
+                    ? null
+                    : CreateViewModel(projection, homeHeroId);
                 if (next == null && RetainsStandingDecisionAcrossConnectionPause(projection))
                 {
                     // A transient joined-client pause strips this seat's private detail and commands,

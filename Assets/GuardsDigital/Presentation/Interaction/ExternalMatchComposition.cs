@@ -1,5 +1,6 @@
 using System;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Presentation.Match;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -20,9 +21,11 @@ namespace GuardsDigital.Presentation.Interaction
         public ExternalMatchComposition(
             MatchSessionInitialState initialState,
             Action<ConfiguredMatchSceneRuntime> composed = null,
-            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null)
+            Func<IMatchHost, IMatchSession, IMatchSession> sessionDecorator = null,
+            TeamSide? directorPlayerSide = null)
         {
             SessionDecorator = sessionDecorator;
+            DirectorPlayerSide = directorPlayerSide;
             InitialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
             if (initialState.InitialConfiguration == null)
             {
@@ -44,5 +47,12 @@ namespace GuardsDigital.Presentation.Interaction
         /// and Restart included - talks to the mode's session. Null keeps the Director session.
         /// </summary>
         public Func<IMatchHost, IMatchSession, IMatchSession> SessionDecorator { get; }
+
+        /// <summary>
+        /// W-026. The one side the Director plays while the mode's own controller plays the other:
+        /// the tray, turn controls, decision windows and board outlines read from that side only.
+        /// Null keeps the Director answering for every hero.
+        /// </summary>
+        public TeamSide? DirectorPlayerSide { get; }
     }
 }
