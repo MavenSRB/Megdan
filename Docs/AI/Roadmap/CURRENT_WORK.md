@@ -2,9 +2,9 @@
 
 Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSION_BRIEF.md). Completed records move to [work history](../Archive/WORK_LOG.md).
 
-### [ ] W-032 Compact enemy rail
+### [ ] W-033 PvE enemy target categories
 
-Approved follow-up: enemy rows need four public turn slots and Defense cards, not full hero-sized plaques. Keep a small token for identification; no names/text strips above map tokens. Hovering either an enemy token or its rail row must highlight the other in solo and co-op. Only Heavy shows its two defense cards. Remove level/item/discard space from the enemy rows. Execute after W-031; focused shared-card/rail, bidirectional hover and rendered solo/co-op checks. No gameplay change or package requested.
+Approved latest clarification (supersedes the earlier both-categories request): Heavy counts as a hero; Melee and Ranged count as minions for targeting and effects. Preserve current combat, Defense and defeat rules. PvE only; one logical identity, no double counting. Execute after W-032. Record exact approved rule in PvE design before implementation; inspect typed target/query/effect boundaries and verify hero-only, minion-only and combined effects, ownership, combat preservation, replay and existing-mode isolation at the selected risk tier.
 
 ### [!] W-004 Compact player-name banner for approval
 

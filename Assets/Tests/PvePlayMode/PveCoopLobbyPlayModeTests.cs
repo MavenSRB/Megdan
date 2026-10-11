@@ -234,11 +234,14 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var overlay = Object.FindAnyObjectByType<PveEncounterView>();
             Assert.That(overlay.Session, Is.Null);
             Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Query<VisualElement>()
-                .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(11));
+                .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(7),
+                "Only standing enemies have trays on a joining client.");
             Assert.That(runtime.ReadModel.Cards.Any(card => match.Encounter.FindEnemy(card.OwnerId) != null), Is.True);
+            yield return PveLauncherPlayModeTests.AssertLinkedHover(runtime,
+                overlay.GetComponent<UIDocument>().rootVisualElement, match.Encounter.Enemies[0].HeroId);
             yield return new WaitForEndOfFrame();
             var capture = ScreenCapture.CaptureScreenshotAsTexture();
-            System.IO.File.WriteAllBytes("tmp/w031-coop-join.png", capture.EncodeToPNG()); Object.Destroy(capture);
+            System.IO.File.WriteAllBytes("tmp/w032-coop-join.png", capture.EncodeToPNG()); Object.Destroy(capture);
             externalServer.Shutdown();
             yield return Until(() => Field<PrivateSessionClient>(lobby, "client").State != PrivateSessionClientState.Seated, "Host departure stops the joiner");
         }

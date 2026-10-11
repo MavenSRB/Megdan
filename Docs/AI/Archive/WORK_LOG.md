@@ -34,6 +34,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-029 | Heavy alone has two Defense cards; Melee and Ranged have none. | `work/W-029` |
 | W-030 | Playable PvE Blue team requires exactly three chosen heroes, retaining five placement choices. | `work/W-030` |
 | W-031 | PvE three-player Host/Join, owner-private hero control, host enemy/shared choices and reserved-seat reconnect. | `work/W-031` |
+| W-032 | Compact nameless enemy rows with four public slots, Heavy Defense cards and bidirectional map/rail hover; removed floating map strips. | `work/W-032` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -303,3 +304,12 @@ Closing checks: T2 owner/privacy/compatibility, keyed serialized play with three
 Completed: co-op starts after three ready players choose heroes, forwards owner-only commands, pauses for reserved-seat reconnect and retains terminal host loss without migration. Player-experience review corrected remote rail refresh and menu contrast; rules-authority, maintainability and risk review found no further in-scope defects. Internet and packaged-player validation were not claimed; existing packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-031`; exact checks/results and limitations live in its body.
+
+### [x] W-032 Compact enemy rail
+
+Approved: reduce enemies to token, four turn slots and Heavy's Defense cards; remove names/text above map tokens and preserve enemy token/rail hover in both directions. Only currently standing enemies have trays; remove on defeat, reveal on spawn. PVE-D29.
+Scope: presentation only, retaining shared card miniatures/previews and typed identity highlighting in solo and co-op; no rules, balance, ownership or package change.
+Closing checks: T2 compact geometry, correct public slots and Defense counts, no hero-sized sections/map labels, card previews, real camera-ray token hover and pointer-reachable row hover in solo and a joining client; shared hero-rail/identity regressions and visual inspection.
+Completed: 64-unit rows show only standing enemies (seven initially), disappearing on removal and appearing on spawn; Heavy has two purple Defense miniatures with spent cards dimmed, other types none. Full-card previews and linked hover remain functional. Review of player experience, rules authority, maintainability and risk found no further in-scope defects. Existing packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-032`; exact checks/results and limitations live in its body.

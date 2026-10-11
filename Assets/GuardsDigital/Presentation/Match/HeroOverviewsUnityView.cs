@@ -135,6 +135,10 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Optional public plan presentation; absent for ordinary hero rails.</summary>
         public Func<HeroOverviewViewModel, IReadOnlyList<HeroTurnSlotViewModel>> TurnSlotsOverride { get; set; }
 
+        /// <summary>Adds a public card to this view's shared full-face hover surface.</summary>
+        public VisualElement BuildPublicCardMiniature(string name, TrayCardViewModel card) =>
+            BuildMiniCard(name, card, card.AssistiveLabel, card);
+
         /// <summary>The public lobby roster supplies names for the same hero identities this rail draws.</summary>
         public void SetPlayerNames(IReadOnlyList<SeatRosterEntry> roster)
         {

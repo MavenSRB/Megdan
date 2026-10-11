@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
@@ -23,7 +22,7 @@ namespace GuardsDigital.Pve.Presentation
 {
     /// <summary>
     /// The PvE encounter on top of the existing match scene (PVE-D05/D10/D14/D16/D04): paces the
-    /// enemies' steps, shows each standing enemy's four-turn plan beside its token with its cards on
+    /// enemies' steps, shows each enemy's four-turn plan in a compact rail with its cards on
     /// hover, offers the round-start placement and granted levels, asks the player to settle enemy
     /// ties and reports the loss. Every command goes through the encounter session.
     /// </summary>
@@ -57,13 +56,9 @@ namespace GuardsDigital.Pve.Presentation
         private Label promptBanner;
         private Label message;
         private VisualElement actions;
-        private Label cardDetail;
-        private readonly Dictionary<HeroId, Label> strips = new Dictionary<HeroId, Label>();
         private readonly Dictionary<HeroId, VisualElement> enemyRows = new Dictionary<HeroId, VisualElement>();
         private readonly Dictionary<HeroId, Sprite> enemyArt = new Dictionary<HeroId, Sprite>();
         private HeroId hoveredEnemy;
-        private HeroId inspectedEnemy;
-        private VisualElement inspectionAnchor;
         private ScrollView enemyRail;
         private HeroOverviewsUnityView sharedEnemyView;
         private HeroOverviewsViewModel lastRailModel;
@@ -194,20 +189,6 @@ namespace GuardsDigital.Pve.Presentation
             actions.style.flexDirection = FlexDirection.Row;
             actions.style.flexWrap = Wrap.Wrap;
             panel.Add(actions);
-
-            cardDetail = Text(13, FontStyle.Normal, Color.white);
-            cardDetail.name = "pve-card-detail";
-            cardDetail.style.position = Position.Absolute;
-            cardDetail.style.backgroundColor = new Color(0.12f, 0.08f, 0.04f, 0.95f);
-            cardDetail.style.paddingLeft = 8;
-            cardDetail.style.paddingRight = 8;
-            cardDetail.style.paddingTop = 6;
-            cardDetail.style.paddingBottom = 6;
-            cardDetail.style.whiteSpace = WhiteSpace.Normal;
-            cardDetail.style.maxWidth = 360;
-            cardDetail.style.display = DisplayStyle.None;
-            cardDetail.pickingMode = PickingMode.Ignore;
-            root.Add(cardDetail);
         }
 
         private void Update()
@@ -257,27 +238,8 @@ namespace GuardsDigital.Pve.Presentation
         private void LateUpdate()
         {
             if (runtime == null) return;
-            PlaceStrips();
             RefreshEnemyRail();
             AdaptHudRails();
-        }
-
-        private void InspectEnemy(PveEnemyRecord enemy, VisualElement anchor)
-        {
-            inspectedEnemy = enemy.HeroId;
-            inspectionAnchor = anchor;
-            hoveredEnemy = enemy.HeroId;
-            runtime.BoardView.SetHoveredHero(enemy.HeroId);
-            ShowCards(enemy, anchor);
-        }
-
-        private void ClearInspection()
-        {
-            inspectedEnemy = default;
-            inspectionAnchor = null;
-            hoveredEnemy = default;
-            runtime.BoardView.SetHoveredHero(default);
-            cardDetail.style.display = DisplayStyle.None;
         }
 
         private void OnBoardHeroHighlighted(HeroId hero)
@@ -329,7 +291,8 @@ namespace GuardsDigital.Pve.Presentation
             {
                 lastRailModel = sourceModel;
                 sharedEnemyView.Render(new HeroOverviewsViewModel(sourceModel.Version,
-                    sourceModel.Heroes.Where(hero => encounter.FindEnemy(hero.HeroId) != null)));
+                    sourceModel.Heroes.Where(hero => encounter.FindEnemy(hero.HeroId) != null &&
+                        match.Heroes.Any(standing => standing.HeroId.Equals(hero.HeroId)))));
                 var column = sharedEnemyView.Root.Q("gd-hero-rail-red") ?? enemyRail.Q("gd-hero-rail-red");
                 enemyRail.Add(column);
                 column.style.position = Position.Relative;
@@ -358,15 +321,9 @@ namespace GuardsDigital.Pve.Presentation
                         initiative.style.unityTextAlign = TextAnchor.MiddleCenter;
                         miniature.Add(initiative);
                     }
-                    var reading = Text(12, FontStyle.Normal, Color.white);
-                    reading.name = "pve-enemy-reading";
-                    row.Add(reading);
                     if (enemyArt.TryGetValue(hero, out var sprite))
                         row.Q("gd-hero-icon").style.backgroundImage = new StyleBackground(sprite);
-                    // Enemies have neither items nor a coin reward; keep their identity, slots and discard UI.
-                    row.Q("gd-bonus-strip").style.display = DisplayStyle.None;
-                    var worth = row.Q("gd-hero-worth");
-                    if (worth != null) worth.style.display = DisplayStyle.None;
+                    CompactEnemyRow(row, hero);
                     enemyRows[hero] = row;
                 }
             }
@@ -375,15 +332,12 @@ namespace GuardsDigital.Pve.Presentation
             sharedEnemyView.Root.BringToFront();
             foreach (var enemy in encounter.Enemies)
             {
-                var row = enemyRows[enemy.HeroId];
+                if (!enemyRows.TryGetValue(enemy.HeroId, out var row)) continue;
                 var standing = match.Heroes.Any(value => value.HeroId.Equals(enemy.HeroId));
                 var defeated = match.Scoreboard.Any(value => value.HeroId.Equals(enemy.HeroId) && value.Deaths > 0);
                 var acting = match.IsTurnActive && match.SelectedActor.ActorId.Equals(enemy.HeroId);
                 var state = standing ? (acting ? "Acting" : "On board") : defeated ? "Defeated" : "Spawn round " + enemy.Spawn.Round;
-                var defenses = match.Cards.Count(card => card.OwnerId.Equals(enemy.HeroId) &&
-                    card.State.Location == CardLocation.Hand && cards.Purple(card.DefinitionReference.DefinitionId) != null);
-                row.Q<Label>("pve-enemy-reading").text = state + " | Level " + enemy.Type.Level +
-                    " | " + defenses + " defense";
+                row.tooltip = enemy.DisplayName + " — " + state;
                 row.style.opacity = defeated && !standing ? 0.6f : 1f;
                 row.style.backgroundColor = acting || hoveredEnemy.Equals(enemy.HeroId) || promptedEnemy.Equals(enemy.HeroId)
                     ? new Color(0.45f, 0.24f, 0.08f, 1f) : new Color(0.17f, 0.09f, 0.08f, 1f);
@@ -393,8 +347,69 @@ namespace GuardsDigital.Pve.Presentation
                         view.SetTokenFaceOverride(art.texture);
                 }
             }
-            if (inspectedEnemy.IsDefined && inspectionAnchor != null)
-                ShowCards(encounter.FindEnemy(inspectedEnemy), inspectionAnchor);
+        }
+
+        private void CompactEnemyRow(VisualElement row, HeroId hero)
+        {
+            // Keep the shared token, turn miniatures, hover anchors and row identity handlers.
+            // Hero progression, current-card plaque and discard regions do not belong in this rail.
+            var icon = row.Q("gd-hero-icon");
+            var turns = row.Q("gd-turn-slots");
+            icon.RemoveFromHierarchy();
+            turns.RemoveFromHierarchy();
+            row.Clear();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+            row.style.height = 64;
+            row.style.minHeight = 64;
+            row.style.paddingTop = row.style.paddingBottom = 4;
+            row.style.paddingLeft = row.style.paddingRight = 3;
+            row.style.marginBottom = 5;
+            icon.style.width = icon.style.height = 36;
+            icon.style.minWidth = 36;
+            icon.style.flexShrink = 0;
+            row.Add(icon);
+            turns.style.flexGrow = 1;
+            turns.style.minWidth = 0;
+            turns.style.marginTop = 0;
+            turns.style.marginLeft = 3;
+            turns.style.paddingLeft = turns.style.paddingRight = 0;
+            foreach (var active in turns.Query<Label>("gd-turn-slot-active").ToList())
+                active.style.display = DisplayStyle.None;
+            foreach (var outline in turns.Query<VisualElement>("gd-turn-slot-outline").ToList())
+                outline.style.paddingLeft = outline.style.paddingRight = 0;
+            row.Add(turns);
+
+            var defenses = ReadModel.Cards.Where(card => card.OwnerId.Equals(hero) &&
+                cards.Purple(card.DefinitionReference.DefinitionId) != null).OrderBy(card => card.Id.Value).ToArray();
+            if (defenses.Length == 0) return;
+            var defenseSlots = new VisualElement { name = "pve-defense-slots" };
+            defenseSlots.style.flexDirection = FlexDirection.Row;
+            defenseSlots.style.marginLeft = 4;
+            defenseSlots.style.flexShrink = 0;
+            row.Add(defenseSlots);
+            foreach (var card in defenses)
+            {
+                var definition = ReadModel.Definitions.First(value => value.Reference.Equals(card.DefinitionReference));
+                var available = card.State.Location == CardLocation.Hand;
+                var face = new TrayCardViewModel(card.Id, definition.Reference, definition.DisplayName,
+                    definition.Progression.Color, CurrentRoundCards.ReadFace(definition),
+                    available ? TrayCardGroup.Available : TrayCardGroup.Discarded, 0, false, false);
+                var miniature = sharedEnemyView.BuildPublicCardMiniature("pve-defense-card", face);
+                // Purple is PvE presentation, not a tabletop progression colour.
+                miniature.style.backgroundColor = new Color(.48f, .22f, .68f);
+                miniature.style.width = 20;
+                miniature.style.marginLeft = 2;
+                miniature.style.opacity = available ? 1f : .35f;
+                miniature.userData = card.Id;
+                var value = Text(11, FontStyle.Bold, Color.white);
+                value.name = "pve-defense-value";
+                value.text = cards.Purple(card.DefinitionReference.DefinitionId).Defense.ToString();
+                value.style.unityTextAlign = TextAnchor.MiddleCenter;
+                value.pickingMode = PickingMode.Ignore;
+                miniature.Add(value);
+                defenseSlots.Add(miniature);
+            }
         }
 
         private void OnDestroy()
@@ -531,121 +546,10 @@ namespace GuardsDigital.Pve.Presentation
             runtime.RefreshAll();
         }
 
-        private void PlaceStrips()
-        {
-            var match = ReadModel;
-            var camera = Camera.main;
-            var views = runtime.BoardView.HeroViews.Where(view => view != null).ToArray();
-            foreach (var enemy in encounter.Enemies)
-            {
-                if (!strips.TryGetValue(enemy.HeroId, out var strip))
-                {
-                    strip = Text(12, FontStyle.Bold, Color.white);
-                    strip.name = "pve-plan-" + enemy.HeroId.Value;
-                    strip.style.position = Position.Absolute;
-                    strip.style.backgroundColor = enemy.Spawn.Round > 1
-                        ? new Color(0.36f, 0.2f, 0.06f, 0.9f)
-                        : new Color(0.85f, 0.42f, 0.08f, 0.9f);
-                    strip.style.paddingLeft = 4;
-                    strip.style.paddingRight = 4;
-                    var captured = enemy;
-                    strip.RegisterCallback<PointerEnterEvent>(_ => InspectEnemy(captured, strip));
-                    strip.RegisterCallback<PointerLeaveEvent>(_ => ClearInspection());
-                    root.Add(strip);
-                    strips[enemy.HeroId] = strip;
-                }
-
-                var standing = match.Heroes.Any(value => value.HeroId.Equals(enemy.HeroId));
-                var view = views.FirstOrDefault(value => value.Occupancy.HeroId.Equals(enemy.HeroId) && value.gameObject.activeInHierarchy);
-                if (!standing || view == null || camera == null || root.panel == null)
-                {
-                    strip.style.display = DisplayStyle.None;
-                    continue;
-                }
-
-                var screen = camera.WorldToScreenPoint(view.transform.position);
-                if (screen.z < 0)
-                {
-                    strip.style.display = DisplayStyle.None;
-                    continue;
-                }
-
-                var point = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screen.x, Screen.height - screen.y));
-                strip.style.display = DisplayStyle.Flex;
-                // W-026. The enemy a standing prompt decides for is marked on the board as well.
-                var edge = promptedEnemy.Equals(enemy.HeroId) ? 2f : 0f;
-                var edgeColour = new Color(1f, 0.95f, 0.3f, 1f);
-                strip.style.borderTopWidth = edge;
-                strip.style.borderBottomWidth = edge;
-                strip.style.borderLeftWidth = edge;
-                strip.style.borderRightWidth = edge;
-                strip.style.borderTopColor = edgeColour;
-                strip.style.borderBottomColor = edgeColour;
-                strip.style.borderLeftColor = edgeColour;
-                strip.style.borderRightColor = edgeColour;
-                strip.style.left = point.x - 60;
-                strip.style.top = point.y - 52;
-                strip.text = PlanText(match, enemy);
-            }
-        }
-
-        private string PlanText(IMatchReadModel match, PveEnemyRecord enemy)
-        {
-            var plan = PvePlans.PlanFor(encounter, enemy, Math.Max(match.RoundIndex, enemy.Spawn.Round));
-            var slots = plan.Select((key, index) =>
-            {
-                var card = enemy.Type.FindOrange(key);
-                var text = card == null ? "?" : $"{card.Initiative}{ActionGlyph(card)}";
-                return match.RoundIndex >= enemy.Spawn.Round && index + 1 == match.TurnIndex ? "[" + text + "]" : text;
-            });
-            return enemy.Ordinal.ToString(CultureInfo.InvariantCulture) + ": " + string.Join(" ", slots);
-        }
-
-        private static string ActionGlyph(PveOrangeCard card)
-        {
-            if (card.IsIdle) return "z";
-            var attack = card.Options.Any(option => option.Kind == PveOptionKind.Attack);
-            var move = card.Options.Any(option => option.Kind == PveOptionKind.Move);
-            return attack && move ? "AM" : attack ? "A" : "M";
-        }
-
-        private void ShowCards(PveEnemyRecord enemy, VisualElement anchor)
-        {
-            var lines = new List<string> { enemy.DisplayName + " (level " + enemy.Type.Level + ")" };
-            foreach (var card in enemy.Type.OrangeCards)
-            {
-                var copies = card.Copies > 1 ? " x" + card.Copies : string.Empty;
-                if (card.IsIdle)
-                {
-                    lines.Add($"{card.Key}{copies} {card.Name}: Init {card.Initiative}, idle");
-                    continue;
-                }
-
-                var values = new List<string> { "Init " + card.Initiative };
-                if (card.AttackValue.HasValue)
-                    values.Add("Atk " + card.AttackValue + (card.AttackRange > 0 ? " range " + card.AttackRange : " adjacent"));
-                if (card.MoveValue.HasValue) values.Add("Move " + card.MoveValue);
-                var options = string.Join(", then ", card.Options.Select(option =>
-                    (option.Kind == PveOptionKind.Attack ? "attack " : "move to ") + option.Target.ToString().ToLowerInvariant()));
-                lines.Add($"{card.Key}{copies} {card.Name}: {string.Join(", ", values)} - {options}");
-            }
-
-            foreach (var card in enemy.Type.PurpleCards)
-            {
-                lines.Add($"{card.Key} {card.Name}: Defense {card.Defense} (purple)");
-            }
-
-            cardDetail.text = string.Join("\n", lines);
-            var bounds = anchor.worldBound;
-            cardDetail.style.left = Mathf.Clamp(bounds.xMax + 8, 0, Mathf.Max(0, root.resolvedStyle.width - 360));
-            cardDetail.style.top = Mathf.Clamp(bounds.yMin, 0, Mathf.Max(0, root.resolvedStyle.height - 300));
-            cardDetail.style.display = DisplayStyle.Flex;
-            cardDetail.BringToFront();
-        }
 
         /// <summary>
         /// The existing HUD lays its rails out for three heroes a side: the enemies' rail is hidden
-        /// (their plans are shown beside their tokens) and a Blue rail of more than three heroes is
+        /// (replaced by the compact public enemy rail) and a Blue rail of more than three heroes is
         /// scaled to fit.
         /// </summary>
         private void AdaptHudRails()

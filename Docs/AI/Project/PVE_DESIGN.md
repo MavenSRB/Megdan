@@ -60,6 +60,10 @@ Supersedes PVE-D02's playable team-size range: the player chooses exactly three 
 
 Add Host/Join to the separate PvE executable while retaining solo. A playing host and two joiners each control one distinct Blue hero. Only the host runs enemy/encounter automation and decides enemy ties and shared Blue-team choices; hero-owned actions remain with that hero's player. Reuse private keyed TCP and owner-private projections, with reserved-seat reconnect and terminal host loss, no migration. All three players must be present and ready before starting. Existing decks, waves, three-hero count and five placement options remain unchanged. Acceptance: host and two clients agree on encounter state; unauthorized hero/shared/enemy commands are refused, private cards remain private, public enemy plans remain visible, reconnect restores the same seat, and PvP remains unchanged.
 
+## PVE-D29 Compact enemy presentation (Approved, user 2026-10-12)
+
+Supersedes PVE-D24's full hero plaque and PVE-D16's map plan strip: enemy rows show their official token, four public turn-card slots and, only for Heavy, its two Defense cards. Only enemies currently on the board have rows: defeated enemies disappear, and future waves appear when spawned. No hero name/level/item/discard sections or floating text above map tokens. Spent defenses stay visible but dimmed. Preserve shared full-card hover; token-to-row and row-to-token hover highlight the same enemy in solo and co-op. Identity/status remain available through inspection rather than occupying a permanent text row. No rules, cards, plan timing or ownership change. Closing checks: compact geometry, four planned cards, correct Defense slots/state, row spawn/removal, absence of map labels, public-card previews and linked hover in solo and a joining client.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

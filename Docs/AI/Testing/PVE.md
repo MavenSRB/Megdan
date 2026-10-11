@@ -24,7 +24,7 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 
 `Assets/Tests/PvePlayMode` holds `GuardsDigital.Pve.PlayModeTests` (namespace `GuardsDigital.Tests.Pve.PlayMode`). They load the launcher scene by path in play mode, because it is not in Build Settings. A request filter of `GuardsDigital.Tests.Pve.PlayMode` selects them. They cover:
 - the launcher composing into the match scene with the encounter session and overlay;
-- the paced enemy commitments after placement and the plan strips;
+- the paced enemy commitments after placement, compact public four-slot enemy rails, Heavy defenses, no floating map labels and bidirectional token/rail hover;
 - the enemy card editor's fields.
 
 ## Three-player co-op
