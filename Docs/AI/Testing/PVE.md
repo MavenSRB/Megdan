@@ -27,6 +27,12 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 - the paced enemy commitments after placement and the plan strips;
 - the enemy card editor's fields.
 
+## Three-player co-op
+
+`GuardsDigital.Tests.Pve.PveCoopMatchTests` covers three Blue seats, public enemy cards, private hero cards, ownership and mode/content identity. `GuardsDigital.Tests.Pve.PveCoopWireTests` drives keyed serialized admission, selection, play, reserved-seat reconnect and host loss. Shared host-policy or selection-composition changes additionally select the affected owner-projection, team-agreement, lobby/hero-selection, admission/reconnect and architecture fixtures, plus the existing-mode identity oracle above.
+
+`GuardsDigital.Tests.Pve.PlayMode.PveCoopLobbyPlayModeTests` uses real loopback TCP and pointer-reachable Host/Join/Ready/hero controls, scene handoff, local reconnect and remote enemy rails. Its headless peers share the Editor process; it does not claim external-network or packaged-player coverage. Retain the solo launcher fixture for changes to the shared launcher/overlay path.
+
 ## Build gate
 
 Run the existing gate first, then the PvE gate, so the PvE gate can check isolation:

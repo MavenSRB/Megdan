@@ -206,6 +206,14 @@ namespace GuardsDigital.Pve.Presentation
             start.style.unityFontStyleAndWeight = FontStyle.Bold;
             column.Add(start);
             column.Add(problemLabel);
+            var coop = new Button(() =>
+            {
+                if (!ulong.TryParse(seedField.value, out var coopSeed))
+                { problemLabel.text = "The seed must be a whole number."; return; }
+                PveCoopLobby.Open(coopSeed);
+                GetComponent<UIDocument>().enabled = false;
+            }) { text = "HOST / JOIN CO-OP", name = "pve-coop" };
+            column.Add(coop);
             Refresh();
         }
 

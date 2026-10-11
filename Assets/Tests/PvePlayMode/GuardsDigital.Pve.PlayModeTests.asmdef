@@ -7,6 +7,7 @@
         "GuardsDigital.Core",
         "GuardsDigital.Core.CardState",
         "GuardsDigital.Application",
+        "GuardsDigital.Network",
         "GuardsDigital.Presentation",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.Runtime"

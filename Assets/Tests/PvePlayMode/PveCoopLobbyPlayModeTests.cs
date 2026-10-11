@@ -1,0 +1,246 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Network;
+using GuardsDigital.Presentation.Match;
+using GuardsDigital.Pve.Play;
+using GuardsDigital.Pve.Content;
+using GuardsDigital.Pve.Composition;
+using GuardsDigital.Presentation.Board;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Pve.Presentation;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
+
+namespace GuardsDigital.Tests.Pve.PlayMode
+{
+    public sealed class PveCoopLobbyPlayModeTests
+    {
+        private readonly List<TcpSessionClientTransport> transports = new List<TcpSessionClientTransport>();
+        private readonly List<PrivateSessionClient> clients = new List<PrivateSessionClient>();
+        private PveCoopLobby lobby;
+        private TcpSessionListener externalListener;
+        private PrivateSessionHost externalServer;
+        private static T Field<T>(object target, string name) => (T)target.GetType()
+            .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(target);
+
+        private void Pump()
+        {
+            if (externalListener != null)
+            {
+                foreach (var item in externalListener.Drain())
+                    switch (item.Kind)
+                    {
+                        case TransportEventKind.Connected: externalServer.OnConnected(item.Ordinal, DateTime.UtcNow.Ticks); break;
+                        case TransportEventKind.Frame: externalServer.OnFrame(item.Ordinal, item.Frame); break;
+                        case TransportEventKind.Disconnected: externalServer.OnDisconnected(item.Ordinal); break;
+                        case TransportEventKind.StreamRejected: externalServer.OnStreamRejected(item.Ordinal, item.Reason); break;
+                    }
+                externalServer.Sweep(DateTime.UtcNow.Ticks);
+            }
+            for (var i = 0; i < transports.Count; i++)
+                foreach (var item in transports[i].Drain())
+                    switch (item.Kind)
+                    {
+                        case TransportEventKind.Connected: clients[i].OnConnected(); break;
+                        case TransportEventKind.Frame: clients[i].OnFrame(item.Frame); break;
+                        case TransportEventKind.Disconnected: clients[i].OnDisconnected(); break;
+                        case TransportEventKind.StreamRejected: clients[i].OnStreamRejected(item.Reason); break;
+                    }
+        }
+        private IEnumerator Until(Func<bool> done, string reason)
+        {
+            var end = Time.realtimeSinceStartup + 45;
+            while (!done() && Time.realtimeSinceStartup < end) { Pump(); yield return null; }
+            var local = lobby == null ? null : Field<PrivateSessionClient>(lobby, "client");
+            var authority = lobby == null ? null : Field<PveCoopMatch>(lobby, "match");
+            Assert.That(done(), Is.True, reason + "; local=" + local?.State + "; feedback=" + local?.MatchFeedback +
+                "; result=" + local?.LastSubmissionResult?.Accepted + "; version=" + authority?.Host.Version +
+                "; roster=" + string.Join(",", local?.Roster.Select(row => row.Seat + ":" + row.Occupancy + ":" + row.IsReady) ?? Array.Empty<string>()) +
+                "; remote=" + string.Join(",", clients.Select(client => client.State + ":" + client.IsReady)));
+            yield return null;
+        }
+        private static void Click(VisualElement element)
+        {
+            Assert.That(element, Is.Not.Null);
+            Assert.That(element.enabledInHierarchy, Is.True);
+            var point = element.worldBound.center;
+            var picked = element.panel.Pick(point);
+            Assert.That(picked == element || element.Contains(picked), Is.True, "Control is pointer reachable: " + element.name);
+            using (var down = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, mousePosition = point, button = 0, clickCount = 1 }))
+            { down.target = picked; picked.SendEvent(down); }
+            using (var up = PointerUpEvent.GetPooled(new Event { type = EventType.MouseUp, mousePosition = point, button = 0, clickCount = 1 }))
+            { up.target = picked; picked.SendEvent(up); }
+        }
+
+        [UnityTest]
+        public IEnumerator HostMenuThreePlayersPlacementAndReconnectUseTheConfiguredScene()
+        {
+#if UNITY_EDITOR
+            var load = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(
+                PveLauncherPlayModeTests.LauncherScenePath, new LoadSceneParameters(LoadSceneMode.Single));
+            while (!load.isDone) yield return null;
+#endif
+            yield return null; yield return null;
+            var launcher = Object.FindAnyObjectByType<PveLauncher>();
+            Click(launcher.GetComponent<UIDocument>().rootVisualElement.Q<Button>("pve-coop"));
+            yield return null; yield return null;
+            lobby = Object.FindAnyObjectByType<PveCoopLobby>();
+            Assert.That(lobby, Is.Not.Null);
+            Field<TextField>(lobby, "port").value = "19531";
+            var root = lobby.GetComponent<UIDocument>().rootVisualElement;
+            Assert.That(root.Q<Label>("pve-coop-title").resolvedStyle.color, Is.EqualTo(Color.white));
+            Assert.That(root.Q<Button>("pve-coop-host").resolvedStyle.color, Is.EqualTo(Color.black));
+            Assert.That(Field<TextField>(lobby, "address").resolvedStyle.color, Is.EqualTo(Color.black));
+            yield return new WaitForEndOfFrame();
+            var menu = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w031-coop-menu-styled.png", menu.EncodeToPNG()); Object.Destroy(menu);
+            Click(root.Q<Button>("pve-coop-host"));
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "client")?.GrantedSeat != null, "Host takes its own seat");
+            var server = Field<PrivateSessionHost>(lobby, "server");
+            Assert.That(PrivateSessionEndpoint.TryParseAddress("127.0.0.1:19531", out var target, out _), Is.True);
+            for (var i = 2; i <= 3; i++)
+            {
+                var transport = new TcpSessionClientTransport();
+                var client = new PrivateSessionClient(server.Identity, new SeatId("blue-player-0" + i), "", transport, new CryptoNonceSource());
+                transports.Add(transport); clients.Add(client);
+                Assert.That(transport.Connect(target, 3, out var error), Is.True, error);
+            }
+            yield return Until(() => clients.All(client => client.GrantedSeat != null), "Two joiners claim their seats");
+            foreach (var client in clients) Assert.That(client.TrySetReadiness(true), Is.True);
+            Click(root.Q<Button>("pve-coop-ready"));
+            yield return Until(() => root.Q<Button>("pve-coop-pick-hero-wasp").enabledSelf, "All players ready, host can pick");
+            Click(root.Q<Button>("pve-coop-pick-hero-wasp"));
+            yield return Until(() => clients[0].Roster[0].HasChosenHero, "Host's choice reaches joiners");
+            Assert.That(clients[0].TryChooseHero("hero-arien"), Is.True);
+            yield return Until(() => clients[1].Roster[1].HasChosenHero, "Second choice reaches third player");
+            Assert.That(clients[1].TryChooseHero("hero-brogan"), Is.True);
+            yield return Until(() => Field<ConfiguredMatchSceneRuntime>(lobby, "runtime") != null, "Host enters configured match");
+            var runtime = Field<ConfiguredMatchSceneRuntime>(lobby, "runtime");
+            Assert.That(runtime.Seat.Id.Value, Is.EqualTo("blue-player-01"));
+            Assert.That(runtime.Seat.HeroId.Value, Is.EqualTo("hero-wasp"));
+            var match = Field<PveCoopMatch>(lobby, "match");
+            yield return Until(() => match.Session.Projection.PendingSystemTransitionStep != null, "Placement begins");
+            for (var guard = 0; guard < 3; guard++)
+            {
+                var seat = match.Host.Seats.Seats.First(value => match.Host.ProjectionForSeat(value.Id).AuthorizedCommands
+                    .Any(command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep));
+                var command = match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands.First(value => value.Kind == DirectorCommandKind.AnswerSystemTransitionStep);
+                var before = match.Host.Version;
+                if (seat.Id.Value == "blue-player-01")
+                {
+                    yield return null; yield return null;
+                    var overlay = Object.FindAnyObjectByType<PveEncounterView>().GetComponent<UIDocument>().rootVisualElement;
+                    Click(overlay.Query<Button>().ToList().First(button => button.text.StartsWith("Place at ")));
+                }
+                else
+                {
+                    var owner = clients.Single(client => client.TargetSeat.Equals(seat.Id));
+                    yield return Until(() => owner.LatestProjection.Version == before, "Owner receives placement projection");
+                    Assert.That(owner.TrySubmitCommand(command, out _), Is.True);
+                }
+                yield return Until(() => match.Host.Version > before, "Owner placement accepted for " + seat.Id);
+            }
+            yield return Until(() => runtime.ReadModel.Heroes.Count(hero => runtime.ReadModel.Participants.GetTeamForHero(hero.HeroId).Side == TeamSide.Blue) == 3,
+                "All three Blue heroes drawn");
+            yield return new WaitForEndOfFrame();
+            var capture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w031-coop-host.png", capture.EncodeToPNG()); Object.Destroy(capture);
+            var hostClient = Field<PrivateSessionClient>(lobby, "client");
+            Field<TcpSessionClientTransport>(lobby, "transport").Dispose();
+            hostClient.OnDisconnected();
+            yield return Until(() => server.IsPaused, "Disconnect pauses authority");
+            yield return null;
+            Click(root.Q<Button>("pve-coop-reconnect"));
+            yield return Until(() => !server.IsPaused && hostClient.State == PrivateSessionClientState.Seated, "Menu reconnect restores the same seat");
+            Assert.That(hostClient.TargetSeat.Value, Is.EqualTo("blue-player-01"));
+            Assert.That(runtime.ReadModel.Cards.Where(card => runtime.ReadModel.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue)
+                .All(card => card.OwnerId.Equals(runtime.Seat.HeroId)), Is.True);
+        }
+
+        [UnityTearDown]
+        public IEnumerator Cleanup()
+        {
+            if (lobby != null) Object.Destroy(lobby.gameObject);
+            foreach (var transport in transports) transport.Dispose();
+            transports.Clear(); clients.Clear();
+            externalServer?.Shutdown(); externalListener?.Dispose();
+            externalServer = null; externalListener = null;
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator JoinMenuClaimsOwnSeatAndDrawsRemoteEnemyPlansWithoutAuthority()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
+            var map = OfficialBoardMapCatalog.Load().Load(layout.MapReference);
+            PveComposedEncounter Compose(string[] ids) => PveEncounterComposer.Compose(new PveEncounterSetup(ids, 42), layout, catalog, map);
+            var initial = Compose(new[] { "hero-arien", "hero-brogan", "hero-wasp" });
+            var baseIdentity = PrivateSessionIdentity.ForComposition(map, initial.InitialState.InitialConfiguration, initial.InitialState.Setup, BuildIdentityStamp.Current);
+            var identity = PveCoopMatch.Identity(baseIdentity, 42, PveContentLoader.SaveCatalog(catalog),
+                System.IO.File.ReadAllText(System.IO.Path.Combine(PveDataPaths.Directory, "encounter.json")));
+            Assert.That(PrivateSessionEndpoint.TryParseAddress("127.0.0.1:19532", out var endpoint, out _), Is.True);
+            externalListener = new TcpSessionListener(); externalListener.Start(endpoint);
+            var match = new PveCoopMatch(initial);
+            externalServer = new PrivateSessionHost(match.Host, identity, "", externalListener, new CryptoNonceSource());
+            externalServer.SeatComposition = selection =>
+            {
+                var choices = selection.PickOrder.Select(seat => { selection.TryGetChoice(seat.Seat, out var hero); return hero.HeroIdValue; }).ToArray();
+                match = new PveCoopMatch(Compose(choices)); return match.Host;
+            };
+            foreach (var seat in new[] { "blue-player-01", "blue-player-03" })
+            {
+                var transport = new TcpSessionClientTransport();
+                var client = new PrivateSessionClient(identity, new SeatId(seat), "", transport, new CryptoNonceSource());
+                transports.Add(transport); clients.Add(client);
+                Assert.That(transport.Connect(endpoint, 3, out var problem), Is.True, problem);
+            }
+            lobby = PveCoopLobby.Open(42);
+            Field<TextField>(lobby, "port").value = "19532";
+            var root = lobby.GetComponent<UIDocument>().rootVisualElement;
+            yield return null; yield return null;
+            Click(root.Q<Button>("pve-coop-join"));
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "client")?.State == PrivateSessionClientState.Admitted,
+                "Join opens the host's three-seat roster");
+            Click(root.Query<Button>().ToList().Single(button => button.text == "Take blue-player-02"));
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "client").GrantedSeat != null, "Joiner claims second seat");
+            yield return Until(() => clients.All(client => client.GrantedSeat != null), "Other two seats admitted");
+            foreach (var client in clients) Assert.That(client.TrySetReadiness(true), Is.True);
+            Click(root.Q<Button>("pve-coop-ready"));
+            yield return Until(() => externalServer.ReadySeatCount == 3, "All three players ready");
+            Assert.That(clients[0].TryChooseHero("hero-wasp"), Is.True);
+            yield return Until(() => root.Q<Button>("pve-coop-pick-hero-arien").enabledSelf, "Joiner's turn to pick");
+            yield return new WaitForEndOfFrame();
+            var lobbyCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w031-coop-join-menu.png", lobbyCapture.EncodeToPNG()); Object.Destroy(lobbyCapture);
+            Click(root.Q<Button>("pve-coop-pick-hero-arien"));
+            yield return Until(() => clients[1].Roster[1].HasChosenHero, "Choice reaches host and third player");
+            Assert.That(clients[1].TryChooseHero("hero-brogan"), Is.True);
+            yield return Until(() => Field<ConfiguredMatchSceneRuntime>(lobby, "runtime") != null, "Joiner enters configured scene");
+            var runtime = Field<ConfiguredMatchSceneRuntime>(lobby, "runtime");
+            Assert.That(runtime.Seat.Id.Value, Is.EqualTo("blue-player-02"));
+            Assert.That(runtime.Seat.HeroId.Value, Is.EqualTo("hero-arien"));
+            Assert.That(Field<PrivateSessionHost>(lobby, "server"), Is.Null, "Joiner never hosts an authority");
+            yield return null; yield return null;
+            var overlay = Object.FindAnyObjectByType<PveEncounterView>();
+            Assert.That(overlay.Session, Is.Null);
+            Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Query<VisualElement>()
+                .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(11));
+            Assert.That(runtime.ReadModel.Cards.Any(card => match.Encounter.FindEnemy(card.OwnerId) != null), Is.True);
+            yield return new WaitForEndOfFrame();
+            var capture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w031-coop-join.png", capture.EncodeToPNG()); Object.Destroy(capture);
+            externalServer.Shutdown();
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "client").State != PrivateSessionClientState.Seated, "Host departure stops the joiner");
+        }
+    }
+}

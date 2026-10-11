@@ -320,6 +320,23 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Optional asymmetric-mode seat visibility and command authorization. Null preserves PvP behavior.
+    /// </summary>
+    public sealed class MatchSeatPolicy
+    {
+        public TeamSide PlayerSide { get; }
+        public TeamSide PublicCardSide { get; }
+        public Func<MatchSessionProjection, MatchSeat, IReadOnlyList<DirectorCommand>, IReadOnlyList<DirectorCommand>> Commands { get; }
+        public MatchSeatPolicy(TeamSide playerSide, TeamSide publicCardSide,
+            Func<MatchSessionProjection, MatchSeat, IReadOnlyList<DirectorCommand>, IReadOnlyList<DirectorCommand>> commands)
+        {
+            PlayerSide = playerSide;
+            PublicCardSide = publicCardSide;
+            Commands = commands ?? throw new ArgumentNullException(nameof(commands));
+        }
+    }
+
+    /// <summary>
     /// Milestone 8.30. The serialized executor around one Unity-free <see cref="IMatchSession"/>.
     /// </summary>
     /// <remarks>
@@ -469,8 +486,11 @@ namespace GuardsDigital.Application
         /// </summary>
         private string undoFloorDetail = string.Empty;
 
-        public MatchHost(IMatchSession session)
+        private readonly MatchSeatPolicy seatPolicy;
+
+        public MatchHost(IMatchSession session, MatchSeatPolicy seatPolicy = null)
         {
+            this.seatPolicy = seatPolicy;
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             Experiments = (session as MatchSession)?.Experiments ?? ExperimentalMatchOptions.Disabled;
             clock = new MatchClock(Experiments);
@@ -943,6 +963,7 @@ namespace GuardsDigital.Application
             {
                 seatedParticipants = participants;
                 seatBinding = MatchSeatBinding.ForParticipants(participants);
+                if (seatPolicy != null) seatBinding = seatBinding.ForPlayerSide(seatPolicy.PlayerSide);
             }
 
             return seatBinding;
@@ -961,10 +982,10 @@ namespace GuardsDigital.Application
         private SeatProjection ProjectionForBound(MatchSeat seat)
         {
             var source = session.Projection;
-            var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
+            var agreement = seatPolicy == null ? teamAgreement.ProjectionFor(source, CurrentSeats(), seat) : null;
             return SeatProjectionFactory.ForSeat(
-                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
-                CoordinationFor(seat), coordination.Revision, coordination.Generation, ClockState);
+                source, seat, agreement, seatPolicy == null && CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
+                CoordinationFor(seat), coordination.Revision, coordination.Generation, ClockState, seatPolicy);
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -1127,6 +1148,7 @@ namespace GuardsDigital.Application
         /// </remarks>
         private void ContinueEndOfRound()
         {
+            if (seatPolicy != null) return; // A mode's own driver owns its continuation pace.
             for (var stage = 0; stage < EndOfRoundContinuationStageLimit; stage++)
             {
                 var projection = session.Projection;
@@ -1451,6 +1473,7 @@ namespace GuardsDigital.Application
 
         private bool CanSeatUndo(MatchSeat seat, out string detail)
         {
+            if (seatPolicy != null) { detail = "This mode does not offer seat Undo."; return false; }
             var projection = session.Projection;
             if (CanRetractCommitment(projection, seat.HeroId))
             {

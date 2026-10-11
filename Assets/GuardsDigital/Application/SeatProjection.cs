@@ -1296,7 +1296,8 @@ namespace GuardsDigital.Application
             MatchUndoMarker undoMarker = default,
             ExperimentalMatchOptions experiments = null,
             IReadOnlyList<TeammateMarker> teammateMarkers = null,
-            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
+            long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null,
+            MatchSeatPolicy seatPolicy = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -1309,7 +1310,8 @@ namespace GuardsDigital.Application
                 .ToArray();
             var publicCards = source.Cards
                 .Where(card => !card.OwnerId.Equals(seat.HeroId))
-                .Where(card => IsPublic(card, source.MatchLog))
+                .Where(card => IsPublic(card, source.MatchLog) || (seatPolicy != null &&
+                    source.Participants.GetTeamForHero(card.OwnerId).Side == seatPolicy.PublicCardSide))
                 .ToArray();
             // Milestone 9.30b. The source's own list, taken whole as the match log is: every count in
             // it is table-public, so there is nothing to scope away.
@@ -1339,7 +1341,8 @@ namespace GuardsDigital.Application
                 handSummaries,
                 owner,
                 ownsDecision ? NarrowContract(source.DecisionContract, seat) : null,
-                AuthorizedCommands(source, seat, owner),
+                seatPolicy == null ? AuthorizedCommands(source, seat, owner) :
+                    seatPolicy.Commands(source, seat, AuthorizedCommands(source, seat, owner)),
                 new SeatPendingSurface(source, seat, ownsDecision, isActor, nameableCardIds),
                 teamAgreement,
                 isSeatUndoAvailable,

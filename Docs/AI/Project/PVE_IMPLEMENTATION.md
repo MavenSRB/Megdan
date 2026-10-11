@@ -104,6 +104,14 @@ The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exact
 
 ## Launch, smoke and build
 
+### Co-op integration (PVE-D28, W-031)
+
+The separate launcher adds a Host/Join menu. A playing host and two joiners claim three Blue seats, ready and choose distinct heroes. The host controls enemies and team-wide choices; placement and level-up remain hero-owned. Host and joiners enter the same seed and use identical PvE data. Existing private TCP provides keyed admission, reserved-seat reconnect and owner projections. An empty key binds loopback only; LAN/internet hosting requires a key and a reachable host port. No relay or host migration is added.
+
+`PveCoopMatch` composes the encounter session behind a seat-serving host. The optional `MatchSeatPolicy` limits player seats to Blue, exposes Red's public cards, filters hero-owned commands and leaves continuation/Undo/team decisions with the mode. The null policy preserves existing-mode behavior. `PrivateSessionHost.SeatComposition` is an optional asymmetric seat-pick callback; ordinary PvP still uses `IDeferredMatchComposition` and the equal-team `HeroLineup` contract. `PveCoopLobby` owns transport pumping, host automation and the local player's ordinary online client. `PveEncounterView.AttachCoop` reads the online projection for map/rail status and gives shared-choice controls only to the local host.
+
+Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. PvE co-op uses a distinct `pve-coop-1-<seed>` match-format identity and a digest including the PvE catalog and encounter data, so PvP, differing seeds and differing editable content cannot enter the same session. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
+
 - **Launch.** The launcher loads and validates content, offers every configured hero (up to the number of placement spaces) and a seed, composes the encounter and loads the match scene with the external composition. The match then runs in the existing Director mode.
 - **Smoke.** `-guardsPveSmokeTest` composes a fixed two-hero encounter and reports `GUARDS_PVE_SMOKE: BEGIN`, `COMPOSED` and `PASS` (or `FAIL`), then quits with its exit code.
 - **Build.** `PveBuildEntryPoint.BuildWindowsPvePlayer` builds `Builds/PveWin64/GuardsDigitalPvE.exe`. It sets the product name and version stamp for that build only and restores both before saving assets.

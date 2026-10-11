@@ -140,6 +140,10 @@ namespace GuardsDigital.Application
 
         public IReadOnlyList<MatchSeat> Seats => seats;
 
+        /// <summary>Optional mode boundary: retain only actual player seats, never synthetic opponents.</summary>
+        public MatchSeatBinding ForPlayerSide(TeamSide side) =>
+            new MatchSeatBinding(Array.AsReadOnly(seats.Where(seat => seat.TeamSide == side).ToArray()));
+
         /// <summary>The seat with that id, or <c>null</c> - an unknown seat is a refusal, not a throw.</summary>
         public MatchSeat Find(SeatId id) =>
             seats.FirstOrDefault(seat => seat.Id.Equals(id));

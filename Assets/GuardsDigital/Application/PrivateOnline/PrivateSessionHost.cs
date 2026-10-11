@@ -434,6 +434,9 @@ namespace GuardsDigital.Application
         /// </remarks>
         public IDeferredMatchComposition Composition { get; set; }
 
+        /// <summary>Optional asymmetric-mode composition. Ordinary PvP retains its printed HeroLineup contract.</summary>
+        public Func<HeroSelectionStage, IMatchHost> SeatComposition { get; set; }
+
         public int TotalSeats => matchHost.Seats.Seats.Count;
 
         public int ClaimedSeatCount
@@ -1411,7 +1414,7 @@ namespace GuardsDigital.Application
             }
 
             var composer = Composition;
-            if (composer == null)
+            if (composer == null && SeatComposition == null)
             {
                 // Milestone 8.35z43. The two conditions used to share one `return`, which
                 // made this case - a selection that COMPLETED with no composer attached - silently
@@ -1454,7 +1457,7 @@ namespace GuardsDigital.Application
                     " before the transition.");
             }
 
-            var composed = composer.ComposeForLineup(selection.BuildLineup());
+            var composed = SeatComposition != null ? SeatComposition(selection) : composer.ComposeForLineup(selection.BuildLineup());
             if (composed == null)
             {
                 return false;

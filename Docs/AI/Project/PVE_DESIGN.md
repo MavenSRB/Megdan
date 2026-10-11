@@ -4,7 +4,7 @@ Canonical owner for original PvE product and rule decisions. Return to [project 
 
 ## Approved direction
 
-Design PvE alongside iteration, testing and repairs to the existing private game. The first slice is a single-player **test** encounter shipped as a separate executable; co-op and a merged executable are later work. Its source is co-designer Vorty's draft (2026-10-10: card-driven enemies with publicly committed four-turn plans, three friendly creeps to defend, staged spawns on the official map), refined with the user in a design interview the same day. The records below are approved rules for that slice only; they never change the existing mode.
+Design PvE alongside iteration, testing and repairs to the existing private game. The first slice is a single-player **test** encounter shipped as a separate executable; PVE-D28 extends it with three-player co-op. A merged executable remains later work. Its source is co-designer Vorty's draft (2026-10-10: card-driven enemies with publicly committed four-turn plans, three friendly creeps to defend, staged spawns on the official map), refined with the user in a design interview the same day. The records below are approved rules for that slice only; they never change the existing mode.
 
 ## Decision records
 
@@ -56,10 +56,14 @@ Supersedes the Melee/Ranged defenses retained by PVE-D24/D25. Only Heavy enemies
 
 Supersedes PVE-D02's playable team-size range: the player chooses exactly three distinct configured heroes for Blue. Keep all five PVE-D17 placement spaces as choices for those three heroes. The launcher caps selection at three and permits starting only with three; its programmatic start applies the same Core-owned validation. Generic encounter composition remains available for small deterministic test fixtures. No enemy, deck, placement-coordinate or existing-mode change. Closing checks: reject zero/one/two/four/five player selections, accept three, cap selection and disable Start when incomplete, compose and place exactly three Blue heroes.
 
+## PVE-D28 Three-player co-op (Approved, user 2026-10-12)
+
+Add Host/Join to the separate PvE executable while retaining solo. A playing host and two joiners each control one distinct Blue hero. Only the host runs enemy/encounter automation and decides enemy ties and shared Blue-team choices; hero-owned actions remain with that hero's player. Reuse private keyed TCP and owner-private projections, with reserved-seat reconnect and terminal host loss, no migration. All three players must be present and ready before starting. Existing decks, waves, three-hero count and five placement options remain unchanged. Acceptance: host and two clients agree on encounter state; unauthorized hero/shared/enemy commands are refused, private cards remain private, public enemy plans remain visible, reconnect restores the same seat, and PvP remains unchanged.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").
-- Lowering hero levels, a win condition, real enemy content and balance, co-op, boss cards and enemy skills.
+- Lowering hero levels, a win condition, real enemy content and balance, boss cards and enemy skills.
 
 ## Rule authority and decision records
 

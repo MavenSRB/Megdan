@@ -44,6 +44,11 @@ namespace GuardsDigital.Pve.Presentation
 
         private ConfiguredMatchSceneRuntime runtime;
         private PveEncounterSession session;
+        private PveComposedEncounter encounter;
+        private bool coop;
+        private Action<DirectorCommand> sharedSubmit;
+        private Func<DirectorCommand, bool> playerSubmit;
+        private IMatchReadModel ReadModel => coop ? runtime.ReadModel : session.Projection;
         private PveCardIndex cards;
         private UIDocument document;
         private VisualElement root;
@@ -81,7 +86,23 @@ namespace GuardsDigital.Pve.Presentation
             var view = new GameObject("PvE Encounter").AddComponent<PveEncounterView>();
             view.runtime = runtime;
             view.session = encounterSession;
+            view.encounter = encounterSession.Encounter;
             view.cards = new PveCardIndex(encounterSession.Encounter.Catalog);
+            view.Build();
+            return view;
+        }
+
+        public static PveEncounterView AttachCoop(ConfiguredMatchSceneRuntime runtime, PveComposedEncounter encounter,
+            PveEncounterSession authority, Action<DirectorCommand> sharedSubmit, Func<DirectorCommand, bool> playerSubmit)
+        {
+            var view = new GameObject("PvE Co-op Encounter").AddComponent<PveEncounterView>();
+            view.runtime = runtime;
+            view.encounter = encounter;
+            view.session = authority;
+            view.coop = true;
+            view.sharedSubmit = sharedSubmit;
+            view.playerSubmit = playerSubmit;
+            view.cards = new PveCardIndex(encounter.Catalog);
             view.Build();
             return view;
         }
@@ -126,13 +147,13 @@ namespace GuardsDigital.Pve.Presentation
             heading.text = "ENEMIES";
             rail.Add(heading);
             enemyRail = rail;
-            sharedEnemyView = new HeroOverviewsUnityView(() => session.Projection)
+            sharedEnemyView = new HeroOverviewsUnityView(() => ReadModel)
             {
                 TurnSlotsOverride = hero => PlannedSlots(hero)
             };
             sharedEnemyView.HeroHighlighted += hero => runtime.BoardView.SetHoveredHero(hero);
             root.Add(sharedEnemyView.Root);
-            foreach (var enemy in session.Encounter.Enemies)
+            foreach (var enemy in encounter.Enemies)
                 if (enemy.Type.TokenType.HasValue)
                     enemyArt[enemy.HeroId] = StandardMinionArtCatalog.Load(TeamSide.Red, enemy.Type.TokenType.Value);
             runtime.BoardView.HeroHighlighted += OnBoardHeroHighlighted;
@@ -191,8 +212,8 @@ namespace GuardsDigital.Pve.Presentation
 
         private void Update()
         {
-            if (session == null) return;
-            if (session.Status == PveEncounterStatus.Ongoing && Time.unscaledTime >= nextStepAt &&
+            if (runtime == null) return;
+            if (!coop && session.Status == PveEncounterStatus.Ongoing && Time.unscaledTime >= nextStepAt &&
                 PresentationSettled())
             {
                 var result = session.Step(out var step);
@@ -235,7 +256,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private void LateUpdate()
         {
-            if (session == null) return;
+            if (runtime == null) return;
             PlaceStrips();
             RefreshEnemyRail();
             AdaptHudRails();
@@ -267,10 +288,10 @@ namespace GuardsDigital.Pve.Presentation
 
         private IReadOnlyList<HeroTurnSlotViewModel> PlannedSlots(HeroOverviewViewModel hero)
         {
-            var enemy = session.Encounter.FindEnemy(hero.HeroId);
+            var enemy = encounter.FindEnemy(hero.HeroId);
             if (enemy == null) return hero.TurnSlots;
-            var match = session.Projection;
-            var plan = PvePlans.PlanFor(session.Encounter, enemy, Math.Max(match.RoundIndex, enemy.Spawn.Round));
+            var match = ReadModel;
+            var plan = PvePlans.PlanFor(encounter, enemy, Math.Max(match.RoundIndex, enemy.Spawn.Round));
             var copies = new Dictionary<string, int>();
             var slots = new List<HeroTurnSlotViewModel>();
             for (var turn = 1; turn <= plan.Count; turn++)
@@ -301,14 +322,14 @@ namespace GuardsDigital.Pve.Presentation
 
         private void RefreshEnemyRail()
         {
-            var match = session.Projection;
+            var match = ReadModel;
             var sourceModel = runtime.HeroOverviewsView.Model;
             if (sourceModel == null) return;
             if (!ReferenceEquals(sourceModel, lastRailModel))
             {
                 lastRailModel = sourceModel;
                 sharedEnemyView.Render(new HeroOverviewsViewModel(sourceModel.Version,
-                    sourceModel.Heroes.Where(hero => session.Encounter.FindEnemy(hero.HeroId) != null)));
+                    sourceModel.Heroes.Where(hero => encounter.FindEnemy(hero.HeroId) != null)));
                 var column = sharedEnemyView.Root.Q("gd-hero-rail-red") ?? enemyRail.Q("gd-hero-rail-red");
                 enemyRail.Add(column);
                 column.style.position = Position.Relative;
@@ -352,7 +373,7 @@ namespace GuardsDigital.Pve.Presentation
             sharedEnemyView.Root.style.width = root.resolvedStyle.width;
             sharedEnemyView.Root.style.height = root.resolvedStyle.height;
             sharedEnemyView.Root.BringToFront();
-            foreach (var enemy in session.Encounter.Enemies)
+            foreach (var enemy in encounter.Enemies)
             {
                 var row = enemyRows[enemy.HeroId];
                 var standing = match.Heroes.Any(value => value.HeroId.Equals(enemy.HeroId));
@@ -373,7 +394,7 @@ namespace GuardsDigital.Pve.Presentation
                 }
             }
             if (inspectedEnemy.IsDefined && inspectionAnchor != null)
-                ShowCards(session.Encounter.FindEnemy(inspectedEnemy), inspectionAnchor);
+                ShowCards(encounter.FindEnemy(inspectedEnemy), inspectionAnchor);
         }
 
         private void OnDestroy()
@@ -384,13 +405,13 @@ namespace GuardsDigital.Pve.Presentation
 
         private void RenderPanel()
         {
-            var match = session.Projection;
-            var prompt = session.CurrentPrompt;
+            var match = ReadModel;
+            var prompt = session?.CurrentPrompt;
             var promptText = prompt?.Text;
-            var lost = session.Status == PveEncounterStatus.Lost;
+            var lost = PveEnemyController.IsLost(ReadModel);
             status.text = lost
                 ? "ENCOUNTER LOST - every creep is defeated"
-                : $"PvE  Round {match.RoundIndex}  Turn {match.TurnIndex}  -  seed {session.Encounter.Setup.Seed}";
+                : $"PvE  Round {match.RoundIndex}  Turn {match.TurnIndex}  -  seed {encounter.Setup.Seed}";
             status.style.color = lost ? new Color(1f, 0.4f, 0.35f) : Color.white;
             promptedEnemy = prompt?.Enemy ?? default;
             promptBanner.style.display = prompt == null || lost ? DisplayStyle.None : DisplayStyle.Flex;
@@ -407,6 +428,7 @@ namespace GuardsDigital.Pve.Presentation
             actions.Clear();
             if (lost)
             {
+                if (coop) return;
                 actions.Add(ActionButton("Restart (same seed)", () => { session.Restart(); runtime.RefreshAll(); }));
                 actions.Add(ActionButton("New setup", () => SceneManager.LoadScene(LauncherSceneName, LoadSceneMode.Single)));
                 return;
@@ -423,10 +445,23 @@ namespace GuardsDigital.Pve.Presentation
                 return;
             }
 
+            if (coop && session != null && session.Projection.DecisionContract != null &&
+                PveCoopMatch.IsSharedChoice(session.Projection))
+            {
+                foreach (var choice in session.Projection.DecisionContract.Commands)
+                {
+                    var command = choice;
+                    var owner = match.Cards.FirstOrDefault(card => card.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
+                    var label = command.Kind == DirectorCommandKind.ChooseTiedActor ? HeroName(match, owner) + " acts first" : command.Kind.ToString();
+                    actions.Add(ActionButton(label, () => Submit(command)));
+                }
+                return;
+            }
             var pending = match.PendingSystemTransitionStep;
             if (pending != null && MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _))
             {
-                foreach (var item in pending.OpenItems.Where(value => value.ChoosingSide == TeamSide.Blue))
+                foreach (var item in pending.OpenItems.Where(value => value.ChoosingSide == TeamSide.Blue &&
+                    (!coop || (ModeRoundStartPlacementRules.TryReadItem(value.ItemId, out var owner) && runtime.Seat.Owns(owner)))))
                 {
                     foreach (var option in item.Options)
                     {
@@ -441,13 +476,14 @@ namespace GuardsDigital.Pve.Presentation
 
             if (pending == null && match.Phase == RoundResolutionPhase.AwaitingCommitments && match.TurnIndex == 1)
             {
-                foreach (var hero in session.Encounter.Heroes)
+                foreach (var hero in encounter.Heroes)
                 {
+                    if (coop && !runtime.Seat.Owns(hero)) continue;
                     var commitment = match.Commitments.FirstOrDefault(value => value.HeroId.Equals(hero));
                     if (!commitment.HeroId.IsDefined || commitment.Status != TurnCardCommitmentStatus.AwaitingResponse) continue;
                     var level = match.HeroProgression.FirstOrDefault(value => value.HeroId.Equals(hero))?.Level ?? 1;
                     var command = DirectorCommand.BeginSystemTransition(MatchModeRules.LevelGrantTransitionId(hero));
-                    if (session.Refusal(command) != null) continue;
+                    if (!coop && session.Refusal(command) != null) continue;
                     actions.Add(ActionButton($"+1 level {HeroName(match, hero)} (Lv {level})", () => Submit(command)));
                 }
             }
@@ -460,7 +496,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private string MessageFor(IMatchReadModel match, PvePrompt prompt)
         {
-            if (session.Status == PveEncounterStatus.Lost) return "Undo or restart from the Director drawer, or use the buttons below.";
+            if (PveEnemyController.IsLost(ReadModel)) return "Undo or restart from the Director drawer, or use the buttons below.";
             if (prompt != null) return prompt.Text;
             var pending = match.PendingSystemTransitionStep;
             if (pending != null && MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _))
@@ -472,6 +508,7 @@ namespace GuardsDigital.Pve.Presentation
                 }
             }
 
+            if (coop) return "Your hero's choices are yours. The host resolves shared and enemy decisions.";
             var next = session.Peek();
             var acting = next.Kind == PveStepKind.Command ? "Enemies acting... " : "Your move. ";
             return acting + lastActionText;
@@ -479,6 +516,15 @@ namespace GuardsDigital.Pve.Presentation
 
         private void Submit(DirectorCommand command)
         {
+            if (coop)
+            {
+                if (session != null && (session.CurrentPrompt != null ||
+                    PveCoopMatch.IsSharedChoice(session.Projection)))
+                    sharedSubmit(command);
+                else lastActionText = playerSubmit(command) ? string.Empty : "This choice is not currently available to your hero.";
+                renderedVersion = -1;
+                return;
+            }
             var result = session.Execute(command);
             lastActionText = result.Accepted ? string.Empty : "Refused: " + result.Detail;
             renderedVersion = -1;
@@ -487,10 +533,10 @@ namespace GuardsDigital.Pve.Presentation
 
         private void PlaceStrips()
         {
-            var match = session.Projection;
+            var match = ReadModel;
             var camera = Camera.main;
             var views = runtime.BoardView.HeroViews.Where(view => view != null).ToArray();
-            foreach (var enemy in session.Encounter.Enemies)
+            foreach (var enemy in encounter.Enemies)
             {
                 if (!strips.TryGetValue(enemy.HeroId, out var strip))
                 {
@@ -545,7 +591,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private string PlanText(IMatchReadModel match, PveEnemyRecord enemy)
         {
-            var plan = PvePlans.PlanFor(session.Encounter, enemy, Math.Max(match.RoundIndex, enemy.Spawn.Round));
+            var plan = PvePlans.PlanFor(encounter, enemy, Math.Max(match.RoundIndex, enemy.Spawn.Round));
             var slots = plan.Select((key, index) =>
             {
                 var card = enemy.Type.FindOrange(key);
@@ -612,7 +658,7 @@ namespace GuardsDigital.Pve.Presentation
             var red = hudRoot.Q("gd-hero-rail-red");
             if (red != null) red.style.display = DisplayStyle.None;
             var blue = hudRoot.Q("gd-hero-rail-blue");
-            var heroes = session.Encounter.Heroes.Count;
+            var heroes = encounter.Heroes.Count;
             if (blue != null && heroes > 3)
             {
                 var scale = 3f / heroes;
@@ -644,7 +690,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private string HeroName(IMatchReadModel match, HeroId hero)
         {
-            var enemy = session.Encounter.FindEnemy(hero);
+            var enemy = encounter.FindEnemy(hero);
             if (enemy != null) return enemy.DisplayName;
             var setup = match.Setup.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
             return setup?.DisplayName ?? hero.Value;

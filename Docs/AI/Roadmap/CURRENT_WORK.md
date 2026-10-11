@@ -2,6 +2,10 @@
 
 Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSION_BRIEF.md). Completed records move to [work history](../Archive/WORK_LOG.md).
 
+### [ ] W-032 Compact enemy rail
+
+Approved follow-up: enemy rows need four public turn slots and Defense cards, not full hero-sized plaques. Keep a small token for identification; no names/text strips above map tokens. Hovering either an enemy token or its rail row must highlight the other in solo and co-op. Only Heavy shows its two defense cards. Remove level/item/discard space from the enemy rows. Execute after W-031; focused shared-card/rail, bidirectional hover and rendered solo/co-op checks. No gameplay change or package requested.
+
 ### [!] W-004 Compact player-name banner for approval
 
 Approved: restore original slim tray geometry and replace the expanded name row with a small top-border banner. Show the rendered result for approval. W-013's later explicit as-is build request authorizes packaging the candidate without closing this separate design-approval gate.
