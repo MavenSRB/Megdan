@@ -22,8 +22,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
     {
         public const string LauncherScenePath = "Assets/GuardsPve/Scenes/PveLauncher.unity";
 
-        private static readonly string[] FiveHeroes =
-            { "hero-arien", "hero-brogan", "hero-wasp", "hero-tigerclaw", "hero-xargatha" };
+        private static readonly string[] ThreeHeroes =
+            { "hero-arien", "hero-brogan", "hero-wasp" };
 
         [UnityTest]
         public IEnumerator TheLauncherComposesTheStaticEncounterIntoTheExistingMatchScene()
@@ -35,9 +35,28 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(document, Is.Not.Null, "The setup screen is drawn.");
             Assert.That(document.rootVisualElement.Q<Button>("pve-start"), Is.Not.Null);
             Assert.That(document.rootVisualElement.Q<Button>("pve-hero-hero-arien"), Is.Not.Null);
+            Assert.That(document.rootVisualElement.Q<Button>("pve-start").enabledSelf, Is.False);
+            Assert.That(launcher.StartEncounter(ThreeHeroes.Take(2), 42), Has.Some.Contains("Choose exactly 3"));
+            Assert.That(launcher.StartEncounter(ThreeHeroes.Concat(new[] { "hero-tigerclaw" }), 42), Has.Some.Contains("Choose exactly 3"));
+            var toggle = typeof(PveLauncher).GetMethod("Toggle", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            foreach (var hero in ThreeHeroes) toggle.Invoke(launcher, new object[] { hero });
+            Assert.That(document.rootVisualElement.Q<Button>("pve-start").enabledSelf, Is.True);
+            toggle.Invoke(launcher, new object[] { "hero-tigerclaw" });
+            var chosen = (System.Collections.Generic.List<string>)typeof(PveLauncher)
+                .GetField("chosen", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(launcher);
+            Assert.That(chosen, Is.EqualTo(ThreeHeroes));
+            toggle.Invoke(launcher, new object[] { ThreeHeroes[0] });
+            Assert.That(document.rootVisualElement.Q<Button>("pve-start").enabledSelf, Is.False);
+            toggle.Invoke(launcher, new object[] { ThreeHeroes[0] });
+
+            yield return null;
+            yield return new WaitForEndOfFrame();
+            var setupCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w030-three-hero-setup.png", setupCapture.EncodeToPNG());
+            Object.Destroy(setupCapture);
 
             ConfiguredMatchSceneRuntime composed = null;
-            var problems = launcher.StartEncounter(FiveHeroes, 42, runtime => composed = runtime);
+            var problems = launcher.StartEncounter(ThreeHeroes, 42, runtime => composed = runtime);
             Assert.That(problems, Is.Empty);
             var deadline = Time.realtimeSinceStartup + 60f;
             while (composed == null && Time.realtimeSinceStartup < deadline) yield return null;
@@ -74,7 +93,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 yield return null;
             }
 
-            Assert.That(session.Projection.Heroes.Count(hero => Side(session.Projection, hero.HeroId) == TeamSide.Blue), Is.EqualTo(5));
+            Assert.That(session.Projection.Heroes.Count(hero => Side(session.Projection, hero.HeroId) == TeamSide.Blue), Is.EqualTo(3));
 
             // The paced driver then commits every enemy's planned card, and the tray never shows an
             // enemy's hand as the player's while it does (W-026).
@@ -137,7 +156,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
             yield return new WaitForEndOfFrame();
             var hoverCapture = ScreenCapture.CaptureScreenshotAsTexture();
-            System.IO.File.WriteAllBytes("tmp/w027-enemy-card-hover.png", hoverCapture.EncodeToPNG());
+            System.IO.File.WriteAllBytes("tmp/w030-enemy-card-hover.png", hoverCapture.EncodeToPNG());
             Object.Destroy(hoverCapture);
             using (var leave = PointerLeaveEvent.GetPooled()) { leave.target = firstSlot; firstSlot.SendEvent(leave); }
             yield return null;
@@ -147,7 +166,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return new WaitForEndOfFrame();
             var capture = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.Directory.CreateDirectory("tmp");
-            System.IO.File.WriteAllBytes("tmp/w027-enemy-rail.png", capture.EncodeToPNG());
+            System.IO.File.WriteAllBytes("tmp/w030-enemy-rail.png", capture.EncodeToPNG());
             Object.Destroy(capture);
 
             Assert.That(session.Undo().Accepted, Is.True);

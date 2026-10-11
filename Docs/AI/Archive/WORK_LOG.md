@@ -32,6 +32,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-027 | Melee/Ranged/Heavy enemies, approved target priorities and spawn mix, official tokens and shared hero rails with four public planned cards. | `work/W-027` |
 | W-028 | Exactly two attack cards in each enemy hand and plan; duplicate Slash/Shoot replaced by idle fourth slots. | `work/W-028` |
 | W-029 | Heavy alone has two Defense cards; Melee and Ranged have none. | `work/W-029` |
+| W-030 | Playable PvE Blue team requires exactly three chosen heroes, retaining five placement choices. | `work/W-030` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -283,3 +284,12 @@ Closing checks: T1 shipped and composed defense counts/values, validation and sa
 Completed: Melee/Ranged have no defense cards; Heavy retains Thick Hide (3) and Brace (5). Player-experience, rules-authority, maintainability and risk review found no further in-scope defects. Existing packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-029`; exact checks/results and limitations live in its body.
+
+### [x] W-030 Three-hero Blue team
+
+Approved: exactly three Blue heroes in playable PvE; preserve all five placement choices, enemies and existing-mode behavior. Decision: PVE-D27.
+Scope: Core-owned player setup validation, launcher selection/count/start gate and smoke roster; generic composition remains usable for focused test fixtures. No build requested.
+Closing checks: T2 setup-size boundaries, launcher selection/start and three-hero placement, affected content/composition regressions, rendered setup inspection, documentation validation and diff check.
+Completed: launcher selection caps at three, Start requires three, programmatic launch validates the same rule, and the scene places three Blue heroes. Review of player experience, rules authority, maintainability and risk found no further in-scope defects. Packages unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-030`; exact checks/results and limitations live in its body.

@@ -110,5 +110,20 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(problems, Has.Some.Contains("Hero 'hero-arien' is chosen more than once"));
             Assert.That(problems, Has.Some.Contains("Hero 'hero-nobody' is not a configured hero"));
         }
+
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        public void PlayableBlueTeamRequiresExactlyThreeHeroes(int count)
+        {
+            var heroes = new[] { "hero-arien", "hero-brogan", "hero-wasp", "hero-tigerclaw", "hero-xargatha" };
+            var problems = PveEncounterComposer.ValidatePlayerSetup(
+                new PveEncounterSetup(System.Linq.Enumerable.Take(heroes, count), 7), PveTestContent.Encounter());
+            Assert.That(problems.Count == 0, Is.EqualTo(count == 3));
+            if (count != 3) Assert.That(problems, Has.Some.Contains("Choose exactly 3 heroes for Blue"));
+        }
     }
 }

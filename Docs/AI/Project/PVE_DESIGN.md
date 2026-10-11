@@ -52,6 +52,10 @@ Supersedes PVE-D24's duplicate Slash/Shoot and their plan sequences. Each shippe
 
 Supersedes the Melee/Ranged defenses retained by PVE-D24/D25. Only Heavy enemies have Defense cards: exactly two, retaining Thick Hide (Defense 3) and Brace (Defense 5), both Initiative 1. Melee and Ranged have no Defense cards. All attack cards, movement, idle slots, plans, target priorities and spawns remain unchanged. Closing checks: shipped and composed hands have defense counts 0/0/2 with Heavy's values preserved; empty defense lists validate and survive save/editor round-trip.
 
+## PVE-D27 Three-hero Blue team (Approved, user 2026-10-12)
+
+Supersedes PVE-D02's playable team-size range: the player chooses exactly three distinct configured heroes for Blue. Keep all five PVE-D17 placement spaces as choices for those three heroes. The launcher caps selection at three and permits starting only with three; its programmatic start applies the same Core-owned validation. Generic encounter composition remains available for small deterministic test fixtures. No enemy, deck, placement-coordinate or existing-mode change. Closing checks: reject zero/one/two/four/five player selections, accept three, cap selection and disable Start when incomplete, compose and place exactly three Blue heroes.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

@@ -40,7 +40,7 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 `PveEncounterComposer` builds an ordinary `MatchSessionInitialState` through public APIs; the existing-mode setup helpers that require 2v2/3v3 are not used.
 
-- **Participants.** Two teams with one player per hero. The chosen heroes are Blue, holding their verified printed sets. Each enemy is a Red hero (`pve-enemy-NN`) with the rulebook dashboard.
+- **Participants.** Two teams with one player per hero. The playable launcher requires exactly three chosen Blue heroes, holding their verified printed sets, under PVE-D27. `PveEncounterComposer.ValidatePlayerSetup` owns that limit; generic composition still supports focused test fixtures. All five placement spaces remain available. Each enemy is a Red hero (`pve-enemy-NN`) with the rulebook dashboard.
 - **Enemy cards.** Synthetic-fixture card definitions from `PveCardFactory`:
   - an orange card is one printed primary Attack (adjacent or Ranged) and one printed secondary Movement, neither replaceable;
   - an idle card prints no action;

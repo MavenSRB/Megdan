@@ -75,11 +75,14 @@ namespace GuardsDigital.Pve.Presentation
         {
             if (catalog == null || encounter == null || map == null)
                 return new[] { "PvE content did not load." };
+            var setup = new PveEncounterSetup(heroIdValues, seed);
+            var setupProblems = PveEncounterComposer.ValidatePlayerSetup(setup, encounter);
+            if (setupProblems.Count > 0) return setupProblems;
             PveComposedEncounter composedEncounter;
             try
             {
                 composedEncounter = PveEncounterComposer.Compose(
-                    new PveEncounterSetup(heroIdValues, seed), encounter, catalog, map);
+                    setup, encounter, catalog, map);
             }
             catch (PveSetupException exception)
             {
@@ -237,7 +240,7 @@ namespace GuardsDigital.Pve.Presentation
         {
             if (!chosen.Remove(heroIdValue))
             {
-                if (chosen.Count >= encounter.HeroPlacement.Count) return;
+                if (chosen.Count >= PveEncounterComposer.RequiredPlayerHeroCount) return;
                 chosen.Add(heroIdValue);
             }
 
@@ -246,7 +249,8 @@ namespace GuardsDigital.Pve.Presentation
 
         private void Refresh()
         {
-            countLabel.text = $"Heroes chosen: {chosen.Count} / {encounter.HeroPlacement.Count}";
+            countLabel.text = $"Heroes chosen: {chosen.Count} / {PveEncounterComposer.RequiredPlayerHeroCount}";
+            root.Q<Button>("pve-start").SetEnabled(chosen.Count == PveEncounterComposer.RequiredPlayerHeroCount);
             foreach (var pair in heroButtons)
             {
                 var order = chosen.IndexOf(pair.Key);

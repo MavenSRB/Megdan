@@ -19,7 +19,7 @@ namespace GuardsDigital.Pve.Presentation
     {
         public const string Marker = "GUARDS_PVE_SMOKE:";
         public const ulong Seed = 20261010UL;
-        public static readonly string[] Heroes = { "hero-arien", "hero-brogan" };
+        public static readonly string[] Heroes = { "hero-arien", "hero-brogan", "hero-wasp" };
         private const float TimeoutSeconds = 300f;
         private const float SmokeStepSeconds = 0.02f;
 

@@ -104,6 +104,7 @@ namespace GuardsDigital.Pve.Composition
     /// </remarks>
     public static class PveEncounterComposer
     {
+        public const int RequiredPlayerHeroCount = 3;
         public const int UnusedLifeCount = 99;
         public const int UnusedWaveCount = 3;
         public const string RedTeamIdValue = OfficialSixPlayerParticipants.RedTeamIdValue;
@@ -225,6 +226,15 @@ namespace GuardsDigital.Pve.Composition
                             enemy.HeroId, enemy.Spawn.Round, ModeHeroPlacementKind.Designated, enemy.Spawn.Coordinate))),
                 levelGrantHeroes: heroes,
                 defeatInsteadOfDiscardSide: TeamSide.Red);
+
+        /// <summary>PVE-D27: playable setup requires three heroes; generic composition also supports small test fixtures.</summary>
+        public static IReadOnlyList<string> ValidatePlayerSetup(PveEncounterSetup setup, PveEncounterDefinition encounter)
+        {
+            var problems = ValidateSetup(setup, encounter).ToList();
+            if (setup.HeroIdValues.Count != RequiredPlayerHeroCount)
+                problems.Add($"Choose exactly {RequiredPlayerHeroCount} heroes for Blue.");
+            return problems;
+        }
 
         public static IReadOnlyList<string> ValidateSetup(PveEncounterSetup setup, PveEncounterDefinition encounter)
         {
