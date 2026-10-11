@@ -64,6 +64,10 @@ Add Host/Join to the separate PvE executable while retaining solo. A playing hos
 
 Supersedes PVE-D24's full hero plaque and PVE-D16's map plan strip: enemy rows show their official token, four public turn-card slots and, only for Heavy, its two Defense cards. Only enemies currently on the board have rows: defeated enemies disappear, and future waves appear when spawned. No hero name/level/item/discard sections or floating text above map tokens. Spent defenses stay visible but dimmed. Preserve shared full-card hover; token-to-row and row-to-token hover highlight the same enemy in solo and co-op. Identity/status remain available through inspection rather than occupying a permanent text row. No rules, cards, plan timing or ownership change. Closing checks: compact geometry, four planned cards, correct Defense slots/state, row spawn/removal, absence of map labels, public-card previews and linked hover in solo and a joining client.
 
+## PVE-D30 Enemy targeting categories (Approved, user 2026-10-12)
+
+Supersedes PVE-D24's all-hero targeting identity and the subsequently proposed both-categories interpretation. Heavy counts as a hero; Melee and Ranged count as minions for targeting and effects. Change enemy type classification, not any card definition. Keep one authoritative identity per enemy and preserve existing turns, decks, combat, Defense and defeat rules. This is a PvE category override, not the tabletop p.17 replacement of all rules and qualities. Existing modes remain unchanged. Closing checks: hero-only, minion-only and combined targeting/effects, no duplicate targets, ownership, combat preservation and restore/replay stability.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").
