@@ -41,6 +41,8 @@ namespace GuardsDigital.Tests.Pve
             editor.Build();
             Assert.That(editor.Edited().Types.Select(type => type.TokenType),
                 Is.EqualTo(catalog.Types.Select(type => type.TokenType)));
+            Assert.That(editor.Edited().Types.Select(type => type.PurpleCards.Count),
+                Is.EqualTo(new[] { 0, 0, 2 }));
             Assert.Throws<System.FormatException>(() => PveContentLoader.LoadCatalog(
                 PveContentLoader.SaveCatalog(catalog).Replace("\"tokenType\": \"melee\"", "\"tokenType\": \"unknown\"")));
         }

@@ -48,6 +48,10 @@ Keep PVE-D17's coordinates and ordering. Round 1 alternates Melee/Ranged startin
 
 Supersedes PVE-D24's duplicate Slash/Shoot and their plan sequences. Each shipped enemy hand has exactly two attack-capable orange cards, counting copies: Melee has one Slash and one Heavy Blow; Ranged has one Shoot and one Power Shot; Heavy retains one Smash and one Hurl. Melee and Ranged keep their movement card and fill the fourth slot with X Idle (Initiative 1, no action), following PVE-D07. Their plans become `A B C X`, `A C B X`, `A B X C`. Heavy's plans, defenses and all other values, target priorities and spawns are unchanged. Closing checks: every composed hand and listed plan contains exactly two attack cards, four action slots remain valid, content saves round-trip and target-priority checks remain green.
 
+## PVE-D26 Heavy-only defenses (Approved, user 2026-10-12)
+
+Supersedes the Melee/Ranged defenses retained by PVE-D24/D25. Only Heavy enemies have Defense cards: exactly two, retaining Thick Hide (Defense 3) and Brace (Defense 5), both Initiative 1. Melee and Ranged have no Defense cards. All attack cards, movement, idle slots, plans, target priorities and spawns remain unchanged. Closing checks: shipped and composed hands have defense counts 0/0/2 with Heavy's values preserved; empty defense lists validate and survive save/editor round-trip.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

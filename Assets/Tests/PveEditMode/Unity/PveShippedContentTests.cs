@@ -56,8 +56,9 @@ namespace GuardsDigital.Tests.Pve
                         Is.EqualTo(type.Plans.Select(plan => string.Join(" ", plan))), type.Id);
                     Assert.That(loaded.OrangeCards.Select(Describe), Is.EqualTo(type.OrangeCards.Select(Describe)));
                 }
-                Assert.That(loaded.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense)),
-                    Is.EqualTo(type.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense))), type.Id);
+                if (pair.Item1 == "heavy")
+                    Assert.That(loaded.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense)),
+                        Is.EqualTo(type.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense))), type.Id);
             }
             Assert.That(shipped.Types.Select(type => type.TokenType.ToString()), Is.EqualTo(new[] { "Melee", "Ranged", "Heavy" }));
             foreach (var typeId in new[] { "melee", "ranged" })
@@ -79,7 +80,7 @@ namespace GuardsDigital.Tests.Pve
                 "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1",
                 "X/1/1//0//True/"
             }));
-            Assert.That(ranged.PurpleCards.Single().Defense, Is.EqualTo(2));
+            Assert.That(ranged.PurpleCards, Is.Empty);
             foreach (var typeId in new[] { "melee", "ranged" })
                 Assert.That(shipped.Find(typeId).Plans.Select(plan => string.Join(" ", plan)),
                     Is.EqualTo(new[] { "A B C X", "A C B X", "A B X C" }));
@@ -106,6 +107,23 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(hand.DealtDefinitions.Count(definition => definition.ActionDefinitions.Any(action =>
                 action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack)), Is.EqualTo(2));
             Assert.That(hand.Instances.Count, Is.EqualTo(4 + type.PurpleCards.Count));
+        }
+
+        [TestCase("melee", 0)]
+        [TestCase("ranged", 0)]
+        [TestCase("heavy", 2)]
+        public void OnlyHeavyHasTwoDefenseCards(string typeId, int expectedCount)
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var type = catalog.Find(typeId);
+            Assert.That(type.PurpleCards.Count, Is.EqualTo(expectedCount));
+            if (expectedCount == 2)
+                Assert.That(type.PurpleCards.Select(card => card.Defense), Is.EqualTo(new[] { 3, 5 }));
+            var hand = GuardsDigital.Pve.Composition.PveCardFactory.CreateHand(type,
+                new GuardsDigital.Core.Units.Heroes.HeroId("test-enemy"), "enemy");
+            Assert.That(hand.DealtDefinitions.Count(definition => definition.ActionDefinitions.Any(action =>
+                action.Kind == GuardsDigital.Core.Cards.ActionKind.Defense)), Is.EqualTo(expectedCount));
+            Assert.That(hand.Instances.Count, Is.EqualTo(4 + expectedCount));
         }
 
         private static string Describe(PveOrangeCard card) =>

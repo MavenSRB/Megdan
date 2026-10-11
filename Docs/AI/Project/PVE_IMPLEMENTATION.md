@@ -100,7 +100,7 @@ Each hook is unused by every existing composition, which therefore behaves as be
 
 `PveContentValidator` refuses invalid content with readable messages before composition. The launcher shows them instead of starting.
 
-The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards, one movement-only card and one idle card, plus its Defense cards. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25 two-attack amendment in the design owner state the approved values, plans and spawn mix.
+The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards, one movement-only card and one idle card. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
 
 ## Launch, smoke and build
 

@@ -31,6 +31,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-020 | Published the remaining prepared runtime board, hero, hero-selection, marker and token artwork through Git LFS to private Gitea. | `work/W-020` |
 | W-027 | Melee/Ranged/Heavy enemies, approved target priorities and spawn mix, official tokens and shared hero rails with four public planned cards. | `work/W-027` |
 | W-028 | Exactly two attack cards in each enemy hand and plan; duplicate Slash/Shoot replaced by idle fourth slots. | `work/W-028` |
+| W-029 | Heavy alone has two Defense cards; Melee and Ranged have none. | `work/W-029` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -273,3 +274,12 @@ Closing checks: T1 shipped-content/composed-hand and plan multiplicity assertion
 Completed: each hand and plan contains exactly two attacks, one movement card and one idle, plus the unchanged defenses. Review of player experience, rules authority, maintainability and risk found no further in-scope defects. The existing private package is unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-028`; exact results, test-compilation correction and limitations live in its body.
+
+### [x] W-029 Heavy-only defense cards
+
+Approved: only Heavy enemies have defense cards, exactly two; remove Melee/Ranged defenses and retain Heavy's existing values. Keep attacks, plans and all other content unchanged. Decision: PVE-D26.
+Scope: shipped PvE content and focused tests; no engine/UI changes or new build.
+Closing checks: T1 shipped and composed defense counts/values, validation and save/editor round-trip, existing priority/deck regressions, documentation validation and diff check.
+Completed: Melee/Ranged have no defense cards; Heavy retains Thick Hide (3) and Brace (5). Player-experience, rules-authority, maintainability and risk review found no further in-scope defects. Existing packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-029`; exact checks/results and limitations live in its body.

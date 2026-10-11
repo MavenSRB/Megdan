@@ -16,7 +16,7 @@
           "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] },
         { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
       ],
-      "purpleCards": [ { "key": "P", "name": "Parry", "initiative": 1, "defense": 4 } ],
+      "purpleCards": [],
       "plans": [ "A B C X", "A C B X", "A B X C" ]
     },
     {
@@ -34,7 +34,7 @@
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] },
         { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
       ],
-      "purpleCards": [ { "key": "P", "name": "Guard", "initiative": 1, "defense": 2 } ],
+      "purpleCards": [],
       "plans": [ "A B C X", "A C B X", "A B X C" ]
     },
     {

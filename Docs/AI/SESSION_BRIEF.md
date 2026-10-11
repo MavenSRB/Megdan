@@ -14,11 +14,11 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-028**.
+- Last completed work: **W-029**.
 - Active authorized work: **none**.
 - Next proposed work: **W-004**.
 
-W-027 adds Melee, Ranged and Heavy enemies with official red tokens and a scrollable left rail using the hero plaque and four prefilled public card slots. W-028 limits each enemy hand to exactly two attacks, one movement card and one idle, plus defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25 in [PvE design](Project/PVE_DESIGN.md). W024 PvE predates these source changes; no new package was requested. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). W-004 remains a paused presentation-approval gate; see [current work](Roadmap/CURRENT_WORK.md).
+Melee, Ranged and Heavy enemies use official red tokens and a scrollable left rail with the hero plaque and four prefilled public card slots. Each enemy hand has exactly two attacks, one movement card and one idle. Only Heavy has defenses: two cards; Melee and Ranged have none. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26 in [PvE design](Project/PVE_DESIGN.md). W024 PvE predates these source changes; no new package was requested. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). W-004 remains a paused presentation-approval gate; see [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is playable; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
