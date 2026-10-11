@@ -30,6 +30,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-026 | PvE playtest fixes: the HUD plays Blue only, enemy ties read as enemy decisions, paced steps wait for animations; an enemy-turn stall and colliding enemy card faces fixed. | `work/W-026` |
 | W-020 | Published the remaining prepared runtime board, hero, hero-selection, marker and token artwork through Git LFS to private Gitea. | `work/W-020` |
 | W-027 | Melee/Ranged/Heavy enemies, approved target priorities and spawn mix, official tokens and shared hero rails with four public planned cards. | `work/W-027` |
+| W-028 | Exactly two attack cards in each enemy hand and plan; duplicate Slash/Shoot replaced by idle fourth slots. | `work/W-028` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -263,3 +264,12 @@ Closing checks: T2 focused shipped content/priority, save/editor round-trip, sha
 Completed: three types, matching map/rail art and shared four-slot public plans are implemented and checked. W024 remains the prior package; no new binary built.
 
 Historical evidence: completion commit addressed by immutable `work/W-027`; exact results, test-fixture correction and limitations live in its body.
+
+### [x] W-028 Two attack cards per enemy hand
+
+Approved: every shipped enemy hand has exactly two attack cards, counting copies. Remove the extra Slash/Shoot and use PVE-D07's idle fourth turn; keep Heavy and all other values, target priorities, tokens and spawns. Exact content decision: PVE-D25.
+Scope: shipped PvE content, focused tests and documentation; no engine or presentation change and no build requested.
+Closing checks: T1 shipped-content/composed-hand and plan multiplicity assertions, priority and save/editor regressions; reuse W-027's unchanged shared rail/idle presentation evidence, documentation validation and diff check.
+Completed: each hand and plan contains exactly two attacks, one movement card and one idle, plus the unchanged defenses. Review of player experience, rules authority, maintainability and risk found no further in-scope defects. The existing private package is unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-028`; exact results, test-compilation correction and limitations live in its body.

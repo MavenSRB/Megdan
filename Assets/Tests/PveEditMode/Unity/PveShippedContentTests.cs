@@ -48,12 +48,14 @@ namespace GuardsDigital.Tests.Pve
             {
                 var type = stated.Find(pair.Item2);
                 var loaded = shipped.Find(pair.Item1);
-                Assert.That(loaded.Plans.Select(plan => string.Join(" ", plan)),
-                    Is.EqualTo(type.Plans.Select(plan => string.Join(" ", plan))), type.Id);
-                Assert.That(loaded.OrangeCards.Select(card => (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle)),
-                    Is.EqualTo(type.OrangeCards.Select(card => (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle))));
+                Assert.That(loaded.OrangeCards.Where(card => !card.IsIdle).Select(card => (card.Key, card.Initiative, card.AttackValue, card.AttackRange, card.MoveValue)),
+                    Is.EqualTo(type.OrangeCards.Where(card => !card.IsIdle).Select(card => (card.Key, card.Initiative, card.AttackValue, card.AttackRange, card.MoveValue))));
                 if (pair.Item1 == "heavy")
+                {
+                    Assert.That(loaded.Plans.Select(plan => string.Join(" ", plan)),
+                        Is.EqualTo(type.Plans.Select(plan => string.Join(" ", plan))), type.Id);
                     Assert.That(loaded.OrangeCards.Select(Describe), Is.EqualTo(type.OrangeCards.Select(Describe)));
+                }
                 Assert.That(loaded.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense)),
                     Is.EqualTo(type.PurpleCards.Select(card => (card.Key, card.Initiative, card.Defense))), type.Id);
             }
@@ -73,12 +75,37 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(ranged.OrangeCards.Select(Describe), Is.EqualTo(new[]
             {
                 "A/8/1//0/2/False/Move:Hero:3",
-                "B/6/2/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:3",
-                "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1"
+                "B/6/1/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:3",
+                "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1",
+                "X/1/1//0//True/"
             }));
             Assert.That(ranged.PurpleCards.Single().Defense, Is.EqualTo(2));
-            Assert.That(ranged.Plans.Select(plan => string.Join(" ", plan)),
-                Is.EqualTo(new[] { "A B C B", "A C B B", "A B B C" }));
+            foreach (var typeId in new[] { "melee", "ranged" })
+                Assert.That(shipped.Find(typeId).Plans.Select(plan => string.Join(" ", plan)),
+                    Is.EqualTo(new[] { "A B C X", "A C B X", "A B X C" }));
+        }
+
+        [TestCase("melee")]
+        [TestCase("ranged")]
+        [TestCase("heavy")]
+        public void EveryHandAndPlanHasExactlyTwoAttackCards(string typeId)
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var type = catalog.Find(typeId);
+            Assert.That(type.OrangeCards.Where(card => card.AttackValue.HasValue).Sum(card => card.Copies), Is.EqualTo(2));
+            Assert.That(type.OrangeHand.Count, Is.EqualTo(4));
+            Assert.That(type.OrangeCards.Single(card => card.IsIdle).Initiative, Is.EqualTo(1));
+            foreach (var plan in type.Plans)
+            {
+                Assert.That(plan.Count, Is.EqualTo(4));
+                Assert.That(plan.Count(key => type.FindOrange(key).AttackValue.HasValue), Is.EqualTo(2));
+                Assert.That(plan, Is.EquivalentTo(type.OrangeHand));
+            }
+            var hand = GuardsDigital.Pve.Composition.PveCardFactory.CreateHand(type,
+                new GuardsDigital.Core.Units.Heroes.HeroId("test-enemy"), "enemy");
+            Assert.That(hand.DealtDefinitions.Count(definition => definition.ActionDefinitions.Any(action =>
+                action.Kind == GuardsDigital.Core.Cards.ActionKind.Attack)), Is.EqualTo(2));
+            Assert.That(hand.Instances.Count, Is.EqualTo(4 + type.PurpleCards.Count));
         }
 
         private static string Describe(PveOrangeCard card) =>
@@ -93,7 +120,7 @@ namespace GuardsDigital.Tests.Pve
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
             var type = catalog.Find(typeId);
             var immediateAttack = new PveEnemyType(type.Id, type.DisplayName, type.Level,
-                type.OrangeCards, type.PurpleCards, new[] { new[] { "B", "A", "C", "B" } }, type.TokenType);
+                type.OrangeCards, type.PurpleCards, new[] { new[] { "B", "A", "C", "X" } }, type.TokenType);
             var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
                 new[] { new PveCreepPlacement(new GuardsDigital.Core.Board.HexCoordinate(-3, 2), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
                 new[] { new GuardsDigital.Core.Board.HexCoordinate(-5, 3) },

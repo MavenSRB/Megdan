@@ -44,6 +44,10 @@ Melee replaces Raider, keeping its card values and plans, but every Attack tries
 
 Keep PVE-D17's coordinates and ordering. Round 1 alternates Melee/Ranged starting with Melee (four/three); round 2 alternates Heavy/Ranged starting with Heavy (two/two). Closing checks: shipped catalog values, priority order, plan multiplicity, spawn mapping, save/editor round-trip, matching map/rail art and projected standing/waiting/defeated status, hover and Undo/Restart presentation.
 
+## PVE-D25 Two attack cards (Approved, user 2026-10-12)
+
+Supersedes PVE-D24's duplicate Slash/Shoot and their plan sequences. Each shipped enemy hand has exactly two attack-capable orange cards, counting copies: Melee has one Slash and one Heavy Blow; Ranged has one Shoot and one Power Shot; Heavy retains one Smash and one Hurl. Melee and Ranged keep their movement card and fill the fourth slot with X Idle (Initiative 1, no action), following PVE-D07. Their plans become `A B C X`, `A C B X`, `A B X C`. Heavy's plans, defenses and all other values, target priorities and spawns are unchanged. Closing checks: every composed hand and listed plan contains exactly two attack cards, four action slots remain valid, content saves round-trip and target-priority checks remain green.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

@@ -9,14 +9,15 @@
       "orangeCards": [
         { "key": "A", "name": "Advance", "initiative": 9, "copies": 1, "move": 2,
           "options": [ { "kind": "move", "target": "minion" } ] },
-        { "key": "B", "name": "Slash", "initiative": 7, "copies": 2, "attack": 3, "move": 2,
+        { "key": "B", "name": "Slash", "initiative": 7, "copies": 1, "attack": 3, "move": 2,
           "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" },
                        { "kind": "move", "target": "minion" } ] },
         { "key": "C", "name": "Heavy Blow", "initiative": 4, "copies": 1, "attack": 5,
-          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] }
+          "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] },
+        { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
       ],
       "purpleCards": [ { "key": "P", "name": "Parry", "initiative": 1, "defense": 4 } ],
-      "plans": [ "A B C B", "A C B B", "A B B C" ]
+      "plans": [ "A B C X", "A C B X", "A B X C" ]
     },
     {
       "id": "ranged",
@@ -26,14 +27,15 @@
       "orangeCards": [
         { "key": "A", "name": "Aim", "initiative": 8, "copies": 1, "move": 2,
           "options": [ { "kind": "move", "target": "hero", "stopDistance": 3 } ] },
-        { "key": "B", "name": "Shoot", "initiative": 6, "copies": 2, "attack": 3, "range": 3, "move": 1,
+        { "key": "B", "name": "Shoot", "initiative": 6, "copies": 1, "attack": 3, "range": 3, "move": 1,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "hero", "stopDistance": 3 } ] },
         { "key": "C", "name": "Power Shot", "initiative": 3, "copies": 1, "attack": 5, "range": 3,
-          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] }
+          "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] },
+        { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
       ],
       "purpleCards": [ { "key": "P", "name": "Guard", "initiative": 1, "defense": 2 } ],
-      "plans": [ "A B C B", "A C B B", "A B B C" ]
+      "plans": [ "A B C X", "A C B X", "A B X C" ]
     },
     {
       "id": "heavy",
