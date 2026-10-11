@@ -26,8 +26,16 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-021 | Separate PvE executable skeleton: isolated assemblies, validated content, static encounter composed into the existing match scene, existing mode unchanged. | `work/W-021` |
 | W-022 | PvE rules: restore-stable mode rules and additive engine hooks, enemy controller, encounter session, seeded plans and loss; existing mode unchanged. | `work/W-022` |
 | W-023 | PvE presentation: encounter session behind the HUD, paced enemies, plan strips, placement, level and prompt buttons, loss banner and an enemy card editor. | `work/W-023` |
+| W-024 | PvE test package: the separate PvE executable zipped with its content data, smoked as built and as extracted, existing-mode build free of PvE assemblies. | `work/W-024` |
 | W-026 | PvE playtest fixes: the HUD plays Blue only, enemy ties read as enemy decisions, paced steps wait for animations; an enemy-turn stall and colliding enemy card faces fixed. | `work/W-026` |
 
+### [x] W-024 PvE test package
+
+Approved: package and smoke the PvE executable (last step of the approved W-021 to W-024 sequence). The first candidate (2026-10-11) was superseded by the user's playtest report; this package is rebuilt after the W-026 fixes.
+Outcome: `Builds/Playtest-W024-pve-test.zip`, stamp `1.0-W024-pve-test+20261011002704-24e33cce`, holding `GuardsDigitalPvE.exe` and `PveData/`; identity in the [build record](../Project/BUILDS.md).
+Acceptance: build tier - PvE build smoke markers, exact-artifact launch of the extracted copy, per-file and ZIP SHA-256, existing-mode player smoke and PvE-assembly absence; living-document validation.
+
+Historical evidence: completion commit addressed by immutable `work/W-024`; exact checks, results and limitations live in its body.
 ### [x] W-026 PvE playtest fixes
 
 Approved: the user's 2026-10-11 playtest report on the first W-024 candidate package ("sometimes I play as the bot and sometimes it plays automatically", "friendly creeps are counted as enemy", find other defects from W-021 to W-023). The user kept the player settling enemy ties (PVE-D10/D12/D20) but asked that it read as a choice made for an enemy, and deferred hero token artwork: the private source corpus is not in this checkout.
