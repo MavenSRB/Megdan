@@ -40,6 +40,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-033 | Melee/Ranged satisfy both hero and minion targeting/effects once; Heavy remains hero-only, with unchanged cards and combat. | `work/W-033` |
 | W-035 | Updated private Windows PvE package with enemy changes, Host/Join and the approved banner; exact-artifact solo/co-op/render/ZIP checks. | `work/W-035` |
 | W-036 | Random four-card enemy order per round, public upfront and deterministic across Undo/co-op. | `work/W-036` |
+| W-037 | Enemy rail box fits live trays, hides when empty and caps overflow for scrolling. | `work/W-037` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -356,3 +357,9 @@ Historical evidence: completion commit addressed by immutable `work/W-035`; exac
 Approved: replace preset plans with a random order of each enemy's four orange cards each round (PVE-D32). All permutations are available, without movement-first constraints; preserve copies, exactly two shipped attacks, separate Heavy Defense, public slots, commitment fallback and deterministic seed/round/enemy derivation. Retain legacy JSON plan lists for compatibility, unused by runtime ordering; bump the PvE co-op format to refuse preset-plan peers. No card definitions, shared engine or schemas changed; no package rebuild. Closing checks: all 24 distinct-card orders reachable, copy preservation, repeat/seed/round/enemy behavior, all four actual commitments, Undo/restart/round flow, co-op identity and rendered solo/joiner rails. T2 review found no remaining in-scope defect; rules remain isolated and the bounded shuffle adds no mutable random state. Batch visual-test invocation was corrected to the required non-batch mode and rerun green.
 
 Historical evidence: completion commit addressed by immutable `work/W-036`; exact checks/results and limitations live in its body.
+
+### [x] W-037 Fit enemy rail to live trays
+
+Approved from the user's screenshot: scale the enemy box to the number of live trays. Replaced its stretched height with heading-plus-row height capped by available space, preserving compact geometry, cards, hover and vertical scrolling; empty occupancy hides the box. No rules, shared HUD or package change. T2 acceptance: oversized-box regression observed failing before the fix and passing after; seven/six/zero/restored-row sizes, viewport shrink/grow and last-row scrolling, joining-client size and hover, rendered inspection. Test staging was corrected to restore its captured populated snapshot after synthetic removals; ordinary restart remains covered before staging. Review found no remaining in-scope defect. W035 ZIP remains unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-037`; exact validation and failure closure live in its body.

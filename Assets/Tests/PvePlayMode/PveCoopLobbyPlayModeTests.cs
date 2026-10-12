@@ -233,6 +233,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null; yield return null;
             var overlay = Object.FindAnyObjectByType<PveEncounterView>();
             Assert.That(overlay.Session, Is.Null);
+            Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Q("pve-enemy-rail").resolvedStyle.height,
+                Is.EqualTo(507).Within(1), "Joining clients fit the rail to seven live trays.");
             Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Query<VisualElement>()
                 .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(7),
                 "Only standing enemies have trays on a joining client.");

@@ -60,6 +60,11 @@ namespace GuardsDigital.Pve.Presentation
         private readonly Dictionary<HeroId, Sprite> enemyArt = new Dictionary<HeroId, Sprite>();
         private HeroId hoveredEnemy;
         private ScrollView enemyRail;
+        private const float EnemyRailTop = 110f;
+        private const float EnemyRailBottomClearance = 330f;
+        private const float EnemyRailHeadingHeight = 24f;
+        private const float EnemyRowHeight = 64f;
+        private const float EnemyRowGap = 5f;
         private HeroOverviewsUnityView sharedEnemyView;
         private HeroOverviewsViewModel lastRailModel;
         private float nextStepAt;
@@ -133,13 +138,16 @@ namespace GuardsDigital.Pve.Presentation
             var rail = new ScrollView(ScrollViewMode.Vertical) { name = "pve-enemy-rail" };
             rail.style.position = Position.Absolute;
             rail.style.left = 12;
-            rail.style.top = 110;
-            rail.style.bottom = 330;
+            rail.style.top = EnemyRailTop;
+            rail.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             rail.style.width = 264;
             rail.style.backgroundColor = new Color(0.08f, 0.05f, 0.05f, 0.94f);
             root.Add(rail);
             var heading = Text(16, FontStyle.Bold, Color.white);
             heading.text = "ENEMIES";
+            heading.style.height = EnemyRailHeadingHeight;
+            heading.style.flexShrink = 0;
+            heading.style.marginTop = heading.style.marginBottom = 0;
             rail.Add(heading);
             enemyRail = rail;
             sharedEnemyView = new HeroOverviewsUnityView(() => ReadModel)
@@ -299,6 +307,7 @@ namespace GuardsDigital.Pve.Presentation
                 column.style.left = 0;
                 column.style.top = 0;
                 column.style.width = Length.Percent(100);
+                column.style.flexShrink = 0;
                 enemyRows.Clear();
                 foreach (var row in column.Children())
                 {
@@ -327,6 +336,10 @@ namespace GuardsDigital.Pve.Presentation
                     enemyRows[hero] = row;
                 }
             }
+            // Fit the live rows, retaining the existing hand clearance only as an overflow cap.
+            var availableHeight = Mathf.Max(0f, root.resolvedStyle.height - EnemyRailTop - EnemyRailBottomClearance);
+            enemyRail.style.height = Mathf.Min(EnemyRailHeadingHeight + enemyRows.Count * (EnemyRowHeight + EnemyRowGap), availableHeight);
+            enemyRail.style.display = enemyRows.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             sharedEnemyView.Root.style.width = root.resolvedStyle.width;
             sharedEnemyView.Root.style.height = root.resolvedStyle.height;
             sharedEnemyView.Root.BringToFront();
@@ -360,11 +373,12 @@ namespace GuardsDigital.Pve.Presentation
             row.Clear();
             row.style.flexDirection = FlexDirection.Row;
             row.style.alignItems = Align.Center;
-            row.style.height = 64;
-            row.style.minHeight = 64;
+            row.style.height = EnemyRowHeight;
+            row.style.minHeight = EnemyRowHeight;
+            row.style.flexShrink = 0;
             row.style.paddingTop = row.style.paddingBottom = 4;
             row.style.paddingLeft = row.style.paddingRight = 3;
-            row.style.marginBottom = 5;
+            row.style.marginBottom = EnemyRowGap;
             icon.style.width = icon.style.height = 36;
             icon.style.minWidth = 36;
             icon.style.flexShrink = 0;

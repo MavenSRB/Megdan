@@ -14,9 +14,11 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 
 ## Current authorization and next route
 
-- Last completed work: **W-036**.
+- Last completed work: **W-037**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
+
+The enemy rail box now fits its live trays, hides when empty and scrolls only beyond the available height. This UI change is not in the preserved W035 package. Details: [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
 Enemy orange cards now shuffle each round instead of using preset orders (PVE-D32). All four slots remain public upfront; Defense stays separate and seed/round/enemy identity preserves Undo and co-op agreement. This source change is not included in the preserved W035 ZIP. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

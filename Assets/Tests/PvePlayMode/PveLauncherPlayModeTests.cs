@@ -190,6 +190,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             composed.RefreshAll();
             yield return null; yield return null;
             Assert.That(rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value).tooltip, Does.Contain("On board"));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(24 + 7 * 69).Within(1),
+                "The background ends after the live trays, not at the bottom of the screen.");
             // Stage a snapshot with one enemy removed and a Heavy entering the board. This is a
             // projection/lifecycle test, not a second simulation of the separately tested combat rules.
             var heavy = encounter.Enemies.First(enemy => enemy.Type.PurpleCards.Count == 2);
@@ -222,6 +224,38 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             System.IO.File.WriteAllBytes("tmp/w032-enemy-rail.png", capture.EncodeToPNG());
             Object.Destroy(capture);
 
+            // Removal shrinks the box; zero live enemies hide it; restoring occupancy grows it.
+            var populatedSnapshot = composed.CaptureSnapshot();
+            StageEnemyBoard(composed, heavy.HeroId, null);
+            composed.RefreshAll();
+            yield return null; yield return null;
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(24 + 6 * 69).Within(1));
+            foreach (var enemy in encounter.Enemies)
+                StageEnemyBoard(composed, enemy.HeroId, null);
+            composed.RefreshAll();
+            yield return null; yield return null;
+            Assert.That(rail.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+            RestoreTestSnapshot(composed, populatedSnapshot);
+            composed.RefreshAll();
+            yield return null; yield return null;
+            Assert.That(rail.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(507).Within(1));
+
+            // Viewport resize caps the box and keeps every tray reachable by scrolling.
+            overlay.style.bottom = StyleKeyword.Auto;
+            overlay.style.height = 700;
+            yield return null; yield return null; yield return null;
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(260).Within(1));
+            var lastRow = rail.Q("gd-hero-rail-red").Children().Last();
+            rail.ScrollTo(lastRow);
+            yield return null; yield return null;
+            Assert.That(rail.scrollOffset.y, Is.GreaterThan(0));
+            Assert.That(lastRow.worldBound.yMax, Is.LessThanOrEqualTo(rail.worldBound.yMax + 1));
+            overlay.style.height = StyleKeyword.Null;
+            overlay.style.bottom = 0;
+            yield return null; yield return null; yield return null;
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(507).Within(1));
+
             foreach (var hero in session.Projection.Participants.Heroes)
             {
                 Assert.DoesNotThrow(() => PlayerAccent.For(session.Projection.Participants, hero.Id), hero.Id.Value);
@@ -237,22 +271,30 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 runtime.InitialState.Scenario.CardDefinitions, runtime.InitialState.AvailableMaps,
                 runtime.InitialState.Setup.Minions, modeRules: runtime.InitialState.ModeRules);
             var state = restored.Board.CaptureRestoreState();
-            var positions = state.HeroOccupancies.Where(hero => !hero.HeroId.Equals(removed))
-                .Concat(new[] { new HeroOccupancy(spawned.HeroId, spawned.Spawn.Coordinate) });
+            var positions = state.HeroOccupancies.Where(hero => !hero.HeroId.Equals(removed));
+            if (spawned != null) positions = positions.Concat(new[] { new HeroOccupancy(spawned.HeroId, spawned.Spawn.Coordinate) });
             var staged = new BoardRestoreState(positions, state.ObstacleOccupancies, state.RemainingMinions,
                 state.PlacedTokens, state.CurrentBattleZoneId, state.MinionBattleExclusions,
                 state.LastCompletedMovementWalk, state.HeroBodySupplies, state.ActingBodies,
                 state.CurrentTurnStart, state.PreviousTurnStart, state.UnitMutations);
             var board = AdjacentMoveAuthority.Restore(staged, restored.Board.MapDefinition, runtime.InitialState.Setup.Minions);
-            var defenseId = PveCardFactory.PurpleId(spawned.Type, spawned.Type.PurpleCards[0]);
-            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(restored.Cards.First(card => card.OwnerId.Equals(spawned.HeroId) &&
-                card.DefinitionReference.DefinitionId.Equals(defenseId))), Is.True);
+            if (spawned != null)
+            {
+                var defenseId = PveCardFactory.PurpleId(spawned.Type, spawned.Type.PurpleCards[0]);
+                Assert.That(CardLifecycleAuthority.TryDiscardFromHand(restored.Cards.First(card => card.OwnerId.Equals(spawned.HeroId) &&
+                    card.DefinitionReference.DefinitionId.Equals(defenseId))), Is.True);
+            }
+            RestoreTestSnapshot(runtime, AuthoritativeSnapshotSerializer.Serialize(restored.Round, board));
+        }
+
+        private static void RestoreTestSnapshot(ConfiguredMatchSceneRuntime runtime, string payload)
+        {
             // PvE intentionally exposes no player restore control. Stage through the existing
             // underlying test authority, retaining the configured overlay and its live read port.
             var inner = (GuardsDigital.Application.IMatchSession)typeof(PveEncounterSession)
                 .GetField("inner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 .GetValue(runtime.Session);
-            var result = inner.RestoreSnapshot(AuthoritativeSnapshotSerializer.Serialize(restored.Round, board));
+            var result = inner.RestoreSnapshot(payload);
             Assert.That(result.Accepted, Is.True, result.Detail);
         }
 
