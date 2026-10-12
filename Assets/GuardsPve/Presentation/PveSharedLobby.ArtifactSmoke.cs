@@ -6,6 +6,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
@@ -138,12 +139,21 @@ namespace GuardsDigital.Pve.Presentation
                     var commits = projection.AuthorizedCommands.Where(c => c.Kind == DirectorCommandKind.CommitCard).ToArray();
                     if (commits.Length > 0 && opened.connections.All(c => c.Client.LatestProjection?.AuthorizedCommands.Any(a => a.Kind == DirectorCommandKind.CommitCard) == true))
                     {
-                        SmokeRequire(opened.runtime.Seat.HeroId.Value == hero && opened.runtime.Seat.Id.Value == seat, "Chosen identity mismatch");
+                        SmokeRequire(opened.runtime.Host.Seats.Find(new SeatId(seat)).HeroId.Value == hero &&
+                            opened.runtime.Seat.Id.Equals(client.TargetSeat), "Chosen identity mismatch");
                         SmokeRequire(commits.All(c => c.HeroId.Equals(opened.runtime.Seat.HeroId)), "Foreign control leaked");
                         SmokeRequire(((IExperimentalReadModel)opened.runtime.ReadModel).Experiments.TeammateCoordination, "Coordination disabled");
                         foreach (var owner in opened.connections.Select(c => c.Client))
                         {
-                            PveCoopLobby.SmokeClick(opened.document.rootVisualElement.Q<Button>("pve-control-" + owner.TargetSeat.Value));
+                            var ownedHero = opened.runtime.Host.Seats.Find(owner.TargetSeat).HeroId;
+                            var tray = opened.runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                                .Single(r => r.userData is HeroId id && id.Equals(ownedHero));
+                            using (var click = PointerUpEvent.GetPooled(new Event { type = EventType.MouseUp,
+                                mousePosition = tray.Q("gd-hero-medallion").worldBound.center, button = 0, clickCount = 1 }))
+                            {
+                                click.target = tray.Q("gd-hero-medallion");
+                                ((VisualElement)click.target).SendEvent(click);
+                            }
                             SmokeRequire(opened.runtime.Seat.Id.Equals(owner.TargetSeat), "Local seat switch failed");
                             SmokeRequire(owner.LatestProjection.AuthorizedCommands.Where(c => c.Kind == DirectorCommandKind.CommitCard)
                                 .All(c => c.HeroId.Equals(opened.runtime.Seat.HeroId)), "Foreign multi-seat command");
@@ -151,6 +161,21 @@ namespace GuardsDigital.Pve.Presentation
                         for (var frame = 0; frame < 30; frame++) yield return null;
                         var overlay = FindAnyObjectByType<PveEncounterView>();
                         SmokeRequire(overlay.GetComponent<UIDocument>().rootVisualElement.Q("gd-hero-rail-red")?.childCount == 7, "Enemy rail missing");
+                        var rules = opened.runtime.InitialState.ModeRules;
+                        var future = rules.RoundStartPlacements.Where(p => p.Round > 1).Select(p => p.HeroId).ToArray();
+                        SmokeRequire(!opened.runtime.ReadModel.Commitments.Any(c => future.Contains(c.HeroId)), "Unspawned enemy committed");
+                        PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var shippedEncounter);
+                        SmokeRequire(shippedEncounter.Spawns.Count(s => s.Round == 1 && s.EnemyTypeId == "heavy") == 1,
+                            "First wave must include one Heavy");
+                        var faces = PveEnemyArtwork.ResourcesFor(catalog);
+                        SmokeRequire(faces.Count == 14, "Expected fourteen generated faces");
+                        foreach (var face in faces)
+                        {
+                            SmokeRequire(ConfiguredCardArtwork.TryLoadTexture(face.Key, out var texture, out _), "Missing face: " + face.Value);
+                            SmokeRequire(Math.Abs((float)texture.width / texture.height - CardFootprint.StandardWidth / CardFootprint.StandardHeight) < .01f,
+                                "Distorted face: " + face.Value);
+                        }
+                        Debug.Log(SmokeMarker + "FACES 14 portrait; future-enemy commitments=0");
                         PveCoopLobby.CaptureArtifactBoard(Path.Combine(folder, "board-" + number + ".png"));
                         yield return new WaitForEndOfFrame();
                         ScreenCapture.CaptureScreenshot(Path.Combine(folder, "screen-" + number + ".png"));

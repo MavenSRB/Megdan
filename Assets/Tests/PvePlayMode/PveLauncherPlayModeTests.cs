@@ -191,8 +191,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     Is.EqualTo(CardFootprint.StandardWidth / CardFootprint.StandardHeight).Within(.01f),
                     "Generated faces must retain portrait proportions, not Unity's square NPOT conversion: " + face.Value);
             }
-            var firstRow = rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value);
-            yield return AssertLinkedHover(composed, overlay, encounter.Enemies[0].HeroId);
+            var melee = encounter.Enemies.First(enemy => enemy.Type.Id == "melee");
+            var firstRow = rail.Q("pve-enemy-" + melee.HeroId.Value);
+            yield return AssertLinkedHover(composed, overlay, melee.HeroId);
             var firstSlot = firstRow.Query<VisualElement>("gd-turn-slot").ToList()
                 .Single(slot => slot.tooltip.Contains("Shield Up"));
             using (var hover = PointerEnterEvent.GetPooled()) { hover.target = firstSlot; firstSlot.SendEvent(hover); }
@@ -229,21 +230,24 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(restarted.Accepted, Is.True, restarted.Detail);
             composed.RefreshAll();
             yield return null; yield return null;
-            Assert.That(rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value).tooltip, Does.Contain("On board"));
+            Assert.That(rail.Q("pve-enemy-" + melee.HeroId.Value).tooltip, Does.Contain("On board"));
             Assert.That(rail.resolvedStyle.height, Is.EqualTo(7 * 69).Within(1),
                 "The background ends after the live trays, not at the bottom of the screen.");
+            var redBanner = ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                overlay.resolvedStyle.width, overlay.resolvedStyle.height, TeamSide.Red);
+            Assert.That(rail.resolvedStyle.top, Is.GreaterThanOrEqualTo(redBanner.yMax + 4f),
+                "The complete tiebreaker banner must fit above the enemy trays even after a handover.");
             // Stage a snapshot with one enemy removed and a Heavy entering the board. This is a
             // projection/lifecycle test, not a second simulation of the separately tested combat rules.
-            var heavy = encounter.Enemies.First(enemy => enemy.Type.PurpleCards.Count == 2);
-            StageEnemyBoard(composed, encounter.Enemies[0].HeroId, heavy);
+            var heavy = encounter.Enemies.First(enemy => enemy.Type.PurpleCards.Count == 2 && enemy.Spawn.Round == 2);
+            StageEnemyBoard(composed, melee.HeroId, heavy);
             composed.RefreshAll();
             yield return null; yield return null;
-            Assert.That(rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value), Is.Null,
+            Assert.That(rail.Q("pve-enemy-" + melee.HeroId.Value), Is.Null,
                 "An enemy removed from the board loses its tray.");
             Assert.That(rail.Q("pve-enemy-" + heavy.HeroId.Value), Is.Not.Null,
                 "A newly spawned enemy gains its tray.");
-            var defenseRow = rail.Query<VisualElement>().ToList().First(row => row.Q("pve-defense-card") != null &&
-                row.name != null && row.name.StartsWith("pve-enemy-pve-enemy-"));
+            var defenseRow = rail.Q("pve-enemy-" + heavy.HeroId.Value);
             Assert.That(defenseRow.Query<VisualElement>("pve-defense-card").ToList()
                 .Count(card => card.style.opacity.value < .5f), Is.EqualTo(1), "A spent Defense is dimmed.");
             rail.ScrollTo(defenseRow);
@@ -291,7 +295,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             overlay.style.bottom = StyleKeyword.Auto;
             overlay.style.height = 700;
             yield return null; yield return null; yield return null;
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(260).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(700 - redBanner.yMax - 4 - 330).Within(1));
             var lastRow = rail.Q("gd-hero-rail-red").Children().Last();
             rail.ScrollTo(lastRow);
             yield return null; yield return null;

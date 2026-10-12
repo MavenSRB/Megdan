@@ -122,6 +122,10 @@ Closing checks: legal placement clicks and invalid-click refusal; deterministic 
 
 Enemies not on the board do not participate in commitment or turn resolution: no card commitment, automatic Pass, off-board card resolution or presentation delay. They enter the required turn roster when placed by their scheduled spawn. Preserve wave scheduling, legal placement and ordinary Blue hero defeat/respawn behavior. An enemy removed during a turn retains that turn's existing resolution/history; it is absent from subsequent turn rosters while off the board. This replaces D07's implicit all-configured-enemies commitment behavior. Closing checks: no pre-spawn commitments/actions/history assignments, round-two entry with all four cards intact, legal refusal of inactive commands, restore/Undo/co-op agreement and unchanged existing-mode identity.
 
+## PVE-D41 First-wave Heavy (Approved, user 2026-10-12)
+
+Replace one wave-one Melee with a Heavy at the first spawn (-1,-2), preserving all spawn positions and counts. Wave one: three Melee, three Ranged, one Heavy. Wave two stays two Heavy and two Ranged. Other cards, values and wave timing remain unchanged.
+
 ## Remaining open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

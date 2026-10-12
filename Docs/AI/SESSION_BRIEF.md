@@ -10,17 +10,17 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W046 Unified**, `Builds/Playtest-W046-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Package identity and evidence: [build record](Project/BUILDS.md). W045, W013 and separate W035 remain preserved, superseded packages.
+Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W047-W049, full tiebreaker clearance above enemy trays, and wave one with 3 Melee, 3 Ranged and 1 Heavy (PVE-D41); wave two unchanged. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-- Last completed work: **W-049**.
+- Last completed work: **W-050**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
-W048 saved PvE logs and W049 generated enemy faces/board-gated turns are implemented, source-only. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved; wait for the next user request.
+W048 saved PvE logs and W049 generated enemy faces/board-gated turns are included in W050. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved; wait for the next user request.
 
-W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. This is source-only; W046 remains the delivered build and local `main` at `815a9f82`. No new package, main merge or remote push for W047.
+W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. W050 includes these changes; local `main` remains at `815a9f82`. W047 itself was source-only; no main merge or remote push followed.
 
 W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; W047 replaces Control buttons with tray/token clicks and automatic awaited-seat selection. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the W046 artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

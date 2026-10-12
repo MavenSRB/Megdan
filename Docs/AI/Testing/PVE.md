@@ -55,6 +55,8 @@ The scene/rail fixtures capture rendered frames using `WaitForEndOfFrame`; selec
 
 ## Build gate
 
+W050's unified artifact smoke follows owned portrait selection rather than retired Control buttons, accepts automatic active-seat switching, and verifies all fourteen private portrait textures, no future-wave commitments and one first-wave Heavy in the shipped content. The launcher Play Mode fixture also reserves full tiebreaker height above live enemy trays and verifies the revised overflow cap.
+
 W-045 replaces assembly absence as a current acceptance requirement: the normal Windows `Invoke-PlayerBuildSmoke.ps1` build includes PvE under `GUARDS_PVE` and copies `PveData`. Reuse that binary with `Invoke-PveArtifactSmoke.ps1 -PlayerCount 1`, `2` and `3` (default), distinct evidence directories and ports. The shared-lobby adapter hosts through Map, joins through the ordinary PvP front door with mode/seed adoption, picks heroes on shared screens, and checks owned-seat switching, commands, coordination and board/rail rendering. `PveSharedLobbyPlayModeTests` covers solo, two-player split ownership, reconnect and same-version seat switching. Hidden-player full-screen PNGs can be black; board-camera captures and Editor UI captures provide visual evidence. Historical separate-player gates below remain recipes for preserved legacy artifacts, not the unified build's isolation criterion.
 
 Run the existing gate first, then the PvE gate, so the PvE gate can check isolation:

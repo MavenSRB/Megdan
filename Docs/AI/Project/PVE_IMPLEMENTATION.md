@@ -54,6 +54,8 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 
 ## Generated enemy faces
 
+W050 reserves the shared tiebreaker banner's full height plus a four-unit gap above the enemy trays, including when the banner changes sides. The live-row fit and overflow cap use the same top offset; card dimensions and preview scale remain unchanged.
+
 `PveEnemyArtwork` maps the fourteen W044 faces to exact enemy definition/revision identities through the shared `ConfiguredCardArtwork` prepared-face renderer, separately from the official verified-art catalog. Approved PNG bytes are copied unchanged from `tmp/w044-enemy-faces/final` into the ignored `Assets/Resources/Private/PveCards` folder. Their own aspect ratio is retained inside the normal card footprint. Twelve orange and two purple faces retain approved icons/text; shared preview and effect-glow layers remain in use. Tuned names, numbers, Skills, repeat flags or targeting priorities fail the baked-face guard and use the typed fallback; missing private artwork also falls back. No rules derive from artwork. These private assets are not publication-authorized or included in the preserved W046 package.
 
 ## Weak-attack fallback (W-034)
@@ -61,6 +63,8 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35/D37): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 as close as possible toward the closest Blue unit (hero or creep), stopping adjacent. The controller picks Movement only when no prior Attack option applies. Typed `PveTargetKind.Unit` combines opposing hero/creep coordinates for Movement only; validation refuses it on Attack options. Ranged Take Position also stops at range 2 with Move 2; both Ranged attacks retain printed Range 3.
 
 ## Encounter composition (W-021)
+
+PVE-D41 replaces the first wave's Melee at (-1,-2) with Heavy. The shipped first wave has three Melee, three Ranged and one Heavy; wave two keeps two Heavy and two Ranged. All eleven spawn positions and wave timing are unchanged.
 
 PVE-D37 revises Heavy: Hurl is Attack 2 / Range 2, repeats once on a different target, and retains Move 1 fallback. Hook (Initiative 1) pulls the closest Blue hero or creep along a straight hex line until adjacent or blocked; an unaligned closest unit does not move, and ties use the host's seeded automatic legal choice. Thick Hide remains Defense 3 / Initiative 1 and, after a successful defense and the incoming attack's after-attack text, counterattacks the original attacker once at Attack 1 only if adjacent. Brace is unchanged. The counterattack is a normal, defendable attack, not direct damage.
 

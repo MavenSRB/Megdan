@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-050 | Current-source unified Windows package, including W047-W049 and user-requested tiebreaker clearance and first-wave Heavy replacement. Focused content/UI checks, exact-artifact PvP and PvE one/two/three-player smokes, portrait resource/roster checks, board renders, manifest/ZIP verification and extracted launch. Original card scaling, older packages and main preserved. | `work/W-050` |
 | W-049 | Integrated fourteen generated private enemy faces with exact-content fallback guards and original card sizing; corrected square texture import while preserving source PNGs. Per user clarification, unspawned enemies have no commitments, passes or turn assignments until spawning; preserved wave timing, restore, partial network slots and default PvP. Focused engine/UI checks and visual review; source-only, W046 package/main unchanged. | `work/W-049` |
 | W-048 | Saved PvE host narration and public-metadata host/client captures using shared privacy/failure conventions; distinct original-mode ending, nonfatal disk failure and disposal checks. Source-only, W046 package/main preserved. | `work/W-048` |
 | W-047 | Approved PvE interaction cleanup: board-only initial placement, deterministic automatic enemy choices, no manual level grant or redundant panels, owned tray/token selection and automatic awaited-seat switching, compact header-free enemy rail and Blue-only shared end screen. Focused rules/network/UI regressions and visual review; source only, W046 package/main unchanged. | `work/W-047` |
@@ -55,6 +56,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-050 Unified build, tiebreaker clearance and first-wave Heavy
+
+Historical evidence: `work/W-050` commit body.
+
+Approved 2026-10-12: build the current game; additional requests reserve room above enemy trays for the tiebreaker and replace one wave-one Melee with Heavy. The first spawn at (-1,-2) changes type; positions/count/timing/cards remain unchanged (PVE-D41). Enemy rail starts below the shared banner plus four-unit gap and retains live-height/scroll behavior. Updated the opt-in artifact smoke for portrait-based owned-seat switching and automatic active-seat selection, verifying all fourteen generated portrait textures and absent future-wave commitments. T2 changed-path content/UI checks and exact-artifact player/PvP/PvE/board/ZIP/extracted-launch checks close the request; unaffected W046 full suites and W047-W049 focused evidence reused. Review preserves core authority, private assets and original card scaling. W050 supersedes W046 as package only; no main merge, remote publication, internet/NAT or packaged reconnect claim.
 
 ### [x] W-049 Generated enemy faces and spawned-only turns
 

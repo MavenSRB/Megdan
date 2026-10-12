@@ -55,7 +55,9 @@ namespace GuardsDigital.Pve.Presentation
         private readonly Dictionary<HeroId, Sprite> enemyArt = new Dictionary<HeroId, Sprite>();
         private HeroId hoveredEnemy;
         private ScrollView enemyRail;
-        private const float EnemyRailTop = 110f;
+        // Reserve the shared tiebreaker banner even while Blue holds it.
+        private static float EnemyRailTop => ConfiguredMatchHudRenderer
+            .CalculateTieBreakerRailBannerRect(0f, 0f, TeamSide.Red).yMax + 4f;
         private const float EnemyRailBottomClearance = 330f;
         private const float EnemyRowHeight = 64f;
         private const float EnemyRowGap = 5f;
