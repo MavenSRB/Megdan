@@ -344,20 +344,23 @@ namespace GuardsDigital.Application
         }
     }
 
-    /// <summary>Milestone 8.107. How far the host's search for its own internet address has got.</summary>
+    /// <summary>How far the host's search for its own internet address has got.</summary>
     public enum HostAddressDiscovery
     {
         /// <summary>Nothing has been asked yet, or the session is local-only.</summary>
         NotStarted = 0,
 
-        /// <summary>The router has been asked and has not answered yet.</summary>
+        /// <summary>The local router and, if needed, HTTPS lookup are still being asked.</summary>
         Searching = 1,
 
         /// <summary>The router named a public address.</summary>
         RouterAnswered = 2,
 
-        /// <summary>The router did not answer, or answered with a private address.</summary>
-        RouterSilent = 3
+        /// <summary>No lookup produced a public address.</summary>
+        RouterSilent = 3,
+
+        /// <summary>A bounded HTTPS fallback named a public address after UPnP did not.</summary>
+        PublicServiceAnswered = 4
     }
 
     /// <summary>
@@ -413,17 +416,18 @@ namespace GuardsDigital.Application
             switch (discovery)
             {
                 case HostAddressDiscovery.RouterAnswered when !string.IsNullOrEmpty(internetAddress):
+                case HostAddressDiscovery.PublicServiceAnswered when !string.IsNullOrEmpty(internetAddress):
                     address = "INTERNET IP: " + internetAddress + "   PORT " + portText;
                     break;
                 case HostAddressDiscovery.Searching:
                 case HostAddressDiscovery.NotStarted:
-                    address = "INTERNET IP: ASKING THE ROUTER...   PORT " + portText;
+                    address = "INTERNET IP: FINDING PUBLIC IP...   PORT " + portText;
                     break;
                 default:
                     address = string.IsNullOrEmpty(lanAddress)
-                        ? "INTERNET IP: UNKNOWN (the router did not say)   PORT " + portText
+                        ? "INTERNET IP: UNKNOWN (lookup failed)   PORT " + portText
                         : "LAN IP: " + lanAddress + "   PORT " + portText +
-                            " (the router did not give an internet IP)";
+                            " (public IP lookup failed)";
                     break;
             }
 

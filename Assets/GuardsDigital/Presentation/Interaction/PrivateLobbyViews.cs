@@ -451,7 +451,10 @@ namespace GuardsDigital.Presentation.Interaction
             experimentalPanel.Add(cardModifiersActiveEffectsToggle);
             experimentalPanel.Add(cardModifiersCardEffectsToggle);
 
-            timerToggle=new Toggle("Turn timer") {name="experimental-timer"};
+            var timerHeading = Caption("TURN TIMER", 16, "experimental-timer-heading");
+            timerHeading.style.marginTop = 12f;
+            experimentalPanel.Add(timerHeading);
+            timerToggle=new Toggle("Enable turn timer") {name="experimental-timer"};
             timerToggle.style.fontSize=18; timerToggle.style.color=Color.white; experimentalPanel.Add(timerToggle);
             timerSettings=new VisualElement {name="experimental-timer-settings"}; timerSettings.style.display=DisplayStyle.None;
             var durationLabels=new[]{"Card commitment time","Card resolution time","Response time","Card upgrade time","Team time bank per wave"};
@@ -1636,13 +1639,13 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>
         /// Milestone 8.107. Set by Play Mode journeys so that hosting a keyed session in a test run
-        /// never sends a real UPnP search onto the developer's network. The invitation then stays
-        /// on its "asking the router" line.
+        /// never sends a real UPnP or HTTPS address-discovery request from the developer's network.
+        /// The invitation then stays on its "finding public IP" line.
         /// </summary>
         public static bool SuppressRouterQuestion;
 
-        /// <summary>How long the router gets to say which internet address this network has.</summary>
-        private static readonly TimeSpan RouterQuestionBudget = TimeSpan.FromSeconds(6);
+        /// <summary>How long local-router and HTTPS discovery share to find the public address.</summary>
+        private static readonly TimeSpan RouterQuestionBudget = TimeSpan.FromSeconds(10);
 
         private IPrivateLobbyFieldMemory fieldMemory;
         private RouterExternalAddressProbe addressProbe;

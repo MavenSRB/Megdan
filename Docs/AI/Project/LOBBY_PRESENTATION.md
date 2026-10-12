@@ -4,7 +4,11 @@ Canonical current lobby/picker contract. Return to [project context](../PROJECT_
 
 ## Experimental menu
 
-The host screen now exposes an **Experimental** button with a per-match teammate coordination toggle, reset off for a new hosted game. [The owning milestone](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination) records its gate status. The [accepted timer settings](EXPERIMENTAL_FEATURES.md#experimental-menu) follow separately at 9.56; the normal map selector remains outside Experimental.
+The host screen now exposes an **Experimental** button with a per-match teammate coordination toggle, reset off for a new hosted game. [The owning milestone](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-958-implement-and-gate-experimental-teammate-coordination) records its gate status. The [accepted timer settings](EXPERIMENTAL_FEATURES.md#experimental-menu) follow separately at 9.56 and appear under their own **Turn timer** heading rather than reading as part of Card Modifiers; the normal map selector remains outside Experimental.
+
+## Host invitation address
+
+A keyed host displays the public IPv4 and bound port guests should use. Discovery first asks the local router through UPnP and, when that optional feature cannot supply a public address, uses a bounded HTTPS lookup against fixed public-IP endpoints. Every response is treated as untrusted and displayed only when it is exactly one valid public IPv4. If both routes fail, the lobby labels the LAN address as a fallback rather than implying it is internet-reachable. This discovers an address only; the host still owns firewall and port-forwarding setup.
 
 ## Setup and selection
 

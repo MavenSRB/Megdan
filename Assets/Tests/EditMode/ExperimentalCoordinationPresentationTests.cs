@@ -205,7 +205,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test] public void TimerFieldsExposeAllDefaultsAndResetPerGame()
         {
             var view=new PrivateLobbyUnityView(); view.ShowPage(PrivateLobbyEntryPage.Host);
-            view.Root.Q<Toggle>("experimental-timer").value=true;
+            var timerHeading=view.Root.Q<Label>("experimental-timer-heading");
+            var cardHeading=view.Root.Q<Label>("experimental-card-modifiers-heading");
+            var timerToggle=view.Root.Q<Toggle>("experimental-timer");
+            Assert.That(timerHeading.text,Is.EqualTo("TURN TIMER"));
+            Assert.That(timerToggle.label,Is.EqualTo("Enable turn timer"));
+            var experimentalRows=timerHeading.parent.Children().ToList();
+            Assert.That(experimentalRows.IndexOf(timerHeading),Is.GreaterThan(experimentalRows.IndexOf(cardHeading)));
+            Assert.That(experimentalRows.IndexOf(timerToggle),Is.GreaterThan(experimentalRows.IndexOf(timerHeading)));
+            timerToggle.value=true;
             var durations=new[]{120,30,30,120,300};
             for(int i=0;i<durations.Length;i++)
             {

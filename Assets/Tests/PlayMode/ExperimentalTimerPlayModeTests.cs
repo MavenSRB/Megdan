@@ -187,6 +187,12 @@ namespace GuardsDigital.Tests.PlayMode
             })
                 menu.Root.Q<Toggle>(name).value = true;
             yield return null;yield return null;
+            var cardModifiersHeading=menu.Root.Q<Label>("experimental-card-modifiers-heading");
+            var timerHeading=menu.Root.Q<Label>("experimental-timer-heading");
+            var timerToggle=menu.Root.Q<Toggle>("experimental-timer");
+            Assert.That(timerHeading.worldBound.yMin,Is.GreaterThan(cardModifiersHeading.worldBound.yMax),
+                "Turn timer must begin under its own heading after the Card Modifiers section.");
+            Assert.That(timerToggle.worldBound.yMin,Is.GreaterThanOrEqualTo(timerHeading.worldBound.yMax));
             Assert.That(menu.Root.Query<IntegerField>().ToList().Where(f=>f.name.StartsWith("experimental-duration-")).Count(),Is.EqualTo(5));
             var commitment=menu.Root.Q<IntegerField>("experimental-duration-0");
             commitment.value=125; commitment.value=0;

@@ -16,11 +16,13 @@ Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified
 
 Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-051**.
+- Last completed work: **W-052**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
 W048 saved PvE logs and W049 generated enemy faces/board-gated turns are included in W050. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved; wait for the next user request.
+
+W052 separates Turn timer from Card Modifiers in Experimental and makes keyed-host address discovery fall back from local UPnP to bounded HTTPS public-IPv4 lookups. Responses are accepted only as exact public IPv4 values; failure remains an explicitly labelled LAN/unknown result. This does not open or verify the selected port. Source-only; the W050/W051 packages and local main remain unchanged.
 
 W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. W050 includes these changes; local `main` remains at `815a9f82`. W047 itself was source-only; no main merge or remote push followed.
 

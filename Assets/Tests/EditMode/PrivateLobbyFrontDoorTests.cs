@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Network;
@@ -95,11 +96,16 @@ namespace GuardsDigital.Tests.EditMode
             var searching = PrivateLobbyInvitation.For(
                 "K7QM-4TZP-9WXR", 45677, HostAddressDiscovery.Searching, null, null);
             Assert.That(searching.SessionIdLine, Is.EqualTo("SESSION ID: K7QM-4TZP-9WXR"));
-            Assert.That(searching.AddressLine, Does.StartWith("INTERNET IP: ASKING THE ROUTER"));
+            Assert.That(searching.AddressLine, Does.StartWith("INTERNET IP: FINDING PUBLIC IP"));
 
             var answered = PrivateLobbyInvitation.For(
                 "K7QM-4TZP-9WXR", 45677, HostAddressDiscovery.RouterAnswered, "81.2.69.160", "192.168.1.20");
             Assert.That(answered.AddressLine, Is.EqualTo("INTERNET IP: 81.2.69.160   PORT 45677"));
+
+            var fallbackAnswered = PrivateLobbyInvitation.For(
+                "K7QM-4TZP-9WXR", 45677, HostAddressDiscovery.PublicServiceAnswered,
+                "81.2.69.161", "192.168.1.20");
+            Assert.That(fallbackAnswered.AddressLine, Is.EqualTo("INTERNET IP: 81.2.69.161   PORT 45677"));
         }
 
         [Test]
@@ -108,7 +114,7 @@ namespace GuardsDigital.Tests.EditMode
             var lan = PrivateLobbyInvitation.For(
                 "K7QM", 5000, HostAddressDiscovery.RouterSilent, null, "192.168.1.20");
             Assert.That(lan.AddressLine, Does.StartWith("LAN IP: 192.168.1.20   PORT 5000"));
-            Assert.That(lan.AddressLine, Does.Contain("did not give an internet IP"));
+            Assert.That(lan.AddressLine, Does.Contain("public IP lookup failed"));
 
             var nothing = PrivateLobbyInvitation.For(
                 "K7QM", 5000, HostAddressDiscovery.RouterSilent, null, string.Empty);
@@ -197,6 +203,37 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(RouterAddressParsing.TryReadExternalAddress(Answer("<script>"), out _), Is.False);
             Assert.That(RouterAddressParsing.TryReadExternalAddress("<html/>", out _), Is.False);
+        }
+
+        [Test]
+        public void TheHttpsAnswer_IsShownOnlyWhenItIsExactlyOnePublicIPv4()
+        {
+            Assert.That(RouterAddressParsing.TryReadPublicAddressText(" 81.2.69.160\r\n", out var address), Is.True);
+            Assert.That(address, Is.EqualTo("81.2.69.160"));
+
+            foreach (var answer in new[]
+                     {
+                         "192.168.0.2", "100.64.0.1", "81.2.69.160 extra", "<html>81.2.69.160</html>", ""
+                     })
+            {
+                Assert.That(RouterAddressParsing.TryReadPublicAddressText(answer, out _), Is.False, answer);
+            }
+        }
+
+        [Test]
+        public void AddressDiscovery_FallsBackToHttps_WhenTheRouterCannotNameThePublicIp()
+        {
+            var probe = new RouterExternalAddressProbe(
+                _ => null,
+                _ => "81.2.69.160");
+
+            probe.Start(TimeSpan.FromSeconds(1));
+
+            Assert.That(SpinWait.SpinUntil(
+                () => probe.Discovery != HostAddressDiscovery.Searching,
+                TimeSpan.FromSeconds(1)), Is.True);
+            Assert.That(probe.Discovery, Is.EqualTo(HostAddressDiscovery.PublicServiceAnswered));
+            Assert.That(probe.InternetAddress, Is.EqualTo("81.2.69.160"));
         }
 
         [Test]

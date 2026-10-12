@@ -12,19 +12,19 @@ using GuardsDigital.Application;
 namespace GuardsDigital.Network
 {
     /// <summary>
-    /// Milestone 8.107. The pure half of asking the local router for this network's internet
-    /// address over UPnP: reading the three replies. Kept apart from the sockets so every reading is
-    /// provable offline.
+    /// The pure half of discovering this network's internet address: reading UPnP and bounded
+    /// HTTPS replies. Kept apart from the sockets so every reading is provable offline.
     /// </summary>
     /// <remarks>
-    /// <para>The conversation is the standard Internet Gateway Device one. An SSDP search is
+    /// <para>The first conversation is the standard Internet Gateway Device one. An SSDP search is
     /// multicast on the LAN, and the gateway answers with a <c>LOCATION</c> URL. That URL's device
     /// description names a WAN connection service and its control URL, and a SOAP
     /// <c>GetExternalIPAddress</c> call to that URL returns <c>NewExternalIPAddress</c>. Nothing
-    /// leaves the local network. The user chose this over an outside "what is my IP" service.</para>
-    /// <para>Every reply comes from whichever device on the LAN chose to answer, so it is treated as
-    /// untrusted. A description is fetched only from a private IPv4 host. The address is shown only
-    /// if it parses as a public IPv4, and nothing read here is ever dialled or executed.</para>
+    /// leaves the local network. When that optional router feature is unavailable, the probe asks
+    /// fixed HTTPS public-IP endpoints for the caller's address.</para>
+    /// <para>Every reply is treated as untrusted. A router description is fetched only from a
+    /// private IPv4 host; HTTPS is attempted only against the fixed endpoints below. An address is
+    /// shown only if it parses as a public IPv4, and nothing read here is ever dialled or executed.</para>
     /// </remarks>
     public static class RouterAddressParsing
     {
@@ -203,6 +203,25 @@ namespace GuardsDigital.Network
             return true;
         }
 
+        /// <summary>A plain-text HTTPS response that contains exactly one public IPv4 address.</summary>
+        public static bool TryReadPublicAddressText(string response, out string address)
+        {
+            address = null;
+            if (string.IsNullOrWhiteSpace(response) || response.Length > 64)
+            {
+                return false;
+            }
+
+            var candidate = response.Trim();
+            if (!IsPublicIPv4(candidate))
+            {
+                return false;
+            }
+
+            address = candidate;
+            return true;
+        }
+
         /// <summary>
         /// Whether text is a dotted IPv4 outside every private, shared, loopback, link-local and
         /// reserved range. A router behind another router reports the inner network's address, and
@@ -292,8 +311,8 @@ namespace GuardsDigital.Network
     }
 
     /// <summary>
-    /// Milestone 8.107. Asks the local router, once and in the background, which internet address
-    /// this network has, and finds this machine's own LAN IPv4 in case it does not answer.
+    /// Asks the local router, once and in the background, which internet address this network has,
+    /// falls back to bounded HTTPS discovery, and finds this machine's own LAN IPv4 if both fail.
     /// </summary>
     /// <remarks>
     /// The lobby polls <see cref="Discovery"/> from its frame loop. The whole question is bounded by
@@ -303,8 +322,15 @@ namespace GuardsDigital.Network
     public sealed class RouterExternalAddressProbe
     {
         private const int MaxReplyBytes = 64 * 1024;
+        private static readonly Uri[] PublicAddressEndpoints =
+        {
+            new Uri("https://api.ipify.org"),
+            new Uri("https://checkip.amazonaws.com")
+        };
 
         private readonly object gate = new object();
+        private readonly Func<DateTime, string> routerLookup;
+        private readonly Func<DateTime, string> publicLookup;
         private HostAddressDiscovery discovery = HostAddressDiscovery.NotStarted;
         private string internetAddress = string.Empty;
         private string lanAddress = string.Empty;
@@ -314,6 +340,17 @@ namespace GuardsDigital.Network
         public string InternetAddress { get { lock (gate) return internetAddress; } }
 
         public string LanAddress { get { lock (gate) return lanAddress; } }
+
+        public RouterExternalAddressProbe() : this(AskRouter, AskPublicAddressService) { }
+
+        /// <summary>Supplies deterministic lookup seams without letting tests touch the network.</summary>
+        public RouterExternalAddressProbe(
+            Func<DateTime, string> routerLookup,
+            Func<DateTime, string> publicLookup)
+        {
+            this.routerLookup = routerLookup ?? throw new ArgumentNullException(nameof(routerLookup));
+            this.publicLookup = publicLookup ?? throw new ArgumentNullException(nameof(publicLookup));
+        }
 
         /// <summary>Starts the question once; later calls do nothing.</summary>
         public void Start(TimeSpan budget)
@@ -335,14 +372,46 @@ namespace GuardsDigital.Network
         {
             var lan = string.Empty;
             string found = null;
+            var foundByPublicService = false;
+            var deadline = DateTime.UtcNow + budget;
             try
             {
                 lan = FindLanIPv4();
-                found = AskRouter(DateTime.UtcNow + budget);
+            }
+            catch (Exception)
+            {
+                lan = string.Empty;
+            }
+
+            try
+            {
+                var routerDeadline = Min(deadline, DateTime.UtcNow + TimeSpan.FromSeconds(3));
+                found = routerLookup(routerDeadline);
+                if (!RouterAddressParsing.IsPublicIPv4(found))
+                {
+                    found = null;
+                }
             }
             catch (Exception)
             {
                 found = null;
+            }
+
+            if (string.IsNullOrEmpty(found) && DateTime.UtcNow < deadline)
+            {
+                try
+                {
+                    found = publicLookup(deadline);
+                    foundByPublicService = RouterAddressParsing.IsPublicIPv4(found);
+                    if (!foundByPublicService)
+                    {
+                        found = null;
+                    }
+                }
+                catch (Exception)
+                {
+                    found = null;
+                }
             }
 
             lock (gate)
@@ -351,7 +420,9 @@ namespace GuardsDigital.Network
                 internetAddress = found ?? string.Empty;
                 discovery = string.IsNullOrEmpty(found)
                     ? HostAddressDiscovery.RouterSilent
-                    : HostAddressDiscovery.RouterAnswered;
+                    : foundByPublicService
+                        ? HostAddressDiscovery.PublicServiceAnswered
+                        : HostAddressDiscovery.RouterAnswered;
             }
         }
 
@@ -441,6 +512,32 @@ namespace GuardsDigital.Network
             return null;
         }
 
+        private static string AskPublicAddressService(DateTime deadline)
+        {
+            for (var index = 0; index < PublicAddressEndpoints.Length; index++)
+            {
+                var remaining = deadline - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                var attemptsLeft = PublicAddressEndpoints.Length - index;
+                var attemptDeadline = Min(
+                    deadline,
+                    DateTime.UtcNow + TimeSpan.FromTicks(remaining.Ticks / attemptsLeft));
+                var response = HttpText(
+                    PublicAddressEndpoints[index], "GET", null, null, attemptDeadline,
+                    useSystemProxy: true);
+                if (RouterAddressParsing.TryReadPublicAddressText(response, out var address))
+                {
+                    return address;
+                }
+            }
+
+            return null;
+        }
+
         private static IEnumerable<Uri> SearchForGateways(DateTime deadline)
         {
             var found = new List<Uri>();
@@ -487,7 +584,8 @@ namespace GuardsDigital.Network
         }
 
         private static string HttpText(
-            Uri uri, string method, string soapAction, string body, DateTime deadline)
+            Uri uri, string method, string soapAction, string body, DateTime deadline,
+            bool useSystemProxy = false)
         {
             var remaining = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
             if (remaining <= 0)
@@ -502,7 +600,10 @@ namespace GuardsDigital.Network
                 request.Timeout = remaining;
                 request.ReadWriteTimeout = remaining;
                 request.AllowAutoRedirect = false;
-                request.Proxy = null;
+                if (!useSystemProxy)
+                {
+                    request.Proxy = null;
+                }
                 if (body != null)
                 {
                     var bytes = Encoding.UTF8.GetBytes(body);
