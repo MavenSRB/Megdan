@@ -336,7 +336,16 @@ namespace GuardsDigital.Application
         {
             // Core snapshots deliberately start without replay ancestry. Only the current timer
             // checkpoint belongs in that snapshot; live Director Undo uses the in-memory journal.
-            SynchronizeClocks(); WriteTimerCheckpoint(w,CaptureTimerCheckpoint()); w.Write(0);
+            SynchronizeClocks();
+            // Untimed games still measure decision windows, but their response bookkeeping
+            // is not a clock: it has no matching entries and no persistence/Undo meaning.
+            // Persist a canonical empty checkpoint rather than an unrestorable response stack.
+            var checkpoint = Experiments.TurnTimer ? CaptureTimerCheckpoint() : new TimerCheckpoint
+            {
+                State = MatchClockState.Disabled, Turn = string.Empty, Stack = Array.Empty<string>(),
+                Tallies = new Dictionary<string, IReadOnlyDictionary<RuleObject, int>>()
+            };
+            WriteTimerCheckpoint(w,checkpoint); w.Write(0);
         }
         private (TimerCheckpoint Current,Dictionary<int,TimerCheckpoint> Journal) ReadTimerSnapshot(System.IO.BinaryReader r)
         {

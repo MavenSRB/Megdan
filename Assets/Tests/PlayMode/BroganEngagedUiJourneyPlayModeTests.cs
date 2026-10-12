@@ -26,31 +26,13 @@ using static GuardsDigital.Tests.PlayMode.BroganUiJourneyPlayModeTests;
 
 namespace GuardsDigital.Tests.PlayMode
 {
-    /// <summary>
-    /// Brogan's starting-hand cards played the way a player plays them, from the engaged staging -
-    /// Wasp and Brogan two spaces apart around one Blue melee minion, with a Red ranged minion beside
-    /// Brogan. Milestone 8.21.
-    ///
-    /// <para>Every decision each journey is about is made on the live surface: tray cards, prompt
-    /// controls and card faces through <see cref="UiPlayer"/>, board decisions through the camera's
-    /// screen-point ray after the HUD's own pointer-blocking answer. Decisions that are only setup -
-    /// the walk that puts a piece where a printed sentence can reach it, the enemy's own turn - ride
-    /// the headless command surface, exactly as milestones 8.15 and 8.20a do, and are marked where
-    /// they appear.</para>
-    ///
-    /// <para><b>The staged board is what makes these cards reachable.</b> The Blue melee minion the
-    /// staging engages both heroes around is <em>friendly</em> to Brogan, which is what puts it inside
-    /// Shield's printed Radius 1 and makes the enemy's attack on it open his removal-prevention
-    /// decision; the Red ranged minion standing beside him is what "target a unit adjacent to you"
-    /// finds. Neither is arranged by a fixture - both are where p.6's setup and milestone 8.15's
-    /// restaging put them.</para>
-    /// </summary>
-    public sealed class BroganEngagedUiJourneyPlayModeTests
+    /// <summary>Standalone defense-popup pixel layout, independent of any card journey.</summary>
+    public sealed class DefenseBreakdownLayoutPlayModeTests
     {
         [UnityTest]
         public IEnumerator DefenseBreakdownVisibleInkIsVerticallyBalancedAtEveryRowCount()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBrogan);
             UiPlayer.SetPlayerViewport(2560u, 1440u, "Defense breakdown ink balance");
             yield return null;
             yield return null;
@@ -111,6 +93,29 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+    }
+
+    /// <summary>
+    /// Brogan's starting-hand cards played the way a player plays them, from the engaged staging -
+    /// Wasp and Brogan two spaces apart around one Blue melee minion, with a Red ranged minion beside
+    /// Brogan. Milestone 8.21.
+    ///
+    /// <para>Every decision each journey is about is made on the live surface: tray cards, prompt
+    /// controls and card faces through <see cref="UiPlayer"/>, board decisions through the camera's
+    /// screen-point ray after the HUD's own pointer-blocking answer. Decisions that are only setup -
+    /// the walk that puts a piece where a printed sentence can reach it, the enemy's own turn - ride
+    /// the headless command surface, exactly as milestones 8.15 and 8.20a do, and are marked where
+    /// they appear.</para>
+    ///
+    /// <para><b>The staged board is what makes these cards reachable.</b> The Blue melee minion the
+    /// staging engages both heroes around is <em>friendly</em> to Brogan, which is what puts it inside
+    /// Shield's printed Radius 1 and makes the enemy's attack on it open his removal-prevention
+    /// decision; the Red ranged minion standing beside him is what "target a unit adjacent to you"
+    /// finds. Neither is arranged by a fixture - both are where p.6's setup and milestone 8.15's
+    /// restaging put them.</para>
+    /// </summary>
+    public sealed class BroganEngagedUiJourneyPlayModeTests
+    {
         [UnityTest]
         public IEnumerator HeroModifiersStayVisibleWithCardPipsAndHoverContributorsOutsideAttacks()
         {
@@ -356,6 +361,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "while its Attack Defense is previewed.");
             foreach (var contribution in heroPreview.MinionContributions)
             {
+                Assert.That(pointerInput.RefreshDefenseModifierPreviewFromPointerRay(
+                    new Ray(hero.transform.position + (Vector3.up * 10f), Vector3.down),
+                    true, Camera.main.WorldToScreenPoint(hero.transform.position)), Is.True);
                 var state = runtime.BoardView.Model.Minions.Single(value =>
                     value.MinionId.Equals(contribution.SourceMinionId));
                 Assert.That(Tile(state.Coordinate).CornerHighlight.ContributionKind,

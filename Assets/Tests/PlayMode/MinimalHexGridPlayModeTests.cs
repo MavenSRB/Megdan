@@ -4878,6 +4878,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "The permanent hero hover link gives the hovered hero's warm ivory ally cue precedence over the resting attack-target cue.");
             foreach (var contribution in targetDefensePreview.MinionContributions)
             {
+                Assert.That(pointerInput.RefreshDefenseModifierPreviewFromPointerRay(
+                    heroPointerRay, true, Camera.main.WorldToScreenPoint(hero.transform.position)), Is.True);
                 var minionState = runtime.BoardView.Model.Minions.Single(value =>
                     value.MinionId.Equals(contribution.SourceMinionId));
                 var contributionTile = runtime.BoardView.TileViews.Single(value =>

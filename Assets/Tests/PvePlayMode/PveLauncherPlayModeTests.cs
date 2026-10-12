@@ -338,9 +338,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
 
         private static void StageEnemyBoard(ConfiguredMatchSceneRuntime runtime, HeroId removed, PveEnemyRecord spawned)
         {
-            var payload = runtime.CaptureSnapshot();
-            var authoritative = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope)
-                ? envelope.AuthoritativePayload : payload;
+            var authoritative = runtime.Session.Projection.AuthoritativeSnapshot;
             var restored = AuthoritativeSnapshotSerializer.Deserialize(runtime.ContentCatalogs, authoritative,
                 runtime.InitialState.Scenario.CardDefinitions, runtime.InitialState.AvailableMaps,
                 runtime.InitialState.Setup.Minions, modeRules: runtime.InitialState.ModeRules);
@@ -363,6 +361,29 @@ namespace GuardsDigital.Tests.Pve.PlayMode
 
         private static void RestoreTestSnapshot(ConfiguredMatchSceneRuntime runtime, string payload)
         {
+            // Raw staged boards still belong to the host's mandatory coordination settings.
+            // Preserve the versioned host envelope, with its canonical disabled clock.
+            const string prefix = "guards-experimental/6:";
+            if (!payload.StartsWith(prefix, System.StringComparison.Ordinal))
+            {
+                Assert.That(runtime.InitialState.Experiments.TurnTimer, Is.False);
+                using (var stream = new System.IO.MemoryStream())
+                using (var writer = new System.IO.BinaryWriter(stream))
+                {
+                    // Reuse the host's private codec rather than duplicating its binary layout
+                    // or widening production visibility solely for staging this fixture.
+                    typeof(GuardsDigital.Application.MatchHost).Assembly
+                        .GetType("GuardsDigital.Application.ExperimentalWireCodec")
+                        .GetMethod("WriteOptions", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+                        .Invoke(null, new object[] { writer, runtime.InitialState.Experiments });
+                    typeof(GuardsDigital.Application.MatchHost)
+                        .GetMethod("WriteTimerSnapshot", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                        .Invoke(runtime.Host, new object[] { writer });
+                    writer.Write(payload);
+                    writer.Flush();
+                    payload = prefix + System.Convert.ToBase64String(stream.ToArray());
+                }
+            }
             // PvE intentionally exposes no player restore control. Stage through the existing
             // underlying test authority, retaining the configured overlay and its live read port.
             var inner = (GuardsDigital.Application.IMatchSession)typeof(PveEncounterSession)

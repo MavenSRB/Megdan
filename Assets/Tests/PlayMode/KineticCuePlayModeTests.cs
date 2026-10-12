@@ -382,38 +382,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "The engaged staging must show an awaited element, or there is no breath to sample " +
                 "and this case would pass by measuring nothing.");
 
-            // The edge actually being lit is measured rather than named: a rail carries several
-            // meanings on its borders at once and only the awaited gold is the breath's to move.
-            var host = hosts[0];
-            var edges = new System.Func<VisualElement, Color>[]
-            {
-                element => element.resolvedStyle.borderTopColor,
-                element => element.resolvedStyle.borderBottomColor,
-                element => element.resolvedStyle.borderLeftColor,
-                element => element.resolvedStyle.borderRightColor
-            };
-            System.Func<VisualElement, Color> read = null;
-            foreach (var candidate in hosts)
-            {
-                foreach (var edge in edges)
-                {
-                    if (KineticCueUnityView.IsAwaitedGold(edge(candidate)))
-                    {
-                        host = candidate;
-                        read = edge;
-                        break;
-                    }
-                }
-
-                if (read != null)
-                {
-                    break;
-                }
-            }
-
-            Assert.That(read, Is.Not.Null,
-                "No awaited host draws an edge on the breath's own segment, so nothing on screen is " +
-                "being lit - the silent zero-host failure in its newest form.");
+            // Rails now breathe in their stable player accent, not the retired gold card ring.
+            var host = hosts.First(value => value.name == "gd-rail-awaited-glow" && value.userData is Color);
+            var accent = (Color)host.userData;
+            System.Func<VisualElement, Color> read = value => value.resolvedStyle.borderTopColor;
 
             // One full loop's worth of REAL frames. Nothing here ticks anything.
             var lowest = float.MaxValue;
@@ -422,10 +394,12 @@ namespace GuardsDigital.Tests.PlayMode
             while (elapsed < KineticTiming.ShineBreatheLoopSeconds * 1.2f)
             {
                 var sampled = read(host);
-                Assert.That(KineticCueUnityView.DistanceToBreathSegment(sampled),
-                    Is.LessThanOrEqualTo(KineticCueUnityView.AwaitedGoldTolerance),
-                    "The breath moves brightness along its own segment and holds the hue exactly " +
-                    "constant, so a sample off that segment is a hue drift rather than a dim.");
+                var strength = Mathf.Max(sampled.r, sampled.g, sampled.b) /
+                    Mathf.Max(accent.r, accent.g, accent.b);
+                Assert.That(strength, Is.InRange(0.33f, 1.02f));
+                Assert.That(Vector3.Distance(new Vector3(sampled.r, sampled.g, sampled.b),
+                    new Vector3(accent.r, accent.g, accent.b) * strength), Is.LessThan(0.025f),
+                    "Breathing changes brightness without changing the player accent hue.");
                 var luminance = (0.2126f * sampled.r) + (0.7152f * sampled.g) + (0.0722f * sampled.b);
                 lowest = Mathf.Min(lowest, luminance);
                 highest = Mathf.Max(highest, luminance);
@@ -449,56 +423,12 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.35x-allcardsbreath, the corrective to the LIVE ACCEPTANCE VERDICT bug
-        /// recorded against 8.35z47/z48: "Not all cards are being animated when waiting for
-        /// submission" - the screenshot showed one gold-framed breathing card and the rest static,
-        /// though every held card is equally awaiting the player's commitment. The original
-        /// directive's own words are "Card(s)": every card awaiting the commitment carries the
-        /// breath, not only one of them.
-        ///
-        /// <para><b>The cause, found by counting rather than guessing.</b> Three candidates were on
-        /// the table: the marker attaches only to one card (an attachment-loop bug), a buried card's
-        /// border paints a colour the recognition rejects (a styling bug), or the model flags only
-        /// one card as awaited. None of those is what shipped. <c>MatchFeaturePresenters.BuildTray</c>
-        /// sets <c>TrayCardViewModel.IsAwaitedAnswer</c> true for every <c>Available</c> card while
-        /// the hero can select one, and <c>ConfiguredCardFaceView.Build</c> gives every such card its
-        /// own independent <c>gd-card-awaited-shine</c> ring painted the identical
-        /// <see cref="MatchHudTheme.ShineGlow"/>. The rulebook p.5 official six-player match makes
-        /// EVERY hero's own p.7 commitment public and simultaneously outstanding at round start -
-        /// <c>AwaitedInputQuery.IsHeroAwaited</c> reads each hero's own commitment status - so all
-        /// six hero rails (<c>gd-rail-awaited-glow</c>) shine at the same instant the viewer's own
-        /// five-card hand does. That is eleven elements sharing one shared, cross-surface budget:
-        /// <see cref="KineticCueUnityView.MaxBreathingShineElements"/> was 8, sized on a doc comment
-        /// that assumed "a hand of five cards plus A TRAY" - singular, true before milestone 8.25
-        /// made the shipped match six rails wide and false on every round of the game a player
-        /// actually gets. <see cref="KineticCueUnityView.FindAwaitedShineHosts"/> collects hosts in
-        /// DOCUMENT order and stops at the cap, and hero rails are mounted before the hand tray in
-        /// <c>ConfiguredMatchHudRenderer.Build</c> (<c>root.Add(heroOverviews.Root)</c> precedes
-        /// <c>root.Add(trayRegion)</c>), so the six rails fill the budget first and the viewer's own
-        /// hand cards that arrive after it are silently never handed to <c>Light()</c> at all - left
-        /// at the full resting gold <c>ConfiguredCardFaceView</c> paints once and never touched again,
-        /// which reads exactly as "static" beside the one card (or few) that fit under the cap.</para>
-        ///
-        /// <para><b>The fix.</b> <see cref="KineticCueUnityView.MaxBreathingShineElements"/> now
-        /// states the shipped match's own true worst case - six hero rails plus one viewed hero's
-        /// five-card hand, eleven - with headroom above it, rather than a stale single-tray count.
-        /// Nothing about attachment, recognition or the model changed, because none of those was
-        /// broken; only the budget the ONE CONDUCTOR already shares was too small for the six-player
-        /// game this project ships.</para>
-        ///
-        /// <para><b>What this proves, on real frames.</b> It composes the actual six-player
-        /// <see cref="SceneCardContent.ConfiguredMatch"/> scene for one real seat - the same
-        /// production path <c>ConfiguredMatchHudRenderer.Configure</c> takes, compact peek mode
-        /// included - at the very moment nobody has committed yet, so all six rails and all five
-        /// hand cards are simultaneously awaited. It first counts the TRUE uncapped set the marker
-        /// class names against what the breath's own capped query returns - the fidelity number the
-        /// user's report becomes - and then samples every hand card's own border across consecutive
-        /// real frames exactly as the sibling case above samples one, asserting each one's luminance
-        /// swings through the breath range. On shipped 8.35z48 the capped set is short and the cards
-        /// excluded from it never move at all; after the fix every one of the five does.</para>
+        /// All six awaited hero rails breathe within the shared budget. Hand-card gold outlines
+        /// were deliberately retired; cards remain available without joining the shine hosts.
+        /// Samples real frames rather than ticking the conductor directly.
         /// </summary>
         [UnityTest]
-        public IEnumerator EveryCommittableHandCard_BreathesInTheConfiguredSixPlayerCommitmentWait()
+        public IEnumerator OnlyHeroRailsBreatheWhileCommittableCardsStayUnoutlined()
         {
             yield return LoadConfiguredMatchSceneForFirstSeat();
             var root = Root();
@@ -523,9 +453,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(railHosts, Has.Length.EqualTo(6),
                 "Rulebook p.7's commitment is public and simultaneous: every hero of the official " +
                 "six-player match owes it at once at round start, so six rails shine together.");
-            Assert.That(cardHosts, Has.Length.EqualTo(5),
-                "The viewed hero's whole five-card hand is offered for commitment at once - the " +
-                "SEVENTH amendment's card scope, not only its focused card.");
+            Assert.That(cardHosts, Is.Empty, "The breathing gold card outline was explicitly retired.");
+            Assert.That(root.Runtime.HandsView.Model.ViewedHand.Cards.Count, Is.GreaterThanOrEqualTo(5),
+                "Retiring the outline must not remove the hand.");
 
             // What the breath's own capped query actually returns - the fidelity number.
             var litHosts = KineticCueUnityView.FindAwaitedShineHosts(hudRoot);
@@ -542,11 +472,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "silently excluded from Light() and never move, which is the user's report as a " +
                 "number: 'the rest static'.");
 
-            // Sample EVERY hand card's own border across consecutive real frames, all five at once,
+            // Sample every hero rail's own border across consecutive real frames, all six at once,
             // exactly as the sibling case above samples one - nothing here ticks anything.
-            var lowest = new float[cardHosts.Length];
-            var highest = new float[cardHosts.Length];
-            for (var index = 0; index < cardHosts.Length; index++)
+            var lowest = new float[railHosts.Length];
+            var highest = new float[railHosts.Length];
+            for (var index = 0; index < railHosts.Length; index++)
             {
                 lowest[index] = float.MaxValue;
                 highest[index] = float.MinValue;
@@ -555,9 +485,9 @@ namespace GuardsDigital.Tests.PlayMode
             var elapsed = 0f;
             while (elapsed < KineticTiming.ShineBreatheLoopSeconds * 1.2f)
             {
-                for (var index = 0; index < cardHosts.Length; index++)
+                for (var index = 0; index < railHosts.Length; index++)
                 {
-                    var sampled = cardHosts[index].resolvedStyle.borderTopColor;
+                    var sampled = railHosts[index].resolvedStyle.borderTopColor;
                     var luminance = (0.2126f * sampled.r) + (0.7152f * sampled.g) + (0.0722f * sampled.b);
                     lowest[index] = Mathf.Min(lowest[index], luminance);
                     highest[index] = Mathf.Max(highest[index], luminance);
@@ -567,16 +497,16 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
-            for (var index = 0; index < cardHosts.Length; index++)
+            for (var index = 0; index < railHosts.Length; index++)
             {
                 var swing = highest[index] - lowest[index];
                 TestContext.WriteLine(
-                    $"[allcardsbreath] hand card {index}: luminance {lowest[index]:F4} to " +
+                    $"[railbreath] hero rail {index}: luminance {lowest[index]:F4} to " +
                     $"{highest[index]:F4}, swing {swing:F4}.");
                 Assert.That(swing, Is.GreaterThan(0.05f),
-                    $"Hand card {index} of {cardHosts.Length} never moved across a whole real-frame " +
+                    $"Hero rail {index} of {railHosts.Length} never moved across a whole real-frame " +
                     "loop - exactly 'the rest static' from the LIVE ACCEPTANCE VERDICT, reproduced " +
-                    "as a number for this specific card rather than trusted from a screenshot.");
+                    "as a number for this specific rail rather than trusted from a screenshot.");
             }
 
             Assert.That(driver.FailureCount, Is.EqualTo(0));

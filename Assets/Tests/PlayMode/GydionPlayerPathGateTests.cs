@@ -247,7 +247,7 @@ namespace GuardsDigital.Tests.PlayMode
                     Prove(HeroPieceMovement, Movement),
                     Prove(HeroPieceDefeatAndRespawn, Lifecycle),
                     Prove(PresentationRebuild, Lifecycle)
-                }, new[] { "GydionDealingTests.SelectedGydion_DealsEighteenFrontsAndPutsAllTwentyTwoSpellsInHisBook" }),
+                }, new[] { "GydionDealingTests.SelectedGydion_DealsEighteenFrontsAndStartsAllTwentyTwoSpellsRemovedFaceup" }),
                 Component("gydion-session", "Session continuity", new[]
                 {
                     Prove(SnapshotRestoreContinuation, Restore),

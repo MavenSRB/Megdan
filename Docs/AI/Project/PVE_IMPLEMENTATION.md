@@ -134,6 +134,8 @@ Host chooses a fresh seed. A normal Join initially uses the PvP front door, then
 
 PvE composition always enables teammate coordination, including allied hand inspection and typed suggestions, while other experiments remain off. The outer mode host receives the same immutable options as the inner encounter authority, and external scene composition preserves them. PvP defaults and schema/wire layouts are unchanged. The legacy launcher/co-op adapter described below remains only for existing fixture/tool compatibility; W-045 is the normal player route.
 
+Coordination-enabled host snapshots wrap the Core payload with immutable options. When the timer is disabled, its checkpoint is canonical and empty: decision-window measurement bookkeeping must not leak into snapshot identity or produce response-stack references to nonexistent clocks. Enabled timer snapshots retain their existing state and restore behavior.
+
 ### Transport and legacy adapter (PVE-D28, W-031)
 
 PvE defaults to the shared PvP TCP port 45677 (W-038). Internet hosting requires a session key, host firewall allowance and router forwarding/reachable routing; joiners enter the host's public IP, port and key, with matching build/data. Empty keys remain loopback-only. PvP/PvE cannot host on the same port concurrently. No relay or automatic port mapping is added; keyed loopback validation is not proof of external internet reachability.

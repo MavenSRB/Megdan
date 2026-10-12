@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-046 | Explicit full-suite gate, fresh unified Windows package and local main integration. Fixed disabled-timer snapshot restore/equality and reconciled stale test contracts; all active failures closed. Exact-artifact local PvP/PvE, rendering, ZIP integrity and extracted launch verified; no remote publication. | `work/W-046` |
 | W-045 | User-approved unified Windows PvP/PvE executable: PvE under Map; shared Take Seats/hero picker, exactly three Blue seats with solo/two-/three-player ownership, automatic mode/seed adoption, forced coordination and hidden Experimental. Preserved owner command checks, host enemy/shared decisions and PvP flow. Focused source/UI checks, exact-artifact mode/ownership/network/board smokes and ZIP extraction verified. W044 faces excluded; no new external-network or packaged reconnect claim. | `work/W-045` |
 | W-044 | Fourteen private enemy faces from approved orange Hurl sample; correct primary Movement/Defense/Skill icons, no secondary icons. Hurl fallback approaches closest Blue unit, stopping adjacent. | `work/W-044` |
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
@@ -419,3 +420,9 @@ Historical evidence: gameplay checkpoint `83770128`; final acceptance and privat
 Approved PVE-D38: one executable with PvE under Map, existing Take Seats and hero selection, exactly three Blue seats shared by one to three players, inherited host mode/seed, hidden Experimental and mandatory coordination. Reuses authenticated per-seat clients and existing privacy/command authority; host retains enemies/shared choices. T2 acceptance covers shared UI, owned-seat switching, reconnect, local TCP and both modes on the exact packaged artifact. Review preserves rules and assembly boundaries. W044 face previews are not integrated. No new external-network, packaged reconnect or Mac unified claim.
 
 Historical evidence: completion commit addressed by immutable `work/W-045`; exact source checks, failure-to-green transitions, artifact checks and limitations live in its body.
+
+### [x] W-046 Full-suite gate, unified build and local main merge
+
+Requested after W045: full tests, build and local merge to main. T3 acceptance runs the complete offline harness and Unity Edit/Play suites, closes every active failure with focused green evidence, then checks one fresh Windows artifact through player launch, PvP host/two joiners, PvE solo/two/three players, board rendering and ZIP extraction. The only runtime correction canonicalizes disabled-timer snapshots; rules, schema 59, wire /52 and enabled timers are preserved. Test corrections reconcile current interaction/overlay contracts and valid history/host-envelope staging, retaining rule assertions. Review found no remaining in-scope acceptance defect; broader internet/NAT and packaged reconnect are not certified. W044 previews remain unintegrated. W047 follow-ups remain separate. Main integration is local fast-forward only; no remote operation.
+
+Historical evidence: completion commit addressed by immutable `work/W-046`; exact suite results, failing-to-passing transitions, artifact identity, review and limitations live in its body.

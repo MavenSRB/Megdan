@@ -826,8 +826,18 @@ namespace GuardsDigital.Tests.PlayMode
 
             var standingBefore = Object.FindObjectsByType<StandardMinionView>().Length;
             UiPlayer.Click(UiPlayer.Button(hud, typeControls[0].Label));
-            yield return null;
-            yield return null;
+            // The spawn is authoritative immediately, but the queued action animation may
+            // still retain its pre-spawn board. Wait through the real presentation boundary.
+            for (var frame = 0; frame < 600 &&
+                 Object.FindObjectsByType<StandardMinionView>().Length != standingBefore + 1; frame++)
+            {
+                if (UiPlayer.HasButton(hud, "CONTINUE"))
+                {
+                    var next = UiPlayer.Button(hud, "CONTINUE");
+                    if (next.enabledInHierarchy && next.worldBound.width > 0f) UiPlayer.Click(next);
+                }
+                yield return null;
+            }
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The answered type finishes the step. " + Remaining(runtime));

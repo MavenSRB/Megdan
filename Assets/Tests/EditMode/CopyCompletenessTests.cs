@@ -417,6 +417,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 { "AcceptedCommands", "Director-only authority (8.30a): the accepted-command history" },
                 { "AuthoritativeSnapshot", "Director-only authority (8.30a): the snapshot" },
+                { "ModeCardRuleValues", "Local authority only (W-042): full rule-derived AI values independent of display preferences; seats receive visibility-filtered CardValues" },
                 { "DiagnosticSnapshot", "Director-only authority (8.30a): derived from the snapshot and the diagnostic log" },
                 { "DiagnosticEvents", "Director-only authority (8.30a): the whole rule-event log" },
                 { "IsHistoryAvailable", "Director-only authority (8.30a): the unbounded Undo" },

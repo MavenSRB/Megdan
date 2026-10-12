@@ -741,7 +741,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "and she is still standing where the printed Move put her, which is the space the " +
                 "narrowing was measured from. " + Remaining(runtime));
 
-            // The live attack has cleared, but the animation must retain the earned +2.
+            // The earned +2 is proved by the defense breakdown above. W-019 deliberately
+            // stopped substituting resolved totals into animation faces; default-off overlays
+            // must remain absent after the live attack clears.
             for (var frame = 0; frame < 180 &&
                  runtime.SpotlightPresenter.Stage.Phase != AttackSpotlightPhase.Held; frame++)
             {
@@ -752,8 +754,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SpotlightPresenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held));
             var captured = runtime.SpotlightPresenter.Stage.Current.AttackCard;
             Assert.That(captured, Is.Not.Null);
-            Assert.That(captured.ValueBonuses.Single(value => value.Channel == PrintedValueChannel.Attack).Bonus,
-                Is.EqualTo(2), "The completed lunge's movement bonus belongs to this animation.");
+            Assert.That(captured.ValueBonuses, Is.Empty,
+                "Default-off animation overlays must not reconstruct the completed attack total.");
             yield return UiPlayer.CaptureScreen("tmp/w015-cutter-resolved-lunge.png");
         }
 

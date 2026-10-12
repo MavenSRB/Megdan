@@ -10,13 +10,13 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W045 Unified**, `Builds/Playtest-W045-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Package identity and evidence: [build record](Project/BUILDS.md). W013 and separate W035 remain preserved, superseded packages.
+Current private Windows package: **W046 Unified**, `Builds/Playtest-W046-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Package identity and evidence: [build record](Project/BUILDS.md). W045, W013 and separate W035 remain preserved, superseded packages.
 
 ## Current authorization and next route
 
-- Last completed work: **W-045**.
+- Last completed work: **W-046**.
 - Active authorized work: **none**.
-- Next proposed work: **None**.
+- Next proposed work: **W-047**.
 
 W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; Control buttons switch owned heroes. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the same artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

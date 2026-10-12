@@ -179,7 +179,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         internal static IEnumerator Stage(SceneCardContent scene, CardDefinitionId[] hand,
             HexCoordinate? wasp = null, CardDefinitionId[] waspHand = null, int? coins = null,
-            SeatId? seat = null)
+            SeatId? seat = null, bool preserveHistory = false)
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;
             if (!cachedGydion.HasValue)
@@ -204,7 +204,28 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadStagedScene(scene);
             Assert.That(Gydion(Root().Runtime), Is.EqualTo(cachedGydion.Value));
             Assert.That(SpaceOf(Root().Runtime, cachedGydion.Value), Is.EqualTo(GydionSpace));
-            StageTheBook(Root().Runtime, Array.Empty<CardDefinitionId>());
+            if (!preserveHistory)
+            {
+                StageTheBook(Root().Runtime, Array.Empty<CardDefinitionId>());
+                yield break;
+            }
+
+            // Undo/restart journeys need this as initial fixture state, not a restored
+            // snapshot: snapshot import deliberately has no replay ancestry.
+            var initial = Root().Runtime.InitialState;
+            foreach (var card in initial.InitialConfiguration.CardInstances.Where(value =>
+                         value.State.Location == CardLocation.RemovedFromSpellbook))
+                Assert.That(CardLifecycleAuthority.TryReturnToSpellbook(card), Is.True);
+            var scenario = initial.Scenario;
+            var staged = new MatchSessionInitialState(new InitialScenarioDescription(
+                scenario.Participants, scenario.CardDefinitions, initial.InitialConfiguration.CardInstances,
+                scenario.InitialTieBreakerState, scenario.SetupSeed, scenario.SelectedMap,
+                scenario.InitialHeroes, scenario.InitialObstacles, scenario.HeroBodySupplies),
+                initial.Setup, initial.AvailableMaps, initial.InitialConfiguration,
+                initial.InitialTiming, initial.StagedProgression, initial.Experiments, initial.ModeRules);
+            MatchSceneCompositionRoot.NextComposedExternalMatch = new ExternalMatchComposition(staged);
+            MatchSceneCompositionRoot.NextComposedSeat = seat;
+            yield return LoadStagedScene(scene);
         }
 
         /// <summary>
@@ -1050,7 +1071,7 @@ namespace GuardsDigital.Tests.PlayMode
         public IEnumerator ACastUndoesToItsRetainedPrefixAndReplaysExactly()
         {
             yield return Stage(SceneCardContent.VerifiedEngagedStagedGydion,
-                new[] { GydionCardContent.Cantrip, GydionCardContent.PrepareSpells });
+                new[] { GydionCardContent.Cantrip, GydionCardContent.PrepareSpells }, preserveHistory: true);
             var root = Root();
             var runtime = root.Runtime;
             yield return Begin(root, GydionCardContent.Cantrip);
@@ -1089,7 +1110,7 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return Stage(SceneCardContent.VerifiedEngagedStagedGydion,
                 new[] { GydionCardContent.ElementaryAbjuration, GydionCardContent.Cantrip, GydionCardContent.PrepareSpells },
-                wasp: WaspBesideHim);
+                wasp: WaspBesideHim, preserveHistory: true);
             var root = Root();
             var runtime = root.Runtime;
             var gydion = Gydion(runtime);

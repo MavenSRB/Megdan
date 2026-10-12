@@ -116,10 +116,9 @@ namespace GuardsDigital.Tests.Pve
 
         private static RestoredAuthoritativeMatch Read(PveTestDriver driver)
         {
-            Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(driver.Director.CaptureSnapshot(), out var envelope), Is.True);
             var initial = driver.Composed.InitialState;
             return AuthoritativeSnapshotSerializer.Deserialize(initial.InitialConfiguration.ContentCatalogs,
-                envelope.AuthoritativePayload, initial.Scenario.CardDefinitions, initial.AvailableMaps,
+                driver.Director.Projection.AuthoritativeSnapshot, initial.Scenario.CardDefinitions, initial.AvailableMaps,
                 initial.Setup.Minions, modeRules: initial.ModeRules);
         }
 

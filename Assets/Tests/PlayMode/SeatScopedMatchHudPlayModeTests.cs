@@ -1475,6 +1475,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(host.ClientForSeat(teammate.Id).SubmitAgreement(new TeamAgreementSubmission(
                     new SubmissionId("9-29-teammate-pick"), teammateView.Version, teammatesPick)).Accepted,
                 Is.True);
+            yield return SettleForCapture(Root(), 8f);
             runtime.RefreshAll();
             yield return null;
             yield return null;
@@ -1957,6 +1958,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator Capture(string relativePath)
         {
             var path = Path.GetFullPath(relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             if (File.Exists(path))
             {
                 File.Delete(path);
