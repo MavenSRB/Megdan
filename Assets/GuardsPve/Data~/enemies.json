@@ -27,14 +27,14 @@
       "minionCategory": "ranged",
       "level": 1,
       "orangeCards": [
-        { "key": "A", "name": "Aim", "initiative": 8, "copies": 1, "move": 2,
+        { "key": "A", "name": "Take Position", "initiative": 8, "copies": 1, "move": 2,
           "options": [ { "kind": "move", "target": "hero", "stopDistance": 2 } ] },
         { "key": "B", "name": "Shoot", "initiative": 6, "copies": 1, "attack": 3, "range": 3, "move": 1,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "hero", "stopDistance": 2 } ] },
         { "key": "C", "name": "Power Shot", "initiative": 3, "copies": 1, "attack": 5, "range": 3,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" } ] },
-        { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
+        { "key": "X", "name": "Aim", "initiative": 1, "copies": 1, "skill": "range-next-turn" }
       ],
       "purpleCards": [],
       "plans": [ "A B C X", "A C B X", "A B X C" ]

@@ -87,7 +87,7 @@ namespace GuardsDigital.Pve.Presentation
                         range = card.AttackRange,
                         move = card.MoveValue ?? 0,
                         idle = card.IsIdle,
-                        skill = card.Skill == PveSkillKind.None ? null : "immune-this-turn",
+                        skill = WriteSkill(card.Skill),
                         options = card.Options.Select(option => new OptionDto
                         {
                             kind = option.Kind.ToString().ToLowerInvariant(),
@@ -153,7 +153,19 @@ namespace GuardsDigital.Pve.Presentation
         {
             if (string.IsNullOrWhiteSpace(value)) return PveSkillKind.None;
             if (value == "immune-this-turn") return PveSkillKind.ImmuneThisTurn;
+            if (value == "range-next-turn") return PveSkillKind.RangeNextTurn;
             throw new FormatException($"'{value}' is not a supported PvE Skill.");
+        }
+
+        private static string WriteSkill(PveSkillKind skill)
+        {
+            switch (skill)
+            {
+                case PveSkillKind.None: return null;
+                case PveSkillKind.ImmuneThisTurn: return "immune-this-turn";
+                case PveSkillKind.RangeNextTurn: return "range-next-turn";
+                default: throw new ArgumentOutOfRangeException(nameof(skill));
+            }
         }
 
         private static PveOptionKind ParseKind(string value)

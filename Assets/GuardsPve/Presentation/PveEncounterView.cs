@@ -284,6 +284,7 @@ namespace GuardsDigital.Pve.Presentation
                 var face = new TrayCardViewModel(instance?.Id ?? new CardInstanceId(enemy.HeroId.Value + "-plan-" + turn),
                     definition.Reference, definition.DisplayName, definition.Progression.Color,
                     CurrentRoundCards.ReadFace(definition), TrayCardGroup.Available, 0, false, false,
+                    isActiveEffectSource: instance != null && match.StandingActiveEffectSourceCardInstanceIds.Contains(instance.Id),
                     isResolving: match.IsTurnActive && match.SelectedActor.ActorId.Equals(enemy.HeroId) && turn == match.TurnIndex);
                 slots.Add(new HeroTurnSlotViewModel(turn, face.Color, true, face));
             }

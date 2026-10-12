@@ -21,7 +21,7 @@ namespace GuardsDigital.Pve.Composition
     /// </remarks>
     public static class PveCardFactory
     {
-        public const string ContentRevision = "pve-content-2";
+        public const string ContentRevision = "pve-content-3";
         public static readonly ActionDefinitionId SkillActionId = new ActionDefinitionId("pve-skill");
         public static readonly ActionDefinitionId AttackActionId = new ActionDefinitionId("pve-attack");
         public static readonly ActionDefinitionId MovementActionId = new ActionDefinitionId("pve-movement");
@@ -83,10 +83,10 @@ namespace GuardsDigital.Pve.Composition
         private static CardDefinition CreateOrange(PveEnemyType type, PveOrangeCard card, CardDefinitionId id)
         {
             var actions = new List<ActionDefinition>();
-            if (card.Skill == PveSkillKind.ImmuneThisTurn)
+            if (card.Skill != PveSkillKind.None)
                 actions.Add(new ActionDefinition(SkillActionId, ActionKind.Skill, ActionDefinitionOrigin.PrintedPrimary,
                     new PrintedValueDefinition[0], new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
-                    AttackRangeKind.None, default, PveSkillContent.ImmuneEffect()));
+                    AttackRangeKind.None, default, PveSkillContent.Effect(card.Skill)));
             if (card.AttackValue.HasValue)
             {
                 var values = new List<PrintedValueDefinition>
@@ -127,7 +127,7 @@ namespace GuardsDigital.Pve.Composition
                 CardProgressionProfile.NotStated,
                 actions,
                 null,
-                card.Skill == PveSkillKind.ImmuneThisTurn ? CardSourceContent.Authored(PveSkillContent.ImmuneText) : null);
+                card.Skill == PveSkillKind.None ? null : CardSourceContent.Authored(PveSkillContent.Text(card.Skill)));
         }
 
         private static CardDefinition CreatePurple(PveEnemyType type, PvePurpleCard card) =>

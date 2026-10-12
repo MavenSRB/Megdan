@@ -172,8 +172,7 @@ namespace GuardsDigital.Pve.Composition
             var setupSeed = new SetupRandomnessSeed(setup.Seed);
             var tieBreaker = TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed);
             var configuration = MatchConfiguration.CreateValidatedFromHands(participants, hands, tieBreaker, setupSeed,
-                enemies.Any(enemy => enemy.Type.OrangeCards.Any(card => card.Skill == PveSkillKind.ImmuneThisTurn))
-                    ? PveSkillContent.Handlers() : null);
+                PveSkillContent.Handlers(enemies.SelectMany(enemy => enemy.Type.OrangeCards).Select(card => card.Skill)));
 
             var minions = CreateCreeps(map, encounter, blueTeam);
             var quickSetup = new QuickGameSetupState(

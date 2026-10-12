@@ -30,8 +30,7 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(melee.OrangeHand.Count, Is.EqualTo(4));
             Assert.That(melee.OrangeCards.Count(value => value.AttackValue.HasValue), Is.EqualTo(2));
             Assert.That(melee.PurpleCards, Is.Empty);
-            foreach (var id in new[] { "ranged", "heavy" })
-                Assert.That(catalog.Find(id).FindOrange("X").IsIdle, Is.True);
+            Assert.That(catalog.Find("heavy").FindOrange("X").IsIdle, Is.True);
             var definition = PveCardFactory.CreateDefinitions(melee).Single(value => value.Id.Equals(PveCardFactory.OrangeId(melee, card)));
             Assert.That(definition.ActionDefinitions.Single().Kind, Is.EqualTo(ActionKind.Skill));
             Assert.That(definition.ContentAuthority, Is.EqualTo(CardContentAuthority.OriginalMode));

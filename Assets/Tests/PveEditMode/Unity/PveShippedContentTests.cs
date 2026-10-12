@@ -80,7 +80,7 @@ namespace GuardsDigital.Tests.Pve
                 "A/8/1//0/2/False/Move:Hero:2",
                 "B/6/1/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:2",
                 "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1",
-                "X/1/1//0//True/"
+                "X/1/1//0//False/"
             }));
             Assert.That(ranged.PurpleCards, Is.Empty);
             foreach (var typeId in new[] { "melee", "ranged" })
@@ -98,7 +98,7 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(type.OrangeCards.Where(card => card.AttackValue.HasValue).Sum(card => card.Copies), Is.EqualTo(2));
             Assert.That(type.OrangeHand.Count, Is.EqualTo(4));
             Assert.That(type.FindOrange("X").Initiative, Is.EqualTo(typeId == "melee" ? 9 : 1));
-            Assert.That(type.FindOrange("X").IsIdle, Is.EqualTo(typeId != "melee"));
+            Assert.That(type.FindOrange("X").IsIdle, Is.EqualTo(typeId == "heavy"));
             foreach (var plan in type.Plans)
             {
                 Assert.That(plan.Count, Is.EqualTo(4));

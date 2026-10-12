@@ -90,6 +90,12 @@ Replace Melee X Idle with X Shield Up, one copy, Initiative 9, no Attack/Movemen
 
 Aim (Move 2) and Shoot's fallback (Move 1) now stop at range 2 from heroes, superseding their stop-at-3 values. Attack Range stays 3 on Shoot and Power Shot; attack priorities, fallback ordering and other cards are unchanged.
 
+## PVE-D36 Ranged Take Position and Aim (Approved, user 2026-10-12)
+
+Rename Ranged A to Take Position, retaining Initiative 8, Move 2 toward heroes stopping at 2. Replace Ranged X Idle with Aim, Initiative 1, standalone Skill: "Next turn, have +1 Range." Apply the existing Next Turn lifecycle and +1 Range modifier to its controller, dormant this turn, active next turn and expired at that turn's end; normal defeat/card-retrieval cancellation remains. Printed Attack/Range, Shoot movement fallback, hand size and priorities are unchanged. The AI must honor effective attack reach, including Range 4 during Aim, through authoritative offers.
+
+Aim's source card uses the shared effect glow from resolution while pending, through its active next turn, clearing on expiry or cancellation (user addition 2026-10-12).
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

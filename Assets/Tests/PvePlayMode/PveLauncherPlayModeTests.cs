@@ -185,6 +185,20 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null;
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
 
+            var ranged = encounter.Enemies.First(enemy => enemy.Type.Id == "ranged");
+            var aimSlot = rail.Q("pve-enemy-" + ranged.HeroId.Value).Query<VisualElement>("gd-turn-slot")
+                .ToList().Single(slot => slot.tooltip.Contains("Aim"));
+            using (var hover = PointerEnterEvent.GetPooled()) { hover.target = aimSlot; aimSlot.SendEvent(hover); }
+            yield return null;
+            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
+                .Any(label => label.text == "Next turn, have +1 Range."), Is.True);
+            yield return new WaitForEndOfFrame();
+            var aimCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w042-aim-hover.png", aimCapture.EncodeToPNG());
+            Object.Destroy(aimCapture);
+            using (var leave = PointerLeaveEvent.GetPooled()) { leave.target = aimSlot; aimSlot.SendEvent(leave); }
+            yield return null;
+
             Assert.That(session.Undo().Accepted, Is.True);
             composed.RefreshAll();
             yield return null;
@@ -262,6 +276,57 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             foreach (var hero in session.Projection.Participants.Heroes)
             {
                 Assert.DoesNotThrow(() => PlayerAccent.For(session.Projection.Participants, hero.Id), hero.Id.Value);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator AimGlowsWhilePendingAndActiveThenClears()
+        {
+            yield return LoadLauncher();
+            ConfiguredMatchSceneRuntime runtime = null;
+            Assert.That(Object.FindAnyObjectByType<PveLauncher>().StartEncounter(ThreeHeroes, 42, value =>
+            {
+                runtime = value;
+                PveLauncher.LastView.StepSeconds = float.PositiveInfinity;
+            }), Is.Empty);
+            var deadline = Time.realtimeSinceStartup + 60f;
+            while (runtime == null && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(runtime, Is.Not.Null);
+            var session = (PveEncounterSession)runtime.Session;
+            var encounter = PveLauncher.LastComposed;
+            var enemy = encounter.Enemies.First(value => value.Type.Id == "ranged" &&
+                PvePlans.PlanFor(encounter, value, 1)[0] == "X");
+            var aim = session.Projection.Cards.Single(card => card.OwnerId.Equals(enemy.HeroId) &&
+                card.DefinitionReference.DefinitionId.Value == "pve-ranged-x").Id;
+            for (var phase = 0; phase < 3; phase++)
+            {
+                System.Func<bool> reached = phase == 0
+                    ? () => session.Projection.StandingActiveEffectSourceCardInstanceIds.Contains(aim)
+                    : () => session.Projection.TurnIndex >= phase + 1;
+                for (var step = 0; step < 400 && !reached(); step++)
+                {
+                    var result = session.Peek().Kind == PveStepKind.Command
+                        ? session.Step(out _) : session.Execute(PvePassivePlayer.NextAnswer(session));
+                    Assert.That(result.Accepted, Is.True, result.Detail);
+                }
+                Assert.That(reached(), Is.True);
+                runtime.RefreshAll();
+                yield return null; yield return null;
+                var overlay = PveLauncher.LastView.GetComponent<UIDocument>().rootVisualElement;
+                var row = overlay.Q("pve-enemy-" + enemy.HeroId.Value);
+                Assert.That(row, Is.Not.Null);
+                var outline = row.Q("gd-turn-slot-outline");
+                Assert.That(outline.resolvedStyle.borderTopColor, Is.EqualTo(phase < 2
+                    ? MatchHudTheme.ActiveEffectAccent : new Color(0, 0, 0, 0)));
+                if (phase == 0)
+                {
+                    overlay.Q<ScrollView>("pve-enemy-rail").ScrollTo(row);
+                    yield return null;
+                    yield return new WaitForEndOfFrame();
+                    var capture = ScreenCapture.CaptureScreenshotAsTexture();
+                    System.IO.File.WriteAllBytes("tmp/w042-aim-glow.png", capture.EncodeToPNG());
+                    Object.Destroy(capture);
+                }
             }
         }
 
@@ -349,6 +414,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(root.Q<IntegerField>("pve-edit-heavy-P-defense"), Is.Not.Null);
             Assert.That(root.Q<IntegerField>("pve-edit-ranged-B-range"), Is.Not.Null);
             Assert.That(root.Q<IntegerField>("pve-edit-melee-X-init").value, Is.EqualTo(9));
+            Assert.That(root.Q<IntegerField>("pve-edit-ranged-X-init").value, Is.EqualTo(1));
+            Assert.That(root.Q<IntegerField>("pve-edit-ranged-X-attack"), Is.Null);
             Assert.That(root.Q<IntegerField>("pve-edit-melee-X-attack"), Is.Null,
                 "The standalone Skill exposes initiative, not attack/movement fields.");
             Assert.That(root.Q<Button>("pve-card-editor-save"), Is.Not.Null);

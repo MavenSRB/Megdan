@@ -44,7 +44,7 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 
 ## Weak-attack fallback (W-034)
 
-Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Ranged Aim also stops at range 2 with Move 2; both Ranged attacks retain Range 3. Stronger cards and all other values/plans remain unchanged.
+Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Ranged Take Position also stops at range 2 with Move 2; both Ranged attacks retain printed Range 3.
 
 ## Encounter composition (W-021)
 
@@ -54,7 +54,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 - **Enemy cards.** Placeholder card definitions from `PveCardFactory` (synthetic-fixture authority, except the approved original-mode Shield Up wording):
   - an orange card is one printed primary Attack (adjacent or Ranged) and one printed secondary Movement, neither replaceable;
   - an idle card prints no action;
-  - a standalone Skill carries a typed effect root; Shield Up uses `PveSkillKind.ImmuneThisTurn` and `PveSkillContent` (PVE-D34);
+  - a standalone Skill carries a typed effect root; Shield Up uses `PveSkillKind.ImmuneThisTurn`, Aim uses `RangeNextTurn`, both through `PveSkillContent` (PVE-D34/D36);
   - a purple card prints a reaction Defense discarded on use;
   - each copy of an orange card is its own definition (`pve-<type>-<key>`, then `-2`, `-3` for later copies) with identical content, because the existing HUD's card inspection holds every face of a hero once (W-026: two copies sharing one face made inspecting that enemy throw).
 - **Creeps.** Blue standard minions on the encounter's creep spaces.
@@ -71,7 +71,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
   - round-start placement and enemy commitments from `PvePlans` (seed, round and enemy; a removed planned card is replaced per PVE-D21);
   - each enemy's first applicable option, holding otherwise;
   - movement to the destination nearest its targets within the stop distance, cheapest first;
-  - attack targets in the card's listed order;
+  - attack targets in the card's listed order, gated by authoritative availability and effective reach. The local authority's `ModeCardRuleValues` supplies all rule modifiers independently of display preferences; this derived read port adds no stored state or wire payload;
   - the weakest sufficient purple Defense, otherwise declining;
   - declining every enemy respawn, and advancing the end of round.
 - **Ties.** Equal enemy targets, destinations, blocked spawns and enemy Initiative ties become a `PvePrompt` the player answers. An enemy Initiative tie in which at most one tied enemy stands is settled without asking, because off-board enemies do nothing and only one order is observable.
@@ -104,7 +104,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 `enemies.json` lists enemy types:
 - id, display name, optional token type (melee/ranged/heavy) and level (this slice supports level 1);
-- orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance; a standalone `skill: "immune-this-turn"` instead supplies the approved Skill without attack/movement options;
+- orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance; standalone `skill: "immune-this-turn"` or `"range-next-turn"` supplies the approved Skill without attack/movement options;
 - purple cards: key, name, Initiative, Defense;
 - legacy plans, one space-separated string per plan: retained and validated for file/editor compatibility, but ignored by runtime ordering under PVE-D32.
 
@@ -112,7 +112,9 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 `PveContentValidator` refuses invalid content with readable messages before composition. The launcher shows them instead of starting.
 
-The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards and one movement-only card. Melee's fourth card is Shield Up, Initiative 9: "This unit is immune this turn." Ranged/Heavy retain Idle. PVE-D34 uses the existing unqualified Immune rule through a typed Skill: protection starts at resolution and expires at the normal This Turn checkpoint. Its mode-only capability registration survives restore/Undo/restart without changing default catalogs; original wording appears on the shared card face without claiming official provenance. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 2 (PVE-D35). Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
+The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards and one movement-only card. Melee's fourth card is Shield Up, Initiative 9: "This unit is immune this turn." Heavy retains Idle. PVE-D34 uses the existing unqualified Immune rule through a typed Skill: protection starts at resolution and expires at the normal This Turn checkpoint. Mode-only capability registration survives restore/Undo/restart without changing default catalogs; original wording appears on the shared card face without claiming official provenance. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with printed range 3 and movement stopping at distance 2 (PVE-D35). Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
+
+PVE-D36 renames Ranged's movement card Take Position (Initiative 8), and replaces Idle with Aim (Initiative 1): "Next turn, have +1 Range." Aim uses the existing dormant/active Next Turn lifecycle and defeat/retrieval cancellation; either attack can actually reach 4 during the bonus. The compact tray preserves the shared purple source-card outline while pending or active, clearing when the effect ends. These original Skills use content revision `pve-content-3`.
 
 ## Launch, smoke and build
 

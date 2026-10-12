@@ -45,6 +45,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-039 | Joining players automatically inherit the host seed, retaining full keyed compatibility and reconnect identity. | `work/W-039` |
 | W-040 | Melee Shield Up, Initiative 9, grants existing Immune for this turn; typed Skill, shared wording and restore-stable mode catalog. | `work/W-040` |
 | W-041 | Ranged Aim and Shoot fallback stop at range 2; attack Range 3 and movement amounts unchanged. | `work/W-041` |
+| W-042 | Ranged Take Position and next-turn Aim; effective attack reach and shared pending/active card glow. | `work/W-042` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -391,3 +392,9 @@ Historical evidence: completion commit addressed by immutable `work/W-040`; exac
 Approved: Ranged movement stops at range 2 rather than 3. Updated Aim and Shoot fallback content only; Move 2/1, Attack Range 3, priorities, other cards and shared rules remain unchanged (PVE-D35). T1 acceptance: exact shipped content and affected attack/fallback cases, JSON/editor round-trip. Review found no remaining in-scope defect or new shared-rule risk. No engine/UI change, package rebuild or remote operation.
 
 Historical evidence: completion commit addressed by immutable `work/W-041`; exact checks/results and omitted-suite rationale live in its body.
+
+### [x] W-042 Ranged Take Position and Aim
+
+Approved: rename Ranged movement card Take Position, replace Idle with Aim, Initiative 1, "Next turn, have +1 Range," and make its card glow. PVE-D36 uses typed Skill content and the existing Next Turn modifier/cancellation lifecycle; keeps movement, attack values, priorities and the four-card hand. AI uses full rule-derived reach independently of display settings, while preserving option targeting. The compact rail uses the shared pending/active source-card outline. T2 acceptance: both range-four attacks, expiry/retrieval, Undo/restore, save/editor/face, existing-mode identity, affected encounter/co-op boundaries, rendered text and glow lifecycle. Review found no remaining in-scope defect; existing timing, colors and authoritative action legality are preserved. No package rebuild or remote operation.
+
+Historical evidence: completion commit addressed by immutable `work/W-042`; exact checks/results, corrected failures, limitations and omitted-suite rationale live in its body.

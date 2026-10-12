@@ -8,7 +8,8 @@ namespace GuardsDigital.Pve.Content
     public enum PveSkillKind
     {
         None = 0,
-        ImmuneThisTurn = 1
+        ImmuneThisTurn = 1,
+        RangeNextTurn = 2
     }
 
     /// <summary>PVE-D07. What an orange option aims at.</summary>

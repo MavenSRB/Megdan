@@ -1108,10 +1108,12 @@ namespace GuardsDigital.Application
             IEnumerable<DirectorCommand> pendingRevealRetrieval = null,
             IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null,
             IEnumerable<CardValuePreview> cardValues = null,
-            IEnumerable<CardInstanceId> standingActiveEffectSourceCardInstanceIds = null)
+            IEnumerable<CardInstanceId> standingActiveEffectSourceCardInstanceIds = null,
+            IEnumerable<CardValuePreview> modeCardRuleValues = null)
         {
             Version = version;
             CardValues = Array.AsReadOnly((cardValues ?? Array.Empty<CardValuePreview>()).ToArray());
+            ModeCardRuleValues = Array.AsReadOnly((modeCardRuleValues ?? Array.Empty<CardValuePreview>()).ToArray());
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             SelectedMap = selectedMap ?? throw new ArgumentNullException(nameof(selectedMap));
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
@@ -1648,6 +1650,10 @@ namespace GuardsDigital.Application
             PendingAttackTargetDefensePreviews { get; }
         public IReadOnlyList<HeroDefenseModifierProjection> HeroDefenseModifiers { get; }
         public IReadOnlyList<CardValuePreview> CardValues { get; }
+
+        /// <summary>Full rule-derived mode-controller deltas, independent of display preferences.
+        /// Local authority projection only; not a second state store or a seat/wire payload.</summary>
+        public IReadOnlyList<CardValuePreview> ModeCardRuleValues { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
 

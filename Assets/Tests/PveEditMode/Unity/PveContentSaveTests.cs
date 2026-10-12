@@ -66,6 +66,8 @@ namespace GuardsDigital.Tests.Pve
             var editor = new PveCardEditor(() => catalog, null);
             editor.Build();
             Assert.That(editor.Edited().Find("melee").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.ImmuneThisTurn));
+            Assert.That(editor.Edited().Find("ranged").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.RangeNextTurn));
+            Assert.That(editor.Edited().Find("ranged").FindOrange("A").Name, Is.EqualTo("Take Position"));
             Assert.That(editor.Edited().Types.Select(type => type.MinionCategory),
                 Is.EqualTo(catalog.Types.Select(type => type.MinionCategory)));
             Assert.That(editor.Edited().Types.Select(type => type.TokenType),

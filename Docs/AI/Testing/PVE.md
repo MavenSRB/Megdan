@@ -16,6 +16,8 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 
 ## Enemy category integration
 
+`PveAimTests` covers PVE-D36's names/face, dormant-to-active Range bonus, both actual range-four attacks, expiry/retrieval, source visibility and restore/Undo. `PveLauncherPlayModeTests` inspects Aim's rendered wording and its shared tray outline while pending, active and expired. These reuse the existing modifier and source-glow contracts rather than introducing PvE-specific timing or colors.
+
 `PveShieldUpTests` covers PVE-D34's authored face, automatic Skill choice, existing immunity and turn expiry, restore/Undo/restart and unchanged default catalog. `PveContentSaveTests` covers typed Skill JSON/editor retention and unknown/mixed-action rejection; the launcher Play Mode fixture hovers Shield Up and captures its rendered wording. Shared catalog/provenance changes also run `CardDefinitionTests`, `EffectSeamConformanceTests` and the composition/identity fixtures below.
 
 `PveEnemyCategoryTests` executes unchanged High Voltage against both Melee and Ranged, rejects Heavy from the minion choice, verifies staged adjacency and the existing discard/Defeat path, and round-trips the pending typed outcome through restore and retained-prefix Undo replay. Restoring that outcome without its trusted mode category must refuse atomically. `ComposableTargetSelectionTests` covers hero/minion/combined category membership, distinct identity, Attack target identity, radius modifiers and guarded removal/atomic minion-to-token replacement. Run these with the unchanged-card, snapshot-tampering, board-operation and feasibility-conformance fixtures when changing category consumers.

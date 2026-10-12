@@ -1082,7 +1082,8 @@ namespace GuardsDigital.Application
                     : null,
                 CreateHeroDefenseModifiers(turnModifications),
                 round.ReadCardValuePreviews(CardValueSources(Experiments)),
-                CreateStandingActiveEffectSourceCards(round));
+                CreateStandingActiveEffectSourceCards(round),
+                initialState.ModeRules == null ? null : round.ReadCardValuePreviews());
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

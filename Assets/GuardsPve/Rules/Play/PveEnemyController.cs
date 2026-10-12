@@ -326,13 +326,20 @@ namespace GuardsDigital.Pve.Play
                     if (option.Kind == PveOptionKind.Attack)
                     {
                         var offer = Offer(match, card.Id, PveCardFactory.AttackActionId);
-                        var reach = Math.Max(1, orange.AttackRange);
+                        // Rule-derived values are not the optional on-card display deltas. Retain
+                        // this option's target kind while honoring modified reach; the offer still
+                        // owns legality and AttackStep chooses only authoritative legal targets.
+                        var rangeBonus = match is MatchSessionProjection authority
+                            ? authority.ModeCardRuleValues.Where(value => value.Owner.Equals(actor.ActorId) &&
+                                value.Definition.Equals(card.DefinitionReference) && value.Channel == PrintedValueChannel.Range)
+                                .Sum(value => value.Bonus) : 0;
+                        var reach = Math.Max(1, orange.AttackRange + rangeBonus);
                         if (offer.HasValue && offer.Value.IsAvailable &&
                             targets.Any(target => HexDistanceQuery.Calculate(position.Value, target) <= reach))
                         {
                             return PveStep.Run(
                                 DirectorCommand.StartAction(card.Id, PveCardFactory.AttackActionId),
-                                enemy.DisplayName + " attacks a " + option.Target.ToString().ToLowerInvariant());
+                                enemy.DisplayName + " attacks");
                         }
                     }
                     else if (option.Kind == PveOptionKind.Move)
