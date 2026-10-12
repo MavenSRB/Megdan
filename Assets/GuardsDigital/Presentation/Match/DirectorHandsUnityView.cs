@@ -713,7 +713,7 @@ namespace GuardsDigital.Presentation.Match
             };
             button.RegisterCallback<PointerDownEvent>(evt =>
             {
-                if (evt.button != 1) return;
+                if (evt.button != 1 || contextOnly) return;
                 evt.StopImmediatePropagation();
                 CardSuggested?.Invoke(card.CardInstanceId);
             }, TrickleDown.TrickleDown);

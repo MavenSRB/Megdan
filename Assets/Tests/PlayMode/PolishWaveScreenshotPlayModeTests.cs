@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
@@ -571,6 +572,171 @@ namespace GuardsDigital.Tests.PlayMode
             finally
             {
                 UiPlayer.SetPlayerViewport(1920, 1080, "restore after 8.36f1");
+            }
+        }
+
+        /// <summary>
+        /// W-060. A playtest found p.15's mandatory window gone while its unanswered pause still
+        /// stood, with right-click the suspected trigger. Exercise the actual pointer surfaces rather
+        /// than calling the presenter seam: neither a candidate nor either read-only hand may answer
+        /// or dismiss the pause, and the intentional minimise must retain one reachable way back.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheLevelUpWindow_IgnoresRightClicksAndCanAlwaysReopenAfterMinimising()
+        {
+            yield return LoadTheMatch();
+            var root = Root();
+            root.ConfigureExperiments(new ExperimentalMatchOptions(teammateCoordination: true));
+            yield return null;
+            yield return null;
+            var runtime = root.Runtime;
+            var budget = 256;
+            while (runtime.SystemTransitionPrompt?.Kind != SystemTransitionPromptKind.LevelUpUpgrade)
+            {
+                Assert.That(budget--, Is.GreaterThan(0), "The fixture never reached a level-up offer.");
+                var awaiting = runtime.HandsView.Model.Hands.FirstOrDefault(hand =>
+                    hand.CommitmentStatus == TurnCardCommitmentStatus.AwaitingResponse && hand.Cards.Count > 0);
+                if (awaiting != null)
+                {
+                    Assert.That(runtime.SelectCommitmentCard(awaiting.Cards[0].Id), Is.True);
+                    Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+                }
+                else if (runtime.PendingInitiativeChoice != null)
+                {
+                    Assert.That(runtime.SubmitInitiativeChoice(
+                        runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
+                }
+                else if (runtime.SystemTransitionPrompt != null)
+                {
+                    Assert.That(runtime.SubmitSystemTransitionOption(0), Is.True);
+                }
+                else if (runtime.Phase == RoundResolutionPhase.EndOfRound)
+                {
+                    Assert.That(runtime.ContinueEndOfRound(), Is.True);
+                }
+                else
+                {
+                    Assert.That(runtime.SubmitEndTurn(), Is.True);
+                }
+                yield return null;
+            }
+
+            var heroId = runtime.Projection.PendingSystemTransitionDescription.HeroId;
+            runtime.RoundPresenter.SetHomeHero(heroId);
+            runtime.DecisionWindowPresenter.SetHomeHero(heroId);
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var snapshot = runtime.CaptureSnapshot();
+            Assert.That(runtime.DecisionWindowView.Model?.Family, Is.EqualTo(DecisionWindowFamily.LevelUp));
+            Assert.That(runtime.DecisionWindowView.Model?.State, Is.EqualTo(DecisionWindowState.Expanded));
+
+            var candidate = runtime.DecisionWindowView.Root.Q<Button>("gd-upgrade-option");
+            RightClick(candidate);
+            yield return null;
+            AssertLevelUpStillStands(runtime, snapshot, DecisionWindowState.Expanded,
+                "right-clicking an offered upgrade");
+
+            var preview = runtime.DecisionWindowView.Root.Q("gd-levelup-hand-preview-card");
+            RightClick(preview);
+            yield return null;
+            AssertLevelUpStillStands(runtime, snapshot, DecisionWindowState.Expanded,
+                "right-clicking a read-only hand preview");
+
+            UiPlayer.Click(UiPlayer.Button(root.Hud, DecisionWindowUnityView.MinimiseLabel));
+            yield return null;
+            AssertLevelUpStillStands(runtime, snapshot, DecisionWindowState.Docked,
+                "minimising the window");
+
+            var suggestions = 0;
+            runtime.HandsView.CardSuggested += _ => suggestions++;
+            var handCard = runtime.HandsView.Root.Query<Button>("gd-card-choice").ToList()
+                .First(button => UiPlayer.IsShown(button));
+            RightClick(handCard, allowContextBlocker: true);
+            yield return null;
+            Assert.That(suggestions, Is.Zero,
+                "A context-only hand must refuse the coordination command while Level Up owns input.");
+            AssertLevelUpStillStands(runtime, snapshot, DecisionWindowState.Docked,
+                "right-clicking the context-only ordinary hand");
+
+            Assert.That(runtime.HandsView.IsContextOnly, Is.True,
+                "The docked Level Up must keep the ordinary hand in context-only mode.");
+            SendRightClick(handCard, handCard.worldBound.center);
+            yield return null;
+            Assert.That(suggestions, Is.Zero,
+                "The hand view itself must refuse a context-only coordination command even if its input shield changes.");
+
+            var expand = UiPlayer.Button(root.Hud, DecisionWindowUnityView.ExpandLabel);
+            Assert.That(UiPlayer.IsShown(expand), Is.True,
+                "The unanswered docked Level Up must keep a reachable EXPAND control.");
+            UiPlayer.Click(expand);
+            yield return null;
+            AssertLevelUpStillStands(runtime, snapshot, DecisionWindowState.Expanded,
+                "reopening the minimised window");
+        }
+
+        private static void AssertLevelUpStillStands(
+            ConfiguredMatchSceneRuntime runtime,
+            string snapshot,
+            DecisionWindowState state,
+            string action)
+        {
+            Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot),
+                action + " must not answer or otherwise change the mandatory choice.");
+            Assert.That(runtime.DecisionWindowView.Model?.Family, Is.EqualTo(DecisionWindowFamily.LevelUp),
+                action + " must not dismiss the mandatory window.");
+            Assert.That(runtime.DecisionWindowView.Model?.State, Is.EqualTo(state),
+                action + " must leave the expected reading reachable.");
+            Assert.That(UiPlayer.IsShown(runtime.DecisionWindowView.Root), Is.True,
+                action + " must leave the decision surface visible.");
+        }
+
+        private static void RightClick(VisualElement element, bool allowContextBlocker = false)
+        {
+            Assert.That(element?.panel, Is.Not.Null);
+            var point = element.worldBound.center;
+            var target = element.panel.Pick(point);
+            var pickedWithinElement = false;
+            for (var cursor = target; cursor != null; cursor = cursor.parent)
+            {
+                if (cursor != element)
+                {
+                    continue;
+                }
+
+                pickedWithinElement = true;
+                break;
+            }
+            Assert.That(pickedWithinElement ||
+                        (allowContextBlocker && target?.name == "gd-context-only-hand-blocker"), Is.True,
+                $"The intended Level Up surface must be reachable by the pointer; picked '{target?.name ?? "<none>"}'.");
+            SendRightClick(target, point);
+        }
+
+        private static void SendRightClick(VisualElement target, Vector2 point)
+        {
+            using (var down = PointerDownEvent.GetPooled(new Event
+            {
+                type = EventType.MouseDown,
+                mousePosition = point,
+                button = 1,
+                clickCount = 1
+            }))
+            {
+                down.target = target;
+                target.SendEvent(down);
+            }
+            using (var up = PointerUpEvent.GetPooled(new Event
+            {
+                type = EventType.MouseUp,
+                mousePosition = point,
+                button = 1,
+                clickCount = 1
+            }))
+            {
+                up.target = target;
+                target.SendEvent(up);
             }
         }
 
