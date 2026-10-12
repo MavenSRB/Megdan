@@ -303,6 +303,13 @@ namespace GuardsDigital.Core.Cards
 
         public void BindModeRules(GuardsDigital.Core.Setup.MatchModeRules rules)
         {
+            if (rules?.MinionBattleIsInert == true && PendingMinionBattleChoice != null)
+            {
+                throw new ArgumentException(
+                    "An inert mode cannot restore a pending Minion Battle choice.",
+                    nameof(rules));
+            }
+
             modeRules = rules;
             cardActions?.BindModeRules(rules);
             RefreshModeTurnParticipants();
@@ -2145,6 +2152,22 @@ namespace GuardsDigital.Core.Cards
             {
                 return RoundResolutionResult.Reject(
                     RoundResolutionRejectionReason.MissingRequiredEndOfRoundHandler);
+            }
+
+            // PVE-D03/D23. A mode may retain the ordinary pre-battle checkpoint without running the
+            // battle that follows it. Keep this at the authority boundary: mode category membership
+            // remains available to cards and targeting, but cannot leak into counts, removals, or a
+            // Lane-Push request when the mode declares the battle inert.
+            if (modeRules?.MinionBattleIsInert == true)
+            {
+                return CompleteMinionBattle(
+                    new EndOfRoundResolutionId($"round-{RoundIndex}-minion-battle"),
+                    GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
+                        .GetCurrentBattleZone(board).Id,
+                    null,
+                    null,
+                    Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                    precedingEvents);
             }
 
             var plan = MinionBattleRules.Plan(

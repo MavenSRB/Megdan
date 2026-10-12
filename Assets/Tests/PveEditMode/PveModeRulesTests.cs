@@ -5,6 +5,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Pve.Content;
 using GuardsDigital.Pve.Play;
 using NUnit.Framework;
 
@@ -24,6 +25,30 @@ namespace GuardsDigital.Tests.Pve
             driver.PlayUntil(match => match.CompletedRounds.Count >= 1);
 
             AssertEndOfRoundSkipped(driver.Match);
+        }
+
+        [Test]
+        public void EnemyMinionCategoriesDoNotActivatePveMinionBattleOrLanePush()
+        {
+            var driver = CategoryBattleDriver();
+
+            driver.PlayUntil(match => match.CompletedRounds.Count >= 1);
+
+            AssertCategoryBattleStayedInert(driver);
+        }
+
+        [Test]
+        public void RestoredSnapshotKeepsEnemyCategoryBattleInert()
+        {
+            var played = CategoryBattleDriver();
+            played.PlayUntil(match => match.TurnIndex >= 3);
+            var snapshot = played.Director.CaptureSnapshot();
+            var restored = CategoryBattleDriver();
+
+            Assert.That(restored.Director.RestoreSnapshot(snapshot).Accepted, Is.True);
+            restored.PlayUntil(match => match.CompletedRounds.Count >= 1);
+
+            AssertCategoryBattleStayedInert(restored);
         }
 
         [Test]
@@ -121,6 +146,41 @@ namespace GuardsDigital.Tests.Pve
         {
             Assert.That(match.HeroProgression.All(value => value.Coins == 0), Is.True, "No balance moved.");
             Assert.That(match.Scoreboard.Sum(entry => entry.CoinsEarned), Is.EqualTo(0), "No coin was earned.");
+        }
+
+        private static PveTestDriver CategoryBattleDriver()
+        {
+            var source = PveTestContent.HeroHuntingCatalog().Find("raider");
+            var catalog = new PveEnemyCatalog("pve-inert-battle-regression", new[]
+            {
+                new PveEnemyType(
+                    source.Id,
+                    source.DisplayName,
+                    source.Level,
+                    source.OrangeCards,
+                    source.PurpleCards,
+                    source.Plans,
+                    source.TokenType,
+                    StandardMinionType.Melee)
+            });
+            var encounter = new PveEncounterDefinition(
+                "official-single-lane",
+                1,
+                new[] { "-3,2", "-5,4", "-3,4" }.Select(value =>
+                    new PveCreepPlacement(PveTestContent.Hex(value), StandardMinionType.Melee)),
+                new[] { "-4,2", "-2,2", "-5,3", "-2,3", "-4,4" }.Select(PveTestContent.Hex),
+                new[] { new PveSpawn(1, PveTestContent.Hex("-7,10"), "raider") });
+            return PveTestDriver.Start(encounter: encounter, catalog: catalog);
+        }
+
+        private static void AssertCategoryBattleStayedInert(PveTestDriver driver)
+        {
+            var enemy = driver.Composed.Enemies.Single().HeroId;
+            Assert.That(driver.Match.Minions.Count, Is.EqualTo(3),
+                "PVE-D03 leaves every Blue creep untouched by the inert battle.");
+            Assert.That(driver.Match.Heroes.Any(value => value.HeroId.Equals(enemy)), Is.True,
+                "PVE-D30 category membership must not make the PvE battle remove an enemy.");
+            AssertEndOfRoundSkipped(driver.Match);
         }
     }
 }

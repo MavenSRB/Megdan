@@ -17,8 +17,8 @@ Current private Windows package: **W059 Unified**, `Builds/Playtest-W059-unified
 Matching Mac package: `Builds/Playtest-W059-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W059 build stamp/content; SHA-256 `deea4f4d2733d6ce8521d670dea44a509b3847ee0518ba6891adaae2541c071d`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
 - Last completed work: **W-059**.
-- Active authorized work: **None**.
-- Next proposed work: **None**.
+- Active authorized work: **W-060**, PvE playtest repairs: finish the unseated host spectator repair, restore PVE-D03's inert Minion Battle after PVE-D30 category membership incorrectly caused an enemy removal and Lane Push in live play, make a relaunched PvE player reclaim its reserved seat and authoritative live state instead of remaining on the default demo composition, and add lifecycle-correct public plan/available-Defense card pips to enemy board tokens.
+- Next proposed work: **W-060**.
 
 W053 makes the existing seat-scoped PvP Undo rules available to Blue seats in PvE, including commitment withdrawal and the turn floor plus attack, interaction and other-seat walls. A manually selected committed local seat remains selected while its Undo is available, without changing ordinary automatic awaited-seat switching. Focused engine, wire and real-input shared-lobby checks passed. Source-only; W050/W051 packages remain unchanged.
 

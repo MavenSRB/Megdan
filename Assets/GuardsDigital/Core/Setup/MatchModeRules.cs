@@ -85,7 +85,8 @@ namespace GuardsDigital.Core.Setup
             IEnumerable<ModeHeroPlacement> roundStartPlacements = null,
             TeamSide defeatInsteadOfDiscardSide = TeamSide.None,
             IEnumerable<KeyValuePair<HeroId, StandardMinionType>> minionCategoryHeroes = null,
-            IEnumerable<HeroId> boardRequiredTurnHeroes = null)
+            IEnumerable<HeroId> boardRequiredTurnHeroes = null,
+            bool minionBattleIsInert = false)
         {
             UnavailableEndOfRoundStages = Array.AsReadOnly(
                 (unavailableEndOfRoundStages ?? Enumerable.Empty<EndOfRoundStage>()).Distinct().ToArray());
@@ -118,10 +119,17 @@ namespace GuardsDigital.Core.Setup
             BoardRequiredTurnHeroes = Array.AsReadOnly((boardRequiredTurnHeroes ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
             if (BoardRequiredTurnHeroes.Any(hero => !hero.IsDefined))
                 throw new ArgumentException("Turn participation requires defined heroes.", nameof(boardRequiredTurnHeroes));
+            MinionBattleIsInert = minionBattleIsInert;
         }
 
         /// <summary>These mode units participate only while on the board at commitment time.</summary>
         public IReadOnlyList<HeroId> BoardRequiredTurnHeroes { get; }
+
+        /// <summary>
+        /// PVE-D03/D23. The pre-battle timing checkpoint still runs, but the battle itself does not
+        /// count or remove units and cannot request a Lane Push.
+        /// </summary>
+        public bool MinionBattleIsInert { get; }
 
         public IEnumerable<HeroId> TurnHeroes(MatchParticipants participants,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
