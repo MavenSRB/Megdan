@@ -7,6 +7,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
 | W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
+| W-004 | Compact player-name banner: revised rendered candidate visually approved by the user. | `work/W-004` |
 | W-005 | Restored both whole blue side zones on the alternate map; revision-2 identity, movement/travel and rendered-map regressions. | `work/W-005` |
 | W-006 | Simplified tied Initiative to candidate card faces with per-player ping accents and hero-token preference markers. | `work/W-006` |
 | W-007 | Retained `WHO ACTS FIRST?` and centred each selector's hero token above their highlighted card. | `work/W-007` |
@@ -329,3 +330,15 @@ Approved superseding side-conversation clarification: Heavy counts as a hero onl
 Prior investigation is preserved: the minion-only prototype could not satisfy intrinsic-minion output/Defeat/adjacency contracts; private `tmp/w033-category-prototype.patch` was removed from executable source. Scope approval resolved the prerequisite and superseded that mapping. Checkpoint `f92f3f33` retains its evidence, not a claim of completed behavior. Handoff review of player experience, authority, maintainability and risk found no remaining in-scope acceptance defect. Existing private packages and W-004's separate human gate remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-033`; exact checks/results, corrected test failures and limitations live in its body.
+
+### [x] W-004 Compact player-name banner approved
+
+Approved: restore original slim tray geometry and replace the expanded name row with a small top-border banner. Show the rendered result for approval. W-013's later explicit as-is build request authorizes packaging the candidate without closing this separate design-approval gate.
+Scope: nameplate styling only; no gameplay, spell-preview or package changes.
+Closing checks: focused nameplate geometry/render test at 1280/1920/2560 widths, original 12-unit top padding, banner clear of hero text/portrait (border overlap allowed), long/empty names; captured preview and user visual approval. T2, no unrelated suites. Human approval is the final prerequisite.
+
+The user's second revision is implemented: two more reference units lower, font 11 to 12, unchanged tray dimensions. The focused render check passed at 1280/1920/2560 widths, including hero text/portrait clearance. Revised preview: `tmp/w004-banner-larger-preview.png`; full views: `tmp/w004-larger-banner-1280.png`, `tmp/w004-larger-banner-1920.png`, `tmp/w004-larger-banner-2560.png`. The user approved the displayed revised preview on 2026-10-12 ("Sure."); the human gate is closed. Prior candidates (`43aa907d`, `bb06f8c3`) and captures remain preserved; W013 includes the candidate under the later as-is request, with no further package authorized. Exact evidence lives in the candidate commit body.
+
+Approval closure is documentation-only (T0), reusing the unchanged candidate's T2 evidence in `847a6a07`. No further UI, gameplay or package change. Reviewed approval against the exact saved preview; no outstanding acceptance prerequisite.
+
+Historical evidence: completion commit addressed by immutable `work/W-004`; approval closure checks and limitations live in its body.
