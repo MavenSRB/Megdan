@@ -123,7 +123,7 @@ The separate launcher adds a Host/Join menu. A playing host and two joiners clai
 Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. PvE co-op uses a distinct `pve-coop-1-<seed>` match-format identity and a digest including the PvE catalog and encounter data, so PvP, differing seeds and differing editable content cannot enter the same session. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
 
 - **Launch.** The launcher loads and validates content, offers every configured hero (up to the number of placement spaces) and a seed, composes the encounter and loads the match scene with the external composition. The match then runs in the existing Director mode.
-- **Smoke.** `-guardsPveSmokeTest` composes a fixed two-hero encounter and reports `GUARDS_PVE_SMOKE: BEGIN`, `COMPOSED` and `PASS` (or `FAIL`), then quits with its exit code.
+- **Smoke.** `-guardsPveSmokeTest` composes a fixed three-hero encounter and reports `GUARDS_PVE_SMOKE: BEGIN`, `COMPOSED` and `PASS` (or `FAIL`), then quits with its exit code. The opt-in `-guardsPveCoopSmoke` path exercises the shipped lobby in three separate player processes and captures their boards; [the recipe](../Testing/PVE.md#build-gate) owns its bounded claims. Neither driver runs during normal play.
 - **Build.** `PveBuildEntryPoint.BuildWindowsPvePlayer` builds `Builds/PveWin64/GuardsDigitalPvE.exe`. It sets the product name and version stamp for that build only and restores both before saving assets.
 
 ## Current limits

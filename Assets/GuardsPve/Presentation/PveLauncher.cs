@@ -64,6 +64,8 @@ namespace GuardsDigital.Pve.Presentation
             }
 
             BuildScreen(loadProblem);
+            if (Environment.GetCommandLineArgs().Contains(PveCoopLobby.ArtifactSmokeFlag))
+                PveCoopLobby.StartArtifactSmoke(this);
         }
 
         /// <summary>

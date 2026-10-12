@@ -19,7 +19,7 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Pve.Presentation
 {
     /// <summary>PVE-D28. Playing host plus two owner-scoped clients over the existing keyed transport.</summary>
-    public sealed class PveCoopLobby : MonoBehaviour, IPrivateSessionClientOutbox
+    public sealed partial class PveCoopLobby : MonoBehaviour, IPrivateSessionClientOutbox
     {
         private static readonly string[] ProvisionalHeroes = { "hero-arien", "hero-brogan", "hero-wasp" };
         private PveEnemyCatalog catalog;

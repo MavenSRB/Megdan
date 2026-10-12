@@ -10,11 +10,11 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. Current private PvE test package: **W024 PvE**, `Builds/Playtest-W024-pve-test.zip` (separate executable). Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. Current private PvE test package: **W035 PvE**, `Builds/Playtest-W035-pve-coop.zip` (separate executable). Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-- Last completed work: **W-004**.
+- Last completed work: **W-035**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -22,13 +22,13 @@ All weaker enemy attacks now have movement fallback after both attack options (P
 
 Melee/Ranged now count as both heroes and minions for targeting/effects; Heavy counts as hero only, and combined effects count each enemy once (amended PVE-D30). The shared engine preserves each enemy's Hero identity, combat and Defense, with guarded minion effect outputs, removal/replacement and restore/Undo support. Category work changed no card definitions. See [PvE implementation](Project/PVE_IMPLEMENTATION.md); no further implementation is authorized.
 
-Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two attacks, one movement card and one idle. Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26/D29 in [PvE design](Project/PVE_DESIGN.md). W024 PvE predates these source changes; no new package was requested. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). The revised compact player-name banner is visually approved (W-004); no approval gate remains in [current work](Roadmap/CURRENT_WORK.md).
+Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two attacks, one movement card and one idle. Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26/D29 in [PvE design](Project/PVE_DESIGN.md). W035 PvE includes these changes; W024 remains preserved as an older package. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). The revised compact player-name banner is visually approved (W-004); no approval gate remains in [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is playable; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 
 The playable PvE Blue team is exactly three chosen heroes (PVE-D27); all five placement spaces remain available. Generic composition supports smaller deterministic test fixtures.
 
-PvE Host/Join supports a playing host and two joiners, one Blue hero each (PVE-D28). Host controls enemies/shared choices; hero decisions and private cards remain owner-scoped. Keyed TCP, reserved-seat reconnect and terminal host loss reuse the private session stack. Solo remains available. Source validation uses serialized and loopback peers, not an internet or new-package claim.
+PvE Host/Join supports a playing host and two joiners, one Blue hero each (PVE-D28). Host controls enemies/shared choices; hero decisions and private cards remain owner-scoped. Keyed TCP, reserved-seat reconnect and terminal host loss reuse the private session stack. Solo remains available. W035 adds exact-package solo and three-process loopback validation plus board captures and extracted-ZIP launch; no new internet/NAT or packaged reconnect claim.
 
 ## Durable boundaries
 
