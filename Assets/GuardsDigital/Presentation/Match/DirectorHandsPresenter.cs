@@ -413,7 +413,8 @@ namespace GuardsDigital.Presentation.Match
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
                 var owing = heroes.FirstOrDefault(hero =>
-                    projection.GetCommitment(hero.HeroId).Status == TurnCardCommitmentStatus.AwaitingResponse);
+                    projection.Commitments.Any(value => value.HeroId.Equals(hero.HeroId) &&
+                        value.Status == TurnCardCommitmentStatus.AwaitingResponse));
                 if (owing != null) return owing.HeroId;
             }
 
@@ -441,8 +442,8 @@ namespace GuardsDigital.Presentation.Match
                 var owing = projection.Setup.Heroes
                     .OrderBy(hero => hero.TeamSide)
                     .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
-                    .FirstOrDefault(hero => projection.GetCommitment(hero.HeroId).Status ==
-                        TurnCardCommitmentStatus.AwaitingResponse);
+                    .FirstOrDefault(hero => projection.Commitments.Any(value => value.HeroId.Equals(hero.HeroId) &&
+                        value.Status == TurnCardCommitmentStatus.AwaitingResponse));
                 if (owing != null)
                 {
                     return owing.HeroId;
@@ -643,7 +644,7 @@ namespace GuardsDigital.Presentation.Match
             HeroCardInspection trustedInspection = null)
         {
             var commitment = projection.GetCommitment(heroId);
-            var canSelect = !readOnly && projection.IsInputEnabled &&
+            var canSelect = commitment.HeroId.IsDefined && !readOnly && projection.IsInputEnabled &&
                 projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
                 commitment.Status == TurnCardCommitmentStatus.AwaitingResponse;
             // Milestone 8.5b's correction: the card this hero revealed for the current turn is the card
@@ -855,8 +856,8 @@ namespace GuardsDigital.Presentation.Match
             var card = projection.Cards.SingleOrDefault(value => value.Id.Equals(cardInstanceId));
             return card != null && (session.IsDirector || card.OwnerId.Equals(homeHeroId)) &&
                 card.State.Location == CardLocation.Hand &&
-                projection.GetCommitment(card.OwnerId).Status ==
-                    TurnCardCommitmentStatus.AwaitingResponse
+                projection.Commitments.Any(value => value.HeroId.Equals(card.OwnerId) &&
+                    value.Status == TurnCardCommitmentStatus.AwaitingResponse)
                 ? card
                 : null;
         }

@@ -848,7 +848,8 @@ namespace GuardsDigital.Core.Snapshots
             }
         }
 
-        private static RoundTurnSlot[] ReadSlots(BinaryReader reader, IReadOnlyList<CardInstance> cards, MatchParticipants participants)
+        private static RoundTurnSlot[] ReadSlots(BinaryReader reader, IReadOnlyList<CardInstance> cards, MatchParticipants participants,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null)
         {
             return ReadMany(reader, "round slots", () =>
             {
@@ -860,7 +861,7 @@ namespace GuardsDigital.Core.Snapshots
                     var passed = reader.ReadBoolean();
                     return new TurnCardAssignment(hero, card, passed, reader.ReadBoolean());
                 });
-                return new RoundTurnSlot(round, turn, assignments, cards, participants);
+                return new RoundTurnSlot(round, turn, assignments, cards, participants, modeRules?.BoardRequiredTurnHeroes);
             });
         }
 

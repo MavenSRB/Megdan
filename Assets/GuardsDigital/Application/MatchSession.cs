@@ -836,6 +836,7 @@ namespace GuardsDigital.Application
             var turn = round.CurrentTurnAuthority;
             var commitment = round.CurrentCommitmentAuthority;
             var commitments = configuration.Participants.Heroes
+                .Where(hero => commitment == null || commitment.ExpectedHeroIds.Contains(hero.Id))
                 .OrderBy(hero => hero.Id.Value, StringComparer.Ordinal)
                 .Select(hero => new MatchCommitmentProjection(
                     hero.Id,
@@ -1083,7 +1084,8 @@ namespace GuardsDigital.Application
                 CreateHeroDefenseModifiers(turnModifications),
                 round.ReadCardValuePreviews(CardValueSources(Experiments)),
                 CreateStandingActiveEffectSourceCards(round),
-                initialState.ModeRules == null ? null : round.ReadCardValuePreviews());
+                initialState.ModeRules == null ? null : round.ReadCardValuePreviews(),
+                initialState.ModeRules?.BoardRequiredTurnHeroes);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

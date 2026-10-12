@@ -23,11 +23,12 @@ namespace GuardsDigital.Editor
     {
         private const string ArtFolder = "Assets/Resources/Private/Cards/";
 
-        public override uint GetVersion() => 4u;
+        public override uint GetVersion() => 5u;
 
         private void OnPreprocessTexture()
         {
             if ((!assetPath.StartsWith(ArtFolder, StringComparison.Ordinal) &&
+                 !assetPath.StartsWith("Assets/Resources/Private/PveCards/", StringComparison.Ordinal) &&
                  !assetPath.StartsWith("Assets/Resources/Private/HeroSelection/", StringComparison.Ordinal) &&
                  !assetPath.StartsWith("Assets/Resources/Private/Markers/", StringComparison.Ordinal) &&
                  !assetPath.StartsWith("Assets/Resources/Private/Spells/", StringComparison.Ordinal) &&

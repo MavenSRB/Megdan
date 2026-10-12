@@ -16,6 +16,28 @@ namespace GuardsDigital.Tests.Pve
     public sealed class PveEncounterFlowTests
     {
         [Test]
+        public void FutureWaveHasNoCommitmentsActionsOrTurnAssignmentsUntilSpawned()
+        {
+            var driver = PveTestDriver.Start(catalog: PveTestContent.HeroHuntingCatalog());
+            var future = driver.Composed.Enemies.Where(enemy => enemy.Spawn.Round == 2).Select(enemy => enemy.HeroId).ToArray();
+            Assert.That(driver.Match.Commitments.Any(value => future.Contains(value.HeroId)), Is.False,
+                "PVE-D40: unspawned enemies are not turn participants, not automatic passes.");
+            var unspawned = future[0];
+            var card = driver.Match.Cards.First(value => value.OwnerId.Equals(unspawned));
+            Assert.That(driver.Director.Execute(DirectorCommand.CommitCard(unspawned, card.Id)).Accepted, Is.False);
+            driver.PlayUntil(match => match.RoundIndex == 1 && match.TurnIndex == 4 && match.Phase == RoundResolutionPhase.ResolvingTurn);
+            Assert.That(driver.Match.Commitments.Any(value => future.Contains(value.HeroId)), Is.False);
+            Assert.That(driver.Match.TurnSlots.SelectMany(slot => slot.Assignments).Any(value => future.Contains(value.HeroId)), Is.False);
+            Assert.That(driver.Match.Cards.Where(value => future.Contains(value.OwnerId)).All(value => value.State.Location == CardLocation.Hand), Is.True);
+            var restored = PveTestDriver.Start(catalog: PveTestContent.HeroHuntingCatalog());
+            Assert.That(restored.Director.RestoreSnapshot(driver.Director.CaptureSnapshot()).Accepted, Is.True);
+            Assert.That(restored.Session.CaptureSnapshot(), Is.EqualTo(driver.Session.CaptureSnapshot()));
+            driver.PlayUntil(match => match.RoundIndex == 2 && match.PendingSystemTransitionStep == null &&
+                future.All(hero => match.Heroes.Any(value => value.HeroId.Equals(hero))));
+            Assert.That(future.All(hero => driver.Match.Commitments.Any(value => value.HeroId.Equals(hero))), Is.True);
+        }
+
+        [Test]
         public void RoundOneOpensWithThePlayersPlacementBeforeAnyoneCommits()
         {
             var driver = PveTestDriver.Start();
@@ -35,14 +57,14 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
-        public void AfterPlacementEveryEnemyCommitsItsPlannedCard()
+        public void AfterPlacementEverySpawnedEnemyCommitsItsPlannedCard()
         {
             var driver = PveTestDriver.Start();
             driver.PlayUntil(match => match.PendingSystemTransitionStep == null &&
                 driver.Composed.Heroes.All(hero => match.Heroes.Any(value => value.HeroId.Equals(hero))));
             driver.Session.RunAutomatic();
 
-            foreach (var enemy in driver.Composed.Enemies)
+            foreach (var enemy in driver.Composed.Enemies.Where(value => value.Spawn.Round == 1))
             {
                 var commitment = driver.Match.Commitments.Single(value => value.HeroId.Equals(enemy.HeroId));
                 Assert.That(commitment.Status, Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown), enemy.DisplayName);

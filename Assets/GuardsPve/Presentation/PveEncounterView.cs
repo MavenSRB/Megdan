@@ -100,6 +100,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private void Build()
         {
+            PveEnemyArtwork.Configure(encounter.Catalog);
             runtime.VictoryScreenPresenter.ModeEnding = projection => PveEnemyController.IsLost(projection)
                 ? VictoryScreenPresenter.DeriveModeEnding(projection, TeamSide.Blue, "ALL FRIENDLY CREEPS WERE DEFEATED") : null;
             document = gameObject.AddComponent<UIDocument>();

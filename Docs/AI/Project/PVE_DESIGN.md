@@ -118,6 +118,10 @@ Remove the ENEMIES heading, keep the tiebreaker unobstructed, and slightly enlar
 
 Closing checks: legal placement clicks and invalid-click refusal; deterministic enemy-only choices through replay/Undo/co-op; manual level-offer absence with ordinary progression intact; Blue-only terminal view; live tray/font/tiebreaker/hover layout; owned/manual/automatic seat selection and other-player inspection; no obsolete panels; existing-mode identity and directly affected UI/ownership regressions.
 
+## PVE-D40 Enemy turn entry (Approved, user 2026-10-12)
+
+Enemies not on the board do not participate in commitment or turn resolution: no card commitment, automatic Pass, off-board card resolution or presentation delay. They enter the required turn roster when placed by their scheduled spawn. Preserve wave scheduling, legal placement and ordinary Blue hero defeat/respawn behavior. An enemy removed during a turn retains that turn's existing resolution/history; it is absent from subsequent turn rosters while off the board. This replaces D07's implicit all-configured-enemies commitment behavior. Closing checks: no pre-spawn commitments/actions/history assignments, round-two entry with all four cards intact, legal refusal of inactive commands, restore/Undo/co-op agreement and unchanged existing-mode identity.
+
 ## Remaining open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

@@ -4,6 +4,8 @@ Recipes for PvE and its unified lobby. Tiers, evidence and full-suite triggers s
 
 ## Engine-free PvE tests
 
+PVE-D40: `PveEncounterFlowTests.FutureWaveHasNoCommitmentsActionsOrTurnAssignmentsUntilSpawned` checks inactive command refusal, untouched cards, absent commitments/history, restore and wave entry. The co-op wire fixture reconstructs partial turn slots from each serialized owner projection. Run commitment, round authority, snapshot, slot-borrow and network-client consumers plus the existing-mode golden oracle when changing this mode roster contract.
+
 `Assets/Tests/PveEditMode/*.cs` hold the engine-free PvE fixtures (namespace `GuardsDigital.Tests.Pve`). Unity compiles them as `GuardsDigital.Pve.EditModeTests`. The dotnet harness compiles the same top-level files with its `GuardsDigital.Pve` project, so they use public APIs only. Unity-only PvE Edit Mode tests live under `Assets/Tests/PveEditMode/Unity/`, which the harness does not compile. W-026 adds `PveControlBoundaryTests` (offline: random legal Blue play never meets an automatic step that decides for a Blue hero, and no attack or minion Defense modifier reads a side's own units as enemies) and the Unity-only `PveDirectorPerspectiveTests` (the existing Director presenters with Blue as player side never draw an enemy as the player's own; without a side they still follow every hero).
 
 Focused harness run:
@@ -31,6 +33,8 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 `GuardsDigital.Tests.EditMode.PlayerAccentSideTests` covers the further seat colours. Composition-root and boundary changes also select `Phase4ArchitectureConformanceTests`, `ApplicationArchitectureBoundaryTests`, `OnlineArchitectureConformanceTests` and `ConfiguredMatchCutoverArchitectureTests`.
 
 ## Play Mode
+
+W049 artwork: `PveEnemyArtworkTests` verifies all fourteen definition/revision mappings, changed-content and missing-resource fallback. The launcher fixture loads every private texture, checks portrait proportions, hovers Shield Up/Aim/Thick Hide through real controls and checks actual prepared images; its Aim lifecycle check preserves pending/active/expired glow. The shared-lobby fixture exercises partial enemy rosters over real loopback play. Private PNGs remain excluded from publication.
 
 Saved logging: `PveLoggingTests` checks nonfatal disk failure and writer disposal; shared `GameplayNarrationLogTests` and `PrivateOnlineEvidenceTests` cover narration and distinct original-mode closure. `PveSharedLobbyPlayModeTests` verifies persisted player/enemy rows, duplicate-publish suppression, key absence and cleanup on leaving.
 

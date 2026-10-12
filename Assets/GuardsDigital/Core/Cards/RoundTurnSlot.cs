@@ -130,12 +130,15 @@ namespace GuardsDigital.Core.Cards
 
     public sealed class RoundTurnSlot
     {
+        public IReadOnlyList<HeroId> OptionalHeroIds { get; }
+
         public RoundTurnSlot(
             int roundIndex,
             int turnIndex,
             IEnumerable<TurnCardAssignment> assignments,
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            IEnumerable<HeroId> optionalHeroIds = null)
         {
             if (roundIndex < 1)
             {
@@ -168,7 +171,10 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Turn-slot assignments must not contain null entries.", nameof(assignments));
             }
 
+            OptionalHeroIds = Array.AsReadOnly((optionalHeroIds ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
+            foreach (var hero in OptionalHeroIds) participants.GetHero(hero);
             var expectedHeroIds = participants.Heroes
+                .Where(hero => !OptionalHeroIds.Contains(hero.Id) || assignmentArray.Any(value => value.HeroId.Equals(hero.Id)))
                 .Select(hero => hero.Id)
                 .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
                 .ToArray();
@@ -180,7 +186,7 @@ namespace GuardsDigital.Core.Cards
                     .SequenceEqual(expectedHeroIds))
             {
                 throw new ArgumentException(
-                    "A turn slot requires exactly one assignment for every configured hero.",
+                    "A turn slot requires exactly one assignment for every participating hero.",
                     nameof(assignments));
             }
 

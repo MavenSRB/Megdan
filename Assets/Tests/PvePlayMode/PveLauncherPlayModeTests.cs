@@ -123,6 +123,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 .All(view => view.gameObject.activeInHierarchy), Is.True, "Every placed hero is drawn on the board.");
             foreach (var enemy in encounter.Enemies)
             {
+                if (enemy.Spawn.Round > 1)
+                {
+                    Assert.That(session.Projection.Commitments.Any(value => value.HeroId.Equals(enemy.HeroId)), Is.False);
+                    continue;
+                }
                 Assert.That(session.Projection.Commitments.Single(value => value.HeroId.Equals(enemy.HeroId)).Status,
                     Is.Not.EqualTo(GuardsDigital.Core.Cards.TurnCardCommitmentStatus.AwaitingResponse), enemy.DisplayName);
             }
@@ -179,6 +184,13 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     Assert.That(view.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture, Is.SameAs(sprite.texture));
                 }
             }
+            foreach (var face in PveEnemyArtwork.ResourcesFor(encounter.Catalog))
+            {
+                Assert.That(ConfiguredCardArtwork.TryLoadTexture(face.Key, out var texture, out _), Is.True, face.Value);
+                Assert.That((float)texture.width / texture.height,
+                    Is.EqualTo(CardFootprint.StandardWidth / CardFootprint.StandardHeight).Within(.01f),
+                    "Generated faces must retain portrait proportions, not Unity's square NPOT conversion: " + face.Value);
+            }
             var firstRow = rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value);
             yield return AssertLinkedHover(composed, overlay, encounter.Enemies[0].HeroId);
             var firstSlot = firstRow.Query<VisualElement>("gd-turn-slot").ToList()
@@ -186,8 +198,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             using (var hover = PointerEnterEvent.GetPooled()) { hover.target = firstSlot; firstSlot.SendEvent(hover); }
             yield return null;
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
-                .Any(label => label.text == "This unit is immune this turn."), Is.True);
+            Assert.That(overlay.Q("gd-turn-slot-preview").Q<Image>("gd-card-artwork").image,
+                Is.SameAs(Resources.Load<Texture2D>("Private/PveCards/melee-shield-up")));
             yield return new WaitForEndOfFrame();
             var hoverCapture = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.File.WriteAllBytes("tmp/w040-shield-up-hover.png", hoverCapture.EncodeToPNG());
@@ -201,8 +213,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 .ToList().Single(slot => slot.tooltip.Contains("Aim"));
             using (var hover = PointerEnterEvent.GetPooled()) { hover.target = aimSlot; aimSlot.SendEvent(hover); }
             yield return null;
-            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
-                .Any(label => label.text == "Next turn, have +1 Range."), Is.True);
+            Assert.That(overlay.Q("gd-turn-slot-preview").Q<Image>("gd-card-artwork").image,
+                Is.SameAs(Resources.Load<Texture2D>("Private/PveCards/ranged-aim")));
             yield return new WaitForEndOfFrame();
             var aimCapture = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.File.WriteAllBytes("tmp/w042-aim-hover.png", aimCapture.EncodeToPNG());
@@ -241,8 +253,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null;
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex),
                 "Heavy defenses use the same complete-card hover preview.");
-            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
-                .Any(label => label.text == "After successfully defending: If the attacker is adjacent, counterattack it once with Attack 1."), Is.True);
+            Assert.That(overlay.Q("gd-turn-slot-preview").Q<Image>("gd-card-artwork").image,
+                Is.SameAs(Resources.Load<Texture2D>("Private/PveCards/heavy-thick-hide")));
             yield return new WaitForEndOfFrame();
             var heavyCapture = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.File.WriteAllBytes("tmp/w043-thick-hide-hover.png", heavyCapture.EncodeToPNG());

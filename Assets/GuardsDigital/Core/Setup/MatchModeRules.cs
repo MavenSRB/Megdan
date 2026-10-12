@@ -84,7 +84,8 @@ namespace GuardsDigital.Core.Setup
             IEnumerable<HexCoordinate> playerPlacementSpaces = null,
             IEnumerable<ModeHeroPlacement> roundStartPlacements = null,
             TeamSide defeatInsteadOfDiscardSide = TeamSide.None,
-            IEnumerable<KeyValuePair<HeroId, StandardMinionType>> minionCategoryHeroes = null)
+            IEnumerable<KeyValuePair<HeroId, StandardMinionType>> minionCategoryHeroes = null,
+            IEnumerable<HeroId> boardRequiredTurnHeroes = null)
         {
             UnavailableEndOfRoundStages = Array.AsReadOnly(
                 (unavailableEndOfRoundStages ?? Enumerable.Empty<EndOfRoundStage>()).Distinct().ToArray());
@@ -114,7 +115,21 @@ namespace GuardsDigital.Core.Setup
                     !Enum.IsDefined(typeof(StandardMinionType), pair.Value)))
                 throw new ArgumentException("Mode minion categories require defined identities and classes.", nameof(minionCategoryHeroes));
             MinionCategoryHeroes = new ReadOnlyDictionary<HeroId, StandardMinionType>(categories.ToDictionary(pair => pair.Key, pair => pair.Value));
+            BoardRequiredTurnHeroes = Array.AsReadOnly((boardRequiredTurnHeroes ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
+            if (BoardRequiredTurnHeroes.Any(hero => !hero.IsDefined))
+                throw new ArgumentException("Turn participation requires defined heroes.", nameof(boardRequiredTurnHeroes));
         }
+
+        /// <summary>These mode units participate only while on the board at commitment time.</summary>
+        public IReadOnlyList<HeroId> BoardRequiredTurnHeroes { get; }
+
+        public IEnumerable<HeroId> TurnHeroes(MatchParticipants participants,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            int roundIndex,
+            TurnCardCommitmentRestoreState state = null) => participants.Heroes.Select(hero => hero.Id)
+            .Where(hero => !BoardRequiredTurnHeroes.Contains(hero) || board.IsHeroOnBoard(hero) ||
+                (state != null && !RoundStartPlacements.Any(placement => placement.HeroId.Equals(hero) && placement.Round > roundIndex) &&
+                    (state.Commitments.Any(pair => pair.Key.Equals(hero)) || state.Passes.Contains(hero))));
 
         /// <summary>PVE-D30: additional targeting/effect category, never a second board identity or combat model.</summary>
         public IReadOnlyDictionary<HeroId, StandardMinionType> MinionCategoryHeroes { get; }

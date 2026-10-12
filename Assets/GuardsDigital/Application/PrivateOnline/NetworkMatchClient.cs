@@ -343,8 +343,10 @@ namespace GuardsDigital.Application
     /// record. While the session is not actionable the retained view is deliberately stripped of
     /// every offer and pending answer.
     /// </summary>
-    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel
+    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
     {
+        public IReadOnlyList<HeroId> OptionalTurnHeroIds =>
+            (trusted as IModeTurnRosterReadModel)?.OptionalTurnHeroIds ?? Array.Empty<HeroId>();
         private readonly IMatchReadModel trusted;
         private readonly MatchContentCatalogs catalogs;
         private NetworkSeatProjectionRecord wire;
@@ -1212,7 +1214,8 @@ namespace GuardsDigital.Application
                     trusted.Cards.Single(card => card.Id.Equals(id)))
                 .ToArray();
             return new RoundTurnSlot(
-                row.RoundIndex, row.TurnIndex, assignments, validationCards, Participants);
+                row.RoundIndex, row.TurnIndex, assignments, validationCards, Participants,
+                (trusted as IModeTurnRosterReadModel)?.OptionalTurnHeroIds);
         }
 
         private PlacedToken ToToken(NetworkTokenRow row)

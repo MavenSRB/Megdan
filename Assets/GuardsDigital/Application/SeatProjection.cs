@@ -150,7 +150,7 @@ namespace GuardsDigital.Application
                             definitions))
                     : assignment),
                 cards,
-                participants);
+                participants, slot.OptionalHeroIds);
 
         /// <summary>
         /// Milestone 9.32g. The colour every seat knows a facedown resting card has, though not which
@@ -950,8 +950,9 @@ namespace GuardsDigital.Application
     /// projection reports, so a client never decides its own legality and the two can never
     /// disagree.</para>
     /// </remarks>
-    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel
+    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
     {
+        public IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
         private readonly SeatPendingSurface pending;
         private readonly IReadOnlyList<CardInstance> visibleCards;
 
@@ -974,6 +975,7 @@ namespace GuardsDigital.Application
             long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null)
         {
             Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
+            OptionalTurnHeroIds = source.OptionalTurnHeroIds;
             TeammateMarkers = teammateMarkers ?? Array.Empty<TeammateMarker>();
             CoordinationRevision = coordinationRevision;
             CoordinationGeneration = coordinationGeneration;

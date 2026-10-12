@@ -305,6 +305,7 @@ namespace GuardsDigital.Core.Cards
         {
             modeRules = rules;
             cardActions?.BindModeRules(rules);
+            RefreshModeTurnParticipants();
             if (rules == null || rules.UnavailableEndOfRoundStages.Count == 0)
             {
                 return;
@@ -341,6 +342,16 @@ namespace GuardsDigital.Core.Cards
         }
 
         public int RoundIndex { get; private set; }
+
+        private TurnCardCommitmentAuthority NewCommitmentAuthority() =>
+            new TurnCardCommitmentAuthority(instances, participants, modeRules?.TurnHeroes(participants, board, RoundIndex));
+
+        private void RefreshModeTurnParticipants()
+        {
+            if (modeRules != null && Phase == RoundResolutionPhase.AwaitingCommitments &&
+                CurrentCommitmentAuthority != null && !CurrentCommitmentAuthority.HasAnyResponse)
+                CurrentCommitmentAuthority = NewCommitmentAuthority();
+        }
 
         public int TurnIndex { get; private set; }
 
@@ -430,7 +441,7 @@ namespace GuardsDigital.Core.Cards
                     assignment.HeroId.Equals(owner)
                         ? new TurnCardAssignment(owner, handCard, false)
                         : assignment),
-                instances, participants);
+                instances, participants, modeRules?.BoardRequiredTurnHeroes);
             if (!CardLifecycleAuthority.TrySwapResolvedWithHand(oldCard, newCard))
                 return false;
             turnSlots[matching[0].index] = newSlot;
@@ -478,7 +489,7 @@ namespace GuardsDigital.Core.Cards
                 new RoundTurnSlot(slot.RoundIndex, slot.TurnIndex,
                     slot.Assignments.Select(assignment =>
                         assignment.HeroId.Equals(owner) ? replacement : assignment),
-                    instances, participants);
+                    instances, participants, modeRules?.BoardRequiredTurnHeroes);
             var firstReplacement = Replace(firstPosition.slot,
                 new TurnCardAssignment(owner, secondCard, false,
                     secondPosition.assignment.IsFacedown));
@@ -547,7 +558,7 @@ namespace GuardsDigital.Core.Cards
                                 assignment.CardInstanceId.Value.Equals(card)
                                 ? new TurnCardAssignment(owner, deckCard, false, incomingFacedown)
                                 : assignment),
-                        instances, participants)));
+                        instances, participants, modeRules?.BoardRequiredTurnHeroes)));
                 }
 
                 if (replacedSlots.Count != 1)
@@ -611,7 +622,7 @@ namespace GuardsDigital.Core.Cards
                 slot.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
                     ? new TurnCardAssignment(owner, partnerCard, false)
                     : assignment),
-                instances, participants);
+                instances, participants, modeRules?.BoardRequiredTurnHeroes);
             if (!CardLifecycleAuthority.TrySwapUnresolvedWithRestingCard(unresolved, partner))
                 return false;
             turnSlots[index] = replacement;
@@ -660,11 +671,11 @@ namespace GuardsDigital.Core.Cards
             var replacedCurrent = new RoundTurnSlot(current.RoundIndex, current.TurnIndex,
                 current.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
                     ? new TurnCardAssignment(owner, resolvedCard, false)
-                    : assignment), instances, participants);
+                    : assignment), instances, participants, modeRules?.BoardRequiredTurnHeroes);
             var replacedPrevious = new RoundTurnSlot(previous.RoundIndex, previous.TurnIndex,
                 previous.Assignments.Select(assignment => assignment.HeroId.Equals(owner)
                     ? new TurnCardAssignment(owner, unresolvedCard, false)
-                    : assignment), instances, participants);
+                    : assignment), instances, participants, modeRules?.BoardRequiredTurnHeroes);
             if (!CardLifecycleAuthority.TrySwapUnresolvedWithResolvedCard(unresolved, resolved))
                 return false;
             turnSlots[currentIndex] = replacedCurrent;
@@ -712,7 +723,7 @@ namespace GuardsDigital.Core.Cards
                         assignment.HeroId.Equals(owner)
                             ? new TurnCardAssignment(owner, itemCard, false)
                             : assignment),
-                    instances, participants);
+                    instances, participants, modeRules?.BoardRequiredTurnHeroes);
             }
             if (!HeroItems.TrySwapItemWithCard(
                 oldItemCard, newItemCard, definitions))
@@ -1146,6 +1157,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             var begun = new List<RoundResolutionEvent>();
+            RefreshModeTurnParticipants();
             begun.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
             return RoundResolutionResult.Accept(begun);
         }
@@ -1173,6 +1185,7 @@ namespace GuardsDigital.Core.Cards
             // Milestone 7.5. What the answered upgrade did is reported before where the transition now
             // is, so the stream reads in the order the round happened.
             var events = wasLevelUp ? DrainLevelUpEvents() : new List<RoundResolutionEvent>();
+            RefreshModeTurnParticipants();
             events.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
             if (wasLevelUp)
             {
@@ -1720,6 +1733,7 @@ namespace GuardsDigital.Core.Cards
         public bool CanCommitTwoCards(HeroId heroId) =>
             Phase == RoundResolutionPhase.AwaitingCommitments &&
             board != null && board.IsHeroOnBoard(heroId) &&
+            CurrentCommitmentAuthority.ExpectedHeroIds.Contains(heroId) &&
             CurrentCommitmentAuthority.GetStatus(heroId) == TurnCardCommitmentStatus.AwaitingResponse &&
             CurrentUltimates().Ultimates.Any(ultimate =>
                 ultimate.OwnerId.Equals(heroId) &&
@@ -2864,7 +2878,7 @@ namespace GuardsDigital.Core.Cards
             preMinionBattleTriggersVisited = false;
             CurrentEndOfRoundStage = null;
             CurrentTurnAuthority = null;
-            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);
+            CurrentCommitmentAuthority = NewCommitmentAuthority();
             Phase = RoundResolutionPhase.AwaitingCommitments;
             events.Add(RoundResolutionEvent.CompletedRoundBoundary(
                 RoundResolutionEventKind.NextRoundStarted,
@@ -3000,7 +3014,7 @@ namespace GuardsDigital.Core.Cards
                         CurrentCommitmentAuthority.GetRevealedCardInstanceId(heroId),
                         CurrentCommitmentAuthority.GetStatus(heroId) == TurnCardCommitmentStatus.Passed)),
                 instances,
-                participants);
+                participants, modeRules?.BoardRequiredTurnHeroes);
             turnSlots.Add(slot);
             events.Add(RoundResolutionEvent.SlotRecorded(slot));
 
@@ -3084,7 +3098,7 @@ namespace GuardsDigital.Core.Cards
 
             TurnIndex++;
             CurrentTurnAuthority = null;
-            CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);
+            CurrentCommitmentAuthority = NewCommitmentAuthority();
             Phase = RoundResolutionPhase.AwaitingCommitments;
             events.Add(RoundResolutionEvent.Boundary(
                 RoundResolutionEventKind.TurnAdvanced,

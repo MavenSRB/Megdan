@@ -15,6 +15,14 @@ namespace GuardsDigital.Presentation.Match
             new HashSet<string>(StringComparer.Ordinal);
 
         private static Func<string, Texture2D> textureLoaderOverride;
+        private static IReadOnlyDictionary<CardDefinitionReference, string> modeResources;
+
+        /// <summary>Original-mode artwork stays separate from the verified official corpus.</summary>
+        public static void SetModeResources(IReadOnlyDictionary<CardDefinitionReference, string> resources)
+        {
+            modeResources = resources == null ? null :
+                new Dictionary<CardDefinitionReference, string>(resources);
+        }
 
         /// <summary>
         /// Installs a bounded texture provider. Tests use this to prove both artwork and clean-checkout
@@ -33,6 +41,11 @@ namespace GuardsDigital.Presentation.Match
             out string resourcePath)
         {
             resourcePath = string.Empty;
+            if (reference.IsDefined && modeResources != null && modeResources.TryGetValue(reference, out var modePath))
+            {
+                resourcePath = modePath;
+                return true;
+            }
             try
             {
                 if (!reference.IsDefined ||

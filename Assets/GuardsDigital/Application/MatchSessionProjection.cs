@@ -950,8 +950,14 @@ namespace GuardsDigital.Application
         }
     }
 
-    public sealed class MatchSessionProjection : IMatchReadModel, ICardValueReadModel
+    public interface IModeTurnRosterReadModel
     {
+        IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
+    }
+
+    public sealed class MatchSessionProjection : IMatchReadModel, ICardValueReadModel, IModeTurnRosterReadModel
+    {
+        public IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
         private readonly Lazy<string> diagnosticSnapshot;
         private readonly Lazy<IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry>> matchLog;
         private readonly AuthoritativeSnapshotCapture authoritativeCapture;
@@ -1109,8 +1115,10 @@ namespace GuardsDigital.Application
             IEnumerable<HeroDefenseModifierProjection> heroDefenseModifiers = null,
             IEnumerable<CardValuePreview> cardValues = null,
             IEnumerable<CardInstanceId> standingActiveEffectSourceCardInstanceIds = null,
-            IEnumerable<CardValuePreview> modeCardRuleValues = null)
+            IEnumerable<CardValuePreview> modeCardRuleValues = null,
+            IEnumerable<HeroId> optionalTurnHeroIds = null)
         {
+            OptionalTurnHeroIds = Array.AsReadOnly((optionalTurnHeroIds ?? Array.Empty<HeroId>()).ToArray());
             Version = version;
             CardValues = Array.AsReadOnly((cardValues ?? Array.Empty<CardValuePreview>()).ToArray());
             ModeCardRuleValues = Array.AsReadOnly((modeCardRuleValues ?? Array.Empty<CardValuePreview>()).ToArray());
@@ -1808,7 +1816,7 @@ namespace GuardsDigital.Application
 
         public MatchCommitmentProjection GetCommitment(HeroId heroId)
         {
-            return Commitments.Single(value => value.HeroId.Equals(heroId));
+            return Commitments.FirstOrDefault(value => value.HeroId.Equals(heroId));
         }
 
         /// <summary>

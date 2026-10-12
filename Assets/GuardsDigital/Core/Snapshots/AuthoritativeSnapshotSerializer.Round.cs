@@ -171,7 +171,7 @@ namespace GuardsDigital.Core.Snapshots
 
                 return new GuardsDigital.Core.Rules.Victory.TeamVictoryTally(teamId, count, threshold);
             });
-            var slots = ReadSlots(reader, cards, participants);
+            var slots = ReadSlots(reader, cards, participants, modeRules);
             var heroDefeats = ReadHeroDefeatHistory(reader);
             var resolvedCurrentTurn = ReadMany(reader, "current-turn resolved heroes", () =>
                 new HeroId(reader.ReadString()));
@@ -188,7 +188,7 @@ namespace GuardsDigital.Core.Snapshots
                 var completedIndex = reader.ReadInt32();
                 return new CompletedRoundRecord(
                     completedIndex,
-                    ReadSlots(reader, cards, participants),
+                    ReadSlots(reader, cards, participants, modeRules),
                     ReadOutcomes(reader));
             });
             var stage = SnapshotEnumReader.ReadNullable<EndOfRoundStage>(reader, "current end-of-round stage");
@@ -256,7 +256,9 @@ namespace GuardsDigital.Core.Snapshots
             TurnCardCommitmentAuthority commitment = null;
             if (reader.ReadBoolean())
             {
-                commitment = TurnCardCommitmentAuthority.Restore(cards, participants, ReadCommitment(reader));
+                var state = ReadCommitment(reader);
+                commitment = TurnCardCommitmentAuthority.Restore(cards, participants, state,
+                    modeRules?.TurnHeroes(participants, board, roundIndex, state));
             }
 
             CardActionResolutionAuthority cardActions = null;

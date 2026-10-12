@@ -144,7 +144,8 @@ namespace GuardsDigital.Core.Cards
 
         public TurnCardCommitmentAuthority(
             IEnumerable<CardInstance> instances,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            IEnumerable<HeroId> participatingHeroes = null)
         {
             if (instances == null)
             {
@@ -171,10 +172,12 @@ namespace GuardsDigital.Core.Cards
             }
 
             this.instances = Array.AsReadOnly(cards);
-            expectedHeroIds = Array.AsReadOnly(participants.Heroes
-                .Select(hero => hero.Id)
+            expectedHeroIds = Array.AsReadOnly((participatingHeroes ?? participants.Heroes.Select(hero => hero.Id))
                 .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
                 .ToArray());
+            if (expectedHeroIds.Count == 0 || expectedHeroIds.Distinct().Count() != expectedHeroIds.Count)
+                throw new ArgumentException("Turn participants must be nonempty and unique.", nameof(participatingHeroes));
+            foreach (var hero in expectedHeroIds) participants.GetHero(hero);
         }
 
         public bool IsRevealed { get; private set; }
@@ -211,10 +214,11 @@ namespace GuardsDigital.Core.Cards
         internal static TurnCardCommitmentAuthority Restore(
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            TurnCardCommitmentRestoreState state)
+            TurnCardCommitmentRestoreState state,
+            IEnumerable<HeroId> participatingHeroes = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
-            var authority = new TurnCardCommitmentAuthority(instances, participants);
+            var authority = new TurnCardCommitmentAuthority(instances, participants, participatingHeroes);
             foreach (var pair in state.Commitments)
             {
                 if (!authority.IsExpectedHero(pair.Key) || !pair.Value.IsDefined ||

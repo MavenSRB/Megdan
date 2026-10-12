@@ -230,7 +230,8 @@ namespace GuardsDigital.Pve.Composition
                             enemy.HeroId, enemy.Spawn.Round, ModeHeroPlacementKind.Designated, enemy.Spawn.Coordinate))),
                 defeatInsteadOfDiscardSide: TeamSide.Red,
                 minionCategoryHeroes: enemies.Where(enemy => enemy.Type.MinionCategory != StandardMinionType.None)
-                    .Select(enemy => new KeyValuePair<HeroId, StandardMinionType>(enemy.HeroId, enemy.Type.MinionCategory)));
+                    .Select(enemy => new KeyValuePair<HeroId, StandardMinionType>(enemy.HeroId, enemy.Type.MinionCategory)),
+                boardRequiredTurnHeroes: enemies.Select(enemy => enemy.HeroId));
 
         /// <summary>PVE-D27: playable setup requires three heroes; generic composition also supports small test fixtures.</summary>
         public static IReadOnlyList<string> ValidatePlayerSetup(PveEncounterSetup setup, PveEncounterDefinition encounter)

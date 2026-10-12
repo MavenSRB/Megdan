@@ -2,13 +2,11 @@
 
 Canonical owner for what PvE implements and how it reuses the existing game. Approved rules live in [PvE design](PVE_DESIGN.md); delivery and authorization live in [the PvE plan](../Roadmap/PVE.md) and the [brief](../SESSION_BRIEF.md). Return to [project index](../PROJECT_CONTEXT.md).
 
-## Assembly boundary (PVE-D01, amended PVE-D38)
-
 ## Saved match logs
 
 The shared PvE lobby attaches the existing gameplay narration recorder after final hero composition. The host saves player and automatic enemy events to `match-yyyyMMdd-HHmmss.log` beside the player log (persistent-data fallback); duplicate projection publications do not duplicate rows. Late disk failures disable narration without interrupting play. Host events reuse the shared privacy-safe diagnostic formatter. Public-metadata captures live in `Logs/online-runs` (`tmp/online-runs` in Editor), with one host capture and one per locally owned client seat. Leaving closes unfinished captures as aborted; a no-creep PvE ending uses `GD_EVIDENCE_MODE_END`, not a fabricated competitive victory or a PvP validation-gate declaration. No keys, endpoints, payloads or private hands enter these captures. W046's preserved package does not contain this source-only addition.
 
-## Assembly layout
+## Assembly boundary (PVE-D01, amended PVE-D38)
 
 PvE code lives outside `Assets/GuardsDigital`:
 
@@ -18,11 +16,13 @@ PvE code lives outside `Assets/GuardsDigital`:
 - `Assets/GuardsPve/Scenes/PveLauncher.unity` - the PvE executable's first scene. It is not in Build Settings.
 - `Assets/GuardsPve/Data~` - `enemies.json` and `encounter.json`. The `~` folder is not imported; the Editor reads it in place and the PvE build copies it to `PveData/` beside the executable.
 
-Every PvE assembly sets `autoReferenced: false`; runtime/test assemblies retain `UNITY_EDITOR || GUARDS_PVE`. W-045's unified player build supplies that define and copies `PveData/`, replacing the original separate-player inclusion policy under PVE-D38. Shared assemblies still never reference PvE. `PveSharedLobby.Register` registers the mode adapter before scene load through `PrivateLobbyMode`; the optional artifact runner starts only under its explicit smoke flag. No new Resources/StreamingAssets content is added.
+Every PvE assembly sets `autoReferenced: false`; runtime/test assemblies retain `UNITY_EDITOR || GUARDS_PVE`. W-045's unified player build supplies that define and copies `PveData/`, replacing the original separate-player inclusion policy under PVE-D38. Shared assemblies still never reference PvE. `PveSharedLobby.Register` registers the mode adapter before scene load through `PrivateLobbyMode`; the optional artifact runner starts only under its explicit smoke flag. W049 adds private enemy faces under `Resources/Private/PveCards`; no StreamingAssets content is added.
 
 The unified executable starts the existing match/lobby scene. The old PvE launcher scene, separate build entry and legacy smoke remain available for historical fixtures, not the unified player's front door. Preserved W024/W035 packages retain their original separate-launcher behavior.
 
 ## Additive shared hooks
+
+PVE-D40: `MatchModeRules.BoardRequiredTurnHeroes` identifies enemies whose presence gates turn participation. New commitment rosters exclude them while off the board, and scheduled placement refreshes an unanswered roster. There is no automatic Pass or hidden card resolution for an excluded enemy. A unit removed after committing retains that turn's response/history, then drops out next turn. Blue heroes retain normal defeat/respawn commitments. Trusted mode metadata permits omitted enemy assignments in turn slots, restores and owner/network projections; ordinary compositions still require every configured hero. No new serialized field is needed. Saved responses retain already-committed units through a mid-turn restore.
 
 Each hook is unused by every existing composition, which therefore behaves as before. The seeded existing-mode snapshot golden pins that.
 
@@ -51,6 +51,10 @@ Original-mode Defense riders may declare `CardTextTiming.AfterSuccessfulDefense`
 Under amended PVE-D30, Melee and Ranged count as both heroes and minions for targeting/effects; Heavy counts as hero only. Each enemy retains one Hero identity, normal enemy turns, cards, Defense and combat. Combined queries enumerate that identity once. The explicit `PveEnemyType.MinionCategory` is separate from token artwork, travels through editable content and co-op content identity, and binds through `MatchModeRules.MinionCategoryHeroes` on composition, restore and Undo. Existing-mode defaults add no category.
 
 Shared selectors, presence, attack filtering and continuous minion scopes consult the mode category. A minion-only effect output naming such an enemy carries its actual Hero value, never a fabricated MinionId; its consumers and snapshot validator require the trusted mode mapping. Unchanged High Voltage therefore selects and defeats Melee/Ranged through their existing hero defeat path, reads pre-removal adjacency and excludes Heavy from its minion choice. No card definition is changed for category support.
+
+## Generated enemy faces
+
+`PveEnemyArtwork` maps the fourteen W044 faces to exact enemy definition/revision identities through the shared `ConfiguredCardArtwork` prepared-face renderer, separately from the official verified-art catalog. Approved PNG bytes are copied unchanged from `tmp/w044-enemy-faces/final` into the ignored `Assets/Resources/Private/PveCards` folder. Their own aspect ratio is retained inside the normal card footprint. Twelve orange and two purple faces retain approved icons/text; shared preview and effect-glow layers remain in use. Tuned names, numbers, Skills, repeat flags or targeting priorities fail the baked-face guard and use the typed fallback; missing private artwork also falls back. No rules derive from artwork. These private assets are not publication-authorized or included in the preserved W046 package.
 
 ## Weak-attack fallback (W-034)
 
@@ -147,7 +151,7 @@ The separate launcher adds a Host/Join menu. A playing host and two joiners clai
 
 `PveCoopMatch` composes the encounter session behind a seat-serving host. The optional `MatchSeatPolicy` limits player seats to Blue, exposes Red's public cards, filters hero-owned commands and leaves continuation/Undo/team decisions with the mode. The null policy preserves existing-mode behavior. `PrivateSessionHost.SeatComposition` is an optional asymmetric seat-pick callback; ordinary PvP still uses `IDeferredMatchComposition` and the equal-team `HeroLineup` contract. `PveCoopLobby` owns transport pumping, host automation and the local player's ordinary online client. `PveEncounterView.AttachCoop` reads the online projection for map/rail status and gives shared-choice controls only to the local host.
 
-Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. The typed transition-description enum adds `HeroPlacement`, emitted only by the new PvE composition and decoded through the existing option payload. PvE co-op uses a distinct `pve-coop-3-<seed>` match-format identity and a digest including the PvE catalog and encounter data, so older enemy-choice/manual-grant builds, PvP, differing seeds and differing editable content cannot enter the same session. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
+Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. The typed transition-description enum adds `HeroPlacement`, emitted only by the new PvE composition and decoded through the existing option payload. PvE co-op uses `pve-coop-4-<seed>` and a digest including catalog/encounter data, separating board-gated enemy turn participation from older all-enemy commitment builds, PvP, differing seeds and editable content. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
 
 - **Launch.** The launcher loads and validates content, offers every configured hero (up to the number of placement spaces) and a seed, composes the encounter and loads the match scene with the external composition. The match then runs in the existing Director mode.
 - **Smoke.** `-guardsPveSmokeTest` composes a fixed three-hero encounter and reports `GUARDS_PVE_SMOKE: BEGIN`, `COMPOSED` and `PASS` (or `FAIL`), then quits with its exit code. The opt-in `-guardsPveCoopSmoke` path exercises the shipped lobby in three separate player processes and captures their boards; [the recipe](../Testing/PVE.md#build-gate) owns its bounded claims. Neither driver runs during normal play.

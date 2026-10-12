@@ -13,7 +13,7 @@ namespace GuardsDigital.Pve.Play
     /// <summary>PVE-D28. One authority, three owner-private player seats, host-owned enemies and team choices.</summary>
     public sealed class PveCoopMatch
     {
-        private const string FormatPrefix = "pve-coop-3-";
+        private const string FormatPrefix = "pve-coop-4-";
         public PveCoopMatch(PveComposedEncounter encounter)
         {
             Encounter = encounter ?? throw new ArgumentNullException(nameof(encounter));

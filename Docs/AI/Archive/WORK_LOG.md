@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-049 | Integrated fourteen generated private enemy faces with exact-content fallback guards and original card sizing; corrected square texture import while preserving source PNGs. Per user clarification, unspawned enemies have no commitments, passes or turn assignments until spawning; preserved wave timing, restore, partial network slots and default PvP. Focused engine/UI checks and visual review; source-only, W046 package/main unchanged. | `work/W-049` |
 | W-048 | Saved PvE host narration and public-metadata host/client captures using shared privacy/failure conventions; distinct original-mode ending, nonfatal disk failure and disposal checks. Source-only, W046 package/main preserved. | `work/W-048` |
 | W-047 | Approved PvE interaction cleanup: board-only initial placement, deterministic automatic enemy choices, no manual level grant or redundant panels, owned tray/token selection and automatic awaited-seat switching, compact header-free enemy rail and Blue-only shared end screen. Focused rules/network/UI regressions and visual review; source only, W046 package/main unchanged. | `work/W-047` |
 | W-046 | Explicit full-suite gate, fresh unified Windows package and local main integration. Fixed disabled-timer snapshot restore/equality and reconciled stale test contracts; all active failures closed. Exact-artifact local PvP/PvE, rendering, ZIP integrity and extracted launch verified; no remote publication. | `work/W-046` |
@@ -54,6 +55,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-049 Generated enemy faces and spawned-only turns
+
+Historical evidence: `work/W-049` commit body.
+
+Approved user request and clarifications 2026-10-12: replace synthetic enemy previews with all fourteen W044 private faces, retain original card scaling, and ignore unspawned enemies entirely until their scheduled placement rather than auto-passing them. Exact-content artwork mappings use the shared renderer and typed fallback; the existing importer preserves portrait proportions without changing source PNGs or layout dimensions. PVE-D40 excludes inactive enemies from commitments and turn slots, with trusted optional-roster metadata for snapshot/seat/network consumers and unchanged default PvP. T2 acceptance: exact mapping/fallback, all texture proportions, rendered Shield Up/Aim/Thick Hide and Aim glow, inactive command rejection/untouched cards/absent history, restore and wave entry, serialized partial slots and affected shared regressions. Review found no remaining in-scope defect. Dependency W048; source-only, no new build, main merge or remote publication. Private image reference: `C:/Users/sppet/AppData/Local/Temp/codex-clipboard-5d6cdda3-3513-4721-9bfc-98c9bc1f357b.png`.
 
 ### [x] W-048 Saved PvE logging parity
 

@@ -124,6 +124,7 @@ namespace GuardsDigital.Tests.Pve
                     "The received wire projection must not carry another player's initial private hand.");
             }
             var playerMoves = 0;
+            var checkedPartialTurn = false;
             for (var step = 0; step < 180 && rig.Match.Session.Status == PveEncounterStatus.Ongoing; step++)
             {
                 rig.Match.Session.RunAutomatic();
@@ -149,8 +150,24 @@ namespace GuardsDigital.Tests.Pve
                 }
                 foreach (var link in rig.Links)
                     Assert.That(link.Client.LatestProjection.Version, Is.EqualTo(rig.Match.Host.Version));
+                if (!checkedPartialTurn && rig.Match.Session.Projection.TurnSlots.Count > 0)
+                {
+                    foreach (var link in rig.Links)
+                    {
+                        var local = rig.Match.Host.ProjectionForSeat(link.Client.TargetSeat);
+                        var remote = new NetworkMatchReadModel(local,
+                            rig.Match.Encounter.InitialState.InitialConfiguration.ContentCatalogs,
+                            link.Client.LatestProjection, true);
+                        Assert.That(remote.TurnSlots[0].Assignments.Select(value => value.HeroId),
+                            Is.EquivalentTo(local.TurnSlots[0].Assignments.Select(value => value.HeroId)));
+                        Assert.That(remote.TurnSlots[0].Assignments.Count,
+                            Is.LessThan(remote.Participants.Heroes.Count), "Unspawned enemies are absent across the wire.");
+                    }
+                    checkedPartialTurn = true;
+                }
             }
             Assert.That(playerMoves, Is.GreaterThan(6));
+            Assert.That(checkedPartialTurn, Is.True);
             var returning = rig.Links[1];
             var seat = returning.Client.TargetSeat;
             rig.Server.OnDisconnected(returning.Ordinal);
