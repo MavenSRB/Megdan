@@ -32,6 +32,8 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 
 ## Play Mode
 
+Saved logging: `PveLoggingTests` checks nonfatal disk failure and writer disposal; shared `GameplayNarrationLogTests` and `PrivateOnlineEvidenceTests` cover narration and distinct original-mode closure. `PveSharedLobbyPlayModeTests` verifies persisted player/enemy rows, duplicate-publish suppression, key absence and cleanup on leaving.
+
 PVE-D39 cleanup: `PveCoopMatchTests` verifies typed owner-only `HeroPlacement`, retired manual-grant absence and format-3 identity. `PveEncounterFlowTests` and `PveHeavyTests` verify automatic legal enemy ties and restore; the existing control-boundary fixture protects Blue decisions. `PveSharedLobbyPlayModeTests` drives normal board placement, owned portrait/token selection, automatic next commitment/action selection, foreign-hero inspection and retained reconnect. `PveLauncherPlayModeTests` checks the header-free content-sized rail, larger numbers, board input and Blue-only shared terminal screen. Shared progression, existing-mode golden identity, board/prompt and projection consumers accompany these changes; no new full-suite or package claim follows from these focused checks.
 
 `Assets/Tests/PvePlayMode` holds `GuardsDigital.Pve.PlayModeTests` (namespace `GuardsDigital.Tests.Pve.PlayMode`). They load the launcher scene by path in play mode, because it is not in Build Settings. A request filter of `GuardsDigital.Tests.Pve.PlayMode` selects them. They cover:

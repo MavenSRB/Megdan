@@ -16,6 +16,24 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class PrivateOnlineEvidenceTests
     {
         [Test]
+        public void OriginalModeEndingIsDistinctFromCompetitiveVictoryAndClosesOnce()
+        {
+            var setup = PrivateSessionTestDriver.Compose();
+            var directory = Path.Combine(ProjectRoot(), "tmp", "w048-evidence-" + Guid.NewGuid().ToString("N"));
+            var capture = new PrivateOnlineEvidenceFile(directory, setup.Identity, AdmitFreshHost(setup),
+                PrivateOnlineEvidenceRole.Host, "");
+            capture.CompleteModeEnding(42, new[] { "blue-player-01", "blue-player-02", "blue-player-03" });
+            capture.CompleteModeEnding(42);
+            capture.Dispose();
+            var lines = File.ReadAllLines(capture.Path);
+            Assert.That(lines.Count(line => line.StartsWith("GD_EVIDENCE_MODE_END ")), Is.EqualTo(1));
+            Assert.That(lines.Any(line => line.StartsWith("GD_EVIDENCE_ABORT ")), Is.False);
+            Assert.That(lines.Any(line => line.StartsWith("GD_EVIDENCE_END ")), Is.False,
+                "Original-mode completion must not impersonate a competitive victory gate");
+            using (File.Open(capture.Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+        }
+
+        [Test]
         public void OnlineEvidenceBundleRejectsMixedRunIdentity()
         {
             var setup = PrivateSessionTestDriver.Compose();

@@ -28,9 +28,11 @@ namespace GuardsDigital.Pve.Presentation
         {
             public TcpSessionClientTransport Transport;
             public PrivateSessionClient Client;
+            public PrivateOnlineEvidenceFile Evidence;
+            public bool EvidenceUnavailable;
             public void Send(byte[] frame) => Transport?.Send(frame);
             public void Close() => Transport?.Close();
-            public void Dispose() { Client?.SendGoodbye(); Transport?.Dispose(); }
+            public void Dispose() { Client?.SendGoodbye(); Transport?.Dispose(); CloseCapture(Evidence); }
         }
 
         private readonly List<Connection> connections = new List<Connection>();
@@ -153,7 +155,7 @@ namespace GuardsDigital.Pve.Presentation
                     else if (e.Kind == TransportEventKind.StreamRejected) server.OnStreamRejected(e.Ordinal, e.Reason);
                 }
                 server.Sweep(now);
-                foreach (var e in server.DrainEvents()) Debug.Log("GUARDS_PVE_LOBBY: " + e.Kind);
+                foreach (var e in server.DrainEvents()) PrivateOnlineMarkers.LogHostEvent(e, server);
             }
             foreach (var connection in connections)
                 foreach (var e in connection.Transport.Drain())
@@ -196,6 +198,7 @@ namespace GuardsDigital.Pve.Presentation
                 projectionRevision = active.ProjectionRevision;
                 runtime.RefreshAll();
             }
+            CaptureSavedLogs();
         }
 
         private void Press(PrivateLobbyControl control, PrivateLobbyEntry pressed)
@@ -235,6 +238,7 @@ namespace GuardsDigital.Pve.Presentation
                 runtime = composed;
                 runtime.AttachOnlineClient(active);
                 runtime.LocalHeroSelection = SelectOwnedHero;
+                AttachSavedNarration();
                 PveEncounterView.AttachCoop(runtime, encounter, server == null ? null : match.Session,
                     command => { if (server.IsPaused) return; match.Session.Execute(command); server.RepublishProjections(); },
                     command => active.TrySubmitCommand(command, out _));
@@ -319,6 +323,7 @@ namespace GuardsDigital.Pve.Presentation
             if (runtime != null) runtime.LocalHeroSelection = null;
             foreach (var c in connections) c.Dispose();
             server?.Shutdown();
+            CloseSavedLogs();
             listener?.Dispose();
             if (document?.panelSettings != null) Destroy(document.panelSettings);
         }

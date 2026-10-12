@@ -14,11 +14,11 @@ Current private Windows package: **W046 Unified**, `Builds/Playtest-W046-unified
 
 ## Current authorization and next route
 
-- Last completed work: **W-047**.
-- Active authorized work: **None**.
-- Next proposed work: **W-048**.
+- Last completed work: **W-048**.
+- Active authorized work: **W-049**.
+- Next proposed work: **W-049**.
 
-W048 saved PvE logs and then W049 generated enemy faces/unspawned-turn investigation are explicitly approved; the serial sequence is recorded in current work.
+W048 saved PvE logs are implemented, source-only. W049 integrates generated enemy faces and excludes not-yet-spawned enemies from engine turn participation until spawning, as explicitly requested; the approved scope is recorded in current work.
 
 W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. This is source-only; W046 remains the delivered build and local `main` at `815a9f82`. No new package, main merge or remote push for W047.
 

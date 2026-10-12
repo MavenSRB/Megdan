@@ -75,6 +75,18 @@ namespace GuardsDigital.Network
             return values.Length == 0 ? "-" : string.Join(",", values);
         }
 
+        /// <summary>A mode ended without a competitive victory. Not a PvP gate declaration.</summary>
+        public void CompleteModeEnding(long version, IEnumerable<string> humanSeats = null)
+        {
+            if (closed) return;
+            if (Role == PrivateOnlineEvidenceRole.Host)
+                writer.WriteLine("GD_EVIDENCE_PARTICIPANTS human=" + Encode(Seats(humanSeats)) + " bot=-");
+            writer.WriteLine("GD_EVIDENCE_MODE_END run=" + Encode(RunId) + " process=" + process +
+                " version=" + version.ToString(CultureInfo.InvariantCulture));
+            closed = true;
+            writer.Dispose();
+        }
+
         public void Dispose()
         {
             if (closed) return;

@@ -30,10 +30,13 @@ namespace GuardsDigital.Presentation.Interaction
     /// on, because a game that refused to start over its own logging would be a worse failure than
     /// the one this closes.</para>
     /// </remarks>
-    internal static class GameplayNarrationFile
+    public static class GameplayNarrationFile
     {
-        public static GameplayNarrationRecorder TryOpen()
+        public static GameplayNarrationRecorder TryOpen() => TryOpen(out _);
+
+        public static GameplayNarrationRecorder TryOpen(out string openedPath)
         {
+            openedPath = null;
             try
             {
                 var directory = DirectoryBesideThePlayerLog();
@@ -47,13 +50,44 @@ namespace GuardsDigital.Presentation.Interaction
                 var stream = new FileStream(
                     path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                 PrivateOnlineMarkers.Log("GAMEPLAY_LOG path=" + path);
-                return new GameplayNarrationRecorder(new StreamWriter(stream));
+                openedPath = path;
+                return new GameplayNarrationRecorder(new FailureSafeWriter(new StreamWriter(stream)));
             }
             catch (Exception exception)
             {
                 PrivateOnlineMarkers.Log(
                     "GAMEPLAY_LOG_UNAVAILABLE reason=" + exception.GetType().Name);
                 return null;
+            }
+        }
+
+        // A full disk or a late I/O failure must not interrupt authoritative command publication.
+        private sealed class FailureSafeWriter : TextWriter
+        {
+            private TextWriter inner;
+            public FailureSafeWriter(TextWriter inner) { this.inner = inner; }
+            public override System.Text.Encoding Encoding => System.Text.Encoding.UTF8;
+            public override void WriteLine(string value) => Attempt(writer => writer.WriteLine(value));
+            public override void Flush() => Attempt(writer => writer.Flush());
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing) Attempt(writer => writer.Dispose());
+                inner = null;
+                base.Dispose(disposing);
+            }
+            private void Attempt(Action<TextWriter> action)
+            {
+                if (inner == null) return;
+                try { action(inner); }
+                catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
+                {
+                    var failed = inner;
+                    inner = null;
+                    try { failed.Dispose(); }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                    PrivateOnlineMarkers.Log("GAMEPLAY_LOG_UNAVAILABLE reason=" + exception.GetType().Name);
+                }
             }
         }
 
@@ -73,7 +107,7 @@ namespace GuardsDigital.Presentation.Interaction
         }
     }
 
-    internal static class PrivateOnlineMarkers
+    public static class PrivateOnlineMarkers
     {
         public const string Prefix = "GUARDS_ONLINE:";
 

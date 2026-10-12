@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-048 | Saved PvE host narration and public-metadata host/client captures using shared privacy/failure conventions; distinct original-mode ending, nonfatal disk failure and disposal checks. Source-only, W046 package/main preserved. | `work/W-048` |
 | W-047 | Approved PvE interaction cleanup: board-only initial placement, deterministic automatic enemy choices, no manual level grant or redundant panels, owned tray/token selection and automatic awaited-seat switching, compact header-free enemy rail and Blue-only shared end screen. Focused rules/network/UI regressions and visual review; source only, W046 package/main unchanged. | `work/W-047` |
 | W-046 | Explicit full-suite gate, fresh unified Windows package and local main integration. Fixed disabled-timer snapshot restore/equality and reconciled stale test contracts; all active failures closed. Exact-artifact local PvP/PvE, rendering, ZIP integrity and extracted launch verified; no remote publication. | `work/W-046` |
 | W-045 | User-approved unified Windows PvP/PvE executable: PvE under Map; shared Take Seats/hero picker, exactly three Blue seats with solo/two-/three-player ownership, automatic mode/seed adoption, forced coordination and hidden Experimental. Preserved owner command checks, host enemy/shared decisions and PvP flow. Focused source/UI checks, exact-artifact mode/ownership/network/board smokes and ZIP extraction verified. W044 faces excluded; no new external-network or packaged reconnect claim. | `work/W-045` |
@@ -54,7 +55,14 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
+### [x] W-048 Saved PvE logging parity
+
+Historical evidence: `work/W-048` commit body.
+
+Approved side-conversation request 2026-10-12: save PvE match narration and applicable host/client session diagnostics like PvP, using existing GameplayNarrationFile/AttachGameplayNarration and PrivateOnlineEvidenceFile capture, privacy and failure-handling conventions. Cover player and automatic enemy actions and writer cleanup with focused output tests. Dependency: W047 local commit. Outcome: shared recording integrated after hero composition, private captures and distinct original-mode closure; focused output/lifecycle checks passed. No new package or main merge.
+
 ### [x] W-047 Approved PvE popup removal and shared player interactions
+
 
 Historical evidence: `work/W-047` commit body.
 

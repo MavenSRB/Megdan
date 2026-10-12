@@ -4,6 +4,12 @@ Canonical owner for what PvE implements and how it reuses the existing game. App
 
 ## Assembly boundary (PVE-D01, amended PVE-D38)
 
+## Saved match logs
+
+The shared PvE lobby attaches the existing gameplay narration recorder after final hero composition. The host saves player and automatic enemy events to `match-yyyyMMdd-HHmmss.log` beside the player log (persistent-data fallback); duplicate projection publications do not duplicate rows. Late disk failures disable narration without interrupting play. Host events reuse the shared privacy-safe diagnostic formatter. Public-metadata captures live in `Logs/online-runs` (`tmp/online-runs` in Editor), with one host capture and one per locally owned client seat. Leaving closes unfinished captures as aborted; a no-creep PvE ending uses `GD_EVIDENCE_MODE_END`, not a fabricated competitive victory or a PvP validation-gate declaration. No keys, endpoints, payloads or private hands enter these captures. W046's preserved package does not contain this source-only addition.
+
+## Assembly layout
+
 PvE code lives outside `Assets/GuardsDigital`:
 
 - `Assets/GuardsPve/Rules` - `GuardsDigital.Pve`, engine-free (no Unity reference): content model and validation, seeded plan derivation, enemy card factory and encounter composer.

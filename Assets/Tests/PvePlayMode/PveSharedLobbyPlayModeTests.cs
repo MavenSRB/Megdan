@@ -11,6 +11,7 @@ using GuardsDigital.Network;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Pve.Presentation;
+using GuardsDigital.Pve.Play;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -34,6 +35,12 @@ namespace GuardsDigital.Tests.Pve.PlayMode
         private PrivateSessionClient remote;
         private static T Field<T>(object instance, string name) => (T)instance.GetType()
             .GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);
+        private static string ReadLive(string path)
+        {
+            using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Open,
+                System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+            using (var reader = new System.IO.StreamReader(stream)) return reader.ReadToEnd();
+        }
         private IEnumerator Until(Func<bool> predicate, string message)
         {
             var end = Time.realtimeSinceStartup + 30;
@@ -171,8 +178,37 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection.AuthorizedCommands.Any(c =>
                 c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.StartAction), "An owned action turn is automatically selected");
             Assert.That(runtime.Seat.HeroId, Is.EqualTo(runtime.ReadModel.SelectedActor.ActorId));
+            var authority = Field<PveCoopMatch>(lobby, "match");
+            var server = Field<PrivateSessionHost>(lobby, "server");
+            var enemyActed = false;
+            for (var step = 0; step < 200 && !enemyActed; step++)
+            {
+                var next = authority.Session.Peek();
+                enemyActed = next.Command?.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.StartAction;
+                var result = next.Kind == PveStepKind.Command ? authority.Session.Step(out _) :
+                    authority.Session.Execute(PvePassivePlayer.NextAnswer(authority.Session));
+                Assert.That(result.Accepted, Is.True, result.Detail);
+                server.RepublishProjections();
+                yield return null;
+            }
+            Assert.That(enemyActed, Is.True, "Saved output includes an automatic enemy action");
+            var narrationPath = Field<string>(lobby, "narrationPath");
+            Assert.That(System.IO.File.Exists(narrationPath), Is.True);
+            var saved = ReadLive(narrationPath);
+            Assert.That(saved, Does.Contain(GameplayNarrationLog.FormatVersion));
+            foreach (var row in authority.Session.Projection.MatchLog)
+                Assert.That(saved, Does.Contain("#" + row.Sequence + " " + row.Kind));
+            Assert.That(saved, Does.Not.Contain("shared-test"), "Never save the session key");
+            server.RepublishProjections();
+            Assert.That(ReadLive(narrationPath), Is.EqualTo(saved), "Duplicate publishes do not duplicate narration");
+            var capture = Field<PrivateOnlineEvidenceFile>(lobby, "hostEvidence");
+            Assert.That(ReadLive(capture.Path), Does.Contain("role=host"));
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot("tmp/w047-solo-shared-lobby.png");
+            Object.Destroy(lobby.gameObject);
+            yield return null;
+            using (System.IO.File.Open(narrationPath, System.IO.FileMode.Open, System.IO.FileAccess.ReadWrite, System.IO.FileShare.None)) { }
+            Assert.That(System.IO.File.ReadAllText(capture.Path), Does.Contain("GD_EVIDENCE_ABORT"), "Unfinished session closes its capture");
         }
 
         [UnityTearDown]
