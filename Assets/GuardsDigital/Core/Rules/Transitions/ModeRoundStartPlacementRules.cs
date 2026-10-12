@@ -24,7 +24,7 @@ namespace GuardsDigital.Core.Rules.Transitions
     /// (<see cref="MatchModeRules.PlacementTransitionId"/>), so these rules hold no round state and
     /// restore with nothing but the board.</para>
     /// </remarks>
-    public sealed class ModeRoundStartPlacementRules : ISystemTransitionStepRules
+    public sealed class ModeRoundStartPlacementRules : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
     {
         private const string ItemPrefix = "mode-place:";
         private const string OptionPrefix = "space:";
@@ -134,6 +134,20 @@ namespace GuardsDigital.Core.Rules.Transitions
             }
 
             Commit(heroId, space);
+        }
+
+        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep)
+        {
+            if (pendingStep == null || !MatchModeRules.TryReadPlacementRound(pendingStep.DefinitionId, out _) ||
+                !pendingStep.StepId.Equals(MatchModeRules.PlacementStepId) ||
+                !TryReadItem(pendingStep.OpenItems.Single().ItemId, out var hero)) return null;
+            return new SystemTransitionStepDescription(SystemTransitionPromptKind.HeroPlacement,
+                pendingStep, hero, pendingStep.Options.Select(option =>
+                {
+                    if (!TryReadOption(option, out var space)) throw new InvalidOperationException("Invalid placement option.");
+                    return SystemTransitionOptionDescription.PlaceHero(option, space,
+                        board.MapDefinition.Spaces.Single(value => value.Coordinate.Equals(space)).Id);
+                }));
         }
 
         /// <summary>The spaces a scheduled hero may be placed on now, in a stable order.</summary>

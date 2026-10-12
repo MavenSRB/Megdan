@@ -39,6 +39,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IVictoryScreenView view;
         private IMatchReadModel lastProjection;
         private VictoryScreenViewModel lastViewModel;
+        private Func<IMatchReadModel, VictoryScreenViewModel> modeEnding;
 
         /// <summary>The Director-shaped constructor, composing the Director's own client.</summary>
         public VictoryScreenPresenter(IMatchSession session, IVictoryScreenView view)
@@ -55,6 +56,13 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The screen currently drawn, or null while the match is still being played.</summary>
         public VictoryScreenViewModel Model => lastViewModel;
 
+        /// <summary>Optional mode-owned terminal policy; null retains the ordinary victory rules.</summary>
+        public Func<IMatchReadModel, VictoryScreenViewModel> ModeEnding
+        {
+            get => modeEnding;
+            set { modeEnding = value; lastProjection = null; }
+        }
+
         public void Refresh() => view.Render(GetOrCreateViewModel(session.Projection));
 
         private VictoryScreenViewModel GetOrCreateViewModel(IMatchReadModel projection)
@@ -65,7 +73,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             lastProjection = projection;
-            lastViewModel = Derive(projection);
+            lastViewModel = ModeEnding == null ? Derive(projection) : ModeEnding(projection);
             return lastViewModel;
         }
 
@@ -98,33 +106,7 @@ namespace GuardsDigital.Presentation.Match
             var lines = setupHeroes
                 .Select(hero => new Line(projection, hero.HeroId, hero.TeamSide, hero.ContentId, hero.DisplayName))
                 .ToArray();
-            var best = VictoryScreenLabels.Columns.ToDictionary(
-                column => column,
-                column =>
-                {
-                    // Deaths is never marked: the mark says "led the column", and the hero defeated
-                    // most often led nothing. The mockup the user approved marks no Deaths cell.
-                    if (column == VictoryScreenColumn.Deaths)
-                    {
-                        return int.MinValue;
-                    }
-
-                    var highest = lines.Max(line => line.Value(column));
-                    // A column nothing happened in has no leader: "joint best at nothing" is a fact
-                    // about the match rather than about a player.
-                    return highest > 0 ? highest : int.MinValue;
-                });
-
-            var rows = lines.ToDictionary(
-                line => line.HeroId,
-                line => new VictoryScreenRowViewModel(
-                    line.HeroId,
-                    line.TeamSide,
-                    line.ContentId,
-                    line.DisplayName,
-                    line.Worth,
-                    VictoryScreenLabels.Columns.Select(column => new VictoryScreenCellViewModel(
-                        column, line.Value(column), line.Value(column) == best[column]))));
+            var rows = BuildRows(lines);
 
             var blocks = new List<VictoryScreenBlockViewModel>();
             string bannerName;
@@ -191,6 +173,66 @@ namespace GuardsDigital.Presentation.Match
                 // in the status line cannot be two different readings of the same ending.
                 VictoryCauseLabels.Describe(outcome.Cause).ToUpperInvariant(),
                 blocks);
+        }
+
+        private static IReadOnlyDictionary<HeroId, VictoryScreenRowViewModel> BuildRows(Line[] lines)
+        {
+            var best = VictoryScreenLabels.Columns.ToDictionary(
+                column => column,
+                column =>
+                {
+                    // Deaths is never marked: the mark says "led the column", and the hero defeated
+                    // most often led nothing. The mockup the user approved marks no Deaths cell.
+                    if (column == VictoryScreenColumn.Deaths)
+                    {
+                        return int.MinValue;
+                    }
+
+                    var highest = lines.Max(line => line.Value(column));
+                    // A column nothing happened in has no leader: "joint best at nothing" is a fact
+                    // about the match rather than about a player.
+                    return highest > 0 ? highest : int.MinValue;
+                });
+
+            var rows = lines.ToDictionary(
+                line => line.HeroId,
+                line => new VictoryScreenRowViewModel(
+                    line.HeroId,
+                    line.TeamSide,
+                    line.ContentId,
+                    line.DisplayName,
+                    line.Worth,
+                    VictoryScreenLabels.Columns.Select(column => new VictoryScreenCellViewModel(
+                        column, line.Value(column), line.Value(column) == best[column]))));
+            return rows;
+        }
+
+        /// <summary>Shared scoreboard presentation for an original mode's already-decided ending.</summary>
+        public static VictoryScreenViewModel DeriveModeEnding(IMatchReadModel projection, TeamSide playerSide, string modeCause)
+        {
+            if (projection.Outcome.HasEnded)
+            {
+                var ordinary = Derive(projection);
+                var visible = ordinary?.Blocks.Where(block => block.TeamSide == playerSide).ToArray();
+                if (visible == null || visible.Length == 0) return null;
+                var won = visible.Any(block => block.Kind == VictoryScreenBlockKind.Winners ||
+                    block.Kind == VictoryScreenBlockKind.SoloWinner);
+                return new VictoryScreenViewModel(projection.Version, ordinary.Cause, ordinary.HasSoloWinner,
+                    won ? ordinary.BannerText : VictoryScreenLabels.TeamName(playerSide).ToUpperInvariant() + " DEFEATED",
+                    playerSide == TeamSide.Blue ? MatchHudTheme.TeamBlue : MatchHudTheme.TeamRed, ordinary.CauseText, visible);
+            }
+            var lines = projection.Setup.Heroes.Where(hero => hero.TeamSide == playerSide)
+                .Select(hero => new Line(projection, hero.HeroId, hero.TeamSide, hero.ContentId, hero.DisplayName)).ToArray();
+            if (lines.Length == 0) return null;
+            var rows = BuildRows(lines);
+            var block = new VictoryScreenBlockViewModel(VictoryScreenBlockKind.Defeated,
+                playerSide, VictoryScreenLabels.TeamHeader(playerSide),
+                VictoryScreenLabels.DefeatedTag, lines.Select(line => rows[line.HeroId]));
+            return VictoryScreenViewModel.ForModeEnding(projection.Version,
+                VictoryScreenLabels.TeamName(playerSide).ToUpperInvariant() + " DEFEATED",
+                playerSide == TeamSide.Blue ? MatchHudTheme.TeamBlue : MatchHudTheme.TeamRed,
+                modeCause,
+                new[] { block });
         }
 
         /// <summary>The sides that have heroes on them, other than <paramref name="side"/>, in setup order.</summary>

@@ -4,6 +4,9 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Rules.Transitions;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -48,13 +51,13 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(predicate(), Is.True, message);
             yield return null;
         }
-        private static void Click(Button button)
+        private static void Click(VisualElement button)
         {
             Assert.That(button, Is.Not.Null);
             Assert.That(button.enabledInHierarchy, Is.True);
             var point = button.worldBound.center;
             var picked = button.panel.Pick(point);
-            Assert.That(picked == button || button.Contains(picked), Is.True, "Pointer reachable: " + button.text);
+            Assert.That(picked == button || button.Contains(picked), Is.True, "Pointer reachable: " + button.name);
             using (var down = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, mousePosition = point, button = 0, clickCount = 1 }))
             { down.target = picked; picked.SendEvent(down); }
             using (var up = PointerUpEvent.GetPooled(new Event { type = EventType.MouseUp, mousePosition = point, button = 0, clickCount = 1 }))
@@ -109,14 +112,67 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var runtime = Field<ConfiguredMatchSceneRuntime>(lobby, "runtime");
             Assert.That(runtime.InitialState.Experiments.TeammateCoordination, Is.True);
             var root = lobby.GetComponent<UIDocument>().rootVisualElement;
-            foreach (var button in root.Query<Button>().ToList().Where(b => b.name.StartsWith("pve-control-")))
+            Assert.That(root.Query<Button>().ToList().Any(b => b.name.StartsWith("pve-control-")), Is.False);
+            for (var placed = 0; placed < 3; placed++)
             {
-                Click(button);
-                Assert.That(runtime.Seat.Id.Value, Is.EqualTo(button.name.Substring("pve-control-".Length)));
-                Assert.That(((IExperimentalReadModel)runtime.ReadModel).Experiments.TeammateCoordination, Is.True);
+                yield return Until(() => runtime.ReadModel.PendingSystemTransitionStep != null &&
+                    runtime.ReadModel.DecisionContract?.Commands.Count > 0, "Owned placement is automatically selected");
+                var pending = runtime.ReadModel.PendingSystemTransitionStep;
+                var item = pending.OpenItems.Single();
+                Assert.That(ModeRoundStartPlacementRules.TryReadItem(item.ItemId, out var hero), Is.True);
+                Assert.That(runtime.Seat.HeroId, Is.EqualTo(hero));
+                Assert.That(ModeRoundStartPlacementRules.TryReadOption(item.Options[0], out var space), Is.True);
+                var tile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None).Single(t => t.Coordinate.Equals(space));
+                var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                Assert.That(pointer.TryHandlePointerRay(Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(tile.transform.position))), Is.True);
+                yield return Until(() => runtime.ReadModel.Heroes.Any(h => h.HeroId.Equals(hero)), "Placed hero replicated");
             }
+            yield return Until(() => runtime.ReadModel.PendingSystemTransitionStep == null, "Placement completes");
+            var heroes = runtime.InitialState.Setup.Heroes.Where(h => h.TeamSide == TeamSide.Blue).Select(h => h.HeroId).ToArray();
+            foreach (var hero in heroes.Reverse())
+            {
+                var select = runtime.LocalHeroSelection;
+                var invoked = false;
+                var accepted = false;
+                runtime.LocalHeroSelection = selected => { invoked = true; return accepted = select(selected); };
+                var rail = runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                    .Single(r => r.userData is HeroId id && id.Equals(hero));
+                Click(rail.Q("gd-hero-medallion"));
+                runtime.LocalHeroSelection = select;
+                Assert.That(invoked, Is.True, "Portrait routes through local selection");
+                Assert.That(accepted, Is.True, "Owned selection accepted: " + runtime.ReadModel.Phase + "/" + runtime.ReadModel.DecisionContract?.FamilyId);
+                Assert.That(runtime.Seat.HeroId, Is.EqualTo(hero));
+                yield return null; yield return null;
+                Assert.That(runtime.Seat.HeroId, Is.EqualTo(hero), "Manual actionable selection stays stable");
+            }
+            for (var committed = 0; committed < 2; committed++)
+            {
+                yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection.AuthorizedCommands.Any(c =>
+                    c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard) == true, "Current owner may commit");
+                var owner = Field<PrivateSessionClient>(lobby, "active");
+                var previous = runtime.Seat.HeroId;
+                var command = owner.LatestProjection.AuthorizedCommands.First(c =>
+                    c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard);
+                Assert.That(owner.TrySubmitCommand(command, out _), Is.True);
+                yield return Until(() => !runtime.Seat.HeroId.Equals(previous), "Commit automatically selects another unfinished owned hero");
+            }
+            // Map tokens select the same owned seat without replaying or submitting a rule command.
+            var firstHero = heroes[0];
+            var token = runtime.BoardView.HeroViews.Single(h => h.Occupancy.HeroId.Equals(firstHero));
+            var tokenPointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(tokenPointer.TryHandlePointerRay(Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(token.transform.position))), Is.True);
+            Assert.That(runtime.Seat.HeroId, Is.EqualTo(firstHero));
+            yield return null; yield return null; // Completed owners automatically return to the unfinished one.
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection.AuthorizedCommands.Any(c =>
+                c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard), "Remaining commitment owner");
+            var lastOwner = Field<PrivateSessionClient>(lobby, "active");
+            Assert.That(lastOwner.TrySubmitCommand(lastOwner.LatestProjection.AuthorizedCommands.First(c =>
+                c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard), out _), Is.True);
+            yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection.AuthorizedCommands.Any(c =>
+                c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.StartAction), "An owned action turn is automatically selected");
+            Assert.That(runtime.Seat.HeroId, Is.EqualTo(runtime.ReadModel.SelectedActor.ActorId));
             yield return new WaitForEndOfFrame();
-            ScreenCapture.CaptureScreenshot("tmp/w045-solo-shared-lobby.png");
+            ScreenCapture.CaptureScreenshot("tmp/w047-solo-shared-lobby.png");
         }
 
         [UnityTearDown]
@@ -166,7 +222,17 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(remote.TryChooseHero("hero-brogan"), Is.True);
             yield return Until(() => Field<ConfiguredMatchSceneRuntime>(lobby, "runtime") != null && remote.HasMatchStarted, "Two-player match starts");
             Assert.That(lobby.GetComponent<UIDocument>().rootVisualElement.Query<Button>().ToList()
-                .Count(b => b.name.StartsWith("pve-control-")), Is.EqualTo(2));
+                .Count(b => b.name.StartsWith("pve-control-")), Is.Zero);
+            var runtime = Field<ConfiguredMatchSceneRuntime>(lobby, "runtime");
+            var foreignHero = runtime.Host.Seats.Find(remote.TargetSeat).HeroId;
+            var selectedSeat = runtime.Seat.Id;
+            yield return null; yield return null;
+            var foreignRail = runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                .Single(r => r.userData is HeroId id && id.Equals(foreignHero));
+            Click(foreignRail.Q("gd-hero-medallion"));
+            Assert.That(runtime.Seat.Id, Is.EqualTo(selectedSeat), "Inspection never transfers the other player's authority");
+            Assert.That(runtime.HeroOverviewsView.CardInspection.Hero, Is.EqualTo(foreignHero));
+            runtime.HeroOverviewsView.CardInspection.Close();
             remoteTransport.Dispose(); remote.OnDisconnected();
             yield return Until(() => server.IsPaused, "Disconnect pauses authority");
             Assert.That(remote.BeginReconnect(), Is.True);

@@ -963,7 +963,8 @@ namespace GuardsDigital.Presentation.Match
                 SystemTransitionStepDescription description,
                 PendingDecisionContract contract)
         {
-            if (description == null || description.Kind != SystemTransitionPromptKind.LanePushRespawnPlace)
+            if (description == null || (description.Kind != SystemTransitionPromptKind.LanePushRespawnPlace &&
+                description.Kind != SystemTransitionPromptKind.HeroPlacement))
             {
                 return Array.Empty<SystemTransitionDestinationViewModel>();
             }

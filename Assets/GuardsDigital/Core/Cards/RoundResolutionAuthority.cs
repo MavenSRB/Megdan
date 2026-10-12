@@ -320,10 +320,8 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
-        /// W-022, PVE-D05/D12/D14. Whether a mode's transition may begin now. Both belong to a round's
-        /// start - the first turn's commitments, with nothing paused - and a placement additionally
-        /// to its own round before anyone has committed, a granted level to a hero who has not yet
-        /// committed and can rise.
+        /// PVE-D05/D12/D39. A mode placement belongs to its own round's first turn,
+        /// before anyone commits and with no other transition paused.
         /// </summary>
         public bool CanBeginModeTransition(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId definitionId)
@@ -339,10 +337,7 @@ namespace GuardsDigital.Core.Cards
                 return round == RoundIndex && !CurrentCommitmentAuthority.HasAnyResponse;
             }
 
-            return GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out var hero) &&
-                modeRules.LevelGrantHeroes.Contains(hero) &&
-                !CurrentCommitmentAuthority.HasHeroResponded(hero) &&
-                levelUp != null && levelUp.CanGrantLevel(hero);
+            return false;
         }
 
         public int RoundIndex { get; private set; }
@@ -1136,8 +1131,7 @@ namespace GuardsDigital.Core.Cards
             // W-022. A mode's transitions belong to a round's start; outside it they are refused as
             // a commitment-phase command would be.
             var isModeTransition =
-                GuardsDigital.Core.Setup.MatchModeRules.TryReadPlacementRound(definitionId, out _) ||
-                GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out _);
+                GuardsDigital.Core.Setup.MatchModeRules.TryReadPlacementRound(definitionId, out _);
             if (isModeTransition && !CanBeginModeTransition(definitionId))
             {
                 return RoundResolutionResult.Reject(RoundResolutionRejectionReason.NotAwaitingCommitments);
@@ -1151,10 +1145,7 @@ namespace GuardsDigital.Core.Cards
                 return RoundResolutionResult.Reject(TranslateTransitionRejection(result.RejectionReason));
             }
 
-            // W-022. A granted level reports what it did as a purchased one does.
-            var begun = GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(definitionId, out _)
-                ? DrainLevelUpEvents()
-                : new List<RoundResolutionEvent>();
+            var begun = new List<RoundResolutionEvent>();
             begun.Add(RoundResolutionEvent.SystemTransitionProgressed(RoundIndex, TurnIndex, result));
             return RoundResolutionResult.Accept(begun);
         }
@@ -2793,11 +2784,8 @@ namespace GuardsDigital.Core.Cards
         private bool IsPausedLevelUp() =>
             levelUp != null &&
             systemTransitions.PendingStep != null &&
-            (systemTransitions.PendingStep.DefinitionId.Equals(
-                    GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId) ||
-                // W-022. A mode's granted level pauses on the same upgrade answer.
-                GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(
-                    systemTransitions.PendingStep.DefinitionId, out _));
+            systemTransitions.PendingStep.DefinitionId.Equals(
+                GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId);
 
         /// <summary>
         /// The tail every end-of-round stage shares: report what the stage did, stop if it paused or

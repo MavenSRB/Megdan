@@ -258,8 +258,7 @@ namespace GuardsDigital.Core.Rules.Progression
         UltimateUnlocked = 4,
 
         /// <summary>
-        /// W-022, PVE-D14. A level a mode granted without a purchase; it spends nothing, and the
-        /// hero's p.15 upgrade follows exactly as after a purchased level.
+        /// Reserved historical event value for pre-PVE-D39 snapshots. No live rule emits it.
         /// </summary>
         LevelGranted = 5
     }
@@ -331,12 +330,6 @@ namespace GuardsDigital.Core.Rules.Progression
             HeroId heroId, HeroLevel level, CoinSpendOperation spend) =>
             new HeroLevelUpOutcome(
                 HeroLevelUpOutcomeKind.LevelPurchased, heroId, level, spend,
-                default, default, default, default, null);
-
-        /// <summary>W-022, PVE-D14. A level granted by a mode rather than bought.</summary>
-        public static HeroLevelUpOutcome LevelGranted(HeroId heroId, HeroLevel level) =>
-            new HeroLevelUpOutcome(
-                HeroLevelUpOutcomeKind.LevelGranted, heroId, level, default,
                 default, default, default, default, null);
 
         public static HeroLevelUpOutcome CardUpgraded(
@@ -475,12 +468,7 @@ namespace GuardsDigital.Core.Rules.Progression
 
             if (context.Step.Id.Equals(HeroLevelUpSystemTransition.PurchaseAndUpgradeStepId))
             {
-                // W-022, PVE-D14. A mode's per-hero grant shares this step and its answer; only how
-                // the level arrives differs.
-                return GuardsDigital.Core.Setup.MatchModeRules.TryReadLevelGrantHero(
-                        context.Definition.Id, out var grantedHero)
-                    ? ResolveGrantAndUpgrade(context, grantedHero)
-                    : ResolvePurchaseAndUpgrade(context);
+                return ResolvePurchaseAndUpgrade(context);
             }
 
             if (context.Step.Id.Equals(HeroLevelUpSystemTransition.GainItemsStepId))
@@ -632,54 +620,6 @@ namespace GuardsDigital.Core.Rules.Progression
         /// engine defect rather than a state: this step never begins a purchase while one is
         /// outstanding, so two would mean a purchase was completed without its consequence.
         /// </summary>
-        /// <summary>
-        /// W-022, PVE-D14. One level for one hero, raised without spending, followed by the same
-        /// Upgrade a Card answer (or Ultimate unlock) a purchased level is followed by. A hero with no
-        /// next level, or none it could complete, is granted nothing.
-        /// </summary>
-        private SystemTransitionStepResolution ResolveGrantAndUpgrade(
-            SystemTransitionStepContext context, HeroId heroId)
-        {
-            var completed = context.CompletedItemIds.Select(HeroLevelUpItem.Read).ToArray();
-            if (TryFindOutstandingPurchase(completed, heroId, out var level))
-            {
-                if (TryResolveOutstandingUltimate(heroId, level, out var unlocked))
-                {
-                    return unlocked;
-                }
-
-                return SystemTransitionStepResolution.PausedOn(new[] { OpenUpgradeItem(heroId, level) });
-            }
-
-            if (completed.Any(item => item.HeroId.Equals(heroId) && item.Kind == HeroLevelUpItemKind.Purchase))
-            {
-                return SystemTransitionStepResolution.Completed;
-            }
-
-            RequireBinding();
-            var current = levels.GetLevel(heroId);
-            if (!HeroLevelSchedule.HasNextLevel(current) ||
-                UltimateUnlockQuery.Derive(definitions, instances).IsUnlockedFor(heroId) ||
-                !CanCompletePurchase(heroId) ||
-                !levels.TryRaiseLevel(heroId, out var raised))
-            {
-                return SystemTransitionStepResolution.Completed;
-            }
-
-            outcomes.Add(HeroLevelUpOutcome.LevelGranted(heroId, raised));
-            return SystemTransitionStepResolution.ItemCompleted(
-                new HeroLevelUpItem(heroId, raised, HeroLevelUpItemKind.Purchase).ToItemId());
-        }
-
-        /// <summary>
-        /// W-022. Whether a granted level could start for this hero now: it has a next level, its
-        /// Ultimate is not unlocked and p.15's upgrade could be completed.
-        /// </summary>
-        public bool CanGrantLevel(HeroId heroId) =>
-            IsBound &&
-            HeroLevelSchedule.HasNextLevel(levels.GetLevel(heroId)) &&
-            !UltimateUnlockQuery.Derive(definitions, instances).IsUnlockedFor(heroId) &&
-            CanCompletePurchase(heroId);
 
         private static bool TryFindOutstandingPurchase(
             IReadOnlyList<HeroLevelUpItem> completed,

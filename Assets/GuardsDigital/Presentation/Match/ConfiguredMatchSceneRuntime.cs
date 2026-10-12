@@ -522,6 +522,7 @@ namespace GuardsDigital.Presentation.Match
                 HeroOverviewsView?.SetHighlightedHero(heroId);
             if (HeroOverviewsView != null)
             {
+                HeroOverviewsView.LocalHeroSelection = hero => LocalHeroSelection?.Invoke(hero) == true;
                 HeroOverviewsView.HeroHighlighted += heroId =>
                     BoardView.SetHoveredHero(heroId);
                 HeroOverviewsView.HeroSelected += heroId => SelectViewedHero(heroId);
@@ -660,6 +661,9 @@ namespace GuardsDigital.Presentation.Match
                 own != null && own.Card.Equals(id), projection.SelectedMap.Reference, cardOwner: card.OwnerId, card: id, generation: experimental.CoordinationGeneration));
         }
 
+        /// <summary>Mode-supplied local owned-seat selection; null preserves ordinary inspection.</summary>
+        public Func<HeroId, bool> LocalHeroSelection { get; set; }
+
         public bool SelectViewedHero(HeroId heroId)
         {
             if (!HandsPresenter.SelectViewedHero(heroId))
@@ -674,6 +678,8 @@ namespace GuardsDigital.Presentation.Match
 
         private bool HandleBoardHeroViewIntent(HeroId heroId)
         {
+            // Board action/target handlers have already had precedence before this view intent.
+            if (LocalHeroSelection?.Invoke(heroId) == true) return true;
             // Milestone 9.80a. A player keeps the current token behaviour: the same full inspection
             // modal a tray click opens. The one host that deliberately took no seat instead gets the
             // earlier tray-pointing behaviour the user requested, while tray clicks remain owned by

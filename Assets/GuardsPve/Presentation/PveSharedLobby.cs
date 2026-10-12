@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Board;
@@ -47,8 +49,6 @@ namespace GuardsDigital.Pve.Presentation
         private PrivateLobbyModel model;
         private PrivateSessionClient active;
         private ConfiguredMatchSceneRuntime runtime;
-        private VisualElement seatControls;
-        private Label status;
         private string feedback = "", rendered = "";
         private long projectionRevision = -1;
         private bool loading;
@@ -84,15 +84,6 @@ namespace GuardsDigital.Pve.Presentation
             view = new PrivateLobbyUnityView();
             document.rootVisualElement.Add(view.Root);
             view.ControlPressed += Press;
-            seatControls = new VisualElement { name = "pve-owned-seat-controls" };
-            seatControls.style.position = Position.Absolute;
-            seatControls.style.right = 12;
-            seatControls.style.bottom = 12;
-            seatControls.style.backgroundColor = new Color(.04f, .06f, .09f, .95f);
-            document.rootVisualElement.Add(seatControls);
-            status = new Label();
-            status.style.color = Color.white;
-            status.style.whiteSpace = WhiteSpace.Normal;
         }
 
         private PveComposedEncounter Compose(IEnumerable<string> heroes) =>
@@ -199,13 +190,12 @@ namespace GuardsDigital.Pve.Presentation
                 nextStep = Time.unscaledTime + .45f;
                 if (match.Session.Step(out _)?.Accepted == true) server.RepublishProjections();
             }
+            SelectAwaitedOwner();
             if (projectionRevision != active.ProjectionRevision)
             {
                 projectionRevision = active.ProjectionRevision;
                 runtime.RefreshAll();
             }
-            status.text = server?.IsPaused == true ? "Paused — waiting for reconnect" :
-                active.State + " — " + HeroLabel(active);
         }
 
         private void Press(PrivateLobbyControl control, PrivateLobbyEntry pressed)
@@ -244,37 +234,57 @@ namespace GuardsDigital.Pve.Presentation
             {
                 runtime = composed;
                 runtime.AttachOnlineClient(active);
+                runtime.LocalHeroSelection = SelectOwnedHero;
                 PveEncounterView.AttachCoop(runtime, encounter, server == null ? null : match.Session,
                     command => { if (server.IsPaused) return; match.Session.Execute(command); server.RepublishProjections(); },
                     command => active.TrySubmitCommand(command, out _));
                 view.Root.style.display = DisplayStyle.None;
-                seatControls.Add(status);
-                foreach (var c in connections)
-                {
-                    var owner = c.Client;
-                    if (owner.GrantedSeat == null) continue;
-                    seatControls.Add(new Button(() => Switch(owner))
-                        { text = "Control " + HeroLabel(owner), name = "pve-control-" + owner.TargetSeat.Value });
-                }
-                seatControls.Add(new Button(Reconnect) { text = "Reconnect" });
-                seatControls.Add(new Button(Leave) { text = "Leave" });
             }, directorPlayerSide: TeamSide.Blue);
             SceneManager.LoadScene(PveLauncher.MatchSceneName);
         }
 
         private void Switch(PrivateSessionClient owner)
         {
+            if (ReferenceEquals(active, owner)) return;
             if (owner.State != PrivateSessionClientState.Seated || !owner.HasMatchStarted || owner.LatestProjection == null) return;
             active = owner;
             runtime.AttachOnlineClient(active);
             projectionRevision = -1;
         }
 
-        private static string HeroLabel(PrivateSessionClient owner)
+        private bool SelectOwnedHero(HeroId hero)
         {
-            var row = owner.Roster.FirstOrDefault(r => r.Seat.Equals(owner.TargetSeat));
-            return RegisteredHeroRoster.ForThisBuild.FirstOrDefault(h => h.HeroIdValue == row?.Hero.Value).DisplayName
-                ?? owner.TargetSeat.Value;
+            var projection = runtime.ReadModel;
+            // A tray/token never steals an unfinished board or card choice from its current owner.
+            if (projection.PendingSystemTransitionStep != null ||
+                (projection.DecisionContract != null && projection.Phase != RoundResolutionPhase.AwaitingCommitments)) return false;
+            // The admission grant predates hero pick; resolve the final composed seat identity.
+            var owner = connections.Select(c => c.Client).FirstOrDefault(c =>
+                runtime.Host.Seats.Find(c.TargetSeat)?.HeroId.Equals(hero) == true);
+            if (owner == null || owner.State != PrivateSessionClientState.Seated || owner.LatestProjection == null) return false;
+            Switch(owner);
+            return true;
+        }
+
+        private void SelectAwaitedOwner()
+        {
+            if (active?.IsWaitingForHost == true) return;
+            if (NeedsInput(active)) return; // Includes a manually selected unfinished commitment.
+            var next = connections.Select(c => c.Client).OrderBy(c => c.TargetSeat.Value, StringComparer.Ordinal)
+                .FirstOrDefault(NeedsInput);
+            if (next != null) Switch(next);
+        }
+
+        private bool NeedsInput(PrivateSessionClient owner)
+        {
+            var projection = owner?.LatestProjection;
+            if (owner?.State != PrivateSessionClientState.Seated || projection == null || owner.IsWaitingForHost ||
+                projection.AuthorizedCommands.Count == 0) return false;
+            if (projection.Phase == (int)RoundResolutionPhase.AwaitingCommitments &&
+                !projection.AuthorizedCommands.Any(c => c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.AnswerSystemTransitionStep))
+                return projection.Commitments.Any(c => c.HeroId == runtime.Host.Seats.Find(owner.TargetSeat).HeroId.Value &&
+                    c.Status == (int)TurnCardCommitmentStatus.AwaitingResponse);
+            return true;
         }
 
         private void Reconnect()
@@ -292,8 +302,10 @@ namespace GuardsDigital.Pve.Presentation
         private void ShowFailure()
         {
             view.Root.style.display = DisplayStyle.None;
-            seatControls.Add(new Label(feedback));
-            seatControls.Add(new Button(Leave) { text = "Back" });
+            var failure = new VisualElement { name = "pve-connection-failure" };
+            failure.Add(new Label(feedback));
+            failure.Add(new Button(Leave) { text = "Back" });
+            document.rootVisualElement.Add(failure);
         }
 
         private void Leave()
@@ -304,6 +316,7 @@ namespace GuardsDigital.Pve.Presentation
 
         private void OnDestroy()
         {
+            if (runtime != null) runtime.LocalHeroSelection = null;
             foreach (var c in connections) c.Dispose();
             server?.Shutdown();
             listener?.Dispose();

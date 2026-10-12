@@ -72,7 +72,6 @@ namespace GuardsDigital.Core.Setup
     public sealed class MatchModeRules
     {
         public const string PlacementTransitionPrefix = "mode-round-start-placement/round-";
-        public const string LevelGrantTransitionPrefix = "mode-grant-level/";
 
         public static readonly SystemTransitionStepId PlacementStepId =
             new SystemTransitionStepId("mode-round-start-placement-place");
@@ -84,7 +83,6 @@ namespace GuardsDigital.Core.Setup
             IEnumerable<HexCoordinate> respawnOverrideSpaces = null,
             IEnumerable<HexCoordinate> playerPlacementSpaces = null,
             IEnumerable<ModeHeroPlacement> roundStartPlacements = null,
-            IEnumerable<HeroId> levelGrantHeroes = null,
             TeamSide defeatInsteadOfDiscardSide = TeamSide.None,
             IEnumerable<KeyValuePair<HeroId, StandardMinionType>> minionCategoryHeroes = null)
         {
@@ -110,8 +108,6 @@ namespace GuardsDigital.Core.Setup
             if (RoundStartPlacements.Any(placement => placement.Kind == ModeHeroPlacementKind.PlayerChoice) &&
                 PlayerPlacementSpaces.Count == 0)
                 throw new ArgumentException("A player-chosen placement needs placement spaces.", nameof(playerPlacementSpaces));
-            LevelGrantHeroes = Array.AsReadOnly(
-                (levelGrantHeroes ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
             DefeatInsteadOfDiscardSide = defeatInsteadOfDiscardSide;
             var categories = (minionCategoryHeroes ?? Enumerable.Empty<KeyValuePair<HeroId, StandardMinionType>>()).ToArray();
             if (categories.Any(pair => !pair.Key.IsDefined || pair.Value == StandardMinionType.None ||
@@ -145,9 +141,6 @@ namespace GuardsDigital.Core.Setup
         /// <summary>PVE-D05/D12. The off-board heroes placed at a round's start, and how.</summary>
         public IReadOnlyList<ModeHeroPlacement> RoundStartPlacements { get; }
 
-        /// <summary>PVE-D14. Heroes that may be granted a level before their first commitment of a round.</summary>
-        public IReadOnlyList<HeroId> LevelGrantHeroes { get; }
-
         /// <summary>PVE-D19. The side whose forced discards take a Defense card or defeat it instead.</summary>
         public TeamSide DefeatInsteadOfDiscardSide { get; }
 
@@ -157,9 +150,6 @@ namespace GuardsDigital.Core.Setup
         public static SystemTransitionDefinitionId PlacementTransitionId(int round) =>
             new SystemTransitionDefinitionId(PlacementTransitionPrefix + round.ToString(CultureInfo.InvariantCulture));
 
-        public static SystemTransitionDefinitionId LevelGrantTransitionId(HeroId heroId) =>
-            new SystemTransitionDefinitionId(LevelGrantTransitionPrefix + heroId.Value);
-
         public static bool TryReadPlacementRound(SystemTransitionDefinitionId id, out int round)
         {
             round = 0;
@@ -168,31 +158,12 @@ namespace GuardsDigital.Core.Setup
                     CultureInfo.InvariantCulture, out round) && round >= 1;
         }
 
-        public static bool TryReadLevelGrantHero(SystemTransitionDefinitionId id, out HeroId heroId)
-        {
-            heroId = default;
-            if (!id.IsDefined || !id.Value.StartsWith(LevelGrantTransitionPrefix, StringComparison.Ordinal))
-                return false;
-            heroId = new HeroId(id.Value.Substring(LevelGrantTransitionPrefix.Length));
-            return heroId.IsDefined;
-        }
-
         /// <summary>The transitions this mode adds to a match's catalog.</summary>
         public IEnumerable<SystemTransitionDefinition> TransitionDefinitions =>
             PlacementRounds.Select(round => new SystemTransitionDefinition(
                     PlacementTransitionId(round),
                     "Round " + round.ToString(CultureInfo.InvariantCulture) + " Placement",
-                    new List<SystemTransitionStepDefinition> { SystemTransitionStepDefinition.Derived(PlacementStepId) }))
-                .Concat(LevelGrantHeroes.Select(hero => new SystemTransitionDefinition(
-                    LevelGrantTransitionId(hero),
-                    "Granted Level",
-                    new List<SystemTransitionStepDefinition>
-                    {
-                        SystemTransitionStepDefinition.Derived(
-                            GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.PurchaseAndUpgradeStepId),
-                        new SystemTransitionStepDefinition(
-                            GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.GainItemsStepId)
-                    })));
+                    new List<SystemTransitionStepDefinition> { SystemTransitionStepDefinition.Derived(PlacementStepId) }));
 
         public bool IsUnavailable(EndOfRoundStage stage) => UnavailableEndOfRoundStages.Contains(stage);
     }

@@ -108,6 +108,16 @@ Movement amendment (user 2026-10-12): Hurl's Move 1 fallback approaches the clos
 
 One executable hosts PvP or PvE through the existing PvP front door. PvE is selected under Map, then uses the same Take Seats and hero-selection screens for host and joiners. Keep exactly three Blue hero seats; one player may claim multiple seats, including all three for solo play. Replace the separate PvE launcher/menu. Hide Experimental when PvE is selected and force teammate coordination on for PvE; preserve ordinary PvP settings. Host remains responsible for enemy automation and shared choices. This is implementation authorization, not permission to change combat, enemy content or integrate private card-face previews.
 
+## PVE-D39 Shared interaction cleanup (Approved, user 2026-10-12)
+
+After W046, remove the persistent PvE round/turn/seed, ownership and control panels. Initial hero placement uses the shared legal board destinations and click path, as respawn does; no placement buttons. Enemy-only tied targets, movement, blocked spawns, Initiative and other enemy answers are chosen randomly from legal candidates by the host, deterministically from the encounter seed and recorded state. This supersedes player-chosen enemy ties in D10/D12/D20/D37; Blue-owned and Blue-team choices remain human decisions. Undo, restore and replay reproduce the same choice without client-side randomness.
+
+Remove the manual `+1 level` feature and its dedicated PvE offers/wiring (supersedes D14's manual grant). Preserve independently used shared progression and earned upgrades; do not change D03's disabled automatic round-end progression or D22's zero coin gains. Terminal presentation reuses the existing PvP end-game screen with only Blue heroes. No new victory condition is introduced by this presentation request.
+
+Remove the ENEMIES heading, keep the tiebreaker unobstructed, and slightly enlarge compact enemy-card numbers without changing miniature/tray dimensions, values or hero UI. Remove the in-match Control/Reconnect/Leave panel, retaining shared reconnection and cleanup machinery. Clicking an owned hero's tray/token selects that local seat; clicking another player's hero remains inspection. Card actions, meaningful board targeting and placement take precedence over switching. Automatically select an owned hero needing action, and advance commitment to the next owned unfinished hero in stable order; retain a manually selected hero while it can still act and avoid per-frame switching. Never transfer another player's authority.
+
+Closing checks: legal placement clicks and invalid-click refusal; deterministic enemy-only choices through replay/Undo/co-op; manual level-offer absence with ordinary progression intact; Blue-only terminal view; live tray/font/tiebreaker/hover layout; owned/manual/automatic seat selection and other-player inspection; no obsolete panels; existing-mode identity and directly affected UI/ownership regressions.
+
 ## Remaining open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

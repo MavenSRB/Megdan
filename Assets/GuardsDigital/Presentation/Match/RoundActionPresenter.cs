@@ -1146,7 +1146,8 @@ namespace GuardsDigital.Presentation.Match
             PendingDecisionContract contract,
             IMatchReadModel projection)
         {
-            if (description == null || description.Options.Count == 0)
+            if (description == null || description.Options.Count == 0 ||
+                description.Kind == SystemTransitionPromptKind.HeroPlacement)
             {
                 return null;
             }
@@ -2401,6 +2402,8 @@ namespace GuardsDigital.Presentation.Match
             var transitionStep = projection.PendingSystemTransitionStep;
             if (transitionStep != null)
             {
+                if (projection.PendingSystemTransitionDescription?.Kind == SystemTransitionPromptKind.HeroPlacement)
+                    return string.Empty;
                 return NarrationLabels.Own("LEVEL UP", "CHOOSE HOW TO PROCEED");
             }
 

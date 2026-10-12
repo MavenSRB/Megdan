@@ -24,7 +24,10 @@ namespace GuardsDigital.Core.Rules.Transitions
         LevelUpUpgrade = 1,
 
         /// <summary>Rulebook p.8's sidebar Place, for a minion whose Spawn point is blocked.</summary>
-        LanePushRespawnPlace = 2
+        LanePushRespawnPlace = 2,
+
+        /// <summary>An original mode's owner-chosen initial hero placement.</summary>
+        HeroPlacement = 3
     }
 
     /// <summary>
@@ -171,6 +174,12 @@ namespace GuardsDigital.Core.Rules.Transitions
                 default,
                 destination,
                 destinationSpaceId);
+
+        public static SystemTransitionOptionDescription PlaceHero(
+            SystemTransitionOptionId optionId, HexCoordinate destination, SpaceId destinationSpaceId) =>
+            new SystemTransitionOptionDescription(optionId, SystemTransitionPromptKind.HeroPlacement,
+                default, default, default, default, default, default, PrintedValueChannel.None,
+                default, destination, destinationSpaceId);
     }
 
     /// <summary>

@@ -52,8 +52,7 @@ namespace GuardsDigital.Core.Rules.Transitions
 
         /// <summary>
         /// W-022. The rules above plus a mode's: each round-start placement runs on
-        /// <see cref="ModeRoundStartPlacementRules"/> over the match's board, and each granted level on
-        /// the same <paramref name="levelUp"/> rules a purchased level uses. With no mode rules it is
+        /// <see cref="ModeRoundStartPlacementRules"/> over the match's board. With no mode rules it is
         /// exactly the rule set above.
         /// </summary>
         public static ISystemTransitionStepRules CreateRules(
@@ -72,13 +71,6 @@ namespace GuardsDigital.Core.Rules.Transitions
                 rules.AddRange(modeRules.PlacementRounds.Select(round =>
                     new KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>(
                         GuardsDigital.Core.Setup.MatchModeRules.PlacementTransitionId(round), placement)));
-            }
-
-            if (levelUp != null)
-            {
-                rules.AddRange(modeRules.LevelGrantHeroes.Select(hero =>
-                    new KeyValuePair<SystemTransitionDefinitionId, ISystemTransitionStepRules>(
-                        GuardsDigital.Core.Setup.MatchModeRules.LevelGrantTransitionId(hero), levelUp)));
             }
 
             return new SystemTransitionStepRuleSet(rules);

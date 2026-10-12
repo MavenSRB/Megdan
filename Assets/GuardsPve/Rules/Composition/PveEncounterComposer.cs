@@ -228,7 +228,6 @@ namespace GuardsDigital.Pve.Composition
                         .Where(enemy => enemy.Spawn.Round > 1)
                         .Select(enemy => new ModeHeroPlacement(
                             enemy.HeroId, enemy.Spawn.Round, ModeHeroPlacementKind.Designated, enemy.Spawn.Coordinate))),
-                levelGrantHeroes: heroes,
                 defeatInsteadOfDiscardSide: TeamSide.Red,
                 minionCategoryHeroes: enemies.Where(enemy => enemy.Type.MinionCategory != StandardMinionType.None)
                     .Select(enemy => new KeyValuePair<HeroId, StandardMinionType>(enemy.HeroId, enemy.Type.MinionCategory)));

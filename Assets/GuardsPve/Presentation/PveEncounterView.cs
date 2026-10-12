@@ -21,10 +21,8 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Pve.Presentation
 {
     /// <summary>
-    /// The PvE encounter on top of the existing match scene (PVE-D05/D10/D14/D16/D04): paces the
-    /// enemies' steps, shows each enemy's four-turn plan in a compact rail with its cards on
-    /// hover, offers the round-start placement and granted levels, asks the player to settle enemy
-    /// ties and reports the loss. Every command goes through the encounter session.
+    /// PVE-D39: paces enemy steps and draws their compact public cards. Placement and endings
+    /// use the shared scene surfaces; only Blue-owned shared choices require this host control.
     /// </summary>
     public sealed class PveEncounterView : MonoBehaviour
     {
@@ -52,9 +50,6 @@ namespace GuardsDigital.Pve.Presentation
         private UIDocument document;
         private VisualElement root;
         private VisualElement panel;
-        private Label status;
-        private Label promptBanner;
-        private Label message;
         private VisualElement actions;
         private readonly Dictionary<HeroId, VisualElement> enemyRows = new Dictionary<HeroId, VisualElement>();
         private readonly Dictionary<HeroId, Sprite> enemyArt = new Dictionary<HeroId, Sprite>();
@@ -62,18 +57,13 @@ namespace GuardsDigital.Pve.Presentation
         private ScrollView enemyRail;
         private const float EnemyRailTop = 110f;
         private const float EnemyRailBottomClearance = 330f;
-        private const float EnemyRailHeadingHeight = 24f;
         private const float EnemyRowHeight = 64f;
         private const float EnemyRowGap = 5f;
         private HeroOverviewsUnityView sharedEnemyView;
         private HeroOverviewsViewModel lastRailModel;
         private float nextStepAt;
         private float presentationWaitStartedAt = -1f;
-        private HeroId promptedEnemy;
-        private string lastActionText = string.Empty;
         private long renderedVersion = -1;
-        private string renderedPrompt;
-        private SeatId renderedSeat;
         private ConfiguredMatchHudRenderer hudRenderer;
 
         public PveEncounterSession Session => session;
@@ -110,6 +100,8 @@ namespace GuardsDigital.Pve.Presentation
 
         private void Build()
         {
+            runtime.VictoryScreenPresenter.ModeEnding = projection => PveEnemyController.IsLost(projection)
+                ? VictoryScreenPresenter.DeriveModeEnding(projection, TeamSide.Blue, "ALL FRIENDLY CREEPS WERE DEFEATED") : null;
             document = gameObject.AddComponent<UIDocument>();
             var authored = Resources.Load<PanelSettings>(ConfiguredMatchHudRenderer.RuntimePanelSettingsResourcePath);
             var settings = authored != null ? Instantiate(authored) : ScriptableObject.CreateInstance<PanelSettings>();
@@ -144,12 +136,7 @@ namespace GuardsDigital.Pve.Presentation
             rail.style.width = 264;
             rail.style.backgroundColor = new Color(0.08f, 0.05f, 0.05f, 0.94f);
             root.Add(rail);
-            var heading = Text(16, FontStyle.Bold, Color.white);
-            heading.text = "ENEMIES";
-            heading.style.height = EnemyRailHeadingHeight;
-            heading.style.flexShrink = 0;
-            heading.style.marginTop = heading.style.marginBottom = 0;
-            rail.Add(heading);
+
             enemyRail = rail;
             sharedEnemyView = new HeroOverviewsUnityView(() => ReadModel)
             {
@@ -162,43 +149,17 @@ namespace GuardsDigital.Pve.Presentation
                     enemyArt[enemy.HeroId] = StandardMinionArtCatalog.Load(TeamSide.Red, enemy.Type.TokenType.Value);
             runtime.BoardView.HeroHighlighted += OnBoardHeroHighlighted;
 
-            panel = new VisualElement { name = "pve-panel" };
+            // Only a genuine Blue-team choice may need host controls. No persistent PvE panel.
+            panel = new VisualElement { name = "pve-shared-choice" };
             panel.style.position = Position.Absolute;
             panel.style.left = 290;
             panel.style.top = 110;
-            panel.style.width = 420;
-            panel.style.backgroundColor = new Color(0.06f, 0.07f, 0.09f, 0.88f);
-            panel.style.paddingLeft = 10;
-            panel.style.paddingRight = 10;
-            panel.style.paddingTop = 8;
-            panel.style.paddingBottom = 8;
-            root.Add(panel);
-
-            status = Text(15, FontStyle.Bold, Color.white);
-            status.name = "pve-status";
-            panel.Add(status);
-            // W-026. An enemy's tie is the player's to settle (PVE-D10/D12/D20); this says so in so
-            // many words, so it never reads as a decision of the player's own hero.
-            promptBanner = Text(14, FontStyle.Bold, Color.black);
-            promptBanner.name = "pve-prompt-banner";
-            promptBanner.style.backgroundColor = new Color(1f, 0.62f, 0.15f, 1f);
-            promptBanner.style.paddingLeft = 6;
-            promptBanner.style.paddingRight = 6;
-            promptBanner.style.paddingTop = 3;
-            promptBanner.style.paddingBottom = 3;
-            promptBanner.style.marginTop = 4;
-            promptBanner.style.whiteSpace = WhiteSpace.Normal;
-            promptBanner.style.display = DisplayStyle.None;
-            panel.Add(promptBanner);
-            message = Text(13, FontStyle.Normal, new Color(1f, 0.85f, 0.4f));
-            message.name = "pve-message";
-            message.style.whiteSpace = WhiteSpace.Normal;
-            panel.Add(message);
-            actions = new VisualElement { name = "pve-actions" };
-            actions.style.flexDirection = FlexDirection.Row;
-            actions.style.flexWrap = Wrap.Wrap;
+            panel.style.display = DisplayStyle.None;
+            actions = new VisualElement();
             panel.Add(actions);
+            root.Add(panel);
         }
+
 
         private void Update()
         {
@@ -212,12 +173,11 @@ namespace GuardsDigital.Pve.Presentation
                     nextStepAt = Time.unscaledTime + StepSeconds;
                     if (result != null && result.Accepted)
                     {
-                        lastActionText = step.Note ?? step.Command.Kind.ToString();
                         runtime.RefreshAll();
                     }
                     else
                     {
-                        lastActionText = "Enemy step refused: " + result?.Detail;
+                        Debug.LogWarning("Enemy step refused: " + result?.Detail);
                         nextStepAt = Time.unscaledTime + 2f;
                     }
                 }
@@ -247,6 +207,8 @@ namespace GuardsDigital.Pve.Presentation
         private void LateUpdate()
         {
             if (runtime == null) return;
+            root.style.display = runtime.VictoryScreenView.Model == null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (runtime.VictoryScreenView.Model != null) return;
             RefreshEnemyRail();
             AdaptHudRails();
         }
@@ -325,7 +287,7 @@ namespace GuardsDigital.Pve.Presentation
                         var miniature = miniatures[index];
                         if (cards.Orange(planned[index].PlayedCard.DefinitionReference.DefinitionId) != null)
                             miniature.style.backgroundColor = new Color(0.9f, 0.44f, 0.09f);
-                        var initiative = Text(11, FontStyle.Bold, Color.black);
+                        var initiative = Text(13, FontStyle.Bold, Color.black);
                         initiative.name = "pve-plan-initiative";
                         initiative.text = planned[index].PlayedCard?.Face.Initiative?.AmountLabel ?? "-";
                         initiative.pickingMode = PickingMode.Ignore;
@@ -340,7 +302,7 @@ namespace GuardsDigital.Pve.Presentation
             }
             // Fit the live rows, retaining the existing hand clearance only as an overflow cap.
             var availableHeight = Mathf.Max(0f, root.resolvedStyle.height - EnemyRailTop - EnemyRailBottomClearance);
-            enemyRail.style.height = Mathf.Min(EnemyRailHeadingHeight + enemyRows.Count * (EnemyRowHeight + EnemyRowGap), availableHeight);
+            enemyRail.style.height = Mathf.Min(enemyRows.Count * (EnemyRowHeight + EnemyRowGap), availableHeight);
             enemyRail.style.display = enemyRows.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             sharedEnemyView.Root.style.width = root.resolvedStyle.width;
             sharedEnemyView.Root.style.height = root.resolvedStyle.height;
@@ -354,7 +316,7 @@ namespace GuardsDigital.Pve.Presentation
                 var state = standing ? (acting ? "Acting" : "On board") : defeated ? "Defeated" : "Spawn round " + enemy.Spawn.Round;
                 row.tooltip = enemy.DisplayName + " — " + state;
                 row.style.opacity = defeated && !standing ? 0.6f : 1f;
-                row.style.backgroundColor = acting || hoveredEnemy.Equals(enemy.HeroId) || promptedEnemy.Equals(enemy.HeroId)
+                row.style.backgroundColor = acting || hoveredEnemy.Equals(enemy.HeroId)
                     ? new Color(0.45f, 0.24f, 0.08f, 1f) : new Color(0.17f, 0.09f, 0.08f, 1f);
                 if (enemyArt.TryGetValue(enemy.HeroId, out var art))
                 {
@@ -418,7 +380,7 @@ namespace GuardsDigital.Pve.Presentation
                 miniature.style.marginLeft = 2;
                 miniature.style.opacity = available ? 1f : .35f;
                 miniature.userData = card.Id;
-                var value = Text(11, FontStyle.Bold, Color.white);
+                var value = Text(13, FontStyle.Bold, Color.white);
                 value.name = "pve-defense-value";
                 value.text = cards.Purple(card.DefinitionReference.DefinitionId).Defense.ToString();
                 value.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -436,116 +398,24 @@ namespace GuardsDigital.Pve.Presentation
 
         private void RenderPanel()
         {
-            var match = ReadModel;
-            var prompt = session?.CurrentPrompt;
-            var promptText = prompt?.Text;
-            var lost = PveEnemyController.IsLost(ReadModel);
-            status.text = lost
-                ? "ENCOUNTER LOST - every creep is defeated"
-                : $"PvE  Round {match.RoundIndex}  Turn {match.TurnIndex}  -  seed {encounter.Setup.Seed}";
-            status.style.color = lost ? new Color(1f, 0.4f, 0.35f) : Color.white;
-            promptedEnemy = prompt?.Enemy ?? default;
-            promptBanner.style.display = prompt == null || lost ? DisplayStyle.None : DisplayStyle.Flex;
-            promptBanner.text = prompt == null ? string.Empty : PromptBannerText(match, prompt);
-            var currentSeat = runtime.Seat?.Id ?? default;
-            if (renderedVersion == match.Version && renderedPrompt == promptText && renderedSeat.Equals(currentSeat) && !lost)
-            {
-                message.text = MessageFor(match, prompt);
-                return;
-            }
-
-            renderedVersion = match.Version;
-            renderedPrompt = promptText;
-            renderedSeat = currentSeat;
-            message.text = MessageFor(match, prompt);
+            var show = coop && session != null && !PveEnemyController.IsLost(ReadModel) &&
+                PveCoopMatch.IsSharedChoice(session.Projection) &&
+                session.Projection.DecisionOwner.TeamSide == TeamSide.Blue;
+            panel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
+            if (renderedVersion == session.Projection.Version) return;
+            renderedVersion = session.Projection.Version;
             actions.Clear();
-            if (lost)
+            foreach (var choice in session.Projection.DecisionContract.Commands)
             {
-                if (coop) return;
-                actions.Add(ActionButton("Restart (same seed)", () => { session.Restart(); runtime.RefreshAll(); }));
-                actions.Add(ActionButton("New setup", () => SceneManager.LoadScene(LauncherSceneName, LoadSceneMode.Single)));
-                return;
-            }
-
-            if (prompt != null)
-            {
-                foreach (var answer in prompt.Answers)
-                {
-                    var command = answer;
-                    actions.Add(ActionButton(AnswerLabel(match, prompt, command), () => Submit(command)));
-                }
-
-                return;
-            }
-
-            if (coop && session != null && session.Projection.DecisionContract != null &&
-                PveCoopMatch.IsSharedChoice(session.Projection))
-            {
-                foreach (var choice in session.Projection.DecisionContract.Commands)
-                {
-                    var command = choice;
-                    var owner = match.Cards.FirstOrDefault(card => card.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
-                    var label = command.Kind == DirectorCommandKind.ChooseTiedActor ? HeroName(match, owner) + " acts first" : command.Kind.ToString();
-                    actions.Add(ActionButton(label, () => Submit(command)));
-                }
-                return;
-            }
-            var pending = match.PendingSystemTransitionStep;
-            if (pending != null && MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _))
-            {
-                foreach (var item in pending.OpenItems.Where(value => value.ChoosingSide == TeamSide.Blue &&
-                    (!coop || (ModeRoundStartPlacementRules.TryReadItem(value.ItemId, out var owner) && runtime.Seat.Owns(owner)))))
-                {
-                    foreach (var option in item.Options)
-                    {
-                        var command = DirectorCommand.AnswerSystemTransitionStep(new SystemTransitionChoiceCommand(
-                            pending.InstanceId, pending.StepId, item.ItemId, TeamSide.Blue, option));
-                        actions.Add(ActionButton("Place at " + SpaceOf(option), () => Submit(command)));
-                    }
-                }
-
-                return;
-            }
-
-            if (pending == null && match.Phase == RoundResolutionPhase.AwaitingCommitments && match.TurnIndex == 1)
-            {
-                foreach (var hero in encounter.Heroes)
-                {
-                    if (coop && !runtime.Seat.Owns(hero)) continue;
-                    var commitment = match.Commitments.FirstOrDefault(value => value.HeroId.Equals(hero));
-                    if (!commitment.HeroId.IsDefined || commitment.Status != TurnCardCommitmentStatus.AwaitingResponse) continue;
-                    var level = match.HeroProgression.FirstOrDefault(value => value.HeroId.Equals(hero))?.Level ?? 1;
-                    var command = DirectorCommand.BeginSystemTransition(MatchModeRules.LevelGrantTransitionId(hero));
-                    if (!coop && session.Refusal(command) != null) continue;
-                    actions.Add(ActionButton($"+1 level {HeroName(match, hero)} (Lv {level})", () => Submit(command)));
-                }
+                var command = choice;
+                var owner = ReadModel.Cards.FirstOrDefault(card => card.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
+                var label = command.Kind == DirectorCommandKind.ChooseTiedActor
+                    ? HeroName(ReadModel, owner) + " acts first" : command.Kind.ToString();
+                actions.Add(ActionButton(label, () => Submit(command)));
             }
         }
 
-        private string PromptBannerText(IMatchReadModel match, PvePrompt prompt) =>
-            prompt.Enemy.IsDefined
-                ? "ENEMY DECISION - you choose for " + HeroName(match, prompt.Enemy).ToUpperInvariant()
-                : "ENEMY DECISION - you choose for the enemies";
-
-        private string MessageFor(IMatchReadModel match, PvePrompt prompt)
-        {
-            if (PveEnemyController.IsLost(ReadModel)) return "Undo or restart from the Director drawer, or use the buttons below.";
-            if (prompt != null) return prompt.Text;
-            var pending = match.PendingSystemTransitionStep;
-            if (pending != null && MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _))
-            {
-                var item = pending.OpenItems.FirstOrDefault(value => value.ChoosingSide == TeamSide.Blue);
-                if (item != null && ModeRoundStartPlacementRules.TryReadItem(item.ItemId, out var hero))
-                {
-                    return "Place " + HeroName(match, hero) + " on a placement space.";
-                }
-            }
-
-            if (coop) return "Your hero's choices are yours. The host resolves shared and enemy decisions.";
-            var next = session.Peek();
-            var acting = next.Kind == PveStepKind.Command ? "Enemies acting... " : "Your move. ";
-            return acting + lastActionText;
-        }
 
         private void Submit(DirectorCommand command)
         {
@@ -554,12 +424,12 @@ namespace GuardsDigital.Pve.Presentation
                 if (session != null && (session.CurrentPrompt != null ||
                     PveCoopMatch.IsSharedChoice(session.Projection)))
                     sharedSubmit(command);
-                else lastActionText = playerSubmit(command) ? string.Empty : "This choice is not currently available to your hero.";
+                else if (!playerSubmit(command)) Debug.LogWarning("This choice is not currently available to your hero.");
                 renderedVersion = -1;
                 return;
             }
             var result = session.Execute(command);
-            lastActionText = result.Accepted ? string.Empty : "Refused: " + result.Detail;
+            if (!result.Accepted) Debug.LogWarning("Refused: " + result.Detail);
             renderedVersion = -1;
             runtime.RefreshAll();
         }
@@ -589,26 +459,7 @@ namespace GuardsDigital.Pve.Presentation
             }
         }
 
-        private string AnswerLabel(IMatchReadModel match, PvePrompt prompt, DirectorCommand command)
-        {
-            var enemy = prompt.Enemy.IsDefined ? HeroName(match, prompt.Enemy) + " " : string.Empty;
-            switch (command.Kind)
-            {
-                case DirectorCommandKind.ChooseAttackTarget:
-                    return enemy + "attacks " + (command.HeroId.IsDefined
-                        ? HeroName(match, command.HeroId)
-                        : "creep " + command.MinionId.Value);
-                case DirectorCommandKind.ChooseMovementDestination:
-                    return enemy + "moves to " + command.Coordinate.Q + "," + command.Coordinate.R;
-                case DirectorCommandKind.AnswerSystemTransitionStep:
-                    return enemy + "enters at " + SpaceOf(command.SystemTransitionChoice.OptionId);
-                case DirectorCommandKind.ChooseTiedActor:
-                    var owner = match.Cards.FirstOrDefault(value => value.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
-                    return HeroName(match, owner) + " acts first";
-                default:
-                    return command.Kind.ToString();
-            }
-        }
+
 
         private string HeroName(IMatchReadModel match, HeroId hero)
         {
@@ -618,8 +469,7 @@ namespace GuardsDigital.Pve.Presentation
             return setup?.DisplayName ?? hero.Value;
         }
 
-        private static string SpaceOf(SystemTransitionOptionId option) =>
-            ModeRoundStartPlacementRules.TryReadOption(option, out var space) ? space.Q + "," + space.R : option.Value;
+
 
         private static Button ActionButton(string text, Action click)
         {

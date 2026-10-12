@@ -1384,6 +1384,9 @@ namespace GuardsDigital.Application
             SystemTransitionPromptKind kind, NetworkSystemTransitionOptionRow row)
         {
             var id = new SystemTransitionOptionId(row.OptionId);
+            if (kind == SystemTransitionPromptKind.HeroPlacement)
+                return SystemTransitionOptionDescription.PlaceHero(id,
+                    new HexCoordinate(row.DestinationQ, row.DestinationR), new SpaceId(row.DestinationSpaceId));
             if (kind == SystemTransitionPromptKind.LanePushRespawnPlace)
             {
                 return SystemTransitionOptionDescription.Place(

@@ -26,7 +26,8 @@ namespace GuardsDigital.Tests.Pve
             var run = NewRun();
             Reach(run, () => run.Session.Peek().Command?.ActionDefinitionId.Equals(PveCardFactory.SkillActionId) == true);
             Step(run);
-            Assert.That(run.Session.Peek().Prompt.Kind, Is.EqualTo(PvePromptKind.EnemyClosestUnit));
+            Assert.That(run.Session.Peek().Note, Is.EqualTo("enemy choice: " + PvePromptKind.EnemyClosestUnit));
+            Assert.That(run.Session.CurrentPrompt, Is.Null);
             Assert.That(run.Match.PendingEffectChoice.SelectInvocations.Count, Is.EqualTo(2));
             var snapshot = run.Director.CaptureSnapshot();
             var restored = NewRun();

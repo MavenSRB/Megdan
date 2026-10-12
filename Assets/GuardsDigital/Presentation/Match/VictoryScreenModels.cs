@@ -339,8 +339,20 @@ namespace GuardsDigital.Presentation.Match
             Color bannerColor,
             string causeText,
             IEnumerable<VictoryScreenBlockViewModel> blocks)
+            : this(version, cause, hasSoloWinner, bannerText, bannerColor, causeText, blocks, false)
         {
-            if (cause == MatchVictoryCause.None)
+        }
+
+        /// <summary>An explicitly terminal original mode can end without a tabletop victory cause.</summary>
+        public static VictoryScreenViewModel ForModeEnding(long version, string bannerText, Color bannerColor,
+            string causeText, IEnumerable<VictoryScreenBlockViewModel> blocks) =>
+            new VictoryScreenViewModel(version, MatchVictoryCause.None, false, bannerText, bannerColor, causeText, blocks, true);
+
+        private VictoryScreenViewModel(long version, MatchVictoryCause cause, bool hasSoloWinner,
+            string bannerText, Color bannerColor, string causeText,
+            IEnumerable<VictoryScreenBlockViewModel> blocks, bool modeEnding)
+        {
+            if (cause == MatchVictoryCause.None && !modeEnding)
             {
                 throw new ArgumentException(
                     "A victory screen is built for a match that has actually ended.", nameof(cause));

@@ -24,7 +24,7 @@ namespace GuardsDigital.Pve.Play
         /// <summary>The enemies or the encounter's own flow take this command next.</summary>
         Command = 1,
 
-        /// <summary>The player settles a tie on an enemy's behalf (PVE-D10/D12/D20).</summary>
+        /// <summary>Internal legal enemy candidates, converted to a seeded command by NextStep (PVE-D39).</summary>
         Prompt = 2,
 
         /// <summary>No creep remains, or the engine ended the match (PVE-D04).</summary>
@@ -88,6 +88,25 @@ namespace GuardsDigital.Pve.Play
 
         public PveStep NextStep(
             IMatchReadModel match, Func<HeroId, IReadOnlyList<DirectorCommand>> authorizedFor = null)
+        {
+            var step = ResolveNextStep(match, authorizedFor);
+            if (step.Kind != PveStepKind.Prompt) return step;
+            // PVE-D39: only enemy prompts reach this branch. Blue decisions remain awaited.
+            // Core snapshot identity survives restore/Undo, unlike a host version or history count.
+            var answers = step.Prompt.Answers;
+            return PveStep.Run(answers[DecisionIndex(match, answers.Count)], "enemy choice: " + step.Prompt.Kind);
+        }
+
+        private int DecisionIndex(IMatchReadModel match, int count)
+        {
+            if (count <= 0) throw new InvalidOperationException("An enemy decision must offer a legal answer.");
+            var authority = match as MatchSessionProjection
+                ?? throw new InvalidOperationException("Enemy decisions require the local authoritative projection.");
+            return (int)(PveSeed.Mix(encounter.Setup.Seed ^ PveSeed.StableHash(authority.AuthoritativeSnapshot)) % (ulong)count);
+        }
+
+        private PveStep ResolveNextStep(
+            IMatchReadModel match, Func<HeroId, IReadOnlyList<DirectorCommand>> authorizedFor)
         {
             if (match == null) throw new ArgumentNullException(nameof(match));
             if (IsLost(match)) return PveStep.Lost;
@@ -493,7 +512,7 @@ namespace GuardsDigital.Pve.Play
             var confirm = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                 command.EffectChoice != null &&
                 command.EffectChoice.Kind == GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommandKind.Confirm);
-            return PveStep.Run(confirm ?? commands[0], "PVE_FALLBACK " + Name(enemy));
+            return PveStep.Run(confirm ?? commands[DecisionIndex(match, commands.Count)], "PVE_FALLBACK " + Name(enemy));
         }
 
         private int? PurpleDefense(IMatchReadModel match, GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidate candidate)

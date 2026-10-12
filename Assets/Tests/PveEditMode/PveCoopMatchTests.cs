@@ -52,6 +52,10 @@ namespace GuardsDigital.Tests.Pve
                     .FirstOrDefault(command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep) })
                     .FirstOrDefault(value => value.command != null);
                 Assert.That(choice, Is.Not.Null, "A placement must reach its owner's seat.");
+                var description = match.Host.ProjectionForSeat(choice.seat.Id).PendingSystemTransitionDescription;
+                Assert.That(description, Is.Not.Null, "Placement uses the shared typed board prompt.");
+                Assert.That(description.HeroId, Is.EqualTo(choice.seat.HeroId));
+                Assert.That(description.Kind, Is.EqualTo(GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.HeroPlacement));
                 var other = seats.First(seat => !seat.Id.Equals(choice.seat.Id));
                 var version = match.Host.Version;
                 var refused = match.Host.SubmitForSeat(other.Id, new SeatSubmission(new SubmissionId("foreign-" + step), version, choice.command));
@@ -66,15 +70,13 @@ namespace GuardsDigital.Tests.Pve
             var owned = match.Host.ProjectionForSeat(seats[0].Id).AuthorizedCommands.First(command => command.Kind == DirectorCommandKind.CommitCard);
             Assert.That(match.Host.SubmitForSeat(seats[1].Id,
                 new SeatSubmission(new SubmissionId("foreign-card"), match.Host.Version, owned)).Accepted, Is.False);
-            var grant = match.Host.ProjectionForSeat(seats[0].Id).AuthorizedCommands
-                .First(command => command.Kind == DirectorCommandKind.BeginSystemTransition);
-            var granted = match.Host.SubmitForSeat(seats[0].Id,
-                new SeatSubmission(new SubmissionId("own-level"), match.Host.Version, grant));
-            Assert.That(granted.Accepted, Is.True, granted.Detail);
-            Assert.That(PveCoopMatch.IsSharedChoice(match.Session.Projection), Is.False);
-            Assert.That(match.Host.ProjectionForSeat(seats[0].Id).AuthorizedCommands, Is.Not.Empty);
-            Assert.That(match.Host.ProjectionForSeat(seats[1].Id).AuthorizedCommands, Is.Empty);
-            Assert.That(match.Host.ProjectionForSeat(seats[2].Id).AuthorizedCommands, Is.Empty);
+            foreach (var seat in seats)
+            {
+                Assert.That(match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands
+                    .Any(command => command.Kind == DirectorCommandKind.BeginSystemTransition), Is.False,
+                    "Manual level grants were removed, not merely hidden.");
+                Assert.That(match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands, Is.Not.Empty);
+            }
         }
 
         [Test]
@@ -84,7 +86,7 @@ namespace GuardsDigital.Tests.Pve
             var initial = match.Encounter.InitialState;
             var normal = PrivateSessionIdentity.ForComposition(PveTestContent.OfficialMap(), initial.InitialConfiguration, initial.Setup, "test");
             var coop = PveCoopMatch.Identity(normal, 42, "catalog", "layout");
-            Assert.That(coop.MatchFormatId, Is.EqualTo("pve-coop-2-42"));
+            Assert.That(coop.MatchFormatId, Is.EqualTo("pve-coop-3-42"));
             var legacy = new PrivateSessionIdentity(coop.ProtocolFamily, coop.ProtocolVersion,
                 coop.BuildIdentity, coop.SnapshotSchemaVersion, coop.MapId, coop.MapContentRevision,
                 "pve-coop-1-42", coop.ContentDigest);
@@ -96,22 +98,23 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(coop.Equals(PveCoopMatch.Identity(normal, 42, "catalog", "layout")), Is.True);
         }
 
-        [TestCase("pve-coop-2-42", true)]
-        [TestCase("pve-coop-2-18446744073709551615", true)]
+        [TestCase("pve-coop-3-42", true)]
+        [TestCase("pve-coop-3-18446744073709551615", true)]
         [TestCase("pve-coop-1-42", false)]
-        [TestCase("pve-coop-2-0", false)]
-        [TestCase("pve-coop-2-7", false)]
-        [TestCase("pve-coop-2-042", false)]
-        [TestCase("pve-coop-2--1", false)]
-        [TestCase("pve-coop-2-18446744073709551616", false)]
-        [TestCase("pve-coop-2- 42", false)]
-        [TestCase("pve-coop-2-42-extra", false)]
+        [TestCase("pve-coop-2-42", false)]
+        [TestCase("pve-coop-3-0", false)]
+        [TestCase("pve-coop-3-7", false)]
+        [TestCase("pve-coop-3-042", false)]
+        [TestCase("pve-coop-3--1", false)]
+        [TestCase("pve-coop-3-18446744073709551616", false)]
+        [TestCase("pve-coop-3- 42", false)]
+        [TestCase("pve-coop-3-42-extra", false)]
         [TestCase("", false)]
         public void OnlyCanonicalDifferentCurrentFormatSeedsAreInherited(string format, bool expected)
         {
             var hint = new SessionRejectMessage(SessionRejectionReason.MatchFormatMismatch, "", hostFormatId: format);
             Assert.That(PveCoopMatch.TryReadHostSeed(hint, 7, out var seed), Is.EqualTo(expected));
-            if (expected) Assert.That("pve-coop-2-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture), Is.EqualTo(format));
+            if (expected) Assert.That("pve-coop-3-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture), Is.EqualTo(format));
             else Assert.That(seed, Is.Zero);
         }
 
@@ -121,7 +124,7 @@ namespace GuardsDigital.Tests.Pve
             foreach (SessionRejectionReason reason in System.Enum.GetValues(typeof(SessionRejectionReason)))
             {
                 if (reason == SessionRejectionReason.None) continue;
-                var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-2-42");
+                var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-3-42");
                 Assert.That(PveCoopMatch.TryReadHostSeed(hint, 0, out _, includeMapMismatch: true),
                     Is.EqualTo(reason == SessionRejectionReason.MatchFormatMismatch || reason == SessionRejectionReason.MapRevisionMismatch));
             }
@@ -134,7 +137,7 @@ namespace GuardsDigital.Tests.Pve
             foreach (SessionRejectionReason reason in System.Enum.GetValues(typeof(SessionRejectionReason)))
             {
                 if (reason == SessionRejectionReason.None || reason == SessionRejectionReason.MatchFormatMismatch) continue;
-                var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-2-42");
+                var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-3-42");
                 Assert.That(PveCoopMatch.TryReadHostSeed(hint, 7, out _), Is.False, reason.ToString());
             }
         }

@@ -14,11 +14,15 @@ Current private Windows package: **W046 Unified**, `Builds/Playtest-W046-unified
 
 ## Current authorization and next route
 
-- Last completed work: **W-046**.
-- Active authorized work: **none**.
-- Next proposed work: **W-047**.
+- Last completed work: **W-047**.
+- Active authorized work: **None**.
+- Next proposed work: **W-048**.
 
-W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; Control buttons switch owned heroes. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the same artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
+W048 saved PvE logs and then W049 generated enemy faces/unspawned-turn investigation are explicitly approved; the serial sequence is recorded in current work.
+
+W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. This is source-only; W046 remains the delivered build and local `main` at `815a9f82`. No new package, main merge or remote push for W047.
+
+W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; W047 replaces Control buttons with tray/token clicks and automatic awaited-seat selection. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the W046 artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
 PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Join automatically adopts the host seed (PVE-D33); only address, port and key need sharing, with matching build/data. Keyed local Host/Join/reconnect and rejection boundaries are verified; external internet reachability is not. These source changes are not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

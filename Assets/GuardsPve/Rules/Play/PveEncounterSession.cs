@@ -119,12 +119,12 @@ namespace GuardsDigital.Pve.Play
 
             if (next.Kind == PveStepKind.Command) return "The enemies are still acting.";
 
-            // PVE-D05/D14. A paused placement or granted level is finished before anything else; the
+            // PVE-D05/D39. A paused placement is finished before anything else; the
             // engine itself does not hold commitments back while a transition is paused.
             if (match.PendingSystemTransitionStep != null &&
                 command.Kind != DirectorCommandKind.AnswerSystemTransitionStep)
             {
-                return "Finish the placement or the level-up first.";
+                return "Finish the placement first.";
             }
 
             switch (command.Kind)
@@ -137,10 +137,7 @@ namespace GuardsDigital.Pve.Play
                     if (Controller.IsEnemy(command.HeroId)) return "Enemies commit their own planned cards.";
                     return null;
                 case DirectorCommandKind.BeginSystemTransition:
-                    return MatchModeRules.TryReadLevelGrantHero(command.SystemTransitionDefinitionId, out var hero) &&
-                        !Controller.IsEnemy(hero)
-                        ? null
-                        : "Only a hero's granted level may be started here.";
+                    return "Encounter transitions are started automatically.";
                 case DirectorCommandKind.ChooseTiedActor:
                     return command.TeamSide == TeamSide.Blue ? null : "Enemy ties are settled through their prompt.";
                 case DirectorCommandKind.AnswerSystemTransitionStep:

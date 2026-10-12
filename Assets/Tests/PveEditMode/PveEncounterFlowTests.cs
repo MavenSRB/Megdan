@@ -161,16 +161,35 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
-        public void ThePlayerCannotActForAnEnemyAndATiePromptTakesOnlyItsAnswers()
+        public void EnemyTiesAreAutomaticLegalAndStableAcrossRestoreRatherThanPlayerCommands()
         {
             var driver = PveTestDriver.Start();
-            driver.PlayUntil(match => driver.Session.CurrentPrompt != null);
-            var prompt = driver.Session.CurrentPrompt;
+            for (var i = 0; i < 2000; i++)
+            {
+                var next = driver.Session.Peek();
+                if (next.Note?.StartsWith("enemy choice:") == true) break;
+                if (next.Kind == PveStepKind.Command) Assert.That(driver.Session.Step(out _).Accepted, Is.True);
+                else
+                {
+                    var answer = driver.PlayerAnswer();
+                    Assert.That(answer, Is.Not.Null, "Fixture must reach an enemy tie before ending.");
+                    Assert.That(driver.Session.Execute(answer).Accepted, Is.True);
+                }
+            }
+            var selected = driver.Session.Peek();
+            Assert.That(selected.Note, Does.StartWith("enemy choice:"));
+            Assert.That(driver.Match.DecisionContract.Commands, Does.Contain(selected.Command));
+            Assert.That(driver.Session.CurrentPrompt, Is.Null);
             var enemy = driver.Composed.Enemies[0].HeroId;
-
             Assert.That(driver.Session.Execute(DirectorCommand.Pass(enemy)).Accepted, Is.False);
-            Assert.That(driver.Session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.False);
-            Assert.That(driver.Session.Execute(prompt.Answers[0]).Accepted, Is.True, prompt.Text);
+            Assert.That(driver.Session.Execute(selected.Command).Accepted, Is.False);
+            Assert.That(driver.Session.Peek().Command, Is.EqualTo(selected.Command));
+            var restored = PveTestDriver.Start();
+            Assert.That(restored.Director.RestoreSnapshot(driver.Director.CaptureSnapshot()).Accepted, Is.True);
+            Assert.That(restored.Session.Peek().Command, Is.EqualTo(selected.Command));
+            Assert.That(driver.Session.Step(out _).Accepted, Is.True);
+            Assert.That(restored.Session.Step(out _).Accepted, Is.True);
+            Assert.That(restored.Director.CaptureSnapshot(), Is.EqualTo(driver.Director.CaptureSnapshot()));
         }
 
         [Test]

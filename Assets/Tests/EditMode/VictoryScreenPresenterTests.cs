@@ -36,6 +36,37 @@ namespace GuardsDigital.Tests.EditMode
     /// </remarks>
     public sealed class VictoryScreenPresenterTests
     {
+        [Test]
+        public void ModeLossUsesOnlyPlayerRowsWithoutInventingAnEngineVictory()
+        {
+            var projection = ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession().Projection;
+            var model = VictoryScreenPresenter.DeriveModeEnding(projection, TeamSide.Blue, "ALL FRIENDLY CREEPS WERE DEFEATED");
+            Assert.That(projection.Outcome.HasEnded, Is.False);
+            Assert.That(model.BannerText, Is.EqualTo("BLUE DEFEATED"));
+            Assert.That(model.Blocks.Count, Is.EqualTo(1));
+            Assert.That(model.Blocks.Single().TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(model.Blocks.Single().Kind, Is.EqualTo(VictoryScreenBlockKind.Defeated));
+            Assert.That(VictoryScreenPresenter.Derive(projection), Is.Null);
+        }
+
+        [TestCase(TeamSide.Blue, false)]
+        [TestCase(TeamSide.Red, false)]
+        [TestCase(TeamSide.Blue, true)]
+        [TestCase(TeamSide.Red, true)]
+        public void ModeEngineEndingPreservesItsCauseAndOnlyShowsBlue(TeamSide winnerSide, bool solo)
+        {
+            var initial = ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession().Projection;
+            var winner = initial.Setup.Heroes.First(hero => hero.TeamSide == winnerSide);
+            var ended = solo
+                ? EndedProjection.SoloWin(initial, MatchVictoryCause.CoinHoardClaimed, winner.HeroId)
+                : EndedProjection.TeamWin(initial, MatchVictoryCause.ThroneCaptured, winnerSide);
+            var model = VictoryScreenPresenter.DeriveModeEnding(ended, TeamSide.Blue, "unused");
+            Assert.That(model.Blocks.All(block => block.TeamSide == TeamSide.Blue), Is.True);
+            Assert.That(model.Cause, Is.EqualTo(ended.Outcome.Cause));
+            Assert.That(model.HasSoloWinner, Is.EqualTo(solo));
+            Assert.That(model.BannerText, winnerSide == TeamSide.Blue ? Does.EndWith("WINS") : Is.EqualTo("BLUE DEFEATED"));
+        }
+
         // -----------------------------------------------------------------------------------------
         // Nothing is drawn while the match is being played
         // -----------------------------------------------------------------------------------------

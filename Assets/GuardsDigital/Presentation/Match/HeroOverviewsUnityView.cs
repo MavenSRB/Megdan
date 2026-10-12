@@ -249,6 +249,9 @@ namespace GuardsDigital.Presentation.Match
         public event Action<HeroId> HeroHighlighted;
         public event Action<HeroId> HeroSelected;
 
+        /// <summary>Optional local owned-seat selection before ordinary hero inspection.</summary>
+        public Func<HeroId, bool> LocalHeroSelection { get; set; }
+
         /// <summary>
         /// Raised after either rail column resolves a new live bound. The configured HUD uses Red's
         /// edge to place `DIRECTOR` immediately after the third hero, and Blue's edge to expose only
@@ -575,6 +578,7 @@ namespace GuardsDigital.Presentation.Match
                     ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
                 rail.AddManipulator(new Clickable(() =>
                 {
+                    if (LocalHeroSelection?.Invoke(hero.HeroId) == true) return;
                     if (!OpenCardInspection(hero.HeroId))
                         HeroSelected?.Invoke(hero.HeroId);
                 }));
@@ -1578,6 +1582,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (evt.button != 0) return;
                 evt.StopPropagation();
+                if (LocalHeroSelection?.Invoke(hero.HeroId) == true) return;
                 if (!OpenCardInspection(hero.HeroId)) HeroSelected?.Invoke(hero.HeroId);
             });
             return medallion;

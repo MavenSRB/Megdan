@@ -92,10 +92,16 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             {
                 var pending = session.Projection.PendingSystemTransitionStep;
                 var item = pending.OpenItems.First(value => value.ChoosingSide == TeamSide.Blue);
-                var placed = session.Execute(GuardsDigital.Core.Replay.DirectorCommand.AnswerSystemTransitionStep(
-                    new GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand(
-                        pending.InstanceId, pending.StepId, item.ItemId, TeamSide.Blue, item.Options[0])));
-                Assert.That(placed.Accepted, Is.True, placed.Detail);
+                Assert.That(GuardsDigital.Core.Rules.Transitions.ModeRoundStartPlacementRules.TryReadOption(item.Options[0], out var space), Is.True);
+                var tile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                    .Single(value => value.Coordinate.Equals(space));
+                var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                composed.RefreshAll();
+                yield return null;
+                var version = session.Projection.Version;
+                Assert.That(pointer.TryHandlePointerRay(Camera.main.ScreenPointToRay(
+                    Camera.main.WorldToScreenPoint(tile.transform.position))), Is.True, "Place through the normal board input.");
+                Assert.That(session.Projection.Version, Is.GreaterThan(version));
                 composed.RefreshAll();
                 yield return null;
             }
@@ -123,8 +129,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
 
             yield return null;
             var overlay = PveLauncher.LastView.GetComponent<UIDocument>().rootVisualElement;
-            Assert.That(overlay.Q<Label>("pve-status").text, Does.Contain("Round 1"));
-            Assert.That(overlay.Q<Label>("pve-prompt-banner"), Is.Not.Null, "An enemy decision has its own banner.");
+            Assert.That(overlay.Q<Label>("pve-status"), Is.Null, "No persistent encounter popup.");
+            Assert.That(overlay.Q<Label>("pve-prompt-banner"), Is.Null, "Enemies settle their own choices.");
             Assert.That(overlay.Query<Label>().ToList().Any(label => label.name != null &&
                 label.name.StartsWith("pve-plan-pve-enemy-")), Is.False, "No floating text above map tokens.");
 
@@ -151,6 +157,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                         "All four planned cards are public before Blue commits.");
                     Assert.That(slots[turn].Q<Label>("pve-plan-initiative").text,
                         Is.EqualTo(enemy.Type.FindOrange(plan[turn]).Initiative.ToString()));
+                    Assert.That(slots[turn].Q<Label>("pve-plan-initiative").resolvedStyle.fontSize, Is.EqualTo(13));
+                    var number = slots[turn].Q<Label>("pve-plan-initiative");
+                    Assert.That(number.MeasureTextSize("13", 0, VisualElement.MeasureMode.Undefined,
+                        0, VisualElement.MeasureMode.Undefined).x, Is.LessThanOrEqualTo(slots[turn].resolvedStyle.width),
+                        "Two-digit numbers fit the unchanged miniature width.");
                 }
                 Assert.That(row.resolvedStyle.height, Is.LessThanOrEqualTo(64.1f));
                 Assert.That(row.Q("gd-hero-name"), Is.Null);
@@ -207,7 +218,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             composed.RefreshAll();
             yield return null; yield return null;
             Assert.That(rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value).tooltip, Does.Contain("On board"));
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(24 + 7 * 69).Within(1),
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(7 * 69).Within(1),
                 "The background ends after the live trays, not at the bottom of the screen.");
             // Stage a snapshot with one enemy removed and a Heavy entering the board. This is a
             // projection/lifecycle test, not a second simulation of the separately tested combat rules.
@@ -252,7 +263,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             StageEnemyBoard(composed, heavy.HeroId, null);
             composed.RefreshAll();
             yield return null; yield return null;
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(24 + 6 * 69).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(6 * 69).Within(1));
             foreach (var enemy in encounter.Enemies)
                 StageEnemyBoard(composed, enemy.HeroId, null);
             composed.RefreshAll();
@@ -262,7 +273,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             composed.RefreshAll();
             yield return null; yield return null;
             Assert.That(rail.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(507).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(483).Within(1));
 
             // Viewport resize caps the box and keeps every tray reachable by scrolling.
             overlay.style.bottom = StyleKeyword.Auto;
@@ -277,12 +288,33 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             overlay.style.height = StyleKeyword.Null;
             overlay.style.bottom = 0;
             yield return null; yield return null; yield return null;
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(507).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(483).Within(1));
 
             foreach (var hero in session.Projection.Participants.Heroes)
             {
                 Assert.DoesNotThrow(() => PlayerAccent.For(session.Projection.Participants, hero.Id), hero.Id.Value);
             }
+            // Original PvE loss uses the shared end screen, without changing the engine's victory rules.
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(composed.ContentCatalogs,
+                session.Projection.AuthoritativeSnapshot, composed.InitialState.Scenario.CardDefinitions,
+                composed.InitialState.AvailableMaps, composed.InitialState.Setup.Minions, modeRules: composed.InitialState.ModeRules);
+            var state = restored.Board.CaptureRestoreState();
+            var empty = new BoardRestoreState(state.HeroOccupancies, state.ObstacleOccupancies,
+                state.RemainingMinions.Take(0),
+                state.PlacedTokens, state.CurrentBattleZoneId, state.MinionBattleExclusions,
+                state.LastCompletedMovementWalk, state.HeroBodySupplies, state.ActingBodies,
+                state.CurrentTurnStart, state.PreviousTurnStart, state.UnitMutations);
+            var board = AdjacentMoveAuthority.Restore(empty, restored.Board.MapDefinition, composed.InitialState.Setup.Minions);
+            RestoreTestSnapshot(composed, AuthoritativeSnapshotSerializer.Serialize(restored.Round, board));
+            composed.RefreshAll();
+            yield return null; yield return null;
+            Assert.That(composed.VictoryScreenView.Model.BannerText, Is.EqualTo("BLUE DEFEATED"));
+            Assert.That(composed.VictoryScreenView.Model.Blocks.All(block => block.TeamSide == TeamSide.Blue), Is.True);
+            Assert.That(overlay.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+            yield return new WaitForEndOfFrame();
+            var endingCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w047-blue-ending.png", endingCapture.EncodeToPNG());
+            Object.Destroy(endingCapture);
         }
 
         [UnityTest]

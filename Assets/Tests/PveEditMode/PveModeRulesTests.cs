@@ -38,30 +38,22 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
-        public void AHeroIsGrantedALevelBeforeItCommitsButNotAfter()
+        public void ManualLevelGrantIsAbsentAndRefusedBeforeAndAfterCommitment()
         {
             var driver = PveTestDriver.Start();
             driver.PlayUntil(match => match.PendingSystemTransitionStep == null &&
                 driver.Composed.Heroes.All(hero => match.Heroes.Any(value => value.HeroId.Equals(hero))));
             driver.Session.RunAutomatic();
             var hero = driver.Composed.Heroes[0];
-
-            var begun = driver.Session.Execute(DirectorCommand.BeginSystemTransition(MatchModeRules.LevelGrantTransitionId(hero)));
-            Assert.That(begun.Accepted, Is.True, begun.Detail);
-            var pending = driver.Match.PendingSystemTransitionStep;
-            Assert.That(pending, Is.Not.Null, "The granted level waits on its Upgrade a Card answer.");
-            var item = pending.OpenItems.Single();
-            var answered = driver.Session.Execute(DirectorCommand.AnswerSystemTransitionStep(new SystemTransitionChoiceCommand(
-                pending.InstanceId, pending.StepId, item.ItemId, item.ChoosingSide, item.Options[0])));
-            Assert.That(answered.Accepted, Is.True, answered.Detail);
-            Assert.That(driver.Match.PendingSystemTransitionStep, Is.Null);
-            Assert.That(driver.Match.HeroProgression.Single(value => value.HeroId.Equals(hero)).Level, Is.EqualTo(2));
-            AssertNoCoins(driver.Match);
-
+            var retired = new SystemTransitionDefinitionId("mode-grant-level/" + hero.Value);
+            Assert.That(driver.Composed.InitialState.ModeRules.TransitionDefinitions.Any(value => value.Id.Equals(retired)), Is.False);
+            var before = driver.Session.CaptureSnapshot();
+            Assert.That(driver.Session.Execute(DirectorCommand.BeginSystemTransition(retired)).Accepted, Is.False);
+            Assert.That(driver.Session.CaptureSnapshot(), Is.EqualTo(before));
+            Assert.That(driver.Match.HeroProgression.Single(value => value.HeroId.Equals(hero)).Level, Is.EqualTo(1));
             var card = driver.Match.Cards.First(value => value.OwnerId.Equals(hero) && value.State.Location == CardLocation.Hand);
             Assert.That(driver.Session.Execute(DirectorCommand.CommitCard(hero, card.Id)).Accepted, Is.True);
-            Assert.That(driver.Session.Execute(DirectorCommand.BeginSystemTransition(
-                MatchModeRules.LevelGrantTransitionId(hero))).Accepted, Is.False, "After its commitment the window is closed.");
+            Assert.That(driver.Session.Execute(DirectorCommand.BeginSystemTransition(retired)).Accepted, Is.False);
         }
 
         [Test]

@@ -13,7 +13,7 @@ namespace GuardsDigital.Pve.Play
     /// <summary>PVE-D28. One authority, three owner-private player seats, host-owned enemies and team choices.</summary>
     public sealed class PveCoopMatch
     {
-        private const string FormatPrefix = "pve-coop-2-";
+        private const string FormatPrefix = "pve-coop-3-";
         public PveCoopMatch(PveComposedEncounter encounter)
         {
             Encounter = encounter ?? throw new ArgumentNullException(nameof(encounter));
@@ -54,8 +54,7 @@ namespace GuardsDigital.Pve.Play
         public static bool IsSharedChoice(IMatchReadModel source)
         {
             var pending = source.PendingSystemTransitionStep;
-            if (pending != null && (MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _) ||
-                MatchModeRules.TryReadLevelGrantHero(pending.DefinitionId, out _))) return false;
+            if (pending != null && MatchModeRules.TryReadPlacementRound(pending.DefinitionId, out _)) return false;
             return source.DecisionOwner.IsDefined && source.DecisionOwner.IsTeamOwned;
         }
 
@@ -63,12 +62,6 @@ namespace GuardsDigital.Pve.Play
             IReadOnlyList<DirectorCommand> commands)
         {
             var result = commands.Where(command => Session.Refusal(command) == null && Owns(source, seat, command)).ToList();
-            if (source.PendingSystemTransitionStep == null && source.TurnIndex == 1 &&
-                source.Phase == GuardsDigital.Core.Cards.RoundResolutionPhase.AwaitingCommitments)
-            {
-                var grant = DirectorCommand.BeginSystemTransition(MatchModeRules.LevelGrantTransitionId(seat.HeroId));
-                if (Session.Refusal(grant) == null) result.Add(grant);
-            }
             return result.AsReadOnly();
         }
 
@@ -78,8 +71,6 @@ namespace GuardsDigital.Pve.Play
                 ModeRoundStartPlacementRules.TryReadItem(command.SystemTransitionChoice.ItemId, out var placed))
                 return seat.Owns(placed);
             // Hero-owned decisions remain private. Team-owned choices are presented only by the host overlay.
-            if (source.PendingSystemTransitionStep != null && MatchModeRules.TryReadLevelGrantHero(
-                source.PendingSystemTransitionStep.DefinitionId, out var leveled)) return seat.Owns(leveled);
             if (IsSharedChoice(source)) return false;
             return true;
         }
