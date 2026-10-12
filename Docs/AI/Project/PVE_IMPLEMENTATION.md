@@ -48,7 +48,7 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 
 ## Weak-attack fallback (W-034)
 
-Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Ranged Take Position also stops at range 2 with Move 2; both Ranged attacks retain printed Range 3.
+Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35/D37): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 as close as possible toward the closest Blue unit (hero or creep), stopping adjacent. The controller picks Movement only when no prior Attack option applies. Typed `PveTargetKind.Unit` combines opposing hero/creep coordinates for Movement only; validation refuses it on Attack options. Ranged Take Position also stops at range 2 with Move 2; both Ranged attacks retain printed Range 3.
 
 ## Encounter composition (W-021)
 

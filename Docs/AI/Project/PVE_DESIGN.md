@@ -102,6 +102,8 @@ Hurl becomes Attack 2, retaining Range 2, Initiative 3 and Move 1 fallback; afte
 
 Timing clarification (user 2026-10-12): Thick Hide's counterattack follows the original attack's completion, including its after-attack effects; it does not interrupt the defense comparison.
 
+Movement amendment (user 2026-10-12): Hurl's Move 1 fallback approaches the closest Blue unit (hero or creep) as closely as possible, stopping adjacent rather than at range 2. Attack priority, printed Range 2, movement allowance and repeat remain unchanged.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

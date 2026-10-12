@@ -62,6 +62,15 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
+        public void CombinedUnitTargetIsMovementOnly()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var json = PveContentLoader.SaveCatalog(catalog);
+            Assert.That(PveContentValidator.ValidateCatalog(PveContentLoader.LoadCatalog(
+                json.Replace("\"hero\"", "\"unit\""))), Has.Some.Contains("unit is supported only for movement"));
+        }
+
+        [Test]
         public void CardEditorPreservesTokenIdentityAndUnknownTokenIsRefused()
         {
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);

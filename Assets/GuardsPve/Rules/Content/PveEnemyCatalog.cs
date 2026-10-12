@@ -18,7 +18,8 @@ namespace GuardsDigital.Pve.Content
     {
         None = 0,
         Hero = 1,
-        Minion = 2
+        Minion = 2,
+        Unit = 3
     }
 
     /// <summary>PVE-D07. The two simple options an orange card may list.</summary>

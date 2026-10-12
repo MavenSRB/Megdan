@@ -188,6 +188,7 @@ namespace GuardsDigital.Pve.Presentation
             {
                 case "hero": return PveTargetKind.Hero;
                 case "minion": return PveTargetKind.Minion;
+                case "unit": return PveTargetKind.Unit;
                 default: return PveTargetKind.None;
             }
         }

@@ -175,6 +175,21 @@ namespace GuardsDigital.Tests.Pve
             Assert.Fail("No enemy action was reached.");
         }
 
+        [Test]
+        public void HurlFallbackApproachesAdjacentWithoutChangingRangedStops()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var hurl = catalog.Find("heavy").FindOrange("C");
+            Assert.That(hurl.MoveValue, Is.EqualTo(1));
+            Assert.That(hurl.AttackRange, Is.EqualTo(2));
+            Assert.That(hurl.Options.Last().Kind, Is.EqualTo(PveOptionKind.Move));
+            Assert.That(hurl.Options.Last().Target, Is.EqualTo(PveTargetKind.Unit));
+            Assert.That(hurl.Options.Last().StopDistance, Is.EqualTo(1));
+            foreach (var move in catalog.Find("ranged").OrangeCards.SelectMany(card => card.Options)
+                         .Where(option => option.Kind == PveOptionKind.Move))
+                Assert.That(move.StopDistance, Is.EqualTo(2));
+        }
+
         private static string Describe(PveOrangeCard card) =>
             $"{card.Key}/{card.Initiative}/{card.Copies}/{card.AttackValue}/{card.AttackRange}/{card.MoveValue}/" +
             $"{card.IsIdle}/" + string.Join(",", card.Options.Select(option =>

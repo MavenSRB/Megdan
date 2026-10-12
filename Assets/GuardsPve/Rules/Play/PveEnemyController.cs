@@ -506,10 +506,16 @@ namespace GuardsDigital.Pve.Play
         private IReadOnlyList<HexCoordinate> Targets(IMatchReadModel match, HeroId actor, PveTargetKind kind)
         {
             var side = match.Participants.GetTeamForHero(actor).Side;
-            return kind == PveTargetKind.Hero
-                ? match.Heroes.Where(hero => match.Participants.GetTeamForHero(hero.HeroId).Side != side)
-                    .Select(hero => hero.Coordinate).ToArray()
-                : match.Minions.Where(minion => minion.TeamSide != side).Select(minion => minion.Coordinate).ToArray();
+            var heroes = match.Heroes.Where(hero => match.Participants.GetTeamForHero(hero.HeroId).Side != side)
+                .Select(hero => hero.Coordinate);
+            var minions = match.Minions.Where(minion => minion.TeamSide != side).Select(minion => minion.Coordinate);
+            switch (kind)
+            {
+                case PveTargetKind.Hero: return heroes.ToArray();
+                case PveTargetKind.Minion: return minions.ToArray();
+                case PveTargetKind.Unit: return heroes.Concat(minions).Distinct().ToArray();
+                default: return Array.Empty<HexCoordinate>();
+            }
         }
 
         private static ActionOffer? Offer(IMatchReadModel match, CardInstanceId card, ActionDefinitionId action)

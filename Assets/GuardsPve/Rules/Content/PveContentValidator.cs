@@ -132,8 +132,9 @@ namespace GuardsDigital.Pve.Content
             var moves = card.Options.Where(option => option.Kind == PveOptionKind.Move).ToArray();
             if (card.Options.Any(option => option.Kind != PveOptionKind.Attack && option.Kind != PveOptionKind.Move))
                 errors.Add($"{label} lists an option that is neither move nor attack.");
-            if (card.Options.Any(option => option.Target != PveTargetKind.Hero && option.Target != PveTargetKind.Minion))
-                errors.Add($"{label} lists an option whose target is neither hero nor minion.");
+            if (card.Options.Any(option => option.Target != PveTargetKind.Hero && option.Target != PveTargetKind.Minion &&
+                !(option.Kind == PveOptionKind.Move && option.Target == PveTargetKind.Unit)))
+                errors.Add($"{label} lists an invalid target; unit is supported only for movement.");
 
             if (attacks.Length > 0)
             {

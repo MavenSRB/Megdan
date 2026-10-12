@@ -196,6 +196,39 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(restored.Director.CaptureSnapshot(), Is.EqualTo(run.Director.CaptureSnapshot()));
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void HurlMovesTowardClosestBlueUnitAndRestoresChoice(bool creepIsCloser)
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
+            var closer = PveTestContent.Hex("-4,1");
+            var farther = PveTestContent.Hex("-1,-3");
+            var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
+                new[] { new PveCreepPlacement(creepIsCloser ? closer : farther, StandardMinionType.Melee) },
+                new[] { creepIsCloser ? farther : closer },
+                new[] { new PveSpawn(1, PveTestContent.Hex("-1,1"), "heavy") });
+            var run = PveTestDriver.StartWithOpening(new[] { "C" }, new[] { "hero-brogan" }, encounter, catalog);
+            var enemy = run.Composed.Enemies.Single().HeroId;
+            Reach(run, () => run.Match.PendingMovementChoice?.MovingHeroId.Equals(enemy) == true);
+            Assert.That(run.Match.TurnIndex, Is.EqualTo(1));
+            var saved = run.Director.CaptureSnapshot();
+            var restored = PveTestDriver.Start(run.Composed.Setup.Seed, new[] { "hero-brogan" }, encounter, catalog);
+            Assert.That(restored.Director.RestoreSnapshot(saved).Accepted, Is.True);
+            foreach (var driver in new[] { run, restored })
+            {
+                var step = driver.Session.Peek();
+                var choices = step.Kind == PveStepKind.Command ? new[] { step.Command } : step.Prompt.Answers.ToArray();
+                Assert.That(choices, Is.Not.Empty);
+                foreach (var choice in choices)
+                {
+                    Assert.That(choice.Kind, Is.EqualTo(DirectorCommandKind.ChooseMovementDestination));
+                    Assert.That(GuardsDigital.Core.Board.HexDistanceQuery.Calculate(choice.Coordinate, closer), Is.EqualTo(2));
+                }
+                Step(driver);
+            }
+            Assert.That(restored.Director.CaptureSnapshot(), Is.EqualTo(run.Director.CaptureSnapshot()));
+        }
+
         private static void Reach(PveTestDriver run, Func<bool> condition)
         {
             for (var i = 0; i < 300 && !condition(); i++) Step(run);
