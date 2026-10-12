@@ -26,6 +26,8 @@ namespace GuardsDigital.Pve.Presentation
     /// </summary>
     public sealed class PveEncounterView : MonoBehaviour
     {
+        private const float SpentEnemyCardOpacity = .35f;
+
         /// <summary>Seconds between enemy steps; the launch smoke shortens it.</summary>
         public float StepSeconds { get; set; } = 0.45f;
 
@@ -240,9 +242,10 @@ namespace GuardsDigital.Pve.Presentation
                 var definition = match.Definitions.First(value => value.Id.Equals(definitionId));
                 var instance = match.Cards.FirstOrDefault(value => value.OwnerId.Equals(enemy.HeroId) &&
                     value.DefinitionReference.DefinitionId.Equals(definitionId));
-                // Past slots use the actual resolved card (including a PVE-D21 replacement).
+                // Resolved slots use the actual card immediately (including a PVE-D21 replacement),
+                // even while the rest of the current turn is still resolving.
                 var actual = hero.TurnSlots.FirstOrDefault(value => value.TurnIndex == turn);
-                if (turn < match.TurnIndex && actual != null && actual.IsOccupied)
+                if (actual != null && actual.IsOccupied)
                 {
                     slots.Add(actual);
                     continue;
@@ -290,6 +293,9 @@ namespace GuardsDigital.Pve.Presentation
                         var miniature = miniatures[index];
                         if (cards.Orange(planned[index].PlayedCard.DefinitionReference.DefinitionId) != null)
                             miniature.style.backgroundColor = new Color(0.9f, 0.44f, 0.09f);
+                        miniature.style.opacity = planned[index].PlayedCard.Group == TrayCardGroup.Played
+                            ? SpentEnemyCardOpacity
+                            : 1f;
                         var initiative = Text(13, FontStyle.Bold, Color.black);
                         initiative.name = "pve-plan-initiative";
                         initiative.text = planned[index].PlayedCard?.Face.Initiative?.AmountLabel ?? "-";
@@ -381,7 +387,7 @@ namespace GuardsDigital.Pve.Presentation
                 miniature.style.backgroundColor = new Color(.48f, .22f, .68f);
                 miniature.style.width = 20;
                 miniature.style.marginLeft = 2;
-                miniature.style.opacity = available ? 1f : .35f;
+                miniature.style.opacity = available ? 1f : SpentEnemyCardOpacity;
                 miniature.userData = card.Id;
                 var value = Text(13, FontStyle.Bold, Color.white);
                 value.name = "pve-defense-value";

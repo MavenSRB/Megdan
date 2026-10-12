@@ -155,6 +155,8 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 Assert.That(row.Q("gd-hero-icon").style.backgroundImage.value.sprite, Is.SameAs(sprite));
                 var slots = row.Query<VisualElement>("gd-turn-slot").ToList();
                 Assert.That(slots.Count, Is.EqualTo(4), "Every enemy uses the hero rail's four card slots.");
+                Assert.That(slots.All(slot => slot.resolvedStyle.opacity >= .99f), Is.True,
+                    "Unresolved public enemy plans remain at full strength.");
                 var plan = PvePlans.PlanFor(encounter, enemy, System.Math.Max(1, enemy.Spawn.Round));
                 for (var turn = 0; turn < 4; turn++)
                 {
@@ -369,17 +371,57 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 var overlay = PveLauncher.LastView.GetComponent<UIDocument>().rootVisualElement;
                 var row = overlay.Q("pve-enemy-" + enemy.HeroId.Value);
                 Assert.That(row, Is.Not.Null);
+                var slots = row.Query<VisualElement>("gd-turn-slot").ToList();
+                Assert.That(slots[0].resolvedStyle.opacity, Is.EqualTo(.35f).Within(.01f),
+                    "The resolved Aim card stays in its public plan slot and dims immediately.");
+                Assert.That(slots.Skip(phase == 2 ? 2 : 1).All(slot => slot.resolvedStyle.opacity >= .99f), Is.True,
+                    "Unresolved plan cards remain at full strength.");
                 var outline = row.Q("gd-turn-slot-outline");
                 Assert.That(outline.resolvedStyle.borderTopColor, Is.EqualTo(phase < 2
                     ? MatchHudTheme.ActiveEffectAccent : new Color(0, 0, 0, 0)));
                 if (phase == 0)
                 {
+                    var undo = session.Undo();
+                    Assert.That(undo.Accepted, Is.True, undo.Detail);
+                    runtime.RefreshAll();
+                    yield return null; yield return null;
+                    row = overlay.Q("pve-enemy-" + enemy.HeroId.Value);
+                    slots = row.Query<VisualElement>("gd-turn-slot").ToList();
+                    Assert.That(slots[0].resolvedStyle.opacity, Is.EqualTo(1f).Within(.01f),
+                        "Undo restores the rewound enemy plan card to full strength.");
+                    for (var step = 0; step < 400 &&
+                        !session.Projection.StandingActiveEffectSourceCardInstanceIds.Contains(aim); step++)
+                    {
+                        var replay = session.Peek().Kind == PveStepKind.Command
+                            ? session.Step(out _) : session.Execute(PvePassivePlayer.NextAnswer(session));
+                        Assert.That(replay.Accepted, Is.True, replay.Detail);
+                    }
+                    Assert.That(session.Projection.StandingActiveEffectSourceCardInstanceIds.Contains(aim), Is.True);
+                    runtime.RefreshAll();
+                    yield return null; yield return null;
+                    row = overlay.Q("pve-enemy-" + enemy.HeroId.Value);
+                    slots = row.Query<VisualElement>("gd-turn-slot").ToList();
+                    Assert.That(slots[0].resolvedStyle.opacity, Is.EqualTo(.35f).Within(.01f),
+                        "Re-resolving after Undo derives the same dimmed tray state.");
+                    using (var hover = PointerEnterEvent.GetPooled())
+                    {
+                        hover.target = slots[0];
+                        slots[0].SendEvent(hover);
+                    }
+                    yield return null;
+                    Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.opacity, Is.EqualTo(1f),
+                        "Dimming the miniature does not dim its full-card hover preview.");
                     overlay.Q<ScrollView>("pve-enemy-rail").ScrollTo(row);
                     yield return null;
                     yield return new WaitForEndOfFrame();
                     var capture = ScreenCapture.CaptureScreenshotAsTexture();
-                    System.IO.File.WriteAllBytes("tmp/w042-aim-glow.png", capture.EncodeToPNG());
+                    System.IO.File.WriteAllBytes("tmp/w058-resolved-enemy-card.png", capture.EncodeToPNG());
                     Object.Destroy(capture);
+                    using (var leave = PointerLeaveEvent.GetPooled())
+                    {
+                        leave.target = slots[0];
+                        slots[0].SendEvent(leave);
+                    }
                 }
             }
         }

@@ -42,6 +42,8 @@ PVE-D39 cleanup: `PveCoopMatchTests` verifies typed owner-only `HeroPlacement`, 
 
 W053 Undo parity: `PveCoopMatchTests` covers Blue commitment withdrawal and a bounded in-turn rewind; `PveCoopWireTests` proves the owner-private serialized Undo round trip; the shared PvP `SeatBoundedUndoTests` and `CommitmentRetractionTests` retain the common walls and withdrawal contract. `PveSharedLobbyPlayModeTests` selects an already committed local hero through its real rail, keeps that undoable seat selected, clicks the shared Undo control, recommits and proves ordinary automatic unfinished-seat selection resumes.
 
+W058 resolved enemy cards: `PveLauncherPlayModeTests` begins with four full-strength public slots, proves that Aim dims immediately on resolution while later slots remain bright, returns to full strength through PvE Undo, dims again on deterministic replay, and retains an undimmed full-card hover preview. `PveCoopLobbyPlayModeTests` verifies the joining client's projected unresolved plans use the same full-strength treatment.
+
 `Assets/Tests/PvePlayMode` holds `GuardsDigital.Pve.PlayModeTests` (namespace `GuardsDigital.Tests.Pve.PlayMode`). They load the launcher scene by path in play mode, because it is not in Build Settings. A request filter of `GuardsDigital.Tests.Pve.PlayMode` selects them. They cover:
 - the launcher composing into the match scene with the encounter session and overlay;
 - the paced enemy commitments after placement, compact public four-slot enemy rails, Heavy defenses, no floating map labels and bidirectional token/rail hover;

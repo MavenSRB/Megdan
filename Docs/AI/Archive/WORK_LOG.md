@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-058 | Resolved orange PvE enemy cards remain in their public tray slots and dim immediately to the established spent-Defense opacity. Current/unresolved cards and full-card hover remain bright; Undo/replay and solo/co-op projection checks passed. Source-only; W050/W051 unchanged. | `work/W-058` |
 | W-053 | Blue PvE seats use the existing bounded PvP Undo rules, including pre-reveal commitment withdrawal and in-turn turn-floor, attack, interaction and other-seat walls. Owner-private wire submission and the real shared-lobby control are covered; an explicitly selected undoable local seat stays reachable while ordinary automatic awaited-seat switching remains intact. Source-only; W050/W051 unchanged. | `work/W-053` |
 | W-057 | PvE now spawns 3 Melee/2 Ranged/1 Heavy in wave one and 2 Heavy/1 Ranged in wave two, removing the final prior Ranged spawn from each wave. Exact content/composition tests and solo/co-op six-row rail checks passed. Source-only; W050/W051 packages unchanged. | `work/W-057` |
 | W-056 | White signed card-modifier overlays now use a thicker weight-scaled black outline without changing their inspected anchors, bounded fit or pointer transparency. Focused Edit/Play checks and `+1`, `+12` and `-12` Game View inspection passed. | `work/W-056` |
@@ -63,6 +64,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-058 Dim resolved PvE enemy cards
+
+Requested on 2026-10-12: keep resolved enemy cards in their existing enemy-tray slots and dim them so the remaining plan is easier to read. The rail uses the authoritative occupied turn slot as soon as an orange card resolves, including during the rest of that same global turn, and applies the existing spent-Defense opacity only to its miniature. Current/unresolved cards and the full-card hover preview remain full strength. T2 acceptance covers initial brightness, immediate resolution, refresh, PvE Undo and deterministic replay, active-effect outline coexistence, undimmed hover inspection, a joining co-op client's projected plan, and rendered Game View inspection. No rules, card state, plan derivation, snapshot, wire, package or remote change.
+
+Historical evidence: `work/W-058` commit body.
 
 ### [x] W-053 PvE seat Undo parity
 

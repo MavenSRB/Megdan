@@ -301,6 +301,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Query<VisualElement>()
                 .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(6),
                 "Only standing enemies have trays on a joining client.");
+            var remotePlanSlots = overlay.GetComponent<UIDocument>().rootVisualElement
+                .Query<VisualElement>("gd-turn-slot").ToList();
+            Assert.That(remotePlanSlots.Count, Is.EqualTo(24));
+            Assert.That(remotePlanSlots.All(slot => slot.resolvedStyle.opacity >= .99f), Is.True,
+                "The joining client's unresolved enemy plans remain at full strength.");
             Assert.That(runtime.ReadModel.Cards.Any(card => match.Encounter.FindEnemy(card.OwnerId) != null), Is.True);
             yield return PveLauncherPlayModeTests.AssertLinkedHover(runtime,
                 overlay.GetComponent<UIDocument>().rootVisualElement, match.Encounter.Enemies[0].HeroId);

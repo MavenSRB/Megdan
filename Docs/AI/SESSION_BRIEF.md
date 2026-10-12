@@ -16,11 +16,13 @@ Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified
 
 Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-053**.
+- Last completed work: **W-058**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
 W053 makes the existing seat-scoped PvP Undo rules available to Blue seats in PvE, including commitment withdrawal and the turn floor plus attack, interaction and other-seat walls. A manually selected committed local seat remains selected while its Undo is available, without changing ordinary automatic awaited-seat switching. Focused engine, wire and real-input shared-lobby checks passed. Source-only; W050/W051 packages remain unchanged.
+
+W058 keeps each public orange enemy card in its existing tray slot and dims it immediately after resolution, reusing the spent enemy-Defense treatment. Current/unresolved cards and full-card inspection stay unchanged; Undo and replay re-derive the correct state, and focused solo/co-op Play Mode checks passed. Source-only; W050/W051 packages remain unchanged.
 
 W057 removes the final Ranged spawn from each PvE wave: current source now has 3 Melee, 2 Ranged and 1 Heavy in wave one, then 2 Heavy and 1 Ranged in wave two. Exact content/composition checks and solo/co-op six-row rail checks passed. Source-only; W050/W051 packages retain their prior roster.
 
