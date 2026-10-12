@@ -160,7 +160,7 @@ namespace GuardsDigital.Pve.Presentation
                         }
                         for (var frame = 0; frame < 30; frame++) yield return null;
                         var overlay = FindAnyObjectByType<PveEncounterView>();
-                        SmokeRequire(overlay.GetComponent<UIDocument>().rootVisualElement.Q("gd-hero-rail-red")?.childCount == 7, "Enemy rail missing");
+                        SmokeRequire(overlay.GetComponent<UIDocument>().rootVisualElement.Q("gd-hero-rail-red")?.childCount == 6, "Enemy rail missing");
                         var rules = opened.runtime.InitialState.ModeRules;
                         var future = rules.RoundStartPlacements.Where(p => p.Round > 1).Select(p => p.HeroId).ToArray();
                         SmokeRequire(!opened.runtime.ReadModel.Commitments.Any(c => future.Contains(c.HeroId)), "Unspawned enemy committed");

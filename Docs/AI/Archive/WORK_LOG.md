@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-057 | PvE now spawns 3 Melee/2 Ranged/1 Heavy in wave one and 2 Heavy/1 Ranged in wave two, removing the final prior Ranged spawn from each wave. Exact content/composition tests and solo/co-op six-row rail checks passed. Source-only; W050/W051 packages unchanged. | `work/W-057` |
 | W-056 | White signed card-modifier overlays now use a thicker weight-scaled black outline without changing their inspected anchors, bounded fit or pointer transparency. Focused Edit/Play checks and `+1`, `+12` and `-12` Game View inspection passed. | `work/W-056` |
 | W-055 | Large phase announcements and final-ten countdowns now follow the viewing player's team colour: existing blood red for Red, dark blue for Blue, and red fallback for an unseated Director. Focused Edit/Play checks and targeted Game View inspections passed. | `work/W-055` |
 | W-054 | Unseated hosts now redraw the trusted local Director board/HUD on every authoritative gameplay version, restoring remote hero movement and all other projection-driven updates without changing seats, wire data or privacy. The regression failed at authority/render versions 2/0 before the fix; the affected Play Mode fixture and live-view capture passed afterward. | `work/W-054` |
@@ -61,6 +62,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-057 Reduce PvE Ranged enemies
+
+Requested on 2026-10-12: remove one Ranged enemy from each PvE wave. PVE-D42 removes the final prior Ranged spawn in each wave (`-2,7` in round one and `-11,8` in round two), leaving wave one at three Melee, two Ranged and one Heavy and wave two at two Heavy and one Ranged. All retained spawn positions, cards, target priorities and timing remain unchanged. T2 acceptance covers exact shipped JSON/composition and validation/flow checks, solo and co-op six-row enemy rails, and Game View inspection. The affected legacy co-op fixture was brought back to the already-approved board-click placement path and given isolated runtime teardown after its stale popup-button path and teardown race failed during the first run. Source-only; W050/W051 packages remain unchanged.
+
+Historical evidence: `work/W-057` commit body.
 
 ### [x] W-056 Thicker card-modifier number outlines
 

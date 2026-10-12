@@ -66,7 +66,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 ## Encounter composition (W-021)
 
-PVE-D41 replaces the first wave's Melee at (-1,-2) with Heavy. The shipped first wave has three Melee, three Ranged and one Heavy; wave two keeps two Heavy and two Ranged. All eleven spawn positions and wave timing are unchanged.
+PVE-D41 replaces the first wave's Melee at (-1,-2) with Heavy. PVE-D42 then removes the final Ranged spawn from each wave (`-2,7` in round one and `-11,8` in round two). The shipped first wave has three Melee, two Ranged and one Heavy; wave two has two Heavy and one Ranged. The nine retained spawn positions and wave timing are unchanged.
 
 PVE-D37 revises Heavy: Hurl is Attack 2 / Range 2, repeats once on a different target, and retains Move 1 fallback. Hook (Initiative 1) pulls the closest Blue hero or creep along a straight hex line until adjacent or blocked; an unaligned closest unit does not move, and ties use the host's seeded automatic legal choice. Thick Hide remains Defense 3 / Initiative 1 and, after a successful defense and the incoming attack's after-attack text, counterattacks the original attacker once at Attack 1 only if adjacent. Brace is unchanged. The counterattack is a normal, defendable attack, not direct damage.
 

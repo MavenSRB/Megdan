@@ -36,9 +36,12 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(shipped.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate)),
                 Is.EqualTo(approved.Spawns.Select(spawn => (spawn.Round, spawn.Coordinate))));
             Assert.That(shipped.Spawns.Select(spawn => spawn.EnemyTypeId), Is.EqualTo(new[]
-                { "heavy", "ranged", "melee", "ranged", "melee", "ranged", "melee", "heavy", "ranged", "heavy", "ranged" }));
+                { "heavy", "ranged", "melee", "ranged", "melee", "melee", "heavy", "ranged", "heavy" }));
+            Assert.That(shipped.Spawns.Count(spawn => spawn.Round == 1 && spawn.EnemyTypeId == "ranged"), Is.EqualTo(2));
             Assert.That(shipped.Spawns.Count(spawn => spawn.Round == 1 && spawn.EnemyTypeId == "heavy"), Is.EqualTo(1));
             Assert.That(shipped.Spawns.Count(spawn => spawn.Round == 1 && spawn.EnemyTypeId == "melee"), Is.EqualTo(3));
+            Assert.That(shipped.Spawns.Count(spawn => spawn.Round == 2 && spawn.EnemyTypeId == "ranged"), Is.EqualTo(1));
+            Assert.That(shipped.Spawns.Count(spawn => spawn.Round == 2 && spawn.EnemyTypeId == "heavy"), Is.EqualTo(2));
         }
 
         [Test]

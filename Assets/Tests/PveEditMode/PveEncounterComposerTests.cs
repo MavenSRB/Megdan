@@ -51,7 +51,7 @@ namespace GuardsDigital.Tests.Pve
             var encounter = Compose();
             var projection = MatchHost.Compose(encounter.InitialState).Projection;
 
-            Assert.That(encounter.Enemies.Count, Is.EqualTo(11));
+            Assert.That(encounter.Enemies.Count, Is.EqualTo(9));
             foreach (var enemy in encounter.Enemies)
             {
                 Assert.That(projection.Participants.GetTeamForHero(enemy.HeroId).Side, Is.EqualTo(TeamSide.Red));
@@ -67,7 +67,7 @@ namespace GuardsDigital.Tests.Pve
             }
 
             Assert.That(encounter.Enemies.Where(enemy => enemy.Spawn.Round == 1).Select(enemy => enemy.DisplayName),
-                Is.EqualTo(Enumerable.Range(1, 7).Select(number => "Raider " + number)));
+                Is.EqualTo(Enumerable.Range(1, 6).Select(number => "Raider " + number)));
         }
 
         [Test]

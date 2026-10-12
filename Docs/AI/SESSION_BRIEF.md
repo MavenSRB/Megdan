@@ -16,11 +16,13 @@ Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified
 
 Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-056**.
+- Last completed work: **W-057**.
 - Active authorized work: **W-053 - PvE seat Undo parity**.
 - Next proposed work: **None**.
 
-W053 makes the existing seat-scoped PvP Undo rules available to Blue seats in PvE, including the turn floor and attack/interaction/other-seat walls, while the encounter session rewinds through automatic enemy commands following the player's action. Source work has resumed after W055; W050/W051 packages remain unchanged.
+W053 makes the existing seat-scoped PvP Undo rules available to Blue seats in PvE, including the turn floor and attack/interaction/other-seat walls, while the encounter session rewinds through automatic enemy commands following the player's action. Source work has resumed after W057; W050/W051 packages remain unchanged.
+
+W057 removes the final Ranged spawn from each PvE wave: current source now has 3 Melee, 2 Ranged and 1 Heavy in wave one, then 2 Heavy and 1 Ranged in wave two. Exact content/composition checks and solo/co-op six-row rail checks passed. Source-only; W050/W051 packages retain their prior roster.
 
 W056 gives white numeric card-modifier overlays a thicker black outline without moving or resizing them. Focused EditMode/PlayMode checks and targeted Game View inspection passed; source-only, with W050/W051 unchanged.
 

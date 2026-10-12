@@ -81,7 +81,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(composed.BoardView.PerspectiveSide, Is.EqualTo(TeamSide.Blue));
             Assert.That(model.Heroes.Count(hero => Side(model, hero.HeroId) == TeamSide.Blue), Is.EqualTo(0),
                 "Heroes wait for their round-1 placement.");
-            Assert.That(model.Heroes.Count(hero => Side(model, hero.HeroId) == TeamSide.Red), Is.EqualTo(7));
+            Assert.That(model.Heroes.Count(hero => Side(model, hero.HeroId) == TeamSide.Red), Is.EqualTo(6));
             Assert.That(model.Minions.Count, Is.EqualTo(3));
 
             // The overlay's driver begins the placement on its own; the player answers it.
@@ -231,7 +231,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             composed.RefreshAll();
             yield return null; yield return null;
             Assert.That(rail.Q("pve-enemy-" + melee.HeroId.Value).tooltip, Does.Contain("On board"));
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(7 * 69).Within(1),
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(6 * 69).Within(1),
                 "The background ends after the live trays, not at the bottom of the screen.");
             var redBanner = ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
                 overlay.resolvedStyle.width, overlay.resolvedStyle.height, TeamSide.Red);
@@ -279,7 +279,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             StageEnemyBoard(composed, heavy.HeroId, null);
             composed.RefreshAll();
             yield return null; yield return null;
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(6 * 69).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(5 * 69).Within(1));
             foreach (var enemy in encounter.Enemies)
                 StageEnemyBoard(composed, enemy.HeroId, null);
             composed.RefreshAll();
@@ -289,7 +289,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             composed.RefreshAll();
             yield return null; yield return null;
             Assert.That(rail.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(483).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(414).Within(1));
 
             // Viewport resize caps the box and keeps every tray reachable by scrolling.
             overlay.style.bottom = StyleKeyword.Auto;
@@ -304,7 +304,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             overlay.style.height = StyleKeyword.Null;
             overlay.style.bottom = 0;
             yield return null; yield return null; yield return null;
-            Assert.That(rail.resolvedStyle.height, Is.EqualTo(483).Within(1));
+            Assert.That(rail.resolvedStyle.height, Is.EqualTo(414).Within(1));
 
             foreach (var hero in session.Projection.Participants.Heroes)
             {
@@ -338,7 +338,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
         {
             yield return LoadLauncher();
             ConfiguredMatchSceneRuntime runtime = null;
-            Assert.That(Object.FindAnyObjectByType<PveLauncher>().StartEncounter(ThreeHeroes, 42, value =>
+            Assert.That(Object.FindAnyObjectByType<PveLauncher>().StartEncounter(ThreeHeroes, 2, value =>
             {
                 runtime = value;
                 PveLauncher.LastView.StepSeconds = float.PositiveInfinity;

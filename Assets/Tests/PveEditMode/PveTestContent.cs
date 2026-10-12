@@ -98,9 +98,9 @@ namespace GuardsDigital.Tests.Pve
             new[] { "-3,2", "-5,4", "-3,4" }.Select(value =>
                 new PveCreepPlacement(Hex(value), StandardMinionType.Melee)),
             new[] { "-4,2", "-2,2", "-5,3", "-2,3", "-4,4" }.Select(Hex),
-            new[] { "-1,-2", "1,-1", "-7,2", "0,4", "-9,7", "-2,7", "-7,10" }
+            new[] { "-1,-2", "1,-1", "-7,2", "0,4", "-9,7", "-7,10" }
                 .Select(value => new PveSpawn(1, Hex(value), "raider"))
-                .Concat(new[] { "0,-4", "-6,0", "0,6", "-11,8" }
+                .Concat(new[] { "0,-4", "-6,0", "0,6" }
                     .Select(value => new PveSpawn(2, Hex(value), "brute"))));
 
         internal static HexCoordinate Hex(string value)

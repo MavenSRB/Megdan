@@ -132,10 +132,10 @@ namespace GuardsDigital.Pve.Presentation
                             for (var frame = 0; frame < 30; frame++) yield return null;
                             var rail = overlay.GetComponent<UIDocument>().rootVisualElement.Q<ScrollView>("pve-enemy-rail");
                             var column = rail?.Q("gd-hero-rail-red");
-                            Require(column != null && column.childCount == 7, "Seven live enemy rows required");
+                            Require(column != null && column.childCount == 6, "Six live enemy rows required");
                             CaptureArtifactBoard(Path.Combine(folder, "board-" + seatNumber + ".png"));
                             Debug.Log(ArtifactMarker + " READY seat=" + seatId + " hero=" + pickedHero +
-                                " version=" + projection.Version + " commits=" + commitments.Length + " enemies=7");
+                                " version=" + projection.Version + " commits=" + commitments.Length + " enemies=6");
                             var readyPath = Path.Combine(folder, "ready-" + seatNumber);
                             File.WriteAllText(readyPath + ".pending", BuildIdentityStamp.Current);
                             File.Move(readyPath + ".pending", readyPath);

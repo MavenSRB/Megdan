@@ -126,6 +126,10 @@ Enemies not on the board do not participate in commitment or turn resolution: no
 
 Replace one wave-one Melee with a Heavy at the first spawn (-1,-2), preserving all spawn positions and counts. Wave one: three Melee, three Ranged, one Heavy. Wave two stays two Heavy and two Ranged. Other cards, values and wave timing remain unchanged.
 
+## PVE-D42 Reduced Ranged waves (Approved, user 2026-10-12)
+
+Remove one Ranged enemy from each wave, superseding D17/D24/D41 only for those two spawn entries and the resulting counts. Remove the final Ranged entry in each prior wave: round one's `-2,7` spawn and round two's `-11,8` spawn. Wave one is now three Melee, two Ranged and one Heavy; wave two is two Heavy and one Ranged. Every retained spawn coordinate, card, value, target priority and wave timing remains unchanged.
+
 ## Remaining open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

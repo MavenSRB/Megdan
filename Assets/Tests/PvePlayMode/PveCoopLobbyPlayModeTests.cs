@@ -8,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Pve.Play;
 using GuardsDigital.Pve.Content;
 using GuardsDigital.Pve.Composition;
@@ -142,8 +143,19 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 if (seat.Id.Value == "blue-player-01")
                 {
                     yield return null; yield return null;
-                    var overlay = Object.FindAnyObjectByType<PveEncounterView>().GetComponent<UIDocument>().rootVisualElement;
-                    Click(overlay.Query<Button>().ToList().First(button => button.text.StartsWith("Place at ")));
+                    var item = match.Session.Projection.PendingSystemTransitionStep.OpenItems
+                        .Single(value => GuardsDigital.Core.Rules.Transitions.ModeRoundStartPlacementRules
+                            .TryReadItem(value.ItemId, out var hero) && hero.Equals(seat.HeroId));
+                    Assert.That(GuardsDigital.Core.Rules.Transitions.ModeRoundStartPlacementRules
+                        .TryReadOption(item.Options[0], out var space), Is.True);
+                    var tile = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                        .Single(value => value.Coordinate.Equals(space));
+                    var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                    runtime.RefreshAll();
+                    yield return null;
+                    Assert.That(pointer.TryHandlePointerRay(Camera.main.ScreenPointToRay(
+                        Camera.main.WorldToScreenPoint(tile.transform.position))), Is.True,
+                        "The playing host places through the configured board input.");
                 }
                 else
                 {
@@ -173,12 +185,21 @@ namespace GuardsDigital.Tests.Pve.PlayMode
         [UnityTearDown]
         public IEnumerator Cleanup()
         {
-            if (lobby != null) Object.Destroy(lobby.gameObject);
+            if (lobby != null)
+            {
+                foreach (var pointer in Object.FindObjectsByType<PrimitiveHeroPointerInput>(
+                             FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    Object.Destroy(pointer.gameObject);
+                }
+                yield return null;
+                Object.Destroy(lobby.gameObject);
+                yield return null;
+            }
             foreach (var transport in transports) transport.Dispose();
             transports.Clear(); clients.Clear();
             externalServer?.Shutdown(); externalListener?.Dispose();
             externalServer = null; externalListener = null;
-            yield return null;
         }
 
         [UnityTest]
@@ -276,9 +297,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var overlay = Object.FindAnyObjectByType<PveEncounterView>();
             Assert.That(overlay.Session, Is.Null);
             Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Q("pve-enemy-rail").resolvedStyle.height,
-                Is.EqualTo(507).Within(1), "Joining clients fit the rail to seven live trays.");
+                Is.EqualTo(414).Within(1), "Joining clients fit the rail to six live trays.");
             Assert.That(overlay.GetComponent<UIDocument>().rootVisualElement.Query<VisualElement>()
-                .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(7),
+                .ToList().Count(element => element.name != null && element.name.StartsWith("pve-enemy-pve-enemy-")), Is.EqualTo(6),
                 "Only standing enemies have trays on a joining client.");
             Assert.That(runtime.ReadModel.Cards.Any(card => match.Encounter.FindEnemy(card.OwnerId) != null), Is.True);
             yield return PveLauncherPlayModeTests.AssertLinkedHover(runtime,

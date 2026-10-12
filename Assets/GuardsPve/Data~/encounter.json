@@ -13,11 +13,9 @@
     { "round": 1, "hex": "-7,2", "enemyType": "melee" },
     { "round": 1, "hex": "0,4", "enemyType": "ranged" },
     { "round": 1, "hex": "-9,7", "enemyType": "melee" },
-    { "round": 1, "hex": "-2,7", "enemyType": "ranged" },
     { "round": 1, "hex": "-7,10", "enemyType": "melee" },
     { "round": 2, "hex": "0,-4", "enemyType": "heavy" },
     { "round": 2, "hex": "-6,0", "enemyType": "ranged" },
-    { "round": 2, "hex": "0,6", "enemyType": "heavy" },
-    { "round": 2, "hex": "-11,8", "enemyType": "ranged" }
+    { "round": 2, "hex": "0,6", "enemyType": "heavy" }
   ]
 }
