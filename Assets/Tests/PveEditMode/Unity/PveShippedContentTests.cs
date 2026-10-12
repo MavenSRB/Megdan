@@ -77,8 +77,8 @@ namespace GuardsDigital.Tests.Pve
             var ranged = shipped.Find("ranged");
             Assert.That(ranged.OrangeCards.Select(Describe), Is.EqualTo(new[]
             {
-                "A/8/1//0/2/False/Move:Hero:3",
-                "B/6/1/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:3",
+                "A/8/1//0/2/False/Move:Hero:2",
+                "B/6/1/3/3/1/False/Attack:Hero:1,Attack:Minion:1,Move:Hero:2",
                 "C/3/1/5/3//False/Attack:Hero:1,Attack:Minion:1",
                 "X/1/1//0//True/"
             }));

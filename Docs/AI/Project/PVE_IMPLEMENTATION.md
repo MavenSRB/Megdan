@@ -44,7 +44,7 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 
 ## Weak-attack fallback (W-034)
 
-Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 3; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Stronger cards and all other values/plans remain unchanged.
+Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31, amended by PVE-D35): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 2; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Ranged Aim also stops at range 2 with Move 2; both Ranged attacks retain Range 3. Stronger cards and all other values/plans remain unchanged.
 
 ## Encounter composition (W-021)
 
@@ -112,7 +112,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 `PveContentValidator` refuses invalid content with readable messages before composition. The launcher shows them instead of starting.
 
-The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards and one movement-only card. Melee's fourth card is Shield Up, Initiative 9: "This unit is immune this turn." Ranged/Heavy retain Idle. PVE-D34 uses the existing unqualified Immune rule through a typed Skill: protection starts at resolution and expires at the normal This Turn checkpoint. Its mode-only capability registration survives restore/Undo/restart without changing default catalogs; original wording appears on the shared card face without claiming official provenance. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
+The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards and one movement-only card. Melee's fourth card is Shield Up, Initiative 9: "This unit is immune this turn." Ranged/Heavy retain Idle. PVE-D34 uses the existing unqualified Immune rule through a typed Skill: protection starts at resolution and expires at the normal This Turn checkpoint. Its mode-only capability registration survives restore/Undo/restart without changing default catalogs; original wording appears on the shared card face without claiming official provenance. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 2 (PVE-D35). Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
 
 ## Launch, smoke and build
 

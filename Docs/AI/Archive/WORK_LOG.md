@@ -44,6 +44,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-038 | PvE shares PvP's TCP port 45677 and explains direct internet prerequisites; keyed lobby validated. | `work/W-038` |
 | W-039 | Joining players automatically inherit the host seed, retaining full keyed compatibility and reconnect identity. | `work/W-039` |
 | W-040 | Melee Shield Up, Initiative 9, grants existing Immune for this turn; typed Skill, shared wording and restore-stable mode catalog. | `work/W-040` |
+| W-041 | Ranged Aim and Shoot fallback stop at range 2; attack Range 3 and movement amounts unchanged. | `work/W-041` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -384,3 +385,9 @@ Historical evidence: completion commit addressed by immutable `work/W-039`; exac
 Approved: replace Melee Idle with Shield Up, Initiative 9, text "This unit is immune this turn." Reuses existing unqualified Immune/This Turn behavior from Skill resolution through expiry, with no new targeting rule. Adds a typed PvE Skill, mode-scoped trusted capability composition, and explicitly original-mode inert wording rather than claiming official source provenance. Two attacks, no Defense, four-card shuffle, Ranged/Heavy and default existing-mode catalogs remain unchanged. T2 acceptance: card values/text, automatic selection, immunity/expiry, Undo/restore/restart, editor/save validation, shared preview and co-op, default identity and architecture regressions. Review found no remaining in-scope defect. Source-only change; no rebuilt package or external internet claim.
 
 Historical evidence: completion commit addressed by immutable `work/W-040`; exact checks/results, test-assumption corrections and limitations live in its body.
+
+### [x] W-041 Ranged movement stop distance
+
+Approved: Ranged movement stops at range 2 rather than 3. Updated Aim and Shoot fallback content only; Move 2/1, Attack Range 3, priorities, other cards and shared rules remain unchanged (PVE-D35). T1 acceptance: exact shipped content and affected attack/fallback cases, JSON/editor round-trip. Review found no remaining in-scope defect or new shared-rule risk. No engine/UI change, package rebuild or remote operation.
+
+Historical evidence: completion commit addressed by immutable `work/W-041`; exact checks/results and omitted-suite rationale live in its body.

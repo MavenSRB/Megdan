@@ -86,6 +86,10 @@ The host chooses the encounter seed; joining players inherit it automatically an
 
 Replace Melee X Idle with X Shield Up, one copy, Initiative 9, no Attack/Movement/Defense. Text: "This unit is immune this turn." It is a Skill applying the existing unqualified Immune rule to its controller from resolution until the ordinary This Turn expiry; self-action and presence/system-event exceptions remain the existing rules. This supersedes Melee's idle slot and the earlier deferral of enemy Skills only for this bounded card. Ranged/Heavy cards, two Melee attacks and four-card shuffle remain unchanged.
 
+## PVE-D35 Ranged movement stop distance (Approved, user 2026-10-12)
+
+Aim (Move 2) and Shoot's fallback (Move 1) now stop at range 2 from heroes, superseding their stop-at-3 values. Attack Range stays 3 on Shoot and Power Shot; attack priorities, fallback ordering and other cards are unchanged.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

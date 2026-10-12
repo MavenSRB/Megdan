@@ -14,7 +14,7 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 
 ## Current authorization and next route
 
-- Last completed work: **W-040**.
+- Last completed work: **W-041**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -26,7 +26,7 @@ The enemy rail box now fits its live trays, hides when empty and scrolls only be
 
 Enemy orange cards now shuffle each round instead of using preset orders (PVE-D32). All four slots remain public upfront; Defense stays separate and seed/round/enemy identity preserves Undo and co-op agreement. This source change is not included in the preserved W035 ZIP. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
-All weaker enemy attacks now have movement fallback after both attack options (PVE-D31): Slash Move 2 toward creeps, Shoot Move 1 toward heroes stopping at 3, Hurl Move 1 toward heroes stopping at 2. Stronger cards and other values are unchanged.
+All weaker enemy attacks have movement fallback after both attack options (PVE-D31/D35): Slash Move 2 toward creeps, Shoot Move 1 toward heroes stopping at 2, Hurl Move 1 toward heroes stopping at 2. Ranged Aim also stops at range 2; both Ranged attacks retain Range 3. Stronger cards and other values are unchanged. These source changes are not in W035.
 
 Melee/Ranged now count as both heroes and minions for targeting/effects; Heavy counts as hero only, and combined effects count each enemy once (amended PVE-D30). The shared engine preserves each enemy's Hero identity, combat and Defense, with guarded minion effect outputs, removal/replacement and restore/Undo support. Category work changed no card definitions. See [PvE implementation](Project/PVE_IMPLEMENTATION.md); no further implementation is authorized.
 
