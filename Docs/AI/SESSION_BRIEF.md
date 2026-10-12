@@ -14,7 +14,9 @@ Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified
 
 ## Current authorization and next route
 
-- Last completed work: **W-050**.
+Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+
+- Last completed work: **W-051**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 

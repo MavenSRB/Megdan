@@ -146,7 +146,7 @@ namespace GuardsDigital.EditorTools
                     target = target,
                     targetGroup = BuildTargetGroup.Standalone,
                     options = BuildOptions.StrictMode,
-                    extraScriptingDefines = target == BuildTarget.StandaloneWindows64
+                    extraScriptingDefines = target == BuildTarget.StandaloneWindows64 || target == BuildTarget.StandaloneOSX
                         ? new[] { "GUARDS_PVE" } : Array.Empty<string>()
                 });
             }
@@ -171,9 +171,10 @@ namespace GuardsDigital.EditorTools
                 return 1;
             }
 
-            if (target == BuildTarget.StandaloneWindows64)
+            if (target == BuildTarget.StandaloneWindows64 || target == BuildTarget.StandaloneOSX)
             {
-                var pveData = Path.Combine(outputDirectory, "PveData");
+                // macOS Application.dataPath is <app>/Contents; PveDataPaths uses its parent.
+                var pveData = Path.Combine(target == BuildTarget.StandaloneOSX ? executablePath : outputDirectory, "PveData");
                 Directory.CreateDirectory(pveData);
                 foreach (var file in Directory.GetFiles(Path.Combine(projectRoot, "Assets/GuardsPve/Data~"), "*.json"))
                     File.Copy(file, Path.Combine(pveData, Path.GetFileName(file)), true);

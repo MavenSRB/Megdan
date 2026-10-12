@@ -91,6 +91,21 @@ if (-not (Test-Path -LiteralPath $dataDir -PathType Container)) {
     exit 1
 }
 
+# The unified Mac artifact must contain both original-mode assemblies and identical tunable data.
+foreach ($assembly in @('GuardsDigital.Pve.dll', 'GuardsDigital.Pve.Presentation.dll')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $dataDir "Managed/$assembly") -PathType Leaf)) {
+        throw "MAC BUILD FAILED: missing unified assembly $assembly"
+    }
+}
+foreach ($file in @('enemies.json', 'encounter.json')) {
+    $sourceData = Join-Path $projectRoot "Assets/GuardsPve/Data~/$file"
+    $bundledData = Join-Path $bundlePath "PveData/$file"
+    if (-not (Test-Path -LiteralPath $bundledData -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $sourceData).Hash -ne (Get-FileHash -LiteralPath $bundledData).Hash) {
+        throw "MAC BUILD FAILED: missing or stale PvE content $file"
+    }
+}
+
 $stamped = Select-String -LiteralPath $buildLog -Pattern 'GUARDS_BUILD: STAMP (.+)$' | Select-Object -First 1
 if (-not $stamped -or $stamped.Matches[0].Groups[1].Value.Trim() -ne $Stamp) {
     Write-Error "MAC BUILD FAILED: the build did not carry the requested stamp '$Stamp'."

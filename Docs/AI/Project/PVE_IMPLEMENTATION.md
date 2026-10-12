@@ -54,6 +54,8 @@ Shared selectors, presence, attack filtering and continuous minion scopes consul
 
 ## Generated enemy faces
 
+W051's Mac counterpart uses the same `GUARDS_PVE` define and content as the unified Windows build. `PveData` lives at `GuardsDigital.app/PveData`, matching the unchanged runtime parent-of-dataPath lookup (macOS dataPath is the app's `Contents`, per [Unity documentation](https://docs.unity.com/en-us/engine/6000.3/script-reference/unityengine/application/datapath)). Mac bundle/build validation does not prove native launch or cross-platform networking.
+
 W050 reserves the shared tiebreaker banner's full height plus a four-unit gap above the enemy trays, including when the banner changes sides. The live-row fit and overflow cap use the same top offset; card dimensions and preview scale remain unchanged.
 
 `PveEnemyArtwork` maps the fourteen W044 faces to exact enemy definition/revision identities through the shared `ConfiguredCardArtwork` prepared-face renderer, separately from the official verified-art catalog. Approved PNG bytes are copied unchanged from `tmp/w044-enemy-faces/final` into the ignored `Assets/Resources/Private/PveCards` folder. Their own aspect ratio is retained inside the normal card footprint. Twelve orange and two purple faces retain approved icons/text; shared preview and effect-glow layers remain in use. Tuned names, numbers, Skills, repeat flags or targeting priorities fail the baked-face guard and use the typed fallback; missing private artwork also falls back. No rules derive from artwork. These private assets are not publication-authorized or included in the preserved W046 package.

@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-051 | Matching W050 universal Mac package with PvP/PvE, same identity/content, private textures and executable ZIP modes. Cross-build, architectures, bundle data/resources and extraction integrity verified; native Mac launch/render/network explicitly unverified. Windows package/main preserved. | `work/W-051` |
 | W-050 | Current-source unified Windows package, including W047-W049 and user-requested tiebreaker clearance and first-wave Heavy replacement. Focused content/UI checks, exact-artifact PvP and PvE one/two/three-player smokes, portrait resource/roster checks, board renders, manifest/ZIP verification and extracted launch. Original card scaling, older packages and main preserved. | `work/W-050` |
 | W-049 | Integrated fourteen generated private enemy faces with exact-content fallback guards and original card sizing; corrected square texture import while preserving source PNGs. Per user clarification, unspawned enemies have no commitments, passes or turn assignments until spawning; preserved wave timing, restore, partial network slots and default PvP. Focused engine/UI checks and visual review; source-only, W046 package/main unchanged. | `work/W-049` |
 | W-048 | Saved PvE host narration and public-metadata host/client captures using shared privacy/failure conventions; distinct original-mode ending, nonfatal disk failure and disposal checks. Source-only, W046 package/main preserved. | `work/W-048` |
@@ -56,6 +57,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-051 Matching W050 universal Mac package
+
+Historical evidence: `work/W-051` commit body.
+
+User request 2026-10-12: make the Mac build as well. Built the universal Intel/Apple Silicon Mono counterpart with the exact Windows W050 stamp and unchanged gameplay/content. Corrected the build-only Mac omission of `GUARDS_PVE` and copied JSON to the existing runtime lookup location inside the app. The Mac build gate now rejects missing PvE assemblies or stale bundled JSON. Verified native architecture headers, version, fourteen private texture names/dimensions, matching Windows JSON and complete ZIP extraction hashes/Unix modes. Preserved the older September Mac app privately before building; Windows W050 and main unchanged. Review preserves authority/platform separation; no native Mac, cross-platform network, signing/notarization or publication claim. Native launch requires a Mac and is a limitation, not a green check.
 
 ### [x] W-050 Unified build, tiebreaker clearance and first-wave Heavy
 
