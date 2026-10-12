@@ -216,7 +216,8 @@ namespace GuardsDigital.Core.Components
         /// reserve p.19's Respawn ordering requires, a token to its finite token supply - and this
         /// commit awards nothing, opens no Defeat stage, and records no reward eligibility.
         /// </summary>
-        BoardObjectRemovalCommitResult CommitValidatedRemoval(BoardObjectReference subject);
+        BoardObjectRemovalCommitResult CommitValidatedRemoval(BoardObjectReference subject,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null);
 
         /// <summary>
         /// Rulebook p.19: "Swap an object (such as a miniature or a token on the board) with a different
@@ -237,5 +238,9 @@ namespace GuardsDigital.Core.Components
         BoardObjectRemovalCommitResult CommitValidatedMinionReplacement(
             GuardsDigital.Core.Setup.MinionId outgoing,
             PlacedToken incoming);
+
+        /// <summary>Atomic replacement of a single-body mode enemy retaining its hero identity.</summary>
+        BoardObjectRemovalCommitResult CommitValidatedHeroReplacement(
+            GuardsDigital.Core.Units.Heroes.HeroId outgoing, PlacedToken incoming);
     }
 }

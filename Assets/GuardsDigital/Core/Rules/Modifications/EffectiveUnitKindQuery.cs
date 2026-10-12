@@ -46,13 +46,17 @@ namespace GuardsDigital.Core.Rules.Modifications
                     ? (IReadOnlyList<EffectiveUnitKind>)Array.Empty<EffectiveUnitKind>()
                     : new[] { IntrinsicKindQuery.IntrinsicUnitKind(rulesObject) };
             var overlaid = modifications?.OverlaidEffectiveUnitKinds(rulesObject);
-            if (overlaid == null || overlaid.Count == 0)
+            var modeMinion = rulesObject.Kind == RuleObjectKind.Hero &&
+                modifications?.ModeRules?.HasMinionCategory(rulesObject.HeroId) == true;
+            if ((overlaid == null || overlaid.Count == 0) && !modeMinion)
             {
                 return standing;
             }
 
             var composed = new List<EffectiveUnitKind>(standing);
-            for (var index = 0; index < overlaid.Count; index++)
+            if (modeMinion && !composed.Contains(EffectiveUnitKind.Minion))
+                composed.Add(EffectiveUnitKind.Minion);
+            for (var index = 0; index < (overlaid?.Count ?? 0); index++)
             {
                 if (!composed.Contains(overlaid[index]))
                 {

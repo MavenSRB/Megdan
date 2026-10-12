@@ -109,7 +109,7 @@ namespace GuardsDigital.Pve.Presentation
                 }),
                 type.PurpleCards.Select(card => new PvePurpleCard(card.Key, card.Name,
                     Value(type, card.Key, "init", card.Initiative), Value(type, card.Key, "defense", card.Defense))),
-                type.Plans, type.TokenType)));
+                type.Plans, type.TokenType, type.MinionCategory)));
 
         private void Save()
         {

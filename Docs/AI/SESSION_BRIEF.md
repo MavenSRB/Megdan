@@ -14,13 +14,13 @@ Current private package: **W013**, `Builds/Playtest-W013-live-card-values.zip`. 
 
 ## Current authorization and next route
 
-- Last completed work: **W-034**.
+- Last completed work: **W-033**.
 - Active authorized work: **none**.
-- Next proposed work: **W-033**.
+- Next proposed work: **none**.
 
 All weaker enemy attacks now have movement fallback after both attack options (PVE-D31): Slash Move 2 toward creeps, Shoot Move 1 toward heroes stopping at 3, Hurl Move 1 toward heroes stopping at 2. Stronger cards and other values are unchanged.
 
-After W-034, W-033 is approved with shared-engine support: Melee/Ranged count as both heroes and minions, Heavy as hero only, and combined effects count each enemy once. Keep all card definitions unchanged for category work. The earlier minion-only prototype was removed and remains private; it is not completed behavior. See [current work](Roadmap/CURRENT_WORK.md) and amended PVE-D30.
+Melee/Ranged now count as both heroes and minions for targeting/effects; Heavy counts as hero only, and combined effects count each enemy once (amended PVE-D30). The shared engine preserves each enemy's Hero identity, combat and Defense, with guarded minion effect outputs, removal/replacement and restore/Undo support. Category work changed no card definitions. See [PvE implementation](Project/PVE_IMPLEMENTATION.md); no further implementation is authorized.
 
 Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two attacks, one movement card and one idle. Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26/D29 in [PvE design](Project/PVE_DESIGN.md). W024 PvE predates these source changes; no new package was requested. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). W-004 remains a paused presentation-approval gate; see [current work](Roadmap/CURRENT_WORK.md).
 

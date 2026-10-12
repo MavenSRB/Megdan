@@ -36,6 +36,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-031 | PvE three-player Host/Join, owner-private hero control, host enemy/shared choices and reserved-seat reconnect. | `work/W-031` |
 | W-032 | Compact nameless enemy rows with four public slots, Heavy Defense cards and bidirectional map/rail hover; removed floating map strips. | `work/W-032` |
 | W-034 | All weaker enemy attacks have movement fallback; Heavy Hurl gains Move 1 toward heroes stopping at range 2. | `work/W-034` |
+| W-033 | Melee/Ranged satisfy both hero and minion targeting/effects once; Heavy remains hero-only, with unchanged cards and combat. | `work/W-033` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -320,3 +321,11 @@ Historical evidence: completion commit addressed by immutable `work/W-032`; exac
 Approved: every weaker enemy attack offers Movement if neither attack option applies (PVE-D31). Completed: Slash and Shoot retain their existing fallback; Hurl gains Move 1 toward heroes, stopping at range 2, after both attack options. Stronger cards, other values, plans and hand sizes are unchanged. Closing checks: all three shipped types choose Attack in reach and Movement out of reach on the first weak-card slot; composition, save and affected PvE flow regressions. T1, content-only production change; no UI/shared engine/package change. Review of behavior, rules authority, maintainability and risk found no further in-scope defect. Category work remains separately approved as W-033 with its superseding both-categories mapping.
 
 Historical evidence: completion commit addressed by immutable `work/W-034`; exact checks/results and limitations live in its body.
+
+### [x] W-033 PvE enemy target categories
+
+Approved superseding side-conversation clarification: Heavy counts as a hero only; Melee/Ranged count as BOTH heroes and minions for targeting/effects, once in combined queries/effects. Shared engine support, including unchanged High Voltage, was expressly authorized; preserve card definitions, combat, Defense, defeat, decks and turns. Executed after W-034. Completed with explicit type metadata independent of art and one actual Hero identity per enemy; minion selectors, output consumers, radius modifiers and guarded removal/replacement honor the mode category. Pending output restore rejects untrusted category substitutions. Closing checks cover unchanged High Voltage against both types, Heavy exclusion, class filtering, distinct counting, combat preservation, snapshot continuation and Undo replay, co-op and existing-mode isolation. T2; no package or visible layout change.
+
+Prior investigation is preserved: the minion-only prototype could not satisfy intrinsic-minion output/Defeat/adjacency contracts; private `tmp/w033-category-prototype.patch` was removed from executable source. Scope approval resolved the prerequisite and superseded that mapping. Checkpoint `f92f3f33` retains its evidence, not a claim of completed behavior. Handoff review of player experience, authority, maintainability and risk found no remaining in-scope acceptance defect. Existing private packages and W-004's separate human gate remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-033`; exact checks/results, corrected test failures and limitations live in its body.

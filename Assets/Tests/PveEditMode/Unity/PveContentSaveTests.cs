@@ -20,6 +20,7 @@ namespace GuardsDigital.Tests.Pve
             {
                 var loaded = reloaded.Find(type.Id);
                 Assert.That(loaded.TokenType, Is.EqualTo(type.TokenType));
+                Assert.That(loaded.MinionCategory, Is.EqualTo(type.MinionCategory));
                 Assert.That(loaded.OrangeCards.Select(card =>
                         (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle,
                             string.Join(",", card.Options.Select(option => option.Kind + ":" + option.Target + ":" + option.StopDistance)))),
@@ -39,6 +40,8 @@ namespace GuardsDigital.Tests.Pve
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
             var editor = new PveCardEditor(() => catalog, null);
             editor.Build();
+            Assert.That(editor.Edited().Types.Select(type => type.MinionCategory),
+                Is.EqualTo(catalog.Types.Select(type => type.MinionCategory)));
             Assert.That(editor.Edited().Types.Select(type => type.TokenType),
                 Is.EqualTo(catalog.Types.Select(type => type.TokenType)));
             Assert.That(editor.Edited().Types.Select(type => type.PurpleCards.Count),

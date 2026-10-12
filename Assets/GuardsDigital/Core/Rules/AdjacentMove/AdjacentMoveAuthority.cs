@@ -1761,10 +1761,17 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return BoardObjectSwapCommitResult.Accept(first, second, firstOrigin, secondOrigin);
         }
 
-        public BoardObjectRemovalCommitResult CommitValidatedRemoval(BoardObjectReference subject)
+        public BoardObjectRemovalCommitResult CommitValidatedRemoval(BoardObjectReference subject,
+            MatchModeRules modeRules = null)
         {
             if (subject.Kind == BoardObjectKind.Hero)
             {
+                if (modeRules?.HasMinionCategory(subject.HeroId) == true &&
+                    TryGetObjectCoordinate(subject, out var modeOrigin))
+                {
+                    CommitValidatedHeroRemoval(subject.HeroId);
+                    return BoardObjectRemovalCommitResult.Accept(subject, modeOrigin);
+                }
                 // p.13 takes a hero off the board through Defeat and its consequences, so this port is
                 // not the back door to it.
                 return BoardObjectRemovalCommitResult.Reject(
@@ -1826,6 +1833,21 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             occupancyIndex.Substitute(replaced.Coordinate, BoardOccupant.ForToken(incoming.Id));
             tokens[index] = incoming;
             return BoardObjectReplacementCommitResult.Accept(replaced, incoming);
+        }
+
+        public BoardObjectRemovalCommitResult CommitValidatedHeroReplacement(HeroId outgoing, PlacedToken incoming)
+        {
+            if (incoming == null) throw new ArgumentNullException(nameof(incoming));
+            var bodies = GetHeroBodies(outgoing);
+            if (bodies.Count != 1 || !bodies[0].Coordinate.Equals(incoming.Coordinate) ||
+                tokens.Any(token => token.Id.Equals(incoming.Id)) ||
+                tokens.Count(token => token.Definition.Reference.Equals(incoming.Definition.Reference)) >= incoming.Definition.SupplyCount)
+                return BoardObjectRemovalCommitResult.Reject(BoardObjectRemovalRejectionReason.UnknownObject);
+            occupancies.Remove(bodies[0]);
+            actingBodies.Remove(outgoing);
+            occupancyIndex.Substitute(incoming.Coordinate, BoardOccupant.ForToken(incoming.Id));
+            tokens.Add(incoming);
+            return BoardObjectRemovalCommitResult.Accept(BoardObjectReference.ForHero(outgoing), incoming.Coordinate);
         }
 
         public BoardObjectRemovalCommitResult CommitValidatedMinionReplacement(

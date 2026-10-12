@@ -193,14 +193,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var placedDefinition = EffectiveDefinition(context, definition);
                 if (placedDefinition == null)
                     return EffectExecutionResult.ImpossibleMandatory();
-                var outcome = Rules.BoardObjects.ReplaceOperation.ReplaceMinion(
-                    Policy,
-                    components.Exchange,
-                    components.Board,
-                    components.Tokens,
-                    components.Catalog,
-                    minion,
-                    new PlacedToken(
+                var incoming = new PlacedToken(
                         new TokenInstanceId(
                             $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
                             $":{placedDefinition.Id.Value}:r{context.RoundIndex}t{context.TurnIndex}:{at.Q}:{at.R}"),
@@ -208,8 +201,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ActorId,
                         context.ControllerId,
                         context.SourceCardInstanceId,
-                        at),
-                    Stage(context));
+                        at);
+                var outcome = minion.Kind == BoardObjectKind.Hero
+                    ? Rules.BoardObjects.ReplaceOperation.ReplaceModeMinion(Policy, components.Exchange,
+                        components.Board, components.Tokens, components.Catalog, minion.HeroId, incoming,
+                        Stage(context), context.Modifications)
+                    : Rules.BoardObjects.ReplaceOperation.ReplaceMinion(Policy, components.Exchange,
+                        components.Board, components.Tokens, components.Catalog, minion.MinionId, incoming, Stage(context));
                 if (!outcome.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -243,13 +241,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             placedDefinition.Reference, context.Components.Tokens.PlacedTokens) > 0 ||
                         context.Components.Tokens.PlacedTokens.Any(token =>
                             token.Definition.Reference.Equals(placedDefinition.Reference))) &&
-                    !Stage(context).IsPrevented(BoardObjectReference.ForMinion(minion))
+                    !Stage(context).IsPrevented(minion)
                         ? EffectExecutionResultKind.Applied
                         : EffectExecutionResultKind.ImpossibleMandatory;
             }
 
             private static bool TryResolve(
-                EffectCapabilityContext context, out Setup.MinionId minion, out HexCoordinate at)
+                EffectCapabilityContext context, out BoardObjectReference minion, out HexCoordinate at)
             {
                 minion = default;
                 at = default;
@@ -257,12 +255,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var subject = context.Input("subject");
                 if (components == null || !components.IsLive || subject.Kind != EffectValueKind.Coordinate ||
                     !components.Board.TryGetObjectAt(subject.Coordinate, out var occupant) ||
-                    occupant.Kind != BoardObjectKind.Minion)
+                    (occupant.Kind != BoardObjectKind.Minion && !(occupant.Kind == BoardObjectKind.Hero &&
+                        context.Modifications?.ModeRules?.HasMinionCategory(occupant.HeroId) == true)))
                 {
                     return false;
                 }
 
-                minion = occupant.MinionId;
+                minion = occupant;
                 at = subject.Coordinate;
                 return true;
             }

@@ -604,6 +604,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     continue;
                 }
+                if (target.Kind == BoardObjectKind.Hero && (kinds & PrintedIconKinds.Heroes) == 0 &&
+                    !SyntheticRosterCapabilities.AdmittedClassIncludes(admittedClass,
+                        context.Modifications?.ModeRules?.MinionCategory(target.HeroId) ?? StandardMinionType.None))
+                    continue;
                 if (target.Kind == BoardObjectKind.Token &&
                     EffectiveUnitKindQuery.Is(
                         RuleObject.ForToken(target.TokenInstanceId),
@@ -634,7 +638,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             switch (target.Kind)
             {
                 case BoardObjectKind.Hero:
-                    return (kinds & PrintedIconKinds.Heroes) != 0;
+                    return (kinds & PrintedIconKinds.Heroes) != 0 ||
+                        ((kinds & PrintedIconKinds.Minions) != 0 &&
+                         modifications?.ModeRules?.HasMinionCategory(target.HeroId) == true);
                 case BoardObjectKind.Minion:
                     return (kinds & PrintedIconKinds.Minions) != 0;
                 case BoardObjectKind.Token:
@@ -827,6 +833,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     return false;
                 }
+                if (excludedMinion.Kind == EffectValueKind.Hero && target.Kind == BoardObjectKind.Hero &&
+                    target.HeroId.Equals(excludedMinion.HeroId) &&
+                    context.Modifications?.ModeRules?.HasMinionCategory(target.HeroId) == true)
+                    return false;
 
                 // Geometry and adjacency: the clauses a bare space can satisfy, shared with placement.
                 if (!space.Admit(at))
@@ -1153,7 +1163,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var kindMatches =
                     (occupant.Kind == BoardObjectKind.Hero &&
                         (adjacentToUnitKind == RosterUnitKind.Hero || adjacentToUnitKind == RosterUnitKind.Unit)) ||
-                    (occupant.Kind == BoardObjectKind.Minion &&
+                    ((occupant.Kind == BoardObjectKind.Minion ||
+                        (occupant.Kind == BoardObjectKind.Hero &&
+                         context.Modifications?.ModeRules?.HasMinionCategory(occupant.HeroId) == true)) &&
                         (adjacentToUnitKind == RosterUnitKind.Minion || adjacentToUnitKind == RosterUnitKind.Unit));
                 return kindMatches &&
                     (adjacentToUnitRelation == SourceTeamRelation.None ||

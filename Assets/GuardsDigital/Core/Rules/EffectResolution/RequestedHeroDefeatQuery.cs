@@ -92,7 +92,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public static IReadOnlyList<RequestedHeroDefeat> Requested(
             EffectDefinition definition,
-            IReadOnlyList<EffectNodeOutcome> outcomes)
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (outcomes == null)
@@ -129,10 +130,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                 foreach (var fact in outcome.Outputs)
                 {
-                    if (string.Equals(
+                    var namesHero = string.Equals(
                             fact.OutputName,
                             SyntheticConsequenceCapabilities.DefeatedHeroOutput,
-                            StringComparison.Ordinal) &&
+                            StringComparison.Ordinal);
+                    var namesModeMinion = string.Equals(fact.OutputName,
+                        SyntheticConsequenceCapabilities.DefeatedMinionOutput, StringComparison.Ordinal) &&
+                        modeRules?.HasMinionCategory(fact.Value.HeroId) == true;
+                    if ((namesHero || namesModeMinion) &&
                         fact.Value.Kind == EffectValueKind.Hero &&
                         fact.Value.HeroId.IsDefined)
                     {

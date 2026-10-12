@@ -2039,7 +2039,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // Milestone 9.21c: every body of a many-bodied hero in reach (RZ-Q2); the
                         // handlers offer them through Offer, once or per body.
                         everyBody: true)
-                    .Where(target => AdmitsClass(admittedClass, target, board))
+                    .Where(target => AdmitsClass(admittedClass, target, board) &&
+                        (unitKind != RosterUnitKind.Minion || target.Kind != BoardObjectKind.Hero ||
+                         AdmittedClassIncludes(admittedClass, context.Modifications?.ModeRules?.MinionCategory(target.HeroId) ?? StandardMinionType.None)))
                     .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(),
                         activity,
@@ -2139,11 +2141,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectValue.Minion(target.MinionId);
 
             protected static EffectOutcomeFact AsOutcome(
+                EffectCapabilityContext context,
                 BoardObjectReference target,
                 string heroOutput = ChosenHeroOutput,
                 string minionOutput = ChosenMinionOutput) =>
                 target.Kind == BoardObjectKind.Hero
-                    ? new EffectOutcomeFact(heroOutput, EffectValue.Hero(target.HeroId))
+                    ? new EffectOutcomeFact(!context.Publishes(heroOutput) && context.Publishes(minionOutput) &&
+                        context.Modifications?.ModeRules?.HasMinionCategory(target.HeroId) == true
+                            ? minionOutput : heroOutput, EffectValue.Hero(target.HeroId))
                     : new EffectOutcomeFact(minionOutput, EffectValue.Minion(target.MinionId));
 
             /// <summary>
@@ -2605,7 +2610,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // keeps every milestone 8.19b definition publishing exactly what it declared.
                 var outcomes = new List<EffectOutcomeFact>();
                 if (chosen.Kind != BoardObjectKind.Token)
-                    outcomes.Add(AsOutcome(chosen));
+                    outcomes.Add(AsOutcome(context, chosen));
                 if (context.Publishes(ChosenSpaceOutput) &&
                     context.Components?.Board != null &&
                     context.Components.Board.TryGetObjectCoordinate(chosen, out var at))
@@ -2704,14 +2709,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (selected.Count > 0)
                 {
                     if (selected[0].Kind != BoardObjectKind.Token)
-                        facts.Add(AsOutcome(selected[0], "firstHero", "firstMinion"));
+                        facts.Add(AsOutcome(context, selected[0], "firstHero", "firstMinion"));
                     AddSpaceIfPublished(context, facts, selected[0], "firstSpace");
                 }
 
                 if (selected.Count > 1)
                 {
                     if (selected[1].Kind != BoardObjectKind.Token)
-                        facts.Add(AsOutcome(selected[1], "secondHero", "secondMinion"));
+                        facts.Add(AsOutcome(context, selected[1], "secondHero", "secondMinion"));
                     AddSpaceIfPublished(context, facts, selected[1], "secondSpace");
                 }
 
@@ -2774,7 +2779,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 return maximum == 0
-                    ? SetOutcome(Array.Empty<BoardObjectReference>())
+                    ? SetOutcome(context, Array.Empty<BoardObjectReference>())
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                         EffectChooserRole.Actor, Offer(context, candidates), minimum, maximum));
             }
@@ -2797,7 +2802,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return SetOutcome(Canonical(chosen));
+                return SetOutcome(context, Canonical(chosen));
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
@@ -2828,7 +2833,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             private static EffectExecutionResult SetOutcome(
-                IReadOnlyList<BoardObjectReference> selected)
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> selected)
             {
                 var facts = new List<EffectOutcomeFact>
                 {
@@ -2837,17 +2842,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (selected.Count > 0)
                 {
-                    facts.Add(AsOutcome(selected[0], "firstHero", "firstMinion"));
+                    facts.Add(AsOutcome(context, selected[0], "firstHero", "firstMinion"));
                 }
 
                 if (selected.Count > 1)
                 {
-                    facts.Add(AsOutcome(selected[1], "secondHero", "secondMinion"));
+                    facts.Add(AsOutcome(context, selected[1], "secondHero", "secondMinion"));
                 }
 
                 if (selected.Count > 2)
                 {
-                    facts.Add(AsOutcome(selected[2], "thirdHero", "thirdMinion"));
+                    facts.Add(AsOutcome(context, selected[2], "thirdHero", "thirdMinion"));
                 }
 
                 return EffectExecutionResult.Applied(facts);
@@ -2956,9 +2961,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var canonical = Canonical(chosen);
                 var facts = new List<EffectOutcomeFact>();
                 if (canonical[0].Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(canonical[0], "firstHero", "firstMinion"));
+                    facts.Add(AsOutcome(context, canonical[0], "firstHero", "firstMinion"));
                 if (canonical[1].Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(canonical[1], "secondHero", "secondMinion"));
+                    facts.Add(AsOutcome(context, canonical[1], "secondHero", "secondMinion"));
                 AddSpaceIfPublished(context, facts, canonical[0], "firstSpace");
                 AddSpaceIfPublished(context, facts, canonical[1], "secondSpace");
                 return facts;
@@ -3297,7 +3302,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact("destination", EffectValue.Space(option.Destination)),
-                    AsOutcome(option.Target)
+                    AsOutcome(context, option.Target)
                 });
             }
 
@@ -5295,7 +5300,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var facts = new List<EffectOutcomeFact>();
                 if (chosen.Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(chosen));
+                    facts.Add(AsOutcome(context, chosen));
                 AddSpaceIfPublished(context, facts, chosen, ChosenSpaceOutput);
                 return EffectExecutionResult.Applied(facts);
             }
@@ -5475,9 +5480,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var canonical = Canonical(chosen);
                 var facts = new List<EffectOutcomeFact>();
                 if (canonical[0].Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(canonical[0], "firstHero", "firstMinion"));
+                    facts.Add(AsOutcome(context, canonical[0], "firstHero", "firstMinion"));
                 if (canonical[1].Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(canonical[1], "secondHero", "secondMinion"));
+                    facts.Add(AsOutcome(context, canonical[1], "secondHero", "secondMinion"));
                 AddSpaceIfPublished(context, facts, canonical[0], "firstSpace");
                 AddSpaceIfPublished(context, facts, canonical[1], "secondSpace");
                 return facts;
@@ -6092,7 +6097,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var facts = new List<EffectOutcomeFact>();
                 if (chosen.Kind != BoardObjectKind.Token)
-                    facts.Add(AsOutcome(chosen, ChosenHeroOutput, ChosenMinionOutput));
+                    facts.Add(AsOutcome(context, chosen, ChosenHeroOutput, ChosenMinionOutput));
                 facts.Add(new EffectOutcomeFact(
                     ChosenSpaceOutput, EffectValue.Space(at)));
                 return EffectExecutionResult.Applied(facts);

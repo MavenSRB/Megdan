@@ -36,6 +36,12 @@ Each hook is unused by every existing composition, which therefore behaves as be
 | Session decorator (W-023) | `ExternalMatchComposition.SessionDecorator`, passed by the root to `ConfiguredMatchSceneRuntime` | Wraps the Director session, so the HUD, Undo and Restart all talk to the encounter session. Only an external composition sets one. |
 | Director player side (W-026) | `ExternalMatchComposition.DirectorPlayerSide`, passed by the root to `ConfiguredMatchSceneRuntime`, which sets `DirectorHandsPresenter.PlayerSide`, `RoundActionPresenter.DirectorPlayerSide`, `DecisionWindowPresenter.DirectorPlayerSide` and `BoardInteractionUnityView.PerspectiveSide`; shared reading in `DirectorPlayerSide` | The Director plays one side. The tray follows only that side's heroes and cannot be pointed at another; while the other side owns the standing moment there is no turn control and no decision window; board outlines read from that side. Only an external composition names a side; a seat ignores it. |
 
+## Enemy categories (W-033)
+
+Under amended PVE-D30, Melee and Ranged count as both heroes and minions for targeting/effects; Heavy counts as hero only. Each enemy retains one Hero identity, normal enemy turns, cards, Defense and combat. Combined queries enumerate that identity once. The explicit `PveEnemyType.MinionCategory` is separate from token artwork, travels through editable content and co-op content identity, and binds through `MatchModeRules.MinionCategoryHeroes` on composition, restore and Undo. Existing-mode defaults add no category.
+
+Shared selectors, presence, attack filtering and continuous minion scopes consult the mode category. A minion-only effect output naming such an enemy carries its actual Hero value, never a fabricated MinionId; its consumers and snapshot validator require the trusted mode mapping. Unchanged High Voltage therefore selects and defeats Melee/Ranged through their existing hero defeat path, reads pre-removal adjacency and excludes Heavy from its minion choice. No card definition is changed for category support.
+
 ## Weak-attack fallback (W-034)
 
 Each type's lower-value Attack has an ordered Movement fallback after both attack priorities (PVE-D31): Melee Slash moves 2 toward creeps, stopping adjacent; Ranged Shoot moves 1 toward heroes, stopping at range 3; Heavy Hurl moves 1 toward heroes, stopping at range 2. The controller picks Movement only when no prior Attack option applies. Stronger cards and all other values/plans remain unchanged.

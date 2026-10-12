@@ -64,8 +64,10 @@ namespace GuardsDigital.Core.Rules.Modifications
             IEnumerable<ActionTargetExclusion> targetExclusions,
             IEnumerable<BoardPartitionRestriction> boardPartitions,
             RuleObject actingObject,
-            HexCoordinate? actingSpace)
+            HexCoordinate? actingSpace,
+            MatchModeRules modeRules = null)
         {
+            ModeRules = modeRules;
             ActingObject = actingObject;
             ActingSpace = actingSpace;
             TargetExclusions = Array.AsReadOnly((targetExclusions ?? Array.Empty<ActionTargetExclusion>()).ToArray());
@@ -127,6 +129,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         public IReadOnlyList<AppliedObstacleOverlay> ObstacleOverlays { get; }
         public IReadOnlyList<BoardPartitionRestriction> BoardPartitions { get; }
         public RuleObject ActingObject { get; }
+        public MatchModeRules ModeRules { get; }
         public HexCoordinate? ActingSpace { get; }
 
         public bool BlocksCurrentActorSpaceInteraction(HexCoordinate space) =>
@@ -173,9 +176,10 @@ namespace GuardsDigital.Core.Rules.Modifications
         public RuleModificationSet WithTargetExclusions(IReadOnlyList<ActionTargetExclusion> exclusions) =>
             (exclusions == null || exclusions.Count == 0) && TargetExclusions.Count == 0 ? this :
                 new RuleModificationSet(Modifications, ObstacleOverlays, TieBreaker, exclusions,
-                    BoardPartitions, ActingObject, ActingSpace);
+                    BoardPartitions, ActingObject, ActingSpace, ModeRules);
         public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0 &&
-            TargetExclusions.Count == 0 && BoardPartitions.Count == 0;
+            TargetExclusions.Count == 0 && BoardPartitions.Count == 0 &&
+            (ModeRules == null || ModeRules.MinionCategoryHeroes.Count == 0);
 
         /// <summary>
         /// Whether any overlay in effect makes <paramref name="space"/> count as an obstacle right

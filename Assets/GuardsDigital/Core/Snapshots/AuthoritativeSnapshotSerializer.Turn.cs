@@ -68,7 +68,8 @@ namespace GuardsDigital.Core.Snapshots
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             EffectRosterState rosterState,
             bool matchHasEnded,
-            out CardActionResolutionAuthority cardActions)
+            out CardActionResolutionAuthority cardActions,
+            MatchModeRules modeRules)
         {
             var started = reader.ReadBoolean();
             var ended = reader.ReadBoolean();
@@ -107,7 +108,7 @@ namespace GuardsDigital.Core.Snapshots
                     // width after a restore as before it.
                     heroItems,
                     // Milestone 8.23: and from the same markers, for the same reason.
-                    markers).WithTargetExclusions(BorrowedSkillTargetScope.Read(consumedTriggers)),
+                    markers, modeRules).WithTargetExclusions(BorrowedSkillTargetScope.Read(consumedTriggers)),
                 heroItems,
                 tieBreaker,
                 roundIndex,

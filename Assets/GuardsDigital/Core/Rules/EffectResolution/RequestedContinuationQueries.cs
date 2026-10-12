@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
@@ -31,7 +32,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public static AttackTarget Bound(
             EffectDefinition definition,
-            IReadOnlyList<EffectNodeOutcome> outcomes)
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            MatchModeRules modeRules = null)
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (outcomes == null)
@@ -61,10 +63,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     else if (string.Equals(
                             fact.OutputName,
                             SyntheticContinuationCapabilities.BoundMinionTargetOutput,
-                            StringComparison.Ordinal) &&
-                        fact.Value.Kind == EffectValueKind.Minion && fact.Value.MinionId.IsDefined)
+                            StringComparison.Ordinal))
                     {
-                        bound = AttackTarget.Minion(fact.Value.MinionId);
+                        if (fact.Value.Kind == EffectValueKind.Minion && fact.Value.MinionId.IsDefined)
+                            bound = AttackTarget.Minion(fact.Value.MinionId);
+                        else if (fact.Value.Kind == EffectValueKind.Hero && modeRules?.HasMinionCategory(fact.Value.HeroId) == true)
+                            bound = AttackTarget.Hero(fact.Value.HeroId);
                     }
                 }
             }

@@ -966,9 +966,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes, context.Modifications?.ModeRules),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
-                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes, context.Modifications?.ModeRules),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
@@ -1168,9 +1168,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         Rebuild(frame, continuation, outcomes, choices), true, events,
                         RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                         RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                        context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                        context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes, context.Modifications?.ModeRules),
                         RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
-                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes, context.Modifications?.ModeRules),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
@@ -1650,7 +1650,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     if (context.StagesHeroDefeats)
                     {
                         var defeats = RequestedHeroDefeatQuery.Requested(context.Definition,
-                            new[] { outcomes[outcomes.Count - 1] });
+                            new[] { outcomes[outcomes.Count - 1] }, context.Modifications?.ModeRules);
                         if (defeats.Count > 0)
                             return EffectResolutionStepResult.Accept(
                                 Rebuild(frame, continuation, outcomes, choices), false, events,
@@ -1807,9 +1807,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, choices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes, context.Modifications?.ModeRules),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
-                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes, context.Modifications?.ModeRules),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),

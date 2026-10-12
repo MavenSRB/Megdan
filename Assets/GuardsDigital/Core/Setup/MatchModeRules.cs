@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using GuardsDigital.Core.Board;
@@ -84,7 +85,8 @@ namespace GuardsDigital.Core.Setup
             IEnumerable<HexCoordinate> playerPlacementSpaces = null,
             IEnumerable<ModeHeroPlacement> roundStartPlacements = null,
             IEnumerable<HeroId> levelGrantHeroes = null,
-            TeamSide defeatInsteadOfDiscardSide = TeamSide.None)
+            TeamSide defeatInsteadOfDiscardSide = TeamSide.None,
+            IEnumerable<KeyValuePair<HeroId, StandardMinionType>> minionCategoryHeroes = null)
         {
             UnavailableEndOfRoundStages = Array.AsReadOnly(
                 (unavailableEndOfRoundStages ?? Enumerable.Empty<EndOfRoundStage>()).Distinct().ToArray());
@@ -111,7 +113,20 @@ namespace GuardsDigital.Core.Setup
             LevelGrantHeroes = Array.AsReadOnly(
                 (levelGrantHeroes ?? Enumerable.Empty<HeroId>()).Distinct().ToArray());
             DefeatInsteadOfDiscardSide = defeatInsteadOfDiscardSide;
+            var categories = (minionCategoryHeroes ?? Enumerable.Empty<KeyValuePair<HeroId, StandardMinionType>>()).ToArray();
+            if (categories.Any(pair => !pair.Key.IsDefined || pair.Value == StandardMinionType.None ||
+                    !Enum.IsDefined(typeof(StandardMinionType), pair.Value)))
+                throw new ArgumentException("Mode minion categories require defined identities and classes.", nameof(minionCategoryHeroes));
+            MinionCategoryHeroes = new ReadOnlyDictionary<HeroId, StandardMinionType>(categories.ToDictionary(pair => pair.Key, pair => pair.Value));
         }
+
+        /// <summary>PVE-D30: additional targeting/effect category, never a second board identity or combat model.</summary>
+        public IReadOnlyDictionary<HeroId, StandardMinionType> MinionCategoryHeroes { get; }
+
+        public bool HasMinionCategory(HeroId hero) => MinionCategoryHeroes.ContainsKey(hero);
+
+        public StandardMinionType MinionCategory(HeroId hero) =>
+            MinionCategoryHeroes.TryGetValue(hero, out var kind) ? kind : StandardMinionType.None;
 
         /// <summary>PVE-D03. End-of-round steps this mode does not run.</summary>
         public IReadOnlyList<EndOfRoundStage> UnavailableEndOfRoundStages { get; }

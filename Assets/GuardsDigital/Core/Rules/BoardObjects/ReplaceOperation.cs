@@ -100,6 +100,36 @@ namespace GuardsDigital.Core.Rules.BoardObjects
     /// </summary>
     public static class ReplaceOperation
     {
+        /// <summary>PVE-D30. The same replacement operation for a hero-backed minion category.</summary>
+        public static MinionReplaceOutcome ReplaceModeMinion(
+            ReplacePolicy policy, IBoardObjectExchangeAuthority exchange, IBoardDisplacementAuthority board,
+            ITokenPlacementAuthority spaces, ComponentDefinitionCatalog catalog,
+            GuardsDigital.Core.Units.Heroes.HeroId outgoing, PlacedToken incoming,
+            RemovalStageDecision removalStage, GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
+        {
+            if (policy == null) throw new ArgumentNullException(nameof(policy));
+            if (exchange == null) throw new ArgumentNullException(nameof(exchange));
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            if (spaces == null) throw new ArgumentNullException(nameof(spaces));
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            if (incoming == null) throw new ArgumentNullException(nameof(incoming));
+            if (removalStage == null) throw new ArgumentNullException(nameof(removalStage));
+            if (modifications?.ModeRules?.HasMinionCategory(outgoing) != true ||
+                policy.Observation != ReplaceObservationPolicy.ReplacementOnly)
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.UnsupportedObservation);
+            var subject = BoardObjectReference.ForHero(outgoing);
+            if (!board.TryGetObjectCoordinate(subject, out var at))
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.OutgoingNotOnBoard);
+            if (!incoming.Coordinate.Equals(at) || removalStage.IsPrevented(subject))
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
+            if (catalog.CountAvailableTokens(incoming.Definition.Reference, spaces.PlacedTokens) < 1)
+                return MinionReplaceOutcome.Reject(ReplaceRejectionReason.SupplyEmpty);
+            var committed = exchange.CommitValidatedHeroReplacement(outgoing, incoming);
+            return committed.Accepted
+                ? MinionReplaceOutcome.Accept(at, removalStage.QualifyLanePush(subject, at).Qualifies)
+                : MinionReplaceOutcome.Reject(ReplaceRejectionReason.ReplacementUnavailable);
+        }
+
         public static ReplaceOutcome ReplaceToken(
             ReplacePolicy policy,
             IBoardObjectExchangeAuthority exchange,

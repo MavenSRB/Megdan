@@ -82,7 +82,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         public RemoveDestination Destination { get; }
 
         /// <summary>
-        /// Whether the declared eligible kind admits this piece. Intrinsic representation only: the
+        /// Whether the declared eligible kind admits this piece. Normally intrinsic representation: the
         /// question is which miniature is being picked up, so no <c>Counts As</c> is consulted. A hero
         /// is admitted by no declared kind, which is why <see cref="RemoveEligiblePieceKind.GamePiece"/>
         /// stops short of p.19's literal breadth - a hero leaving the board is p.13's Defeat with its
@@ -93,8 +93,11 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         /// removing anything, and two readings of one declaration is how a probe comes to report a
         /// piece removable that the operation then refuses.
         /// </summary>
-        public bool Admits(BoardObjectKind kind)
+        public bool Admits(BoardObjectKind kind, bool hasModeMinionCategory = false)
         {
+            // PVE-D30 explicitly adds minion effects to selected Hero identities; this is not Counts As.
+            if (kind == BoardObjectKind.Hero && hasModeMinionCategory)
+                kind = BoardObjectKind.Minion;
             switch (EligiblePiece)
             {
                 case RemoveEligiblePieceKind.GamePiece:

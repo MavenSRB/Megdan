@@ -1399,7 +1399,13 @@ namespace GuardsDigital.Core.Snapshots
                     var value = ReadEffectValue(reader);
                     var declared = node.Outputs.FirstOrDefault(candidate =>
                         string.Equals(candidate.OutputName, outputName, StringComparison.Ordinal));
-                    if (string.IsNullOrEmpty(declared.OutputName) || declared.ValueKind != value.Kind)
+                    // PVE-D30 minion-category effects retain the enemy's actual Hero identity.
+                    // Only the trusted mode roster grants this compatibility; ordinary snapshots
+                    // and Heavy/Blue identities still require the exact declared value kind.
+                    var modeMinionIdentity = declared.ValueKind == EffectValueKind.Minion &&
+                        value.Kind == EffectValueKind.Hero &&
+                        modifications?.ModeRules?.HasMinionCategory(value.HeroId) == true;
+                    if (string.IsNullOrEmpty(declared.OutputName) || (declared.ValueKind != value.Kind && !modeMinionIdentity))
                     {
                         throw Malformed(
                             $"Snapshot effect outcome declares output '{outputName}' that node '{nodeId}' does not publish at that type.");

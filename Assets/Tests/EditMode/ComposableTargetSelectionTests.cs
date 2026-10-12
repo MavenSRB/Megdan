@@ -535,6 +535,138 @@ namespace GuardsDigital.Tests.EditMode
         // Shape 4 - unions and narrowings of the object kinds
         // -------------------------------------------------------------------------------------------
 
+        [TestCase(StandardMinionType.None)]
+        [TestCase(StandardMinionType.Melee)]
+        [TestCase(StandardMinionType.Ranged)]
+        public void ModeEnemyHasBothCategoriesButOnlyOneIdentity(StandardMinionType category)
+        {
+            var board = Board(Heroes(new HexCoordinate(2, 0), new HexCoordinate(0, 2)));
+            var participants = StagedBoardParticipants.CreateWithBlueAlly();
+            var mode = category == StandardMinionType.None ? null : new MatchModeRules(
+                minionCategoryHeroes: new[] { new KeyValuePair<HeroId, StandardMinionType>(Enemy, category) });
+            var modifications = RuleModificationQuery.Build(null, board, participants, TieBreakerState.Unrevealed,
+                UnlockedUltimateSet.None, RuleObject.ForHero(Actor), null, null, mode);
+            var expectedMinion = category != StandardMinionType.None;
+            foreach (var kind in new[] { RosterUnitKind.Hero, RosterUnitKind.Minion, RosterUnitKind.Unit })
+            {
+                var found = RosterPresenceQuery.FindUnitsWithin(Origin, 3, kind, SourceTeamRelation.OpposingSource,
+                    Actor, board, participants, modifications);
+                Assert.That(found.Contains(BoardObjectReference.ForHero(Enemy)),
+                    Is.EqualTo(kind != RosterUnitKind.Minion || expectedMinion));
+                Assert.That(found.Distinct().Count(), Is.EqualTo(found.Count));
+            }
+            foreach (var kind in new[] { AttackTargetableUnits.HeroesOnly, AttackTargetableUnits.MinionsOnly,
+                         AttackTargetableUnits.HeroesAndMinions })
+            {
+                var found = AttackTargetQuery.FindLegalEnemyTargets(Actor,
+                    new PrintedAttackTargetPolicy(kind, AttackTargetReach.PrintedRange), 3, participants, board, modifications);
+                Assert.That(found.Count(value => value.HeroId.Equals(Enemy)),
+                    Is.EqualTo(kind != AttackTargetableUnits.MinionsOnly || expectedMinion ? 1 : 0));
+                Assert.That(found.All(value => value.Kind == AttackTargetKind.Hero), Is.True, "Combat identity is unchanged.");
+            }
+            var minions = ObjectSelection(EffectInputBinding.FromClosedVocabulary(
+                SyntheticTargetingCapabilities.AdmittedObjectKindParameterName, PrintedIconObjectKind.MinionsAndTokens));
+            Assert.That(Offered(SyntheticTargetingCapabilities.RangeTargetV1, minions, board,
+                range: 3, modifications: modifications).Contains(EffectValue.Space(new HexCoordinate(2, 0))), Is.EqualTo(expectedMinion));
+            foreach (var admitted in new[] { RosterMinionClass.Melee, RosterMinionClass.Ranged })
+            {
+                var narrowed = minions.Concat(new[] { EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdmittedMinionClassParameterName, admitted) }).ToArray();
+                Assert.That(Offered(SyntheticTargetingCapabilities.RangeTargetV1, narrowed, board,
+                    range: 3, modifications: modifications).Contains(EffectValue.Space(new HexCoordinate(2, 0))),
+                    Is.EqualTo(expectedMinion && (admitted == RosterMinionClass.Melee
+                        ? category == StandardMinionType.Melee : category == StandardMinionType.Ranged)));
+            }
+            var heroInputs = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(SyntheticTargetingCapabilities.TargetRelationParameterName, SourceTeamRelation.OpposingSource),
+                EffectInputBinding.FromLiteral(SyntheticTargetingCapabilities.ExcludeAdjacentParameterName, EffectValue.Boolean(false))
+            };
+            Assert.That(Offered(SyntheticTargetingCapabilities.RadiusHeroTargetV1, heroInputs, board,
+                radius: 3, modifications: modifications).Contains(EffectValue.Hero(Enemy)), Is.True);
+        }
+
+        [TestCase(ActiveEffectAffectedScopeKind.HeroesInRadius)]
+        [TestCase(ActiveEffectAffectedScopeKind.MinionsInRadius)]
+        [TestCase(ActiveEffectAffectedScopeKind.UnitsInRadius)]
+        public void ModeCategoryReceivesEachRadiusModificationOnce(ActiveEffectAffectedScopeKind scope)
+        {
+            var board = Board(Heroes(new HexCoordinate(2, 0), new HexCoordinate(0, 2)));
+            var participants = StagedBoardParticipants.CreateWithBlueAlly();
+            var mode = new MatchModeRules(minionCategoryHeroes:
+                new[] { new KeyValuePair<HeroId, StandardMinionType>(Enemy, StandardMinionType.Melee) });
+            var definition = new ActiveEffectDefinition("mode-category-radius", scope,
+                ActiveEffectDurationKind.NextTurnAfterPlayingCards, TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.CardsPlayedAndRevealed, TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                new[] { ActiveEffectCancellationCondition.CardsRetrieved }, true, "ModeCategoryRadius", "mode-radius",
+                Array.Empty<TimingCheckpoint>(), new[] { RuleModification.ForValue(PrintedValueChannel.Attack, 1) },
+                radius: DeclaredRadius.PrintedIcon(3), affectedUnitRelation: SourceTeamRelation.OpposingSource);
+            var timing = new ActiveEffectLifecycle();
+            timing.Create(new ActiveEffectId("mode-category-radius"), definition, Actor, TeamSide.Red, default,
+                new CardInstanceId("mode-radius-card"), new ActionDefinitionId("mode-radius-action"), 1, 1);
+            timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(TimingCheckpoint.CardsPlayedAndRevealed, 2, 1),
+                new TieBreakerState(TeamSide.Red));
+            var modifications = RuleModificationQuery.Build(timing, board, participants, TieBreakerState.Unrevealed,
+                UnlockedUltimateSet.None, RuleObject.ForHero(Actor), null, null, mode);
+            Assert.That(modifications.Modifications.Count(value => value.AffectedObject.Equals(RuleObject.ForHero(Enemy))), Is.EqualTo(1));
+            Assert.That(modifications.Modifications.Count(value => value.AffectedObject.Equals(RuleObject.ForHero(SecondEnemy))),
+                Is.EqualTo(scope == ActiveEffectAffectedScopeKind.MinionsInRadius ? 0 : 1));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ModeMinionReplacementIsAtomicAndRefusesOrdinaryHero(bool modeEnemy)
+        {
+            var at = new HexCoordinate(2, 0);
+            var board = Board(Heroes(at, new HexCoordinate(0, 2)));
+            var participants = StagedBoardParticipants.CreateWithBlueAlly();
+            var mode = modeEnemy ? new MatchModeRules(minionCategoryHeroes:
+                new[] { new KeyValuePair<HeroId, StandardMinionType>(Enemy, StandardMinionType.Melee) }) : null;
+            var modifications = RuleModificationQuery.Build(null, board, participants, TieBreakerState.Unrevealed,
+                UnlockedUltimateSet.None, RuleObject.ForHero(Actor), null, null, mode);
+            var catalog = SyntheticComponentDefinitions.CreateCatalog();
+            var token = new PlacedToken(new TokenInstanceId("mode-replacement"), catalog.LoadToken(SyntheticComponentDefinitions.HazardV4),
+                Actor, Actor, new CardInstanceId("mode-replacement-card"), at);
+            var stage = new GuardsDigital.Core.Rules.BoardObjects.RemovalStageDecision(RuleActivity.Skill,
+                RuleObject.ForHero(Actor), board, board, participants, modifications,
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.Removal);
+            var policy = new GuardsDigital.Core.Rules.BoardObjects.ReplacePolicy(
+                GuardsDigital.Core.Rules.BoardObjects.ReplaceIncomingSource.Supply,
+                GuardsDigital.Core.Rules.BoardObjects.ReplaceOutgoingDestination.Supply,
+                GuardsDigital.Core.Rules.BoardObjects.ReplacePropertyTransferPolicy.NoTransfer,
+                GuardsDigital.Core.Rules.BoardObjects.ReplaceObservationPolicy.ReplacementOnly);
+            var result = GuardsDigital.Core.Rules.BoardObjects.ReplaceOperation.ReplaceModeMinion(
+                policy, board, board, board, catalog, Enemy, token, stage, modifications);
+            Assert.That(result.Accepted, Is.EqualTo(modeEnemy));
+            Assert.That(board.TryGetHeroCoordinate(Enemy, out _), Is.EqualTo(!modeEnemy));
+            Assert.That(board.PlacedTokens.Any(value => value.Id.Equals(token.Id)), Is.EqualTo(modeEnemy));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void ModeMinionRemovalKeepsItsIdentityAndRefusesOrdinaryHero(bool modeEnemy)
+        {
+            var board = Board(Heroes(new HexCoordinate(2, 0), new HexCoordinate(0, 2)));
+            var participants = StagedBoardParticipants.CreateWithBlueAlly();
+            var mode = modeEnemy ? new MatchModeRules(minionCategoryHeroes:
+                new[] { new KeyValuePair<HeroId, StandardMinionType>(Enemy, StandardMinionType.Melee) }) : null;
+            var modifications = RuleModificationQuery.Build(null, board, participants, TieBreakerState.Unrevealed,
+                UnlockedUltimateSet.None, RuleObject.ForHero(Actor), null, null, mode);
+            var stage = new GuardsDigital.Core.Rules.BoardObjects.RemovalStageDecision(RuleActivity.Skill,
+                RuleObject.ForHero(Actor), board, board, participants, modifications,
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.Removal);
+            var policy = new GuardsDigital.Core.Rules.BoardObjects.RemovePolicy(
+                GuardsDigital.Core.Rules.BoardObjects.RemoveEligiblePieceKind.MinionMiniature,
+                GuardsDigital.Core.Rules.BoardObjects.RemoveDestination.Supply);
+            var result = GuardsDigital.Core.Rules.BoardObjects.RemoveOperation.Remove(
+                policy, board, board, BoardObjectReference.ForHero(Enemy), stage, mode);
+            Assert.That(result.Accepted, Is.EqualTo(modeEnemy));
+            Assert.That(board.TryGetHeroCoordinate(Enemy, out _), Is.EqualTo(!modeEnemy));
+            Assert.That(board.TryGetHeroCoordinate(SecondEnemy, out _), Is.True);
+            if (modeEnemy) Assert.That(result.Subject, Is.EqualTo(BoardObjectReference.ForHero(Enemy)));
+        }
+
         private static EffectInputBinding[] ObjectSelection(params EffectInputBinding[] clauses) =>
             new[]
             {

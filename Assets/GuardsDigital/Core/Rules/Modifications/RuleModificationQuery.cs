@@ -55,7 +55,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
             RuleObject actingObject,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            MatchModeRules modeRules = null)
         {
             if (board != null && participants == null)
             {
@@ -87,12 +88,12 @@ namespace GuardsDigital.Core.Rules.Modifications
             if (timing != null)
             {
                 applied.AddRange(FromActiveEffects(
-                    timing, board, participants, heroItems, actingObject));
+                    timing, board, participants, heroItems, actingObject, modeRules));
             }
 
             if (board != null)
             {
-                applied.AddRange(FromPlacedTokens(board, participants));
+                applied.AddRange(FromPlacedTokens(board, participants, modeRules));
                 applied.AddRange(
                     FromUnlockedUltimates(ultimates, board, participants, actingObject));
             }
@@ -130,7 +131,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             return new RuleModificationSet(applied, overlays, tieBreaker,
                 targetExclusions: Array.Empty<ActionTargetExclusion>(),
                 boardPartitions: boardPartitions, actingObject: actingObject,
-                actingSpace: actingSpace);
+                actingSpace: actingSpace, modeRules: modeRules);
         }
 
         /// <summary>
@@ -236,7 +237,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            RuleObject actingObject)
+            RuleObject actingObject,
+            MatchModeRules modeRules)
         {
             foreach (var effect in timing.Effects)
             {
@@ -250,7 +252,7 @@ namespace GuardsDigital.Core.Rules.Modifications
 
                 foreach (var affectedObject in AffectedObjects(
                     effect, board, participants, heroItems, actingObject,
-                    ItemBonusPerItemFor(effect.ControllerHeroId, timing)))
+                    ItemBonusPerItemFor(effect.ControllerHeroId, timing), modeRules))
                 {
                     foreach (var modification in effect.Definition.Modifications)
                     {
@@ -283,7 +285,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             RuleObject actingObject,
-            int bonusPerItem)
+            int bonusPerItem,
+            MatchModeRules modeRules)
         {
             switch (effect.Definition.AffectedScope)
             {
@@ -335,7 +338,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     // admits, and four copies could disagree about any of the three.
                     foreach (var unit in UnitsInRadius(
                         effect, board, participants, heroItems, effect.Definition.AffectedScope,
-                        bonusPerItem))
+                        bonusPerItem, modeRules))
                     {
                         yield return unit;
                     }
@@ -379,7 +382,8 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// minion in radius" - and whether the hero the disk is drawn around is one of them, which only
         /// Brogan's Bulwark says. It is intrinsic membership on purpose and by necessity: the paragraph
         /// above says why this walk consults no declaration, and which miniature is standing in the
-        /// disk is the one question about a piece that a <c>Counts As</c> does not answer.
+        /// disk is the one question about a piece that a <c>Counts As</c> does not answer. Trusted
+        /// mode categories are the explicit PvE exception and add no second board identity.
         /// </param>
         private static IEnumerable<RuleObject> UnitsInRadius(
             ActiveEffectInstance effect,
@@ -387,7 +391,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             ActiveEffectAffectedScopeKind scope,
-            int bonusPerItem)
+            int bonusPerItem,
+            MatchModeRules modeRules)
         {
             var admitsHeroes = scope != ActiveEffectAffectedScopeKind.MinionsInRadius;
             var admitsMinions = scope != ActiveEffectAffectedScopeKind.HeroesInRadius &&
@@ -443,7 +448,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 yield return RuleObject.ForHero(effect.ControllerHeroId);
             }
 
-            if (admitsHeroes)
+            if (admitsHeroes || (admitsMinions && modeRules?.MinionCategoryHeroes.Count > 0))
             {
                 // Milestone 9.21a (RZ-Q2): a hero is affected once, whichever of its bodies stand inside.
                 var affectedHeroes = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>();
@@ -451,6 +456,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 {
                     var hero = BoardObjectReference.ForHero(occupancy.HeroId);
                     if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
+                        (admitsHeroes || modeRules?.HasMinionCategory(occupancy.HeroId) == true) &&
                         anchors.Any(anchor => RadiusQuery.Contains(anchor, radius, occupancy.Coordinate)) &&
                         TargetQuery.StandsInRelationTo(
                             relation, hero, effect.ControllerHeroId, participants, board,
@@ -659,7 +665,8 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// </summary>
         private static IEnumerable<AppliedRuleModification> FromPlacedTokens(
             AdjacentMoveAuthority board,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            MatchModeRules modeRules)
         {
             var orderedTokens = board.PlacedTokens
                 .OrderBy(token => token.Id.Value, StringComparer.Ordinal)
@@ -691,7 +698,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     // lifetime: "Once a token is placed, it retains all its properties until that token
                     // is removed."
                     foreach (var affectedObject in TokenPropertyAffectedObjects(
-                        token, property.AffectedObject, board, participants, controllerSide))
+                        token, property.AffectedObject, board, participants, controllerSide, modeRules))
                     {
                         var resolved = ResolveDerivedAmount(
                             property.Modification, affectedObject, token.ControllerHeroId, board,
@@ -730,7 +737,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             TokenPropertyAffectedObject scope,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            TeamSide controllerSide)
+            TeamSide controllerSide,
+            MatchModeRules modeRules)
         {
             // Milestone 9.21a (RZ-Q2): a hero beside the token by several bodies is affected once.
             var affectedByToken = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>();
@@ -778,6 +786,15 @@ namespace GuardsDigital.Core.Rules.Modifications
                     // miniature types are where "melee minion" is defined.
                     var meleeOnly =
                         scope == TokenPropertyAffectedObject.FriendlyMeleeMinionsAdjacentToTheToken;
+                    foreach (var hero in board.Occupancies.Where(value =>
+                        !value.HeroId.Equals(token.ControllerHeroId) &&
+                        modeRules?.HasMinionCategory(value.HeroId) == true &&
+                        (!meleeOnly || modeRules.MinionCategory(value.HeroId) == StandardMinionType.Melee) &&
+                        participants.GetTeamForHero(value.HeroId).Side == controllerSide &&
+                        HexDistanceQuery.Calculate(token.Coordinate, value.Coordinate) == 1))
+                    {
+                        if (affectedByToken.Add(hero.HeroId)) yield return RuleObject.ForHero(hero.HeroId);
+                    }
                     foreach (var minion in board.Minions)
                     {
                         if (HexDistanceQuery.Calculate(token.Coordinate, minion.Coordinate) == 1 &&

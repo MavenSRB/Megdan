@@ -365,6 +365,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var minion = context.Input(MinionParameter).MinionId;
+                var value = context.Input(MinionParameter);
+                if (value.Kind == EffectValueKind.Hero &&
+                    context.Modifications?.ModeRules?.HasMinionCategory(value.HeroId) == true)
+                    return EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(DefeatedMinionOutput, value)
+                    });
                 return minion.IsDefined
                     ? EffectExecutionResult.Applied(new[]
                     {
@@ -379,7 +386,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectExecutionResult.ImpossibleMandatory();
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                context.Input(MinionParameter).MinionId.IsDefined
+                (context.Input(MinionParameter).MinionId.IsDefined ||
+                 (context.Input(MinionParameter).Kind == EffectValueKind.Hero &&
+                  context.Modifications?.ModeRules?.HasMinionCategory(context.Input(MinionParameter).HeroId) == true))
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }

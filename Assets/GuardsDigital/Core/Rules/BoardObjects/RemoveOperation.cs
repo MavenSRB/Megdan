@@ -159,14 +159,16 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             IBoardObjectExchangeAuthority exchange,
             IBoardDisplacementAuthority board,
             BoardObjectReference subject,
-            RemovalStageDecision removalStage)
+            RemovalStageDecision removalStage,
+            GuardsDigital.Core.Setup.MatchModeRules modeRules = null)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (exchange == null) throw new ArgumentNullException(nameof(exchange));
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (removalStage == null) throw new ArgumentNullException(nameof(removalStage));
 
-            if (!policy.Admits(subject.Kind))
+            if (!policy.Admits(subject.Kind, subject.Kind == BoardObjectKind.Hero &&
+                modeRules?.HasMinionCategory(subject.HeroId) == true))
             {
                 return RemoveOutcome.Reject(policy.Destination, RemoveRejectionReason.IneligiblePiece);
             }
@@ -181,7 +183,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 return RemoveOutcome.Prevented(policy.Destination, subject, origin);
             }
 
-            var committed = exchange.CommitValidatedRemoval(subject);
+            var committed = exchange.CommitValidatedRemoval(subject, modeRules);
             if (!committed.Accepted)
             {
                 return RemoveOutcome.Reject(policy.Destination, RemoveRejectionReason.RemovalUnavailable);

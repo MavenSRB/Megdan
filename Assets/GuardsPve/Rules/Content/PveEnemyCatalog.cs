@@ -119,12 +119,16 @@ namespace GuardsDigital.Pve.Content
             IEnumerable<PveOrangeCard> orangeCards,
             IEnumerable<PvePurpleCard> purpleCards,
             IEnumerable<IEnumerable<string>> plans,
-            StandardMinionType? tokenType = null)
+            StandardMinionType? tokenType = null,
+            StandardMinionType minionCategory = StandardMinionType.None)
         {
             Id = id;
             DisplayName = displayName;
             Level = level;
             TokenType = tokenType;
+            if (!Enum.IsDefined(typeof(StandardMinionType), minionCategory))
+                throw new ArgumentOutOfRangeException(nameof(minionCategory));
+            MinionCategory = minionCategory;
             OrangeCards = Array.AsReadOnly((orangeCards ?? Enumerable.Empty<PveOrangeCard>()).ToArray());
             PurpleCards = Array.AsReadOnly((purpleCards ?? Enumerable.Empty<PvePurpleCard>()).ToArray());
             Plans = Array.AsReadOnly((plans ?? Enumerable.Empty<IEnumerable<string>>())
@@ -138,6 +142,8 @@ namespace GuardsDigital.Pve.Content
         public int Level { get; }
         /// <summary>Presentation identity only; these enemies still obey hero rules.</summary>
         public StandardMinionType? TokenType { get; }
+        /// <summary>PVE-D30. An additional effect category independent of artwork; None means hero only.</summary>
+        public StandardMinionType MinionCategory { get; }
         public IReadOnlyList<PveOrangeCard> OrangeCards { get; }
         public IReadOnlyList<PvePurpleCard> PurpleCards { get; }
 

@@ -675,7 +675,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Components.Exchange,
                     context.Components.Board,
                     subject,
-                    RemovalStage(context));
+                    RemovalStage(context), context.Modifications?.ModeRules);
                 if (!outcome.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -737,7 +737,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var named = context.Input("subject");
                 return named.Kind == EffectValueKind.Coordinate &&
                     components.Board.TryGetObjectAt(named.Coordinate, out subject) &&
-                    policy.Admits(subject.Kind);
+                    policy.Admits(subject.Kind, subject.Kind == BoardObjectKind.Hero &&
+                        context.Modifications?.ModeRules?.HasMinionCategory(subject.HeroId) == true);
             }
 
             /// <summary>

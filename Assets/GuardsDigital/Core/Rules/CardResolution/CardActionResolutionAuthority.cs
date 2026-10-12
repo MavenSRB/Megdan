@@ -1291,7 +1291,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // for the same reason: this authority already holds the one register a live match
                 // gives markers into, so taking it from a caller would be the second copy
                 // CreateComponents exists to prevent.
-                components.Markers).WithTargetExclusions(BorrowedSkillTargetScope.Read(borrowedTargetScopeKeys));
+                components.Markers, modeRules).WithTargetExclusions(BorrowedSkillTargetScope.Read(borrowedTargetScopeKeys));
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||

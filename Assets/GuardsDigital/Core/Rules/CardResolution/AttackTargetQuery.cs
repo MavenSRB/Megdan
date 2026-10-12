@@ -288,16 +288,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             // Milestone 8.71c. The mirror narrowing: Hanu's Outnumber and Pile On print "Target a
             // minion in range", so an enemy HERO in exactly that position is not a legal target of the
-            // bullet. The hero half is skipped rather than derived and then discarded, because
-            // FindLegalEnemyHeroes refuses an attacker standing nowhere by returning nothing and this
-            // arm must answer the same way for a reason of its own - see the guard below it.
+            // bullet unless trusted mode rules also categorize that identity as a minion.
+            // Keep its Hero target identity so combat and Defense remain unchanged.
             var minionsOnly = policy.TargetableUnits == AttackTargetableUnits.MinionsOnly;
-            var heroes = minionsOnly
-                ? Enumerable.Empty<AttackTarget>()
-                : FindLegalEnemyHeroBodies(
+            var heroes = FindLegalEnemyHeroBodies(
                         attackerId, attackRange, rangeTotal, participants, board, modifications,
                         attackClassification)
-                    .Where(body => IsAdmitted(body.Coordinate))
+                    .Where(body => IsAdmitted(body.Coordinate) &&
+                        (!minionsOnly || modifications?.ModeRules?.HasMinionCategory(body.HeroId) == true))
                     .Select(body => AttackTarget.HeroBodyOf(body.HeroId, body.Body));
 
             // p.13's narrowing, and the only place it is applied: Crackling Dagger prints "Target a

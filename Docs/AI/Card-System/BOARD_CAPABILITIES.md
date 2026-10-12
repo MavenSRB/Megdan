@@ -12,6 +12,10 @@ Queries support spaces, heroes, minions, units, tokens, markers, cards, zones, t
 
 Relationship filters include self, another, friendly, enemy, owner, controller, and source. `Friendly` excludes self. A hero/minion is both a unit and an obstacle for occupancy, so an obstacle filter must not make a legal unit untargetable.
 
+PvE's trusted additional minion category is an explicit mode exception, not a new board identity: Melee/Ranged remain Hero objects and also satisfy minion targeting/effect scopes, while Heavy remains hero only. Combined queries return each identity once. A minion-only Remove or Replace may remove a mode-classified enemy through guarded board operations without awarding Defeat; ordinary heroes remain refused. Combat, staged Defeat and Defense keep their Hero paths. The mapping is defined by amended PVE-D30, separate from token art and ordinary Counts As overlays.
+
+PvE's explicit additional minion category (PVE-D30, W-033) does not change identity. A declared Minion output may carry an actual Hero value only when trusted `MatchModeRules.MinionCategoryHeroes` contains that hero. Target publication, minion consumers and restored output validation share this constraint; ordinary heroes and Heavy enemies remain invalid in that slot. No alias MinionId, new value kind or snapshot field is created. Pending choices retain the actual identity and normal hero combat/Defeat, while combined categories count once. Card definitions and existing-mode output validation are unchanged.
+
 ### Target versus presence
 
 `TargetQuery` evaluates target eligibility for both player-chosen and automatically affected objects and applies immunity in either case. A separate `ChooseTarget` node creates a pending choice among eligible candidates when the action requires a player decision. `PresenceQuery` checks whether an object exists or is adjacent/in range without targeting it; immune units still count for presence checks where the rules say so. Executors must declare which query they use.

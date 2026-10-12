@@ -1456,6 +1456,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (subject == PrintedIconSelectionSubject.Minion)
                 {
+                    // PVE-D30: the minion category can name the existing hero-backed identity.
+                    // Do not invent a MinionId; consumers and restore validate this mode-only case.
+                    if (selected != null && selected.Count == 1 && selected[0].Kind == EffectValueKind.Hero &&
+                        HeroCandidates(context).Contains(selected[0].HeroId) &&
+                        context.Modifications?.ModeRules?.HasMinionCategory(selected[0].HeroId) == true)
+                        return WithChosenSpace(context, BoardObjectReference.ForHero(selected[0].HeroId),
+                            new EffectOutcomeFact(ChosenMinionOutputName, selected[0]));
                     if (selected != null && selected.Count == 1 &&
                         TryNameOfferedTokenMinion(context, selected[0], out var tokenSpace))
                         return TokenMinionSpaceOutcome(context, tokenSpace);
@@ -1526,6 +1533,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? HeroOffer(context).ToArray()
                     : subject == PrintedIconSelectionSubject.Minion
                         ? MinionCandidates(context).Select(EffectValue.Minion)
+                            .Concat(HeroOffer(context))
                             .Concat(TokenMinionOffer(context)).ToArray()
                     : subject == PrintedIconSelectionSubject.Unit
                         // p.19's two unit kinds in one offer, heroes first and each kind in its own
@@ -1831,16 +1839,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static IReadOnlyList<HeroId> Candidates(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
-                var minionId = context.Input(MinionParameterName).MinionId;
+                var minionValue = context.Input(MinionParameterName);
+                var minionId = minionValue.MinionId;
+                var modeHero = minionValue.Kind == EffectValueKind.Hero &&
+                    context.Modifications?.ModeRules?.HasMinionCategory(minionValue.HeroId) == true;
                 var relation = (SourceTeamRelation)context
                     .Input(TargetRelationParameterName).IntegerValue;
-                if (board == null || !minionId.IsDefined || relation == SourceTeamRelation.None ||
+                if (board == null || (!minionId.IsDefined && !modeHero) || relation == SourceTeamRelation.None ||
                     !Enum.IsDefined(typeof(SourceTeamRelation), relation))
                 {
                     return Array.Empty<HeroId>();
                 }
 
-                var minion = BoardObjectReference.ForMinion(minionId);
+                var minion = modeHero ? BoardObjectReference.ForHero(minionValue.HeroId) : BoardObjectReference.ForMinion(minionId);
                 if (!board.TryGetObjectCoordinate(minion, out var origin))
                     return Array.Empty<HeroId>();
 

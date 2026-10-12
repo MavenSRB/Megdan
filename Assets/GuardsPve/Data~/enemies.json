@@ -5,6 +5,7 @@
       "id": "melee",
       "displayName": "Melee",
       "tokenType": "melee",
+      "minionCategory": "melee",
       "level": 1,
       "orangeCards": [
         { "key": "A", "name": "Advance", "initiative": 9, "copies": 1, "move": 2,
@@ -23,6 +24,7 @@
       "id": "ranged",
       "displayName": "Ranged",
       "tokenType": "ranged",
+      "minionCategory": "ranged",
       "level": 1,
       "orangeCards": [
         { "key": "A", "name": "Aim", "initiative": 8, "copies": 1, "move": 2,

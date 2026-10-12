@@ -152,7 +152,8 @@ namespace GuardsDigital.Tests.EditMode
             // the book refilled must never move a spell.
             // Milestone 9.30f moves it by one: Energy Drain regains a spent Life counter
             // (`TeamLifeState.TryRegainSpent`); asking whether it would must never regain one.
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(25),
+            // PvE category replacement adds its guarded operation and atomic hero-body commit.
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(27),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -642,6 +643,10 @@ namespace GuardsDigital.Tests.EditMode
             ILConformanceScanner.Method(
                 typeof(IBoardObjectExchangeAuthority),
                 nameof(IBoardObjectExchangeAuthority.CommitValidatedMinionReplacement)),
+            ILConformanceScanner.Method(
+                typeof(IBoardObjectExchangeAuthority),
+                nameof(IBoardObjectExchangeAuthority.CommitValidatedHeroReplacement)),
+            ILConformanceScanner.Method(typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceModeMinion)),
             ILConformanceScanner.Method(
                 typeof(ReplaceOperation), nameof(ReplaceOperation.ReplaceMinion)),
             ILConformanceScanner.Method(typeof(SwapOperation), nameof(SwapOperation.Swap)),

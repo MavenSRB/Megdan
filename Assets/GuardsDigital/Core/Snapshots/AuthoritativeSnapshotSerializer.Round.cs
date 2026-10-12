@@ -268,7 +268,7 @@ namespace GuardsDigital.Core.Snapshots
                 // that is legitimate rather than a truncated payload.
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
                     roundIndex, turnIndex, catalogs, lanePush, verifyingHeroItems,
-                    verifyingRosterState, phase == RoundResolutionPhase.GameEnded, out cardActions);
+                    verifyingRosterState, phase == RoundResolutionPhase.GameEnded, out cardActions, modeRules);
             }
             else if (hasRoundCardActions)
             {
@@ -302,7 +302,7 @@ namespace GuardsDigital.Core.Snapshots
                         verifyingHeroItems,
                         // Milestone 8.23: and from the same markers, so a value a held Poison
                         // marker lowered is the same value after a restore as before it.
-                        markers),
+                        markers, modeRules),
                     verifyingHeroItems,
                     rosterState: verifyingRosterState);
             }

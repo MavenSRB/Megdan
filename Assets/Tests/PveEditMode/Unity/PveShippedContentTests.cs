@@ -19,6 +19,8 @@ namespace GuardsDigital.Tests.Pve
 
             Assert.That(PveContentValidator.Validate(catalog, encounter, PveTestContent.OfficialMap()), Is.Empty);
             Assert.That(catalog.ContentStatus, Is.EqualTo("placeholder-test"));
+            Assert.That(catalog.Types.Select(type => type.MinionCategory.ToString()),
+                Is.EqualTo(new[] { "Melee", "Ranged", "None" }));
         }
 
         [Test]
@@ -143,7 +145,7 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(weak.Options.Take(weak.Options.Count - 1).All(option => option.Kind == PveOptionKind.Attack), Is.True);
             var plan = new[] { weak.Key }.Concat(type.OrangeHand.Where(key => key != weak.Key)).ToArray();
             var immediate = new PveEnemyType(type.Id, type.DisplayName, type.Level,
-                type.OrangeCards, type.PurpleCards, new[] { plan }, type.TokenType);
+                type.OrangeCards, type.PurpleCards, new[] { plan }, type.TokenType, type.MinionCategory);
             var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
                 new[] { new PveCreepPlacement(PveTestContent.Hex("-3,2"), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
                 new[] { PveTestContent.Hex("-5,3") },
@@ -181,7 +183,7 @@ namespace GuardsDigital.Tests.Pve
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
             var type = catalog.Find(typeId);
             var immediateAttack = new PveEnemyType(type.Id, type.DisplayName, type.Level,
-                type.OrangeCards, type.PurpleCards, new[] { new[] { "B", "A", "C", "X" } }, type.TokenType);
+                type.OrangeCards, type.PurpleCards, new[] { new[] { "B", "A", "C", "X" } }, type.TokenType, type.MinionCategory);
             var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,
                 new[] { new PveCreepPlacement(new GuardsDigital.Core.Board.HexCoordinate(-3, 2), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
                 new[] { new GuardsDigital.Core.Board.HexCoordinate(-5, 3) },

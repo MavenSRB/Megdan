@@ -104,6 +104,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     result.Add(new EffectOutcomeFact("hero", EffectValue.Hero(target.HeroId)));
                 if (target.Kind == BoardObjectKind.Minion && context.Publishes("minion"))
                     result.Add(new EffectOutcomeFact("minion", EffectValue.Minion(target.MinionId)));
+                if (kind == RosterUnitKind.Minion && target.Kind == BoardObjectKind.Hero && context.Publishes("minion") &&
+                    context.Modifications?.ModeRules?.HasMinionCategory(target.HeroId) == true)
+                    result.Add(new EffectOutcomeFact("minion", EffectValue.Hero(target.HeroId)));
                 return result;
             }
             public EffectExecutionResult Execute(EffectCapabilityContext context)
@@ -144,7 +147,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         everyBody: true)
                     // Typed Hero/Minion consumers name that miniature, as the printed-icon selectors do.
                     .Where(t => kind == RosterUnitKind.Unit || (kind == RosterUnitKind.Hero
-                        ? t.Kind == BoardObjectKind.Hero : t.Kind == BoardObjectKind.Minion))
+                        ? t.Kind == BoardObjectKind.Hero : t.Kind == BoardObjectKind.Minion ||
+                            (t.Kind == BoardObjectKind.Hero && context.Modifications?.ModeRules?.HasMinionCategory(t.HeroId) == true)))
                     .Where(t => !TargetQuery.IsPrevented(t.AsRuleObject(), context.EnclosingActivity,
                         RuleObject.ForHero(context.ActorId), board, context.Participants, context.Modifications, context.ImmunityOverrides))
                     // Milestone 8.61f. The hero a previous pass over this anchor already named, where

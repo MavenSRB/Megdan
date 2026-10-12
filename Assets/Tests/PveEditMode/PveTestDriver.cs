@@ -21,7 +21,7 @@ namespace GuardsDigital.Tests.Pve
     {
         internal static readonly string[] TwoHeroes = { "hero-arien", "hero-brogan" };
 
-        private PveTestDriver(PveComposedEncounter composed)
+        internal PveTestDriver(PveComposedEncounter composed)
         {
             Composed = composed;
             Host = MatchHost.Compose(composed.InitialState);

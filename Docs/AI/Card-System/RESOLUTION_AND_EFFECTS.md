@@ -73,6 +73,8 @@ The application projection derives each currently available Fast Travel replacem
 
 ## Effect composition and extension
 
+The [board capability contract](BOARD_CAPABILITIES.md#object-categories-and-relationships) owns PvE category/output identity compatibility.
+
 The common resolver vocabulary should stay small and typed. Add only what verified rules or cards require.
 
 Every leaf mutation, query, modifier, timing source, and system transition follows the capability contract and coverage catalog in `CARD_EFFECT_CAPABILITIES.md`. A card definition references stable capability IDs and typed parameters rather than relying on this document's examples as implicit behavior.
