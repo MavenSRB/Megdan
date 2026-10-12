@@ -182,6 +182,41 @@ namespace GuardsDigital.Tests.Pve.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator SeedInheritancePreservesKeyContentAndFormatRejectionsWithoutLooping()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
+            var map = OfficialBoardMapCatalog.Load().Load(layout.MapReference);
+            var encounter = PveEncounterComposer.Compose(new PveEncounterSetup(new[] { "hero-arien", "hero-brogan", "hero-wasp" }, 42), layout, catalog, map);
+            var normal = PrivateSessionIdentity.ForComposition(map, encounter.InitialState.InitialConfiguration, encounter.InitialState.Setup, BuildIdentityStamp.Current);
+            var valid = PveCoopMatch.Identity(normal, 42, PveContentLoader.SaveCatalog(catalog),
+                System.IO.File.ReadAllText(System.IO.Path.Combine(PveDataPaths.Directory, "encounter.json")));
+            foreach (var expected in new[] { SessionRejectionReason.SessionKeyMismatch,
+                SessionRejectionReason.ContentDigestMismatch, SessionRejectionReason.MatchFormatMismatch })
+            {
+                var identity = new PrivateSessionIdentity(valid.ProtocolFamily, valid.ProtocolVersion, valid.BuildIdentity,
+                    valid.SnapshotSchemaVersion, valid.MapId, valid.MapContentRevision,
+                    expected == SessionRejectionReason.MatchFormatMismatch ? "pve-coop-1-42" : valid.MatchFormatId,
+                    expected == SessionRejectionReason.ContentDigestMismatch ? new string('a', 64) : valid.ContentDigest);
+                Assert.That(PrivateSessionEndpoint.TryParseAddress("127.0.0.1:19533", out var endpoint, out _), Is.True);
+                externalListener = new TcpSessionListener(); externalListener.Start(endpoint);
+                externalServer = new PrivateSessionHost(new PveCoopMatch(encounter).Host, identity, "host-key", externalListener, new CryptoNonceSource());
+                lobby = PveCoopLobby.Open(9876);
+                Field<TextField>(lobby, "port").value = "19533";
+                Field<TextField>(lobby, "key").value = expected == SessionRejectionReason.SessionKeyMismatch ? "wrong-key" : "host-key";
+                yield return null; yield return null;
+                Click(lobby.GetComponent<UIDocument>().rootVisualElement.Q<Button>("pve-coop-join"));
+                yield return Until(() => Field<PrivateSessionClient>(lobby, "client")?.RejectionReason == expected,
+                    "Seed discovery must retain " + expected);
+                var refused = Field<PrivateSessionClient>(lobby, "client");
+                Assert.That(refused.GrantedSeat, Is.Null);
+                Assert.That(Field<bool>(lobby, "seedInheritanceAttempted"), Is.EqualTo(expected != SessionRejectionReason.MatchFormatMismatch));
+                for (var frame = 0; frame < 20; frame++) { Pump(); yield return null; }
+                Assert.That(Field<PrivateSessionClient>(lobby, "client"), Is.SameAs(refused), "Refusals must not trigger retry loops.");
+                yield return Cleanup();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator JoinMenuClaimsOwnSeatAndDrawsRemoteEnemyPlansWithoutAuthority()
         {
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out var layout);
@@ -194,7 +229,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(PrivateSessionEndpoint.TryParseAddress("127.0.0.1:19532", out var endpoint, out _), Is.True);
             externalListener = new TcpSessionListener(); externalListener.Start(endpoint);
             var match = new PveCoopMatch(initial);
-            externalServer = new PrivateSessionHost(match.Host, identity, "", externalListener, new CryptoNonceSource());
+            externalServer = new PrivateSessionHost(match.Host, identity, "pve-seed-test-key", externalListener, new CryptoNonceSource());
             externalServer.SeatComposition = selection =>
             {
                 var choices = selection.PickOrder.Select(seat => { selection.TryGetChoice(seat.Seat, out var hero); return hero.HeroIdValue; }).ToArray();
@@ -203,17 +238,21 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             foreach (var seat in new[] { "blue-player-01", "blue-player-03" })
             {
                 var transport = new TcpSessionClientTransport();
-                var client = new PrivateSessionClient(identity, new SeatId(seat), "", transport, new CryptoNonceSource());
+                var client = new PrivateSessionClient(identity, new SeatId(seat), "pve-seed-test-key", transport, new CryptoNonceSource());
                 transports.Add(transport); clients.Add(client);
                 Assert.That(transport.Connect(endpoint, 3, out var problem), Is.True, problem);
             }
-            lobby = PveCoopLobby.Open(42);
+            lobby = PveCoopLobby.Open(9876);
+            Field<TextField>(lobby, "seedInput").value = "ignored when joining";
+            Field<TextField>(lobby, "key").value = "pve-seed-test-key";
             Field<TextField>(lobby, "port").value = "19532";
             var root = lobby.GetComponent<UIDocument>().rootVisualElement;
             yield return null; yield return null;
             Click(root.Q<Button>("pve-coop-join"));
             yield return Until(() => Field<PrivateSessionClient>(lobby, "client")?.State == PrivateSessionClientState.Admitted,
                 "Join opens the host's three-seat roster");
+            Assert.That(Field<ulong>(lobby, "seed"), Is.EqualTo(42UL), "Host seed is adopted without pre-sharing.");
+            Assert.That(Field<bool>(lobby, "seedInheritanceAttempted"), Is.True);
             Click(root.Query<Button>().ToList().Single(button => button.text == "Take blue-player-02"));
             yield return Until(() => Field<PrivateSessionClient>(lobby, "client").GrantedSeat != null, "Joiner claims second seat");
             yield return Until(() => clients.All(client => client.GrantedSeat != null), "Other two seats admitted");
@@ -247,6 +286,15 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return new WaitForEndOfFrame();
             var capture = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.File.WriteAllBytes("tmp/w032-coop-join.png", capture.EncodeToPNG()); Object.Destroy(capture);
+            var joinedClient = Field<PrivateSessionClient>(lobby, "client");
+            Field<TcpSessionClientTransport>(lobby, "transport").Dispose();
+            joinedClient.OnDisconnected();
+            yield return Until(() => externalServer.IsPaused, "Joiner disconnect pauses the match");
+            Click(root.Q<Button>("pve-coop-reconnect"));
+            yield return Until(() => !externalServer.IsPaused && joinedClient.State == PrivateSessionClientState.Seated,
+                "Seed-inheriting joiner reconnects to the same seat");
+            Assert.That(Field<ulong>(lobby, "seed"), Is.EqualTo(42UL));
+            Assert.That(joinedClient.TargetSeat.Value, Is.EqualTo("blue-player-02"));
             externalServer.Shutdown();
             yield return Until(() => Field<PrivateSessionClient>(lobby, "client").State != PrivateSessionClientState.Seated, "Host departure stops the joiner");
         }

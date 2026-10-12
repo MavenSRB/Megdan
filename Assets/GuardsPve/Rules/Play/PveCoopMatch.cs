@@ -13,6 +13,7 @@ namespace GuardsDigital.Pve.Play
     /// <summary>PVE-D28. One authority, three owner-private player seats, host-owned enemies and team choices.</summary>
     public sealed class PveCoopMatch
     {
+        private const string FormatPrefix = "pve-coop-2-";
         public PveCoopMatch(PveComposedEncounter encounter)
         {
             Encounter = encounter ?? throw new ArgumentNullException(nameof(encounter));
@@ -30,8 +31,22 @@ namespace GuardsDigital.Pve.Play
         public static PrivateSessionIdentity Identity(PrivateSessionIdentity content, ulong seed, string catalog, string encounter) =>
             new PrivateSessionIdentity(content.ProtocolFamily, content.ProtocolVersion, content.BuildIdentity,
                 content.SnapshotSchemaVersion, content.MapId, content.MapContentRevision,
-                "pve-coop-2-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                FormatPrefix + seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 PrivateSessionContentDigest.HashText(content.ContentDigest + catalog + encounter));
+
+        /// <summary>A public setup hint only; a fresh keyed admission still verifies the complete identity.</summary>
+        public static bool TryReadHostSeed(SessionRejectMessage rejection, ulong currentSeed, out ulong hostSeed)
+        {
+            hostSeed = 0;
+            if (rejection == null || rejection.Reason != SessionRejectionReason.MatchFormatMismatch ||
+                !rejection.HostFormatId.StartsWith(FormatPrefix, StringComparison.Ordinal)) return false;
+            var text = rejection.HostFormatId.Substring(FormatPrefix.Length);
+            if (!ulong.TryParse(text, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var parsed) || parsed == 0 ||
+                parsed == currentSeed || parsed.ToString(System.Globalization.CultureInfo.InvariantCulture) != text) return false;
+            hostSeed = parsed;
+            return true;
+        }
 
         public static bool IsSharedChoice(IMatchReadModel source)
         {

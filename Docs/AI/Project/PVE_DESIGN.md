@@ -78,6 +78,10 @@ Supersedes the preset-plan selection in PVE-D07/D13 and the listed orders in D24
 
 Every enemy type's lower-value attack card lists Movement after its attack options, so it moves only when no attack option applies. Melee Slash retains Move 2 toward creeps, stopping adjacent; Ranged Shoot retains Move 1 toward heroes, stopping at range 3. Heavy Hurl (Attack 4, range 2) gains Move 1 toward heroes, stopping at range 2, following its hero/minion attack options. Stronger cards, other values, plans and hand sizes remain unchanged. This expressly authorizes this PvE card-content change independently of W-033's no-card-change category request. Closing checks: shipped data, fallback ordering, attack precedence and movement when out of reach.
 
+## PVE-D33 Host-owned co-op seed (Approved, user 2026-10-12)
+
+The host chooses the encounter seed; joining players inherit it automatically and need not pre-share or enter it. Existing setup/build/map/content compatibility and keyed admission remain required. A host-format hint may trigger one fresh admission attempt on the same address/port; it never authorizes gameplay or overrides content validation. Established/reconnecting sessions keep their original seed. Unsupported/invalid hints or repeated mismatch stop instead of looping. No existing-mode rule or shared wire change.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

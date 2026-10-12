@@ -42,6 +42,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-036 | Random four-card enemy order per round, public upfront and deterministic across Undo/co-op. | `work/W-036` |
 | W-037 | Enemy rail box fits live trays, hides when empty and caps overflow for scrolling. | `work/W-037` |
 | W-038 | PvE shares PvP's TCP port 45677 and explains direct internet prerequisites; keyed lobby validated. | `work/W-038` |
+| W-039 | Joining players automatically inherit the host seed, retaining full keyed compatibility and reconnect identity. | `work/W-039` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -370,3 +371,9 @@ Historical evidence: completion commit addressed by immutable `work/W-037`; exac
 Approved: direct internet multiplayer using the same port as main PvP. Verified main's shared default is 45677 and replaced PvE's hard-coded 7778 with that constant. Existing keyed wildcard listener and admission remain unchanged; menu explains public IP, selected TCP port, shared key/seed, matching build/data, firewall/router requirements and concurrent-host port conflict. T2 closing checks: default-field equality, real TCP keyed host plus two joining peers, placement, owner privacy, reconnect, joining-client UI and visual readability. No observed failures or remaining code acceptance defects. No router/firewall changes, relay, external-internet validation, or rebuilt ZIP claimed.
 
 Historical evidence: completion commit addressed by immutable `work/W-038`; exact validation and limitations live in its body.
+
+### [x] W-039 Adopt host seed on PvE join
+
+Approved: no pre-sharing seed; the host owns it and joining players inherit it automatically. Uses the existing public format-mismatch hint and one fresh keyed admission attempt, not a wire change. Only canonical current-format nonzero seeds before admission are eligible; local Join seed input is ignored, effective seed shown in status, established/reconnecting sessions stay pinned. T2 acceptance: parser boundaries, compatibility invariants, different initial seed and invalid local seed text successfully joining over keyed TCP, seat ownership and reconnect, wrong-key/content/unsupported-format rejection with no retry loop, readable UI. Review found no remaining in-scope defect; hints never authorize gameplay or bypass the full admission tuple. No shared transport/schema change, package rebuild or external-internet claim.
+
+Historical evidence: completion commit addressed by immutable `work/W-039`; exact checks/results and limitations live in its body.

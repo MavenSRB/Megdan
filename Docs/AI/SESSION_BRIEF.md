@@ -14,11 +14,11 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 
 ## Current authorization and next route
 
-- Last completed work: **W-038**.
+- Last completed work: **W-039**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
-PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Menu guidance covers public IP, matching port/key/seed/build/data and router/firewall setup. Keyed local Host/Join/reconnect is verified; external internet reachability is not. This source change is not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
+PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Join automatically adopts the host seed (PVE-D33); only address, port and key need sharing, with matching build/data. Keyed local Host/Join/reconnect and rejection boundaries are verified; external internet reachability is not. These source changes are not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
 The enemy rail box now fits its live trays, hides when empty and scrolls only beyond the available height. This UI change is not in the preserved W035 package. Details: [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

@@ -39,6 +39,7 @@ namespace GuardsDigital.Pve.Presentation
         private Label status;
         private string dialAddress, error = string.Empty, rosterKey;
         private bool loading;
+        private bool seedInheritanceAttempted, sessionEstablished;
         private float nextStep;
         private long lastProjection = -1;
 
@@ -85,8 +86,8 @@ namespace GuardsDigital.Pve.Presentation
             port = Field("TCP port (same as PvP)", PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture));
             key = Field("Session key (required for LAN/internet)", "");
             key.isPasswordField = true;
-            seedInput = Field("Encounter seed (same on all three players)", seed.ToString(CultureInfo.InvariantCulture));
-            var instructions = new Label("Internet: set a session key, allow the selected TCP port through the host firewall and forward it on the router to the host PC. Share your public IP, port, key and seed; all players need the same build and PvE data. No key: local-machine testing only. PvP and PvE cannot host on the same port at the same time.")
+            seedInput = Field("Encounter seed (Host only; Join uses host seed)", seed.ToString(CultureInfo.InvariantCulture));
+            var instructions = new Label("Internet: set a session key, allow the selected TCP port through the host firewall and forward it on the router to the host PC. Share your public IP, port and key; Join automatically uses the host seed. All players need the same build and PvE data. No key: local-machine testing only. PvP and PvE cannot host on the same port at the same time.")
                 { name = "pve-coop-network-help" };
             instructions.style.whiteSpace = WhiteSpace.Normal;
             lobby.Add(instructions);
@@ -132,12 +133,14 @@ namespace GuardsDigital.Pve.Presentation
                 File.ReadAllText(Path.Combine(PveDataPaths.Directory, "encounter.json")));
         }
 
-        private void Begin(bool hosting)
+        private void Begin(bool hosting, bool inheritingSeed = false)
         {
             if (client != null) return;
             try
             {
-                if (!ulong.TryParse(seedInput.value, out seed)) throw new InvalidOperationException("Enter a whole-number seed.");
+                if (!inheritingSeed) { seedInheritanceAttempted = false; sessionEstablished = false; }
+                if (hosting && !ulong.TryParse(seedInput.value, out seed)) throw new InvalidOperationException("Enter a whole-number seed.");
+                seed = PveSeed.Normalize(seed);
                 if (!int.TryParse(port.value, out var number) || number < 1 || number > 65535)
                     throw new InvalidOperationException("Port must be 1–65535.");
                 PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out catalog, out layout);
@@ -207,6 +210,9 @@ namespace GuardsDigital.Pve.Presentation
                         case TransportEventKind.StreamRejected: client.OnStreamRejected(item.Reason); break;
                         case TransportEventKind.Disconnected: client.OnDisconnected(); break;
                     }
+            if (client != null && (client.State == PrivateSessionClientState.Admitted || client.GrantedSeat != null))
+                sessionEstablished = true;
+            if (TryInheritHostSeed()) { Render(); return; }
             if (server != null && server.HasMatchStarted && !server.IsPaused && runtime != null && Time.unscaledTime >= nextStep)
             {
                 var result = match.Session.Step(out var step);
@@ -251,10 +257,27 @@ namespace GuardsDigital.Pve.Presentation
             SceneManager.LoadScene(PveLauncher.MatchSceneName, LoadSceneMode.Single);
         }
 
+        private bool TryInheritHostSeed()
+        {
+            if (server != null || client == null || seedInheritanceAttempted || sessionEstablished || loading ||
+                client.State != PrivateSessionClientState.Rejected ||
+                !PveCoopMatch.TryReadHostSeed(client.LastRejection, seed, out var hostSeed)) return false;
+            // The hint is untrusted: change only the seed and retry once against the same endpoint.
+            // Never adopt a hint for a session already admitted or during seat reconnect.
+            seedInheritanceAttempted = true;
+            seed = hostSeed;
+            seedInput.value = seed.ToString(CultureInfo.InvariantCulture);
+            Close();
+            rosterKey = null;
+            Begin(false, inheritingSeed: true);
+            return true;
+        }
+
         private void Render()
         {
             status.text = error.Length > 0 ? error : client == null ? "Three players. One hero each. Host resolves shared decisions." :
-                client.State + (server != null && server.IsPaused ? " — paused, waiting for reconnect" : "") +
+                client.State + " — seed " + seed.ToString(CultureInfo.InvariantCulture) +
+                (server != null && server.IsPaused ? " — paused, waiting for reconnect" : "") +
                 (client.RejectionDetail.Length > 0 ? " — " + client.RejectionDetail : "") +
                 (client.HasMatchStarted ? " — host decides shared choices" : " — claim a seat, Ready, then pick a hero");
             panel.Q<Button>("pve-coop-reconnect").SetEnabled(client != null && client.CanAttemptReconnect);
