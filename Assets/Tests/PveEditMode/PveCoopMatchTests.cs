@@ -79,6 +79,11 @@ namespace GuardsDigital.Tests.Pve
             var initial = match.Encounter.InitialState;
             var normal = PrivateSessionIdentity.ForComposition(PveTestContent.OfficialMap(), initial.InitialConfiguration, initial.Setup, "test");
             var coop = PveCoopMatch.Identity(normal, 42, "catalog", "layout");
+            Assert.That(coop.MatchFormatId, Is.EqualTo("pve-coop-2-42"));
+            var legacy = new PrivateSessionIdentity(coop.ProtocolFamily, coop.ProtocolVersion,
+                coop.BuildIdentity, coop.SnapshotSchemaVersion, coop.MapId, coop.MapContentRevision,
+                "pve-coop-1-42", coop.ContentDigest);
+            Assert.That(coop.Equals(legacy), Is.False, "Preset-plan peers must not join shuffle-plan peers.");
             Assert.That(coop.Equals(normal), Is.False);
             Assert.That(coop.Equals(PveCoopMatch.Identity(normal, 43, "catalog", "layout")), Is.False);
             Assert.That(coop.Equals(PveCoopMatch.Identity(normal, 42, "changed", "layout")), Is.False);

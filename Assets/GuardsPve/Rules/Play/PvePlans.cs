@@ -10,8 +10,8 @@ using GuardsDigital.Pve.Content;
 namespace GuardsDigital.Pve.Play
 {
     /// <summary>
-    /// PVE-D07/D13. Each enemy's public four-turn plan for a round: one of its type's listed plans,
-    /// chosen by <see cref="PveSeed.PlanIndex"/> from the setup seed. Derived on every read, so it is
+    /// PVE-D32. Each enemy's public four-turn plan is a seeded shuffle of its orange hand,
+    /// including copies and idle cards but never Defense. Derived on every read, so it is
     /// never stored and replays, undoes and restarts with the match.
     /// </summary>
     public static class PvePlans
@@ -20,8 +20,21 @@ namespace GuardsDigital.Pve.Play
         {
             if (encounter == null) throw new ArgumentNullException(nameof(encounter));
             if (enemy == null) throw new ArgumentNullException(nameof(enemy));
-            var plans = enemy.Type.Plans;
-            return plans[PveSeed.PlanIndex(encounter.Setup.Seed, round, enemy.HeroId.Value, plans.Count)];
+            var plan = enemy.Type.OrangeHand.ToArray();
+            // Validated hands contain four cards. One uniform index selects among all 4! orders;
+            // mixed-radix Fisher-Yates maps each index to exactly one permutation of the copies.
+            var permutations = 1;
+            for (var i = 2; i <= plan.Length; i++) permutations *= i;
+            var index = PveSeed.PlanIndex(encounter.Setup.Seed, round, enemy.HeroId.Value, permutations);
+            for (var i = plan.Length - 1; i > 0; i--)
+            {
+                var other = index % (i + 1);
+                index /= i + 1;
+                var card = plan[i];
+                plan[i] = plan[other];
+                plan[other] = card;
+            }
+            return Array.AsReadOnly(plan);
         }
 
         /// <summary>The orange card the enemy's plan names for one turn (1-4).</summary>

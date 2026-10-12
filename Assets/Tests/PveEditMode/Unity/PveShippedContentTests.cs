@@ -150,7 +150,7 @@ namespace GuardsDigital.Tests.Pve
                 new[] { new PveCreepPlacement(PveTestContent.Hex("-3,2"), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
                 new[] { PveTestContent.Hex("-5,3") },
                 new[] { new PveSpawn(1, PveTestContent.Hex(inReach ? "-4,2" : "-1,-2"), typeId) });
-            var driver = PveTestDriver.Start(heroes: new[] { "hero-brogan" }, encounter: encounter,
+            var driver = PveTestDriver.StartWithOpening(new[] { weak.Key }, heroes: new[] { "hero-brogan" }, encounter: encounter,
                 catalog: new PveEnemyCatalog("placeholder-test", new[] { immediate }));
             for (var index = 0; index < 200; index++)
             {
@@ -188,7 +188,7 @@ namespace GuardsDigital.Tests.Pve
                 new[] { new PveCreepPlacement(new GuardsDigital.Core.Board.HexCoordinate(-3, 2), GuardsDigital.Core.Setup.StandardMinionType.Melee) },
                 new[] { new GuardsDigital.Core.Board.HexCoordinate(-5, 3) },
                 new[] { new PveSpawn(1, new GuardsDigital.Core.Board.HexCoordinate(-4, 2), typeId) });
-            var driver = PveTestDriver.Start(heroes: new[] { "hero-brogan" }, encounter: encounter,
+            var driver = PveTestDriver.StartWithOpening(new[] { "B" }, heroes: new[] { "hero-brogan" }, encounter: encounter,
                 catalog: new PveEnemyCatalog("placeholder-test", new[] { immediateAttack }));
             for (var index = 0; index < 200; index++)
             {

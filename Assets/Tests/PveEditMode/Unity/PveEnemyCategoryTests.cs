@@ -95,8 +95,8 @@ namespace GuardsDigital.Tests.Pve
                 new[] { PveTestContent.Hex("-5,3") },
                 new[] { new PveSpawn(1, PveTestContent.Hex("-4,2"), typeId),
                     new PveSpawn(1, PveTestContent.Hex("-3,2"), "heavy") });
-            var composed = PveEncounterComposer.Compose(new PveEncounterSetup(new[] { "hero-wasp" }, 42),
-                encounter, new PveEnemyCatalog("placeholder-test", types), PveTestContent.OfficialMap());
+            var composed = PveTestDriver.StartWithOpening(new[] { "X", "X" }, new[] { "hero-wasp" },
+                encounter, new PveEnemyCatalog("placeholder-test", types)).Composed;
             var ultimate = composed.InitialState.InitialConfiguration.CardInstances.Single(card =>
                 card.DefinitionReference.DefinitionId.Equals(WaspCardContent.HighVoltage));
             Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);

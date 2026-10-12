@@ -48,6 +48,20 @@ namespace GuardsDigital.Tests.Pve
                 catalog ?? PveTestContent.Catalog(),
                 PveTestContent.OfficialMap()));
 
+        /// <summary>Find a deterministic seed with specified first-turn cards for scenario setup.</summary>
+        internal static PveTestDriver StartWithOpening(string[] keys, string[] heroes,
+            PveEncounterDefinition encounter, PveEnemyCatalog catalog)
+        {
+            // Scenario tests select a reproducible shuffle, never override production ordering.
+            for (ulong seed = 1; seed <= 1000; seed++)
+            {
+                var driver = Start(seed, heroes, encounter, catalog);
+                if (keys.Select((key, index) => PvePlans.PlanFor(driver.Composed,
+                    driver.Composed.Enemies[index], 1)[0] == key).All(value => value)) return driver;
+            }
+            throw new InvalidOperationException("No seed produces the requested opening cards.");
+        }
+
         /// <summary>Automatic steps, then one passive player answer; false when nothing can move.</summary>
         internal bool Advance()
         {

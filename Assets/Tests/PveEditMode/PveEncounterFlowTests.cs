@@ -71,6 +71,39 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
+        public void EveryTurnCommitsThePublicShuffledCard()
+        {
+            var driver = PveTestDriver.Start(catalog: PveTestContent.HeroHuntingCatalog());
+            var cards = new PveCardIndex(driver.Composed.Catalog);
+            var turns = new System.Collections.Generic.HashSet<int>();
+            for (var index = 0; index < 2000 && driver.Match.RoundIndex == 1; index++)
+            {
+                var step = driver.Session.Peek();
+                if (step.Kind == PveStepKind.Command)
+                {
+                    if (step.Command.Kind == DirectorCommandKind.CommitCard)
+                    {
+                        var enemy = driver.Composed.FindEnemy(step.Command.HeroId);
+                        Assert.That(enemy, Is.Not.Null);
+                        var card = driver.Match.Cards.Single(value => value.Id.Equals(step.Command.CardInstanceId));
+                        Assert.That(cards.Orange(card.DefinitionReference.DefinitionId).Key,
+                            Is.EqualTo(PvePlans.PlanFor(driver.Composed, enemy, 1)[driver.Match.TurnIndex - 1]));
+                        turns.Add(driver.Match.TurnIndex);
+                    }
+                    Assert.That(driver.Session.Step(out _).Accepted, Is.True);
+                }
+                else
+                {
+                    var answer = driver.PlayerAnswer();
+                    Assert.That(answer, Is.Not.Null);
+                    Assert.That(driver.Session.Execute(answer).Accepted, Is.True);
+                }
+            }
+            Assert.That(driver.Match.RoundIndex, Is.EqualTo(2));
+            Assert.That(turns, Is.EquivalentTo(new[] { 1, 2, 3, 4 }));
+        }
+
+        [Test]
         public void RoundTwoEnemiesStayOffTheBoardThroughRoundOne()
         {
             var driver = PveTestDriver.Start(catalog: PveTestContent.HeroHuntingCatalog());

@@ -39,6 +39,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-034 | All weaker enemy attacks have movement fallback; Heavy Hurl gains Move 1 toward heroes stopping at range 2. | `work/W-034` |
 | W-033 | Melee/Ranged satisfy both hero and minion targeting/effects once; Heavy remains hero-only, with unchanged cards and combat. | `work/W-033` |
 | W-035 | Updated private Windows PvE package with enemy changes, Host/Join and the approved banner; exact-artifact solo/co-op/render/ZIP checks. | `work/W-035` |
+| W-036 | Random four-card enemy order per round, public upfront and deterministic across Undo/co-op. | `work/W-036` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -349,3 +350,9 @@ Historical evidence: completion commit addressed by immutable `work/W-004`; appr
 Approved: build the current PvE branch for Windows, including the completed enemy/deck/UI/category/fallback and Host/Join work and approved banner. Preserve older packages and user files; no remote publication. Baseline source `55d3ce96`; reused completed source evidence and W-004 approval. Completed `Builds/Playtest-W035-pve-coop.zip`, with `GuardsPvE/GuardsDigitalPvE.exe`, editable PvE data, README, identity and file manifest. Added only opt-in packaged-player smoke support, inert during normal play. Closing checks: current build identity; solo through second-wave spawn; playing host plus two real loopback client processes through owner placement/commitment; private-card isolation; live enemy rows; non-flat equal board captures; content/assembly isolation; manifest/ZIP integrity and extracted-package launch. T2; no unrelated full suites, gameplay changes or internet claim. Failed smoke-only assertions/handoff were corrected and the final artifact rerun green; earlier candidates and logs remain private. Review found no remaining in-scope acceptance defect. No further work authorized.
 
 Historical evidence: completion commit addressed by immutable `work/W-035`; exact source, checks/results, failure closure and limitations live in its body.
+
+### [x] W-036 Random enemy card order
+
+Approved: replace preset plans with a random order of each enemy's four orange cards each round (PVE-D32). All permutations are available, without movement-first constraints; preserve copies, exactly two shipped attacks, separate Heavy Defense, public slots, commitment fallback and deterministic seed/round/enemy derivation. Retain legacy JSON plan lists for compatibility, unused by runtime ordering; bump the PvE co-op format to refuse preset-plan peers. No card definitions, shared engine or schemas changed; no package rebuild. Closing checks: all 24 distinct-card orders reachable, copy preservation, repeat/seed/round/enemy behavior, all four actual commitments, Undo/restart/round flow, co-op identity and rendered solo/joiner rails. T2 review found no remaining in-scope defect; rules remain isolated and the bounded shuffle adds no mutable random state. Batch visual-test invocation was corrected to the required non-batch mode and rerun green.
+
+Historical evidence: completion commit addressed by immutable `work/W-036`; exact checks/results and limitations live in its body.

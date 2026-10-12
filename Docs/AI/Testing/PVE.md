@@ -31,6 +31,8 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 - the paced enemy commitments after placement, compact public four-slot enemy rails, Heavy defenses, no floating map labels and bidirectional token/rail hover;
 - the enemy card editor's fields.
 
+The scene/rail fixtures capture rendered frames using `WaitForEndOfFrame`; select `"batchMode": false` in the launcher request for these visual checks. Batch mode cannot execute that yield.
+
 ## Three-player co-op
 
 `GuardsDigital.Tests.Pve.PveCoopMatchTests` covers three Blue seats, public enemy cards, private hero cards, ownership and mode/content identity. `GuardsDigital.Tests.Pve.PveCoopWireTests` drives keyed serialized admission, selection, play, reserved-seat reconnect and host loss. Shared host-policy or selection-composition changes additionally select the affected owner-projection, team-agreement, lobby/hero-selection, admission/reconnect and architecture fixtures, plus the existing-mode identity oracle above.

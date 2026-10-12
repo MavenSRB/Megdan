@@ -62,7 +62,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 - **Starting board.** Round-1 enemies stand on their spawns. The heroes and later enemies are participants off the board until the round-start placement puts them on it.
 - **Mode rules.** `PveEncounterComposer.ModeRules` states the encounter's rules for the engine (see the hooks above).
 
-`PveSeed` derives plan choices with an explicit SplitMix64 mix of seed, round and enemy identity, so Mono and .NET agree and nothing is stored.
+`PveSeed` derives a uniform permutation index with an explicit SplitMix64 mix of seed, round and enemy identity. `PvePlans` maps it to a shuffle of all four orange card copies (24 possible orders for distinct cards), including Idle and excluding Defense (PVE-D32). No movement-first constraint or board-dependent selection remains. Mono and .NET agree; repeated reads, Undo and restart reproduce the same round's order without stored mutable random state.
 
 ## Encounter rules layer (W-022)
 
@@ -104,7 +104,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 - id, display name, optional token type (melee/ranged/heavy) and level (this slice supports level 1);
 - orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance;
 - purple cards: key, name, Initiative, Defense;
-- plans, one space-separated string per plan.
+- legacy plans, one space-separated string per plan: retained and validated for file/editor compatibility, but ignored by runtime ordering under PVE-D32.
 
 `encounter.json` names the map revision, creep spaces and types, hero placement spaces and spawns (round, space, type). Spaces are written `"q,r"`. Absent numbers are written as 0.
 
@@ -120,7 +120,7 @@ The separate launcher adds a Host/Join menu. A playing host and two joiners clai
 
 `PveCoopMatch` composes the encounter session behind a seat-serving host. The optional `MatchSeatPolicy` limits player seats to Blue, exposes Red's public cards, filters hero-owned commands and leaves continuation/Undo/team decisions with the mode. The null policy preserves existing-mode behavior. `PrivateSessionHost.SeatComposition` is an optional asymmetric seat-pick callback; ordinary PvP still uses `IDeferredMatchComposition` and the equal-team `HeroLineup` contract. `PveCoopLobby` owns transport pumping, host automation and the local player's ordinary online client. `PveEncounterView.AttachCoop` reads the online projection for map/rail status and gives shared-choice controls only to the local host.
 
-Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. PvE co-op uses a distinct `pve-coop-1-<seed>` match-format identity and a digest including the PvE catalog and encounter data, so PvP, differing seeds and differing editable content cannot enter the same session. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
+Compatibility: shared wire /52 and snapshot v59 layouts stay unchanged. PvE co-op uses a distinct `pve-coop-2-<seed>` match-format identity and a digest including the PvE catalog and encounter data, so preset-plan builds, PvP, differing seeds and differing editable content cannot enter the same session. No full snapshots or Director commands are exposed as a client port. Initial content is composed locally from compatible files; subsequent mutable state comes only from owner-scoped network projections.
 
 - **Launch.** The launcher loads and validates content, offers every configured hero (up to the number of placement spaces) and a seed, composes the encounter and loads the match scene with the external composition. The match then runs in the existing Director mode.
 - **Smoke.** `-guardsPveSmokeTest` composes a fixed three-hero encounter and reports `GUARDS_PVE_SMOKE: BEGIN`, `COMPOSED` and `PASS` (or `FAIL`), then quits with its exit code. The opt-in `-guardsPveCoopSmoke` path exercises the shipped lobby in three separate player processes and captures their boards; [the recipe](../Testing/PVE.md#build-gate) owns its bounded claims. Neither driver runs during normal play.

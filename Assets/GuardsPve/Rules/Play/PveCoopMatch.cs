@@ -30,7 +30,7 @@ namespace GuardsDigital.Pve.Play
         public static PrivateSessionIdentity Identity(PrivateSessionIdentity content, ulong seed, string catalog, string encounter) =>
             new PrivateSessionIdentity(content.ProtocolFamily, content.ProtocolVersion, content.BuildIdentity,
                 content.SnapshotSchemaVersion, content.MapId, content.MapContentRevision,
-                "pve-coop-1-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                "pve-coop-2-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 PrivateSessionContentDigest.HashText(content.ContentDigest + catalog + encounter));
 
         public static bool IsSharedChoice(IMatchReadModel source)

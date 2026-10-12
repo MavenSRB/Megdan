@@ -14,9 +14,11 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 
 ## Current authorization and next route
 
-- Last completed work: **W-035**.
+- Last completed work: **W-036**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
+
+Enemy orange cards now shuffle each round instead of using preset orders (PVE-D32). All four slots remain public upfront; Defense stays separate and seed/round/enemy identity preserves Undo and co-op agreement. This source change is not included in the preserved W035 ZIP. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
 All weaker enemy attacks now have movement fallback after both attack options (PVE-D31): Slash Move 2 toward creeps, Shoot Move 1 toward heroes stopping at 3, Hurl Move 1 toward heroes stopping at 2. Stronger cards and other values are unchanged.
 

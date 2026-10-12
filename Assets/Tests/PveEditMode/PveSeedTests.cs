@@ -1,4 +1,5 @@
 using System.Linq;
+using GuardsDigital.Pve.Play;
 using GuardsDigital.Pve.Composition;
 using NUnit.Framework;
 
@@ -10,6 +11,40 @@ namespace GuardsDigital.Tests.Pve
     /// </summary>
     public sealed class PveSeedTests
     {
+        [Test]
+        public void ShuffledPlansReachAllOrdersAndPreserveEveryCopyWithoutDefense()
+        {
+            var encounter = PveTestDriver.Start().Composed;
+            var enemy = encounter.Enemies.First(value => value.Type.Id == "brute");
+            var orders = Enumerable.Range(1, 2400).Select(round =>
+            {
+                var plan = PvePlans.PlanFor(encounter, enemy, round);
+                Assert.That(plan, Is.EquivalentTo(enemy.Type.OrangeHand));
+                Assert.That(plan, Is.EqualTo(PvePlans.PlanFor(encounter, enemy, round)));
+                return string.Join(" ", plan);
+            }).GroupBy(value => value).ToArray();
+            Assert.That(orders.Length, Is.EqualTo(24), "Not restricted to legacy plans or movement first.");
+            Assert.That(orders.All(group => group.Count() > 60 && group.Count() < 140), Is.True);
+            var repeated = encounter.Enemies.First(value => value.Type.Id == "raider");
+            for (var round = 1; round <= 100; round++)
+                Assert.That(PvePlans.PlanFor(encounter, repeated, round), Is.EquivalentTo(repeated.Type.OrangeHand));
+        }
+
+        [Test]
+        public void ShuffleDependsOnSeedRoundAndEnemyButNotReadOrder()
+        {
+            var encounter = PveTestDriver.Start().Composed;
+            var clone = PveTestDriver.Start().Composed;
+            var differentSeed = PveTestDriver.Start(seed: 4321).Composed;
+            var enemy = encounter.Enemies[0];
+            var other = encounter.Enemies.First(value => value.Type.Id == enemy.Type.Id && value != enemy);
+            var orders = Enumerable.Range(1, 30).Select(round => string.Join(" ", PvePlans.PlanFor(encounter, enemy, round))).ToArray();
+            Assert.That(orders.Distinct().Count(), Is.GreaterThan(1));
+            Assert.That(orders, Is.EqualTo(Enumerable.Range(1, 30).Select(round => string.Join(" ", PvePlans.PlanFor(clone, clone.Enemies[0], round)))));
+            Assert.That(orders, Is.Not.EqualTo(Enumerable.Range(1, 30).Select(round => string.Join(" ", PvePlans.PlanFor(differentSeed, differentSeed.Enemies[0], round)))));
+            Assert.That(orders, Is.Not.EqualTo(Enumerable.Range(1, 30).Select(round => string.Join(" ", PvePlans.PlanFor(encounter, other, round)))));
+        }
+
         [Test]
         public void StableHashAndPlanIndexArePinned()
         {
