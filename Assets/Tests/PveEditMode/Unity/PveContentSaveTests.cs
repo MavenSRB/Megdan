@@ -21,6 +21,8 @@ namespace GuardsDigital.Tests.Pve
                 var loaded = reloaded.Find(type.Id);
                 Assert.That(loaded.TokenType, Is.EqualTo(type.TokenType));
                 Assert.That(loaded.OrangeCards.Select(card => card.Skill), Is.EqualTo(type.OrangeCards.Select(card => card.Skill)));
+                Assert.That(loaded.OrangeCards.Select(card => card.RepeatOnDifferentTarget), Is.EqualTo(type.OrangeCards.Select(card => card.RepeatOnDifferentTarget)));
+                Assert.That(loaded.PurpleCards.Select(card => card.Counterattack), Is.EqualTo(type.PurpleCards.Select(card => card.Counterattack)));
                 Assert.That(loaded.MinionCategory, Is.EqualTo(type.MinionCategory));
                 Assert.That(loaded.OrangeCards.Select(card =>
                         (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle,
@@ -65,6 +67,9 @@ namespace GuardsDigital.Tests.Pve
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
             var editor = new PveCardEditor(() => catalog, null);
             editor.Build();
+            Assert.That(editor.Edited().Find("heavy").FindOrange("C").RepeatOnDifferentTarget, Is.True);
+            Assert.That(editor.Edited().Find("heavy").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.HookClosestBlueUnit));
+            Assert.That(editor.Edited().Find("heavy").PurpleCards.First().Counterattack, Is.EqualTo(1));
             Assert.That(editor.Edited().Find("melee").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.ImmuneThisTurn));
             Assert.That(editor.Edited().Find("ranged").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.RangeNextTurn));
             Assert.That(editor.Edited().Find("ranged").FindOrange("A").Name, Is.EqualTo("Take Position"));

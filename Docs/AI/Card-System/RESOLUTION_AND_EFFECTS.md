@@ -37,6 +37,8 @@ The separate **FINISH MOVEMENT** control submits that same authorized Stop exact
 
 ## Deterministic, resumable resolution
 
+Original-mode post-defense counterattack continuation: [PvE contract](../Project/PVE_IMPLEMENTATION.md#post-defense-counterattack-contract).
+
 The resolver is a state machine that advances until it either completes, fails at a mandatory step, or needs an authoritative choice.
 
 At a high level it:

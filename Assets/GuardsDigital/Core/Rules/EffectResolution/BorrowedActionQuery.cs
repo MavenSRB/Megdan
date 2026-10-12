@@ -49,6 +49,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public static BorrowRequest For(CardInstanceId borrowedCardId, RuleObject excludedTarget = default) =>
             new BorrowRequest(true, borrowedCardId, excludedTarget, false, 0, default, false);
 
+        public static BorrowRequest ForDeclaredAction(CardInstanceId card, int actionIndex)
+        {
+            if (!card.IsDefined || actionIndex < 0)
+                throw new ArgumentException("A declared action request names a card and action index.");
+            return new BorrowRequest(true, card, RuleObject.None, true, actionIndex, default, false);
+        }
+
         /// <summary>Mind Grip's selected printed action, with its two explicit this-way exceptions.</summary>
         public static BorrowRequest ForPreviousSlotPrintedAction(
             CardInstanceId borrowedCardId, int printedActionIndex,
@@ -159,7 +166,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 if (outcome.ResultKind != EffectExecutionResultKind.Applied ||
                     !definition.TryGetNode(outcome.NodeId, out var node) ||
                     node.Kind != EffectNodeKind.Capability ||
-                    (!node.Capability.Equals(SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1) &&
+                    (!node.Capability.Equals(CounterattackCapabilities.RequestV1) &&
+                     !node.Capability.Equals(SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1) &&
                      !node.Capability.Equals(SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1) &&
                      // Milestone 9.30c. A cast: the spell it removed faceup is the card whose printed
                      // primary the caster now performs (Prepare Spells, GY-Q3).
@@ -179,6 +187,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         fact.Value.Kind == EffectValueKind.CardInstance)
                     {
                         var excluded = RuleObject.None;
+                        if (node.Capability.Equals(CounterattackCapabilities.RequestV1))
+                        {
+                            var index = outcome.Outputs.Single(value => value.OutputName == CounterattackCapabilities.ActionIndexOutput);
+                            return BorrowRequest.ForDeclaredAction(fact.Value.CardInstanceId, index.Value.IntegerValue);
+                        }
                         foreach (var target in outcome.Outputs)
                         {
                             if (target.OutputName == SyntheticBorrowedActionCapabilities.ExcludedHeroOutput && target.Value.Kind == EffectValueKind.Hero)

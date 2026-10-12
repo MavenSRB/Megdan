@@ -101,7 +101,10 @@ namespace GuardsDigital.Core.Cards
         /// moves no snapshot field - the continuation it parks is one the codec has written since
         /// 8.19a.</para>
         /// </summary>
-        AfterTheMovement = 6
+        AfterTheMovement = 6,
+
+        /// <summary>A Defense rider after the incoming attack and its after-attack text finish.</summary>
+        AfterSuccessfulDefense = 7
     }
 
     public static class CardTextTimingQuery
@@ -121,6 +124,7 @@ namespace GuardsDigital.Core.Cards
                 case CardTextTiming.DefenseAction:
                     return TimingCheckpoint.DefenseResponse;
                 case CardTextTiming.AfterTheAttack:
+                case CardTextTiming.AfterSuccessfulDefense:
                     return TimingCheckpoint.AfterAttack;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -140,6 +144,7 @@ namespace GuardsDigital.Core.Cards
                 case CardTextTiming.AfterTheAttack:
                     return ActionKind.Attack;
                 case CardTextTiming.DefenseAction:
+                case CardTextTiming.AfterSuccessfulDefense:
                     return ActionKind.Defense;
                 case CardTextTiming.AroundTheAction:
                 case CardTextTiming.BeforeTheMovement:

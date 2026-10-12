@@ -9,7 +9,8 @@ namespace GuardsDigital.Pve.Content
     {
         None = 0,
         ImmuneThisTurn = 1,
-        RangeNextTurn = 2
+        RangeNextTurn = 2,
+        HookClosestBlueUnit = 3
     }
 
     /// <summary>PVE-D07. What an orange option aims at.</summary>
@@ -71,7 +72,8 @@ namespace GuardsDigital.Pve.Content
             int? moveValue,
             IEnumerable<PveCardOption> options,
             bool isIdle = false,
-            PveSkillKind skill = PveSkillKind.None)
+            PveSkillKind skill = PveSkillKind.None,
+            bool repeatOnDifferentTarget = false)
         {
             Key = key;
             Name = name;
@@ -83,6 +85,7 @@ namespace GuardsDigital.Pve.Content
             Options = Array.AsReadOnly((options ?? Enumerable.Empty<PveCardOption>()).ToArray());
             IsIdle = isIdle;
             Skill = skill;
+            RepeatOnDifferentTarget = repeatOnDifferentTarget;
         }
 
         public string Key { get; }
@@ -101,23 +104,26 @@ namespace GuardsDigital.Pve.Content
         public IReadOnlyList<PveCardOption> Options { get; }
         public bool IsIdle { get; }
         public PveSkillKind Skill { get; }
+        public bool RepeatOnDifferentTarget { get; }
     }
 
     /// <summary>PVE-D09. A purple Defense card.</summary>
     public sealed class PvePurpleCard
     {
-        public PvePurpleCard(string key, string name, int initiative, int defense)
+        public PvePurpleCard(string key, string name, int initiative, int defense, int counterattack = 0)
         {
             Key = key;
             Name = name;
             Initiative = initiative;
             Defense = defense;
+            Counterattack = counterattack;
         }
 
         public string Key { get; }
         public string Name { get; }
         public int Initiative { get; }
         public int Defense { get; }
+        public int Counterattack { get; }
     }
 
     /// <summary>PVE-D06/D07/D09. One enemy type: its cards, its listed four-turn plans and level.</summary>

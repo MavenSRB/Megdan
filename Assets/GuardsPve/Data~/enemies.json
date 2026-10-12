@@ -50,13 +50,13 @@
         { "key": "B", "name": "Smash", "initiative": 5, "copies": 1, "attack": 6, "move": 1,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "minion" } ] },
-        { "key": "C", "name": "Hurl", "initiative": 3, "copies": 1, "attack": 4, "range": 2, "move": 1,
+        { "key": "C", "name": "Hurl", "initiative": 3, "copies": 1, "attack": 2, "range": 2, "move": 1, "repeatOnDifferentTarget": true,
           "options": [ { "kind": "attack", "target": "hero" }, { "kind": "attack", "target": "minion" },
                        { "kind": "move", "target": "hero", "stopDistance": 2 } ] },
-        { "key": "X", "name": "Dozing Off", "initiative": 1, "copies": 1, "idle": true }
+        { "key": "X", "name": "Hook", "initiative": 1, "copies": 1, "skill": "hook-closest-blue-unit" }
       ],
       "purpleCards": [
-        { "key": "P", "name": "Thick Hide", "initiative": 1, "defense": 3 },
+        { "key": "P", "name": "Thick Hide", "initiative": 1, "defense": 3, "counterattack": 1 },
         { "key": "Q", "name": "Brace", "initiative": 1, "defense": 5 }
       ],
       "plans": [ "A B X C", "A X B C", "A C X B" ]

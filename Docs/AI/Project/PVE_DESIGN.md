@@ -96,6 +96,12 @@ Rename Ranged A to Take Position, retaining Initiative 8, Move 2 toward heroes s
 
 Aim's source card uses the shared effect glow from resolution while pending, through its active next turn, clearing on expiry or cancellation (user addition 2026-10-12).
 
+## PVE-D37 Heavy Hurl, Hook and Thick Hide (Approved, user 2026-10-12)
+
+Hurl becomes Attack 2, retaining Range 2, Initiative 3 and Move 1 fallback; after attacking, repeat once on a different target, if a legal different target exists. Replace Dozing Off with Hook, Initiative 1: move the closest Blue unit (hero or creep) toward Heavy in a straight hex line until adjacent or blocked by an obstacle. The user confirmed that a closest unit not aligned on a straight line yields no movement; do not substitute a farther aligned target. Existing equal-distance player choices apply. Thick Hide retains Defense 3, Initiative 1, and after successfully defending counterattacks the original attacker once with Attack 1 only when adjacent. Other cards and values are unchanged. Use existing movement obstacle and attack/defense rules; no teleport, damage shortcut or competitive card edit.
+
+Timing clarification (user 2026-10-12): Thick Hide's counterattack follows the original attack's completion, including its after-attack effects; it does not interrupt the defense comparison.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

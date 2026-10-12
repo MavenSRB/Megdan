@@ -37,11 +37,13 @@ namespace GuardsDigital.Pve.Composition
             true, "PveRangeNextTurn", "pve-range-next-turn", Array.Empty<TimingCheckpoint>(),
             new[] { RuleModification.ForValue(PrintedValueChannel.Range, 1) });
 
-        public static IEnumerable<IEffectCapabilityHandler> Handlers(IEnumerable<PveSkillKind> skills)
+        public static IEnumerable<IEffectCapabilityHandler> Handlers(IEnumerable<PveSkillKind> skills, bool counterattack = false)
         {
+            if (counterattack) yield return GuardsDigital.Core.Effects.Synthetic.CounterattackCapabilities.Handler();
             foreach (var skill in skills.Distinct())
             {
                 if (skill == PveSkillKind.None) continue;
+                if (skill == PveSkillKind.HookClosestBlueUnit) { yield return PveHookContent.Handler(); continue; }
                 yield return new ActiveEffectCreationHandler(Capability(skill),
                     skill == PveSkillKind.ImmuneThisTurn ? ImmuneDefinition : RangeDefinition);
             }
@@ -63,12 +65,14 @@ namespace GuardsDigital.Pve.Composition
             {
                 case PveSkillKind.ImmuneThisTurn: return ImmuneText;
                 case PveSkillKind.RangeNextTurn: return RangeText;
+                case PveSkillKind.HookClosestBlueUnit: return PveHookContent.Text;
                 default: throw new ArgumentOutOfRangeException(nameof(skill));
             }
         }
 
         public static EffectDefinition Effect(PveSkillKind skill)
         {
+            if (skill == PveSkillKind.HookClosestBlueUnit) return PveHookContent.Effect();
             var capability = Capability(skill);
             var node = new EffectNodeId(skill == PveSkillKind.ImmuneThisTurn ? "grant-immunity" : "grant-range");
             return new EffectDefinition(new EffectDefinitionId(skill == PveSkillKind.ImmuneThisTurn

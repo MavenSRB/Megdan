@@ -118,7 +118,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "An owed card-text remainder names the attack whose remaining steps it owes.");
             }
 
+            if (moment == CardTextTiming.AfterSuccessfulDefense &&
+                (outcome != AttackResolutionOutcome.SuccessfullyDefended || !attack.DefenseOffer.HasValue))
+                throw new ArgumentException("A counterattack remainder requires a successful card defense.", nameof(outcome));
+
             if (moment != CardTextTiming.AfterTheAttack &&
+                moment != CardTextTiming.AfterSuccessfulDefense &&
                 moment != CardTextTiming.DefenseAction &&
                 moment != CardTextTiming.BeforeTheAttack)
             {

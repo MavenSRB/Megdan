@@ -16,6 +16,8 @@ The encounter fixtures play headlessly through a test driver with a deterministi
 
 ## Enemy category integration
 
+`PveHeavyTests` covers Hurl's different-target repeat, Hook geometry/creep/obstacle behavior and Thick Hide's adjacent original-attacker counterattack, ordinary Defense, lethal continuation, after-attack ordering and target/Defense restore plus Undo. Shared combat/card-text/borrow regressions and the existing-mode identity oracle accompany these shared continuation changes.
+
 `PveAimTests` covers PVE-D36's names/face, dormant-to-active Range bonus, both actual range-four attacks, expiry/retrieval, source visibility and restore/Undo. `PveLauncherPlayModeTests` inspects Aim's rendered wording and its shared tray outline while pending, active and expired. These reuse the existing modifier and source-glow contracts rather than introducing PvE-specific timing or colors.
 
 `PveShieldUpTests` covers PVE-D34's authored face, automatic Skill choice, existing immunity and turn expiry, restore/Undo/restart and unchanged default catalog. `PveContentSaveTests` covers typed Skill JSON/editor retention and unknown/mixed-action rejection; the launcher Play Mode fixture hovers Shield Up and captures its rendered wording. Shared catalog/provenance changes also run `CardDefinitionTests`, `EffectSeamConformanceTests` and the composition/identity fixtures below.

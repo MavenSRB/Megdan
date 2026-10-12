@@ -101,6 +101,8 @@ namespace GuardsDigital.Pve.Content
 
         private static void ValidateOrange(string type, PveOrangeCard card, List<string> errors)
         {
+            if (card.RepeatOnDifferentTarget && (!card.AttackValue.HasValue || card.IsIdle || card.Skill != PveSkillKind.None))
+                errors.Add($"Enemy type '{type}' card '{card.Key}' requires an Attack for its repeat.");
             var label = $"Enemy type '{type}' card '{card.Key}'";
             if (string.IsNullOrWhiteSpace(card.Key) || !IsIdentifier(card.Key.ToLowerInvariant()))
                 errors.Add($"Enemy type '{type}' has an orange card without a valid key.");
@@ -161,6 +163,8 @@ namespace GuardsDigital.Pve.Content
         private static void ValidatePurple(string type, PvePurpleCard card, List<string> errors)
         {
             var label = $"Enemy type '{type}' purple card '{card.Key}'";
+            if (card.Counterattack < 0 || card.Counterattack > MaximumValue)
+                errors.Add($"{label} Counterattack {card.Counterattack} must be 0 to {MaximumValue}.");
             if (string.IsNullOrWhiteSpace(card.Key) || !IsIdentifier(card.Key.ToLowerInvariant()))
                 errors.Add($"Enemy type '{type}' has a purple card without a valid key.");
             if (string.IsNullOrWhiteSpace(card.Name)) errors.Add($"{label} needs a name.");

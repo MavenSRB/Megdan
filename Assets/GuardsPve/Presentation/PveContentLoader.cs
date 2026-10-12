@@ -54,9 +54,9 @@ namespace GuardsDigital.Pve.Presentation
                             ParseKind(option.kind),
                             ParseTarget(option.target),
                             option.stopDistance <= 0 ? 1 : option.stopDistance)),
-                        card.idle, ParseSkill(card.skill))),
+                        card.idle, ParseSkill(card.skill), card.repeatOnDifferentTarget)),
                     (type.purpleCards ?? new PurpleCardDto[0]).Select(card =>
-                        new PvePurpleCard(card.key, card.name, card.initiative, card.defense)),
+                        new PvePurpleCard(card.key, card.name, card.initiative, card.defense, card.counterattack)),
                     (type.plans ?? new string[0]).Select(plan =>
                         (plan ?? string.Empty).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)),
                     string.IsNullOrWhiteSpace(type.tokenType) ? (StandardMinionType?)null : ParseMinion(type.tokenType),
@@ -88,6 +88,7 @@ namespace GuardsDigital.Pve.Presentation
                         move = card.MoveValue ?? 0,
                         idle = card.IsIdle,
                         skill = WriteSkill(card.Skill),
+                        repeatOnDifferentTarget = card.RepeatOnDifferentTarget,
                         options = card.Options.Select(option => new OptionDto
                         {
                             kind = option.Kind.ToString().ToLowerInvariant(),
@@ -100,7 +101,8 @@ namespace GuardsDigital.Pve.Presentation
                         key = card.Key,
                         name = card.Name,
                         initiative = card.Initiative,
-                        defense = card.Defense
+                        defense = card.Defense,
+                        counterattack = card.Counterattack
                     }).ToArray(),
                     plans = type.Plans.Select(plan => string.Join(" ", plan)).ToArray()
                 }).ToArray()
@@ -154,6 +156,7 @@ namespace GuardsDigital.Pve.Presentation
             if (string.IsNullOrWhiteSpace(value)) return PveSkillKind.None;
             if (value == "immune-this-turn") return PveSkillKind.ImmuneThisTurn;
             if (value == "range-next-turn") return PveSkillKind.RangeNextTurn;
+            if (value == "hook-closest-blue-unit") return PveSkillKind.HookClosestBlueUnit;
             throw new FormatException($"'{value}' is not a supported PvE Skill.");
         }
 
@@ -164,6 +167,7 @@ namespace GuardsDigital.Pve.Presentation
                 case PveSkillKind.None: return null;
                 case PveSkillKind.ImmuneThisTurn: return "immune-this-turn";
                 case PveSkillKind.RangeNextTurn: return "range-next-turn";
+                case PveSkillKind.HookClosestBlueUnit: return "hook-closest-blue-unit";
                 default: throw new ArgumentOutOfRangeException(nameof(skill));
             }
         }
@@ -227,12 +231,13 @@ namespace GuardsDigital.Pve.Presentation
             public int move;
             public bool idle;
             public string skill;
+            public bool repeatOnDifferentTarget;
             public OptionDto[] options;
         }
 
         [Serializable] private sealed class OptionDto { public string kind; public string target; public int stopDistance; }
 
-        [Serializable] private sealed class PurpleCardDto { public string key; public string name; public int initiative; public int defense; }
+        [Serializable] private sealed class PurpleCardDto { public string key; public string name; public int initiative; public int defense; public int counterattack; }
 
         [Serializable]
         private sealed class EncounterDto

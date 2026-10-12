@@ -230,6 +230,12 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null;
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex),
                 "Heavy defenses use the same complete-card hover preview.");
+            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
+                .Any(label => label.text == "After successfully defending: If the attacker is adjacent, counterattack it once with Attack 1."), Is.True);
+            yield return new WaitForEndOfFrame();
+            var heavyCapture = ScreenCapture.CaptureScreenshotAsTexture();
+            System.IO.File.WriteAllBytes("tmp/w043-thick-hide-hover.png", heavyCapture.EncodeToPNG());
+            Object.Destroy(heavyCapture);
             using (var leave = PointerLeaveEvent.GetPooled()) { leave.target = defense; defense.SendEvent(leave); }
             rail.scrollOffset = Vector2.zero;
             yield return null;

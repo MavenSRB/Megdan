@@ -1528,6 +1528,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             switch (moment)
             {
+                case CardTextTiming.AfterSuccessfulDefense:
+                    return Array.Empty<ResolutionStep>();
                 // p.14 step 7 is the last thing the page does, so what stands after it is the outcome
                 // this attack reached and the end of the action that carried it.
                 case CardTextTiming.AfterTheAttack:
@@ -1539,7 +1541,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     var defeatedMinionWithBasicAttack =
                         resolution.Target.Kind == AttackTargetKind.Minion &&
                         outcome == AttackResolutionOutcome.AttackSuccessful;
-                    return theActionEndsHere
+                    var completion = theActionEndsHere
                         ? Array.AsReadOnly(new[]
                         {
                             completed,
@@ -1553,6 +1555,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 defeatedMinionWithBasicAttack: defeatedMinionWithBasicAttack)
                         })
                         : Array.AsReadOnly(new[] { completed });
+                    if (outcome != AttackResolutionOutcome.SuccessfullyDefended || !resolution.DefenseOffer.HasValue)
+                        return completion;
+                    var defense = resolution.DefenseOffer.Value;
+                    return completion.Concat(new[] { ResolutionStep.ApplyCardText(defense.SourceCardInstanceId,
+                        defense.ActionDefinitionId, resolution.TargetHeroId, CardTextTiming.AfterSuccessfulDefense,
+                        resolution, outcome) }).ToArray();
 
                 // p.14 step 4 sits inside the defender's response, so what stands after it is step 5's
                 // total, the end of the response, and the comparison step 6 opens.
@@ -2768,7 +2776,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             EffectRosterState rosterState = null,
-            bool defenseInterrupted = false)
+            bool defenseInterrupted = false,
+            Func<ActionOffer, AttackTarget, bool> additionalTargetFilter = null)
         {
             if (state == null)
             {
@@ -2784,6 +2793,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var backend = new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers);
+            backend.AdditionalTargetFilter = additionalTargetFilter;
 
             // Bound before the verification below, because a paused Defense comparison is re-derived
             // against the same items the live one used; a restore that verified it without them would
@@ -3690,7 +3700,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 rosterState,
                 modifications);
 
+        internal Func<ActionOffer, AttackTarget, bool> AdditionalTargetFilter { get; set; }
+
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
+            HeroId attackerId, ActionOffer offer, IReadOnlyList<CardDefinition> definitions,
+            MatchParticipants participants, RuleModificationSet modifications,
+            AttackSequenceBullet sequenceBullet = default, IEnumerable<CardInstance> cardInstances = null,
+            IBoardDisplacementAuthority board = null) =>
+            FindUnfilteredLegalAttackTargets(attackerId, offer, definitions, participants, modifications,
+                sequenceBullet, cardInstances, board).Where(target => AdditionalTargetFilter?.Invoke(offer, target) != false).ToArray();
+
+        private IReadOnlyList<AttackTarget> FindUnfilteredLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
@@ -3799,7 +3819,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     candidate.Id.Equals(resolution.ActionDefinitionId));
                 if (action != null &&
                     (resolution.InvocationContext == ActionInvocationContext.TextGranted
-                        ? action.Origin == ActionDefinitionOrigin.PrintedPrimary
+                        ? action.Origin == ActionDefinitionOrigin.PrintedPrimary || action.Origin == ActionDefinitionOrigin.TextGranted
                         : action.Origin == ActionDefinitionOrigin.PrintedSecondary) &&
                     action.Kind == ActionKind.Attack)
                 {

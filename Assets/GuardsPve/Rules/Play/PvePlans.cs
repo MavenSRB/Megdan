@@ -79,7 +79,8 @@ namespace GuardsDigital.Pve.Play
         EnemyAttackTarget = 1,
         EnemyMovementDestination = 2,
         EnemySpawnSpace = 3,
-        EnemyInitiativeOrder = 4
+        EnemyInitiativeOrder = 4,
+        EnemyClosestUnit = 5
     }
 
     /// <summary>

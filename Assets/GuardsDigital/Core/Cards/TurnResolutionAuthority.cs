@@ -3686,6 +3686,13 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult CompleteAttackOrStartItsRepeat(List<TurnResolutionEvent> events)
         {
+            if (cardActions.IsCounterattackRunning)
+            {
+                consumedTurnScopedKeys.RemoveWhere(key => key != null && key.StartsWith(OffTurnBorrowPrefix, StringComparison.Ordinal));
+                ClearRunningGrant();
+                events.AddRange(MaterializeSteps(cardActions.ResumeParkedCardTextPage(new ActionBoundaryContext(
+                    definitions, instances, participants, timing, TieBreakerState, roundIndex, turnIndex)), TurnResolutionEvent.FromAttackAction));
+            }
             // After-Attack text can grant a primary just as Skill text can. Consume the request
             // before resolving its played card or handing Initiative to the next hero.
             var borrowed = TryStartOwedBorrowedAction(events);
@@ -3810,14 +3817,18 @@ namespace GuardsDigital.Core.Cards
             // the page finished. The shape is named once in CardLifecycleAuthority and is one no card
             // an action started on could otherwise be in, so the fault below still fires for every
             // cause it was written for.
-            if (!CardLifecycleAuthority.TryResolveAfterAction(card) &&
+            // A counterattack can defeat the selected actor after its attack has finished.
+            // Defeat already resolves that actor's played card; acknowledge it only once.
+            var resolvedByDefeat = !cardActions.Board.IsHeroOnBoard(card.OwnerId) &&
+                CardLifecycleAuthority.IsResolvedCardInTurnArea(card);
+            if (!resolvedByDefeat && !CardLifecycleAuthority.TryResolveAfterAction(card) &&
                 !CardLifecycleAuthority.WasRetrievedDuringItsOwnAction(card))
             {
                 throw new InvalidOperationException(
                     "A completed turn Attack could not resolve its prevalidated source card.");
             }
 
-            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            if (!resolvedByDefeat) events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -4297,6 +4308,12 @@ namespace GuardsDigital.Core.Cards
                         TieBreakerState, roundIndex, turnIndex);
                     if (!MaterializeInto(events, produced, toTurnEvent))
                     {
+                        return false;
+                    }
+
+                    if (step.CardTextTiming == CardTextTiming.AfterSuccessfulDefense && cardActions.HasOwedBorrowedAction)
+                    {
+                        TryStartOwedBorrowedAction(events);
                         return false;
                     }
 

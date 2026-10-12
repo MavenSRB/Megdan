@@ -257,6 +257,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // is the precondition of was composed against - on a fresh match and on a restored one
             // alike.
             this.attackDefenseBackend.BindCapabilities(catalogs.Capabilities);
+            this.attackDefenseBackend.AdditionalTargetFilter = (offer, target) =>
+                pendingCardTextAwaitingInterrupt?.Moment != CardTextTiming.AfterSuccessfulDefense ||
+                !offer.ActorId.Equals(pendingCardTextAwaitingInterrupt.Attack.TargetHeroId) ||
+                target.Kind == AttackTargetKind.Hero && target.HeroId.Equals(pendingCardTextAwaitingInterrupt.Attack.ActorId);
             // Milestone 9.21h. "A different one of you" repeat settles the body that performs it on
             // this board, whichever resolver requested it.
             this.skillBackend.BindRepeatPerformer(
@@ -611,7 +615,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// from the continuation.s own identity when the answer arrives.
         /// </summary>
         public bool IsCardTextPageStopped =>
-            pendingCardText != null || pendingCardTextAwaitingInterrupt != null;
+            pendingCardText != null || pendingCardTextAwaitingInterrupt != null && !IsCounterattackRunning;
+
+        internal bool IsCounterattackRunning => pendingCardTextAwaitingInterrupt?.Moment == CardTextTiming.AfterSuccessfulDefense &&
+            GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrant(borrowedTargetScopeKeys) == CounterattackCapabilities.GrantId;
 
         /// <summary>The remainder owed while a card-text push trigger stands, or null.</summary>
         public PendingAttackCardTextRemainder PendingCardTextRemainder =>
@@ -2184,6 +2191,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
             EffectRosterState rosterState = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
+            var pendingAttack = state.PendingAttackResolution;
+            if (pendingAttack != null)
+            {
+                var pendingAction = definitions.Single(definition => definition.Reference.Equals(pendingAttack.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(pendingAttack.ActionDefinitionId));
+                if (pendingAction.Origin == ActionDefinitionOrigin.TextGranted)
+                {
+                    var parent = state.PendingCardTextRemainder;
+                    if (parent?.Moment != CardTextTiming.AfterSuccessfulDefense ||
+                        !parent.Attack.TargetHeroId.Equals(pendingAttack.ActorId) ||
+                        !parent.Attack.DefenseOffer.Value.SourceCardInstanceId.Equals(pendingAttack.SourceCardInstanceId) ||
+                        pendingAttack.Target.IsDefined && (pendingAttack.Target.Kind != AttackTargetKind.Hero ||
+                            !pendingAttack.TargetHeroId.Equals(parent.Attack.ActorId)))
+                        throw new ArgumentException("A declared counterattack must retain its successful defense and original attacker.", nameof(state));
+                }
+            }
             if (state.PendingPreAction?.Kind ==
                 PreActionContinuationKind.BeforeDefenseResponse &&
                 (state.PendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
@@ -2319,7 +2342,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             heroItems,
                             rosterState,
                             state.PendingPreAction?.Kind ==
-                                PreActionContinuationKind.BeforeDefenseResponse));
+                                PreActionContinuationKind.BeforeDefenseResponse,
+                            (offer, target) => state.PendingCardTextRemainder?.Moment != CardTextTiming.AfterSuccessfulDefense ||
+                                !offer.ActorId.Equals(state.PendingCardTextRemainder.Attack.TargetHeroId) ||
+                                target.Kind == AttackTargetKind.Hero && target.HeroId.Equals(state.PendingCardTextRemainder.Attack.ActorId)));
 
                 case CardActionContinuationKind.Skill:
                     var isTriggered = catalogs.TriggeredEffects.TryGet(
@@ -2689,6 +2715,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 candidate.Reference.Equals(card.DefinitionReference));
             var action = definition.ActionDefinitions.Single(candidate =>
                 candidate.Id.Equals(step.CardTextActionDefinitionId));
+            if (step.CardTextTiming == CardTextTiming.AfterSuccessfulDefense && action.CardTextAt(step.CardTextTiming) == null)
+                return Array.Empty<ResolutionStep>();
 
             // Milestone 8.23. The body applied here is the one this action prints for THIS moment; an
             // Attack may print two, six numbered steps apart.
@@ -2835,6 +2863,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // card-text repeat is, and read from the same completed result. The actor is the hero whose
             // text asked - the borrowing hero performs the borrowed primary, never its owner.
             RecordOwedBorrowedAction(result, step.CardTextActorId);
+            if (step.CardTextTiming == CardTextTiming.AfterSuccessfulDefense && result.BorrowRequested.IsRequested)
+            {
+                owedBorrowedActionGrantSourceId = CounterattackCapabilities.GrantId;
+                pendingCardTextAwaitingInterrupt = new PendingAttackCardTextRemainder(
+                    step.CardTextTiming, step.CardTextRemainderResolution, step.CardTextRemainderOutcome);
+            }
             // Milestone 8.61g. A rider borrow is read from the same completed result and produces the
             // one thing a borrowed PRIMARY cannot: another card text, at this same moment, inside this
             // same attack. It is appended to the produced stream rather than owed to the turn, because
@@ -3728,7 +3762,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 (request.SelectsPrintedAction &&
                  action.Origin != ActionDefinitionOrigin.PrintedPrimary &&
                  action.Origin != ActionDefinitionOrigin.PrintedSecondary &&
-                 action.Origin != ActionDefinitionOrigin.Reaction))
+                 action.Origin != ActionDefinitionOrigin.Reaction &&
+                 !(action.Origin == ActionDefinitionOrigin.TextGranted &&
+                   owedBorrowedActionGrantSourceId == CounterattackCapabilities.GrantId)))
                 throw new InvalidOperationException("The selected printed action is not borrowable.");
 
             // Milestone 8.38d. A card text asked from inside its own resolution, so that resolution is
@@ -3753,7 +3789,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 : new ActionResolutionId(parent.ResolutionId.Value + ":borrow:" +
                     parent.CompletedOutcomes.Count + ":" + card.Id.Value + ":" + action.Id.Value);
             var invocation = request.SelectsPrintedAction &&
-                action.Origin != ActionDefinitionOrigin.PrintedPrimary
+                action.Origin != ActionDefinitionOrigin.PrintedPrimary && action.Origin != ActionDefinitionOrigin.TextGranted
                     ? ActionInvocationContext.TextGrantedSecondary
                     : ActionInvocationContext.TextGranted;
             var offer = new ActionOffer(card.Id, definition.Reference, action.Id, actor,

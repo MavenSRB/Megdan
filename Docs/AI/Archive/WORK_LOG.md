@@ -46,6 +46,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-040 | Melee Shield Up, Initiative 9, grants existing Immune for this turn; typed Skill, shared wording and restore-stable mode catalog. | `work/W-040` |
 | W-041 | Ranged Aim and Shoot fallback stop at range 2; attack Range 3 and movement amounts unchanged. | `work/W-041` |
 | W-042 | Ranged Take Position and next-turn Aim; effective attack reach and shared pending/active card glow. | `work/W-042` |
+| W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -398,3 +399,9 @@ Historical evidence: completion commit addressed by immutable `work/W-041`; exac
 Approved: rename Ranged movement card Take Position, replace Idle with Aim, Initiative 1, "Next turn, have +1 Range," and make its card glow. PVE-D36 uses typed Skill content and the existing Next Turn modifier/cancellation lifecycle; keeps movement, attack values, priorities and the four-card hand. AI uses full rule-derived reach independently of display settings, while preserving option targeting. The compact rail uses the shared pending/active source-card outline. T2 acceptance: both range-four attacks, expiry/retrieval, Undo/restore, save/editor/face, existing-mode identity, affected encounter/co-op boundaries, rendered text and glow lifecycle. Review found no remaining in-scope defect; existing timing, colors and authoritative action legality are preserved. No package rebuild or remote operation.
 
 Historical evidence: completion commit addressed by immutable `work/W-042`; exact checks/results, corrected failures, limitations and omitted-suite rationale live in its body.
+
+### [x] W-043 Heavy Hurl, Hook and Thick Hide
+
+Approved PVE-D37: Hurl Attack 2 / Range 2 repeats once on a different target while retaining Move 1 fallback; Hook replaces Dozing Off and pulls the closest Blue unit straight toward Heavy until adjacent or obstructed, with ties chosen by the player and no farther aligned substitution. Thick Hide keeps Defense 3 / Initiative 1 and counterattacks the original attacker once at Attack 1 only adjacent, after the incoming attack and after-attack effects finish. Brace and other values unchanged. Typed selection/shared Direct Move, repeat and separate defendable attack continuations preserve target identity, restore and Undo. T2 acceptance: focused geometry/creep/obstacle/tie, repeat, counter/Defense/lethal/ordering/restore, editor/save, shared combat/borrow/card-text, co-op and existing-mode identity checks, plus rendered Heavy text. Review preserves rules/presentation separation and source-only private scope; exhaustive whole-roster interaction combinations are not claimed. No package rebuild or remote publication.
+
+Historical evidence: completion commit addressed by immutable `work/W-043`; exact checks/results, failure corrections and omitted-suite rationale live in its body.

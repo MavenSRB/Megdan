@@ -105,10 +105,11 @@ namespace GuardsDigital.Pve.Presentation
                         .ToArray();
                     return new PveOrangeCard(card.Key, card.Name, Value(type, card.Key, "init", card.Initiative), card.Copies,
                         attack > 0 ? attack : (int?)null, Value(type, card.Key, "range", card.AttackRange),
-                        move > 0 ? move : (int?)null, options);
+                        move > 0 ? move : (int?)null, options,
+                        repeatOnDifferentTarget: card.RepeatOnDifferentTarget);
                 }),
                 type.PurpleCards.Select(card => new PvePurpleCard(card.Key, card.Name,
-                    Value(type, card.Key, "init", card.Initiative), Value(type, card.Key, "defense", card.Defense))),
+                    Value(type, card.Key, "init", card.Initiative), Value(type, card.Key, "defense", card.Defense), card.Counterattack)),
                 type.Plans, type.TokenType, type.MinionCategory)));
 
         private void Save()

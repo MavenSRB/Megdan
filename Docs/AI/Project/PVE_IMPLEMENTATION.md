@@ -36,6 +36,10 @@ Each hook is unused by every existing composition, which therefore behaves as be
 | Session decorator (W-023) | `ExternalMatchComposition.SessionDecorator`, passed by the root to `ConfiguredMatchSceneRuntime` | Wraps the Director session, so the HUD, Undo and Restart all talk to the encounter session. Only an external composition sets one. |
 | Director player side (W-026) | `ExternalMatchComposition.DirectorPlayerSide`, passed by the root to `ConfiguredMatchSceneRuntime`, which sets `DirectorHandsPresenter.PlayerSide`, `RoundActionPresenter.DirectorPlayerSide`, `DecisionWindowPresenter.DirectorPlayerSide` and `BoardInteractionUnityView.PerspectiveSide`; shared reading in `DirectorPlayerSide` | The Director plays one side. The tray follows only that side's heroes and cannot be pointed at another; while the other side owns the standing moment there is no turn control and no decision window; board outlines read from that side. Only an external composition names a side; a seat ignores it. |
 
+## Post-defense counterattack contract
+
+Original-mode Defense riders may declare `CardTextTiming.AfterSuccessfulDefense` (PVE-D37). The incoming attack and its after-attack text finish first; a successful card defense then applies that rider. `CounterattackCapabilities` can request the defense card's declared adjacent text-granted Attack against the original attacker, using the shared borrowed-action/off-turn continuation. The existing card-text remainder preserves the original attack during target/Defense choices and restore; target derivation excludes every other unit. Defeat may already have resolved the original actor's card before the counterattack hands the turn back. Existing-mode definitions declare no such rider.
+
 ## Enemy categories (W-033)
 
 Under amended PVE-D30, Melee and Ranged count as both heroes and minions for targeting/effects; Heavy counts as hero only. Each enemy retains one Hero identity, normal enemy turns, cards, Defense and combat. Combined queries enumerate that identity once. The explicit `PveEnemyType.MinionCategory` is separate from token artwork, travels through editable content and co-op content identity, and binds through `MatchModeRules.MinionCategoryHeroes` on composition, restore and Undo. Existing-mode defaults add no category.
@@ -48,14 +52,18 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 ## Encounter composition (W-021)
 
+PVE-D37 revises Heavy: Hurl is Attack 2 / Range 2, repeats once on a different target, and retains Move 1 fallback. Hook (Initiative 1) pulls the closest Blue hero or creep along a straight hex line until adjacent or blocked; an unaligned closest unit does not move, and ties use the existing player choice. Thick Hide remains Defense 3 / Initiative 1 and, after a successful defense and the incoming attack's after-attack text, counterattacks the original attacker once at Attack 1 only if adjacent. Brace is unchanged. The counterattack is a normal, defendable attack, not direct damage.
+
+`PveHookContent` supplies the typed closest-unit selection and delegates displacement to shared Direct Move. Hurl uses shared repeat control. Thick Hide declares a text-granted Attack and a mode-registered `CounterattackCapabilities` request at `CardTextTiming.AfterSuccessfulDefense`; the shared dispatcher retains the original attack in its existing card-text remainder, narrows targets to that attacker and resumes the original turn after the granted attack. No UI-owned resolution or extra snapshot field is introduced; content revision is `pve-content-4`.
+
 `PveEncounterComposer` builds an ordinary `MatchSessionInitialState` through public APIs; the existing-mode setup helpers that require 2v2/3v3 are not used.
 
 - **Participants.** Two teams with one player per hero. The playable launcher requires exactly three chosen Blue heroes, holding their verified printed sets, under PVE-D27. `PveEncounterComposer.ValidatePlayerSetup` owns that limit; generic composition still supports focused test fixtures. All five placement spaces remain available. Each enemy is a Red hero (`pve-enemy-NN`) with the rulebook dashboard.
-- **Enemy cards.** Placeholder card definitions from `PveCardFactory` (synthetic-fixture authority, except the approved original-mode Shield Up wording):
+- **Enemy cards.** Placeholder card definitions from `PveCardFactory` (synthetic-fixture authority, except approved original-mode effect wording):
   - an orange card is one printed primary Attack (adjacent or Ranged) and one printed secondary Movement, neither replaceable;
   - an idle card prints no action;
   - a standalone Skill carries a typed effect root; Shield Up uses `PveSkillKind.ImmuneThisTurn`, Aim uses `RangeNextTurn`, both through `PveSkillContent` (PVE-D34/D36);
-  - a purple card prints a reaction Defense discarded on use;
+  - a purple card prints a reaction Defense discarded on use; a declared text-granted counterattack is not an additional printed action or hand option;
   - each copy of an orange card is its own definition (`pve-<type>-<key>`, then `-2`, `-3` for later copies) with identical content, because the existing HUD's card inspection holds every face of a hero once (W-026: two copies sharing one face made inspecting that enemy throw).
 - **Creeps.** Blue standard minions on the encounter's creep spaces.
 - **Tie Breaker.** Derived from the setup seed.

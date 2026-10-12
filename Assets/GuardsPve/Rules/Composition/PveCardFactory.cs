@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Pve.Content;
 
@@ -21,11 +23,13 @@ namespace GuardsDigital.Pve.Composition
     /// </remarks>
     public static class PveCardFactory
     {
-        public const string ContentRevision = "pve-content-3";
+        public const string ContentRevision = "pve-content-4";
+        public const string RepeatText = "After the attack: Repeat once on a different target.";
         public static readonly ActionDefinitionId SkillActionId = new ActionDefinitionId("pve-skill");
         public static readonly ActionDefinitionId AttackActionId = new ActionDefinitionId("pve-attack");
         public static readonly ActionDefinitionId MovementActionId = new ActionDefinitionId("pve-movement");
         public static readonly ActionDefinitionId DefenseActionId = new ActionDefinitionId("pve-defense");
+        public static readonly ActionDefinitionId CounterattackActionId = new ActionDefinitionId("pve-counterattack");
 
         public static CardDefinitionId OrangeId(PveEnemyType type, PveOrangeCard card) =>
             new CardDefinitionId("pve-" + type.Id + "-" + card.Key.ToLowerInvariant());
@@ -105,7 +109,9 @@ namespace GuardsDigital.Pve.Composition
                     values,
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
                     card.AttackRange > 0 ? AttackRangeKind.Ranged : AttackRangeKind.NonRanged,
-                    default));
+                    default,
+                    card.RepeatOnDifferentTarget ? RepeatEffect() : null,
+                    cardTextTiming: card.RepeatOnDifferentTarget ? CardTextTiming.AfterTheAttack : CardTextTiming.None));
             }
 
             if (card.MoveValue.HasValue)
@@ -123,32 +129,56 @@ namespace GuardsDigital.Pve.Composition
                 ContentRevision,
                 card.Name,
                 new InitiativeValue(card.Initiative),
-                card.Skill == PveSkillKind.None ? CardContentAuthority.SyntheticTestFixture : CardContentAuthority.OriginalMode,
+                card.Skill == PveSkillKind.None && !card.RepeatOnDifferentTarget ? CardContentAuthority.SyntheticTestFixture : CardContentAuthority.OriginalMode,
                 CardProgressionProfile.NotStated,
                 actions,
                 null,
-                card.Skill == PveSkillKind.None ? null : CardSourceContent.Authored(PveSkillContent.Text(card.Skill)));
+                card.Skill != PveSkillKind.None ? CardSourceContent.Authored(PveSkillContent.Text(card.Skill)) :
+                    card.RepeatOnDifferentTarget ? CardSourceContent.Authored(RepeatText) : null);
         }
 
-        private static CardDefinition CreatePurple(PveEnemyType type, PvePurpleCard card) =>
-            new CardDefinition(
+        private static EffectDefinition RepeatEffect()
+        {
+            var node = new EffectNodeId("repeat-different-target");
+            return new EffectDefinition(new EffectDefinitionId("pve-repeat-different-target"), ContentRevision, node,
+                new[] { new EffectNodeDefinition(node, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
+                    maximumRepeats: 1, repeatTargetBinding: RepeatTargetBinding.DifferentTarget) });
+        }
+
+        private static CardDefinition CreatePurple(PveEnemyType type, PvePurpleCard card)
+        {
+            var counters = card.Counterattack > 0;
+            var actions = new List<ActionDefinition> {
+                new ActionDefinition(DefenseActionId, ActionKind.Defense, ActionDefinitionOrigin.Reaction,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, card.Defense) },
+                    new ActionDefinitionPolicy(counters ? CardTextApplicationPolicy.Applies : CardTextApplicationPolicy.Suppressed, false, false),
+                    AttackRangeKind.None, new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
+                    counters ? CounterattackEffect() : null,
+                    cardTextTiming: counters ? CardTextTiming.AfterSuccessfulDefense : CardTextTiming.None)
+            };
+            if (counters)
+                actions.Add(new ActionDefinition(CounterattackActionId, ActionKind.Attack, ActionDefinitionOrigin.TextGranted,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, card.Counterattack) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false), AttackRangeKind.NonRanged, default));
+            return new CardDefinition(
                 PurpleId(type, card),
                 ContentRevision,
                 card.Name,
                 new InitiativeValue(card.Initiative),
-                CardContentAuthority.SyntheticTestFixture,
+                counters ? CardContentAuthority.OriginalMode : CardContentAuthority.SyntheticTestFixture,
                 CardProgressionProfile.NotStated,
-                new[]
-                {
-                    new ActionDefinition(
-                        DefenseActionId,
-                        ActionKind.Defense,
-                        ActionDefinitionOrigin.Reaction,
-                        new[] { new PrintedValueDefinition(PrintedValueChannel.Defense, card.Defense) },
-                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, false),
-                        AttackRangeKind.None,
-                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile))
-                },
-                null);
+                actions, null, counters ? CardSourceContent.Authored("After successfully defending: If the attacker is adjacent, counterattack it once with Attack " +
+                    card.Counterattack.ToString(CultureInfo.InvariantCulture) + ".") : null);
+        }
+
+        private static EffectDefinition CounterattackEffect()
+        {
+            var node = new EffectNodeId("request-counterattack");
+            return new EffectDefinition(new EffectDefinitionId("pve-counterattack"), ContentRevision, node,
+                new[] { new EffectNodeDefinition(node, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                    CounterattackCapabilities.RequestV1, outputs: new[] {
+                        new EffectOutputBinding(SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValueKind.CardInstance),
+                        new EffectOutputBinding(CounterattackCapabilities.ActionIndexOutput, EffectValueKind.Integer) }) });
+        }
     }
 }

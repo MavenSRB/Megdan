@@ -479,6 +479,9 @@ namespace GuardsDigital.Pve.Play
         {
             var commands = authorizedFor?.Invoke(enemy) ?? Array.Empty<DirectorCommand>();
             if (commands.Count == 0) return PveStep.AwaitingPlayer;
+            if (match.PendingEffectChoice?.NodeId.Equals(PveHookContent.SelectionNode) == true)
+                return PveStep.Ask(new PvePrompt(PvePromptKind.EnemyClosestUnit, enemy,
+                    Name(enemy) + " has equally close Blue units: choose one to hook.", commands));
             var purple = commands
                 .Where(command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
                     command.EffectChoice != null &&
