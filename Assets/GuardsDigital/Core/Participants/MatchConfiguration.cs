@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -142,7 +143,8 @@ namespace GuardsDigital.Core.Participants
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
             bool validateInitialCardState,
-            IReadOnlyList<CardInstance> restoredInstanceOrder = null)
+            IReadOnlyList<CardInstance> restoredInstanceOrder = null,
+            MatchContentCatalogs contentCatalogs = null)
         {
             SetupSeed = setupSeed;
 
@@ -151,7 +153,7 @@ namespace GuardsDigital.Core.Participants
             // declaration - the place that knows which capabilities and components its cards need - and
             // it is the only production type besides MatchContentCatalogs itself that may ask the build
             // what it registers. Everything downstream takes what it is given.
-            ContentCatalogs = MatchContentCatalogs.ForThisBuild();
+            ContentCatalogs = contentCatalogs ?? MatchContentCatalogs.ForThisBuild();
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             var handArray = hands?.ToArray() ?? throw new ArgumentNullException(nameof(hands));
             if (handArray.Length == 0 || handArray.Any(hand => hand == null))
@@ -539,8 +541,11 @@ namespace GuardsDigital.Core.Participants
             MatchParticipants participants,
             IEnumerable<ConfiguredHand> hands,
             TieBreakerState tieBreakerState,
-            SetupRandomnessSeed setupSeed) =>
-            new MatchConfiguration(participants, hands, tieBreakerState, setupSeed, true);
+            SetupRandomnessSeed setupSeed,
+            IEnumerable<IEffectCapabilityHandler> additionalCapabilities = null) =>
+            new MatchConfiguration(participants, hands, tieBreakerState, setupSeed, true,
+                contentCatalogs: additionalCapabilities == null ? null :
+                    MatchContentCatalogs.ForThisBuild().WithAdditionalCapabilities(additionalCapabilities));
 
         private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix)
         {
@@ -3423,7 +3428,7 @@ namespace GuardsDigital.Core.Participants
                 SetupSeed);
 
         public static MatchConfiguration Restore(
-            MatchConfigurationRestoreState state)
+            MatchConfigurationRestoreState state, MatchContentCatalogs contentCatalogs = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var participants = state.Participants;
@@ -3533,7 +3538,7 @@ namespace GuardsDigital.Core.Participants
                 state.TieBreakerState,
                 state.SetupSeed,
                 false,
-                instanceArray);
+                instanceArray, contentCatalogs);
         }
 
         /// <summary>

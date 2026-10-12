@@ -60,6 +60,11 @@ namespace GuardsDigital.Core.Cards
 
         public TriggeredEffectCatalog TriggeredEffects { get; }
 
+        /// <summary>Add trusted mode content without changing the default build's registration identity.</summary>
+        public MatchContentCatalogs WithAdditionalCapabilities(IEnumerable<IEffectCapabilityHandler> handlers) =>
+            new MatchContentCatalogs(new EffectCapabilityCatalog(
+                Capabilities.Registered.Select(Capabilities.Load).Concat(handlers)), Components, TriggeredEffects);
+
         /// <summary>
         /// What this build registers - the single declared origin of both catalogs.
         ///

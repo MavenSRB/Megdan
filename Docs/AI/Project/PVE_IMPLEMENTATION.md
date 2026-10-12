@@ -51,9 +51,10 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 `PveEncounterComposer` builds an ordinary `MatchSessionInitialState` through public APIs; the existing-mode setup helpers that require 2v2/3v3 are not used.
 
 - **Participants.** Two teams with one player per hero. The playable launcher requires exactly three chosen Blue heroes, holding their verified printed sets, under PVE-D27. `PveEncounterComposer.ValidatePlayerSetup` owns that limit; generic composition still supports focused test fixtures. All five placement spaces remain available. Each enemy is a Red hero (`pve-enemy-NN`) with the rulebook dashboard.
-- **Enemy cards.** Synthetic-fixture card definitions from `PveCardFactory`:
+- **Enemy cards.** Placeholder card definitions from `PveCardFactory` (synthetic-fixture authority, except the approved original-mode Shield Up wording):
   - an orange card is one printed primary Attack (adjacent or Ranged) and one printed secondary Movement, neither replaceable;
   - an idle card prints no action;
+  - a standalone Skill carries a typed effect root; Shield Up uses `PveSkillKind.ImmuneThisTurn` and `PveSkillContent` (PVE-D34);
   - a purple card prints a reaction Defense discarded on use;
   - each copy of an orange card is its own definition (`pve-<type>-<key>`, then `-2`, `-3` for later copies) with identical content, because the existing HUD's card inspection holds every face of a hero once (W-026: two copies sharing one face made inspecting that enemy throw).
 - **Creeps.** Blue standard minions on the encounter's creep spaces.
@@ -103,7 +104,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 `enemies.json` lists enemy types:
 - id, display name, optional token type (melee/ranged/heavy) and level (this slice supports level 1);
-- orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance;
+- orange cards: key, name, Initiative, copies, Attack, Range, Movement, idle flag, and ordered options of `move`/`attack` with a `hero`/`minion` target and a stop distance; a standalone `skill: "immune-this-turn"` instead supplies the approved Skill without attack/movement options;
 - purple cards: key, name, Initiative, Defense;
 - legacy plans, one space-separated string per plan: retained and validated for file/editor compatibility, but ignored by runtime ordering under PVE-D32.
 
@@ -111,7 +112,7 @@ Each type's lower-value Attack has an ordered Movement fallback after both attac
 
 `PveContentValidator` refuses invalid content with readable messages before composition. The launcher shows them instead of starting.
 
-The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards, one movement-only card and one idle card. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
+The shipped placeholder catalog contains Melee, Ranged and Heavy. Each has exactly two attack cards and one movement-only card. Melee's fourth card is Shield Up, Initiative 9: "This unit is immune this turn." Ranged/Heavy retain Idle. PVE-D34 uses the existing unqualified Immune rule through a typed Skill: protection starts at resolution and expires at the normal This Turn checkpoint. Its mode-only capability registration survives restore/Undo/restart without changing default catalogs; original wording appears on the shared card face without claiming official provenance. Only Heavy has Defense cards: two, with values 3 and 5; Melee and Ranged have none. Melee pursues and attacks Blue creeps first; Ranged attacks heroes first, with range 3 and movement stopping at distance 3. Heavy keeps the original Brute priorities. PVE-D24 and its PVE-D25/D26 amendments in the design owner state the approved values, plans and spawn mix.
 
 ## Launch, smoke and build
 

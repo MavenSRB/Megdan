@@ -14,11 +14,13 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 
 ## Current authorization and next route
 
-- Last completed work: **W-039**.
+- Last completed work: **W-040**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
 PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Join automatically adopts the host seed (PVE-D33); only address, port and key need sharing, with matching build/data. Keyed local Host/Join/reconnect and rejection boundaries are verified; external internet reachability is not. These source changes are not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
+
+Melee's Idle is now Shield Up, Initiative 9: "This unit is immune this turn." It uses the existing Immune rule from Skill resolution until the This Turn expiry (PVE-D34), including restore/Undo support and shared card-face wording. Ranged/Heavy keep Idle. Source only; W035 has not been rebuilt.
 
 The enemy rail box now fits its live trays, hides when empty and scrolls only beyond the available height. This UI change is not in the preserved W035 package. Details: [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
@@ -28,7 +30,7 @@ All weaker enemy attacks now have movement fallback after both attack options (P
 
 Melee/Ranged now count as both heroes and minions for targeting/effects; Heavy counts as hero only, and combined effects count each enemy once (amended PVE-D30). The shared engine preserves each enemy's Hero identity, combat and Defense, with guarded minion effect outputs, removal/replacement and restore/Undo support. Category work changed no card definitions. See [PvE implementation](Project/PVE_IMPLEMENTATION.md); no further implementation is authorized.
 
-Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two attacks, one movement card and one idle. Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26/D29 in [PvE design](Project/PVE_DESIGN.md). W035 PvE includes these changes; W024 remains preserved as an older package. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). The revised compact player-name banner is visually approved (W-004); no approval gate remains in [current work](Roadmap/CURRENT_WORK.md).
+Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two attacks, one movement card and one fourth card (Melee Shield Up; Ranged/Heavy Idle). Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and PVE-D24/D25/D26/D29/D34 in [PvE design](Project/PVE_DESIGN.md). W035 PvE includes the compact rail and original Idle hands, not Shield Up; W024 remains preserved as an older package. W013 remains the current multiplayer package. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). The revised compact player-name banner is visually approved (W-004); no approval gate remains in [current work](Roadmap/CURRENT_WORK.md).
 
 Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is playable; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
 

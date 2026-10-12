@@ -10,16 +10,19 @@ namespace GuardsDigital.Pve.Composition
     /// <summary>
     /// PVE-D07/D09. Enemy cards as ordinary card definitions, so every rule and hero card reads them
     /// as it reads any hero's: an orange card is one printed Attack (primary) and one printed
-    /// Movement (secondary), an idle card prints no action, and a purple card prints a Defense.
+    /// Movement (secondary), an idle card prints no action, a typed Skill supplies an effect root,
+    /// and a purple card prints a Defense.
     /// </summary>
     /// <remarks>
     /// The content is placeholder test data (PVE-D15), so it carries the synthetic-fixture authority
-    /// and no source face. Neither action may be replaced by Fast Travel or Clear: the enemy's
+    /// and no source face; approved Skill wording has OriginalMode authority, not official provenance.
+    /// Neither action may be replaced by Fast Travel or Clear: the enemy's
     /// options name only moving and attacking.
     /// </remarks>
     public static class PveCardFactory
     {
-        public const string ContentRevision = "pve-content-1";
+        public const string ContentRevision = "pve-content-2";
+        public static readonly ActionDefinitionId SkillActionId = new ActionDefinitionId("pve-skill");
         public static readonly ActionDefinitionId AttackActionId = new ActionDefinitionId("pve-attack");
         public static readonly ActionDefinitionId MovementActionId = new ActionDefinitionId("pve-movement");
         public static readonly ActionDefinitionId DefenseActionId = new ActionDefinitionId("pve-defense");
@@ -80,6 +83,10 @@ namespace GuardsDigital.Pve.Composition
         private static CardDefinition CreateOrange(PveEnemyType type, PveOrangeCard card, CardDefinitionId id)
         {
             var actions = new List<ActionDefinition>();
+            if (card.Skill == PveSkillKind.ImmuneThisTurn)
+                actions.Add(new ActionDefinition(SkillActionId, ActionKind.Skill, ActionDefinitionOrigin.PrintedPrimary,
+                    new PrintedValueDefinition[0], new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
+                    AttackRangeKind.None, default, PveSkillContent.ImmuneEffect()));
             if (card.AttackValue.HasValue)
             {
                 var values = new List<PrintedValueDefinition>
@@ -116,10 +123,11 @@ namespace GuardsDigital.Pve.Composition
                 ContentRevision,
                 card.Name,
                 new InitiativeValue(card.Initiative),
-                CardContentAuthority.SyntheticTestFixture,
+                card.Skill == PveSkillKind.None ? CardContentAuthority.SyntheticTestFixture : CardContentAuthority.OriginalMode,
                 CardProgressionProfile.NotStated,
                 actions,
-                null);
+                null,
+                card.Skill == PveSkillKind.ImmuneThisTurn ? CardSourceContent.Authored(PveSkillContent.ImmuneText) : null);
         }
 
         private static CardDefinition CreatePurple(PveEnemyType type, PvePurpleCard card) =>

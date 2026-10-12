@@ -87,7 +87,9 @@ namespace GuardsDigital.Tests.Pve
         {
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var shipped, out var layout);
             var types = shipped.Types.Where(type => type.Id == typeId || type.Id == "heavy")
-                .Select(type => new PveEnemyType(type.Id, type.DisplayName, type.Level, type.OrangeCards,
+                .Select(type => new PveEnemyType(type.Id, type.DisplayName, type.Level,
+                    type.OrangeCards.Select(card => card.Key == "X"
+                        ? new PveOrangeCard("X", "Fixture Idle", 1, 1, null, 0, null, null, true) : card),
                     type.PurpleCards, new[] { new[] { "X", "A", "B", "C" } }, type.TokenType,
                     enableCategory ? type.MinionCategory : StandardMinionType.None));
             var encounter = new PveEncounterDefinition(layout.MapId, layout.MapRevision,

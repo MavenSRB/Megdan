@@ -5,6 +5,12 @@ using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Pve.Content
 {
+    public enum PveSkillKind
+    {
+        None = 0,
+        ImmuneThisTurn = 1
+    }
+
     /// <summary>PVE-D07. What an orange option aims at.</summary>
     public enum PveTargetKind
     {
@@ -43,7 +49,8 @@ namespace GuardsDigital.Pve.Content
 
     /// <summary>
     /// PVE-D07. An orange card: an Initiative, at most one Attack (value, range) and one Movement
-    /// value, and the ordered options the enemy tries. An idle card lists no option and no value.
+    /// value, and the ordered options the enemy tries, or one standalone typed Skill.
+    /// An idle card lists no option and no value.
     /// </summary>
     /// <remarks>
     /// All Attack options of one card share its single Attack, and all Move options its single
@@ -62,7 +69,8 @@ namespace GuardsDigital.Pve.Content
             int attackRange,
             int? moveValue,
             IEnumerable<PveCardOption> options,
-            bool isIdle = false)
+            bool isIdle = false,
+            PveSkillKind skill = PveSkillKind.None)
         {
             Key = key;
             Name = name;
@@ -73,6 +81,7 @@ namespace GuardsDigital.Pve.Content
             MoveValue = moveValue;
             Options = Array.AsReadOnly((options ?? Enumerable.Empty<PveCardOption>()).ToArray());
             IsIdle = isIdle;
+            Skill = skill;
         }
 
         public string Key { get; }
@@ -90,6 +99,7 @@ namespace GuardsDigital.Pve.Content
         public int? MoveValue { get; }
         public IReadOnlyList<PveCardOption> Options { get; }
         public bool IsIdle { get; }
+        public PveSkillKind Skill { get; }
     }
 
     /// <summary>PVE-D09. A purple Defense card.</summary>

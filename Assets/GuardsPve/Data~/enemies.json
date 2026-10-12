@@ -15,7 +15,7 @@
                        { "kind": "move", "target": "minion" } ] },
         { "key": "C", "name": "Heavy Blow", "initiative": 4, "copies": 1, "attack": 5,
           "options": [ { "kind": "attack", "target": "minion" }, { "kind": "attack", "target": "hero" } ] },
-        { "key": "X", "name": "Idle", "initiative": 1, "copies": 1, "idle": true }
+        { "key": "X", "name": "Shield Up", "initiative": 9, "copies": 1, "skill": "immune-this-turn" }
       ],
       "purpleCards": [],
       "plans": [ "A B C X", "A C B X", "A B X C" ]

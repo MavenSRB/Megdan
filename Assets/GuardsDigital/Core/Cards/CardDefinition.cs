@@ -107,6 +107,9 @@ namespace GuardsDigital.Core.Cards
             // reachable by omission - the argument's default is the synthetic answer, and a verified
             // definition is refused it.
             var statedSourceContent = sourceContent ?? CardSourceContent.NotSourced;
+            if ((contentAuthority == CardContentAuthority.OriginalMode) !=
+                (statedSourceContent.Kind == CardSourceContentKind.Authored))
+                throw new ArgumentException("Original-mode wording requires original-mode authority, and vice versa.", nameof(sourceContent));
             if (contentAuthority == CardContentAuthority.VerifiedOfficial &&
                 !statedSourceContent.StatesASourceFace)
             {

@@ -82,6 +82,10 @@ Every enemy type's lower-value attack card lists Movement after its attack optio
 
 The host chooses the encounter seed; joining players inherit it automatically and need not pre-share or enter it. Existing setup/build/map/content compatibility and keyed admission remain required. A host-format hint may trigger one fresh admission attempt on the same address/port; it never authorizes gameplay or overrides content validation. Established/reconnecting sessions keep their original seed. Unsupported/invalid hints or repeated mismatch stop instead of looping. No existing-mode rule or shared wire change.
 
+## PVE-D34 Melee Shield Up (Approved, user 2026-10-12)
+
+Replace Melee X Idle with X Shield Up, one copy, Initiative 9, no Attack/Movement/Defense. Text: "This unit is immune this turn." It is a Skill applying the existing unqualified Immune rule to its controller from resolution until the ordinary This Turn expiry; self-action and presence/system-event exceptions remain the existing rules. This supersedes Melee's idle slot and the earlier deferral of enemy Skills only for this bounded card. Ranged/Heavy cards, two Melee attacks and four-card shuffle remain unchanged.
+
 ## Open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").

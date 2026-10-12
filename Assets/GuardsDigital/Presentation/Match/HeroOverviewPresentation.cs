@@ -142,7 +142,7 @@ namespace GuardsDigital.Presentation.Match
             // to be silent.
             EmptyTextLabel = printedTextKind == CardSourceContentKind.PrintsNoText
                 ? "THIS FACE PRINTS NO RULES TEXT"
-                : printedTextKind == CardSourceContentKind.Transcribed
+                : printedTextKind == CardSourceContentKind.Transcribed || printedTextKind == CardSourceContentKind.Authored
                     ? string.Empty
                     : "NO SOURCE FACE";
 

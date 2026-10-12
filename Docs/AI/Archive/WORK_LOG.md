@@ -43,6 +43,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-037 | Enemy rail box fits live trays, hides when empty and caps overflow for scrolling. | `work/W-037` |
 | W-038 | PvE shares PvP's TCP port 45677 and explains direct internet prerequisites; keyed lobby validated. | `work/W-038` |
 | W-039 | Joining players automatically inherit the host seed, retaining full keyed compatibility and reconnect identity. | `work/W-039` |
+| W-040 | Melee Shield Up, Initiative 9, grants existing Immune for this turn; typed Skill, shared wording and restore-stable mode catalog. | `work/W-040` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -377,3 +378,9 @@ Historical evidence: completion commit addressed by immutable `work/W-038`; exac
 Approved: no pre-sharing seed; the host owns it and joining players inherit it automatically. Uses the existing public format-mismatch hint and one fresh keyed admission attempt, not a wire change. Only canonical current-format nonzero seeds before admission are eligible; local Join seed input is ignored, effective seed shown in status, established/reconnecting sessions stay pinned. T2 acceptance: parser boundaries, compatibility invariants, different initial seed and invalid local seed text successfully joining over keyed TCP, seat ownership and reconnect, wrong-key/content/unsupported-format rejection with no retry loop, readable UI. Review found no remaining in-scope defect; hints never authorize gameplay or bypass the full admission tuple. No shared transport/schema change, package rebuild or external-internet claim.
 
 Historical evidence: completion commit addressed by immutable `work/W-039`; exact checks/results and limitations live in its body.
+
+### [x] W-040 Melee Shield Up
+
+Approved: replace Melee Idle with Shield Up, Initiative 9, text "This unit is immune this turn." Reuses existing unqualified Immune/This Turn behavior from Skill resolution through expiry, with no new targeting rule. Adds a typed PvE Skill, mode-scoped trusted capability composition, and explicitly original-mode inert wording rather than claiming official source provenance. Two attacks, no Defense, four-card shuffle, Ranged/Heavy and default existing-mode catalogs remain unchanged. T2 acceptance: card values/text, automatic selection, immunity/expiry, Undo/restore/restart, editor/save validation, shared preview and co-op, default identity and architecture regressions. Review found no remaining in-scope defect. Source-only change; no rebuilt package or external internet claim.
+
+Historical evidence: completion commit addressed by immutable `work/W-040`; exact checks/results, test-assumption corrections and limitations live in its body.

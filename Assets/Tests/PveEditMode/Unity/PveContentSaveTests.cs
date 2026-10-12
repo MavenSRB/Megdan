@@ -20,6 +20,7 @@ namespace GuardsDigital.Tests.Pve
             {
                 var loaded = reloaded.Find(type.Id);
                 Assert.That(loaded.TokenType, Is.EqualTo(type.TokenType));
+                Assert.That(loaded.OrangeCards.Select(card => card.Skill), Is.EqualTo(type.OrangeCards.Select(card => card.Skill)));
                 Assert.That(loaded.MinionCategory, Is.EqualTo(type.MinionCategory));
                 Assert.That(loaded.OrangeCards.Select(card =>
                         (card.Key, card.Initiative, card.Copies, card.AttackValue, card.AttackRange, card.MoveValue, card.IsIdle,
@@ -35,11 +36,36 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
+        public void SkillContentRefusesUnknownOrMixedActions()
+        {
+            PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
+            var json = PveContentLoader.SaveCatalog(catalog);
+            Assert.Throws<System.FormatException>(() => PveContentLoader.LoadCatalog(
+                json.Replace("immune-this-turn", "unknown-skill")));
+            var melee = catalog.Find("melee");
+            foreach (var badCard in new[]
+            {
+                new PveOrangeCard("X", "Invalid", 9, 1, null, 0, null, null, true, PveSkillKind.ImmuneThisTurn),
+                new PveOrangeCard("X", "Invalid", 9, 1, 3, 0, null,
+                    new[] { new PveCardOption(PveOptionKind.Attack, PveTargetKind.Hero) }, skill: PveSkillKind.ImmuneThisTurn),
+                new PveOrangeCard("X", "Invalid", 9, 1, null, 0, null, null, skill: (PveSkillKind)99)
+            })
+            {
+                var invalid = new PveEnemyType(melee.Id, melee.DisplayName, melee.Level,
+                    melee.OrangeCards.Select(card => card.Key == "X" ? badCard : card), melee.PurpleCards,
+                    melee.Plans, melee.TokenType, melee.MinionCategory);
+                Assert.That(PveContentValidator.ValidateCatalog(new PveEnemyCatalog("placeholder-test", new[] { invalid })),
+                    Is.Not.Empty);
+            }
+        }
+
+        [Test]
         public void CardEditorPreservesTokenIdentityAndUnknownTokenIsRefused()
         {
             PveContentLoader.LoadFromDirectory(PveDataPaths.Directory, out var catalog, out _);
             var editor = new PveCardEditor(() => catalog, null);
             editor.Build();
+            Assert.That(editor.Edited().Find("melee").FindOrange("X").Skill, Is.EqualTo(PveSkillKind.ImmuneThisTurn));
             Assert.That(editor.Edited().Types.Select(type => type.MinionCategory),
                 Is.EqualTo(catalog.Types.Select(type => type.MinionCategory)));
             Assert.That(editor.Edited().Types.Select(type => type.TokenType),

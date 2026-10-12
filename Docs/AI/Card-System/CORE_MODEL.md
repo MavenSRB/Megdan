@@ -6,6 +6,8 @@ Canonical active shard. Return to [../CARD_SYSTEM_ARCHITECTURE.md](../CARD_SYSTE
 
 ## Purpose and status
 
+Original-mode cards may carry `CardContentAuthority.OriginalMode` and `CardSourceContent.Authored` wording (W-040). These must occur together and make no official source-face claim; official transcription and synthetic-fixture constraints remain unchanged. Authored text is inert presentation/audit content, with behavior defined only by typed actions/effects. Trusted mode capability additions are composed by `MatchConfiguration`, retained through scenario rebuild, restore and Undo, and never added to the default build catalog.
+
 This document is the implementation contract for card-related code. It exists so the small Phase 1 test hand can grow into the complete Wasp set, then five additional distinct heroes for the private 3v3 pitch, and eventually an authorized roster of roughly 40 heroes without putting card rules in Unity scenes, UI callbacks, or card-name conditionals.
 
 `CARD_EFFECT_CAPABILITIES.md` is the mandatory effect-level companion. It defines the reusable contracts for Object Push, source-relative direct Move, Place, Spawn, tokens, markers, board-object changes, keyword queries, modifiers, timing, and other card-driven operations.

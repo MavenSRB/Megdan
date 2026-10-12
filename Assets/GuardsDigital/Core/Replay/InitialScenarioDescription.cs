@@ -131,7 +131,7 @@ namespace GuardsDigital.Core.Replay
                 heroBodySupplies.Concat(added));
         }
 
-        public MatchConfiguration CreateConfiguration()
+        public MatchConfiguration CreateConfiguration(MatchContentCatalogs contentCatalogs = null)
         {
             return MatchConfiguration.Restore(
                 new MatchConfigurationRestoreState(
@@ -139,7 +139,7 @@ namespace GuardsDigital.Core.Replay
                     definitions,
                     initialCards.Select(CloneCard),
                     InitialTieBreakerState,
-                    SetupSeed));
+                    SetupSeed), contentCatalogs);
         }
 
         public AdjacentMoveAuthority CreateBoard(IEnumerable<BoardMapDefinition> availableMaps)

@@ -2388,7 +2388,8 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(panel, 9f);
             HudElements.Border(panel, new Color(ink.r, ink.g, ink.b, 0.28f), 1f, 4f);
 
-            var transcribed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed;
+            var transcribed = card.Face.PrintedTextKind == CardSourceContentKind.Transcribed ||
+                card.Face.PrintedTextKind == CardSourceContentKind.Authored;
             var words = HudElements.Text(
                 transcribed ? card.Face.PrintedText : card.Face.EmptyTextLabel,
                 transcribed ? 11.5f : 10f,

@@ -54,7 +54,7 @@ namespace GuardsDigital.Pve.Presentation
                             ParseKind(option.kind),
                             ParseTarget(option.target),
                             option.stopDistance <= 0 ? 1 : option.stopDistance)),
-                        card.idle)),
+                        card.idle, ParseSkill(card.skill))),
                     (type.purpleCards ?? new PurpleCardDto[0]).Select(card =>
                         new PvePurpleCard(card.key, card.name, card.initiative, card.defense)),
                     (type.plans ?? new string[0]).Select(plan =>
@@ -87,6 +87,7 @@ namespace GuardsDigital.Pve.Presentation
                         range = card.AttackRange,
                         move = card.MoveValue ?? 0,
                         idle = card.IsIdle,
+                        skill = card.Skill == PveSkillKind.None ? null : "immune-this-turn",
                         options = card.Options.Select(option => new OptionDto
                         {
                             kind = option.Kind.ToString().ToLowerInvariant(),
@@ -148,6 +149,13 @@ namespace GuardsDigital.Pve.Presentation
             return File.ReadAllText(path);
         }
 
+        private static PveSkillKind ParseSkill(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return PveSkillKind.None;
+            if (value == "immune-this-turn") return PveSkillKind.ImmuneThisTurn;
+            throw new FormatException($"'{value}' is not a supported PvE Skill.");
+        }
+
         private static PveOptionKind ParseKind(string value)
         {
             switch ((value ?? string.Empty).Trim().ToLowerInvariant())
@@ -206,6 +214,7 @@ namespace GuardsDigital.Pve.Presentation
             public int range;
             public int move;
             public bool idle;
+            public string skill;
             public OptionDto[] options;
         }
 

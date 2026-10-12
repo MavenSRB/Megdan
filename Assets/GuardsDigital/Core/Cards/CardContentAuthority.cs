@@ -4,6 +4,7 @@ namespace GuardsDigital.Core.Cards
     {
         None = 0,
         SyntheticTestFixture = 1,
-        VerifiedOfficial = 2
+        VerifiedOfficial = 2,
+        OriginalMode = 3
     }
 }

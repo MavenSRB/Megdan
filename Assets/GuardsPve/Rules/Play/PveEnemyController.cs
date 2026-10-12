@@ -313,6 +313,13 @@ namespace GuardsDigital.Pve.Play
             var position = PositionOf(match, actor.ActorId);
             if (orange != null && !orange.IsIdle && position.HasValue && Acts(match, enemy, card, orange))
             {
+                if (orange.Skill != PveSkillKind.None)
+                {
+                    var skill = Offer(match, card.Id, PveCardFactory.SkillActionId);
+                    if (skill.HasValue && skill.Value.IsAvailable)
+                        return PveStep.Run(DirectorCommand.StartAction(card.Id, PveCardFactory.SkillActionId),
+                            enemy.DisplayName + " uses " + orange.Name);
+                }
                 foreach (var option in orange.Options)
                 {
                     var targets = Targets(match, actor.ActorId, option.Target);

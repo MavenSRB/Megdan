@@ -317,7 +317,7 @@ namespace GuardsDigital.Application
         {
             var rebuiltConfiguration = useProvidedConfiguration && initialState.InitialConfiguration != null
                 ? initialState.InitialConfiguration
-                : initialState.Scenario.CreateConfiguration();
+                : initialState.Scenario.CreateConfiguration(initialState.InitialConfiguration?.ContentCatalogs);
             var rebuiltBoard = initialState.Scenario.CreateBoard(
                 initialState.AvailableMaps,
                 initialState.Setup.Minions);
@@ -464,7 +464,7 @@ namespace GuardsDigital.Application
                         // setup, and no later state can restate it. A restore that dropped it would
                         // leave a live match unable to say how it started, which is the gap F-ER2-04
                         // recorded.
-                        initialState.Scenario.SetupSeed)),
+                        initialState.Scenario.SetupSeed), configuration.ContentCatalogs),
                 restored);
         }
 

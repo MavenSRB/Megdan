@@ -110,6 +110,14 @@ namespace GuardsDigital.Pve.Content
             if (card.Copies < 1 || card.Copies > PlanLength)
                 errors.Add($"{label} copies {card.Copies} must be 1 to {PlanLength}.");
 
+            if (card.Skill != PveSkillKind.None)
+            {
+                if (card.Skill != PveSkillKind.ImmuneThisTurn || card.IsIdle || card.Options.Count > 0 ||
+                    card.AttackValue.HasValue || card.MoveValue.HasValue || card.AttackRange != 0)
+                    errors.Add($"{label} must state a supported standalone Skill without idle, options or values.");
+                return;
+            }
+
             if (card.IsIdle)
             {
                 if (card.Options.Count > 0 || card.AttackValue.HasValue || card.MoveValue.HasValue)

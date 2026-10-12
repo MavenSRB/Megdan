@@ -131,6 +131,21 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Throws<ArgumentException>(() => CardSourceContent.Transcribed("   "));
         }
 
+        [Test]
+        public void OriginalModeWordingIsInertAndCannotClaimOfficialOrSyntheticAuthority()
+        {
+            CardDefinition Make(CardContentAuthority authority, CardSourceContent text) => new CardDefinition(
+                new CardDefinitionId("original-mode-card"), "1", "Original", new InitiativeValue(9),
+                authority, CardProgressionProfile.NotStated, Array.Empty<ActionDefinition>(), text);
+            var authored = CardSourceContent.Authored("This unit is immune this turn.");
+            Assert.That(Make(CardContentAuthority.OriginalMode, authored).SourceContent.StatesASourceFace, Is.False);
+            Assert.Throws<ArgumentException>(() => Make(CardContentAuthority.VerifiedOfficial, authored));
+            Assert.Throws<ArgumentException>(() => Make(CardContentAuthority.SyntheticTestFixture, authored));
+            Assert.Throws<ArgumentException>(() => Make(CardContentAuthority.OriginalMode, CardSourceContent.NotSourced));
+            Assert.Throws<ArgumentException>(() => Make(CardContentAuthority.OriginalMode, CardSourceContent.Transcribed("Official words")));
+            Assert.Throws<ArgumentException>(() => CardSourceContent.Authored(" "));
+        }
+
         /// <summary>
         /// Milestone 8.3's third acceptance check, asked of the model rather than of a habit: the
         /// extracted card faces stay audit and presentation assets, so no part of the content model has

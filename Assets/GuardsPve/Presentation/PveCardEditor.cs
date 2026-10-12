@@ -49,7 +49,7 @@ namespace GuardsDigital.Pve.Presentation
                 {
                     var row = Row(card.Key + " " + card.Name + (card.IsIdle ? " (idle)" : string.Empty));
                     row.Add(Field(type, card.Key, "init", card.Initiative));
-                    if (!card.IsIdle)
+                    if (!card.IsIdle && card.Skill == PveSkillKind.None)
                     {
                         row.Add(Field(type, card.Key, "move", card.MoveValue ?? 0));
                         row.Add(Field(type, card.Key, "attack", card.AttackValue ?? 0));
@@ -91,10 +91,10 @@ namespace GuardsDigital.Pve.Presentation
                 type.Level,
                 type.OrangeCards.Select(card =>
                 {
-                    if (card.IsIdle)
+                    if (card.IsIdle || card.Skill != PveSkillKind.None)
                     {
                         return new PveOrangeCard(card.Key, card.Name, Value(type, card.Key, "init", card.Initiative),
-                            card.Copies, null, 0, null, card.Options, true);
+                            card.Copies, null, 0, null, card.Options, card.IsIdle, card.Skill);
                     }
 
                     var attack = Value(type, card.Key, "attack", card.AttackValue ?? 0);

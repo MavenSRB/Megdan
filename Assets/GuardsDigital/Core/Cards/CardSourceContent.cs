@@ -16,11 +16,14 @@ namespace GuardsDigital.Core.Cards
         PrintsNoText = 1,
 
         /// <summary>The source face was read and its rules text is carried verbatim.</summary>
-        Transcribed = 2
+        Transcribed = 2,
+
+        /// <summary>User-approved original-mode wording, not a tabletop transcription.</summary>
+        Authored = 3
     }
 
     /// <summary>
-    /// The exact words one card's source face prints, carried on the definition and read by nothing.
+    /// Inert card wording: either an official transcription or explicitly original-mode authored text.
     ///
     /// Milestone 8.3, closing the 7.9a review's F-CARD-08: transcribed card text had no home in the
     /// content model at all, so a verified definition's numbers lived in code while its sentences lived
@@ -35,7 +38,9 @@ namespace GuardsDigital.Core.Cards
     /// gone out of its way not to build. What a card's text *does* is composed as typed effect content
     /// through <see cref="PrintedTextComposition"/>; what it *says* is this.</para>
     ///
-    /// <para><b>Three states, because two would lie.</b> A verified card that prints no rules text and
+    /// <para>Original-mode authored wording carries no official source-face claim and requires
+    /// OriginalMode authority. It remains presentation/audit data, never an execution input.</para>
+    /// <para><b>The three source states remain distinct.</b> A verified card that prints no rules text and
     /// a synthetic card that has no printed face at all are different facts, and collapsing them would
     /// let a fixture pass a check that exists to make verified content answerable to its source.
     /// <see cref="CardDefinition"/> couples the state to <see cref="CardContentAuthority"/> in both
@@ -86,6 +91,12 @@ namespace GuardsDigital.Core.Cards
 
         public CardSourceContentKind Kind { get; }
 
+        public static CardSourceContent Authored(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException("Authored content requires text.", nameof(text));
+            return new CardSourceContent(CardSourceContentKind.Authored, text);
+        }
+
         /// <summary>
         /// The transcribed words, or an empty string for either absence. Empty rather than null so a
         /// diagnostic that prints provenance cannot fault on a card that prints nothing.
@@ -93,6 +104,6 @@ namespace GuardsDigital.Core.Cards
         public string PrintedText { get; }
 
         /// <summary>Whether this definition states anything about a source face it was read from.</summary>
-        public bool StatesASourceFace => Kind != CardSourceContentKind.NotSourced;
+        public bool StatesASourceFace => Kind == CardSourceContentKind.Transcribed || Kind == CardSourceContentKind.PrintsNoText;
     }
 }

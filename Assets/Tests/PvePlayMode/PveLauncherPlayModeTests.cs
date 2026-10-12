@@ -170,13 +170,16 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             }
             var firstRow = rail.Q("pve-enemy-" + encounter.Enemies[0].HeroId.Value);
             yield return AssertLinkedHover(composed, overlay, encounter.Enemies[0].HeroId);
-            var firstSlot = firstRow.Q("gd-turn-slot");
+            var firstSlot = firstRow.Query<VisualElement>("gd-turn-slot").ToList()
+                .Single(slot => slot.tooltip.Contains("Shield Up"));
             using (var hover = PointerEnterEvent.GetPooled()) { hover.target = firstSlot; firstSlot.SendEvent(hover); }
             yield return null;
             Assert.That(overlay.Q("gd-turn-slot-preview").resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(overlay.Q("gd-turn-slot-preview").Query<Label>().ToList()
+                .Any(label => label.text == "This unit is immune this turn."), Is.True);
             yield return new WaitForEndOfFrame();
             var hoverCapture = ScreenCapture.CaptureScreenshotAsTexture();
-            System.IO.File.WriteAllBytes("tmp/w032-enemy-card-hover.png", hoverCapture.EncodeToPNG());
+            System.IO.File.WriteAllBytes("tmp/w040-shield-up-hover.png", hoverCapture.EncodeToPNG());
             Object.Destroy(hoverCapture);
             using (var leave = PointerLeaveEvent.GetPooled()) { leave.target = firstSlot; firstSlot.SendEvent(leave); }
             yield return null;
@@ -345,6 +348,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(root.Q<IntegerField>("pve-edit-melee-B-attack"), Is.Not.Null);
             Assert.That(root.Q<IntegerField>("pve-edit-heavy-P-defense"), Is.Not.Null);
             Assert.That(root.Q<IntegerField>("pve-edit-ranged-B-range"), Is.Not.Null);
+            Assert.That(root.Q<IntegerField>("pve-edit-melee-X-init").value, Is.EqualTo(9));
+            Assert.That(root.Q<IntegerField>("pve-edit-melee-X-attack"), Is.Null,
+                "The standalone Skill exposes initiative, not attack/movement fields.");
             Assert.That(root.Q<Button>("pve-card-editor-save"), Is.Not.Null);
         }
 

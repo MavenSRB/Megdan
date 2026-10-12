@@ -50,7 +50,7 @@ namespace GuardsDigital.Tests.Pve
             {
                 var type = stated.Find(pair.Item2);
                 var loaded = shipped.Find(pair.Item1);
-                Assert.That(loaded.OrangeCards.Where(card => !card.IsIdle).Select(card => (card.Key, card.Initiative, card.AttackValue, card.AttackRange, card.MoveValue)),
+                Assert.That(loaded.OrangeCards.Where(card => !card.IsIdle && card.Skill == PveSkillKind.None).Select(card => (card.Key, card.Initiative, card.AttackValue, card.AttackRange, card.MoveValue)),
                     Is.EqualTo(type.OrangeCards.Where(card => !card.IsIdle).Select(card => (card.Key, card.Initiative, card.AttackValue, card.AttackRange, card.MoveValue))));
                 if (pair.Item1 == "heavy")
                 {
@@ -97,7 +97,8 @@ namespace GuardsDigital.Tests.Pve
             var type = catalog.Find(typeId);
             Assert.That(type.OrangeCards.Where(card => card.AttackValue.HasValue).Sum(card => card.Copies), Is.EqualTo(2));
             Assert.That(type.OrangeHand.Count, Is.EqualTo(4));
-            Assert.That(type.OrangeCards.Single(card => card.IsIdle).Initiative, Is.EqualTo(1));
+            Assert.That(type.FindOrange("X").Initiative, Is.EqualTo(typeId == "melee" ? 9 : 1));
+            Assert.That(type.FindOrange("X").IsIdle, Is.EqualTo(typeId != "melee"));
             foreach (var plan in type.Plans)
             {
                 Assert.That(plan.Count, Is.EqualTo(4));
