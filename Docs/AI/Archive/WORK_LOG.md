@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-054 | Unseated hosts now redraw the trusted local Director board/HUD on every authoritative gameplay version, restoring remote hero movement and all other projection-driven updates without changing seats, wire data or privacy. The regression failed at authority/render versions 2/0 before the fix; the affected Play Mode fixture and live-view capture passed afterward. | `work/W-054` |
 | W-052 | Experimental Turn timer now has its own heading and enable label, distinct from Card Modifiers. Keyed-host public IPv4 discovery retains local UPnP first and adds bounded validated HTTPS fallbacks before an explicitly labelled LAN/unknown result; port reachability remains the host's responsibility. Focused Edit/Play regressions and captured visual review passed; live third-party lookup was not exercised by the validation environment. | `work/W-052` |
 | W-051 | Matching W050 universal Mac package with PvP/PvE, same identity/content, private textures and executable ZIP modes. Cross-build, architectures, bundle data/resources and extraction integrity verified; native Mac launch/render/network explicitly unverified. Windows package/main preserved. | `work/W-051` |
 | W-050 | Current-source unified Windows package, including W047-W049 and user-requested tiebreaker clearance and first-wave Heavy replacement. Focused content/UI checks, exact-artifact PvP and PvE one/two/three-player smokes, portrait resource/roster checks, board renders, manifest/ZIP verification and extracted launch. Original card scaling, older packages and main preserved. | `work/W-050` |
@@ -58,6 +59,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-054 Live host-spectator presentation refresh
+
+Approved from the user's 2026-10-12 report that host spectate did not show heroes moving or other live map changes. The unseated hosting process already read its trusted local Director authority, but the lobby redraw signature watched only its admitted loopback client; that client correctly receives no owner projections while remote commands advance the match. The signature now includes the local authority version after match start, refreshing the complete projection-driven board and HUD without claiming a seat or changing protocol, projection, rules or privacy contracts. Acceptance is the failing-then-passing host journey (authority version 2 while rendered board remained 0 before the fix), the complete 35-case private-lobby Play Mode fixture, and visual inspection of the post-command host capture. Source-only; W050/W051 packages remain unchanged.
+
+Historical evidence: `work/W-054` commit body.
 
 ### [x] W-051 Matching W050 universal Mac package
 

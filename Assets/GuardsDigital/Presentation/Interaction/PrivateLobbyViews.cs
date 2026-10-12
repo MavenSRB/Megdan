@@ -2154,7 +2154,15 @@ namespace GuardsDigital.Presentation.Interaction
                     .Append(machine.LastAgreementResult?.SubmissionId ?? string.Empty).Append(':')
                     // Milestone 8.107. A hosting client that took no seat never hears MatchStarted,
                     // so the host's own fact is what turns its screen into the host console.
-                    .Append(session != null && session.HasMatchStarted ? '1' : '0');
+                    .Append(session != null && session.HasMatchStarted ? '1' : '0').Append(':')
+                    // W-054. That same unseated client receives no owner projection after the
+                    // transition, so none of its fields move while remote seats play. Its HUD reads
+                    // the local Director authority directly; include that authority's version in
+                    // the one redraw signature so board occupancies, kinetics, trays, prompts and
+                    // every other projection-driven surface refresh after each accepted command.
+                    .Append(session != null && session.HasMatchStarted
+                        ? compositionRoot?.Runtime?.Host.Version ?? -1
+                        : -1);
                 // 8.35z54. THE HERO AND THE CHOSEN FLAG BELONG IN THIS STRING, and leaving
                 // them out is why an accepted pick "didnt do nothing" on the user's screen. It is
                 // the whole redraw condition - the lobby rebuilds when it moves and at no other

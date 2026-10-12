@@ -912,6 +912,10 @@ namespace GuardsDigital.Tests.PlayMode
 
                 var acceptedBefore = Runtime().Host.Projection.AcceptedCommands.Count;
                 Assert.That(acceptedBefore, Is.GreaterThanOrEqualTo(2), "The players have made moves to take back.");
+                Assert.That(runtime.BoardView.Model.Version, Is.EqualTo(Runtime().Host.Version),
+                    "The unseated host must redraw its board and every projection-driven HUD surface " +
+                    "after remote gameplay advances the local authority.");
+                yield return UiPlayer.CaptureScreen("tmp/w054-seatless-host-live-refresh-1920x1080.png");
 
                 Assert.That(runtime.Undo(), Is.True, "The live HUD preserves the host's Director undo.");
                 yield return null;
