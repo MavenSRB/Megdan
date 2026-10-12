@@ -81,12 +81,13 @@ namespace GuardsDigital.Pve.Presentation
             lobby = new VisualElement();
             panel.Add(lobby);
             playerName = Field("Player name", "Player");
-            address = Field("Host IP (Join only)", "127.0.0.1");
-            port = Field("Port", "7778");
+            address = Field("Host public IP (internet Join)", "127.0.0.1");
+            port = Field("TCP port (same as PvP)", PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture));
             key = Field("Session key (required for LAN/internet)", "");
             key.isPasswordField = true;
             seedInput = Field("Encounter seed (same on all three players)", seed.ToString(CultureInfo.InvariantCulture));
-            var instructions = new Label("Share the host IP, port, key and seed with your two friends. No key: local-machine testing only.");
+            var instructions = new Label("Internet: set a session key, allow the selected TCP port through the host firewall and forward it on the router to the host PC. Share your public IP, port, key and seed; all players need the same build and PvE data. No key: local-machine testing only. PvP and PvE cannot host on the same port at the same time.")
+                { name = "pve-coop-network-help" };
             instructions.style.whiteSpace = WhiteSpace.Normal;
             lobby.Add(instructions);
             lobby.Add(Button("HOST", () => Begin(true), "pve-coop-host"));

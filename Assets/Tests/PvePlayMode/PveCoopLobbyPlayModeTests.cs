@@ -96,6 +96,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             yield return null; yield return null;
             lobby = Object.FindAnyObjectByType<PveCoopLobby>();
             Assert.That(lobby, Is.Not.Null);
+            Assert.That(Field<TextField>(lobby, "port").value,
+                Is.EqualTo(PrivateSessionProtocol.DefaultPort.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            Field<TextField>(lobby, "key").value = "pve-network-test-key";
             Field<TextField>(lobby, "port").value = "19531";
             var root = lobby.GetComponent<UIDocument>().rootVisualElement;
             Assert.That(root.Q<Label>("pve-coop-title").resolvedStyle.color, Is.EqualTo(Color.white));
@@ -111,7 +114,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             for (var i = 2; i <= 3; i++)
             {
                 var transport = new TcpSessionClientTransport();
-                var client = new PrivateSessionClient(server.Identity, new SeatId("blue-player-0" + i), "", transport, new CryptoNonceSource());
+                var client = new PrivateSessionClient(server.Identity, new SeatId("blue-player-0" + i), "pve-network-test-key", transport, new CryptoNonceSource());
                 transports.Add(transport); clients.Add(client);
                 Assert.That(transport.Connect(target, 3, out var error), Is.True, error);
             }

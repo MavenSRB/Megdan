@@ -41,6 +41,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-035 | Updated private Windows PvE package with enemy changes, Host/Join and the approved banner; exact-artifact solo/co-op/render/ZIP checks. | `work/W-035` |
 | W-036 | Random four-card enemy order per round, public upfront and deterministic across Undo/co-op. | `work/W-036` |
 | W-037 | Enemy rail box fits live trays, hides when empty and caps overflow for scrolling. | `work/W-037` |
+| W-038 | PvE shares PvP's TCP port 45677 and explains direct internet prerequisites; keyed lobby validated. | `work/W-038` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
 
@@ -363,3 +364,9 @@ Historical evidence: completion commit addressed by immutable `work/W-036`; exac
 Approved from the user's screenshot: scale the enemy box to the number of live trays. Replaced its stretched height with heading-plus-row height capped by available space, preserving compact geometry, cards, hover and vertical scrolling; empty occupancy hides the box. No rules, shared HUD or package change. T2 acceptance: oversized-box regression observed failing before the fix and passing after; seven/six/zero/restored-row sizes, viewport shrink/grow and last-row scrolling, joining-client size and hover, rendered inspection. Test staging was corrected to restore its captured populated snapshot after synthetic removals; ordinary restart remains covered before staging. Review found no remaining in-scope defect. W035 ZIP remains unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-037`; exact validation and failure closure live in its body.
+
+### [x] W-038 PvE internet port parity
+
+Approved: direct internet multiplayer using the same port as main PvP. Verified main's shared default is 45677 and replaced PvE's hard-coded 7778 with that constant. Existing keyed wildcard listener and admission remain unchanged; menu explains public IP, selected TCP port, shared key/seed, matching build/data, firewall/router requirements and concurrent-host port conflict. T2 closing checks: default-field equality, real TCP keyed host plus two joining peers, placement, owner privacy, reconnect, joining-client UI and visual readability. No observed failures or remaining code acceptance defects. No router/firewall changes, relay, external-internet validation, or rebuilt ZIP claimed.
+
+Historical evidence: completion commit addressed by immutable `work/W-038`; exact validation and limitations live in its body.
