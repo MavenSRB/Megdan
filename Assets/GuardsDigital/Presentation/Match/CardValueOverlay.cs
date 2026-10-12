@@ -116,11 +116,11 @@ namespace GuardsDigital.Presentation.Match
 
         private static void ApplyWeight(Label label, float size)
         {
-            // Expand the white ink, not the black edge: heavier numerals without moving their anchors.
-            label.style.unityTextOutlineColor = Color.white;
-            label.style.unityTextOutlineWidth = Mathf.Max(0.35f, size / 48f);
+            // Keep the white numerals crisp against every card face with a real, weight-scaled black edge.
+            label.style.unityTextOutlineColor = Color.black;
+            label.style.unityTextOutlineWidth = Mathf.Max(0.75f, size / 24f);
             label.style.textShadow = new TextShadow { color = Color.black,
-                offset = Vector2.zero, blurRadius = Mathf.Max(1f, size / 12f) };
+                offset = Vector2.zero, blurRadius = Mathf.Max(0.5f, size / 24f) };
         }
 
         public static void AddInline(VisualElement parent, IReadOnlyList<CardValuePreview> values,

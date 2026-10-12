@@ -57,13 +57,13 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ModifierWeightUsesWhiteStrokeWithDarkContrast()
+        public void ModifierWeightUsesThickBlackOutline()
         {
             var reference = ConfiguredCardArtworkCatalog.ConfiguredReferences.First();
             var label = CardValueOverlay.BonusLabel(new CardValuePreview(new HeroId("hero"),
                 reference, PrintedValueChannel.Attack, 2), 32f);
-            Assert.That(label.style.unityTextOutlineColor.value, Is.EqualTo(Color.white));
-            Assert.That(label.style.unityTextOutlineWidth.value, Is.GreaterThanOrEqualTo(0.6f));
+            Assert.That(label.style.unityTextOutlineColor.value, Is.EqualTo(Color.black));
+            Assert.That(label.style.unityTextOutlineWidth.value, Is.GreaterThanOrEqualTo(1.3f));
             Assert.That(label.style.textShadow.value.color, Is.EqualTo(Color.black));
         }
 

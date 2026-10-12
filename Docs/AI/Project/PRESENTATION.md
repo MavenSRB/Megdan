@@ -78,7 +78,7 @@ END TURN and the seat's UNDO use `HudElements.Control`'s shared chip, border, ra
 
 - Team identity never relies on color alone.
 - Red and Blue also use distinct symbols, base markings, outlines, and labels.
-- Cards and state values must remain readable at common desktop resolutions.
+- Cards and state values must remain readable at common desktop resolutions. White signed card-modifier overlays use a weight-scaled black outline while retaining their inspected per-icon anchors and bounded fit.
 - UI structure must allow later scaling.
 - A full accessibility settings suite is deferred.
 

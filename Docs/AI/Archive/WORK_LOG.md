@@ -4,6 +4,8 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-056 | White signed card-modifier overlays now use a thicker weight-scaled black outline without changing their inspected anchors, bounded fit or pointer transparency. Focused Edit/Play checks and `+1`, `+12` and `-12` Game View inspection passed. | `work/W-056` |
+| W-055 | Large phase announcements and final-ten countdowns now follow the viewing player's team colour: existing blood red for Red, dark blue for Blue, and red fallback for an unseated Director. Focused Edit/Play checks and targeted Game View inspections passed. | `work/W-055` |
 | W-054 | Unseated hosts now redraw the trusted local Director board/HUD on every authoritative gameplay version, restoring remote hero movement and all other projection-driven updates without changing seats, wire data or privacy. The regression failed at authority/render versions 2/0 before the fix; the affected Play Mode fixture and live-view capture passed afterward. | `work/W-054` |
 | W-052 | Experimental Turn timer now has its own heading and enable label, distinct from Card Modifiers. Keyed-host public IPv4 discovery retains local UPnP first and adds bounded validated HTTPS fallbacks before an explicitly labelled LAN/unknown result; port reachability remains the host's responsibility. Focused Edit/Play regressions and captured visual review passed; live third-party lookup was not exercised by the validation environment. | `work/W-052` |
 | W-051 | Matching W050 universal Mac package with PvP/PvE, same identity/content, private textures and executable ZIP modes. Cross-build, architectures, bundle data/resources and extraction integrity verified; native Mac launch/render/network explicitly unverified. Windows package/main preserved. | `work/W-051` |
@@ -59,6 +61,18 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-056 Thicker card-modifier number outlines
+
+Requested on 2026-10-12: make the numeric card-modifier overlay easier to read with a thicker black outline. White signed values now use a crisp weight-scaled black edge instead of a white stroke and broad soft shadow; inspected icon anchors, bounded fit and pointer transparency are unchanged. T2 acceptance covers the focused overlay EditMode fixture, affected PlayMode fixture, and non-batch Game View inspection of `+1`, `+12` and `-12` overlays across representative complete card faces. Source-only; W050/W051 packages remain unchanged.
+
+Historical evidence: `work/W-056` commit body.
+
+### [x] W-055 Team-coloured large match announcements
+
+User-prioritized presentation work on 2026-10-12: the large transient phase announcements and final-ten countdown use the viewing player's team colour, preserving blood red for Red and introducing dark blue for Blue; an unseated Director retains the red fallback. T2 acceptance covers focused colour EditMode checks, affected phase/timer PlayMode fixtures, and non-batch Game View inspection of the Blue announcement and countdown treatments. Source-only; W050/W051 packages remain unchanged.
+
+Historical evidence: `work/W-055` commit body.
 
 ### [x] W-054 Live host-spectator presentation refresh
 

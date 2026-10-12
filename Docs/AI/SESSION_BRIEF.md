@@ -16,13 +16,19 @@ Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified
 
 Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-054**.
-- Active authorized work: **None**.
+- Last completed work: **W-056**.
+- Active authorized work: **W-053 - PvE seat Undo parity**.
 - Next proposed work: **None**.
+
+W053 makes the existing seat-scoped PvP Undo rules available to Blue seats in PvE, including the turn floor and attack/interaction/other-seat walls, while the encounter session rewinds through automatic enemy commands following the player's action. Source work has resumed after W055; W050/W051 packages remain unchanged.
+
+W056 gives white numeric card-modifier overlays a thicker black outline without moving or resizing them. Focused EditMode/PlayMode checks and targeted Game View inspection passed; source-only, with W050/W051 unchanged.
+
+W055 makes the large transient phase announcements and final-ten timer countdowns use the viewing player's team colour: the existing blood red for Red and dark blue for Blue. Focused EditMode/PlayMode checks and targeted Game View inspections passed; source-only, with W050/W051 unchanged.
 
 W054 repairs the unseated hosting process's live spectator view: the host redraw signature now follows the local authority version, so remote commands refresh hero positions and every other projection-driven board/HUD surface. The affected private-lobby Play Mode fixture and targeted visual review passed. Source-only; W050/W051 packages remain unchanged.
 
-W048 saved PvE logs and W049 generated enemy faces/board-gated turns are included in W050. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved; await the next user request.
+W048 saved PvE logs and W049 generated enemy faces/board-gated turns are included in W050. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved.
 
 W052 separates Turn timer from Card Modifiers in Experimental and makes keyed-host address discovery fall back from local UPnP to bounded HTTPS public-IPv4 lookups. Responses are accepted only as exact public IPv4 values; failure remains an explicitly labelled LAN/unknown result. This does not open or verify the selected port. Source-only; the W050/W051 packages and local main remain unchanged.
 
