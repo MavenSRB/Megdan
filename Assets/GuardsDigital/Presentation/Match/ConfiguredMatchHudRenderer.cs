@@ -509,6 +509,7 @@ namespace GuardsDigital.Presentation.Match
         private TeamSide? tieBreakerRailBannerSide;
         private MatchStatusBarUnityView statusBar;
         private FinalSecondsCountdownUnityView finalSecondsCountdown;
+        private TeamSide announcementSide = TeamSide.Red;
         private MatchLogUnityView matchLog;
         private DirectorHandsUnityView hands;
         private RoundActionUnityView round;
@@ -710,6 +711,13 @@ namespace GuardsDigital.Presentation.Match
         {
             statusBar?.RenderClock(state);
             finalSecondsCountdown?.Render(state);
+        }
+
+        /// <summary>Colours viewer-facing full-screen announcements for the side using this HUD.</summary>
+        public void SetAnnouncementSide(TeamSide side)
+        {
+            announcementSide = side == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red;
+            finalSecondsCountdown?.SetTeamSide(announcementSide);
         }
 
         public void RenderHeader(MatchHudHeaderViewModel model)
@@ -1487,7 +1495,7 @@ namespace GuardsDigital.Presentation.Match
             defenseModifierBreakdown = new HeroDefenseModifierBreakdownUnityView();
             root.Add(defenseModifierBreakdown.Root);
 
-            finalSecondsCountdown = new FinalSecondsCountdownUnityView();
+            finalSecondsCountdown = new FinalSecondsCountdownUnityView(announcementSide);
             root.Add(finalSecondsCountdown.Root);
 
             // Milestone 8.35z19 (placeholder id). Added LAST, after every other surface,

@@ -16,7 +16,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HeroId Blue = new HeroId("countdown-blue");
 
         [Test]
-        public void View_ReusesTheLargeRedLineWithoutABackground_AndTakesNoPointer()
+        public void View_ReusesTheLargeTeamColouredLineWithoutABackground_AndTakesNoPointer()
         {
             var view = new FinalSecondsCountdownUnityView();
             view.Render(Clock(TimeSpan.FromSeconds(10).Ticks));
@@ -40,6 +40,15 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(PhaseBannerUnityView.OutlineWidth));
             Assert.That(value.style.unityTextOutlineColor.value, Is.EqualTo(PhaseBannerUnityView.Outline));
             Assert.That(value.style.backgroundColor.value, Is.EqualTo(Color.clear));
+
+            view.SetTeamSide(TeamSide.Blue);
+            Assert.That(view.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(value.style.color.value, Is.EqualTo(PhaseBannerUnityView.DarkBlue));
+
+            view.SetTeamSide(TeamSide.None);
+            Assert.That(view.TeamSide, Is.EqualTo(TeamSide.Red),
+                "An unscoped Director keeps the established Red fallback.");
+            Assert.That(value.style.color.value, Is.EqualTo(PhaseBannerUnityView.BloodRed));
         }
 
         [Test]

@@ -21,9 +21,11 @@ namespace GuardsDigital.Presentation.Match
         public const float FontSize = 260f;
 
         private readonly Label value;
+        private TeamSide teamSide;
 
-        public FinalSecondsCountdownUnityView()
+        public FinalSecondsCountdownUnityView(TeamSide teamSide = TeamSide.Red)
         {
+            this.teamSide = teamSide == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red;
             Root = new VisualElement { name = HostName, pickingMode = PickingMode.Ignore };
             Root.style.position = Position.Absolute;
             Root.style.left = 0f;
@@ -38,7 +40,7 @@ namespace GuardsDigital.Presentation.Match
             value = HudElements.Text(
                 string.Empty,
                 FontSize,
-                PhaseBannerUnityView.BloodRed,
+                PhaseBannerUnityView.ColorFor(this.teamSide),
                 FontStyle.Bold);
             value.name = ValueName;
             value.pickingMode = PickingMode.Ignore;
@@ -53,6 +55,14 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement Root { get; }
 
         public int DisplayedSecond { get; private set; }
+
+        public TeamSide TeamSide => teamSide;
+
+        public void SetTeamSide(TeamSide side)
+        {
+            teamSide = side == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red;
+            value.style.color = PhaseBannerUnityView.ColorFor(teamSide);
+        }
 
         public void Render(MatchClockState clock)
         {

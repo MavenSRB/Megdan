@@ -225,6 +225,7 @@ namespace GuardsDigital.Presentation.Match
             // exist yet here.
             PhaseBannerView = new PhaseBannerUnityView(() => hud?.RootElement);
             PhaseBannerPresenter = new PhaseBannerPresenter(client, PhaseBannerView, Seat?.HeroId ?? default);
+            SetAnnouncementSide(Seat?.TeamSide ?? directorPlayerSide ?? TeamSide.Red);
             // Milestone 8.46e (owed by 8.47). The banner yields to the decision window opening
             // EXPANDED on the same refresh: the window is refreshed first in the coordinator, so its
             // model already reflects this projection when the banner decides.
@@ -844,6 +845,14 @@ namespace GuardsDigital.Presentation.Match
                         "The admitted seat's hero is absent from this build's setup.");
                 }
             }
+
+            SetAnnouncementSide(client.Projection.Participants.GetTeamForHero(heroId).Side);
+        }
+
+        private void SetAnnouncementSide(TeamSide side)
+        {
+            PhaseBannerView.SetTeamSide(side);
+            hud.SetAnnouncementSide(side);
         }
 
         public IMatchSession Session => session;

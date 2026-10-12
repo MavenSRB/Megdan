@@ -10,8 +10,8 @@ namespace GuardsDigital.Presentation.Match
     /// Milestone 8.47. One transient banner over the middle of the screen, telling the players the
     /// game state changed: commit a card, resolve your card, minion battle. The user's brief, during
     /// the 2026-09-18 playtest preparation: "text over the screen to let the players know game state
-    /// changed. It pops up, then fades away after like a second or two" - big blood-red letters with
-    /// a black outline on a shaded box, impossible to miss, centre screen.
+    /// changed. It pops up, then fades away after like a second or two" - big team-coloured letters
+    /// with a black outline on a shaded box, impossible to miss, centre screen.
     ///
     /// <para>The words a banner shows: an eyebrow naming the round and turn, and the line that says
     /// what the player does now. Round start is bundled into the round's first commit banner rather

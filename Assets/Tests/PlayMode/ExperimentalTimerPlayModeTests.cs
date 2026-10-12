@@ -18,6 +18,54 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class ExperimentalTimerPlayModeTests
     {
         [UnityTest]
+        public IEnumerator BlueSeat_PhaseBannerAndFinalSecondsUseDarkBlue()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root = ArienUiJourneyPlayModeTests.Root();
+            var blueSeat = root.Runtime.Host.Seats.Seats.First(seat => seat.TeamSide == TeamSide.Blue);
+
+            MatchSceneCompositionRoot.NextComposedSeat = blueSeat.Id;
+            root.ConfigureExperiments(new ExperimentalMatchOptions(turnTimer: true));
+            yield return null;
+            yield return null;
+
+            Assert.That(root.Runtime.Seat?.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(root.Runtime.PhaseBannerView.TeamSide, Is.EqualTo(TeamSide.Blue));
+            root.Runtime.PhaseBannerView.Show(PhaseBannerLabels.Commit(1, 1));
+            yield return new WaitForSecondsRealtime(PhaseBannerUnityView.FadeInMs / 1000f + 0.1f);
+
+            var phaseLine = root.Runtime.PhaseBannerView.Root.Q<Label>(PhaseBannerUnityView.LineName);
+            Assert.That(phaseLine.style.color.value, Is.EqualTo(PhaseBannerUnityView.DarkBlue));
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(root.Runtime.PhaseBannerView.IsShowing, Is.True);
+                yield return UiPlayer.CaptureScreen("tmp/w055-blue-phase-banner.png");
+            }
+
+            root.Runtime.PhaseBannerView.Hide();
+            root.Hud.RenderClock(new MatchClockState(
+                true, 1, 1,
+                TimeSpan.FromSeconds(20).Ticks,
+                TimeSpan.FromSeconds(20).Ticks,
+                new[]
+                {
+                    new MatchClockEntry(
+                        "blue-final-ten", MatchClockKind.Commitment, blueSeat.HeroId, TeamSide.Blue,
+                        TimeSpan.FromSeconds(10).Ticks, running: true)
+                }));
+            yield return null;
+            yield return null;
+
+            var countdown = root.Hud.RootElement.Q<Label>(FinalSecondsCountdownUnityView.ValueName);
+            Assert.That(countdown.style.color.value, Is.EqualTo(PhaseBannerUnityView.DarkBlue));
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return UiPlayer.CaptureScreen("tmp/w055-blue-final-ten.png");
+            }
+        }
+
+        [UnityTest]
         public IEnumerator FinalTenSecondCountdown_CoversTheMapWithoutTakingCardCommands()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;

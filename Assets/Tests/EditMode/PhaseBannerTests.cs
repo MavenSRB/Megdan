@@ -197,7 +197,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheView_DrawsTheWordsOnTheRoot_InBloodRedWithAnOutline_AndTakesNoPointer()
+        public void TheView_DrawsTheWordsInTheViewingTeamsColour_WithAnOutline_AndTakesNoPointer()
         {
             var root = new VisualElement();
             var view = new PhaseBannerUnityView(() => root);
@@ -219,6 +219,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(line.style.fontSize.value.value, Is.EqualTo(PhaseBannerUnityView.LineFontSize));
             Assert.That(view.Root.Q<VisualElement>(PhaseBannerUnityView.PlateName).style.backgroundColor.value,
                 Is.EqualTo(PhaseBannerUnityView.Plate));
+
+            view.SetTeamSide(TeamSide.Blue);
+            Assert.That(view.TeamSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(line.style.color.value, Is.EqualTo(PhaseBannerUnityView.DarkBlue));
+
+            view.SetTeamSide(TeamSide.None);
+            Assert.That(view.TeamSide, Is.EqualTo(TeamSide.Red),
+                "A seatless Director preserves the historical Red fallback.");
+            Assert.That(line.style.color.value, Is.EqualTo(PhaseBannerUnityView.BloodRed));
 
             view.Hide();
             Assert.That(view.IsShowing, Is.False);

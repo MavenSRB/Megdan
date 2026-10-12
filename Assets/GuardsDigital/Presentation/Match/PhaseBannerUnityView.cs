@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GuardsDigital.Core.Participants;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,8 +13,8 @@ namespace GuardsDigital.Presentation.Match
     /// <para>Every number is a reference unit under <see cref="MatchHudPanelScaling"/>, because the
     /// host is a child of the HUD's own root: the letters scale with the rails and the hand, never
     /// with the screen. The line is set at a size no other HUD text uses, on the user's own words:
-    /// "make the letters big, impossible to miss, centre screen"; blood red, black outline, a shaded
-    /// box behind.</para>
+    /// "make the letters big, impossible to miss, centre screen"; team-coloured, black outline, a
+    /// shaded box behind.</para>
     ///
     /// <para>Built once and kept DETACHED until a banner actually stands, for the reason the fizzle
     /// notice is (8.35z9): a hidden element is still an element to every sweep that enumerates the
@@ -48,6 +49,8 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Blood red, as asked; the outline keeps it legible over the brightest board art.</summary>
         public static readonly Color BloodRed = new Color(0.62f, 0.05f, 0.08f, 1f);
+        /// <summary>Blue's dark counterpart to <see cref="BloodRed"/>.</summary>
+        public static readonly Color DarkBlue = new Color(0.05f, 0.18f, 0.62f, 1f);
         public static readonly Color Outline = Color.black;
         public static readonly Color Plate = new Color(0f, 0f, 0f, 0.62f);
 
@@ -57,10 +60,14 @@ namespace GuardsDigital.Presentation.Match
         private readonly Label eyebrow;
         private readonly Label line;
         private long token;
+        private TeamSide teamSide;
 
-        public PhaseBannerUnityView(Func<VisualElement> rootSource)
+        public PhaseBannerUnityView(
+            Func<VisualElement> rootSource,
+            TeamSide teamSide = TeamSide.Red)
         {
             this.rootSource = rootSource ?? throw new ArgumentNullException(nameof(rootSource));
+            this.teamSide = NormalizeTeamSide(teamSide);
 
             host = new VisualElement { name = HostName, pickingMode = PickingMode.Ignore };
             host.style.position = Position.Absolute;
@@ -100,7 +107,7 @@ namespace GuardsDigital.Presentation.Match
             eyebrow.style.unityTextOutlineColor = Outline;
             plate.Add(eyebrow);
 
-            line = HudElements.Text(string.Empty, LineFontSize, BloodRed, FontStyle.Bold);
+            line = HudElements.Text(string.Empty, LineFontSize, ColorFor(this.teamSide), FontStyle.Bold);
             line.name = LineName;
             line.pickingMode = PickingMode.Ignore;
             line.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -120,6 +127,24 @@ namespace GuardsDigital.Presentation.Match
         public string EyebrowText => eyebrow.text;
 
         public string LineText => line.text;
+
+        public TeamSide TeamSide => teamSide;
+
+        public static Color ColorFor(TeamSide side) =>
+            side == TeamSide.Blue ? DarkBlue : BloodRed;
+
+        /// <summary>
+        /// Binds the viewer's side. Undefined/Director-only views preserve the historical Red
+        /// treatment unless their composition explicitly supplies a player side.
+        /// </summary>
+        public void SetTeamSide(TeamSide side)
+        {
+            teamSide = NormalizeTeamSide(side);
+            line.style.color = ColorFor(teamSide);
+        }
+
+        private static TeamSide NormalizeTeamSide(TeamSide side) =>
+            side == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red;
 
         /// <summary>
         /// Shows one banner: attach, fade in, hold, fade out, detach. A newer banner arriving during
