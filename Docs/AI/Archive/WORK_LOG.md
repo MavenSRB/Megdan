@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-044 | Fourteen private enemy faces from approved orange Hurl sample; correct primary Movement/Defense/Skill icons, no secondary icons. Hurl fallback approaches closest Blue unit, stopping adjacent. | `work/W-044` |
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
 | W-003 | Private Windows package with W-002 fixes; one build, exact-artifact smokes and verified ZIP. | `work/W-003` |
@@ -405,3 +406,9 @@ Historical evidence: completion commit addressed by immutable `work/W-042`; exac
 Approved PVE-D37: Hurl Attack 2 / Range 2 repeats once on a different target while retaining Move 1 fallback; Hook replaces Dozing Off and pulls the closest Blue unit straight toward Heavy until adjacent or obstructed, with ties chosen by the player and no farther aligned substitution. Thick Hide keeps Defense 3 / Initiative 1 and counterattacks the original attacker once at Attack 1 only adjacent, after the incoming attack and after-attack effects finish. Brace and other values unchanged. Typed selection/shared Direct Move, repeat and separate defendable attack continuations preserve target identity, restore and Undo. T2 acceptance: focused geometry/creep/obstacle/tie, repeat, counter/Defense/lethal/ordering/restore, editor/save, shared combat/borrow/card-text, co-op and existing-mode identity checks, plus rendered Heavy text. Review preserves rules/presentation separation and source-only private scope; exhaustive whole-roster interaction combinations are not claimed. No package rebuild or remote publication.
 
 Historical evidence: completion commit addressed by immutable `work/W-043`; exact checks/results, failure corrections and omitted-suite rationale live in its body.
+
+### [x] W-044 Private enemy card faces and closest-unit Hurl fallback
+
+Approved sequence: builder-based artwork-free Hurl sample, independent orange/icon edits, user approval, then the remaining thirteen faces. Delivered fourteen private PNGs and an HTML gallery/prompt manifest in `tmp/w044-enemy-faces/final/`, plus `tmp/w044-enemy-faces/enemy-faces-W044.zip`. Orange actions and purple defenses retain their primary icons (Movement boot, Defense shield, and Skill book/rays for Hook, Aim and Shield Up), with secondary icons omitted. Shipped values and approved rules text are visually checked. Hurl's separately approved Move 1 fallback now approaches the closest Blue hero or creep, stopping adjacent; other attack priorities remain unchanged. Builder export/hide limitations required AI-edited previews; they are not native exports. Original samples and rejected variants are preserved. No runtime face integration, build or remote publication.
+
+Historical evidence: gameplay checkpoint `83770128`; final acceptance and private-asset checks in completion commit addressed by immutable `work/W-044`.
