@@ -80,6 +80,74 @@ namespace GuardsDigital.Tests.Pve
         }
 
         [Test]
+        public void BlueCommitmentUsesTheSameSeatUndoWithdrawalAsPvp()
+        {
+            var match = Create();
+            DriveOwnedPlacement(match);
+            var seat = match.Host.Seats.Seats[0];
+            var commit = match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands
+                .First(command => command.Kind == DirectorCommandKind.CommitCard);
+
+            var accepted = match.Host.SubmitForSeat(seat.Id,
+                new SeatSubmission(new SubmissionId("pve-commit"), match.Host.Version, commit));
+
+            Assert.That(accepted.Accepted, Is.True, accepted.Detail);
+            Assert.That(match.Host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable, Is.True);
+            Assert.That(match.Host.Seats.Seats.Where(other => !other.Id.Equals(seat.Id))
+                .All(other => !match.Host.ProjectionForSeat(other.Id).IsSeatUndoAvailable), Is.True);
+
+            var undone = match.Host.SubmitUndoForSeat(seat.Id,
+                new SeatUndoSubmission(new SubmissionId("pve-uncommit"), match.Host.Version));
+
+            Assert.That(undone.Accepted, Is.True, undone.Detail);
+            Assert.That(match.Session.Projection.GetCommitment(seat.HeroId).Status,
+                Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse));
+            Assert.That(match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands
+                .Any(command => command.Kind == DirectorCommandKind.CommitCard), Is.True,
+                "Withdrawal returns the card and commitment allowance to its owner.");
+        }
+
+        [Test]
+        public void BlueTurnActionUsesTheSameBoundedSeatUndoAsPvp()
+        {
+            var match = Create();
+            for (var step = 0; step < 1200; step++)
+            {
+                match.Session.RunAutomatic();
+                var answer = PvePassivePlayer.NextAnswer(match.Session);
+                Assert.That(answer, Is.Not.Null, "The fixture must reach a rewindable Blue turn action.");
+                var owner = match.Host.Seats.Seats.FirstOrDefault(seat =>
+                    match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands.Contains(answer));
+                if (owner == null)
+                {
+                    Assert.That(match.Session.Execute(answer).Accepted, Is.True);
+                    continue;
+                }
+
+                var before = match.Session.CaptureSnapshot();
+                var accepted = match.Host.SubmitForSeat(owner.Id,
+                    new SeatSubmission(new SubmissionId("pve-play-" + step), match.Host.Version, answer));
+                Assert.That(accepted.Accepted, Is.True, accepted.Detail);
+                if (match.Session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments ||
+                    !match.Host.ProjectionForSeat(owner.Id).IsSeatUndoAvailable)
+                {
+                    continue;
+                }
+
+                Assert.That(match.Host.Seats.Seats.Where(other => !other.Id.Equals(owner.Id))
+                    .All(other => !match.Host.ProjectionForSeat(other.Id).IsSeatUndoAvailable), Is.True,
+                    "Only the seat resolving this turn may rewind it.");
+                var undone = match.Host.SubmitUndoForSeat(owner.Id,
+                    new SeatUndoSubmission(new SubmissionId("pve-undo-" + step), match.Host.Version));
+                Assert.That(undone.Accepted, Is.True, undone.Detail);
+                Assert.That(match.Session.CaptureSnapshot(), Is.EqualTo(before));
+                return;
+            }
+
+            Assert.Fail("The deterministic encounter reached no rewindable Blue turn action.");
+        }
+
+        [Test]
         public void CoopIdentitySeparatesPvpSeedsAndEditableContent()
         {
             var match = Create();
@@ -141,6 +209,29 @@ namespace GuardsDigital.Tests.Pve
                 var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-4-42");
                 Assert.That(PveCoopMatch.TryReadHostSeed(hint, 7, out _), Is.False, reason.ToString());
             }
+        }
+
+        private static void DriveOwnedPlacement(PveCoopMatch match)
+        {
+            match.Session.RunAutomatic();
+            for (var step = 0; step < 20 && match.Session.Projection.PendingSystemTransitionStep != null; step++)
+            {
+                var choice = match.Host.Seats.Seats.Select(seat => new
+                    {
+                        seat,
+                        command = match.Host.ProjectionForSeat(seat.Id).AuthorizedCommands
+                            .FirstOrDefault(command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep)
+                    })
+                    .FirstOrDefault(value => value.command != null);
+                Assert.That(choice, Is.Not.Null, "A placement must reach its owning Blue seat.");
+                var accepted = match.Host.SubmitForSeat(choice.seat.Id,
+                    new SeatSubmission(new SubmissionId("setup-place-" + step), match.Host.Version, choice.command));
+                Assert.That(accepted.Accepted, Is.True, accepted.Detail);
+                match.Session.RunAutomatic();
+            }
+
+            Assert.That(match.Session.Projection.PendingSystemTransitionStep, Is.Null);
+            Assert.That(match.Session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
         }
     }
 }

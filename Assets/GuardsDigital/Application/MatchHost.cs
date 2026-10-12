@@ -320,19 +320,23 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
-    /// Optional asymmetric-mode seat visibility and command authorization. Null preserves PvP behavior.
+    /// Optional asymmetric-mode seat visibility, command authorization and explicit seat-Undo opt-in.
+    /// Null preserves PvP behavior; a policy stays non-undoable unless its mode deliberately enables it.
     /// </summary>
     public sealed class MatchSeatPolicy
     {
         public TeamSide PlayerSide { get; }
         public TeamSide PublicCardSide { get; }
+        public bool SeatUndoEnabled { get; }
         public Func<MatchSessionProjection, MatchSeat, IReadOnlyList<DirectorCommand>, IReadOnlyList<DirectorCommand>> Commands { get; }
         public MatchSeatPolicy(TeamSide playerSide, TeamSide publicCardSide,
-            Func<MatchSessionProjection, MatchSeat, IReadOnlyList<DirectorCommand>, IReadOnlyList<DirectorCommand>> commands)
+            Func<MatchSessionProjection, MatchSeat, IReadOnlyList<DirectorCommand>, IReadOnlyList<DirectorCommand>> commands,
+            bool seatUndoEnabled = false)
         {
             PlayerSide = playerSide;
             PublicCardSide = publicCardSide;
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
+            SeatUndoEnabled = seatUndoEnabled;
         }
     }
 
@@ -485,6 +489,7 @@ namespace GuardsDigital.Application
         /// sentence conveys.
         /// </summary>
         private string undoFloorDetail = string.Empty;
+        private int undoObservedAcceptedCommandCount;
 
         private readonly MatchSeatPolicy seatPolicy;
 
@@ -982,10 +987,11 @@ namespace GuardsDigital.Application
 
         private SeatProjection ProjectionForBound(MatchSeat seat)
         {
+            SynchronizeSeatUndoWatermark();
             var source = session.Projection;
             var agreement = seatPolicy == null ? teamAgreement.ProjectionFor(source, CurrentSeats(), seat) : null;
             return SeatProjectionFactory.ForSeat(
-                source, seat, agreement, seatPolicy == null && CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
+                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker(), Experiments,
                 CoordinationFor(seat), coordination.Revision, coordination.Generation, ClockState, seatPolicy);
         }
 
@@ -1203,6 +1209,7 @@ namespace GuardsDigital.Application
             SeatId submittingSeat, DirectorCommand accepted, bool afterRewind = false)
         {
             var projection = session.Projection;
+            undoObservedAcceptedCommandCount = projection.AcceptedCommands.Count;
             var marker = TurnMarkerOf(projection);
             if (!string.Equals(marker, undoTurnMarker, StringComparison.Ordinal))
             {
@@ -1357,11 +1364,15 @@ namespace GuardsDigital.Application
             }
 
             var side = actor.TeamSide;
-            var opposingHeroes = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>(
-                seats.Seats.Where(seat => seat.TeamSide != side).Select(seat => seat.HeroId));
-            var opposingTeams = new HashSet<TeamId>(
-                seats.Seats.Where(seat => seat.TeamSide != side).Select(seat => seat.TeamId));
             var projection = session.Projection;
+            var opposingTeams = new HashSet<TeamId>(projection.Participants.Teams
+                .Where(team => team.Side != side)
+                .Select(team => team.Id));
+            var opposingHeroes = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>(
+                projection.Participants.Heroes
+                    .Where(hero => opposingTeams.Contains(
+                        projection.Participants.GetPlayer(hero.PlayerId).TeamId))
+                    .Select(hero => hero.Id));
             var builder = new System.Text.StringBuilder();
 
             foreach (var hero in projection.Heroes
@@ -1474,7 +1485,11 @@ namespace GuardsDigital.Application
 
         private bool CanSeatUndo(MatchSeat seat, out string detail)
         {
-            if (seatPolicy != null) { detail = "This mode does not offer seat Undo."; return false; }
+            if (seatPolicy != null && !seatPolicy.SeatUndoEnabled)
+            {
+                detail = "This mode does not offer seat Undo.";
+                return false;
+            }
             var projection = session.Projection;
             if (CanRetractCommitment(projection, seat.HeroId))
             {
@@ -1629,6 +1644,20 @@ namespace GuardsDigital.Application
                 return new SeatUndoResult(
                     submission, outcome.Accepted, outcome.SeatReason, outcome.SessionReason,
                     outcome.Detail, outcome.Version, outcome.Sequence, ProjectionForBound(bound));
+            }
+        }
+
+        /// <summary>
+        /// Keeps the seat rewind boundary honest when a decorated mode advances its session outside
+        /// the seat host, as PvE does while pacing enemy turns. Such progress can never become a
+        /// player's new rewind opportunity: it either changes the turn marker or raises the floor
+        /// over any opposing-state change before the next projection is published.
+        /// </summary>
+        private void SynchronizeSeatUndoWatermark()
+        {
+            if (session.Projection.AcceptedCommands.Count != undoObservedAcceptedCommandCount)
+            {
+                RefreshSeatUndoWatermark(default, null);
             }
         }
 

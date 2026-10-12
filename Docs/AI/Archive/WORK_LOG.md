@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-053 | Blue PvE seats use the existing bounded PvP Undo rules, including pre-reveal commitment withdrawal and in-turn turn-floor, attack, interaction and other-seat walls. Owner-private wire submission and the real shared-lobby control are covered; an explicitly selected undoable local seat stays reachable while ordinary automatic awaited-seat switching remains intact. Source-only; W050/W051 unchanged. | `work/W-053` |
 | W-057 | PvE now spawns 3 Melee/2 Ranged/1 Heavy in wave one and 2 Heavy/1 Ranged in wave two, removing the final prior Ranged spawn from each wave. Exact content/composition tests and solo/co-op six-row rail checks passed. Source-only; W050/W051 packages unchanged. | `work/W-057` |
 | W-056 | White signed card-modifier overlays now use a thicker weight-scaled black outline without changing their inspected anchors, bounded fit or pointer transparency. Focused Edit/Play checks and `+1`, `+12` and `-12` Game View inspection passed. | `work/W-056` |
 | W-055 | Large phase announcements and final-ten countdowns now follow the viewing player's team colour: existing blood red for Red, dark blue for Blue, and red fallback for an unseated Director. Focused Edit/Play checks and targeted Game View inspections passed. | `work/W-055` |
@@ -62,6 +63,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-053 PvE seat Undo parity
+
+Requested on 2026-10-12: Blue PvE seats use PvP's existing seat-scoped Undo, including commitment withdrawal and its bounded in-turn walls. The owner-private wire path and shared-lobby control are covered. An explicitly selected undoable local seat remains reachable while ordinary awaited-seat switching continues after recommitment. Source-only; W050/W051 packages remain unchanged.
+
+Historical evidence: `work/W-053` commit body.
 
 ### [x] W-057 Reduce PvE Ranged enemies
 

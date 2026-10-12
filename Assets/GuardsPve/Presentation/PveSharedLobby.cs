@@ -53,6 +53,8 @@ namespace GuardsDigital.Pve.Presentation
         private ConfiguredMatchSceneRuntime runtime;
         private string feedback = "", rendered = "";
         private long projectionRevision = -1;
+        private SeatId manuallySelectedUndoSeat;
+        private long manuallySelectedUndoVersion = -1;
         private bool loading;
         private float nextStep;
 
@@ -267,12 +269,25 @@ namespace GuardsDigital.Pve.Presentation
                 runtime.Host.Seats.Find(c.TargetSeat)?.HeroId.Equals(hero) == true);
             if (owner == null || owner.State != PrivateSessionClientState.Seated || owner.LatestProjection == null) return false;
             Switch(owner);
+            if (owner.LatestProjection.IsSeatUndoAvailable)
+            {
+                manuallySelectedUndoSeat = owner.TargetSeat;
+                manuallySelectedUndoVersion = owner.LatestProjection.Version;
+            }
             return true;
         }
 
         private void SelectAwaitedOwner()
         {
             if (active?.IsWaitingForHost == true) return;
+            if (manuallySelectedUndoSeat.IsDefined && active.TargetSeat.Equals(manuallySelectedUndoSeat) &&
+                active.LatestProjection?.Version == manuallySelectedUndoVersion &&
+                active.LatestProjection.IsSeatUndoAvailable)
+            {
+                return;
+            }
+            manuallySelectedUndoSeat = default;
+            manuallySelectedUndoVersion = -1;
             if (NeedsInput(active)) return; // Includes a manually selected unfinished commitment.
             var next = connections.Select(c => c.Client).OrderBy(c => c.TargetSeat.Value, StringComparer.Ordinal)
                 .FirstOrDefault(NeedsInput);

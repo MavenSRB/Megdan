@@ -162,6 +162,37 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard);
                 Assert.That(owner.TrySubmitCommand(command, out _), Is.True);
                 yield return Until(() => !runtime.Seat.HeroId.Equals(previous), "Commit automatically selects another unfinished owned hero");
+                if (committed == 0)
+                {
+                    var committedRail = runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                        .Single(r => r.userData is HeroId id && id.Equals(previous));
+                    Click(committedRail.Q("gd-hero-medallion"));
+                    yield return null; yield return null;
+                    Assert.That(runtime.Seat.HeroId, Is.EqualTo(previous),
+                        "A manually selected committed seat stays selected while its Undo is available.");
+                    Assert.That(runtime.RoundView.Model.SeatUndoAvailable, Is.True);
+                    var undo = (Button)runtime.RoundView.SeatUndoRoot.Q("gd-seat-undo-control");
+                    Assert.That(undo, Is.Not.Null);
+                    Assert.That(runtime.RoundView.SeatUndoRoot.style.display.value,
+                        Is.EqualTo(DisplayStyle.Flex));
+                    Click(undo);
+                    yield return Until(() => runtime.ReadModel.GetCommitment(previous).Status ==
+                        GuardsDigital.Core.Cards.TurnCardCommitmentStatus.AwaitingResponse,
+                        "Visible PvE Undo returns the committed card");
+                    committedRail = runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                        .Single(r => r.userData is HeroId id && id.Equals(previous));
+                    Click(committedRail.Q("gd-hero-medallion"));
+                    yield return Until(() => runtime.Seat.HeroId.Equals(previous),
+                        "The withdrawn commitment can be selected again");
+                    yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection
+                        .AuthorizedCommands.Any(c => c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard),
+                        "The withdrawn owner may recommit");
+                    var recommit = Field<PrivateSessionClient>(lobby, "active");
+                    Assert.That(recommit.TrySubmitCommand(recommit.LatestProjection.AuthorizedCommands.First(c =>
+                        c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard), out _), Is.True);
+                    yield return Until(() => !runtime.Seat.HeroId.Equals(previous),
+                        "Recommit resumes automatic unfinished-seat selection");
+                }
             }
             // Map tokens select the same owned seat without replaying or submitting a rule command.
             var firstHero = heroes[0];
@@ -169,7 +200,16 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var tokenPointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(tokenPointer.TryHandlePointerRay(Camera.main.ScreenPointToRay(Camera.main.WorldToScreenPoint(token.transform.position))), Is.True);
             Assert.That(runtime.Seat.HeroId, Is.EqualTo(firstHero));
-            yield return null; yield return null; // Completed owners automatically return to the unfinished one.
+            yield return null; yield return null;
+            Assert.That(runtime.Seat.HeroId, Is.EqualTo(firstHero),
+                "An explicitly selected committed hero remains available for Undo.");
+            var unfinishedHero = runtime.ReadModel.Commitments.Single(c =>
+                c.Status == GuardsDigital.Core.Cards.TurnCardCommitmentStatus.AwaitingResponse).HeroId;
+            var unfinishedRail = runtime.HeroOverviewsView.Root.Query<VisualElement>("gd-hero-rail").ToList()
+                .Single(r => r.userData is HeroId id && id.Equals(unfinishedHero));
+            Click(unfinishedRail.Q("gd-hero-medallion"));
+            yield return Until(() => runtime.Seat.HeroId.Equals(unfinishedHero),
+                "The remaining commitment owner can still be selected directly");
             yield return Until(() => Field<PrivateSessionClient>(lobby, "active").LatestProjection.AuthorizedCommands.Any(c =>
                 c.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.CommitCard), "Remaining commitment owner");
             var lastOwner = Field<PrivateSessionClient>(lobby, "active");

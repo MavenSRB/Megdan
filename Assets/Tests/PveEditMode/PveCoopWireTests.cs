@@ -193,5 +193,44 @@ namespace GuardsDigital.Tests.Pve
             foreach (var link in rig.Links)
                 Assert.That(link.Client.TrySubmitCommand(DirectorCommand.Pass(rig.Match.Encounter.Heroes[0]), out _), Is.False);
         }
+
+        [Test]
+        public void KeyedPveClientReceivesAndUsesSeatUndo()
+        {
+            var rig = new Rig();
+            for (var step = 0; step < 1200; step++)
+            {
+                rig.Match.Session.RunAutomatic();
+                rig.Publish();
+                var answer = PvePassivePlayer.NextAnswer(rig.Match.Session);
+                Assert.That(answer, Is.Not.Null, "The fixture must reach a rewindable Blue turn action.");
+                var owner = rig.Links.FirstOrDefault(link =>
+                    rig.Match.Host.ProjectionForSeat(link.Client.TargetSeat).AuthorizedCommands.Contains(answer));
+                if (owner == null)
+                {
+                    Assert.That(rig.Match.Session.Execute(answer).Accepted, Is.True);
+                    continue;
+                }
+
+                var before = rig.Match.Session.CaptureSnapshot();
+                Assert.That(owner.Client.TrySubmitCommand(answer, out _), Is.True);
+                rig.Pump();
+                Assert.That(owner.Client.LastSubmissionResult.Accepted, Is.True,
+                    owner.Client.LastSubmissionResult.Detail);
+                if (rig.Match.Session.Projection.Phase == GuardsDigital.Core.Cards.RoundResolutionPhase.AwaitingCommitments ||
+                    !owner.Client.LatestProjection.IsSeatUndoAvailable)
+                {
+                    continue;
+                }
+
+                Assert.That(owner.Client.TrySubmitUndo(out _), Is.True);
+                rig.Pump();
+                Assert.That(owner.Client.LastUndoResult.Accepted, Is.True, owner.Client.LastUndoResult.Detail);
+                Assert.That(rig.Match.Session.CaptureSnapshot(), Is.EqualTo(before));
+                return;
+            }
+
+            Assert.Fail("The deterministic wire encounter reached no rewindable Blue turn action.");
+        }
     }
 }

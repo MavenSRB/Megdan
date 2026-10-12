@@ -21,7 +21,8 @@ namespace GuardsDigital.Pve.Play
                 throw new ArgumentException("Co-op requires exactly three heroes.", nameof(encounter));
             var authority = MatchHost.Compose(encounter.InitialState);
             Session = new PveEncounterSession(encounter, authority, new LocalDirectorMatchClient(authority));
-            Host = new MatchHost(Session, new MatchSeatPolicy(TeamSide.Blue, TeamSide.Red, PlayerCommands),
+            Host = new MatchHost(Session, new MatchSeatPolicy(
+                    TeamSide.Blue, TeamSide.Red, PlayerCommands, seatUndoEnabled: true),
                 encounter.InitialState.Experiments);
         }
 
