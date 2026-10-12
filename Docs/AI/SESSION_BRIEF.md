@@ -10,13 +10,13 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W050 Unified**, `Builds/Playtest-W050-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W047-W049, full tiebreaker clearance above enemy trays, and wave one with 3 Melee, 3 Ranged and 1 Heavy (PVE-D41); wave two unchanged. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W059 Unified**, `Builds/Playtest-W059-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W052-W058 over W050, including PvE Undo, smaller enemy waves and dimmed resolved enemy cards. Stamp `1.0-W059-unified+20261012211105-4d906506`; package SHA-256 `e0c6e6f33b9a0ec41f128c45157902b5406022660cee4dc6386b1519f9796613`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-Matching Mac package: `Builds/Playtest-W050-unified-mac.zip` (W051), universal Intel/Apple Silicon, both PvP and PvE, same W050 build stamp/content. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+Matching Mac package: `Builds/Playtest-W059-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W059 build stamp/content; SHA-256 `deea4f4d2733d6ce8521d670dea44a509b3847ee0518ba6891adaae2541c071d`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-058**.
+- Last completed work: **W-059**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
