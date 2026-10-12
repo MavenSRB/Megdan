@@ -15,7 +15,7 @@ Current private existing-mode package: **W013**, `Builds/Playtest-W013-live-card
 ## Current authorization and next route
 
 - Last completed work: **W-043**.
-- Active authorized work: **W-044**, Private enemy card faces.
+- Active authorized work: **none**.
 - Next proposed work: **W-044**.
 
 PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Join automatically adopts the host seed (PVE-D33); only address, port and key need sharing, with matching build/data. Keyed local Host/Join/reconnect and rejection boundaries are verified; external internet reachability is not. These source changes are not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
