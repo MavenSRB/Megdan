@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-045 | User-approved unified Windows PvP/PvE executable: PvE under Map; shared Take Seats/hero picker, exactly three Blue seats with solo/two-/three-player ownership, automatic mode/seed adoption, forced coordination and hidden Experimental. Preserved owner command checks, host enemy/shared decisions and PvP flow. Focused source/UI checks, exact-artifact mode/ownership/network/board smokes and ZIP extraction verified. W044 faces excluded; no new external-network or packaged reconnect claim. | `work/W-045` |
 | W-044 | Fourteen private enemy faces from approved orange Hurl sample; correct primary Movement/Defense/Skill icons, no secondary icons. Hurl fallback approaches closest Blue unit, stopping adjacent. | `work/W-044` |
 | W-001 | Adopted iteration work records, PvE design routing and change-based build validation. | `work/W-001` |
 | W-002 | Side-column inspection/pip/rail spell previews, bounded top-tray placement and unclipped player names. | `work/W-002` |
@@ -412,3 +413,9 @@ Historical evidence: completion commit addressed by immutable `work/W-043`; exac
 Approved sequence: builder-based artwork-free Hurl sample, independent orange/icon edits, user approval, then the remaining thirteen faces. Delivered fourteen private PNGs and an HTML gallery/prompt manifest in `tmp/w044-enemy-faces/final/`, plus `tmp/w044-enemy-faces/enemy-faces-W044.zip`. Orange actions and purple defenses retain their primary icons (Movement boot, Defense shield, and Skill book/rays for Hook, Aim and Shield Up), with secondary icons omitted. Shipped values and approved rules text are visually checked. Hurl's separately approved Move 1 fallback now approaches the closest Blue hero or creep, stopping adjacent; other attack priorities remain unchanged. Builder export/hide limitations required AI-edited previews; they are not native exports. Original samples and rejected variants are preserved. No runtime face integration, build or remote publication.
 
 Historical evidence: gameplay checkpoint `83770128`; final acceptance and private-asset checks in completion commit addressed by immutable `work/W-044`.
+
+### [x] W-045 Unified Windows PvP/PvE lobby and package
+
+Approved PVE-D38: one executable with PvE under Map, existing Take Seats and hero selection, exactly three Blue seats shared by one to three players, inherited host mode/seed, hidden Experimental and mandatory coordination. Reuses authenticated per-seat clients and existing privacy/command authority; host retains enemies/shared choices. T2 acceptance covers shared UI, owned-seat switching, reconnect, local TCP and both modes on the exact packaged artifact. Review preserves rules and assembly boundaries. W044 face previews are not integrated. No new external-network, packaged reconnect or Mac unified claim.
+
+Historical evidence: completion commit addressed by immutable `work/W-045`; exact source checks, failure-to-green transitions, artifact checks and limitations live in its body.

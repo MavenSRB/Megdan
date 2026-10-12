@@ -6,7 +6,7 @@ The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these 
 
 ## Experimental menu
 
-**Experimental** opens a scrollable popup of immutable per-match toggles. Map selection stays outside it; every hosted game resets experiments off. **Turn timer** reveals duration settings; **Teammate coordination** independently enables allied card inspection and right-click suggestions. Defaults: commitment **120s**, resolution **30s**, response **30s**, upgrade **120s**, bank per wave **300s**. Allowances accept 1–86400 whole seconds and the bank 0–86400; invalid input is refused. Mockup life counts remain illustrative.
+**Experimental** opens a scrollable immutable-options popup. Map stays outside; PvP defaults off. PvE hides Experimental and forces coordination on ([PVE-D38](PVE_DESIGN.md#pve-d38-unified-lobby-and-cooperative-ownership-approved-user-2026-10-12)). **Turn timer** reveals durations; **Teammate coordination** independently enables allied card inspection/right-click suggestions. Defaults: commitment **120s**, resolution **30s**, response **30s**, upgrade **120s**, bank/wave **300s**. Allowances: 1–86400 whole seconds; bank: 0–86400. Invalid input is refused. Mockup lives remain illustrative.
 
 | Setting | What it times |
 | --- | --- |

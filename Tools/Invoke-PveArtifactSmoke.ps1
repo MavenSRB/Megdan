@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory = $true)][string] $Executable,
     [Parameter(Mandatory = $true)][string] $EvidenceDirectory,
     [int] $Port = 19535,
-    [int] $TimeoutSeconds = 180
+    [int] $TimeoutSeconds = 180,
+    [ValidateRange(1,3)][int] $PlayerCount = 3
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -16,10 +17,11 @@ if (Test-Path -LiteralPath $evidencePath) { throw "Evidence directory already ex
 New-Item -ItemType Directory -Path $evidencePath | Out-Null
 $players = @()
 try {
-    foreach ($seat in 1..3) {
+    foreach ($seat in 1..$PlayerCount) {
         $logPath = Join-Path $evidencePath "player-$seat.log"
         $arguments = @('-screen-fullscreen', '0', '-screen-width', '1920', '-screen-height', '1080',
             '-guardsPveCoopSmoke', "$seat", ('"{0}"' -f $evidencePath), "$Port",
+            '-guardsPvePlayers', "$PlayerCount",
             '-logFile', ('"{0}"' -f $logPath))
         $player = Start-Process -FilePath $artifactPath -ArgumentList $arguments -WorkingDirectory (Split-Path $artifactPath) -PassThru -WindowStyle Hidden
         $players += $player
@@ -49,7 +51,7 @@ try {
     Add-Type -AssemblyName System.Drawing
     $frames = @()
     $identities = @()
-    foreach ($seat in 1..3) {
+    foreach ($seat in 1..$PlayerCount) {
         $logPath = Join-Path $evidencePath "player-$seat.log"
         $output = Get-Content -LiteralPath $logPath -Raw
         foreach ($marker in @('BEGIN', 'SEATED', 'READY', 'BOARD', "PASS blue-player-0$seat")) {
@@ -82,7 +84,7 @@ try {
     }
     if (@($frames | Select-Object -Unique).Count -ne 1) { throw 'Board framing differs across players.' }
     if (@($identities | Select-Object -Unique).Count -ne 1) { throw 'Build identity differs across players.' }
-    Write-Output "PVE ARTIFACT SMOKE PASSED: one host, two real joiners; identity $($identities[0])"
+    Write-Output "PVE ARTIFACT SMOKE PASSED: $PlayerCount player process(es), three Blue heroes; identity $($identities[0])"
 }
 finally {
     # Only the exact player processes launched above may be stopped, never an Editor or unrelated player.

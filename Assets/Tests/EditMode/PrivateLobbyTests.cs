@@ -1057,7 +1057,7 @@ namespace GuardsDigital.Tests.EditMode
             var sources = LobbySources();
             // Milestone 8.107 added PrivateLobbyEntryText.cs (field cleaning, the session ID, the
             // remembered fields and the host's invitation lines), and it is scanned like the rest.
-            Assert.That(sources.Count, Is.EqualTo(4),
+            Assert.That(sources.Count, Is.EqualTo(5),
                 "A scan that finds no lobby source is a broken rule rather than a pass; it found " +
                 string.Join(", ", sources.Keys) + ".");
 
@@ -1087,6 +1087,7 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(PrivateSessionClient),
                 typeof(PrivateSessionHost),
                 typeof(IReadOnlyList<SeatRosterEntry>),
+                typeof(IReadOnlyList<PrivateSessionClient>),
                 typeof(string),
                 // THIRTEENTH amendment. Deliberately admitted, not a session-contract type: which
                 // seats a spawned test driver claimed is knowledge the HOST PROCESS holds locally
@@ -1100,7 +1101,7 @@ namespace GuardsDigital.Tests.EditMode
                 .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                 .Where(method => method.ReturnType == typeof(PrivateLobbyModel))
                 .ToArray();
-            Assert.That(factories.Length, Is.EqualTo(4),
+            Assert.That(factories.Length, Is.EqualTo(5),
                 "A scan that finds no factory is a broken rule; it found " +
                 string.Join(", ", factories.Select(method => method.Name)) + ".");
 

@@ -2143,7 +2143,7 @@ namespace GuardsDigital.Presentation.Interaction
                 cornerHighlightTemplate,
                 // TWELFTH amendment: the staged initial state, or null for the dealt match the
                 // runtime composes for itself exactly as it always has.
-                stagedInitialState, experiments,
+                stagedInitialState, external?.InitialState.Experiments ?? experiments,
                 // W-023. Only an external composition wraps the session.
                 external?.SessionDecorator,
                 // W-026. Only an external composition plays one side.
@@ -3258,6 +3258,14 @@ namespace GuardsDigital.Presentation.Interaction
 
             var options = GuardsDigital.Network.PrivateSessionLaunchOptions.Parse(
                 System.Environment.GetCommandLineArgs());
+            // PVE-D38: the unified application opens its shared front door directly. Explicit
+            // roles, Editor fixtures, external encounters and diagnostic drivers stay unchanged.
+            if (options.IsValid && options.Role == GuardsDigital.Network.PrivateSessionRole.None &&
+                !UnityEngine.Application.isEditor && PrivateLobbyMode.OpenPve != null &&
+                !runtime.IsSandbox && !PlayerSmokeTestDriver.IsRequested() &&
+                string.IsNullOrEmpty(BoardVisualCaptureDriver.RequestedPath()))
+                options = GuardsDigital.Network.PrivateSessionLaunchOptions.Parse(new[]
+                    { GuardsDigital.Network.PrivateSessionLaunchOptions.LobbyFlag });
             if (!options.IsValid)
             {
                 UnityEngine.Debug.LogError("GUARDS_ONLINE: FAIL " + options.Error);

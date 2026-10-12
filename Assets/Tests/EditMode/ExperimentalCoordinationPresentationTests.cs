@@ -42,7 +42,7 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase(false, false)] [TestCase(true, false)] [TestCase(false, true)] [TestCase(true, true)]
         public void SpellbookFacesFollowTheSameTeamAndEnemyOptions(bool allies, bool enemies)
         {
-            var host = HeroCardInspectionTests.Create(allies, enemies);
+            var host = HeroCardInspectionTests.Create(allies, enemies, refillSpellbook: true);
             var hero = host.Projection.Setup.Heroes.Single(h => h.ContentId.Value == "gydion");
             var ownerSeat = host.Seats.Seats.Single(seat => seat.Owns(hero.HeroId));
             var ownerBook = SpellbookPresentation.ForHero(host.ProjectionForSeat(ownerSeat.Id), hero.HeroId, "Gydion");

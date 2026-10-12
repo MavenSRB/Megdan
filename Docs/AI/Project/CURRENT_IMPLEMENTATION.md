@@ -2,7 +2,7 @@
 
 <!-- operative-claim:F-DOC-014 status:CurrentDemonstrated -->
 
-Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md). `SESSION_BRIEF.md` carries only a compact startup summary and the exact authorization/next-profile route.
+Canonical implementation. [Project index](../PROJECT_CONTEXT.md); [unified PvP/PvE lobby](PVE_IMPLEMENTATION.md#unified-lobby-pve-d38-w-045). The [brief](../SESSION_BRIEF.md) owns startup, authorization and next work.
 
 ## Current implementation
 

@@ -104,7 +104,11 @@ Timing clarification (user 2026-10-12): Thick Hide's counterattack follows the o
 
 Movement amendment (user 2026-10-12): Hurl's Move 1 fallback approaches the closest Blue unit (hero or creep) as closely as possible, stopping adjacent rather than at range 2. Attack priority, printed Range 2, movement allowance and repeat remain unchanged.
 
-## Open questions
+## PVE-D38 Unified lobby and cooperative ownership (Approved, user 2026-10-12)
+
+One executable hosts PvP or PvE through the existing PvP front door. PvE is selected under Map, then uses the same Take Seats and hero-selection screens for host and joiners. Keep exactly three Blue hero seats; one player may claim multiple seats, including all three for solo play. Replace the separate PvE launcher/menu. Hide Experimental when PvE is selected and force teammate coordination on for PvE; preserve ordinary PvP settings. Host remains responsible for enemy automation and shared choices. This is implementation authorization, not permission to change combat, enemy content or integrate private card-face previews.
+
+## Remaining open questions
 
 - The rest of Vorty's truncated note ("n.p. ne mora da bude narandzasta i ljubicasta, ...").
 - Lowering hero levels, a win condition, real enemy content and balance, boss cards and enemy skills.

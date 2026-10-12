@@ -23,8 +23,9 @@ namespace GuardsDigital.Presentation.Interaction
         public PrivateLobbyEntry(
             string address, string port, string sessionKey, SeatId seat, string playerName = "",
             ExperimentalMatchOptions experiments = null, MapDefinitionReference? map = null,
-            int waveCount = 0, int lifeCountPerTeam = 0)
+            int waveCount = 0, int lifeCountPerTeam = 0, string modeId = "")
         {
+            ModeId = modeId ?? string.Empty;
             Map = map ?? new MapDefinitionReference(new MapId("official-single-lane"), 1);
             Experiments = experiments ?? ExperimentalMatchOptions.Disabled;
             Address = PrivateLobbyEntryText.CleanEndpointPart(address);
@@ -40,6 +41,7 @@ namespace GuardsDigital.Presentation.Interaction
         public string PlayerName { get; }
 
         public MapDefinitionReference Map { get; }
+        public string ModeId { get; }
         public ExperimentalMatchOptions Experiments { get; }
         /// <summary>Host-selected setup values; zero means an older/non-host caller did not state one.</summary>
         public int WaveCount { get; }

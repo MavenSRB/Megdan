@@ -21,7 +21,8 @@ namespace GuardsDigital.Pve.Play
                 throw new ArgumentException("Co-op requires exactly three heroes.", nameof(encounter));
             var authority = MatchHost.Compose(encounter.InitialState);
             Session = new PveEncounterSession(encounter, authority, new LocalDirectorMatchClient(authority));
-            Host = new MatchHost(Session, new MatchSeatPolicy(TeamSide.Blue, TeamSide.Red, PlayerCommands));
+            Host = new MatchHost(Session, new MatchSeatPolicy(TeamSide.Blue, TeamSide.Red, PlayerCommands),
+                encounter.InitialState.Experiments);
         }
 
         public PveComposedEncounter Encounter { get; }
@@ -35,10 +36,12 @@ namespace GuardsDigital.Pve.Play
                 PrivateSessionContentDigest.HashText(content.ContentDigest + catalog + encounter));
 
         /// <summary>A public setup hint only; a fresh keyed admission still verifies the complete identity.</summary>
-        public static bool TryReadHostSeed(SessionRejectMessage rejection, ulong currentSeed, out ulong hostSeed)
+        public static bool TryReadHostSeed(SessionRejectMessage rejection, ulong currentSeed, out ulong hostSeed,
+            bool includeMapMismatch = false)
         {
             hostSeed = 0;
-            if (rejection == null || rejection.Reason != SessionRejectionReason.MatchFormatMismatch ||
+            if (rejection == null || (rejection.Reason != SessionRejectionReason.MatchFormatMismatch &&
+                !(includeMapMismatch && rejection.Reason == SessionRejectionReason.MapRevisionMismatch)) ||
                 !rejection.HostFormatId.StartsWith(FormatPrefix, StringComparison.Ordinal)) return false;
             var text = rejection.HostFormatId.Substring(FormatPrefix.Length);
             if (!ulong.TryParse(text, System.Globalization.NumberStyles.None,

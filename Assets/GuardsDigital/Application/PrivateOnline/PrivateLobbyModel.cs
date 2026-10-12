@@ -712,6 +712,34 @@ namespace GuardsDigital.Application
                 selection);
         }
 
+        /// <summary>Several independently admitted seats controlled by one local PvE player.</summary>
+        public static PrivateLobbyModel ForLocalPlayers(
+            IReadOnlyList<PrivateSessionClient> clients, PrivateSessionClient active,
+            PrivateSessionHost host = null, string feedback = "")
+        {
+            if (clients == null || active == null || !clients.Contains(active))
+                throw new ArgumentException("The displayed connection must belong to this player.");
+            var owner = ForClient(active);
+            var owned = new HashSet<SeatId>(clients.Where(c => c.GrantedSeat != null).Select(c => c.TargetSeat));
+            var controls = owner.Controls.Where(c => c != PrivateLobbyControl.Ready &&
+                c != PrivateLobbyControl.Unready && c != PrivateLobbyControl.ClaimSeat).ToList();
+            if (!active.HasMatchStarted && !owner.Selection.IsRunning)
+            {
+                if (active.Roster.Any(r => r.Occupancy == SeatOccupancyState.Open) &&
+                    clients.All(c => c.State == PrivateSessionClientState.Admitted || c.State == PrivateSessionClientState.Seated))
+                    controls.Add(PrivateLobbyControl.ClaimSeat);
+                if (owned.Count > 0)
+                    controls.Add(clients.Where(c => c.GrantedSeat != null).All(c => c.IsReady)
+                        ? PrivateLobbyControl.Unready : PrivateLobbyControl.Ready);
+            }
+            if (host?.CanUndoLobbyStep == true) controls.Add(PrivateLobbyControl.HostUndo);
+            return new PrivateLobbyModel(host == null ? PrivateLobbyRole.Client : PrivateLobbyRole.Host,
+                owner.IsShown, owner.StatusLabel, string.IsNullOrEmpty(feedback) ? owner.FeedbackLabel : feedback,
+                owner.SessionLabel, owner.Seats.Select(r => new PrivateLobbySeatRow(r.Seat, r.SeatLabel,
+                    r.HeroLabel, r.TeamLabel, r.OccupancyLabel, r.ReadinessLabel, owned.Contains(r.Seat))).ToArray(),
+                controls, owner.HasMatchStarted, owner.Selection, "PvE — 3 Blue heroes");
+        }
+
         /// <summary>
         /// The dedicated seatless host's lobby: the seats it serves, and the one control that lets
         /// it fill empty ones with test drivers before the match starts.

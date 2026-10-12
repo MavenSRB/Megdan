@@ -197,7 +197,9 @@ namespace GuardsDigital.Pve.Composition
                 standing,
                 Array.Empty<ObstacleOccupancy>());
             var initialState = new MatchSessionInitialState(
-                scenario, quickSetup, new[] { map }, configuration, modeRules: ModeRules(encounter, blueHeroes, enemies));
+                scenario, quickSetup, new[] { map }, configuration,
+                experiments: new ExperimentalMatchOptions(teammateCoordination: true),
+                modeRules: ModeRules(encounter, blueHeroes, enemies));
             return new PveComposedEncounter(setup, encounter, catalog, initialState, blueHeroes, enemies);
         }
 

@@ -488,11 +488,12 @@ namespace GuardsDigital.Application
 
         private readonly MatchSeatPolicy seatPolicy;
 
-        public MatchHost(IMatchSession session, MatchSeatPolicy seatPolicy = null)
+        public MatchHost(IMatchSession session, MatchSeatPolicy seatPolicy = null,
+            ExperimentalMatchOptions modeOptions = null)
         {
             this.seatPolicy = seatPolicy;
             this.session = session ?? throw new ArgumentNullException(nameof(session));
-            Experiments = (session as MatchSession)?.Experiments ?? ExperimentalMatchOptions.Disabled;
+            Experiments = (session as MatchSession)?.Experiments ?? modeOptions ?? ExperimentalMatchOptions.Disabled;
             clock = new MatchClock(Experiments);
             timeoutSeed=(session as MatchSession)?.SetupSeed.Value ?? 0;
             if(Experiments.TurnTimer && timeoutSeed==0) timeoutSeed=GuardsDigital.Core.Setup.SetupRandomnessAuthority.DrawSeed().Value;

@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedForTheName()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(50),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(52),
                 "8.108 adds a name to the seat claim and to every roster row, so a v23 peer is refused.");
         }
 

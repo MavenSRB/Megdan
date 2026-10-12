@@ -73,6 +73,7 @@ namespace GuardsDigital.Pve.Presentation
         private string lastActionText = string.Empty;
         private long renderedVersion = -1;
         private string renderedPrompt;
+        private SeatId renderedSeat;
         private ConfiguredMatchHudRenderer hudRenderer;
 
         public PveEncounterSession Session => session;
@@ -446,7 +447,8 @@ namespace GuardsDigital.Pve.Presentation
             promptedEnemy = prompt?.Enemy ?? default;
             promptBanner.style.display = prompt == null || lost ? DisplayStyle.None : DisplayStyle.Flex;
             promptBanner.text = prompt == null ? string.Empty : PromptBannerText(match, prompt);
-            if (renderedVersion == match.Version && renderedPrompt == promptText && !lost)
+            var currentSeat = runtime.Seat?.Id ?? default;
+            if (renderedVersion == match.Version && renderedPrompt == promptText && renderedSeat.Equals(currentSeat) && !lost)
             {
                 message.text = MessageFor(match, prompt);
                 return;
@@ -454,6 +456,7 @@ namespace GuardsDigital.Pve.Presentation
 
             renderedVersion = match.Version;
             renderedPrompt = promptText;
+            renderedSeat = currentSeat;
             message.text = MessageFor(match, prompt);
             actions.Clear();
             if (lost)

@@ -145,7 +145,9 @@ namespace GuardsDigital.EditorTools
                     locationPathName = executablePath,
                     target = target,
                     targetGroup = BuildTargetGroup.Standalone,
-                    options = BuildOptions.StrictMode
+                    options = BuildOptions.StrictMode,
+                    extraScriptingDefines = target == BuildTarget.StandaloneWindows64
+                        ? new[] { "GUARDS_PVE" } : Array.Empty<string>()
                 });
             }
             finally
@@ -167,6 +169,14 @@ namespace GuardsDigital.EditorTools
             {
                 Debug.LogError($"{MarkerPrefix} FAIL build reported success but produced no executable at {executablePath}");
                 return 1;
+            }
+
+            if (target == BuildTarget.StandaloneWindows64)
+            {
+                var pveData = Path.Combine(outputDirectory, "PveData");
+                Directory.CreateDirectory(pveData);
+                foreach (var file in Directory.GetFiles(Path.Combine(projectRoot, "Assets/GuardsPve/Data~"), "*.json"))
+                    File.Copy(file, Path.Combine(pveData, Path.GetFileName(file)), true);
             }
 
             Debug.Log($"{MarkerPrefix} BUILT {executablePath}");

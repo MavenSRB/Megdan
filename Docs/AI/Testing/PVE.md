@@ -1,6 +1,6 @@
 # PvE validation recipes
 
-Recipes for the separate PvE executable. Tiers, evidence and full-suite triggers stay in [testing policy](POLICY.md); what PvE implements is owned by [PvE implementation](../Project/PVE_IMPLEMENTATION.md). Return to the [testing index](../TESTING.md).
+Recipes for PvE and its unified lobby. Tiers, evidence and full-suite triggers stay in [testing policy](POLICY.md); what PvE implements is owned by [PvE implementation](../Project/PVE_IMPLEMENTATION.md). Return to the [testing index](../TESTING.md).
 
 ## Engine-free PvE tests
 
@@ -46,6 +46,8 @@ The scene/rail fixtures capture rendered frames using `WaitForEndOfFrame`; selec
 `GuardsDigital.Tests.Pve.PlayMode.PveCoopLobbyPlayModeTests` uses real loopback TCP and pointer-reachable Host/Join/Ready/hero controls, scene handoff, local reconnect and remote enemy rails. Its headless peers share the Editor process; it does not claim external-network or packaged-player coverage. Retain the solo launcher fixture for changes to the shared launcher/overlay path.
 
 ## Build gate
+
+W-045 replaces assembly absence as a current acceptance requirement: the normal Windows `Invoke-PlayerBuildSmoke.ps1` build includes PvE under `GUARDS_PVE` and copies `PveData`. Reuse that binary with `Invoke-PveArtifactSmoke.ps1 -PlayerCount 1`, `2` and `3` (default), distinct evidence directories and ports. The shared-lobby adapter hosts through Map, joins through the ordinary PvP front door with mode/seed adoption, picks heroes on shared screens, and checks owned-seat switching, commands, coordination and board/rail rendering. `PveSharedLobbyPlayModeTests` covers solo, two-player split ownership, reconnect and same-version seat switching. Hidden-player full-screen PNGs can be black; board-camera captures and Editor UI captures provide visual evidence. Historical separate-player gates below remain recipes for preserved legacy artifacts, not the unified build's isolation criterion.
 
 Run the existing gate first, then the PvE gate, so the PvE gate can check isolation:
 

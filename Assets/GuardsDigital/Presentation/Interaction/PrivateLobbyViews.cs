@@ -352,6 +352,15 @@ namespace GuardsDigital.Presentation.Interaction
             experimentalButton.style.fontSize = 18;
             ApplyButtonChrome(experimentalButton);
             hostMenu.Add(experimentalButton);
+            if (PrivateLobbyMode.OpenPve != null)
+                mapSelector.choices.Add(PrivateLobbyMode.PveLabel);
+            mapSelector.RegisterValueChangedCallback(_ =>
+            {
+                experimentalButton.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
+                setupCounts.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
+                formatChoices.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
+                if (IsPveSelected) experimentalOverlay.style.display = DisplayStyle.None;
+            });
             var experimentalHeader = new VisualElement { name = "experimental-popup-header" };
             experimentalHeader.style.flexDirection = FlexDirection.Row;
             experimentalHeader.style.alignItems = Align.Center;
@@ -614,10 +623,12 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         private DropdownField mapSelector;
         private readonly BoardMapDefinition[] mapChoices = OfficialBoardMapCatalog.Load().Definitions.ToArray();
+        private bool IsPveSelected => mapSelector.value == PrivateLobbyMode.PveLabel;
 
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
                 ? new PrivateLobbyEntry(string.Empty, hostPort.value, hostKey.value, picked, playerName.value,
+                    IsPveSelected ? new ExperimentalMatchOptions(teammateCoordination: true) :
                     new ExperimentalMatchOptions(coordinationToggle.value,timerToggle.value,timerFields[0].value,timerFields[1].value,
                         timerFields[2].value,timerFields[3].value,timerFields[4].value,enemyInfoToggle.value,
                         minionBattleCapToggle.value,minionBattleCapField.value,
@@ -625,8 +636,9 @@ namespace GuardsDigital.Presentation.Interaction
                         heroShieldItemsToggle.value,heroShieldActiveEffectsToggle.value,heroShieldCardEffectsToggle.value,
                         cardModifiersItemsToggle.value,cardModifiersMinionsToggle.value,
                         cardModifiersActiveEffectsToggle.value,cardModifiersCardEffectsToggle.value),
-                    mapChoices[mapSelector.index].Reference,
-                    waveCountField.value, lifeCountField.value)
+                    mapChoices[Math.Max(0, Math.Min(mapSelector.index, mapChoices.Length - 1))].Reference,
+                    waveCountField.value, lifeCountField.value,
+                    IsPveSelected ? PrivateLobbyMode.PveId : string.Empty)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -1597,6 +1609,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// than looped. Cleared at the top of every fresh <see cref="BeginJoining"/>.
         /// </summary>
         private bool formatInheritanceAttempted;
+        private bool sessionWasAdmitted;
 
         /// <summary>
         /// PLAYTEST FAILURE #2 fix. The last lobby pick refusal already surfaced, so a REFUSED hero
@@ -1857,6 +1870,8 @@ namespace GuardsDigital.Presentation.Interaction
             // the host's format and re-dials, once. This is checked before anything else reads the
             // client's state so a joiner never lingers on a terminal Rejected the way the shipped
             // build's every 2v2 joiner did.
+            if (machine?.State == PrivateSessionClientState.Admitted || machine?.State == PrivateSessionClientState.Seated)
+                sessionWasAdmitted = true;
             if (TryInheritHostFormatAndRejoin())
             {
                 return;
@@ -2418,6 +2433,13 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void BeginHosting(PrivateLobbyEntry entry)
         {
+            if (entry?.ModeId == PrivateLobbyMode.PveId && PrivateLobbyMode.OpenPve != null)
+            {
+                PrivateLobbyMode.OpenPve(entry, true, 0);
+                view.Root.style.display = DisplayStyle.None;
+                enabled = false;
+                return;
+            }
             if (!TryReadHostEndpoint(entry, out var endpoint, out var error))
             {
                 presenter.ShowEntry(LocalSeats(), error);
@@ -2590,6 +2612,7 @@ namespace GuardsDigital.Presentation.Interaction
             // PLAYTEST FAILURE #2 fix. A fresh join gets one fresh format-inheritance attempt, and
             // no stale pick refusal carried over from a prior seating.
             formatInheritanceAttempted = false;
+            sessionWasAdmitted = false;
             lastSurfacedLobbyRefusal = string.Empty;
 
             if (!TryReadEndpoint(entry, out var endpoint, out var error))
@@ -2671,6 +2694,17 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var refused = machine.LastRejection;
+            var pveSeed = PrivateLobbyMode.ReadPveSeed?.Invoke(refused);
+            if (!sessionWasAdmitted && pveSeed.HasValue && PrivateLobbyMode.OpenPve != null)
+            {
+                formatInheritanceAttempted = true;
+                DisposeTransport();
+                PrivateLobbyMode.OpenPve(new PrivateLobbyEntry(dialled.ToString(),
+                    string.Empty, sessionKey, default, playerName), false, pveSeed.Value);
+                view.Root.style.display = DisplayStyle.None;
+                enabled = false;
+                return true;
+            }
             var hostFormat = MatchFormat.FindById(refused?.HostFormatId);
             var hostMap = OfficialBoardMapCatalog.Load().Definitions.FirstOrDefault(m =>
                 m.Id.Value == refused?.HostMapId && m.ContentRevision == refused.HostMapRevision);

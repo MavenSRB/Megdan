@@ -44,7 +44,7 @@ namespace GuardsDigital.Tests.Pve
             public readonly List<Link> Links = new List<Link>();
             public PveCoopMatch Match = PveCoopMatchTests.Create();
             public PrivateSessionHost Server;
-            public Rig()
+            public Rig(bool start = true)
             {
                 var initial = Match.Encounter.InitialState;
                 var identity = PrivateSessionIdentity.ForComposition(PveTestContent.OfficialMap(), initial.InitialConfiguration, initial.Setup, "pve-wire-test");
@@ -73,6 +73,7 @@ namespace GuardsDigital.Tests.Pve
                     link.Client.OnConnected();
                 }
                 Pump();
+                if (!start) return;
                 foreach (var link in Links) Assert.That(link.Client.TrySetReadiness(true), Is.True);
                 Pump();
                 var chosen = new[] { "hero-wasp", "hero-arien", "hero-brogan" };
@@ -87,6 +88,24 @@ namespace GuardsDigital.Tests.Pve
                 Assert.That(Queue, Is.Empty);
             }
             public void Publish() { Server.RepublishProjections(); Pump(); }
+        }
+
+        [Test]
+        public void LocalPlayerGroupsOnlyItsAdmittedSeatsAndCannotClaimAfterSelection()
+        {
+            var rig = new Rig(false);
+            var local = rig.Links.Take(2).Select(l => l.Client).ToArray();
+            var model = PrivateLobbyModel.ForLocalPlayers(local, local[0], rig.Server);
+            Assert.That(model.Seats.Count(s => s.IsOwnSeat), Is.EqualTo(2));
+            Assert.That(model.Offers(PrivateLobbyControl.Ready), Is.True);
+            Assert.That(model.Offers(PrivateLobbyControl.ClaimSeat), Is.False, "All three seats are already claimed.");
+            Assert.Throws<ArgumentException>(() => PrivateLobbyModel.ForLocalPlayers(local, rig.Links[2].Client));
+            foreach (var link in rig.Links) link.Client.TrySetReadiness(true);
+            rig.Pump();
+            model = PrivateLobbyModel.ForLocalPlayers(local, local[0], rig.Server);
+            Assert.That(model.Selection.IsOwnPick, Is.True);
+            Assert.That(model.Offers(PrivateLobbyControl.ClaimSeat), Is.False);
+            Assert.That(model.Offers(PrivateLobbyControl.Ready), Is.False);
         }
 
         [Test]

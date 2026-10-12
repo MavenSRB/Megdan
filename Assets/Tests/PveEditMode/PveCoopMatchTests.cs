@@ -24,6 +24,11 @@ namespace GuardsDigital.Tests.Pve
             foreach (var seat in match.Host.Seats.Seats)
             {
                 var projection = match.Host.ProjectionForSeat(seat.Id);
+                Assert.That(projection.Experiments.TeammateCoordination, Is.True, "PVE-D38: always enabled.");
+                Assert.That(projection.Experiments.TurnTimer, Is.False);
+                Assert.That(projection.AlliedHandCards.Count, Is.GreaterThan(0));
+                Assert.That(projection.AlliedHandCards.All(card =>
+                    match.Encounter.Heroes.Contains(card.OwnerId) && !seat.Owns(card.OwnerId)), Is.True);
                 Assert.That(projection.Cards.Where(card => !seat.Owns(card.OwnerId)),
                     Has.All.Matches<GuardsDigital.Core.Cards.CardInstance>(card =>
                         match.Encounter.FindEnemy(card.OwnerId) != null));
@@ -108,6 +113,18 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(PveCoopMatch.TryReadHostSeed(hint, 7, out var seed), Is.EqualTo(expected));
             if (expected) Assert.That("pve-coop-2-" + seed.ToString(System.Globalization.CultureInfo.InvariantCulture), Is.EqualTo(format));
             else Assert.That(seed, Is.Zero);
+        }
+
+        [Test]
+        public void UnifiedJoinMayReadAMapMismatchHintButNeverOtherFailures()
+        {
+            foreach (SessionRejectionReason reason in System.Enum.GetValues(typeof(SessionRejectionReason)))
+            {
+                if (reason == SessionRejectionReason.None) continue;
+                var hint = new SessionRejectMessage(reason, "", hostFormatId: "pve-coop-2-42");
+                Assert.That(PveCoopMatch.TryReadHostSeed(hint, 0, out _, includeMapMismatch: true),
+                    Is.EqualTo(reason == SessionRejectionReason.MatchFormatMismatch || reason == SessionRejectionReason.MapRevisionMismatch));
+            }
         }
 
         [Test]

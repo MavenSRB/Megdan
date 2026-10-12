@@ -14,13 +14,17 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class HeroCardInspectionTests
     {
-        internal static MatchHost Create(bool allies, bool enemies)
+        internal static MatchHost Create(bool allies, bool enemies, bool refillSpellbook = false)
         {
             var roster = RegisteredHeroRoster.ForThisBuild;
             RegisteredHero Hero(string id) => roster.Single(h => h.ContentId.Value == id);
             var lineup = new HeroLineup(new[] { Hero("gydion"), Hero("takahide") }, new[] { Hero("arien"), Hero("sabina") });
             var format = MatchFormat.TwoVersusTwoQuick;
             var config = MatchConfiguration.CreateForLineupForInternalTest(format, lineup, TeamSide.Red);
+            // W-010 starts spells removed. Privacy tests explicitly stage a refilled book.
+            if (refillSpellbook)
+                foreach (var card in config.CardInstances.Where(c => c.State.Location == CardLocation.RemovedFromSpellbook))
+                    Assert.That(CardLifecycleAuthority.TryReturnToSpellbook(card), Is.True);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(HeroLineupComposition.Compose(format, lineup),
                 config.Participants, map, config.TieBreakerState);

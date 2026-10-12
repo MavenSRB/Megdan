@@ -160,7 +160,7 @@ namespace GuardsDigital.Pve.Presentation
         private static void Require(bool value, string reason)
         { if (!value) throw new InvalidOperationException(ArtifactMarker + " " + reason); }
 
-        private static void SmokeClick(Button button)
+        internal static void SmokeClick(Button button)
         {
             Require(button != null && button.enabledInHierarchy, "Unavailable smoke control");
             button.Focus();
@@ -168,7 +168,7 @@ namespace GuardsDigital.Pve.Presentation
             { submit.target = button; button.SendEvent(submit); }
         }
 
-        private static void CaptureArtifactBoard(string path)
+        internal static void CaptureArtifactBoard(string path)
         {
             var camera = Camera.main;
             Require(camera != null, "No board camera");

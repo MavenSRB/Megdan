@@ -1,8 +1,8 @@
 # PvE implementation
 
-Canonical owner for what the separate PvE executable implements and how it reuses the existing game. Approved rules live in [PvE design](PVE_DESIGN.md); delivery and authorization live in [the PvE plan](../Roadmap/PVE.md) and the [brief](../SESSION_BRIEF.md). Return to [project index](../PROJECT_CONTEXT.md).
+Canonical owner for what PvE implements and how it reuses the existing game. Approved rules live in [PvE design](PVE_DESIGN.md); delivery and authorization live in [the PvE plan](../Roadmap/PVE.md) and the [brief](../SESSION_BRIEF.md). Return to [project index](../PROJECT_CONTEXT.md).
 
-## Isolation (PVE-D01)
+## Assembly boundary (PVE-D01, amended PVE-D38)
 
 PvE code lives outside `Assets/GuardsDigital`:
 
@@ -12,9 +12,9 @@ PvE code lives outside `Assets/GuardsDigital`:
 - `Assets/GuardsPve/Scenes/PveLauncher.unity` - the PvE executable's first scene. It is not in Build Settings.
 - `Assets/GuardsPve/Data~` - `enemies.json` and `encounter.json`. The `~` folder is not imported; the Editor reads it in place and the PvE build copies it to `PveData/` beside the executable.
 
-Every PvE assembly sets `autoReferenced: false`. Every runtime and test PvE assembly carries the define constraint `UNITY_EDITOR || GUARDS_PVE`, which only the PvE build supplies, so the existing player never contains a PvE assembly. No existing assembly references PvE. PvE adds nothing under `Resources/` or `StreamingAssets/` and declares no `RuntimeInitializeOnLoadMethod`, because those would ship or run in the existing player.
+Every PvE assembly sets `autoReferenced: false`; runtime/test assemblies retain `UNITY_EDITOR || GUARDS_PVE`. W-045's unified player build supplies that define and copies `PveData/`, replacing the original separate-player inclusion policy under PVE-D38. Shared assemblies still never reference PvE. `PveSharedLobby.Register` registers the mode adapter before scene load through `PrivateLobbyMode`; the optional artifact runner starts only under its explicit smoke flag. No new Resources/StreamingAssets content is added.
 
-The PvE executable reuses the existing match scene unchanged: its explicit scene list is the PvE launcher followed by `Assets/Scenes/Milestone1_2_HexGrid.unity`.
+The unified executable starts the existing match/lobby scene. The old PvE launcher scene, separate build entry and legacy smoke remain available for historical fixtures, not the unified player's front door. Preserved W024/W035 packages retain their original separate-launcher behavior.
 
 ## Additive shared hooks
 
@@ -126,9 +126,17 @@ PVE-D36 renames Ranged's movement card Take Position (Initiative 8), and replace
 
 ## Launch, smoke and build
 
-### Co-op integration (PVE-D28, W-031)
+### Unified lobby (PVE-D38, W-045)
 
-PvE defaults to the shared PvP TCP port 45677 (W-038). Internet hosting requires a session key, host firewall allowance and router forwarding/reachable routing; joiners enter the host's public IP, port and key, with matching build/data. Empty keys remain loopback-only. The menu states these prerequisites and warns that PvP/PvE cannot host on the same port concurrently. No relay or automatic port mapping is added; keyed loopback validation is not proof of external internet reachability.
+The shared host form adds **PvE — Defend the creeps** under Map. Selecting it hides Experimental and PvP setup counters/team size. `PveSharedLobby` reuses `PrivateLobbyUnityView` and `PrivateLobbyModel.ForLocalPlayers` for the same Take Seats and hero-pick screens. Exactly three Blue seats remain; each locally owned seat has a distinct ordinary authenticated connection, with independent capability, owner projection and command checks. Ready applies to this player's seats; the selection view follows the next locally owned pick. In-match Control buttons switch only among those admitted seats and rebind all seat-scoped presenters; the encounter panel invalidates its cached controls when the displayed seat changes.
+
+Host chooses a fresh seed. A normal Join initially uses the PvP front door, then recognizes a supported PvE map/format hint and retries full admission on the same endpoint once with the host seed and local PvE content. No wrong-key/build/content bypass is added. The host continues to own enemy automation and shared choices. Reconnect retries each locally retained seat capability; a terminal host departure does not transfer authority.
+
+PvE composition always enables teammate coordination, including allied hand inspection and typed suggestions, while other experiments remain off. The outer mode host receives the same immutable options as the inner encounter authority, and external scene composition preserves them. PvP defaults and schema/wire layouts are unchanged. The legacy launcher/co-op adapter described below remains only for existing fixture/tool compatibility; W-045 is the normal player route.
+
+### Transport and legacy adapter (PVE-D28, W-031)
+
+PvE defaults to the shared PvP TCP port 45677 (W-038). Internet hosting requires a session key, host firewall allowance and router forwarding/reachable routing; joiners enter the host's public IP, port and key, with matching build/data. Empty keys remain loopback-only. PvP/PvE cannot host on the same port concurrently. No relay or automatic port mapping is added; keyed loopback validation is not proof of external internet reachability.
 
 The host alone enters the seed (PVE-D33, W-039); Join ignores the local seed field and automatically inherits a different host seed from the existing public format-mismatch hint. Only a canonical nonzero seed for the current PvE format is accepted, and only before admission, once per initial Join. It then retries full keyed/build/map/content admission on the same endpoint. Wrong-key/content failures and unsupported formats remain terminal, never retry loops; admitted sessions/reconnect retain their seed. The effective seed is shown in lobby status. No wire/schema change.
 
