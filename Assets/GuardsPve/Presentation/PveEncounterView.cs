@@ -45,14 +45,10 @@ namespace GuardsDigital.Pve.Presentation
         private PveEncounterSession session;
         private PveComposedEncounter encounter;
         private bool coop;
-        private Action<DirectorCommand> sharedSubmit;
-        private Func<DirectorCommand, bool> playerSubmit;
         private IMatchReadModel ReadModel => coop ? runtime.ReadModel : session.Projection;
         private PveCardIndex cards;
         private UIDocument document;
         private VisualElement root;
-        private VisualElement panel;
-        private VisualElement actions;
         private readonly Dictionary<HeroId, VisualElement> enemyRows = new Dictionary<HeroId, VisualElement>();
         private readonly Dictionary<HeroId, Sprite> enemyArt = new Dictionary<HeroId, Sprite>();
         private HeroId hoveredEnemy;
@@ -67,7 +63,6 @@ namespace GuardsDigital.Pve.Presentation
         private HeroOverviewsViewModel lastRailModel;
         private float nextStepAt;
         private float presentationWaitStartedAt = -1f;
-        private long renderedVersion = -1;
         private ConfiguredMatchHudRenderer hudRenderer;
 
         public PveEncounterSession Session => session;
@@ -88,16 +83,16 @@ namespace GuardsDigital.Pve.Presentation
         }
 
         public static PveEncounterView AttachCoop(ConfiguredMatchSceneRuntime runtime, PveComposedEncounter encounter,
-            PveEncounterSession authority, Action<DirectorCommand> sharedSubmit, Func<DirectorCommand, bool> playerSubmit)
+            PveEncounterSession authority, Func<DirectorCommand, bool> sharedSubmit)
         {
             var view = new GameObject("PvE Co-op Encounter").AddComponent<PveEncounterView>();
             view.runtime = runtime;
             view.encounter = encounter;
             view.session = authority;
             view.coop = true;
-            view.sharedSubmit = sharedSubmit;
-            view.playerSubmit = playerSubmit;
             view.cards = new PveCardIndex(encounter.Catalog);
+            if (authority != null)
+                runtime.DecisionWindowPresenter.UseTiedInitiativeAuthority(sharedSubmit);
             view.Build();
             return view;
         }
@@ -149,20 +144,13 @@ namespace GuardsDigital.Pve.Presentation
             };
             sharedEnemyView.HeroHighlighted += hero => runtime.BoardView.SetHoveredHero(hero);
             root.Add(sharedEnemyView.Root);
+            runtime.ModeCardPipsOverride = EnemyCardPips;
+            runtime.ModeCardPipInspection = CanInspectEnemyCardPip;
             foreach (var enemy in encounter.Enemies)
                 if (enemy.Type.TokenType.HasValue)
                     enemyArt[enemy.HeroId] = StandardMinionArtCatalog.Load(TeamSide.Red, enemy.Type.TokenType.Value);
             runtime.BoardView.HeroHighlighted += OnBoardHeroHighlighted;
 
-            // Only a genuine Blue-team choice may need host controls. No persistent PvE panel.
-            panel = new VisualElement { name = "pve-shared-choice" };
-            panel.style.position = Position.Absolute;
-            panel.style.left = 290;
-            panel.style.top = 110;
-            panel.style.display = DisplayStyle.None;
-            actions = new VisualElement();
-            panel.Add(actions);
-            root.Add(panel);
         }
 
 
@@ -187,8 +175,6 @@ namespace GuardsDigital.Pve.Presentation
                     }
                 }
             }
-
-            RenderPanel();
         }
 
         /// <summary>
@@ -251,7 +237,7 @@ namespace GuardsDigital.Pve.Presentation
                     continue;
                 }
                 var face = new TrayCardViewModel(instance?.Id ?? new CardInstanceId(enemy.HeroId.Value + "-plan-" + turn),
-                    definition.Reference, definition.DisplayName, definition.Progression.Color,
+                    definition.Reference, definition.DisplayName, PveEnemyArtwork.DisplayColor(enemy.Type, orange),
                     CurrentRoundCards.ReadFace(definition), TrayCardGroup.Available, 0, false, false,
                     isActiveEffectSource: instance != null && match.StandingActiveEffectSourceCardInstanceIds.Contains(instance.Id),
                     isResolving: match.IsTurnActive && match.SelectedActor.ActorId.Equals(enemy.HeroId) && turn == match.TurnIndex);
@@ -259,6 +245,33 @@ namespace GuardsDigital.Pve.Presentation
             }
             return slots;
         }
+
+        private IReadOnlyList<HeroCardPip> EnemyCardPips(HeroId hero)
+        {
+            if (encounter.FindEnemy(hero) == null) return null;
+            var overview = runtime.HeroOverviewsView?.Model?.Heroes
+                .FirstOrDefault(value => value.HeroId.Equals(hero));
+            if (overview == null) return Array.Empty<HeroCardPip>();
+
+            var pips = PlannedSlots(overview)
+                .Where(slot => slot.IsOccupied && slot.PlayedCard != null &&
+                    slot.PlayedCard.Group != TrayCardGroup.Played)
+                .Select(slot => new HeroCardPip(
+                    slot.PlayedCard.Color,
+                    slot.PlayedCard.DefinitionReference))
+                .ToList();
+            pips.AddRange(ReadModel.Cards
+                .Where(card => card.OwnerId.Equals(hero) && card.State.Location == CardLocation.Hand &&
+                    cards.Purple(card.DefinitionReference.DefinitionId) != null)
+                .OrderBy(card => card.Id.Value)
+                .Select(card => new HeroCardPip(
+                    PveEnemyArtwork.DisplayColor(cards.Purple(card.DefinitionReference.DefinitionId)),
+                    card.DefinitionReference)));
+            return pips;
+        }
+
+        private bool CanInspectEnemyCardPip(HeroId hero, CardDefinitionReference reference) =>
+            EnemyCardPips(hero)?.Any(pip => pip.DefinitionReference.Equals(reference)) == true;
 
         private void RefreshEnemyRail()
         {
@@ -282,17 +295,18 @@ namespace GuardsDigital.Pve.Presentation
                 foreach (var row in column.Children())
                 {
                     var hero = (HeroId)row.userData;
+                    var enemy = encounter.FindEnemy(hero);
                     row.name = "pve-enemy-" + hero.Value;
                     var model = sourceModel.Heroes.First(value => value.HeroId.Equals(hero));
                     var planned = PlannedSlots(model);
                     var miniatures = row.Query<VisualElement>("gd-turn-slot").ToList();
                     for (var index = 0; index < miniatures.Count; index++)
                     {
-                        // PvE's typed orange plan cards have no tabletop progression colour.
-                        // Decorate the shared miniature without assigning a rules-facing colour.
                         var miniature = miniatures[index];
-                        if (cards.Orange(planned[index].PlayedCard.DefinitionReference.DefinitionId) != null)
-                            miniature.style.backgroundColor = new Color(0.9f, 0.44f, 0.09f);
+                        var plannedCard = cards.Orange(planned[index].PlayedCard.DefinitionReference.DefinitionId);
+                        if (plannedCard != null)
+                            miniature.style.backgroundColor = MatchHudTheme.Face(
+                                PveEnemyArtwork.DisplayColor(enemy.Type, plannedCard));
                         miniature.style.opacity = planned[index].PlayedCard.Group == TrayCardGroup.Played
                             ? SpentEnemyCardOpacity
                             : 1f;
@@ -380,11 +394,11 @@ namespace GuardsDigital.Pve.Presentation
                 var definition = ReadModel.Definitions.First(value => value.Reference.Equals(card.DefinitionReference));
                 var available = card.State.Location == CardLocation.Hand;
                 var face = new TrayCardViewModel(card.Id, definition.Reference, definition.DisplayName,
-                    definition.Progression.Color, CurrentRoundCards.ReadFace(definition),
+                    PveEnemyArtwork.DisplayColor(cards.Purple(card.DefinitionReference.DefinitionId)),
+                    CurrentRoundCards.ReadFace(definition),
                     available ? TrayCardGroup.Available : TrayCardGroup.Discarded, 0, false, false);
                 var miniature = sharedEnemyView.BuildPublicCardMiniature("pve-defense-card", face);
-                // Purple is PvE presentation, not a tabletop progression colour.
-                miniature.style.backgroundColor = new Color(.48f, .22f, .68f);
+                miniature.style.backgroundColor = MatchHudTheme.Face(face.Color);
                 miniature.style.width = 20;
                 miniature.style.marginLeft = 2;
                 miniature.style.opacity = available ? 1f : SpentEnemyCardOpacity;
@@ -401,48 +415,14 @@ namespace GuardsDigital.Pve.Presentation
 
         private void OnDestroy()
         {
-            if (runtime != null) runtime.BoardView.HeroHighlighted -= OnBoardHeroHighlighted;
+            if (runtime != null)
+            {
+                runtime.BoardView.HeroHighlighted -= OnBoardHeroHighlighted;
+                runtime.ModeCardPipsOverride = null;
+                runtime.ModeCardPipInspection = null;
+            }
             if (document != null && document.panelSettings != null) Destroy(document.panelSettings);
         }
-
-        private void RenderPanel()
-        {
-            var show = coop && session != null && !PveEnemyController.IsLost(ReadModel) &&
-                PveCoopMatch.IsSharedChoice(session.Projection) &&
-                session.Projection.DecisionOwner.TeamSide == TeamSide.Blue;
-            panel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!show) return;
-            if (renderedVersion == session.Projection.Version) return;
-            renderedVersion = session.Projection.Version;
-            actions.Clear();
-            foreach (var choice in session.Projection.DecisionContract.Commands)
-            {
-                var command = choice;
-                var owner = ReadModel.Cards.FirstOrDefault(card => card.Id.Equals(command.CardInstanceId))?.OwnerId ?? default;
-                var label = command.Kind == DirectorCommandKind.ChooseTiedActor
-                    ? HeroName(ReadModel, owner) + " acts first" : command.Kind.ToString();
-                actions.Add(ActionButton(label, () => Submit(command)));
-            }
-        }
-
-
-        private void Submit(DirectorCommand command)
-        {
-            if (coop)
-            {
-                if (session != null && (session.CurrentPrompt != null ||
-                    PveCoopMatch.IsSharedChoice(session.Projection)))
-                    sharedSubmit(command);
-                else if (!playerSubmit(command)) Debug.LogWarning("This choice is not currently available to your hero.");
-                renderedVersion = -1;
-                return;
-            }
-            var result = session.Execute(command);
-            if (!result.Accepted) Debug.LogWarning("Refused: " + result.Detail);
-            renderedVersion = -1;
-            runtime.RefreshAll();
-        }
-
 
         /// <summary>
         /// The existing HUD lays its rails out for three heroes a side: the enemies' rail is hidden
@@ -466,27 +446,6 @@ namespace GuardsDigital.Pve.Presentation
                 blue.style.scale = new Scale(new Vector3(scale, scale, 1f));
                 blue.style.transformOrigin = new TransformOrigin(Length.Percent(100), Length.Percent(0), 0);
             }
-        }
-
-
-
-        private string HeroName(IMatchReadModel match, HeroId hero)
-        {
-            var enemy = encounter.FindEnemy(hero);
-            if (enemy != null) return enemy.DisplayName;
-            var setup = match.Setup.Heroes.FirstOrDefault(value => value.HeroId.Equals(hero));
-            return setup?.DisplayName ?? hero.Value;
-        }
-
-
-
-        private static Button ActionButton(string text, Action click)
-        {
-            var button = new Button(click) { text = text };
-            button.style.fontSize = 13;
-            button.style.marginRight = 4;
-            button.style.marginTop = 4;
-            return button;
         }
 
         private static Label Text(int size, FontStyle style, Color color)

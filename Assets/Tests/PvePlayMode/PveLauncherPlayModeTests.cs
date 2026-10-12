@@ -160,10 +160,14 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 var plan = PvePlans.PlanFor(encounter, enemy, System.Math.Max(1, enemy.Spawn.Round));
                 for (var turn = 0; turn < 4; turn++)
                 {
-                    Assert.That(slots[turn].tooltip, Does.Contain(enemy.Type.FindOrange(plan[turn]).Name),
+                    var plannedCard = enemy.Type.FindOrange(plan[turn]);
+                    Assert.That(slots[turn].tooltip, Does.Contain(plannedCard.Name),
                         "All four planned cards are public before Blue commits.");
                     Assert.That(slots[turn].Q<Label>("pve-plan-initiative").text,
-                        Is.EqualTo(enemy.Type.FindOrange(plan[turn]).Initiative.ToString()));
+                        Is.EqualTo(plannedCard.Initiative.ToString()));
+                    Assert.That(slots[turn].resolvedStyle.backgroundColor,
+                        Is.EqualTo(MatchHudTheme.Face(PveEnemyArtwork.DisplayColor(enemy.Type, plannedCard))),
+                        plannedCard.Name + " rail category colour");
                     Assert.That(slots[turn].Q<Label>("pve-plan-initiative").resolvedStyle.fontSize, Is.EqualTo(13));
                     var number = slots[turn].Q<Label>("pve-plan-initiative");
                     Assert.That(number.MeasureTextSize("13", 0, VisualElement.MeasureMode.Undefined,
@@ -175,8 +179,10 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 Assert.That(row.Q("gd-hero-level"), Is.Null);
                 Assert.That(row.Q("gd-discard"), Is.Null);
                 Assert.That(row.Q("gd-bonus-strip"), Is.Null);
-                Assert.That(row.Query<VisualElement>("pve-defense-card").ToList().Count,
-                    Is.EqualTo(enemy.Type.PurpleCards.Count));
+                var defenseCards = row.Query<VisualElement>("pve-defense-card").ToList();
+                Assert.That(defenseCards.Count, Is.EqualTo(enemy.Type.PurpleCards.Count));
+                Assert.That(defenseCards.All(card => card.resolvedStyle.backgroundColor ==
+                    MatchHudTheme.Face(CardColor.Blue)), Is.True, "Defense rail cards are Blue.");
                 Assert.That(row.tooltip,
                     Does.Contain(enemy.Spawn.Round == 1 ? "On board" : "Spawn round 2"));
                 if (enemy.Spawn.Round == 1)
@@ -184,6 +190,18 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     var view = composed.BoardView.HeroViews.First(value => value.Occupancy.HeroId.Equals(enemy.HeroId));
                     Assert.That(view.HasTokenVisual, Is.True);
                     Assert.That(view.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture, Is.SameAs(sprite.texture));
+                    Assert.That(view.CardStateIndicator, Is.Not.Null,
+                        "Every standing enemy token exposes its public card state.");
+                    Assert.That(view.CardStateIndicator.PipCount,
+                        Is.EqualTo(4 + enemy.Type.PurpleCards.Count),
+                        "The four unresolved plan cards and each available Heavy Defense appear as token pips.");
+                    Assert.That(view.CardStateIndicator.Pips.Take(4)
+                        .Select(pip => pip.Color), Is.EquivalentTo(plan.Select(key =>
+                            PveEnemyArtwork.DisplayColor(enemy.Type, enemy.Type.FindOrange(key)))),
+                        "Public plan pips use each card category's colour.");
+                    Assert.That(view.CardStateIndicator.Pips.Skip(4)
+                        .All(pip => pip.Color == CardColor.Blue), Is.True,
+                        "Heavy Defense pips use the blue Defense identity.");
                 }
             }
             foreach (var face in PveEnemyArtwork.ResourcesFor(encounter.Catalog))
@@ -252,6 +270,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var defenseRow = rail.Q("pve-enemy-" + heavy.HeroId.Value);
             Assert.That(defenseRow.Query<VisualElement>("pve-defense-card").ToList()
                 .Count(card => card.style.opacity.value < .5f), Is.EqualTo(1), "A spent Defense is dimmed.");
+            var heavyToken = composed.BoardView.HeroViews.First(value => value.Occupancy.HeroId.Equals(heavy.HeroId));
+            Assert.That(heavyToken.CardStateIndicator.PipCount, Is.EqualTo(5),
+                "A Heavy token drops the spent Defense pip while retaining four unresolved plan cards.");
             rail.ScrollTo(defenseRow);
             yield return null;
             var defense = defenseRow.Q("pve-defense-card");
@@ -374,6 +395,10 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 var slots = row.Query<VisualElement>("gd-turn-slot").ToList();
                 Assert.That(slots[0].resolvedStyle.opacity, Is.EqualTo(.35f).Within(.01f),
                     "The resolved Aim card stays in its public plan slot and dims immediately.");
+                var token = runtime.BoardView.HeroViews.First(value => value.Occupancy.HeroId.Equals(enemy.HeroId));
+                var unresolvedPlanCount = slots.Count(slot => slot.resolvedStyle.opacity >= .99f);
+                Assert.That(token.CardStateIndicator.PipCount, Is.EqualTo(unresolvedPlanCount),
+                    "Every resolved public plan card removes exactly its token pip.");
                 Assert.That(slots.Skip(phase == 2 ? 2 : 1).All(slot => slot.resolvedStyle.opacity >= .99f), Is.True,
                     "Unresolved plan cards remain at full strength.");
                 var outline = row.Q("gd-turn-slot-outline");
@@ -389,6 +414,9 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     slots = row.Query<VisualElement>("gd-turn-slot").ToList();
                     Assert.That(slots[0].resolvedStyle.opacity, Is.EqualTo(1f).Within(.01f),
                         "Undo restores the rewound enemy plan card to full strength.");
+                    Assert.That(token.CardStateIndicator.PipCount,
+                        Is.EqualTo(slots.Count(slot => slot.resolvedStyle.opacity >= .99f)),
+                        "Undo restores the same unresolved public plan pip as the rail card.");
                     for (var step = 0; step < 400 &&
                         !session.Projection.StandingActiveEffectSourceCardInstanceIds.Contains(aim); step++)
                     {

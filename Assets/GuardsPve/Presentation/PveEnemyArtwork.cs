@@ -10,6 +10,32 @@ namespace GuardsDigital.Pve.Presentation
     /// <summary>W044's approved private faces. These mappings are presentation, never rule authority.</summary>
     public static class PveEnemyArtwork
     {
+        /// <summary>
+        /// Enemy cards reuse the five ordinary card colours as a presentation-only category key.
+        /// The definition remains <see cref="CardProgressionProfile.NotStated"/>, so existing-mode
+        /// effects that inspect printed colour never treat these PvE cards as coloured cards.
+        /// </summary>
+        public static CardColor DisplayColor(PveEnemyType type, PveOrangeCard card)
+        {
+            if (type == null) throw new System.ArgumentNullException(nameof(type));
+            if (card == null) throw new System.ArgumentNullException(nameof(card));
+            if (card.Skill != PveSkillKind.None) return CardColor.Silver;
+            if (!card.AttackValue.HasValue && card.MoveValue.HasValue) return CardColor.Green;
+            if (card.AttackValue.HasValue)
+            {
+                var strongest = type.OrangeCards.Where(value => value.AttackValue.HasValue)
+                    .Max(value => value.AttackValue.Value);
+                return card.AttackValue.Value == strongest ? CardColor.Red : CardColor.Gold;
+            }
+            return CardColor.Silver;
+        }
+
+        public static CardColor DisplayColor(PvePurpleCard card)
+        {
+            if (card == null) throw new System.ArgumentNullException(nameof(card));
+            return CardColor.Blue;
+        }
+
         private static readonly string[] Faces =
         {
             "melee|A|advance|Advance|9|0|0|2|None|False|Move:Minion:1",

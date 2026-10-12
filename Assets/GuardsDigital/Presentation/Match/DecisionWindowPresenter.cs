@@ -47,6 +47,7 @@ namespace GuardsDigital.Presentation.Match
         private IMatchReadModel lastProjection;
         private DecisionWindowViewModel lastViewModel;
         private Func<bool> presentationDeferred;
+        private Func<DirectorCommand, bool> tiedInitiativeSubmit;
 
         // The manual toggle. It is keyed by the decision it was made on, so it survives exactly as
         // long as that decision stands: the user's rule is that every NEW decision re-decides the
@@ -96,6 +97,20 @@ namespace GuardsDigital.Presentation.Match
         private TeamSide? directorPlayerSide;
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
+
+        /// <summary>
+        /// Lets a mode-hosted surface answer a team-owned Initiative tie through its retained
+        /// Director authority while keeping every other answer on the seat client. The mode supplies
+        /// the submission boundary; this presenter only replaces that tie's otherwise inert
+        /// seat-agreement controls with the standing Director commands.
+        /// </summary>
+        public void UseTiedInitiativeAuthority(Func<DirectorCommand, bool> submit)
+        {
+            tiedInitiativeSubmit = submit ?? throw new ArgumentNullException(nameof(submit));
+            lastProjection = null;
+            manualStateKey = null;
+            Refresh();
+        }
 
         /// <summary>
         /// Supplies the local presentation gate that may temporarily withhold a newly authoritative
@@ -201,6 +216,15 @@ namespace GuardsDigital.Presentation.Match
                 return agreed.Accepted;
             }
 
+            if (tiedInitiativeSubmit != null &&
+                control.Command.Kind == DirectorCommandKind.ChooseTiedActor &&
+                session.Projection.DecisionOwner.IsTeamOwned)
+            {
+                var accepted = tiedInitiativeSubmit(control.Command);
+                if (!accepted) Refresh();
+                return accepted;
+            }
+
             var result = session.Submit(control.Command);
             if (!result.Accepted)
             {
@@ -253,7 +277,12 @@ namespace GuardsDigital.Presentation.Match
                     !global::GuardsDigital.Presentation.Match.DirectorPlayerSide.OwnsTheMoment(
                         projection, directorPlayerSide.Value)
                     ? null
-                    : CreateViewModel(projection, homeHeroId);
+                    : CreateViewModel(
+                        projection,
+                        homeHeroId,
+                        tiedInitiativeSubmit != null &&
+                        projection.DecisionOwner.IsTeamOwned &&
+                        projection.PendingInitiativeChoice != null);
                 if (next == null && RetainsStandingDecisionAcrossConnectionPause(projection))
                 {
                     // A transient joined-client pause strips this seat's private detail and commands,
@@ -310,6 +339,12 @@ namespace GuardsDigital.Presentation.Match
         public static DecisionWindowViewModel CreateViewModel(
             IMatchReadModel projection, HeroId viewerHeroId)
         {
+            return CreateViewModel(projection, viewerHeroId, false);
+        }
+
+        private static DecisionWindowViewModel CreateViewModel(
+            IMatchReadModel projection, HeroId viewerHeroId, bool useTeamDecisionAuthority)
+        {
             if (projection == null)
             {
                 throw new ArgumentNullException(nameof(projection));
@@ -322,7 +357,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return CreateMinionBattle(projection, viewerHeroId) ??
-                CreateTiedInitiative(projection, viewerHeroId) ??
+                CreateTiedInitiative(projection, viewerHeroId, useTeamDecisionAuthority) ??
                 CreateLevelUp(projection, viewerHeroId) ??
                 CreateDefense(projection, viewerHeroId) ??
                 CreateRemovalPrevention(projection, viewerHeroId) ??
@@ -509,9 +544,10 @@ namespace GuardsDigital.Presentation.Match
         // ---------------------------------------------------------------------------------------
 
         private static DecisionWindowViewModel CreateTiedInitiative(
-            IMatchReadModel projection, HeroId viewerHeroId)
+            IMatchReadModel projection, HeroId viewerHeroId, bool useTeamDecisionAuthority)
         {
-            var agreement = projection.TeamAgreement?.Kind == TeamAgreementKind.Initiative
+            var agreement = !useTeamDecisionAuthority &&
+                projection.TeamAgreement?.Kind == TeamAgreementKind.Initiative
                 ? projection.TeamAgreement
                 : null;
             var pending = projection.PendingInitiativeChoice;

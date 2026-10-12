@@ -600,6 +600,49 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HostTeamDecisionAuthority_MakesTheNormalInitiativeWindowDirectlyAnswerable()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            OwnerScopedProjectionTests.DriveThroughSeats(
+                host, 400,
+                projection => projection.PendingInitiativeChoice != null);
+            var firstChoosingSeat = host.Seats.Seats.First(host.Projection.DecisionOwner.IsOwnedBy);
+            var agreement = host.ProjectionForSeat(firstChoosingSeat.Id).TeamAgreement;
+            Assert.That(agreement?.Kind, Is.EqualTo(TeamAgreementKind.Initiative));
+            var participant = agreement.Participants[0];
+            var seat = host.Seats.Seats.Single(value => value.HeroId.Equals(participant.HeroId));
+            var seatProjection = host.ProjectionForSeat(seat.Id);
+            Assert.That(seatProjection.TeamAgreement, Is.Not.Null,
+                "The ordinary seat surface must begin with the agreement form this regression replaces.");
+            Assert.That(seatProjection.PendingInitiativeChoice, Is.Not.Null,
+                "The host route needs the same typed tie detail already carried by the seat projection.");
+
+            var client = new SwitchingMatchClient(seatProjection);
+            var view = new CapturingDecisionWindowView();
+            var presenter = new DecisionWindowPresenter(client, view, seat.HeroId);
+            DirectorCommand submitted = null;
+
+            presenter.UseTiedInitiativeAuthority(command =>
+            {
+                submitted = command;
+                return true;
+            });
+
+            Assert.That(view.Model?.Family, Is.EqualTo(DecisionWindowFamily.TiedInitiative));
+            Assert.That(view.Model.Controls, Is.Not.Empty);
+            Assert.That(view.Model.Controls.Select(control => control.AgreementCommand), Has.All.Null,
+                "A hosting player must not receive preference controls that wait for other local seats.");
+            Assert.That(view.Model.Controls.Select(control => control.Command?.Kind),
+                Has.All.EqualTo(DirectorCommandKind.ChooseTiedActor),
+                "The normal window carries the authority's direct shared-choice commands.");
+
+            var chosen = view.Model.Controls[0];
+            Assert.That(presenter.Submit(chosen), Is.True);
+            Assert.That(submitted, Is.EqualTo(chosen.Command),
+                "The first valid click reaches the supplied host authority rather than the seat client.");
+        }
+
+        [Test]
         public void ATiedInitiative_RemainsVisibleWhileAReconnectingTeammatePausesTheSameVersion()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());

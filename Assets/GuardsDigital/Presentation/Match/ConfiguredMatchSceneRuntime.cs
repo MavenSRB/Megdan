@@ -1127,6 +1127,15 @@ namespace GuardsDigital.Presentation.Match
 
         public string LastOperationDetail { get; private set; }
 
+        /// <summary>
+        /// Optional mode-owned public card pips. Returning null preserves the ordinary
+        /// owner/coordination projection for that hero; a non-null list replaces it.
+        /// </summary>
+        public Func<HeroId, IReadOnlyList<HeroCardPip>> ModeCardPipsOverride { get; set; }
+
+        /// <summary>Authorizes inspection of an identity exposed by <see cref="ModeCardPipsOverride"/>.</summary>
+        public Func<HeroId, CardDefinitionReference, bool> ModeCardPipInspection { get; set; }
+
         public void RefreshAll()
         {
             HandsView.CoordinationEnabled = (client.Projection as IExperimentalReadModel)?.Experiments.TeammateCoordination == true;
@@ -1154,6 +1163,12 @@ namespace GuardsDigital.Presentation.Match
             foreach (var view in BoardView.HeroViews)
             {
                 var hero = view.Occupancy.HeroId;
+                var modePips = ModeCardPipsOverride?.Invoke(hero);
+                if (modePips != null)
+                {
+                    view.SetCardStateIndicator(false, default, modePips, 0);
+                    continue;
+                }
                 var inspection = enabled
                     ? experimental.CardInspections.FirstOrDefault(value => value.Hero.Equals(hero))
                     : null;
@@ -1202,8 +1217,9 @@ namespace GuardsDigital.Presentation.Match
                 .FirstOrDefault(value => value.Hero.Equals(owner));
             var current = HeroOverviewsView?.Model?.Heroes.FirstOrDefault(value => value.HeroId.Equals(owner))
                 ?.CurrentCard?.Card;
-            if (inspection == null || (!inspection.HandCards.Contains(reference.Value) &&
-                (current == null || !current.DefinitionReference.Equals(reference.Value))))
+            var modeAuthorized = ModeCardPipInspection?.Invoke(owner, reference.Value) == true;
+            if (!modeAuthorized && (inspection == null || (!inspection.HandCards.Contains(reference.Value) &&
+                (current == null || !current.DefinitionReference.Equals(reference.Value)))))
             {
                 hud.HideCardPipPreview();
                 return;

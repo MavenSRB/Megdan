@@ -242,11 +242,12 @@ namespace GuardsDigital.Pve.Presentation
                     overlay = PveEncounterView.AttachCoop(runtime, encounter, server == null ? null : match.Session,
                         command =>
                         {
-                            if (server.IsPaused) return;
+                            if (server.IsPaused) return false;
                             var result = match.Session.Execute(command);
                             if (!result.Accepted) error = result.Detail;
                             server.RepublishProjections();
-                        }, command => client.TrySubmitCommand(command, out _));
+                            return result.Accepted;
+                        });
                     panel.style.position = Position.Absolute;
                     document.rootVisualElement.pickingMode = PickingMode.Ignore;
                     document.rootVisualElement.style.backgroundColor = Color.clear;

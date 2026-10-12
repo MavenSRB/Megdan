@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Pve.Composition;
+using GuardsDigital.Pve.Content;
 using GuardsDigital.Pve.Presentation;
 using NUnit.Framework;
 using UnityEngine;
@@ -45,6 +46,29 @@ namespace GuardsDigital.Tests.Pve
             Assert.That(PveEnemyArtwork.ResourcesFor(changed).Count, Is.EqualTo(13));
             var stopChanged = PveContentLoader.LoadCatalog(Json.Replace("\"stopDistance\": 2", "\"stopDistance\": 3"));
             Assert.That(PveEnemyArtwork.ResourcesFor(stopChanged).Count, Is.EqualTo(12));
+        }
+
+        [Test]
+        public void EnemyCardCategoriesUseTheFiveApprovedPresentationColours()
+        {
+            var catalog = PveContentLoader.LoadCatalog(Json);
+            foreach (var type in catalog.Types)
+            {
+                Assert.That(PveEnemyArtwork.DisplayColor(type,
+                    type.OrangeCards.Single(card => !card.AttackValue.HasValue && card.MoveValue.HasValue)),
+                    Is.EqualTo(CardColor.Green), type.Id + " movement");
+                Assert.That(PveEnemyArtwork.DisplayColor(type,
+                    type.OrangeCards.Single(card => card.Skill != PveSkillKind.None)),
+                    Is.EqualTo(CardColor.Silver), type.Id + " skill");
+                var attacks = type.OrangeCards.Where(card => card.AttackValue.HasValue)
+                    .OrderBy(card => card.AttackValue.Value).ToArray();
+                Assert.That(PveEnemyArtwork.DisplayColor(type, attacks[0]), Is.EqualTo(CardColor.Gold),
+                    type.Id + " weaker attack");
+                Assert.That(PveEnemyArtwork.DisplayColor(type, attacks[1]), Is.EqualTo(CardColor.Red),
+                    type.Id + " stronger attack");
+                Assert.That(type.PurpleCards.All(card => PveEnemyArtwork.DisplayColor(card) == CardColor.Blue),
+                    Is.True, type.Id + " defenses");
+            }
         }
     }
 }

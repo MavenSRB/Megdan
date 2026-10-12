@@ -58,6 +58,17 @@ namespace GuardsDigital.Pve.Presentation
         private bool loading;
         private float nextStep;
 
+        // A real rejoin creates a fresh client after the previous process has gone away. Keep the
+        // host-issued capability in the same per-user store as the shared PvP lobby so that fresh
+        // client can authenticate the reserved-seat reclaim instead of remaining unseated over the
+        // scene's provisional demo composition. The optional factory is a process-boundary test seam;
+        // production always uses Unity's persistent data directory.
+        private static Func<IRetainedSeatCapabilityStore> retainedCapabilityStoreFactory;
+
+        private static IRetainedSeatCapabilityStore RetainedCapabilities() =>
+            retainedCapabilityStoreFactory?.Invoke() ??
+            new FileRetainedSeatCapabilityStore(UnityEngine.Application.persistentDataPath);
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Register()
         {
@@ -131,7 +142,8 @@ namespace GuardsDigital.Pve.Presentation
         private void Connect(SeatId seat)
         {
             var connection = new Connection { Transport = new TcpSessionClientTransport() };
-            connection.Client = new PrivateSessionClient(identity, seat, entry.SessionKey, connection, new CryptoNonceSource())
+            connection.Client = new PrivateSessionClient(identity, seat, entry.SessionKey, connection,
+                new CryptoNonceSource(), retainedCapabilities: RetainedCapabilities())
                 { PlayerName = entry.PlayerName };
             connections.Add(connection);
             active = connection.Client;
@@ -186,7 +198,11 @@ namespace GuardsDigital.Pve.Presentation
                     string.Join("|", active.Roster.Select(r => r.Seat + ":" + r.Occupancy + ":" + r.IsReady + ":" + r.Hero + ":" + r.HasChosenHero)) +
                     string.Join("|", connections.Select(c => c.Client.State + ":" + c.Client.TargetSeat));
                 if (stamp != rendered) { rendered = stamp; view.Render(model); }
-                if (connections.Any(c => c.Client.HasMatchStarted && c.Client.LatestProjection != null)) LoadMatch();
+                var localOwnerReady = connections.Any(c =>
+                    c.Client.HasMatchStarted && c.Client.LatestProjection != null);
+                var seatlessHostReady = server?.HasMatchStarted == true &&
+                    connections.All(c => c.Client.GrantedSeat == null);
+                if (seatlessHostReady || localOwnerReady) LoadMatch();
             }
             if (runtime == null) return;
             if (server != null && !server.IsPaused && Time.unscaledTime >= nextStep)
@@ -195,9 +211,12 @@ namespace GuardsDigital.Pve.Presentation
                 if (match.Session.Step(out _)?.Accepted == true) server.RepublishProjections();
             }
             SelectAwaitedOwner();
-            if (projectionRevision != active.ProjectionRevision)
+            var nextRevision = runtime.IsSeatlessHostView
+                ? match.Session.Projection.Version
+                : active.ProjectionRevision;
+            if (projectionRevision != nextRevision)
             {
-                projectionRevision = active.ProjectionRevision;
+                projectionRevision = nextRevision;
                 runtime.RefreshAll();
             }
             CaptureSavedLogs();
@@ -233,19 +252,37 @@ namespace GuardsDigital.Pve.Presentation
         private void LoadMatch()
         {
             loading = true;
-            active = connections.Select(c => c.Client).First(c => c.HasMatchStarted && c.LatestProjection != null);
-            var encounter = Compose(active.Roster.OrderBy(r => r.Seat.Value, StringComparer.Ordinal).Select(r => r.Hero.Value));
+            var localOwner = connections.Select(c => c.Client)
+                .FirstOrDefault(c => c.HasMatchStarted && c.LatestProjection != null);
+            var seatlessHost = localOwner == null && server?.HasMatchStarted == true &&
+                connections.All(c => c.Client.GrantedSeat == null);
+            if (!seatlessHost) active = localOwner ?? throw new InvalidOperationException("No local match view is available.");
+            var roster = server != null ? server.Roster : active.Roster;
+            var encounter = Compose(roster.OrderBy(r => r.Seat.Value, StringComparer.Ordinal).Select(r => r.Hero.Value));
             MatchSceneCompositionRoot.NextComposedExternalMatch = new ExternalMatchComposition(encounter.InitialState, composed =>
             {
                 runtime = composed;
-                runtime.AttachOnlineClient(active);
-                runtime.LocalHeroSelection = SelectOwnedHero;
+                if (seatlessHost)
+                    runtime.AttachSeatlessHostView(server.RepublishProjections);
+                else
+                {
+                    runtime.AttachOnlineClient(active);
+                    runtime.LocalHeroSelection = SelectOwnedHero;
+                }
                 AttachSavedNarration();
                 PveEncounterView.AttachCoop(runtime, encounter, server == null ? null : match.Session,
-                    command => { if (server.IsPaused) return; match.Session.Execute(command); server.RepublishProjections(); },
-                    command => active.TrySubmitCommand(command, out _));
+                    command =>
+                    {
+                        if (server.IsPaused) return false;
+                        var accepted = match.Session.Execute(command).Accepted;
+                        server.RepublishProjections();
+                        return accepted;
+                    });
                 view.Root.style.display = DisplayStyle.None;
-            }, directorPlayerSide: TeamSide.Blue);
+            }, sessionDecorator: seatlessHost
+                ? new Func<IMatchHost, IMatchSession, IMatchSession>((_, _) => match.Session)
+                : null,
+                directorPlayerSide: TeamSide.Blue);
             SceneManager.LoadScene(PveLauncher.MatchSceneName);
         }
 
