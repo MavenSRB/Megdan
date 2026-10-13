@@ -1220,6 +1220,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         public static MapDefinitionReference? NextComposedMap { get; set; }
         public static MatchFormat NextComposedMatchFormat { get; set; }
+        public static WaveCounterAllocation? NextComposedWaveCounterAllocation { get; set; }
 
         /// <summary>
         /// Milestone 8.35z37. The heroes the next composed match fields, or <c>null</c> for
@@ -1386,8 +1387,11 @@ namespace GuardsDigital.Presentation.Interaction
             // and the plan is what carries it. A caller that chose no line-up gets setup step 7's
             // printed one, so the configured arm below composes exactly the match it always has.
             var requestedMap = NextComposedMap; NextComposedMap = null;
+            var requestedWaveAllocation = NextComposedWaveCounterAllocation;
+            NextComposedWaveCounterAllocation = null;
             var plan = new MatchCompositionPlan(format, TakeRequestedLineup(),
-                content == SceneCardContent.ConfiguredMatch ? requestedMap : null);
+                content == SceneCardContent.ConfiguredMatch ? requestedMap : null,
+                requestedWaveAllocation ?? WaveCounterAllocation.SharedTotal);
             var map = catalog.Load(plan.Map);
             ComposedPlan = plan;
             var configuration = content switch
@@ -2365,6 +2369,7 @@ namespace GuardsDigital.Presentation.Interaction
             NextComposedMap = plan.Map;
             NextComposedMatchFormat = plan.Format;
             NextComposedLineup = plan.IsPrintedLineup ? null : plan.Lineup;
+            NextComposedWaveCounterAllocation = plan.WaveCounterAllocation;
             Compose();
         }
 
@@ -2467,7 +2472,8 @@ namespace GuardsDigital.Presentation.Interaction
                 case SceneCardContent.MechanicsShowcaseFixture:
                     return QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
                 case SceneCardContent.ConfiguredMatch:
-                    return HeroLineupComposition.Compose(plan.Format, plan.Lineup, map);
+                    return HeroLineupComposition.Compose(
+                        plan.Format, plan.Lineup, map, plan.WaveCounterAllocation);
                 default:
                     if (content == SceneCardContent.VerifiedStagedTaliWithAlly)
                     {

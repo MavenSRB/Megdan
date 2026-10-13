@@ -76,14 +76,18 @@ namespace GuardsDigital.Tests.EditMode
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(typeof(RoundResolutionAuthority)),
                     ILConformanceScanner.Method(
-                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume))),
+                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume),
+                        typeof(LanePushRequestId), typeof(ZoneId), typeof(TeamSide),
+                        typeof(TeamSide), typeof(TieBreakerState), typeof(bool))),
                 Is.True,
                 "The end-of-round request reaches the transition at its consumption stage.");
             Assert.That(
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(typeof(TurnResolutionAuthority)),
                     ILConformanceScanner.Method(
-                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume))),
+                        typeof(LanePushConsumption), nameof(LanePushConsumption.TryConsume),
+                        typeof(LanePushRequestId), typeof(ZoneId), typeof(TeamSide),
+                        typeof(TeamSide), typeof(TieBreakerState), typeof(bool))),
                 Is.True,
                 "And the mid-turn request reaches it at the Initiative advance p.8 puts it before.");
         }
@@ -259,6 +263,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static IReadOnlyList<MethodInfo> FlagForms() => new[]
         {
+            ILConformanceScanner.Method(
+                typeof(BattleZoneQuery), nameof(BattleZoneQuery.GetStartingBattleZones)),
             ILConformanceScanner.Method(
                 typeof(BattleZoneQuery), nameof(BattleZoneQuery.TryGetStartingBattleZone)),
             ILConformanceScanner.Method(

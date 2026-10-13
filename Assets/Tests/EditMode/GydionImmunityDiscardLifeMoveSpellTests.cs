@@ -367,7 +367,7 @@ namespace GuardsDigital.Tests.EditMode
             live.StartCasting();
             Assert.That(restored.RedLives, Is.EqualTo(4), "so it regains the spent counter");
             Assert.That(restored.Snapshot(), Is.EqualTo(live.Snapshot()), "exactly as the live match does");
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(60));
         }
 
         // -------------------------------------------------------------------------------------------

@@ -140,12 +140,31 @@ namespace GuardsDigital.Tests.EditMode
 
         [TestCase(2, 3, 4)]
         [TestCase(3, 3, 5)]
+        [TestCase(4, 7, 6)]
+        [TestCase(5, 7, 7)]
         public void TeamSizeDefaults_AreTheFormerQuickValues(
             int heroesPerTeam, int waves, int lives)
         {
             var format = MatchFormat.DefaultForTeamSize(heroesPerTeam);
             Assert.That(format.WaveCount, Is.EqualTo(waves));
             Assert.That(format.LifeCountPerTeam, Is.EqualTo(lives));
+        }
+
+        [Test]
+        public void DoubleLaneDefaults_RoundTripAsEightAndTenPlayerAdmissionFormats()
+        {
+            var four = MatchFormat.DefaultForTeamSize(4);
+            var five = MatchFormat.DefaultForTeamSize(5);
+
+            Assert.That(four.Id, Is.EqualTo("custom-8p-w7-l6"));
+            Assert.That(four.PlayerCount, Is.EqualTo(8));
+            Assert.That(four.TeamShape, Is.EqualTo("4v4"));
+            Assert.That(MatchFormat.FindById(four.Id), Is.EqualTo(four));
+
+            Assert.That(five.Id, Is.EqualTo("custom-10p-w7-l7"));
+            Assert.That(five.PlayerCount, Is.EqualTo(10));
+            Assert.That(five.TeamShape, Is.EqualTo("5v5"));
+            Assert.That(MatchFormat.FindById(five.Id), Is.EqualTo(five));
         }
 
         [Test]

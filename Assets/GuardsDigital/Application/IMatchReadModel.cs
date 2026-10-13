@@ -14,6 +14,16 @@ using GuardsDigital.Core.Units.Minions;
 namespace GuardsDigital.Application
 {
     /// <summary>
+    /// Optional public read-model detail for formats whose Wave counters are allocated per lane.
+    /// The scalar on <see cref="IMatchReadModel"/> remains the match-ending summary; this exposes
+    /// each authoritative pool so presentation never invents or locally tracks lane state.
+    /// </summary>
+    public interface ILaneWaveCounterReadModel
+    {
+        IReadOnlyList<int> RemainingWaveCountersByLane { get; }
+    }
+
+    /// <summary>
     /// Milestone 8.30b. Everything a match surface reads, and nothing a Director alone may.
     /// </summary>
     /// <remarks>

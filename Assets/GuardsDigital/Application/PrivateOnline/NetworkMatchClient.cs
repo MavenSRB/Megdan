@@ -343,7 +343,7 @@ namespace GuardsDigital.Application
     /// record. While the session is not actionable the retained view is deliberately stripped of
     /// every offer and pending answer.
     /// </summary>
-    public sealed class NetworkMatchReadModel : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
+    public sealed class NetworkMatchReadModel : IMatchReadModel, ILaneWaveCounterReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
     {
         public IReadOnlyList<HeroId> OptionalTurnHeroIds =>
             (trusted as IModeTurnRosterReadModel)?.OptionalTurnHeroIds ?? Array.Empty<HeroId>();
@@ -510,6 +510,11 @@ namespace GuardsDigital.Application
         /// </remarks>
         public int RemainingWaveCounters =>
             wire == null ? trusted.RemainingWaveCounters : wire.RemainingWaveCounters;
+
+        public IReadOnlyList<int> RemainingWaveCountersByLane =>
+            wire == null
+                ? ((ILaneWaveCounterReadModel)trusted).RemainingWaveCountersByLane
+                : wire.RemainingWaveCountersByLane;
 
         public IReadOnlyList<HeroOccupancy> Heroes => wire == null ? trusted.Heroes :
             Array.AsReadOnly(wire.Heroes.Select(row =>

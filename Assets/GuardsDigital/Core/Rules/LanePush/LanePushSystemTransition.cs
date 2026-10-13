@@ -286,7 +286,8 @@ namespace GuardsDigital.Core.Rules.LanePush
         /// </summary>
         private SystemTransitionStepResolution ResolveRespawn(SystemTransitionStepContext context)
         {
-            if (!Board.CurrentBattleZoneId.HasValue)
+            if (lanePush.Running == null ||
+                !Board.CurrentBattleZoneIds.Contains(lanePush.Running.BattleZoneId))
             {
                 throw new InvalidOperationException(
                     "p.8 respawns into the new Battle Zone, and the board reports none.");
@@ -295,7 +296,9 @@ namespace GuardsDigital.Core.Rules.LanePush
             var running = lanePush.Running;
             var handled = new HashSet<string>(
                 context.CompletedItemIds.Select(LanePushRespawnItem.SpawnPointOf), StringComparer.Ordinal);
-            var supply = Board.FindMinionSupply();
+            var supply = Board.FindMinionSupply()
+                .Where(BelongsToRunningLane)
+                .ToArray();
             var candidates = MinionSpawnPointsInBattleZone()
                 .Where(candidate => !handled.Contains(candidate.SpawnPoint.Id.Value))
                 .Select(candidate => new
@@ -366,7 +369,7 @@ namespace GuardsDigital.Core.Rules.LanePush
 
         private IEnumerable<SpawnPointCandidate> MinionSpawnPointsInBattleZone()
         {
-            var zoneId = Board.CurrentBattleZoneId.Value;
+            var zoneId = lanePush.Running.BattleZoneId;
             foreach (var spawnPoint in Board.MapDefinition.SpawnPoints)
             {
                 if (!LanePushSystemTransition.TryReadMinionType(spawnPoint.UnitType, out var minionType))
@@ -385,9 +388,30 @@ namespace GuardsDigital.Core.Rules.LanePush
             }
         }
 
+        /// <summary>
+        /// Rulebook p.20 binds every miniature to the Battle Zone it originally spawned in. The
+        /// immutable configured Spawn point retained by each miniature identifies that original
+        /// starting zone, so a push can select from its own lane's supply without parsing IDs or
+        /// adding presentation-owned lane state.
+        /// </summary>
+        private bool BelongsToRunningLane(MinionOccupancy minion)
+        {
+            if (Board.MapDefinition.OrderedLanes.Count <= 1) return true;
+
+            var spawn = Board.MapDefinition.SpawnPoints.SingleOrDefault(candidate =>
+                candidate.Id.Equals(minion.SpawnPoint.SpawnPointId));
+            if (spawn == null) return false;
+            var space = Board.MapDefinition.Spaces.Single(candidate =>
+                candidate.Id.Equals(spawn.SpaceId));
+            return space.ZoneId.HasValue &&
+                Board.MapDefinition.TryGetLaneContaining(space.ZoneId.Value, out var originLane, out _) &&
+                Board.MapDefinition.TryGetLaneContaining(lanePush.Running.BattleZoneId, out var runningLane, out _) &&
+                originLane == runningLane;
+        }
+
         private IEnumerable<HexCoordinate> EmptyBattleZoneCoordinates()
         {
-            var zoneId = Board.CurrentBattleZoneId.Value;
+            var zoneId = lanePush.Running.BattleZoneId;
             return Board.MapDefinition.Spaces
                 .Where(space => space.Kind == BoardMapSpaceKind.Playable &&
                     space.ZoneId.HasValue && space.ZoneId.Value.Equals(zoneId) &&

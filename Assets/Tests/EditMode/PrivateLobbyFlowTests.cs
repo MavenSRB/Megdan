@@ -464,6 +464,8 @@ namespace GuardsDigital.Tests.EditMode
                 "host log and never reached a setup they wanted.");
             Assert.That(model.Offers(PrivateLobbyControl.ChooseTwoVsTwo), Is.True);
             Assert.That(model.Offers(PrivateLobbyControl.ChooseThreeVsThree), Is.True);
+            Assert.That(model.Offers(PrivateLobbyControl.ChooseFourVsFour), Is.True);
+            Assert.That(model.Offers(PrivateLobbyControl.ChooseFiveVsFive), Is.True);
             Assert.That(model.Offers(PrivateLobbyControl.ChooseShortGame), Is.False);
             Assert.That(model.Offers(PrivateLobbyControl.ChooseLongGame), Is.False);
             Assert.That(model.Offers(PrivateLobbyControl.Host), Is.True);
@@ -475,6 +477,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             Assert.That(MatchFormat.DefaultForTeamSize(2), Is.SameAs(MatchFormat.TwoVersusTwoQuick));
             Assert.That(MatchFormat.DefaultForTeamSize(3), Is.SameAs(MatchFormat.ThreeVersusThreeQuick));
+            Assert.That(MatchFormat.DefaultForTeamSize(4).Id, Is.EqualTo("custom-8p-w7-l6"));
+            Assert.That(MatchFormat.DefaultForTeamSize(5).Id, Is.EqualTo("custom-10p-w7-l7"));
         }
     }
 }

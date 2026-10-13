@@ -955,7 +955,7 @@ namespace GuardsDigital.Application
         IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
     }
 
-    public sealed class MatchSessionProjection : IMatchReadModel, ICardValueReadModel, IModeTurnRosterReadModel
+    public sealed class MatchSessionProjection : IMatchReadModel, ILaneWaveCounterReadModel, ICardValueReadModel, IModeTurnRosterReadModel
     {
         public IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
         private readonly Lazy<string> diagnosticSnapshot;
@@ -1116,7 +1116,8 @@ namespace GuardsDigital.Application
             IEnumerable<CardValuePreview> cardValues = null,
             IEnumerable<CardInstanceId> standingActiveEffectSourceCardInstanceIds = null,
             IEnumerable<CardValuePreview> modeCardRuleValues = null,
-            IEnumerable<HeroId> optionalTurnHeroIds = null)
+            IEnumerable<HeroId> optionalTurnHeroIds = null,
+            IEnumerable<int> remainingWaveCountersByLane = null)
         {
             OptionalTurnHeroIds = Array.AsReadOnly((optionalTurnHeroIds ?? Array.Empty<HeroId>()).ToArray());
             Version = version;
@@ -1250,6 +1251,15 @@ namespace GuardsDigital.Application
             // never pushed anything off the pool, so the setup's own starting total is the honest
             // reading rather than a substituted zero.
             RemainingWaveCounters = remainingWaveCounters ?? Setup.WaveCount;
+            RemainingWaveCountersByLane = Array.AsReadOnly(
+                (remainingWaveCountersByLane ?? new[] { RemainingWaveCounters }).ToArray());
+            if (RemainingWaveCountersByLane.Count == 0 ||
+                RemainingWaveCountersByLane.Any(value => value < 0))
+            {
+                throw new ArgumentException(
+                    "Lane Wave-counter pools must be non-empty and non-negative.",
+                    nameof(remainingWaveCountersByLane));
+            }
 
             // Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish), read
             // off the round authority that records it; empty for a composition with no round behind it
@@ -1697,6 +1707,8 @@ namespace GuardsDigital.Application
         /// rather than <see cref="Setup"/>'s starting total. See <see cref="IMatchReadModel.RemainingWaveCounters"/>.
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        public IReadOnlyList<int> RemainingWaveCountersByLane { get; }
 
         /// <summary>
         /// Milestone 9.30g: every team's count toward a printed team victory, ordered by team id. See

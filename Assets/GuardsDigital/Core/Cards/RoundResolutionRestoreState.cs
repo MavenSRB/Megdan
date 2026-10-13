@@ -133,7 +133,9 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<EndOfRoundStageOutcome> outcomes,
             PendingMinionBattleChoice pendingMinionBattleChoice,
             PendingLanePushRequest pendingLanePushRequest,
-            bool preMinionBattleTriggersVisited = false)
+            bool preMinionBattleTriggersVisited = false,
+            int nextMinionBattleLaneIndex = 0,
+            IEnumerable<PendingLanePushRequest> queuedLanePushRequests = null)
         {
             CurrentStage = currentStage;
             Outcomes = Array.AsReadOnly(
@@ -141,6 +143,9 @@ namespace GuardsDigital.Core.Cards
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PreMinionBattleTriggersVisited = preMinionBattleTriggersVisited;
+            NextMinionBattleLaneIndex = nextMinionBattleLaneIndex;
+            QueuedLanePushRequests = Array.AsReadOnly(
+                (queuedLanePushRequests ?? Array.Empty<PendingLanePushRequest>()).ToArray());
         }
 
         public EndOfRoundStage? CurrentStage { get; }
@@ -165,6 +170,8 @@ namespace GuardsDigital.Core.Cards
         /// cursor, which would make a card's trigger window part of the shape of a round.</para>
         /// </summary>
         public bool PreMinionBattleTriggersVisited { get; }
+        public int NextMinionBattleLaneIndex { get; }
+        public IReadOnlyList<PendingLanePushRequest> QueuedLanePushRequests { get; }
 
         public void Deconstruct(
             out EndOfRoundStage? currentStage,

@@ -1214,6 +1214,7 @@ namespace GuardsDigital.Tests.EditMode
                 { "SystemTransitionStepDescription.RemainingCoins", NotReached("a level-up with coins left over") },
                 { "TeamAgreementParticipantProjection.PreferredCardInstanceId", NotReached("a team agreement with a statement made") },
                 { "TurnCardAssignment.PassedWithEmptyHand", NotReached("a pass with an empty hand") },
+                { "RoundTurnSlot.OptionalHeroIds", NotReached("a mode round with optional heroes") },
                 // Milestone 9.32h removed the five 9.32a and 9.32g declarations here (a facedown slot card,
                 // its withheld row and known colour, a facedown discard's colour, a log row's card moves):
                 // the "facedown gold fixture" walk and the overlay now reach every one.

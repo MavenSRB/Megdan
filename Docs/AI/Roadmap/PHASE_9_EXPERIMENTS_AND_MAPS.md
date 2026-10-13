@@ -96,9 +96,13 @@ Completed 2026-10-06: both catalogs load the promoted map; map-aware setup prese
 
 Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-961-completion).
 
-### [!] 9.62 Implement the two-lane maps for 4v4 and 5v5
+### [x] 9.62 Implement the two-lane maps for 4v4 and 5v5
 
-Queued only; not authorized. Owner: future two-lane map implementation milestone. Outcome: both [saved two-lane maps](../Maps/README.md#future-two-lane-maps-for-4v4-and-5v5) support eight or ten players in one shared initiative order, with two independently pushed active Battle Zones; either lane reaching the opposing Throne ends the whole match. Dependencies: explicit implementation approval, reviewed map/spawn specification, applicable player-count setup values, and audit of lane-specific rules/hero effects without unrequested changes. Closing checks on each map and player count: 4v4/5v5 lobby and seat admission, independent zone progression, Minion Battles/Lane Pushes and immediate whole-match victory from either lane, shared turns, relevant hero effects, restore/Undo/replay/network identity, readable HUD/artwork alignment, and existing-map/format regressions at the highest applicable testing tier. The first image remains a separate 2v2/3v3 map request.
+Authorized 2026-10-13 as W-072. Outcome: both [saved two-lane maps](../Maps/README.md#two-lane-maps-for-4v4-and-5v5) support eight or ten players in one shared initiative order, with two independently pushed active Battle Zones; either lane reaching the opposing Throne ends the whole match. Dependencies: reviewed map/spawn specification, applicable player-count setup values, and audit of lane-specific rules/hero effects without unrequested changes; stop rather than invent any mapping the saved sources and approved decisions do not resolve. Closing checks on each map and player count: 4v4/5v5 lobby and seat admission, independent zone progression, Minion Battles/Lane Pushes and immediate whole-match victory from either lane, shared turns, relevant hero effects, restore/Undo/replay/network identity, readable HUD/artwork alignment, and existing-map/format regressions at T3. The first image remains a separate 2v2/3v3 map request. No package or remote publication.
+
+Completed 2026-10-14 as W-072. Both corrected map inventories, 4v4/5v5 composition, two-lane authority, per-lane/shared Waves, schema/wire persistence and ten-rail presentation passed their focused rules, network and rendered checks. No package or publication was produced.
+
+Historical evidence: [9.62 completion](../Archive/Phase-Handoffs/PHASE_9.md#milestone-962-completion).
 
 ## Small-map preparation
 

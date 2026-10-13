@@ -142,6 +142,7 @@ namespace GuardsDigital.Core.Board
         private readonly IReadOnlyList<BoardMapSpawnPoint> spawnPoints;
         private readonly IReadOnlyList<HexCoordinate> playableCoordinates;
         private readonly IReadOnlyList<ZoneId> orderedLaneZoneIds;
+        private readonly IReadOnlyList<IReadOnlyList<ZoneId>> orderedLanes;
         private readonly IReadOnlyDictionary<SpaceId, BoardMapSpace> spacesById;
         private readonly IReadOnlyDictionary<ZoneId, BoardMapZone> zonesById;
         private readonly IReadOnlyDictionary<ZoneId, IReadOnlyList<ZoneId>> adjacentZoneIds;
@@ -149,13 +150,25 @@ namespace GuardsDigital.Core.Board
         public BoardMapDefinition(MapId id, int contentRevision, string displayName,
             IEnumerable<BoardMapSpace> spaces, IEnumerable<BoardMapZone> zones,
             IEnumerable<BoardMapSpawnPoint> spawnPoints, IEnumerable<ZoneId> orderedLaneZoneIds)
+            : this(id, contentRevision, displayName, spaces, zones, spawnPoints,
+                NormalizeLanes(orderedLaneZoneIds))
+        {
+        }
+
+        public BoardMapDefinition(MapId id, int contentRevision, string displayName,
+            IEnumerable<BoardMapSpace> spaces, IEnumerable<BoardMapZone> zones,
+            IEnumerable<BoardMapSpawnPoint> spawnPoints,
+            IEnumerable<IEnumerable<ZoneId>> orderedLanes)
         {
             if (contentRevision <= 0) throw new ArgumentOutOfRangeException(nameof(contentRevision));
             if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("Map display name must not be blank.", nameof(displayName));
             var spaceArray = spaces?.ToArray() ?? throw new ArgumentNullException(nameof(spaces));
             var zoneArray = zones?.ToArray() ?? throw new ArgumentNullException(nameof(zones));
             var spawnArray = spawnPoints?.ToArray() ?? throw new ArgumentNullException(nameof(spawnPoints));
-            var laneArray = orderedLaneZoneIds?.ToArray() ?? throw new ArgumentNullException(nameof(orderedLaneZoneIds));
+            var laneArrays = (orderedLanes ?? throw new ArgumentNullException(nameof(orderedLanes)))
+                .Select(lane => lane?.ToArray() ?? throw new ArgumentException(
+                    "An ordered lane cannot be null.", nameof(orderedLanes)))
+                .ToArray();
             if (spaceArray.Length == 0) throw new ArgumentException("A map requires spaces.", nameof(spaces));
             RequireUnique(spaceArray.Select(value => value.Id), "space IDs");
             RequireUnique(spaceArray.Select(value => value.Coordinate), "space coordinates");
@@ -186,11 +199,15 @@ namespace GuardsDigital.Core.Board
                 }
             }
 
-            ValidateOrderedLane(laneArray, zoneArray, zoneIds, zoneAdjacency);
+            ValidateOrderedLanes(laneArrays, zoneArray, zoneIds, zoneAdjacency);
             Id = id; ContentRevision = contentRevision; DisplayName = displayName;
             this.spaces = Array.AsReadOnly(spaceArray); this.zones = Array.AsReadOnly(zoneArray); this.spawnPoints = Array.AsReadOnly(spawnArray);
             playableCoordinates = Array.AsReadOnly(spaceArray.Where(value => value.Kind == BoardMapSpaceKind.Playable).Select(value => value.Coordinate).ToArray());
-            this.orderedLaneZoneIds = Array.AsReadOnly(laneArray);
+            this.orderedLanes = Array.AsReadOnly(laneArrays
+                .Select(lane => (IReadOnlyList<ZoneId>)Array.AsReadOnly(lane)).ToArray());
+            orderedLaneZoneIds = this.orderedLanes.Count == 0
+                ? Array.Empty<ZoneId>()
+                : this.orderedLanes[0];
             spacesById = new Dictionary<SpaceId, BoardMapSpace>(spaceArray.ToDictionary(value => value.Id));
             zonesById = new Dictionary<ZoneId, BoardMapZone>(zoneArray.ToDictionary(value => value.Id));
             adjacentZoneIds = new Dictionary<ZoneId, IReadOnlyList<ZoneId>>(zoneAdjacency.ToDictionary(
@@ -207,6 +224,21 @@ namespace GuardsDigital.Core.Board
         public IReadOnlyList<BoardMapSpawnPoint> SpawnPoints => spawnPoints;
         public IReadOnlyList<HexCoordinate> PlayableCoordinates => playableCoordinates;
         public IReadOnlyList<ZoneId> OrderedLaneZoneIds => orderedLaneZoneIds;
+        public IReadOnlyList<IReadOnlyList<ZoneId>> OrderedLanes => orderedLanes;
+
+        public bool TryGetLaneContaining(ZoneId zoneId, out int laneIndex, out IReadOnlyList<ZoneId> lane)
+        {
+            for (var index = 0; index < orderedLanes.Count; index++)
+            {
+                if (!orderedLanes[index].Contains(zoneId)) continue;
+                laneIndex = index;
+                lane = orderedLanes[index];
+                return true;
+            }
+            laneIndex = -1;
+            lane = null;
+            return false;
+        }
 
         public BoardMapZone GetZone(ZoneId zoneId)
         {
@@ -303,35 +335,50 @@ namespace GuardsDigital.Core.Board
                 Array.Empty<BoardMapSpawnPoint>(), Array.Empty<ZoneId>());
         }
 
-        private static void ValidateOrderedLane(
-            ZoneId[] lane,
+        private static void ValidateOrderedLanes(
+            ZoneId[][] lanes,
             BoardMapZone[] zones,
             HashSet<ZoneId> zoneIds,
             IReadOnlyDictionary<ZoneId, HashSet<ZoneId>> adjacency)
         {
-            if (lane.Length == 0) return;
-            if (lane.Length < 2) throw new ArgumentException("An ordered lane requires at least two zones.", nameof(lane));
-            RequireUnique(lane, "ordered lane zone IDs");
-            if (lane.Any(value => !zoneIds.Contains(value))) throw new ArgumentException("The ordered lane references an unknown zone.", nameof(lane));
-
+            if (lanes.Length == 0) return;
             var zonesById = zones.ToDictionary(value => value.Id);
-            if (!zonesById[lane[0]].IsThrone || !zonesById[lane[lane.Length - 1]].IsThrone)
-                throw new ArgumentException("The ordered lane must begin and end at Throne zones.", nameof(lane));
-            if (lane.Skip(1).Take(lane.Length - 2).Any(value => zonesById[value].IsThrone))
-                throw new ArgumentException("Only the ordered lane endpoints may be Throne zones.", nameof(lane));
-            if (!lane.Any(value => zonesById[value].IsStartingBattleZone))
-                throw new ArgumentException("The ordered lane must include the starting Battle Zone.", nameof(lane));
+            foreach (var lane in lanes)
+            {
+                if (lane.Length < 2) throw new ArgumentException("An ordered lane requires at least two zones.", nameof(lanes));
+                RequireUnique(lane, "ordered lane zone IDs");
+                if (lane.Any(value => !zoneIds.Contains(value))) throw new ArgumentException("An ordered lane references an unknown zone.", nameof(lanes));
+                if (!zonesById[lane[0]].IsThrone || !zonesById[lane[lane.Length - 1]].IsThrone)
+                    throw new ArgumentException("Every ordered lane must begin and end at Throne zones.", nameof(lanes));
+                if (lane.Skip(1).Take(lane.Length - 2).Any(value => zonesById[value].IsThrone))
+                    throw new ArgumentException("Only ordered-lane endpoints may be Throne zones.", nameof(lanes));
+                if (lane.Count(value => zonesById[value].IsStartingBattleZone) != 1)
+                    throw new ArgumentException("Every ordered lane requires exactly one starting Battle Zone.", nameof(lanes));
+                for (var index = 0; index < lane.Length - 1; index++)
+                    if (!adjacency[lane[index]].Contains(lane[index + 1]))
+                        throw new ArgumentException("Consecutive ordered lane zones must share a playable border.", nameof(lanes));
+            }
 
             var expectedLaneZones = new HashSet<ZoneId>(zones
                 .Where(value => value.IsThrone || string.Equals(value.Kind, "lane", StringComparison.Ordinal))
                 .Select(value => value.Id));
-            if (!expectedLaneZones.SetEquals(lane))
-                throw new ArgumentException("The ordered lane must contain every Throne and lane zone exactly once.", nameof(lane));
-            for (var index = 0; index < lane.Length - 1; index++)
-            {
-                if (!adjacency[lane[index]].Contains(lane[index + 1]))
-                    throw new ArgumentException("Consecutive ordered lane zones must share a playable border.", nameof(lane));
-            }
+            var actualLaneZones = new HashSet<ZoneId>(lanes.SelectMany(lane => lane));
+            if (!expectedLaneZones.SetEquals(actualLaneZones))
+                throw new ArgumentException("Ordered lanes must contain every Throne and lane zone.", nameof(lanes));
+            var sharedInterior = lanes.SelectMany(lane => lane.Skip(1).Take(lane.Length - 2))
+                .GroupBy(value => value).FirstOrDefault(group => group.Count() > 1);
+            if (sharedInterior != null)
+                throw new ArgumentException("Two ordered lanes cannot share an interior zone.", nameof(lanes));
+        }
+
+        private static IEnumerable<IEnumerable<ZoneId>> NormalizeLanes(
+            IEnumerable<ZoneId> orderedLaneZoneIds)
+        {
+            var lane = orderedLaneZoneIds?.ToArray() ??
+                throw new ArgumentNullException(nameof(orderedLaneZoneIds));
+            return lane.Length == 0
+                ? Array.Empty<IEnumerable<ZoneId>>()
+                : new[] { (IEnumerable<ZoneId>)lane };
         }
 
         private static void RequireUnique<T>(IEnumerable<T> values, string label)

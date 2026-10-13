@@ -23,6 +23,7 @@ namespace GuardsDigital.Core.Components
 
         /// <summary>The Zone the Lane has reached, or the named absence on a map that declares none.</summary>
         ZoneId? CurrentBattleZoneId { get; }
+        IReadOnlyList<ZoneId> CurrentBattleZoneIds { get; }
 
         /// <summary>
         /// Moves the Battle Zone one verified step along the ordered Lane, or refuses and leaves it
@@ -30,6 +31,7 @@ namespace GuardsDigital.Core.Components
         /// one step away on this map's Lane is verified here.
         /// </summary>
         bool CommitValidatedBattleZoneAdvance(ZoneId destination);
+        bool CommitValidatedBattleZoneAdvance(ZoneId current, ZoneId destination);
 
         /// <summary>
         /// The minion miniatures standing in one Zone, in canonical identity order (milestone 6.11).

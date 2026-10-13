@@ -93,6 +93,25 @@ namespace GuardsDigital.Core.Rules.LanePush
             TeamSide losingSide,
             TieBreakerState tieBreakerState)
         {
+            if (!lanePush.Board.CurrentBattleZoneId.HasValue)
+                return LanePushConsumptionResult.Reject(
+                    LanePushPrefixRejectionReason.NoCurrentBattleZone,
+                    LanePushPrefixResult.Reject(
+                        LanePushPrefixRejectionReason.NoCurrentBattleZone,
+                        lanePush.RemainingWaveCounters, null));
+            return TryConsume(
+                requestId, lanePush.Board.CurrentBattleZoneId.Value,
+                winningSide, losingSide, tieBreakerState);
+        }
+
+        public LanePushConsumptionResult TryConsume(
+            LanePushRequestId requestId,
+            GuardsDigital.Core.Board.ZoneId battleZoneId,
+            TeamSide winningSide,
+            TeamSide losingSide,
+            TieBreakerState tieBreakerState,
+            bool deferDoubleLaneFinalWaveDecision = false)
+        {
             if (lanePush.Running != null)
             {
                 throw new InvalidOperationException(
@@ -100,7 +119,9 @@ namespace GuardsDigital.Core.Rules.LanePush
                     "time and each of the two checkpoints stops the match while its own is unfinished.");
             }
 
-            var rejection = lanePush.TryBeginPush(winningSide, losingSide, tieBreakerState);
+            var rejection = lanePush.TryBeginPush(
+                battleZoneId, winningSide, losingSide, tieBreakerState,
+                deferDoubleLaneFinalWaveDecision);
             if (rejection != LanePushPrefixRejectionReason.None)
             {
                 return LanePushConsumptionResult.Reject(

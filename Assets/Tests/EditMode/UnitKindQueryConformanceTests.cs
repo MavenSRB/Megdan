@@ -92,7 +92,11 @@ namespace GuardsDigital.Tests.EditMode
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(minionBattleRules),
                     ILConformanceScanner.Method(
-                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside))),
+                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside),
+                        typeof(GuardsDigital.Core.Components.IBoardDisplacementAuthority),
+                        typeof(GuardsDigital.Core.Board.ZoneId),
+                        typeof(GuardsDigital.Core.Participants.MatchParticipants),
+                        typeof(RuleModificationSet))),
                 Is.True,
                 "Minion Battle must count the Battle Zone through the shared effective query.");
 

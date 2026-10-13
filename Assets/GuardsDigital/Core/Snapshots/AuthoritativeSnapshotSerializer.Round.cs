@@ -99,6 +99,10 @@ namespace GuardsDigital.Core.Snapshots
             // its Minion Battle either way - so a restore without it would fire every card that
             // declared the window a second time, on a battle it had already interrupted once.
             writer.Write(endOfRound.PreMinionBattleTriggersVisited);
+            writer.Write(endOfRound.NextMinionBattleLaneIndex);
+            writer.Write(endOfRound.QueuedLanePushRequests.Count);
+            foreach (var request in endOfRound.QueuedLanePushRequests)
+                WritePendingLanePushRequest(writer, request);
             WritePendingMinionBattleChoice(writer, pendingMinionBattleChoice);
             WritePendingLanePushRequest(writer, pendingLanePushRequest);
             WriteTiming(writer, round.Timing.CaptureRestoreState());
@@ -201,6 +205,15 @@ namespace GuardsDigital.Core.Snapshots
                     "Snapshot records rulebook p.8's pre-Minion-Battle moment as visited in a round " +
                     "that has not reached its Minion Battle.");
             }
+
+            var nextMinionBattleLaneIndex = reader.ReadInt32();
+            var queuedLanePushRequests = ReadMany(
+                reader, "queued end-of-round Lane Push requests", () =>
+                {
+                    var request = ReadPendingLanePushRequest(reader);
+                    if (request == null) throw Malformed("A queued Lane Push request cannot be absent.");
+                    return request;
+                });
 
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
@@ -348,7 +361,9 @@ namespace GuardsDigital.Core.Snapshots
                         outcomes,
                         pendingMinionBattleChoice,
                         pendingLanePushRequest,
-                        preMinionBattleTriggersVisited),
+                        preMinionBattleTriggersVisited,
+                        nextMinionBattleLaneIndex,
+                        queuedLanePushRequests),
                     new RoundCardActionsRestoreState(hasRoundCardActions, roundCoinLedger),
                     systemTransitions.CaptureRestoreState(),
                     heroProgression,
@@ -679,18 +694,20 @@ namespace GuardsDigital.Core.Snapshots
             if (lanePush == null) return;
 
             var state = lanePush.CaptureRestoreState();
-            state.Deconstruct(
-                out var remainingWaveCounters, out var gameEndingCause, out var winningSide,
-                out var running);
-            writer.Write(remainingWaveCounters);
-            writer.Write((int)gameEndingCause);
-            writer.Write((int)winningSide);
+            writer.Write((int)state.WaveCounterAllocation);
+            writer.Write(state.RemainingWaveCountersByLane.Count);
+            foreach (var remaining in state.RemainingWaveCountersByLane) writer.Write(remaining);
+            writer.Write(state.IsSuddenDeath);
+            writer.Write((int)state.GameEndingCause);
+            writer.Write((int)state.WinningSide);
+            var running = state.Running;
             writer.Write(running != null);
             if (running == null) return;
 
             writer.Write((int)running.WinningSide);
             writer.Write((int)running.LosingSide);
             writer.Write((int)running.TieBreakerSide);
+            writer.Write(running.BattleZoneId.Value);
             writer.Write(running.PreviousBattleZoneId.HasValue);
             if (running.PreviousBattleZoneId.HasValue)
             {
@@ -714,7 +731,12 @@ namespace GuardsDigital.Core.Snapshots
                 return null;
             }
 
-            var remainingWaveCounters = reader.ReadInt32();
+            var waveCounterAllocation = SnapshotEnumReader.Read<
+                GuardsDigital.Core.Setup.WaveCounterAllocation>(reader, "Wave-counter allocation");
+            var remainingWaveCounters = ReadMany(reader, "remaining Wave-counter pools", () => reader.ReadInt32());
+            if (remainingWaveCounters.Length == 0 || remainingWaveCounters.Any(value => value < 0))
+                throw Malformed("Snapshot remaining Wave-counter pools must be present and nonnegative.");
+            var isSuddenDeath = reader.ReadBoolean();
             var gameEndingCause = SnapshotEnumReader.Read<
                 GuardsDigital.Core.Rules.LanePush.LanePushGameEndingCause>(
                 reader, "Lane-Push game-ending cause");
@@ -725,6 +747,7 @@ namespace GuardsDigital.Core.Snapshots
                 var runningWinner = SnapshotEnumReader.Read<TeamSide>(reader, "running push winner");
                 var runningLoser = SnapshotEnumReader.Read<TeamSide>(reader, "running push loser");
                 var tieBreakerSide = SnapshotEnumReader.Read<TeamSide>(reader, "running push tie-breaker");
+                var battleZoneId = new ZoneId(reader.ReadString());
                 ZoneId? previousBattleZoneId = reader.ReadBoolean()
                     ? new ZoneId(reader.ReadString())
                     : (ZoneId?)null;
@@ -740,12 +763,14 @@ namespace GuardsDigital.Core.Snapshots
                             GuardsDigital.Core.Rules.LanePush.LanePushGameEndingCause>(
                             reader, "Lane-Push stage victory cause")));
                 running = new GuardsDigital.Core.Rules.LanePush.RunningLanePush(
-                    runningWinner, runningLoser, tieBreakerSide, previousBattleZoneId, outcomes);
+                    runningWinner, runningLoser, tieBreakerSide, battleZoneId,
+                    previousBattleZoneId, outcomes);
             }
 
             return GuardsDigital.Core.Rules.LanePush.LanePushTransitionAuthority.Restore(
                 new GuardsDigital.Core.Rules.LanePush.LanePushRestoreState(
-                    remainingWaveCounters, gameEndingCause, winningSide, running),
+                    remainingWaveCounters, waveCounterAllocation,
+                    gameEndingCause, winningSide, running, isSuddenDeath),
                 board);
         }
 

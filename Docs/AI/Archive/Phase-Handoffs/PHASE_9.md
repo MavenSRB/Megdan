@@ -1013,3 +1013,9 @@ Result: team-baked and neutral portraits now share the 0.66 face radius inside t
 | Milestone | Preserved outcome | Tag |
 | --- | --- | --- |
 | 9.100 | Local `Playtest-9.100-ui-playtest` carries the Defense balance check, fixed named seat trays, Escape dismissal and equal hero-token rims. The clean 184-file ZIP matches the validated loose package byte-for-byte; older private packages are preserved and nothing was published. [Definition](../../Roadmap/PHASE_9.md#x-9100-cut-the-integrated-windows-playtest-package). | `milestone/9.100` |
+
+## Milestone 9.62 completion
+
+| Milestone | Preserved outcome | Tag |
+| --- | --- | --- |
+| 9.62 | W-072 implements the corrected green-water and lava-bridge two-lane maps for 4v4/5v5, including center Zones, terrain, independent lane battles/pushes, per-lane/shared Waves and ten visible hero rails. Snapshot v60 and wire /54 preserve the new state. Source-only; no package or publication. [Definition](../../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-962-implement-the-two-lane-maps-for-4v4-and-5v5). | `work/W-072` |

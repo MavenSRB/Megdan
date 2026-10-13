@@ -38,8 +38,17 @@ namespace GuardsDigital.Presentation.Board
             var spawns = (source.spawnPoints ?? Array.Empty<SpawnDto>()).Select(value => new BoardMapSpawnPoint(
                 new SpawnPointId(value.spawnPointId), new SpaceId(value.spaceId), value.teamId, value.unitType));
             var orderedLane = (source.orderedLaneZoneIds ?? Array.Empty<string>()).Select(value => new ZoneId(value));
+            var orderedLanes = (source.orderedLanes ?? Array.Empty<LaneDto>())
+                .Select(lane => (System.Collections.Generic.IEnumerable<ZoneId>)(lane.zoneIds ?? Array.Empty<string>())
+                    .Select(value => new ZoneId(value)).ToArray())
+                .ToArray();
             return new BoardMapDefinition(new MapId(source.mapId), source.revision, source.displayName,
-                spaces, zones, spawns, orderedLane);
+                spaces, zones, spawns,
+                orderedLanes.Length == 0
+                    ? (orderedLane.Any()
+                        ? new[] { orderedLane }
+                        : Array.Empty<System.Collections.Generic.IEnumerable<ZoneId>>())
+                    : orderedLanes);
         }
 
         private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
@@ -48,7 +57,8 @@ namespace GuardsDigital.Presentation.Board
         };
 
 #pragma warning disable 0649 // DTO fields are assigned by System.Text.Json field deserialization.
-        private sealed class MapDto { public string mapId; public int revision; public string displayName; public ZoneDto[] zones; public SpaceDto[] spaces; public SpawnDto[] spawnPoints; public string[] orderedLaneZoneIds; }
+        private sealed class MapDto { public string mapId; public int revision; public string displayName; public ZoneDto[] zones; public SpaceDto[] spaces; public SpawnDto[] spawnPoints; public string[] orderedLaneZoneIds; public LaneDto[] orderedLanes; }
+        private sealed class LaneDto { public string laneId; public string[] zoneIds; }
         private sealed class ZoneDto { public string zoneId; public string displayName; public string kind; public string teamId; public bool isThrone; public bool isStartingBattleZone; }
         private sealed class SpaceDto { public string spaceId; public int q; public int r; public string kind; public string zoneId; }
         private sealed class SpawnDto { public string spawnPointId; public string spaceId; public string teamId; public string unitType; }
@@ -62,8 +72,12 @@ namespace GuardsDigital.Presentation.Board
 
         public static readonly MapDefinitionReference AlternateSmall =
             new MapDefinitionReference(new MapId("alternate-small-single-lane"), 2);
+        public static readonly MapDefinitionReference GreenDoubleLane =
+            new MapDefinitionReference(new MapId("green-water-double-lane"), 1);
+        public static readonly MapDefinitionReference LavaBridgeDoubleLane =
+            new MapDefinitionReference(new MapId("lava-bridge-double-lane"), 1);
         public static System.Collections.Generic.IReadOnlyList<MapDefinitionReference> SupportedMaps { get; } =
-            Array.AsReadOnly(new[] { SelectedMap, AlternateSmall });
+            Array.AsReadOnly(new[] { SelectedMap, AlternateSmall, GreenDoubleLane, LavaBridgeDoubleLane });
 
         public static BoardMapCatalog Load()
         {

@@ -2,6 +2,7 @@ using System;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Presentation.Interaction
 {
@@ -23,7 +24,8 @@ namespace GuardsDigital.Presentation.Interaction
         public PrivateLobbyEntry(
             string address, string port, string sessionKey, SeatId seat, string playerName = "",
             ExperimentalMatchOptions experiments = null, MapDefinitionReference? map = null,
-            int waveCount = 0, int lifeCountPerTeam = 0, string modeId = "")
+            int waveCount = 0, int lifeCountPerTeam = 0, string modeId = "",
+            WaveCounterAllocation waveCounterAllocation = WaveCounterAllocation.SharedTotal)
         {
             ModeId = modeId ?? string.Empty;
             Map = map ?? new MapDefinitionReference(new MapId("official-single-lane"), 1);
@@ -35,6 +37,7 @@ namespace GuardsDigital.Presentation.Interaction
             PlayerName = PrivateLobbyEntryText.CleanPlayerName(playerName);
             WaveCount = waveCount;
             LifeCountPerTeam = lifeCountPerTeam;
+            WaveCounterAllocation = waveCounterAllocation;
         }
 
         /// <summary>Milestone 8.108. The name this player typed, cleaned; empty when none.</summary>
@@ -46,6 +49,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// <summary>Host-selected setup values; zero means an older/non-host caller did not state one.</summary>
         public int WaveCount { get; }
         public int LifeCountPerTeam { get; }
+        public WaveCounterAllocation WaveCounterAllocation { get; }
         public string Address { get; }
         public string Port { get; }
         public string SessionKey { get; }
@@ -322,6 +326,8 @@ namespace GuardsDigital.Presentation.Interaction
 
                 case PrivateLobbyControl.ChooseTwoVsTwo:
                 case PrivateLobbyControl.ChooseThreeVsThree:
+                case PrivateLobbyControl.ChooseFourVsFour:
+                case PrivateLobbyControl.ChooseFiveVsFive:
                     MatchSetupChoiceRequested?.Invoke(control);
                     return true;
 

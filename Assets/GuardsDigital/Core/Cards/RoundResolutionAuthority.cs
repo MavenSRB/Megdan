@@ -68,6 +68,9 @@ namespace GuardsDigital.Core.Cards
         /// planned. Reset when the next round begins, because the moment belongs to a round.
         /// </summary>
         private bool preMinionBattleTriggersVisited;
+        private int nextMinionBattleLaneIndex;
+        private readonly Queue<PendingLanePushRequest> queuedLanePushRequests =
+            new Queue<PendingLanePushRequest>();
         private readonly ActiveEffectLifecycle timing;
         private readonly MarkerAttachmentRegister markers;
         private readonly GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions;
@@ -1237,7 +1240,9 @@ namespace GuardsDigital.Core.Cards
 
             var request = PendingLanePushRequest;
             var consumption = lanePush.TryConsume(
-                request.RequestId, request.WinningSide, request.LosingSide, TieBreakerState);
+                request.RequestId, request.BattleZoneId,
+                request.WinningSide, request.LosingSide, TieBreakerState,
+                queuedLanePushRequests.Count > 0);
             if (!consumption.Accepted)
             {
                 return RoundResolutionResult.Reject(
@@ -1310,6 +1315,12 @@ namespace GuardsDigital.Core.Cards
             if (endOfRoundRequest != null &&
                 CurrentEndOfRoundStage == EndOfRoundStage.ResolveRequestedLanePush)
             {
+                if (queuedLanePushRequests.Count > 0)
+                {
+                    PendingLanePushRequest = queuedLanePushRequests.Dequeue();
+                    return RoundResolutionResult.Accept(events);
+                }
+
                 return CompleteEndOfRoundStage(
                     EndOfRoundStage.ResolveRequestedLanePush,
                     EndOfRoundStageOutcomeKind.Completed,
@@ -1401,7 +1412,9 @@ namespace GuardsDigital.Core.Cards
                     EndOfRoundOutcomes,
                     PendingMinionBattleChoice,
                     PendingLanePushRequest,
-                    preMinionBattleTriggersVisited),
+                    preMinionBattleTriggersVisited,
+                    nextMinionBattleLaneIndex,
+                    queuedLanePushRequests),
                 new RoundCardActionsRestoreState(CardActions != null, ledger),
                 systemTransitions.CaptureRestoreState(),
                 HeroProgression.CaptureRestoreState(),
@@ -1569,6 +1582,9 @@ namespace GuardsDigital.Core.Cards
             turnAuthority?.BindHeroItems(authority.HeroItems);
             authority.PendingMinionBattleChoice = pendingMinionBattleChoice;
             authority.PendingLanePushRequest = pendingLanePushRequest;
+            authority.nextMinionBattleLaneIndex = state.EndOfRound.NextMinionBattleLaneIndex;
+            foreach (var request in state.EndOfRound.QueuedLanePushRequests)
+                authority.queuedLanePushRequests.Enqueue(request);
 
             // Milestone 7.7. A restored ended match stops offering the decisions it stopped offering
             // when it ended. The flag is re-applied from the phase rather than written to the payload,
@@ -1618,6 +1634,12 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Restored Minion Battle choice does not match the round cursor.");
             }
 
+            if (authority.nextMinionBattleLaneIndex < 0 ||
+                (board != null && authority.nextMinionBattleLaneIndex > board.CurrentBattleZoneIds.Count))
+            {
+                throw new ArgumentException("Restored Minion Battle lane cursor is outside the selected map.");
+            }
+
             if (pendingMinionBattleChoice != null)
             {
                 var expectedPlan = MinionBattleRules.Plan(
@@ -1630,7 +1652,8 @@ namespace GuardsDigital.Core.Cards
                         GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
                     authority.CurrentMinionBattleRules(),
                     GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
-                    authority.minionBattleRemovalCap);
+                    authority.minionBattleRemovalCap,
+                    pendingMinionBattleChoice.BattleZoneId);
                 if (expectedPlan.PendingChoice == null)
                 {
                     throw new ArgumentException("Restored Minion Battle choice is no longer required by authoritative state.");
@@ -2180,7 +2203,8 @@ namespace GuardsDigital.Core.Cards
                     GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
                 CurrentMinionBattleRules(),
                 GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
-                minionBattleRemovalCap);
+                minionBattleRemovalCap,
+                board.CurrentBattleZoneIds[nextMinionBattleLaneIndex]);
             var preceding = precedingEvents ?? new List<RoundResolutionEvent>();
             if (plan.PendingChoice != null)
             {
@@ -2239,7 +2263,8 @@ namespace GuardsDigital.Core.Cards
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
             var ruleParticipants = CurrentMinionBattleRules();
             var candidates = units
-                .Select(unit => ResolveBattleCandidate(unit, modifications, ruleParticipants))
+                .Select(unit => ResolveBattleCandidate(
+                    unit, battleZoneId, modifications, ruleParticipants))
                 .ToArray();
             if (candidates.Any(value => !value.HasValue) || candidates.Any(value =>
                     losingTeam == null || value.Value.TeamSide != losingTeam.Side))
@@ -2302,13 +2327,16 @@ namespace GuardsDigital.Core.Cards
 
             // `This Round` remains live through the Minion Battle it can modify. The round-ending
             // checkpoint occurs only after that battle has counted and removed effective minions.
-            foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
-                TimingCheckpoint.RoundEnd,
-                RoundIndex,
-                TurnsPerRound),
-                TieBreakerState))
+            if (nextMinionBattleLaneIndex + 1 >= board.CurrentBattleZoneIds.Count)
             {
-                events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnsPerRound, timingEvent));
+                foreach (var timingEvent in timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+                    TimingCheckpoint.RoundEnd,
+                    RoundIndex,
+                    TurnsPerRound),
+                    TieBreakerState))
+                {
+                    events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnsPerRound, timingEvent));
+                }
             }
 
             PendingMinionBattleChoice = null;
@@ -2322,10 +2350,11 @@ namespace GuardsDigital.Core.Cards
             // teams, because p.8 pushes the Battle Zone once per battle however many reasons it had.
             if (losingTeam != null && ordered.Length > 0 &&
                 (pushLostBySubstitution ||
-                    !HasEffectiveMinionInBattleZone(losingTeam.Side, postRoundModifications)))
+                    !HasEffectiveMinionInBattleZone(
+                        losingTeam.Side, battleZoneId, postRoundModifications)))
             {
-                PendingLanePushRequest = new PendingLanePushRequest(
-                    new LanePushRequestId($"round-{RoundIndex}-minion-battle-lane-push"),
+                var request = new PendingLanePushRequest(
+                    new LanePushRequestId($"round-{RoundIndex}-minion-battle-{battleZoneId.Value}-lane-push"),
                     RoundIndex,
                     battleZoneId,
                     winningTeam.Id,
@@ -2333,7 +2362,15 @@ namespace GuardsDigital.Core.Cards
                     losingTeam.Id,
                     losingTeam.Side,
                     resolutionId);
-                events.Add(RoundResolutionEvent.LanePushRequested(RoundIndex, PendingLanePushRequest));
+                if (PendingLanePushRequest == null) PendingLanePushRequest = request;
+                else queuedLanePushRequests.Enqueue(request);
+                events.Add(RoundResolutionEvent.LanePushRequested(RoundIndex, request));
+            }
+
+            nextMinionBattleLaneIndex++;
+            if (nextMinionBattleLaneIndex < board.CurrentBattleZoneIds.Count)
+            {
+                return ResolveMinionBattle(events);
             }
 
             endOfRoundOutcomes.Add(new EndOfRoundStageOutcome(
@@ -2352,16 +2389,18 @@ namespace GuardsDigital.Core.Cards
         /// presence is read per body, so a hero any of whose bodies stands there is in it, and it is
         /// one unit of the battle however many of its bodies do.
         /// </summary>
-        private bool HeroStandsInCurrentBattleZone(HeroId heroId) =>
+        private bool HeroStandsInCurrentBattleZone(HeroId heroId, GuardsDigital.Core.Board.ZoneId battleZoneId) =>
             board.GetHeroBodies(heroId).Any(body =>
                 GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
                     board,
+                    battleZoneId,
                     board.MapDefinition.Spaces.Single(candidate =>
                         candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
                         candidate.Coordinate.Equals(body.Coordinate)).Id));
 
         private BattleRemovalCandidate? ResolveBattleCandidate(
             GuardsDigital.Core.Rules.Modifications.RuleObject unit,
+            GuardsDigital.Core.Board.ZoneId battleZoneId,
             GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications,
             IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants)
         {
@@ -2376,7 +2415,7 @@ namespace GuardsDigital.Core.Cards
                     GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Hero &&
                 board.IsHeroOnBoard(unit.HeroId))
             {
-                return HeroStandsInCurrentBattleZone(unit.HeroId)
+                return HeroStandsInCurrentBattleZone(unit.HeroId, battleZoneId)
                     ? new BattleRemovalCandidate(
                         unit, participants.GetTeamForHero(unit.HeroId).Side, true)
                     : (BattleRemovalCandidate?)null;
@@ -2394,7 +2433,7 @@ namespace GuardsDigital.Core.Cards
             {
                 var minion = board.Minions.SingleOrDefault(value => value.MinionId.Equals(unit.MinionId));
                 return minion != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                        .IsInCurrentBattleZone(board, minion.OccupiedSpace.SpaceId)
+                        .IsInCurrentBattleZone(board, battleZoneId, minion.OccupiedSpace.SpaceId)
                     ? new BattleRemovalCandidate(
                         unit, minion.TeamSide, minion.MinionType == StandardMinionType.Heavy)
                     : (BattleRemovalCandidate?)null;
@@ -2407,7 +2446,7 @@ namespace GuardsDigital.Core.Cards
                 return null;
             }
 
-            return HeroStandsInCurrentBattleZone(unit.HeroId)
+            return HeroStandsInCurrentBattleZone(unit.HeroId, battleZoneId)
                 ? new BattleRemovalCandidate(
                     unit, participants.GetTeamForHero(unit.HeroId).Side, false)
                 : (BattleRemovalCandidate?)null;
@@ -2456,6 +2495,7 @@ namespace GuardsDigital.Core.Cards
 
         private bool HasEffectiveMinionInBattleZone(
             TeamSide side,
+            GuardsDigital.Core.Board.ZoneId battleZoneId,
             GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
         {
             return board.Minions.Any(minion =>
@@ -2465,7 +2505,7 @@ namespace GuardsDigital.Core.Cards
                         GuardsDigital.Core.Rules.Modifications.EffectiveUnitKind.Minion,
                         modifications) &&
                     GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
-                        board, minion.OccupiedSpace.SpaceId)) ||
+                        board, battleZoneId, minion.OccupiedSpace.SpaceId)) ||
                 board.Occupancies.Any(hero =>
                 {
                     var unit = GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(hero.HeroId);
@@ -2482,7 +2522,7 @@ namespace GuardsDigital.Core.Cards
                         candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
                         candidate.Coordinate.Equals(hero.Coordinate));
                     return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                        .IsInCurrentBattleZone(board, space.Id);
+                        .IsInCurrentBattleZone(board, battleZoneId, space.Id);
                 });
         }
 
@@ -2899,6 +2939,8 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.19c1, and round-scoped for exactly the reason those two are: p.8's moment
             // before the Minion Battle belongs to a round, so the next round owes its own.
             preMinionBattleTriggersVisited = false;
+            nextMinionBattleLaneIndex = 0;
+            queuedLanePushRequests.Clear();
             CurrentEndOfRoundStage = null;
             CurrentTurnAuthority = null;
             CurrentCommitmentAuthority = NewCommitmentAuthority();

@@ -148,7 +148,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return null;
             }
 
-            var remaining = BattleZoneQuery.FindEffectiveMinionsInside(board, participants, modifications);
+            return From(
+                cause, battleZone.Id, null,
+                causeResolutionId, board, participants, modifications);
+        }
+
+        public static PendingImmediateLanePushRequest From(
+            LanePushQualification qualification,
+            ActionResolutionId causeResolutionId,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications) =>
+            From(
+                qualification.Cause, qualification.BattleZoneId, qualification.LosingSide,
+                causeResolutionId, board, participants, modifications);
+
+        private static PendingImmediateLanePushRequest From(
+            LanePushCauseKind cause,
+            ZoneId battleZoneId,
+            TeamSide? recordedLosingSide,
+            ActionResolutionId causeResolutionId,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+            if ((cause != LanePushCauseKind.Removal && cause != LanePushCauseKind.Defeat) ||
+                !board.CurrentBattleZoneIds.Contains(battleZoneId))
+                return null;
+
+            var remaining = BattleZoneQuery.FindEffectiveMinionsInside(
+                board, battleZoneId, participants, modifications);
             var redHolds = remaining.Any(minion => minion.TeamSide == TeamSide.Red);
             var blueHolds = remaining.Any(minion => minion.TeamSide == TeamSide.Blue);
             if (redHolds == blueHolds)
@@ -163,10 +195,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return null;
             }
 
+            if (recordedLosingSide.HasValue && losingTeam.Side != recordedLosingSide.Value)
+                return null;
+
+            var requestSuffix = board.CurrentBattleZoneIds.Count > 1
+                ? $"-{battleZoneId.Value}"
+                : string.Empty;
             return new PendingImmediateLanePushRequest(
-                new LanePushRequestId($"{causeResolutionId.Value}-lane-push"),
+                new LanePushRequestId($"{causeResolutionId.Value}-lane-push{requestSuffix}"),
                 cause,
-                battleZone.Id,
+                battleZoneId,
                 winningTeam.Id,
                 winningTeam.Side,
                 losingTeam.Id,

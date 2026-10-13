@@ -286,10 +286,11 @@ namespace GuardsDigital.Core.Snapshots
 
         private static void WriteBoard(BinaryWriter writer, AdjacentMoveAuthority board)
         {
+            var state = board.CaptureRestoreState();
             var (heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
-                currentBattleZoneId, minionBattleExclusions, lastCompletedMovementWalk,
+                _, minionBattleExclusions, lastCompletedMovementWalk,
                 heroBodySupplies, actingBodies, currentTurnStart, previousTurnStart,
-                unitMutations) = board.CaptureRestoreState();
+                unitMutations) = state;
             writer.Write(board.SelectedMap.MapId.Value);
             writer.Write(board.SelectedMap.ContentRevision);
 
@@ -297,7 +298,9 @@ namespace GuardsDigital.Core.Snapshots
             // that map and means nothing without it. The empty string is the named absence rather than
             // a sentinel zone: a map that declares no starting Battle Zone has none to record, and a
             // reader that saw one would be reading a lane the map does not have.
-            writer.Write(currentBattleZoneId.HasValue ? currentBattleZoneId.Value.Value : string.Empty);
+            writer.Write(state.CurrentBattleZoneIds.Count);
+            foreach (var currentBattleZoneId in state.CurrentBattleZoneIds)
+                writer.Write(currentBattleZoneId.Value);
             writer.Write(heroOccupancies.Count);
             // Milestone 9.21a, schema v49. Each row is one BODY of a hero, written in (hero, body) order;
             // every single-bodied hero writes body 1.
@@ -445,20 +448,25 @@ namespace GuardsDigital.Core.Snapshots
             // starting-Battle-Zone flag - is exactly what the acceptance check forbids: it would turn a
             // payload naming another map's zone, or a zone this build no longer declares, into a match
             // silently restored to the zone it began in.
-            var currentBattleZoneValue = reader.ReadString();
-            ZoneId? currentBattleZoneId = null;
-            if (currentBattleZoneValue.Length > 0)
+            var currentBattleZoneIds = ReadMany(reader, "current Battle Zones", () =>
             {
-                var candidate = new ZoneId(currentBattleZoneValue);
+                var candidate = new ZoneId(reader.ReadString());
                 if (!GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.CanBeCurrentBattleZone(
                         mapDefinition, candidate))
                 {
                     throw Malformed(
                         $"Snapshot Battle Zone '{candidate}' is not a zone map '{reference}' could push the Lane to.");
                 }
-
-                currentBattleZoneId = candidate;
-            }
+                return candidate;
+            });
+            var expectedBattleZoneCount = mapDefinition.OrderedLanes.Count > 0
+                ? mapDefinition.OrderedLanes.Count
+                : mapDefinition.Zones.Count(zone => zone.IsStartingBattleZone);
+            if (currentBattleZoneIds.Length != expectedBattleZoneCount ||
+                currentBattleZoneIds.Distinct().Count() != currentBattleZoneIds.Length ||
+                (mapDefinition.OrderedLanes.Count > 0 && currentBattleZoneIds.Where((zoneId, laneIndex) =>
+                    !mapDefinition.OrderedLanes[laneIndex].Contains(zoneId)).Any()))
+                throw Malformed("Snapshot current Battle Zones must name exactly one zone on each ordered Lane.");
 
             var heroes = ReadMany(reader, "hero occupancies", () =>
             {
@@ -549,8 +557,8 @@ namespace GuardsDigital.Core.Snapshots
             var currentStart = ReadTurnPositions(reader, "current turn-start positions");
             var previousStart = ReadTurnPositions(reader, "previous turn-start positions");
             return AdjacentMoveAuthority.Restore(
-                new BoardRestoreState(
-                    heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneId,
+                BoardRestoreState.ForBattleZones(
+                    heroes, obstacles, remainingMinions, placedTokens, currentBattleZoneIds,
                     exclusions, lastWalk, bodySupplies, actingBodies,
                     currentStart, previousStart, mutations),
                 mapDefinition,

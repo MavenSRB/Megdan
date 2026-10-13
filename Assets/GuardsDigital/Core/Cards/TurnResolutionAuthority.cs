@@ -4033,7 +4033,8 @@ namespace GuardsDigital.Core.Cards
             var decided = cardActions.DeriveImmediateLanePushAtEndOfAction(
                 participants, CurrentModifications()) ?? request;
             var consumption = lanePush.TryConsume(
-                decided.RequestId, decided.WinningSide, decided.LosingSide,
+                decided.RequestId, decided.BattleZoneId,
+                decided.WinningSide, decided.LosingSide,
                 initiative.TieBreakerState);
             if (!consumption.Accepted || consumption.IsPaused)
             {

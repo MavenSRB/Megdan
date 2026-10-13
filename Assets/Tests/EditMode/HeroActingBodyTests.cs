@@ -235,7 +235,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(atPick));
             Assert.That(session.Projection.PendingActingBodyChoice, Is.Not.Null);
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(60));
         }
 
         [Test]
@@ -318,7 +318,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(NetworkCommandCodec.TryDecode(NetworkCommandCodec.Encode(command), out var decoded), Is.True);
             Assert.That(decoded, Is.EqualTo(command));
             Assert.That(decoded.HeroBody, Is.EqualTo(2));
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(52));
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(54));
         }
 
         [Test]

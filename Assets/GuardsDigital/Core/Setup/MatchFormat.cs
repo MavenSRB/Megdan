@@ -142,7 +142,7 @@ namespace GuardsDigital.Core.Setup
         public static MatchFormat Default => ThreeVersusThreeQuick;
 
         /// <summary>
-        /// Milestone 9.70. A host-selected 2v2 or 3v3 setup. Printed Quick/Long rows retain their
+        /// Milestone 9.70/W-072. A host-selected 2v2, 3v3, 4v4 or 5v5 setup. Printed Quick/Long rows retain their
         /// historical ids when the selected counts match them; every other supported pair uses the
         /// admission tuple's existing custom description.
         /// </summary>
@@ -151,10 +151,11 @@ namespace GuardsDigital.Core.Setup
             int waveCount,
             int lifeCountPerTeam)
         {
-            if (heroesPerTeam != 2 && heroesPerTeam != 3)
+            if (heroesPerTeam < 2 || heroesPerTeam > 5)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(heroesPerTeam), heroesPerTeam, "Configured play supports 2v2 or 3v3.");
+                    nameof(heroesPerTeam), heroesPerTeam,
+                    "Configured play supports 2v2, 3v3, 4v4 or 5v5.");
             }
 
             ValidateSetupCount(waveCount, nameof(waveCount));
@@ -177,6 +178,8 @@ namespace GuardsDigital.Core.Setup
         public static MatchFormat DefaultForTeamSize(int heroesPerTeam) =>
             heroesPerTeam == 2 ? TwoVersusTwoQuick
             : heroesPerTeam == 3 ? ThreeVersusThreeQuick
+            : heroesPerTeam == 4 ? CreateConfigured(4, 7, 6)
+            : heroesPerTeam == 5 ? CreateConfigured(5, 7, 7)
             : throw new ArgumentOutOfRangeException(nameof(heroesPerTeam));
 
         /// <summary>
@@ -214,7 +217,7 @@ namespace GuardsDigital.Core.Setup
                     CultureInfo.InvariantCulture, out var waves) ||
                 !int.TryParse(parts[3].Substring(1), NumberStyles.None,
                     CultureInfo.InvariantCulture, out var lives) ||
-                (playerCount != 4 && playerCount != 6))
+                (playerCount != 4 && playerCount != 6 && playerCount != 8 && playerCount != 10))
             {
                 return null;
             }

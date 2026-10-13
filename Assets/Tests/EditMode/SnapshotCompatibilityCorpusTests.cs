@@ -1800,23 +1800,23 @@ namespace GuardsDigital.Tests.EditMode
         // a promise to read v54 payloads. Aggregate equality groups remain unchanged.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v54", "79ae20240559ec79622a6a65f3165d5f84e6338f210b09b405888b18dac4b9f3"),
-            new CompatibilityFixture("active-turn-v54", "7df496f2789e5e737e666e9250e3ecb7efa5b716f3b7cc0d2c24f6332f3bf3f1"),
-            new CompatibilityFixture("pending-choice-v54", "06bae86bca25b18978b3066fb4cd4b0fe39eba3422234351fc00aea2737ba676"),
-            new CompatibilityFixture("end-of-round-v54", "fafb446d5a95be752b98a75acf716314e28d3a597e047dd8522c7a73b01e2756"),
-            new CompatibilityFixture("pending-minion-battle-v54", "c8434d6daeff275ff5943b0d8344a77d1c5bc4b5c055927fe3868bff2efa7d66"),
-            new CompatibilityFixture("placed-token-v54", "0c68186941b9af57e40ba6af3cb10559dcbd0c3d8c586ad3143dbe0fbb82a690"),
-            new CompatibilityFixture("attached-marker-v54", "cc2520d3e526f6fe867fa0295f9f0e121e57fc477b46f4792d948a8a6b66060a"),
-            new CompatibilityFixture("pending-correction-v54", "f1021550acd830f3ac546914323a4f3539f37d6d3861a9d953b12bd7dea445d5"),
-            new CompatibilityFixture("paused-level-up-v54", "ebd5abb3f0487fceaf4f509b3cc07db5a44ce85dd998d9c76d1cb13797089363"),
-            new CompatibilityFixture("ended-match-v54", "633736bfa988ae5621951631fd7c865c3715bc1240784e953a8ba5f7d46c1746"),
-            new CompatibilityFixture("verified-hand-setup-v54", "52214719bc34261e423386743f3c979bed6baf8b55b76533e0b34d4ffe401b00"),
-            new CompatibilityFixture("paused-orbit-repeat-v54", "eed5b31842d55c9750fbfd6a678002ef34e5e053e5f98bbc865825589b1ef689"),
-            new CompatibilityFixture("paused-card-text-v54", "3cadff5c2a1e613b3a6e39fd50004bd777cc457fab287270cdf62f1838c245cc"),
-            new CompatibilityFixture("paused-block-rider-v54", "62d64a6626c0f977cff3b75707a6b8eb91594b1d938dfcba1e8382feb67a0e1a"),
-            new CompatibilityFixture("paused-repeated-attack-v54", "3c2af48df6464a93a4bf5ca019780c5fce3d53918121effb6e982feaa09c3865"),
-            new CompatibilityFixture("parked-pre-action-v54", "d40228002c399e3cd4ec9ad712ce8a6c9ef94ab83c2ee6b4a8b6ed3316ee848c"),
-            new CompatibilityFixture("spellbook-v54", "2c20bb3226fad3e78f00da304c50d31059a8c8c6bddc53065ca2f6d492c78dc7")
+            new CompatibilityFixture("setup-v54", "b2638f5bc067a451729ae34e893688bd4d1dd13dfafdd83148e5f55f296cfd20"),
+            new CompatibilityFixture("active-turn-v54", "976d0e30efb651a0510ba995b91ea215b9f7f5dbca9924883675e11528fd989d"),
+            new CompatibilityFixture("pending-choice-v54", "5298da3691124d2b326c72b458e58a8963d424827a334ca6b36913a3b1e2741f"),
+            new CompatibilityFixture("end-of-round-v54", "782ce6144237c835d9ddb8f00dad393290c6cbe9927a960c1e1b9951b8cb7436"),
+            new CompatibilityFixture("pending-minion-battle-v54", "7d2508882d2fb7e2ac322d27faa2a8c85f97a0b8f82b7ad3d5528989bcacc0fd"),
+            new CompatibilityFixture("placed-token-v54", "0638c3236f95ee5078445e663457fe8fcb2496ea4962028c1f848dc930aa49c0"),
+            new CompatibilityFixture("attached-marker-v54", "86ecb07f3f2834eb85dbc367c92a17ac27f55c739476e3c32ced31b927af49a2"),
+            new CompatibilityFixture("pending-correction-v54", "1735eaeb511b713fcb1315f9efa29a6c160c59059fa3e27f01f7e4fd83e85942"),
+            new CompatibilityFixture("paused-level-up-v54", "01605e22a450852f088821952acfc63b23f0e4cb83cfc522dea89131983d7550"),
+            new CompatibilityFixture("ended-match-v54", "6093f370b62bb2059756f4dc9c28cb7967ba2f50f4c518d3af968902bcad1e83"),
+            new CompatibilityFixture("verified-hand-setup-v54", "b41df4d5b0b78d30a98c76c73573440467ce4205bf8a0d613d1f884a5e17a9aa"),
+            new CompatibilityFixture("paused-orbit-repeat-v54", "51ccf4474660e45230954830e5cc86ddc1f1935b1423f04e7f0476254f5c3696"),
+            new CompatibilityFixture("paused-card-text-v54", "6ada6268c4424a8e415ad51ff3065eba40a8cdabdf5f013fa9f7643e228e01d5"),
+            new CompatibilityFixture("paused-block-rider-v54", "5593f38ed2928fdfdbbebeb3934977a1e9da2af05464380f6418d3e8e65284b0"),
+            new CompatibilityFixture("paused-repeated-attack-v54", "a42d9876d6624cca6255465f5e4dd9f83065cc3de2111e733a816c1aa9e6e686"),
+            new CompatibilityFixture("parked-pre-action-v54", "9969ee02762feb2d8bfff477fc68bc88bf24907e766b217bd487465a00783255"),
+            new CompatibilityFixture("spellbook-v54", "fdc5ce6148754c1b1b36eda0f66c54017e83c78c883b49a968b42cc11373ddbd")
         };
 
         [Test]

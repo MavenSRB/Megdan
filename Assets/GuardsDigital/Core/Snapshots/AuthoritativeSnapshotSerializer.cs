@@ -451,7 +451,7 @@ namespace GuardsDigital.Core.Snapshots
         // v58 (milestone 9.51): a paused previous-slot borrowed secondary has a new
         // ActionInvocationContext member on the wire. A v57 reader cannot interpret that
         // closed enum; reject it at schema admission rather than deep in a paused action.
-        public const int CurrentSchemaVersion = 59;
+        public const int CurrentSchemaVersion = 60;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

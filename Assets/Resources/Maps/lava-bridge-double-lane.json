@@ -1,0 +1,3246 @@
+{
+  "$schema": "guards-digital/map-specification/v1",
+  "schemaVersion": 1,
+  "identity": {
+    "spaceIdScope": "map-local",
+    "zoneIdScope": "map-local",
+    "spawnPointIdScope": "map-local",
+    "spaceIdFormat": "q{signed-integer}_r{signed-integer}",
+    "globalSpaceReference": [
+      "mapId",
+      "spaceId"
+    ],
+    "globalZoneReference": [
+      "mapId",
+      "zoneId"
+    ],
+    "globalSpawnPointReference": [
+      "mapId",
+      "spawnPointId"
+    ],
+    "selectedMapReference": [
+      "mapId",
+      "revision"
+    ],
+    "selectionMutability": "immutable-per-match",
+    "coordinateQueryScope": "selected-map-local",
+    "note": "Map-local child IDs and coordinates may repeat in another map. Persisted, catalog, external, and cross-map references compose mapId with the applicable child ID; one match instead carries the immutable selected mapId and revision."
+  },
+  "coordinateSystem": {
+    "type": "axial",
+    "orientation": "pointy-top",
+    "labelOrder": [
+      "q",
+      "r"
+    ],
+    "directions": [
+      {
+        "name": "east",
+        "dq": 1,
+        "dr": 0
+      },
+      {
+        "name": "north-east",
+        "dq": 1,
+        "dr": -1
+      },
+      {
+        "name": "north-west",
+        "dq": 0,
+        "dr": -1
+      },
+      {
+        "name": "west",
+        "dq": -1,
+        "dr": 0
+      },
+      {
+        "name": "south-west",
+        "dq": -1,
+        "dr": 1
+      },
+      {
+        "name": "south-east",
+        "dq": 0,
+        "dr": 1
+      }
+    ]
+  },
+  "connectionPolicy": {
+    "kind": "standard-axial-touching-inventory-v1",
+    "physicalConnections": "Every pair of inventoried cells separated by one named axial direction.",
+    "playableConnections": "Physical connections whose two endpoints are playable; terrain endpoints are excluded.",
+    "undirectedPhysicalConnectionCount": 1085,
+    "undirectedPlayableConnectionCount": 751
+  },
+  "mapId": "lava-bridge-double-lane",
+  "revision": 1,
+  "displayName": "Lava Bridge Double-Lane Map",
+  "source": {
+    "coordinateDiagram": "Docs/Guards of Atlantis II - Map References/two-lane-4v4-5v5-lava-bridge-melee-spawns-2026-10-05.png",
+    "coordinateDiagramStatus": "Independently source-reviewed playable cells and printed spawn glyphs; private source and prepared artwork remain excluded.",
+    "rulebook": "Docs/Guards of Atlantis II - 2nd Printing_web.pdf",
+    "rulebookPages": [
+      6,
+      19,
+      20
+    ],
+    "reviewedOn": "2026-10-13"
+  },
+  "zones": [
+    {
+      "zoneId": "blue-throne",
+      "displayName": "Blue Throne",
+      "kind": "throne",
+      "teamId": "blue",
+      "isThrone": true,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "top-blue-approach",
+      "displayName": "Top Blue Approach",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "top-starting-battle-zone",
+      "displayName": "Top Starting Battle Zone",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": true
+    },
+    {
+      "zoneId": "top-red-approach",
+      "displayName": "Top Red Approach",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "middle-bridge",
+      "displayName": "Middle Bridge",
+      "kind": "jungle",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "red-throne",
+      "displayName": "Red Throne",
+      "kind": "throne",
+      "teamId": "red",
+      "isThrone": true,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "bottom-red-approach",
+      "displayName": "Bottom Red Approach",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    },
+    {
+      "zoneId": "bottom-starting-battle-zone",
+      "displayName": "Bottom Starting Battle Zone",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": true
+    },
+    {
+      "zoneId": "bottom-blue-approach",
+      "displayName": "Bottom Blue Approach",
+      "kind": "lane",
+      "teamId": null,
+      "isThrone": false,
+      "isStartingBattleZone": false
+    }
+  ],
+  "spaces": [
+    {
+      "spaceId": "q-3_r-4",
+      "q": -3,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r-4",
+      "q": -2,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-1_r-4",
+      "q": -1,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q0_r-4",
+      "q": 0,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q1_r-4",
+      "q": 1,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q2_r-4",
+      "q": 2,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q3_r-4",
+      "q": 3,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q4_r-4",
+      "q": 4,
+      "r": -4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r-3",
+      "q": -4,
+      "r": -3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r-3",
+      "q": -3,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-2_r-3",
+      "q": -2,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-1_r-3",
+      "q": -1,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r-3",
+      "q": 0,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r-3",
+      "q": 1,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q2_r-3",
+      "q": 2,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q3_r-3",
+      "q": 3,
+      "r": -3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q4_r-3",
+      "q": 4,
+      "r": -3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q5_r-3",
+      "q": 5,
+      "r": -3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q6_r-3",
+      "q": 6,
+      "r": -3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r-2",
+      "q": -8,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-7_r-2",
+      "q": -7,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-6_r-2",
+      "q": -6,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r-2",
+      "q": -5,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r-2",
+      "q": -4,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-3_r-2",
+      "q": -3,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-2_r-2",
+      "q": -2,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r-2",
+      "q": -1,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r-2",
+      "q": 0,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r-2",
+      "q": 1,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q2_r-2",
+      "q": 2,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q3_r-2",
+      "q": 3,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q4_r-2",
+      "q": 4,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r-2",
+      "q": 5,
+      "r": -2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r-2",
+      "q": 6,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q7_r-2",
+      "q": 7,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q8_r-2",
+      "q": 8,
+      "r": -2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-9_r-1",
+      "q": -9,
+      "r": -1,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r-1",
+      "q": -8,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-7_r-1",
+      "q": -7,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-6_r-1",
+      "q": -6,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-5_r-1",
+      "q": -5,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-4_r-1",
+      "q": -4,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-3_r-1",
+      "q": -3,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-2_r-1",
+      "q": -2,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r-1",
+      "q": -1,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r-1",
+      "q": 0,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r-1",
+      "q": 1,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q2_r-1",
+      "q": 2,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q3_r-1",
+      "q": 3,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r-1",
+      "q": 4,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r-1",
+      "q": 5,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r-1",
+      "q": 6,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r-1",
+      "q": 7,
+      "r": -1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q8_r-1",
+      "q": 8,
+      "r": -1,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-9_r0",
+      "q": -9,
+      "r": 0,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r0",
+      "q": -8,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-7_r0",
+      "q": -7,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-6_r0",
+      "q": -6,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-5_r0",
+      "q": -5,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "blue-throne"
+    },
+    {
+      "spaceId": "q-4_r0",
+      "q": -4,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-3_r0",
+      "q": -3,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-2_r0",
+      "q": -2,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r0",
+      "q": -1,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r0",
+      "q": 0,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r0",
+      "q": 1,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q2_r0",
+      "q": 2,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r0",
+      "q": 3,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r0",
+      "q": 4,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r0",
+      "q": 5,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r0",
+      "q": 6,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r0",
+      "q": 7,
+      "r": 0,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q8_r0",
+      "q": 8,
+      "r": 0,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-10_r1",
+      "q": -10,
+      "r": 1,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-9_r1",
+      "q": -9,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-8_r1",
+      "q": -8,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-7_r1",
+      "q": -7,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-6_r1",
+      "q": -6,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-5_r1",
+      "q": -5,
+      "r": 1,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r1",
+      "q": -4,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-3_r1",
+      "q": -3,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-2_r1",
+      "q": -2,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r1",
+      "q": -1,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r1",
+      "q": 0,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r1",
+      "q": 1,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q2_r1",
+      "q": 2,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r1",
+      "q": 3,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r1",
+      "q": 4,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r1",
+      "q": 5,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r1",
+      "q": 6,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r1",
+      "q": 7,
+      "r": 1,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q8_r1",
+      "q": 8,
+      "r": 1,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-11_r2",
+      "q": -11,
+      "r": 2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-10_r2",
+      "q": -10,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-9_r2",
+      "q": -9,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-8_r2",
+      "q": -8,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-7_r2",
+      "q": -7,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-6_r2",
+      "q": -6,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-5_r2",
+      "q": -5,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-4_r2",
+      "q": -4,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-3_r2",
+      "q": -3,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-2_r2",
+      "q": -2,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r2",
+      "q": -1,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r2",
+      "q": 0,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q1_r2",
+      "q": 1,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q2_r2",
+      "q": 2,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r2",
+      "q": 3,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r2",
+      "q": 4,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r2",
+      "q": 5,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r2",
+      "q": 6,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r2",
+      "q": 7,
+      "r": 2,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q8_r2",
+      "q": 8,
+      "r": 2,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-12_r3",
+      "q": -12,
+      "r": 3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-11_r3",
+      "q": -11,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-10_r3",
+      "q": -10,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-9_r3",
+      "q": -9,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-8_r3",
+      "q": -8,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-7_r3",
+      "q": -7,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-6_r3",
+      "q": -6,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-5_r3",
+      "q": -5,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-4_r3",
+      "q": -4,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-3_r3",
+      "q": -3,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-2_r3",
+      "q": -2,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q-1_r3",
+      "q": -1,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-blue-approach"
+    },
+    {
+      "spaceId": "q0_r3",
+      "q": 0,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q1_r3",
+      "q": 1,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q2_r3",
+      "q": 2,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r3",
+      "q": 3,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r3",
+      "q": 4,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r3",
+      "q": 5,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r3",
+      "q": 6,
+      "r": 3,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r3",
+      "q": 7,
+      "r": 3,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-13_r4",
+      "q": -13,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-12_r4",
+      "q": -12,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-11_r4",
+      "q": -11,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-10_r4",
+      "q": -10,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-9_r4",
+      "q": -9,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-8_r4",
+      "q": -8,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-7_r4",
+      "q": -7,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-6_r4",
+      "q": -6,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r4",
+      "q": -5,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r4",
+      "q": -4,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r4",
+      "q": -3,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r4",
+      "q": -2,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-1_r4",
+      "q": -1,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q0_r4",
+      "q": 0,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q1_r4",
+      "q": 1,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q2_r4",
+      "q": 2,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r4",
+      "q": 3,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r4",
+      "q": 4,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r4",
+      "q": 5,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r4",
+      "q": 6,
+      "r": 4,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q7_r4",
+      "q": 7,
+      "r": 4,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-14_r5",
+      "q": -14,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-13_r5",
+      "q": -13,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-12_r5",
+      "q": -12,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-11_r5",
+      "q": -11,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-10_r5",
+      "q": -10,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-9_r5",
+      "q": -9,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-8_r5",
+      "q": -8,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-7_r5",
+      "q": -7,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-6_r5",
+      "q": -6,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r5",
+      "q": -5,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r5",
+      "q": -4,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r5",
+      "q": -3,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r5",
+      "q": -2,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-1_r5",
+      "q": -1,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q0_r5",
+      "q": 0,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q1_r5",
+      "q": 1,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q2_r5",
+      "q": 2,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q3_r5",
+      "q": 3,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q4_r5",
+      "q": 4,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q5_r5",
+      "q": 5,
+      "r": 5,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q6_r5",
+      "q": 6,
+      "r": 5,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-14_r6",
+      "q": -14,
+      "r": 6,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-13_r6",
+      "q": -13,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-12_r6",
+      "q": -12,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-11_r6",
+      "q": -11,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-10_r6",
+      "q": -10,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-9_r6",
+      "q": -9,
+      "r": 6,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r6",
+      "q": -8,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-7_r6",
+      "q": -7,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-6_r6",
+      "q": -6,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-5_r6",
+      "q": -5,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-4_r6",
+      "q": -4,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-3_r6",
+      "q": -3,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-2_r6",
+      "q": -2,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-1_r6",
+      "q": -1,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q0_r6",
+      "q": 0,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q1_r6",
+      "q": 1,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "top-starting-battle-zone"
+    },
+    {
+      "spaceId": "q2_r6",
+      "q": 2,
+      "r": 6,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q3_r6",
+      "q": 3,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q4_r6",
+      "q": 4,
+      "r": 6,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q5_r6",
+      "q": 5,
+      "r": 6,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-15_r7",
+      "q": -15,
+      "r": 7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-14_r7",
+      "q": -14,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-13_r7",
+      "q": -13,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "bottom-blue-approach"
+    },
+    {
+      "spaceId": "q-12_r7",
+      "q": -12,
+      "r": 7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-11_r7",
+      "q": -11,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-10_r7",
+      "q": -10,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-9_r7",
+      "q": -9,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-8_r7",
+      "q": -8,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-7_r7",
+      "q": -7,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-6_r7",
+      "q": -6,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-5_r7",
+      "q": -5,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-4_r7",
+      "q": -4,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-3_r7",
+      "q": -3,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-2_r7",
+      "q": -2,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-1_r7",
+      "q": -1,
+      "r": 7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q0_r7",
+      "q": 0,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q1_r7",
+      "q": 1,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q2_r7",
+      "q": 2,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q3_r7",
+      "q": 3,
+      "r": 7,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q4_r7",
+      "q": 4,
+      "r": 7,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-16_r8",
+      "q": -16,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-15_r8",
+      "q": -15,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r8",
+      "q": -14,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r8",
+      "q": -13,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r8",
+      "q": -12,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r8",
+      "q": -11,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-10_r8",
+      "q": -10,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-9_r8",
+      "q": -9,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-8_r8",
+      "q": -8,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-7_r8",
+      "q": -7,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-6_r8",
+      "q": -6,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r8",
+      "q": -5,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r8",
+      "q": -4,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r8",
+      "q": -3,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "middle-bridge"
+    },
+    {
+      "spaceId": "q-2_r8",
+      "q": -2,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-1_r8",
+      "q": -1,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q0_r8",
+      "q": 0,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q1_r8",
+      "q": 1,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q2_r8",
+      "q": 2,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q3_r8",
+      "q": 3,
+      "r": 8,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q4_r8",
+      "q": 4,
+      "r": 8,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r9",
+      "q": -17,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-16_r9",
+      "q": -16,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r9",
+      "q": -15,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r9",
+      "q": -14,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r9",
+      "q": -13,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r9",
+      "q": -12,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r9",
+      "q": -11,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-10_r9",
+      "q": -10,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-9_r9",
+      "q": -9,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r9",
+      "q": -8,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-7_r9",
+      "q": -7,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-6_r9",
+      "q": -6,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-5_r9",
+      "q": -5,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r9",
+      "q": -4,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r9",
+      "q": -3,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-2_r9",
+      "q": -2,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-1_r9",
+      "q": -1,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q0_r9",
+      "q": 0,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q1_r9",
+      "q": 1,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q2_r9",
+      "q": 2,
+      "r": 9,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q3_r9",
+      "q": 3,
+      "r": 9,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r10",
+      "q": -17,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-16_r10",
+      "q": -16,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r10",
+      "q": -15,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r10",
+      "q": -14,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r10",
+      "q": -13,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r10",
+      "q": -12,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r10",
+      "q": -11,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-10_r10",
+      "q": -10,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-9_r10",
+      "q": -9,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r10",
+      "q": -8,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r10",
+      "q": -7,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-6_r10",
+      "q": -6,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-5_r10",
+      "q": -5,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-4_r10",
+      "q": -4,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-3_r10",
+      "q": -3,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-2_r10",
+      "q": -2,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-1_r10",
+      "q": -1,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q0_r10",
+      "q": 0,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q1_r10",
+      "q": 1,
+      "r": 10,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q2_r10",
+      "q": 2,
+      "r": 10,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-18_r11",
+      "q": -18,
+      "r": 11,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r11",
+      "q": -17,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-16_r11",
+      "q": -16,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r11",
+      "q": -15,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r11",
+      "q": -14,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r11",
+      "q": -13,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r11",
+      "q": -12,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r11",
+      "q": -11,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-10_r11",
+      "q": -10,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r11",
+      "q": -9,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r11",
+      "q": -8,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r11",
+      "q": -7,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-6_r11",
+      "q": -6,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-5_r11",
+      "q": -5,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-4_r11",
+      "q": -4,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-3_r11",
+      "q": -3,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-2_r11",
+      "q": -2,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-1_r11",
+      "q": -1,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q0_r11",
+      "q": 0,
+      "r": 11,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q1_r11",
+      "q": 1,
+      "r": 11,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-18_r12",
+      "q": -18,
+      "r": 12,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r12",
+      "q": -17,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-16_r12",
+      "q": -16,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r12",
+      "q": -15,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r12",
+      "q": -14,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r12",
+      "q": -13,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r12",
+      "q": -12,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r12",
+      "q": -11,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-10_r12",
+      "q": -10,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r12",
+      "q": -9,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r12",
+      "q": -8,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r12",
+      "q": -7,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-6_r12",
+      "q": -6,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-5_r12",
+      "q": -5,
+      "r": 12,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r12",
+      "q": -4,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-3_r12",
+      "q": -3,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-2_r12",
+      "q": -2,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q-1_r12",
+      "q": -1,
+      "r": 12,
+      "kind": "playable",
+      "zoneId": "top-red-approach"
+    },
+    {
+      "spaceId": "q0_r12",
+      "q": 0,
+      "r": 12,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-18_r13",
+      "q": -18,
+      "r": 13,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r13",
+      "q": -17,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-16_r13",
+      "q": -16,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r13",
+      "q": -15,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r13",
+      "q": -14,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r13",
+      "q": -13,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r13",
+      "q": -12,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-11_r13",
+      "q": -11,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-10_r13",
+      "q": -10,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r13",
+      "q": -9,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r13",
+      "q": -8,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r13",
+      "q": -7,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-6_r13",
+      "q": -6,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-5_r13",
+      "q": -5,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-4_r13",
+      "q": -4,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-3_r13",
+      "q": -3,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-2_r13",
+      "q": -2,
+      "r": 13,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-1_r13",
+      "q": -1,
+      "r": 13,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-18_r14",
+      "q": -18,
+      "r": 14,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r14",
+      "q": -17,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-16_r14",
+      "q": -16,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-15_r14",
+      "q": -15,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r14",
+      "q": -14,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r14",
+      "q": -13,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-12_r14",
+      "q": -12,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-11_r14",
+      "q": -11,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-10_r14",
+      "q": -10,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r14",
+      "q": -9,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r14",
+      "q": -8,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r14",
+      "q": -7,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-6_r14",
+      "q": -6,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-5_r14",
+      "q": -5,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-4_r14",
+      "q": -4,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-3_r14",
+      "q": -3,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-2_r14",
+      "q": -2,
+      "r": 14,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-1_r14",
+      "q": -1,
+      "r": 14,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-18_r15",
+      "q": -18,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-17_r15",
+      "q": -17,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-16_r15",
+      "q": -16,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-15_r15",
+      "q": -15,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-14_r15",
+      "q": -14,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-starting-battle-zone"
+    },
+    {
+      "spaceId": "q-13_r15",
+      "q": -13,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-12_r15",
+      "q": -12,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-11_r15",
+      "q": -11,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-10_r15",
+      "q": -10,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r15",
+      "q": -9,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r15",
+      "q": -8,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-7_r15",
+      "q": -7,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-6_r15",
+      "q": -6,
+      "r": 15,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-5_r15",
+      "q": -5,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-4_r15",
+      "q": -4,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-3_r15",
+      "q": -3,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-2_r15",
+      "q": -2,
+      "r": 15,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-16_r16",
+      "q": -16,
+      "r": 16,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-15_r16",
+      "q": -15,
+      "r": 16,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-14_r16",
+      "q": -14,
+      "r": 16,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-13_r16",
+      "q": -13,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-12_r16",
+      "q": -12,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-11_r16",
+      "q": -11,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-10_r16",
+      "q": -10,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-9_r16",
+      "q": -9,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "bottom-red-approach"
+    },
+    {
+      "spaceId": "q-8_r16",
+      "q": -8,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-7_r16",
+      "q": -7,
+      "r": 16,
+      "kind": "playable",
+      "zoneId": "red-throne"
+    },
+    {
+      "spaceId": "q-6_r16",
+      "q": -6,
+      "r": 16,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-14_r17",
+      "q": -14,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-13_r17",
+      "q": -13,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-12_r17",
+      "q": -12,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-11_r17",
+      "q": -11,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-10_r17",
+      "q": -10,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-9_r17",
+      "q": -9,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-8_r17",
+      "q": -8,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    },
+    {
+      "spaceId": "q-7_r17",
+      "q": -7,
+      "r": 17,
+      "kind": "terrain",
+      "zoneId": null
+    }
+  ],
+  "spawnPoints": [
+    {
+      "spawnPointId": "blue-hero-01",
+      "spaceId": "q-3_r-3",
+      "teamId": "blue",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "blue-hero-02",
+      "spaceId": "q-7_r-1",
+      "teamId": "blue",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "blue-hero-03",
+      "spaceId": "q-5_r-1",
+      "teamId": "blue",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-01",
+      "spaceId": "q-1_r-3",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-02",
+      "spaceId": "q5_r-1",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-03",
+      "spaceId": "q0_r8",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-04",
+      "spaceId": "q-9_r1",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-05",
+      "spaceId": "q-15_r9",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-ranged-minion-06",
+      "spaceId": "q-9_r12",
+      "teamId": "blue",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-01",
+      "spaceId": "q0_r-1",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-02",
+      "spaceId": "q2_r3",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-03",
+      "spaceId": "q1_r8",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-04",
+      "spaceId": "q-9_r3",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-05",
+      "spaceId": "q-12_r9",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-heavy-minion-06",
+      "spaceId": "q-10_r13",
+      "teamId": "blue",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-01",
+      "spaceId": "q3_r-3",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-02",
+      "spaceId": "q-1_r0",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-03",
+      "spaceId": "q-4_r1",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-04",
+      "spaceId": "q7_r0",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-05",
+      "spaceId": "q4_r2",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-06",
+      "spaceId": "q3_r7",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-07",
+      "spaceId": "q-3_r10",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-08",
+      "spaceId": "q-7_r2",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-09",
+      "spaceId": "q-10_r4",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-10",
+      "spaceId": "q-13_r5",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-11",
+      "spaceId": "q-13_r10",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-12",
+      "spaceId": "q-17_r12",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-13",
+      "spaceId": "q-6_r11",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "blue-melee-minion-14",
+      "spaceId": "q-13_r15",
+      "teamId": "blue",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-hero-01",
+      "spaceId": "q-3_r14",
+      "teamId": "red",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "red-hero-02",
+      "spaceId": "q-5_r14",
+      "teamId": "red",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "red-hero-03",
+      "spaceId": "q-7_r16",
+      "teamId": "red",
+      "unitType": "hero"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-01",
+      "spaceId": "q-1_r1",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-02",
+      "spaceId": "q5_r4",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-03",
+      "spaceId": "q-1_r12",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-04",
+      "spaceId": "q-10_r5",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-05",
+      "spaceId": "q-15_r14",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-ranged-minion-06",
+      "spaceId": "q-9_r16",
+      "teamId": "red",
+      "unitType": "ranged-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-01",
+      "spaceId": "q0_r0",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-02",
+      "spaceId": "q2_r4",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-03",
+      "spaceId": "q-1_r10",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-04",
+      "spaceId": "q-11_r5",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-05",
+      "spaceId": "q-12_r10",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-heavy-minion-06",
+      "spaceId": "q-10_r14",
+      "teamId": "red",
+      "unitType": "heavy-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-01",
+      "spaceId": "q3_r-2",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-02",
+      "spaceId": "q-4_r2",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-03",
+      "spaceId": "q7_r1",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-04",
+      "spaceId": "q3_r3",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-05",
+      "spaceId": "q3_r8",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-06",
+      "spaceId": "q0_r9",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-07",
+      "spaceId": "q-3_r11",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-08",
+      "spaceId": "q-7_r3",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-09",
+      "spaceId": "q-13_r6",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-10",
+      "spaceId": "q-14_r11",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-11",
+      "spaceId": "q-17_r13",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-12",
+      "spaceId": "q-6_r12",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-13",
+      "spaceId": "q-9_r13",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    },
+    {
+      "spawnPointId": "red-melee-minion-14",
+      "spaceId": "q-13_r16",
+      "teamId": "red",
+      "unitType": "melee-minion"
+    }
+  ],
+  "orderedLanes": [
+    {
+      "laneId": "top",
+      "zoneIds": [
+        "red-throne",
+        "top-red-approach",
+        "top-starting-battle-zone",
+        "top-blue-approach",
+        "blue-throne"
+      ]
+    },
+    {
+      "laneId": "bottom",
+      "zoneIds": [
+        "red-throne",
+        "bottom-red-approach",
+        "bottom-starting-battle-zone",
+        "bottom-blue-approach",
+        "blue-throne"
+      ]
+    }
+  ],
+  "inventoryTotals": {
+    "cells": 386,
+    "playableSpaces": 288,
+    "terrainCells": 98,
+    "spawnPoints": 58
+  }
+}

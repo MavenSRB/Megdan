@@ -126,7 +126,7 @@ namespace GuardsDigital.Application
                 AuthoritativeSnapshotSerializer.CurrentSchemaVersion,
                 map.Id.Value,
                 map.ContentRevision,
-                DescribeFormatOf(configuration, setup),
+                DescribeFormatOf(map, configuration, setup),
                 PrivateSessionContentDigest.Compute(configuration));
         }
 
@@ -145,12 +145,20 @@ namespace GuardsDigital.Application
         /// both Thrones, so teams holding different counts is not a format this build composes and
         /// must not be described as one.</para>
         /// </remarks>
-        private static string DescribeFormatOf(MatchConfiguration configuration, QuickGameSetupState setup)
+        private static string DescribeFormatOf(
+            BoardMapDefinition map,
+            MatchConfiguration configuration,
+            QuickGameSetupState setup)
         {
             var lifeCounts = setup.Teams.Select(team => team.LifeCount).Distinct().ToArray();
             var lifeCountPerTeam = lifeCounts.Length == 1 ? lifeCounts[0] : -1;
-            return MatchFormat.DescribeComposition(
+            var format = MatchFormat.DescribeComposition(
                 configuration.Participants.Players.Count, setup.WaveCount, lifeCountPerTeam);
+            return map.OrderedLanes.Count > 1
+                ? format + (setup.WaveCounterAllocation == WaveCounterAllocation.PerLane
+                    ? ";waves=per-lane"
+                    : ";waves=shared-total")
+                : format;
         }
 
         /// <summary>

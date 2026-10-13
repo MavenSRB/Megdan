@@ -449,6 +449,44 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(hero.PortraitAssistiveLabel, Does.Contain("A Hero With No Content"));
         }
 
+        [Test]
+        public void FiveHeroesPerTeam_KeepEveryRailVisibleAndOnlyTheViewedRailExpanded()
+        {
+            var heroes = Enumerable.Range(0, 5)
+                .Select(index => Overview(
+                    "red-" + index, "Red " + index, TeamSide.Red, index == 2))
+                .Concat(Enumerable.Range(0, 5).Select(index => Overview(
+                    "blue-" + index, "Blue " + index, TeamSide.Blue, false)))
+                .ToArray();
+            var view = new HeroOverviewsUnityView();
+
+            view.Render(new HeroOverviewsViewModel(1, heroes));
+
+            var rails = Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails, Has.Length.EqualTo(10));
+            Assert.That(rails.Count(rail => rail.ClassListContains("gd-hero-rail-compact")),
+                Is.EqualTo(9));
+            var expanded = rails.Single(rail =>
+                rail.userData is HeroId id && id.Equals(new HeroId("red-2")));
+            Assert.That(expanded.ClassListContains("gd-hero-rail-compact"), Is.False);
+            Assert.That(Descendants(expanded).Any(element => element.name == "gd-turn-slots"), Is.True);
+            Assert.That(rails.Where(rail => rail.ClassListContains("gd-hero-rail-compact"))
+                .All(rail => Descendants(rail).Any(element =>
+                    element.name == "gd-compact-card-row")), Is.True);
+            Assert.That(rails.Where(rail => rail.ClassListContains("gd-hero-rail-compact"))
+                .All(rail => Descendants(rail).Any(element =>
+                    element.name == "gd-turn-slots") &&
+                    Descendants(rail).Any(element =>
+                        element.name == "gd-current-card-slot") &&
+                    Descendants(rail).Any(element =>
+                        element.name == "gd-hero-medallion") &&
+                    Descendants(rail).All(element =>
+                        element.name != "gd-hero-identity-plate" &&
+                        element.name != "gd-turn-slot-active")), Is.True);
+        }
+
         private static HeroOverviewViewModel Overview(
             HeroContentId contentId, string displayName, TeamSide teamSide) =>
             new HeroOverviewViewModel(
@@ -462,6 +500,20 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<HeroTurnSlotViewModel>(),
                 Array.Empty<TrayCardViewModel>(),
                 false);
+
+        private static HeroOverviewViewModel Overview(
+            string heroId, string displayName, TeamSide teamSide, bool isViewed) =>
+            new HeroOverviewViewModel(
+                new HeroId(heroId),
+                teamSide,
+                default,
+                displayName,
+                1,
+                0,
+                Array.Empty<HeroItemBonusViewModel>(),
+                Array.Empty<HeroTurnSlotViewModel>(),
+                Array.Empty<TrayCardViewModel>(),
+                isViewed);
 
         private static Color32 Pixel(Color32[] pixels, int x, int y) =>
             pixels[(y * PreparedTokenSize) + x];

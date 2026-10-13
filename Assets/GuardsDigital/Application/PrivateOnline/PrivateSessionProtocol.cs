@@ -455,7 +455,9 @@ namespace GuardsDigital.Application
         // W-019, version 52: seven immutable modifier-display toggles extend Experimental options,
         // and the public seat projection distinguishes standing from mechanically active
         // Active-effect source cards. Earlier peers would misread the enclosing projection.
-        public const int Version = 52;
+        // W-072, version 54: large-map sessions carry multi-Lane board and Wave-pool state under
+        // snapshot schema 60, and the immutable host-selected Wave allocation is part of admission.
+        public const int Version = 54;
 
         /// <summary>
         /// Milestone 8.108. The most characters a player name may carry on the wire. Generous next

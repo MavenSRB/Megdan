@@ -261,7 +261,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaMovedBecauseThisEndingHasNoOtherSource()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(59),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(60),
                 "v42 carries the solo winner. The three team causes are re-derived on restore from " +
                 "the Lane-Push transition and p.13's counters; this one has no such source, because " +
                 "holding thirteen coins is not the same fact as having resolved the branch while " +

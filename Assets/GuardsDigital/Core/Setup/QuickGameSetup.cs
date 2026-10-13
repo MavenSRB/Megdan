@@ -146,7 +146,8 @@ namespace GuardsDigital.Core.Setup
             int waveCount,
             int lifeCountPerTeam,
             IEnumerable<QuickGameHeroPlacementDefinition> heroes,
-            IEnumerable<QuickGameMinionPlacementDefinition> minions)
+            IEnumerable<QuickGameMinionPlacementDefinition> minions,
+            WaveCounterAllocation waveCounterAllocation = WaveCounterAllocation.SharedTotal)
         {
             if (string.IsNullOrWhiteSpace(requiredMap.MapId.Value) || requiredMap.ContentRevision <= 0)
                 throw new ArgumentException("Quick Game setup requires a map identity and content revision.", nameof(requiredMap));
@@ -166,6 +167,10 @@ namespace GuardsDigital.Core.Setup
             RequiredMap = requiredMap;
             WaveCount = waveCount;
             LifeCountPerTeam = lifeCountPerTeam;
+            if (waveCounterAllocation != WaveCounterAllocation.SharedTotal &&
+                waveCounterAllocation != WaveCounterAllocation.PerLane)
+                throw new ArgumentOutOfRangeException(nameof(waveCounterAllocation));
+            WaveCounterAllocation = waveCounterAllocation;
             this.heroes = Array.AsReadOnly(heroArray);
             this.minions = Array.AsReadOnly(minionArray);
         }
@@ -173,6 +178,7 @@ namespace GuardsDigital.Core.Setup
         public MapDefinitionReference RequiredMap { get; }
         public int WaveCount { get; }
         public int LifeCountPerTeam { get; }
+        public WaveCounterAllocation WaveCounterAllocation { get; }
         public IReadOnlyList<QuickGameHeroPlacementDefinition> Heroes => heroes;
         public IReadOnlyList<QuickGameMinionPlacementDefinition> Minions => minions;
 
@@ -1668,10 +1674,12 @@ namespace GuardsDigital.Core.Setup
             TieBreakerState tieBreakerState,
             IEnumerable<QuickGameTeamSetupState> teams,
             IEnumerable<QuickGameHeroSetupState> heroes,
-            IEnumerable<QuickGameMinionSetupState> minions)
+            IEnumerable<QuickGameMinionSetupState> minions,
+            WaveCounterAllocation waveCounterAllocation = WaveCounterAllocation.SharedTotal)
         {
             SelectedMap = selectedMap;
             WaveCount = waveCount;
+            WaveCounterAllocation = waveCounterAllocation;
             TieBreakerState = tieBreakerState;
             Teams = Array.AsReadOnly(teams.ToArray());
             Heroes = Array.AsReadOnly(heroes.ToArray());
@@ -1680,6 +1688,7 @@ namespace GuardsDigital.Core.Setup
 
         public MapDefinitionReference SelectedMap { get; }
         public int WaveCount { get; }
+        public WaveCounterAllocation WaveCounterAllocation { get; }
         public TieBreakerState TieBreakerState { get; }
         public IReadOnlyList<QuickGameTeamSetupState> Teams { get; }
         public IReadOnlyList<QuickGameHeroSetupState> Heroes { get; }
@@ -1760,8 +1769,9 @@ namespace GuardsDigital.Core.Setup
                     throw Reject(QuickGameSetupRejectionReason.ParticipantMismatch, exception.Message);
                 }
 
-                var resolved = ResolvePlacement(
-                    selectedMap, definition.SpawnPoint, definition.OccupiedSpace, spaces, spawns, occupiedSpaceIds, occupiedSpawnIds);
+                var resolved = ResolveHeroPlacement(
+                    selectedMap, definition.SpawnPoint, definition.OccupiedSpace,
+                    spaces, spawns, occupiedSpaceIds);
                 var expectedTeam = GuardsDigital.Core.Rules.Modifications.ThroneZoneQuery.GetMapTeamId(team.Side);
                 if (!string.Equals(resolved.Spawn.TeamId, expectedTeam, StringComparison.Ordinal))
                     throw Reject(QuickGameSetupRejectionReason.SpawnTeamMismatch, $"Hero '{definition.HeroId}' uses the wrong team spawn point.");
@@ -1816,7 +1826,40 @@ namespace GuardsDigital.Core.Setup
                 tieBreakerState,
                 teamStates,
                 heroStates,
-                minionStates);
+                minionStates,
+                configuration.WaveCounterAllocation);
+        }
+
+        private static (BoardMapSpawnPoint Spawn, BoardMapSpace Space) ResolveHeroPlacement(
+            BoardMapDefinition selectedMap,
+            ConfiguredSpawnPointReference spawnReference,
+            ConfiguredSpaceReference spaceReference,
+            IReadOnlyDictionary<SpaceId, BoardMapSpace> spaces,
+            IReadOnlyDictionary<SpawnPointId, BoardMapSpawnPoint> spawns,
+            ISet<SpaceId> occupiedSpaceIds)
+        {
+            if (!spawnReference.MapId.Equals(selectedMap.Id) || !spaceReference.MapId.Equals(selectedMap.Id))
+                throw Reject(QuickGameSetupRejectionReason.CrossMapReference,
+                    "Setup child references must belong to the selected map.");
+            if (!spawns.TryGetValue(spawnReference.SpawnPointId, out var spawn))
+                throw Reject(QuickGameSetupRejectionReason.MissingSpawnPoint,
+                    $"Spawn point '{spawnReference}' is unavailable.");
+            if (!spaces.TryGetValue(spaceReference.SpaceId, out var space))
+                throw Reject(QuickGameSetupRejectionReason.MissingSpace,
+                    $"Space '{spaceReference}' is unavailable.");
+
+            if (!spawn.SpaceId.Equals(space.Id))
+            {
+                var anchor = spaces[spawn.SpaceId];
+                if (!occupiedSpaceIds.Contains(anchor.Id) ||
+                    !anchor.Coordinate.GetNeighbors().Contains(space.Coordinate))
+                    throw Reject(QuickGameSetupRejectionReason.SpawnSpaceMismatch,
+                        $"Extra hero at '{spaceReference}' must be adjacent to an occupied hero spawn point.");
+            }
+            if (!occupiedSpaceIds.Add(space.Id))
+                throw Reject(QuickGameSetupRejectionReason.OccupancyConflict,
+                    $"Setup placement conflicts at '{space.Id}'.");
+            return (spawn, space);
         }
 
         private static (BoardMapSpawnPoint Spawn, BoardMapSpace Space) ResolvePlacement(

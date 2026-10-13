@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 ## Purpose and authority
 
@@ -8,7 +8,7 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
+Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
 Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W060-W063 over W059. Stamp `1.0-W064-unified+20261013095758-4bb271b3`; package SHA-256 `8c7adef18f14b61de851b1174025284b7f1a376a7ef60773b95a4abd465ac652`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
@@ -16,11 +16,11 @@ Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified
 
 Matching Mac package: `Builds/Playtest-W064-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W064 build stamp/content; SHA-256 `eda28601cb277b57123b7157712c08b4cd1fe03ce75088c447d172ba5c69bbb2`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-071**.
-- Active authorized work: **None**.
-- Next proposed work: **None**.
+- Last completed work: **9.62**.
+- Active authorized work: **none**.
+- Next proposed work: **none**.
 
-W071 archives and retires the five fully merged non-main branches and their worktrees. `main` is the only local branch; detached historical/validation worktrees and remotes remain untouched.
+W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 
@@ -39,8 +39,6 @@ W057 removes the final Ranged spawn from each PvE wave: current source now has 3
 W056 gives white numeric card-modifier overlays a thicker black outline without moving or resizing them. Focused EditMode/PlayMode checks and targeted Game View inspection passed; source-only, with W050/W051 unchanged.
 
 W055 makes the large transient phase announcements and final-ten timer countdowns use the viewing player's team colour: the existing blood red for Red and dark blue for Blue. Focused EditMode/PlayMode checks and targeted Game View inspections passed; source-only, with W050/W051 unchanged.
-
-W054 repairs the unseated hosting process's live spectator view: the host redraw signature now follows the local authority version, so remote commands refresh hero positions and every other projection-driven board/HUD surface. The affected private-lobby Play Mode fixture and targeted visual review passed. Source-only; W050/W051 packages remain unchanged.
 
 W048 saved PvE logs and W049 generated enemy faces/board-gated turns are included in W050. Unspawned enemies have no commitments or turn assignments and enter the turn roster on spawning. Generated faces retain portrait proportions through the existing artwork importer; original card dimensions and preview scaling are unchanged. W046 package/main remain preserved.
 
@@ -64,7 +62,7 @@ Melee/Ranged now count as both heroes and minions for targeting/effects; Heavy c
 
 Melee, Ranged and Heavy enemies use official red tokens and a compact scrollable left rail: token, four prefilled public turn slots and Heavy's two Defense cards. Only enemies currently on the board have rows; removal hides them and spawning reveals them. No hero-sized plaque or text above map tokens; enemy token/rail hover links both ways in solo and co-op. Each enemy hand has exactly two printed attacks, one movement card and one fourth card (Melee Shield Up; Ranged Aim; Heavy Hook). Melee/Ranged have no defenses. Melee prioritizes Blue creeps; Ranged prioritizes heroes. See [PvE implementation](Project/PVE_IMPLEMENTATION.md) and [PvE design](Project/PVE_DESIGN.md). W035 PvE includes the compact rail and original Idle hands, not the new Skills; W024 remains preserved as an older package. W045 supersedes W013 for multiplayer. Existing-mode behavior, snapshot v59 and wire /52 stay unchanged. Prior delivery and the duplicate historical W-020 identifier are indexed in [work history](Archive/WORK_LOG.md). The revised compact player-name banner is visually approved (W-004). W-044's fourteen artwork-free private faces are saved in `tmp/w044-enemy-faces/final/`, with an HTML gallery and generation prompts. Twelve orange action faces and two purple Defense faces retain primary icons, omit secondary icons and follow the approved Hurl template. W049 integrates unchanged copies as private runtime assets; they are not native builder exports and the preserved W046 package does not include them.
 
-Phase 9 is closed as a development container. Current direction: playtest, iterate and repair the existing private game, add large maps as a planned expansion, and design PvE with the user. Large-map work retains the existing 9.62 plan and its setup/rules prerequisites in the backlog; it is not cancelled or automatically started. The first PvE slice is playable; later PvE questions stay open in its design owner. Neither the former 9.62 route nor paused 9.80 is automatically next.
+Phase 9 is closed as a development container. Current direction: playtest and repair the private game and design PvE with the user. The first PvE slice is playable; later PvE questions stay open in its design owner. Paused 9.80 is not automatically next.
 
 The playable PvE Blue team is exactly three chosen heroes (PVE-D27); all five placement spaces remain available. Generic composition supports smaller deterministic test fixtures.
 

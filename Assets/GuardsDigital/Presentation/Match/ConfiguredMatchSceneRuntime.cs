@@ -603,7 +603,9 @@ namespace GuardsDigital.Presentation.Match
                     projection.RoundIndex,
                     projection.TurnIndex,
                     AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default),
-                    projection.RemainingWaveCounters, (projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState)),
+                    projection.RemainingWaveCounters,
+                    (projection as IExperimentalReadModel)?.Clock ?? (Host as MatchHost)?.ClockState,
+                    (projection as ILaneWaveCounterReadModel)?.RemainingWaveCountersByLane)),
                 HeroOverviewsPresenter,
                 // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
                 // said out loud where the playtest logs already look: a marker naming the panel, and
@@ -1154,7 +1156,9 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.RoundIndex,
                 client.Projection.TurnIndex,
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
-                client.Projection.RemainingWaveCounters, DisplayClock));
+                client.Projection.RemainingWaveCounters,
+                DisplayClock,
+                (client.Projection as ILaneWaveCounterReadModel)?.RemainingWaveCountersByLane));
             coordinator.RefreshAll();
             RefreshHeroCardStateIndicators();
             FizzleNoticePresenter.Refresh();

@@ -393,5 +393,38 @@ namespace GuardsDigital.Core.Setup
 
             return new HeroLineup(red, blue);
         }
+
+        /// <summary>
+        /// Deterministic no-selection line-up for every supported team size. The printed rows remain
+        /// byte-for-byte authoritative for 2v2/3v3; the double-lane variants keep those six heroes in
+        /// their printed seats and fill the additional seats from the registered dealt roster in
+        /// canonical order. A lobby draft replaces this fallback before play.
+        /// </summary>
+        public static HeroLineup DefaultLineup(int heroesPerTeam)
+        {
+            if (heroesPerTeam <= 3) return PrintedLineup(heroesPerTeam);
+            if (heroesPerTeam > 5) throw new ArgumentOutOfRangeException(nameof(heroesPerTeam));
+
+            var red = QuickGameSetupConfiguration.PrintedLineupSides.Where(row => row.Side == TeamSide.Red)
+                .Select(row => row.Hero).ToList();
+            var blue = QuickGameSetupConfiguration.PrintedLineupSides.Where(row => row.Side == TeamSide.Blue)
+                .Select(row => row.Hero).ToList();
+            var used = new HashSet<string>(red.Concat(blue).Select(hero => hero.HeroIdValue),
+                StringComparer.Ordinal);
+            foreach (var hero in ForThisBuild.Where(hero => !used.Contains(hero.HeroIdValue)))
+            {
+                var target = red.Count <= blue.Count ? red : blue;
+                if (target.Count < heroesPerTeam)
+                {
+                    target.Add(hero);
+                    used.Add(hero.HeroIdValue);
+                }
+                if (red.Count == heroesPerTeam && blue.Count == heroesPerTeam) break;
+            }
+
+            if (red.Count != heroesPerTeam || blue.Count != heroesPerTeam)
+                throw new InvalidOperationException("The registered dealt roster cannot fill that match size.");
+            return new HeroLineup(red, blue);
+        }
     }
 }

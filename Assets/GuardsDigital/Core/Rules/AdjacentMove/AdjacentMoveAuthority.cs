@@ -24,6 +24,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         // Milestone 8.114b1, schema v47. See IMinionBattleExclusionAuthority and CompletedMovementWalk.
         private readonly HashSet<MinionId> minionBattleExclusions = new HashSet<MinionId>();
         private CompletedMovementWalk lastCompletedMovementWalk;
+        private readonly List<ZoneId> currentBattleZoneIds = new List<ZoneId>();
 
         // Milestone 9.21a, schema v49. The heroes that declare more than one body (RZ-Q1), and how
         // many each has in all. A hero absent from this map has one body, which is every hero the
@@ -389,9 +390,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             // the Lane-Push Zone stage advances, so every rules question reads this field rather than
             // the flag. A map that declares no starting Battle Zone - every synthetic board - opens
             // with the named absence rather than with a guess drawn from where minions happen to stand.
-            CurrentBattleZoneId = BattleZoneQuery.TryGetStartingBattleZone(mapDefinition, out var opening)
-                ? opening.Id
-                : (ZoneId?)null;
+            currentBattleZoneIds.AddRange(BattleZoneQuery.GetStartingBattleZones(mapDefinition)
+                .Select(zone => zone.Id));
 
             minions = new List<MinionOccupancy>(materializedMinions);
             reserveMinions = new List<MinionOccupancy>(materializedReserve);
@@ -409,7 +409,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private AdjacentMoveAuthority(AdjacentMoveAuthority source)
         {
             MapDefinition = source.MapDefinition;
-            CurrentBattleZoneId = source.CurrentBattleZoneId;
+            currentBattleZoneIds.AddRange(source.currentBattleZoneIds);
             boardCoordinates = source.boardCoordinates;
             terrainCoordinates = source.terrainCoordinates;
             occupancies = new List<HeroOccupancy>(source.occupancies);
@@ -682,7 +682,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// Minion Battle, the Heavy-immunity accompaniment, the displaced-minion correction and the
         /// Lane-Push cause all report "no zone" exactly as they did before this field existed.
         /// </summary>
-        public ZoneId? CurrentBattleZoneId { get; private set; }
+        public ZoneId? CurrentBattleZoneId => currentBattleZoneIds.Count == 0
+            ? (ZoneId?)null
+            : currentBattleZoneIds[0];
+        public IReadOnlyList<ZoneId> CurrentBattleZoneIds => currentBattleZoneIds.AsReadOnly();
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
 
@@ -820,12 +823,12 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         internal AdjacentMoveAuthority CreateValidationFork() => new AdjacentMoveAuthority(this);
 
         public BoardRestoreState CaptureRestoreState() =>
-            new BoardRestoreState(
+            BoardRestoreState.ForBattleZones(
                 occupancies,
                 obstacleOccupancies,
                 minions.Select(minion => new RestoredMinionPosition(minion.MinionId, minion.Coordinate)),
                 tokens,
-                CurrentBattleZoneId,
+                CurrentBattleZoneIds,
                 minionBattleExclusions,
                 lastCompletedMovementWalk,
                 HeroBodySupplies,
@@ -913,25 +916,27 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             // zone a pushed Lane reached, so a fallback would restore a match to the wrong board.
             // Refusing throws, which is what makes it atomic - the caller receives no half-restored
             // authority, exactly as a mismatched minion identity is refused above.
-            if (restored.CurrentBattleZoneId.HasValue != state.CurrentBattleZoneId.HasValue)
+            if (restored.CurrentBattleZoneIds.Count != state.CurrentBattleZoneIds.Count)
             {
                 throw new ArgumentException(
-                    "A restored Battle Zone must be present exactly when the selected map declares one.",
+                    "A restored Battle Zone must be present for every Lane the selected map declares.",
                     nameof(state));
             }
 
-            if (state.CurrentBattleZoneId.HasValue)
+            for (var laneIndex = 0; laneIndex < state.CurrentBattleZoneIds.Count; laneIndex++)
             {
-                var zoneId = state.CurrentBattleZoneId.Value;
-                if (!BattleZoneQuery.CanBeCurrentBattleZone(mapDefinition, zoneId))
+                var zoneId = state.CurrentBattleZoneIds[laneIndex];
+                if (!BattleZoneQuery.CanBeCurrentBattleZone(mapDefinition, zoneId) ||
+                    (mapDefinition.OrderedLanes.Count > 0 &&
+                        !mapDefinition.OrderedLanes[laneIndex].Contains(zoneId)))
                 {
                     throw new ArgumentException(
-                        $"Restored Battle Zone '{zoneId}' is not a zone map '{mapDefinition.Reference}' could push the Lane to.",
+                        $"Restored Battle Zone '{zoneId}' is not on Lane {laneIndex + 1} of map '{mapDefinition.Reference}'.",
                         nameof(state));
                 }
-
-                restored.CurrentBattleZoneId = zoneId;
             }
+            restored.currentBattleZoneIds.Clear();
+            restored.currentBattleZoneIds.AddRange(state.CurrentBattleZoneIds);
 
             // Milestone 8.114b1, schema v47.
             restored.ExcludeFromMinionBattle(state.MinionBattleExclusions);
@@ -1380,17 +1385,18 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         /// </summary>
         public bool CommitValidatedBattleZoneAdvance(ZoneId destination)
         {
-            if (!CurrentBattleZoneId.HasValue)
-            {
-                return false;
-            }
+            return CurrentBattleZoneId.HasValue &&
+                CommitValidatedBattleZoneAdvance(CurrentBattleZoneId.Value, destination);
+        }
 
-            var lane = MapDefinition.OrderedLaneZoneIds;
+        public bool CommitValidatedBattleZoneAdvance(ZoneId currentBattleZone, ZoneId destination)
+        {
+            if (!MapDefinition.TryGetLaneContaining(currentBattleZone, out _, out var lane)) return false;
             var current = -1;
             var next = -1;
             for (var index = 0; index < lane.Count; index++)
             {
-                if (lane[index].Equals(CurrentBattleZoneId.Value)) current = index;
+                if (lane[index].Equals(currentBattleZone)) current = index;
                 if (lane[index].Equals(destination)) next = index;
             }
 
@@ -1399,7 +1405,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 return false;
             }
 
-            CurrentBattleZoneId = destination;
+            var stateIndex = currentBattleZoneIds.FindIndex(zone => zone.Equals(currentBattleZone));
+            if (stateIndex < 0) return false;
+            currentBattleZoneIds[stateIndex] = destination;
             return true;
         }
 

@@ -27,17 +27,17 @@ namespace GuardsDigital.Tests.EditMode
 
         private static readonly string[] PinnedSnapshotHashes =
         {
-            "327997125f6927b0e9cdfea019ec9c198cf62b2853a614d94e8ce3eaa31cccb8",
-            "13fc700bd2bc1b070ea9ee781e4220e7a360c76c29408318bcf870e307ced1b5",
-            "475e041e12e40132844b83136c6b9fcfbafd8d85f163f47655d8b07ebd87072f",
-            "3cb28b2250e0efc91b2abbd1d90bc7bdf7e286a3fcd4c35f7211df65f5df076f",
-            "d9f791e5574ff83a9ddf759d3a69b2dff974f3e01d2bc33c9823bcf2b5335a85",
-            "d6c19afc1f90d65da4ab154437551f972ab25b168bd380b12df9f55857d6a1ab",
-            "8bc6d0c75611aac6228537a9a540c52c5c5554331d61fbd710a9dfe16bab10ad",
-            "7731d72b51d787044c9c75bb9192a2827d22b6b68b24cbcdc4ba49c5144d8473",
-            "d4b10e4a53ccb41c145c095263e9fe8f4ad37d4a1ce7b3ae424abf8ffbb0c315",
-            "0a9c3571e5e5695ac294e63e8884e81cb5d9e137fed99d053cd902005fc2e5c0",
-            "ef7b7e3c4f8c2c3f31fce48d7d63b0e9a7e4cb767bde0923e64a7ddd8c11cd8f"
+            "1d79960a1e20285b03e894833ea313be70fd5d66cc7426d9912a07eafa4fc78b",
+            "35a780be9218fd3cf8426b5aea19dc348fd238a0b919dc521d1ef373deafb292",
+            "04bac47507f65faa6df40356b9bba0e2e1841cfe6ac72883ce18af6e60beb1ad",
+            "0ea0eaf5cb5497fae288e41d53414f8b797530f850bd2982b368c1bffcf83034",
+            "1efc237c10c0466b67796705119baf497084fbc60f8660db6d98a5d8fa7ba32e",
+            "3e788e02fcd09d6a12502f64f9e6c78ef0bc5294da2a7795dd5e48fe3a79ba05",
+            "3dbd80b6f2e529f37ff2ad2e7259c07a9b4fe42cae1ad113f7b541fd2b81f92c",
+            "277c764d2cb42cc710aedda13aa44c0eca1ba3a4116b682e7f1c2b84004413a5",
+            "b1d0230631650917f22344731ae59e3ac353f37a7eb543a4ba872aef04cef036",
+            "4599fcefb5e53640179200ea92a1e9abbd1a97eaf9eecb5558bbedcd733ccf0e",
+            "5ff3e385d0116914f4f9d7934fc421b8b083557dfdbf87746bc5cdec05357baf"
         };
 
         [Test]

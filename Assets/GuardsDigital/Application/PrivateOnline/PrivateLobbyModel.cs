@@ -142,7 +142,13 @@ namespace GuardsDigital.Application
         /// <summary>
         /// Milestone 8.107. The non-playing host's counterpart of the drawer's RESTART.
         /// </summary>
-        DirectorRestart = 17
+        DirectorRestart = 17,
+
+        /// <summary>W-072. Entry form, host side: an eight-player double-lane match.</summary>
+        ChooseFourVsFour = 18,
+
+        /// <summary>W-072. Entry form, host side: a ten-player double-lane match.</summary>
+        ChooseFiveVsFive = 19
     }
 
     /// <summary>
@@ -463,6 +469,8 @@ namespace GuardsDigital.Application
                 case PrivateLobbyControl.SetMatchFormat: return "SETUP";
                 case PrivateLobbyControl.ChooseTwoVsTwo: return "2V2";
                 case PrivateLobbyControl.ChooseThreeVsThree: return "3V3";
+                case PrivateLobbyControl.ChooseFourVsFour: return "4V4";
+                case PrivateLobbyControl.ChooseFiveVsFive: return "5V5";
                 case PrivateLobbyControl.ChooseShortGame: return "SHORT GAME";
                 case PrivateLobbyControl.ChooseLongGame: return "LONG GAME";
                 case PrivateLobbyControl.ClaimSeat: return "TAKE THIS SEAT";
@@ -650,6 +658,8 @@ namespace GuardsDigital.Application
                 // changes is that the choice is now readable instead of being a cycle.
                 controls.Insert(0, PrivateLobbyControl.ChooseTwoVsTwo);
                 controls.Insert(1, PrivateLobbyControl.ChooseThreeVsThree);
+                controls.Insert(2, PrivateLobbyControl.ChooseFourVsFour);
+                controls.Insert(3, PrivateLobbyControl.ChooseFiveVsFive);
             }
 
             return new PrivateLobbyModel(

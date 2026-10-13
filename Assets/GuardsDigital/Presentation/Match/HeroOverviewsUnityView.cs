@@ -586,10 +586,19 @@ namespace GuardsDigital.Presentation.Match
             heroRailRestingTopColors.Clear();
             redColumn.Clear();
             blueColumn.Clear();
+            var teamGroups = Model.Heroes
+                .GroupBy(hero => hero.TeamSide)
+                .ToDictionary(group => group.Key, group => group.ToArray());
+            var expandedRailByTeam = teamGroups.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value.FirstOrDefault(hero => hero.IsAwaited) ??
+                    pair.Value.FirstOrDefault(hero => hero.IsViewed));
             foreach (var hero in Model.Heroes)
             {
                 var column = hero.TeamSide == TeamSide.Red ? redColumn : blueColumn;
-                var rail = BuildOverview(hero);
+                var compact = teamGroups[hero.TeamSide].Length > 3 &&
+                    !ReferenceEquals(expandedRailByTeam[hero.TeamSide], hero);
+                var rail = BuildOverview(hero, compact);
                 heroRails.Add(hero.HeroId, rail);
                 heroRailRestingTopColors.Add(
                     hero.HeroId,
@@ -637,10 +646,11 @@ namespace GuardsDigital.Presentation.Match
             return column;
         }
 
-        private VisualElement BuildOverview(HeroOverviewViewModel hero)
+        private VisualElement BuildOverview(HeroOverviewViewModel hero, bool compact)
         {
             var rail = HudElements.Panel(MatchHudTheme.RailBackground);
             rail.name = "gd-hero-rail";
+            if (compact) rail.AddToClassList("gd-hero-rail-compact");
             // Milestone 8.35z11. THE ONE LINE the motion pass adds to this file. Six rails share
             // the name `gd-hero-rail`, so a card flying to a PARTICULAR hero's commitment slot, or a
             // coin landing in a particular tray, has no way to tell them apart by query alone. This
@@ -648,10 +658,10 @@ namespace GuardsDigital.Presentation.Match
             // finds none, so a build without this line loses the flourish and nothing else. It changes
             // no layout, no style and no behaviour - `userData` is unused on this element otherwise.
             rail.userData = hero.HeroId;
-            rail.style.marginBottom = 8f;
-            HudElements.Padding(rail, 9f);
-            rail.style.paddingTop = 12f;
-            rail.style.paddingBottom = 8f;
+            rail.style.marginBottom = compact ? 5f : 8f;
+            HudElements.Padding(rail, compact ? 6f : 9f);
+            rail.style.paddingTop = compact ? 3f : 12f;
+            rail.style.paddingBottom = compact ? 3f : 8f;
             var accent = colourRead == null ? MatchHudTheme.TeamFace(hero.TeamSide)
                 : PlayerAccent.For(colourRead().Participants, hero.HeroId);
             // Milestone 8.35m: the same warm-gold family the top bar wears while the match waits on
@@ -718,6 +728,39 @@ namespace GuardsDigital.Presentation.Match
                 ? MatchHudTheme.SelectedOutline
                 : new Color(0f, 0f, 0f, 0f);
 
+            var mirrored = hero.TeamSide != TeamSide.Red;
+            if (compact)
+            {
+                var cardRow = HudElements.Row(6f);
+                cardRow.name = "gd-compact-card-row";
+                cardRow.style.alignItems = Align.Center;
+                cardRow.style.flexWrap = Wrap.NoWrap;
+                var compactSlots = BuildTurnSlots(hero, frame, 0f);
+                compactSlots.style.flexGrow = 1f;
+                compactSlots.style.flexBasis = 0f;
+                var current = BuildCurrentCard(hero, mirrored);
+                current.style.height = MiniCardHeight + 4f;
+                var token = BuildHeroPortrait(hero, accent, 0.55f);
+                if (mirrored)
+                {
+                    cardRow.Add(current);
+                    cardRow.Add(compactSlots);
+                    cardRow.Add(token);
+                }
+                else
+                {
+                    cardRow.Add(token);
+                    cardRow.Add(compactSlots);
+                    cardRow.Add(current);
+                }
+
+                rail.Add(cardRow);
+                rail.tooltip = hero.HeroDisplayName + ": select to expand the full tray.";
+                if (hero.IsAwaited)
+                    rail.Add(AwaitedGlowBand(colourRead != null ? (Color?)accent : null));
+                return rail;
+            }
+
             var playerName = HudElements.Text(string.Empty, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold);
             playerName.name = "gd-hero-player-name";
             playerName.pickingMode = PickingMode.Ignore;
@@ -755,7 +798,6 @@ namespace GuardsDigital.Presentation.Match
             // rail's inner corner - so the two rails frame the board instead of both leaning the same
             // way. The turn slots are the one row that is not mirrored: they fill the rail's width
             // edge to edge, and 1-2-3-4 is a sequence rather than a decoration.
-            var mirrored = hero.TeamSide != TeamSide.Red;
             var outward = mirrored ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
 
             // The header: who this hero is on the outer side, and the card they have in play on the
@@ -777,14 +819,15 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Border(head, frame, 1f, 9f);
             head.style.borderTopWidth = 2f;
             head.style.borderTopColor = accent;
-            var icon = BuildHeroPortrait(hero, accent);
+            var icon = BuildHeroPortrait(hero, accent, compact ? 0.74f : 1f);
             var identity = HudElements.Column(0f);
             identity.style.flexShrink = 1f;
             identity.style.flexGrow = 1f;
             identity.style.minWidth = 0f;
             identity.style.overflow = Overflow.Hidden;
             identity.style.alignItems = mirrored ? Align.FlexEnd : Align.FlexStart;
-            var level = HudElements.Text(hero.LevelLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            var level = HudElements.Text(
+                hero.LevelLabel, compact ? 9f : 10f, MatchHudTheme.MutedText, FontStyle.Bold);
             level.name = "gd-hero-level";
             level.style.unityTextAlign = outward;
             level.style.letterSpacing = 0.8f;
@@ -810,7 +853,8 @@ namespace GuardsDigital.Presentation.Match
 
             identity.Add(levelRow);
             var displayName = HudElements.Text(
-                hero.HeroDisplayName, 16f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+                hero.HeroDisplayName, compact ? 14f : 16f,
+                MatchHudTheme.PrimaryText, FontStyle.Bold);
             displayName.name = "gd-hero-name";
             displayName.style.unityTextAlign = outward;
             displayName.style.flexShrink = 1f;
@@ -1122,13 +1166,6 @@ namespace GuardsDigital.Presentation.Match
 
                 // Always drawn, empty when nothing is live, so a slot's height does not change with an
                 // effect and the four of them stay on one line.
-                var activeLabel = HudElements.Text(
-                    slot.ActiveLabel, 7f, MatchHudTheme.ActiveEffectAccent, FontStyle.Bold);
-                activeLabel.name = "gd-turn-slot-active";
-                activeLabel.style.height = 10f;
-                activeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                activeLabel.style.whiteSpace = WhiteSpace.NoWrap;
-                column.Add(activeLabel);
                 slots.Add(column);
             }
 
@@ -1591,9 +1628,10 @@ namespace GuardsDigital.Presentation.Match
                 hero.WorthAssistiveLabel,
                 coinOnly: hero.WorthRepresentsAssistCoinsOnly);
 
-        private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
+        private VisualElement BuildHeroPortrait(
+            HeroOverviewViewModel hero, Color accent, float scale = 1f)
         {
-            var medallion = BuildSharedHeroPortrait(hero, accent);
+            var medallion = BuildSharedHeroPortrait(hero, accent, scale);
             revealAnchors.Add(hero, medallion);
             HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
             medallion.RegisterCallback<PointerDownEvent>(evt =>
@@ -2016,6 +2054,73 @@ namespace GuardsDigital.Presentation.Match
         /// location, a definition or a hand - the whole marker is built from
         /// <see cref="HeroCurrentCardViewModel"/>, and a facedown one carries no card to build from.
         /// </summary>
+        private VisualElement BuildTurnSlots(
+            HeroOverviewViewModel hero,
+            Color frame,
+            float marginTop)
+        {
+            var slots = HudElements.Row(0f);
+            slots.name = "gd-turn-slots";
+            slots.style.marginTop = marginTop;
+            slots.style.flexWrap = Wrap.NoWrap;
+            slots.style.alignItems = Align.Stretch;
+            slots.style.paddingLeft = 4f;
+            slots.style.paddingRight = 4f;
+            slots.style.backgroundColor = new Color(0.065f, 0.076f, 0.085f, 0.92f);
+            HudElements.Border(slots, new Color(frame.r, frame.g, frame.b, 0.58f), 1f, 7f);
+            var first = true;
+            foreach (var slot in TurnSlotsOverride?.Invoke(hero) ?? hero.TurnSlots)
+            {
+                var column = new VisualElement();
+                column.style.flexDirection = FlexDirection.Column;
+                column.style.alignItems = Align.Stretch;
+                column.style.flexGrow = 1f;
+                column.style.flexBasis = 0f;
+                column.style.marginLeft = first ? 0f : 4f;
+                first = false;
+
+                var outline = new VisualElement { name = "gd-turn-slot-outline" };
+                HudElements.Padding(outline, 2f);
+                HudElements.Border(
+                    outline,
+                    slot.IsActiveEffectSource
+                        ? MatchHudTheme.ActiveEffectAccent
+                        : new Color(0f, 0f, 0f, 0f),
+                    DirectorHandsUnityView.ActiveOutlineWidth,
+                    7f);
+
+                var element = slot.IsWithheld
+                    ? BuildWithheldMiniCard("gd-turn-slot", slot.Color, slot.AssistiveLabel, slot, hero.ContentId)
+                    : slot.IsOccupied
+                    ? BuildMiniCard("gd-turn-slot", slot.PlayedCard, slot.AssistiveLabel, slot)
+                    : BuildEmptyMiniCard("gd-turn-slot", slot.AssistiveLabel);
+
+                outline.Add(element);
+                var turnMarker = BuildTurnSlotMarker(slot.TurnSlotMarker, "gd-turn-slot-marker");
+                if (turnMarker != null)
+                {
+                    turnMarker.style.position = Position.Absolute;
+                    turnMarker.style.left = 0f;
+                    turnMarker.style.top = 0f;
+                    turnMarker.style.right = 0f;
+                    turnMarker.style.bottom = 0f;
+                    element.Add(turnMarker);
+                }
+                column.Add(outline);
+
+                var activeLabel = HudElements.Text(
+                    slot.ActiveLabel, 7f, MatchHudTheme.ActiveEffectAccent, FontStyle.Bold);
+                activeLabel.name = "gd-turn-slot-active";
+                activeLabel.style.height = 10f;
+                activeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                activeLabel.style.whiteSpace = WhiteSpace.NoWrap;
+                column.Add(activeLabel);
+                slots.Add(column);
+            }
+
+            return slots;
+        }
+
         private VisualElement BuildCurrentCard(HeroOverviewViewModel hero, bool mirrored)
         {
             var slot = new VisualElement { name = "gd-current-card-slot" };

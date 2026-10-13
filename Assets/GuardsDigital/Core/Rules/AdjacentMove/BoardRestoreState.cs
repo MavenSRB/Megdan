@@ -48,13 +48,67 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             IEnumerable<UnitTurnPosition> currentTurnStart = null,
             IEnumerable<UnitTurnPosition> previousTurnStart = null,
             IEnumerable<KeyValuePair<string, int>> unitMutations = null)
+            : this(
+                heroOccupancies,
+                obstacleOccupancies,
+                remainingMinions,
+                placedTokens,
+                currentBattleZoneId.HasValue
+                    ? new[] { currentBattleZoneId.Value }
+                    : Array.Empty<ZoneId>(),
+                minionBattleExclusions,
+                lastCompletedMovementWalk,
+                heroBodySupplies,
+                actingBodies,
+                currentTurnStart,
+                previousTurnStart,
+                unitMutations)
+        {
+        }
+
+        public static BoardRestoreState ForBattleZones(
+            IEnumerable<HeroOccupancy> heroOccupancies,
+            IEnumerable<ObstacleOccupancy> obstacleOccupancies,
+            IEnumerable<RestoredMinionPosition> remainingMinions,
+            IEnumerable<PlacedToken> placedTokens,
+            IEnumerable<ZoneId> currentBattleZoneIds,
+            IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
+            CompletedMovementWalk lastCompletedMovementWalk,
+            IEnumerable<HeroBodySupply> heroBodySupplies,
+            IEnumerable<HeroActingBody> actingBodies,
+            IEnumerable<UnitTurnPosition> currentTurnStart = null,
+            IEnumerable<UnitTurnPosition> previousTurnStart = null,
+            IEnumerable<KeyValuePair<string, int>> unitMutations = null) =>
+            new BoardRestoreState(
+                heroOccupancies, obstacleOccupancies, remainingMinions, placedTokens,
+                currentBattleZoneIds, minionBattleExclusions, lastCompletedMovementWalk,
+                heroBodySupplies, actingBodies, currentTurnStart, previousTurnStart,
+                unitMutations);
+
+        private BoardRestoreState(
+            IEnumerable<HeroOccupancy> heroOccupancies,
+            IEnumerable<ObstacleOccupancy> obstacleOccupancies,
+            IEnumerable<RestoredMinionPosition> remainingMinions,
+            IEnumerable<PlacedToken> placedTokens,
+            IEnumerable<ZoneId> currentBattleZoneIds,
+            IEnumerable<GuardsDigital.Core.Setup.MinionId> minionBattleExclusions,
+            CompletedMovementWalk lastCompletedMovementWalk,
+            IEnumerable<HeroBodySupply> heroBodySupplies,
+            IEnumerable<HeroActingBody> actingBodies,
+            IEnumerable<UnitTurnPosition> currentTurnStart = null,
+            IEnumerable<UnitTurnPosition> previousTurnStart = null,
+            IEnumerable<KeyValuePair<string, int>> unitMutations = null)
         {
             if (heroOccupancies == null) throw new ArgumentNullException(nameof(heroOccupancies));
             if (obstacleOccupancies == null) throw new ArgumentNullException(nameof(obstacleOccupancies));
             if (remainingMinions == null) throw new ArgumentNullException(nameof(remainingMinions));
             if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
 
-            CurrentBattleZoneId = currentBattleZoneId;
+            CurrentBattleZoneIds = (currentBattleZoneIds ??
+                throw new ArgumentNullException(nameof(currentBattleZoneIds))).ToArray();
+            if (CurrentBattleZoneIds.Any(value => string.IsNullOrWhiteSpace(value.Value)) ||
+                CurrentBattleZoneIds.Distinct().Count() != CurrentBattleZoneIds.Count)
+                throw new ArgumentException("Restored Battle Zones must be defined and distinct.", nameof(currentBattleZoneIds));
             MinionBattleExclusions = (minionBattleExclusions ??
                 throw new ArgumentNullException(nameof(minionBattleExclusions))).Distinct().ToArray();
             LastCompletedMovementWalk = lastCompletedMovementWalk;
@@ -113,7 +167,10 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         // loaded, so what a payload may say is which zone this is, never what that zone contains. The
         // named absence is a board whose map declares no starting Battle Zone, which is every synthetic
         // one; restoring one as anything else would invent a lane the map does not have.
-        public ZoneId? CurrentBattleZoneId { get; }
+        public IReadOnlyList<ZoneId> CurrentBattleZoneIds { get; }
+        public ZoneId? CurrentBattleZoneId => CurrentBattleZoneIds.Count == 0
+            ? (ZoneId?)null
+            : CurrentBattleZoneIds[0];
 
         /// <summary>Milestone 8.114b1, schema v47. This round's Minion-Battle exclusions (Dominance).</summary>
         public IReadOnlyList<GuardsDigital.Core.Setup.MinionId> MinionBattleExclusions { get; }

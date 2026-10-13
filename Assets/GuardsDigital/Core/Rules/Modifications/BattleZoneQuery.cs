@@ -50,6 +50,17 @@ namespace GuardsDigital.Core.Rules.Modifications
             return flagged.Length == 1;
         }
 
+        public static IReadOnlyList<BoardMapZone> GetStartingBattleZones(BoardMapDefinition map)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (map.OrderedLanes.Count == 0)
+                return map.Zones.Where(value => value.IsStartingBattleZone)
+                    .OrderBy(value => value.Id.Value, StringComparer.Ordinal).ToArray();
+            return map.OrderedLanes.Select(lane => lane
+                    .Select(map.GetZone).Single(zone => zone.IsStartingBattleZone))
+                .ToArray();
+        }
+
         /// <summary>
         /// Whether the named space lies in the map's starting Battle Zone. Setup-time only, for the
         /// reason <see cref="TryGetStartingBattleZone"/> states; a rules question asks
@@ -58,7 +69,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsInStartingBattleZone(BoardMapDefinition map, SpaceId spaceId)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
-            return TryGetStartingBattleZone(map, out var zone) && IsInZone(map, zone.Id, spaceId);
+            return GetStartingBattleZones(map).Any(zone => IsInZone(map, zone.Id, spaceId));
         }
 
         /// <summary>
@@ -69,13 +80,9 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsInStartingBattleZone(BoardMapDefinition map, HexCoordinate coordinate)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
-            if (!TryGetStartingBattleZone(map, out var zone))
-            {
-                return false;
-            }
-
             var space = map.Spaces.FirstOrDefault(value => value.Coordinate.Equals(coordinate));
-            return space != null && space.ZoneId != null && space.ZoneId.Value.Equals(zone.Id);
+            return space != null && space.ZoneId != null &&
+                GetStartingBattleZones(map).Any(zone => space.ZoneId.Value.Equals(zone.Id));
         }
 
         /// <summary>
@@ -85,13 +92,9 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static IReadOnlyList<HexCoordinate> FindStartingBattleZoneCoordinates(BoardMapDefinition map)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
-            if (!TryGetStartingBattleZone(map, out var zone))
-            {
-                return Array.Empty<HexCoordinate>();
-            }
-
+            var zones = new HashSet<ZoneId>(GetStartingBattleZones(map).Select(zone => zone.Id));
             return map.Spaces
-                .Where(space => space.ZoneId != null && space.ZoneId.Value.Equals(zone.Id))
+                .Where(space => space.ZoneId != null && zones.Contains(space.ZoneId.Value))
                 .Select(space => space.Coordinate)
                 .OrderBy(coordinate => coordinate.Q)
                 .ThenBy(coordinate => coordinate.R)
@@ -117,9 +120,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return map.OrderedLaneZoneIds.Count > 0
-                ? map.OrderedLaneZoneIds.Contains(zoneId)
-                : TryGetStartingBattleZone(map, out var opening) && opening.Id.Equals(zoneId);
+            return map.OrderedLanes.Count > 0
+                ? map.OrderedLanes.Any(lane => lane.Contains(zoneId))
+                : GetStartingBattleZones(map).Any(opening => opening.Id.Equals(zoneId));
         }
 
         /// <summary>
@@ -133,6 +136,25 @@ namespace GuardsDigital.Core.Rules.Modifications
                 ? board.MapDefinition.GetZone(board.CurrentBattleZoneId.Value)
                 : null;
             return zone != null;
+        }
+
+        public static bool TryGetCurrentBattleZone(
+            IBoardDisplacementAuthority board,
+            HexCoordinate coordinate,
+            out BoardMapZone zone)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            var space = board.MapDefinition.Spaces.FirstOrDefault(value =>
+                value.Kind == BoardMapSpaceKind.Playable && value.Coordinate.Equals(coordinate));
+            if (space == null || !space.ZoneId.HasValue ||
+                !board.CurrentBattleZoneIds.Contains(space.ZoneId.Value))
+            {
+                zone = null;
+                return false;
+            }
+
+            zone = board.MapDefinition.GetZone(space.ZoneId.Value);
+            return true;
         }
 
         /// <summary>The current Battle Zone; throws when the board has none.</summary>
@@ -150,8 +172,16 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsInCurrentBattleZone(IBoardDisplacementAuthority board, SpaceId spaceId)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
-            return board.CurrentBattleZoneId.HasValue &&
-                IsInZone(board.MapDefinition, board.CurrentBattleZoneId.Value, spaceId);
+            return board.CurrentBattleZoneIds.Any(zoneId =>
+                IsInZone(board.MapDefinition, zoneId, spaceId));
+        }
+
+        public static bool IsInCurrentBattleZone(
+            IBoardDisplacementAuthority board, ZoneId battleZoneId, SpaceId spaceId)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            return board.CurrentBattleZoneIds.Contains(battleZoneId) &&
+                IsInZone(board.MapDefinition, battleZoneId, spaceId);
         }
 
         /// <summary>
@@ -161,14 +191,14 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsInCurrentBattleZone(IBoardDisplacementAuthority board, HexCoordinate coordinate)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
-            if (!board.CurrentBattleZoneId.HasValue)
+            if (board.CurrentBattleZoneIds.Count == 0)
             {
                 return false;
             }
 
             var space = board.MapDefinition.Spaces.FirstOrDefault(value => value.Coordinate.Equals(coordinate));
             return space != null && space.ZoneId != null &&
-                space.ZoneId.Value.Equals(board.CurrentBattleZoneId.Value);
+                board.CurrentBattleZoneIds.Contains(space.ZoneId.Value);
         }
 
         /// <summary>
@@ -178,9 +208,10 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static IReadOnlyList<HexCoordinate> FindCurrentBattleZoneCoordinates(
             IBoardDisplacementAuthority board)
         {
-            var zone = GetCurrentBattleZone(board);
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            var zones = new HashSet<ZoneId>(board.CurrentBattleZoneIds);
             return board.MapDefinition.Spaces
-                .Where(space => space.ZoneId != null && space.ZoneId.Value.Equals(zone.Id))
+                .Where(space => space.ZoneId != null && zones.Contains(space.ZoneId.Value))
                 .Select(space => space.Coordinate)
                 .OrderBy(coordinate => coordinate.Q)
                 .ThenBy(coordinate => coordinate.R)
@@ -249,6 +280,42 @@ namespace GuardsDigital.Core.Rules.Modifications
             // is, and it is one unit of the battle however many bodies stand there.
             var counting = board.Occupancies
                 .Where(value => IsInCurrentBattleZone(board, value.Coordinate))
+                .Select(value => RuleObject.ForHero(value.HeroId))
+                .Distinct()
+                .Where(unit => EffectiveUnitKindQuery.Is(unit, EffectiveUnitKind.Minion, modifications))
+                .Select(unit => new EffectiveBattleZoneMinion(
+                    unit, participants.GetTeamForHero(unit.HeroId).Side, false));
+            return Array.AsReadOnly(miniatures.Concat(counting).ToArray());
+        }
+
+        public static IReadOnlyList<EffectiveBattleZoneMinion> FindEffectiveMinionsInside(
+            IBoardDisplacementAuthority board,
+            ZoneId battleZoneId,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+            if (!board.CurrentBattleZoneIds.Contains(battleZoneId))
+                return Array.Empty<EffectiveBattleZoneMinion>();
+
+            var miniatures = board.Minions
+                .Where(value => IsInCurrentBattleZone(board, battleZoneId, value.OccupiedSpace.SpaceId))
+                .OrderBy(value => value.MinionId.Value, StringComparer.Ordinal)
+                .Select(value => new EffectiveBattleZoneMinion(
+                    RuleObject.ForMinion(value.MinionId),
+                    value.TeamSide,
+                    value.MinionType == StandardMinionType.Heavy));
+            var counting = board.Occupancies
+                .Where(value =>
+                {
+                    var space = board.MapDefinition.Spaces.FirstOrDefault(candidate =>
+                        candidate.Kind == BoardMapSpaceKind.Playable &&
+                        candidate.Coordinate.Equals(value.Coordinate));
+                    return space != null &&
+                        IsInCurrentBattleZone(board, battleZoneId, space.Id);
+                })
                 .Select(value => RuleObject.ForHero(value.HeroId))
                 .Distinct()
                 .Where(unit => EffectiveUnitKindQuery.Is(unit, EffectiveUnitKind.Minion, modifications))

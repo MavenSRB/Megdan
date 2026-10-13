@@ -525,7 +525,8 @@ namespace GuardsDigital.Core.Cards
                 roundIndex, board, participants, modifications,
                 Array.Empty<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant>(),
                 GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook,
-                null);
+                null,
+                board.CurrentBattleZoneId);
 
         /// <param name="ruleParticipants">
         /// Milestone 8.19c. The heroes taking part in this battle under a declared Minion-Battle rule,
@@ -539,7 +540,20 @@ namespace GuardsDigital.Core.Cards
             RuleModificationSet modifications,
             IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants,
             GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog,
-            int? removalCap)
+            int? removalCap) =>
+            Plan(
+                roundIndex, board, participants, modifications,
+                ruleParticipants, ruleCatalog, removalCap, board.CurrentBattleZoneId);
+
+        public static MinionBattlePlan Plan(
+            int roundIndex,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants,
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog,
+            int? removalCap,
+            ZoneId? battleZoneId)
         {
             if (roundIndex < 1)
             {
@@ -575,11 +589,14 @@ namespace GuardsDigital.Core.Cards
             // Lane Push, setup, and the displaced-minion correction. Milestone 6.6 moved the
             // effective reading of "the minions in the Battle Zone" there too, so p.8's last-minion
             // Lane-Push cause counts exactly the set this resolution counts.
-            var battleZone = GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
-                .GetCurrentBattleZone(board);
+            if (!battleZoneId.HasValue ||
+                !board.CurrentBattleZoneIds.Contains(battleZoneId.Value))
+                throw new InvalidOperationException("A Minion Battle requires one current Battle Zone.");
+            var battleZone = board.MapDefinition.GetZone(battleZoneId.Value);
             var effective = BattleZoneQuery
-                .FindEffectiveMinionsInside(board, participants, modifications)
-                .Concat(RuleSuppliedStrength(ruleParticipants, ruleCatalog))
+                .FindEffectiveMinionsInside(board, battleZone.Id, participants, modifications)
+                .Concat(RuleSuppliedStrength(ruleParticipants, ruleCatalog)
+                    .Where(value => UnitStandsInZone(value.Unit, battleZone.Id, board)))
                 .GroupBy(value => value.Unit)
                 .Select(group => group.Aggregate((first, second) =>
                     new EffectiveBattleZoneMinion(
@@ -598,7 +615,11 @@ namespace GuardsDigital.Core.Cards
                 !excluded.Contains(value.Unit.MinionId);
             var redTotal = red.Count(Counts);
             var blueTotal = blue.Count(Counts);
-            var resolutionId = new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle");
+            var resolutionSuffix = board.CurrentBattleZoneIds.Count > 1
+                ? $"-{battleZone.Id.Value}"
+                : string.Empty;
+            var resolutionId = new EndOfRoundResolutionId(
+                $"round-{roundIndex}-minion-battle{resolutionSuffix}");
             if (redTotal == blueTotal)
             {
                 return new MinionBattlePlan(
@@ -683,6 +704,27 @@ namespace GuardsDigital.Core.Cards
                 losingSide,
                 Array.Empty<RuleObject>(),
                 choice);
+        }
+
+        private static bool UnitStandsInZone(
+            RuleObject unit, ZoneId zoneId, AdjacentMoveAuthority board)
+        {
+            if (IntrinsicKindQuery.IsMinionMiniature(unit))
+            {
+                var minion = board.Minions.FirstOrDefault(value => value.MinionId.Equals(unit.MinionId));
+                return minion != null &&
+                    BattleZoneQuery.IsInCurrentBattleZone(board, zoneId, minion.OccupiedSpace.SpaceId);
+            }
+
+            if (IntrinsicKindQuery.Of(unit) != RuleObjectKind.Hero) return false;
+            return board.GetHeroBodies(unit.HeroId).Any(body =>
+            {
+                var space = board.MapDefinition.Spaces.FirstOrDefault(candidate =>
+                    candidate.Kind == BoardMapSpaceKind.Playable &&
+                    candidate.Coordinate.Equals(body.Coordinate));
+                return space != null &&
+                    BattleZoneQuery.IsInCurrentBattleZone(board, zoneId, space.Id);
+            });
         }
 
         /// <summary>

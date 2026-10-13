@@ -1187,7 +1187,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     ResolutionStep.FromFact(CardActionResolutionEvent.MinionDefeatFact(
                         eventIdentity, defeat, fact))));
                 RecordImmediateLanePush(
-                    defeat.LanePush.Cause,
+                    defeat.LanePush,
                     new ActionResolutionId(source.ResolutionId.Value),
                     participants,
                     modifications);
@@ -4839,7 +4839,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         CardActionResolutionEvent.MinionDefeatFact(identity, defeat, fact)));
                 }
 
-                RecordImmediateLanePush(defeat.LanePush.Cause, frameId, participants, modifications);
+                RecordImmediateLanePush(defeat.LanePush, frameId, participants, modifications);
             }
         }
 
@@ -6722,7 +6722,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         skill.SourceCardInstanceId, skill.ActionDefinitionId, skill.ActorId, boundary);
                 }
                 RecordImmediateLanePush(
-                    defeat.LanePush.Cause,
+                    defeat.LanePush,
                     new ActionResolutionId(answered.Resolution.ResolutionId.Value),
                     boundary.Participants,
                     modifications);
@@ -6877,13 +6877,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (result.MinionDefeat != null)
             {
                 RecordImmediateLanePush(
-                    result.MinionDefeat.LanePush.Cause, resolutionId, participants, modifications);
+                    result.MinionDefeat.LanePush, resolutionId, participants, modifications);
             }
 
             if (result.HeroDefeat != null)
             {
                 RecordImmediateLanePush(
-                    result.HeroDefeat.LanePush.Cause, resolutionId, participants, modifications);
+                    result.HeroDefeat.LanePush, resolutionId, participants, modifications);
             }
 
             return result;
@@ -6949,6 +6949,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// a second push. It is not dropped now, because the first request is gone before the second
         /// instance starts.</para>
         /// </summary>
+        private void RecordImmediateLanePush(
+            LanePushQualification qualification,
+            ActionResolutionId resolutionId,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (!qualification.Qualifies || pendingLanePush != null || !resolutionId.IsDefined)
+                return;
+
+            pendingLanePush = ImmediateLanePushQuery.From(
+                qualification, resolutionId, board, participants, modifications);
+        }
+
         private void RecordImmediateLanePush(
             LanePushCauseKind cause,
             ActionResolutionId resolutionId,

@@ -71,7 +71,7 @@ Historical evidence: [9.61 completion](../Archive/Phase-Handoffs/PHASE_9.md#mile
 
 ### [ ] 9.62 Implement the two-lane maps for 4v4 and 5v5
 
-See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#962-implement-the-two-lane-maps-for-4v4-and-5v5).
+See [owning definition](PHASE_9_EXPERIMENTS_AND_MAPS.md#x-962-implement-the-two-lane-maps-for-4v4-and-5v5).
 
 ### [x] 9.66 Disarm an END TURN press when its actor's turn has passed
 

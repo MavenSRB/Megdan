@@ -130,6 +130,7 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly VisualElement hostMenu;
         private readonly VisualElement joinMenu;
         private readonly VisualElement formatChoices;
+        private readonly Toggle perLaneWaveToggle;
         private readonly IntegerField waveCountField;
         private readonly IntegerField lifeCountField;
         private readonly Label invitationSession;
@@ -319,6 +320,15 @@ namespace GuardsDigital.Presentation.Interaction
                 setupCounts.Add(field);
             }
             hostMenu.Add(setupCounts);
+            perLaneWaveToggle = new Toggle("Waves are per lane")
+            {
+                name = "host-waves-per-lane",
+                value = true
+            };
+            perLaneWaveToggle.style.fontSize = 18f;
+            perLaneWaveToggle.style.color = Color.white;
+            perLaneWaveToggle.style.display = DisplayStyle.None;
+            hostMenu.Add(perLaneWaveToggle);
             mapSelector = new DropdownField("MAP", mapChoices.Select(m => m.DisplayName).ToList(),
                 Array.FindIndex(mapChoices, m => m.Reference.Equals(OfficialBoardMapCatalog.SelectedMap))) { name = "host-map-selector" };
             mapSelector.style.fontSize = 18; mapSelector.style.marginBottom = 6;
@@ -359,6 +369,9 @@ namespace GuardsDigital.Presentation.Interaction
                 experimentalButton.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
                 setupCounts.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
                 formatChoices.style.display = IsPveSelected ? DisplayStyle.None : DisplayStyle.Flex;
+                perLaneWaveToggle.style.display = IsDoubleLaneSelected && !IsPveSelected
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
                 if (IsPveSelected) experimentalOverlay.style.display = DisplayStyle.None;
             });
             var experimentalHeader = new VisualElement { name = "experimental-popup-header" };
@@ -627,6 +640,8 @@ namespace GuardsDigital.Presentation.Interaction
         private DropdownField mapSelector;
         private readonly BoardMapDefinition[] mapChoices = OfficialBoardMapCatalog.Load().Definitions.ToArray();
         private bool IsPveSelected => mapSelector.value == PrivateLobbyMode.PveLabel;
+        private bool IsDoubleLaneSelected => mapChoices[Math.Max(0,
+            Math.Min(mapSelector.index, mapChoices.Length - 1))].OrderedLanes.Count == 2;
 
         public PrivateLobbyEntry CurrentEntry() =>
             page == PrivateLobbyEntryPage.Host
@@ -641,7 +656,10 @@ namespace GuardsDigital.Presentation.Interaction
                         cardModifiersActiveEffectsToggle.value,cardModifiersCardEffectsToggle.value),
                     mapChoices[Math.Max(0, Math.Min(mapSelector.index, mapChoices.Length - 1))].Reference,
                     waveCountField.value, lifeCountField.value,
-                    IsPveSelected ? PrivateLobbyMode.PveId : string.Empty)
+                    IsPveSelected ? PrivateLobbyMode.PveId : string.Empty,
+                    IsDoubleLaneSelected && perLaneWaveToggle.value
+                        ? WaveCounterAllocation.PerLane
+                        : WaveCounterAllocation.SharedTotal)
                 : new PrivateLobbyEntry(address.value, port.value, key.value, picked, playerName.value);
 
         /// <summary>Milestone 8.107. Which entry page this view is showing.</summary>
@@ -1005,6 +1023,8 @@ namespace GuardsDigital.Presentation.Interaction
         private static bool IsFormatChoice(PrivateLobbyControl control) =>
             control == PrivateLobbyControl.ChooseTwoVsTwo ||
             control == PrivateLobbyControl.ChooseThreeVsThree ||
+            control == PrivateLobbyControl.ChooseFourVsFour ||
+            control == PrivateLobbyControl.ChooseFiveVsFive ||
             control == PrivateLobbyControl.SetMatchFormat;
 
         /// <summary>Whether a format button names half of the setup currently composed.</summary>
@@ -1017,6 +1037,8 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 case PrivateLobbyControl.ChooseTwoVsTwo: return label.StartsWith("2V2", StringComparison.Ordinal);
                 case PrivateLobbyControl.ChooseThreeVsThree: return label.StartsWith("3V3", StringComparison.Ordinal);
+                case PrivateLobbyControl.ChooseFourVsFour: return label.StartsWith("4V4", StringComparison.Ordinal);
+                case PrivateLobbyControl.ChooseFiveVsFive: return label.StartsWith("5V5", StringComparison.Ordinal);
                 default: return false;
             }
         }
@@ -2334,8 +2356,21 @@ namespace GuardsDigital.Presentation.Interaction
 
             var current = compositionRoot.ComposedPlan.Format;
             var wantsHeroesPerTeam = control == PrivateLobbyControl.ChooseTwoVsTwo ? 2
-                : 3;
+                : control == PrivateLobbyControl.ChooseThreeVsThree ? 3
+                : control == PrivateLobbyControl.ChooseFourVsFour ? 4
+                : 5;
             var chosen = MatchFormat.DefaultForTeamSize(wantsHeroesPerTeam);
+            var selectedMap = view.CurrentEntry().Map;
+            var selectedDefinition = OfficialBoardMapCatalog.Load().Load(selectedMap);
+            var doubleLane = selectedDefinition.OrderedLanes.Count == 2;
+            if ((wantsHeroesPerTeam >= 4) != doubleLane)
+            {
+                RefuseFormatChange("MapFormatMismatch",
+                    wantsHeroesPerTeam >= 4
+                        ? "Choose a double-lane map before selecting 4v4 or 5v5."
+                        : "Double-lane maps support 4v4 or 5v5; choose a small map for 2v2 or 3v3.");
+                return;
+            }
             view.SetSetupCounts(chosen.WaveCount, chosen.LifeCountPerTeam);
 
             if (string.Equals(chosen.Id, current.Id, StringComparison.Ordinal))
@@ -2351,7 +2386,10 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             compositionRoot.Recompose(MatchCompositionPlan.Printed(
-                chosen, compositionRoot.ComposedPlan.Map));
+                chosen, selectedMap,
+                doubleLane && view.CurrentEntry().WaveCounterAllocation == WaveCounterAllocation.PerLane
+                    ? WaveCounterAllocation.PerLane
+                    : WaveCounterAllocation.SharedTotal));
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + chosen.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
         }
@@ -2480,7 +2518,15 @@ namespace GuardsDigital.Presentation.Interaction
                     ? entry.LifeCountPerTeam
                     : current.LifeCountPerTeam;
                 var configured = MatchFormat.CreateConfigured(current.HeroesPerTeam, waves, lives);
-                compositionRoot.Recompose(MatchCompositionPlan.Printed(configured, entry.Map));
+                var map = OfficialBoardMapCatalog.Load().Load(entry.Map);
+                var doubleLane = map.OrderedLanes.Count == 2;
+                var heroesPerTeam = current.HeroesPerTeam;
+                if ((heroesPerTeam >= 4) != doubleLane)
+                    heroesPerTeam = doubleLane ? 4 : 3;
+                configured = MatchFormat.CreateConfigured(heroesPerTeam, waves, lives);
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(
+                    configured, entry.Map,
+                    doubleLane ? entry.WaveCounterAllocation : WaveCounterAllocation.SharedTotal));
             }
             catch (ArgumentOutOfRangeException exception)
             {

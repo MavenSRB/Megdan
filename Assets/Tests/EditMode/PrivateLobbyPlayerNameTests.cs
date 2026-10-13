@@ -33,8 +33,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedForTheName()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(52),
-                "8.108 adds a name to the seat claim and to every roster row, so a v23 peer is refused.");
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(54),
+                "W-072 adds the immutable wave-counter allocation to lobby/session identity, so a v52 peer is refused.");
         }
 
         [Test]

@@ -185,6 +185,9 @@ namespace GuardsDigital.Tests.EditMode
                     "A remote seat that cannot read this reads its own composition's frozen " +
                     "starting total, which is the defect milestone 8.35z60 exists to close.");
                 Assert.That(record.RemainingWaveCounters, Is.GreaterThanOrEqualTo(0));
+                Assert.That(record.RemainingWaveCountersByLane,
+                    Is.EqualTo(projection.RemainingWaveCountersByLane),
+                    "Seat " + seat.Id + " decoded different per-lane Wave pools than the host projected.");
                 seen++;
             }
 

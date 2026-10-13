@@ -1085,7 +1085,8 @@ namespace GuardsDigital.Application
                 round.ReadCardValuePreviews(CardValueSources(Experiments)),
                 CreateStandingActiveEffectSourceCards(round),
                 initialState.ModeRules == null ? null : round.ReadCardValuePreviews(),
-                initialState.ModeRules?.BoardRequiredTurnHeroes);
+                initialState.ModeRules?.BoardRequiredTurnHeroes,
+                round.LanePush?.LanePush.RemainingWaveCountersByLane);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

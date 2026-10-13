@@ -57,6 +57,64 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly ZoneId StartingBattleZone = new ZoneId("starting-battle-zone");
         private static readonly ZoneId BlueApproach = new ZoneId("blue-approach");
 
+        [Test]
+        public void SharedFinalWave_WaitsForBothSimultaneousLanePushesThenEntersSuddenDeathOnTie()
+        {
+            var board = EmptyDoubleLaneBoard();
+            var lanePush = new LanePushTransitionAuthority(
+                board, 1, WaveCounterAllocation.SharedTotal);
+
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[0],
+                TeamSide.Red, TeamSide.Blue, deferFinalDecision: true);
+            Assert.That(lanePush.HasEnded, Is.False,
+                "The first of two simultaneous pushes cannot decide the final Wave by itself.");
+            Assert.That(lanePush.RemainingWaveCounters, Is.Zero);
+
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[1],
+                TeamSide.Blue, TeamSide.Red, deferFinalDecision: false);
+            Assert.That(lanePush.HasEnded, Is.False);
+            Assert.That(lanePush.IsSuddenDeath, Is.True,
+                "Opposite pushes leave the combined two-Lane position tied.");
+        }
+
+        [Test]
+        public void SuddenDeath_EndsOnlyAfterALaterPushProducesASoleCombinedWinner()
+        {
+            var board = EmptyDoubleLaneBoard();
+            var lanePush = new LanePushTransitionAuthority(
+                board, 1, WaveCounterAllocation.SharedTotal);
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[0],
+                TeamSide.Red, TeamSide.Blue, deferFinalDecision: true);
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[1],
+                TeamSide.Blue, TeamSide.Red, deferFinalDecision: false);
+
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[1],
+                TeamSide.Red, TeamSide.Blue, deferFinalDecision: false);
+
+            Assert.That(lanePush.HasEnded, Is.True);
+            Assert.That(lanePush.WinningSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(lanePush.GameEndingCause,
+                Is.EqualTo(LanePushGameEndingCause.FinalWaveFlipped));
+            Assert.That(lanePush.RemainingWaveCounters, Is.Zero,
+                "Sudden death advances Battle Zones without inventing more Wave counters.");
+        }
+
+        [Test]
+        public void PerLaneWaveMode_SpendsOnlyThePoolForTheLaneThatWasPushed()
+        {
+            var board = EmptyDoubleLaneBoard();
+            var lanePush = new LanePushTransitionAuthority(
+                board, 2, WaveCounterAllocation.PerLane);
+
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[0],
+                TeamSide.Red, TeamSide.Blue, deferFinalDecision: false);
+            Assert.That(lanePush.RemainingWaveCountersByLane, Is.EqualTo(new[] { 1, 2 }));
+
+            ResolveDirectPush(lanePush, board.CurrentBattleZoneIds[1],
+                TeamSide.Blue, TeamSide.Red, deferFinalDecision: false);
+            Assert.That(lanePush.RemainingWaveCountersByLane, Is.EqualTo(new[] { 1, 1 }));
+        }
+
         // -------------------------------------------------------------------------------------------
         // Acceptance checks 1 and 7: the whole transition runs, in p.8's order, before Initiative
         // continues
@@ -828,6 +886,36 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(space =>
                     space.Kind == BoardMapSpaceKind.Playable && space.Coordinate.Equals(coordinate))
                 .Id;
+        }
+
+        private static GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority EmptyDoubleLaneBoard()
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(
+                OfficialBoardMapCatalog.LavaBridgeDoubleLane);
+            return new GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority(
+                map,
+                Array.Empty<HeroOccupancy>(),
+                Array.Empty<ObstacleOccupancy>(),
+                Array.Empty<QuickGameMinionSetupState>());
+        }
+
+        private static void ResolveDirectPush(
+            LanePushTransitionAuthority lanePush,
+            ZoneId battleZoneId,
+            TeamSide winningSide,
+            TeamSide losingSide,
+            bool deferFinalDecision)
+        {
+            Assert.That(lanePush.TryBeginPush(
+                    battleZoneId,
+                    winningSide,
+                    losingSide,
+                    new TieBreakerState(TeamSide.Red),
+                    deferFinalDecision),
+                Is.EqualTo(LanePushPrefixRejectionReason.None));
+            lanePush.ResolveWaveStage();
+            lanePush.ResolveZoneStage();
+            lanePush.CompletePush();
         }
 
         private static IReadOnlyList<string> NearestEmptyIn(

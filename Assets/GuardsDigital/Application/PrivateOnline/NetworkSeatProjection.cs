@@ -73,7 +73,8 @@ namespace GuardsDigital.Application
             ExperimentalMatchOptions experiments = null, IReadOnlyList<NetworkCardRow> alliedHandCards = null,
             IReadOnlyList<TeammateMarker> teammateMarkers = null, long coordinationRevision = 0, int coordinationGeneration = 0, MatchClockState clock = null,
             IReadOnlyList<HeroCardInspection> cardInspections = null,
-            IReadOnlyList<string> standingActiveEffectSourceCardInstanceIds = null)
+            IReadOnlyList<string> standingActiveEffectSourceCardInstanceIds = null,
+            IReadOnlyList<int> remainingWaveCountersByLane = null)
         {
             Version = version;
             TeamVictoryTallies = teamVictoryTallies ?? Array.Empty<NetworkTeamVictoryTallyRow>();
@@ -99,6 +100,15 @@ namespace GuardsDigital.Application
             Outcome = outcome;
             TeamLifeCounters = teamLifeCounters;
             RemainingWaveCounters = remainingWaveCounters;
+            RemainingWaveCountersByLane = Array.AsReadOnly(
+                (remainingWaveCountersByLane ?? new[] { remainingWaveCounters }).ToArray());
+            if (RemainingWaveCountersByLane.Count == 0 ||
+                RemainingWaveCountersByLane.Any(value => value < 0))
+            {
+                throw new ArgumentException(
+                    "Lane Wave-counter pools must be non-empty and non-negative.",
+                    nameof(remainingWaveCountersByLane));
+            }
             Heroes = heroes;
             Minions = minions;
             Obstacles = obstacles;
@@ -172,6 +182,8 @@ namespace GuardsDigital.Application
         /// be taken, and this codebase does not ship a branch it cannot reach.</para>
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        public IReadOnlyList<int> RemainingWaveCountersByLane { get; }
 
         /// <summary>
         /// Milestone 9.30g, protocol /32. Every team's count toward a printed team victory (Gydion's
@@ -759,6 +771,11 @@ namespace GuardsDigital.Application
                 // side interprets a payload, so placement is a readability choice and the two
                 // counter facts belong together.
                 writer.Write(projection.RemainingWaveCounters);
+                writer.Write(projection.RemainingWaveCountersByLane.Count);
+                foreach (var remaining in projection.RemainingWaveCountersByLane)
+                {
+                    writer.Write(remaining);
+                }
 
                 // Milestone 9.30g, protocol /32. Every team's count toward a printed team victory,
                 // beside the two other counter facts of the table.
@@ -1073,6 +1090,24 @@ namespace GuardsDigital.Application
                     if (remainingWaveCounters < 0)
                     {
                         return false;
+                    }
+
+                    if (!TryReadCount(reader, out var laneWaveCounterCount) ||
+                        laneWaveCounterCount == 0)
+                    {
+                        return false;
+                    }
+
+                    var remainingWaveCountersByLane = new List<int>(laneWaveCounterCount);
+                    for (var index = 0; index < laneWaveCounterCount; index++)
+                    {
+                        var remaining = reader.ReadInt32();
+                        if (remaining < 0)
+                        {
+                            return false;
+                        }
+
+                        remainingWaveCountersByLane.Add(remaining);
                     }
 
                     // Milestone 9.30g, protocol /32. A tally exists once it has counted, toward a
@@ -1538,7 +1573,8 @@ namespace GuardsDigital.Application
                         authorizedCommands,
                         detail,
                         Array.AsReadOnly(tallies.ToArray()), experiments, alliedHandCards, teammateMarkers, coordinationRevision, coordinationGeneration, clock, cardInspections,
-                        Array.AsReadOnly(standingSources.ToArray()));
+                        Array.AsReadOnly(standingSources.ToArray()),
+                        Array.AsReadOnly(remainingWaveCountersByLane.ToArray()));
                     return true;
                 }
             }

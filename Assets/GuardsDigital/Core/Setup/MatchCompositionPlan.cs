@@ -4,6 +4,18 @@ using GuardsDigital.Core.Board;
 namespace GuardsDigital.Core.Setup
 {
     /// <summary>
+    /// How the host-entered Wave count is allocated on a map with more than one lane. The official
+    /// double-lane rule gives every lane its own pool; SharedTotal is the explicit digital option
+    /// requested for W-072. A single-lane match canonicalizes to SharedTotal because the two shapes
+    /// are observably identical there.
+    /// </summary>
+    public enum WaveCounterAllocation
+    {
+        SharedTotal = 0,
+        PerLane = 1
+    }
+
+    /// <summary>
     /// Milestone 8.35z37. Everything a match is composed FROM, as one value: which of
     /// rulebook pp.5-6's printed setups is being played, and which heroes stand on it.
     /// </summary>
@@ -36,12 +48,20 @@ namespace GuardsDigital.Core.Setup
         /// The heroes each side fields, or <c>null</c> for setup step 7's printed line-up at that
         /// format's team size.
         /// </param>
-        public MatchCompositionPlan(MatchFormat format, HeroLineup lineup = null, MapDefinitionReference? map = null)
+        public MatchCompositionPlan(
+            MatchFormat format,
+            HeroLineup lineup = null,
+            MapDefinitionReference? map = null,
+            WaveCounterAllocation waveCounterAllocation = WaveCounterAllocation.SharedTotal)
         {
             Map = map ?? new MapDefinitionReference(new MapId("official-single-lane"), 1);
             Format = format ?? throw new ArgumentNullException(nameof(format));
+            if (waveCounterAllocation != WaveCounterAllocation.SharedTotal &&
+                waveCounterAllocation != WaveCounterAllocation.PerLane)
+                throw new ArgumentOutOfRangeException(nameof(waveCounterAllocation));
+            WaveCounterAllocation = waveCounterAllocation;
             IsPrintedLineup = lineup == null;
-            Lineup = lineup ?? RegisteredHeroRoster.PrintedLineup(format.HeroesPerTeam);
+            Lineup = lineup ?? RegisteredHeroRoster.DefaultLineup(format.HeroesPerTeam);
 
             if (Lineup.HeroesPerTeam != format.HeroesPerTeam)
             {
@@ -55,6 +75,7 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Setup step 4 and step 5's printed setup: the Wave count and the Life count.</summary>
         public MatchFormat Format { get; }
         public MapDefinitionReference Map { get; }
+        public WaveCounterAllocation WaveCounterAllocation { get; }
 
         /// <summary>The heroes on the board, never null - see the type's own remarks.</summary>
         public HeroLineup Lineup { get; }
@@ -67,8 +88,11 @@ namespace GuardsDigital.Core.Setup
         public bool IsPrintedLineup { get; }
 
         /// <summary>The printed setup with nobody having chosen anything - what this build ships.</summary>
-        public static MatchCompositionPlan Printed(MatchFormat format, MapDefinitionReference? map = null) =>
-            new MatchCompositionPlan(format, map: map);
+        public static MatchCompositionPlan Printed(
+            MatchFormat format,
+            MapDefinitionReference? map = null,
+            WaveCounterAllocation waveCounterAllocation = WaveCounterAllocation.SharedTotal) =>
+            new MatchCompositionPlan(format, map: map, waveCounterAllocation: waveCounterAllocation);
 
         /// <summary>
         /// The same setup with a different line-up standing on it. The format is what a session's
@@ -76,7 +100,7 @@ namespace GuardsDigital.Core.Setup
         /// <c>PrivateSessionHost</c>'s remarks on why the format is settled before anyone is seated.
         /// </summary>
         public MatchCompositionPlan WithLineup(HeroLineup lineup) =>
-            new MatchCompositionPlan(Format, lineup, Map);
+            new MatchCompositionPlan(Format, lineup, Map, WaveCounterAllocation);
 
         public override string ToString() =>
             Format.Id + " (" + (IsPrintedLineup ? "printed line-up" : "chosen line-up") + ")";

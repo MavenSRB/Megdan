@@ -437,7 +437,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeatWireMeaning_UsesProtocolTwelve_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(52),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(54),
                 "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
                 + "row gained the attacking card's instance id, its definition id and that "
                 + "definition's content revision, and the action definition id, all written "

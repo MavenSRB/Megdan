@@ -27,7 +27,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-foreach ($mapName in @('official-single-lane', 'alternate-small-single-lane')) {
+foreach ($mapName in @(
+    'official-single-lane',
+    'alternate-small-single-lane',
+    'green-water-double-lane',
+    'lava-bridge-double-lane')) {
 $specificationPath = [System.IO.Path]::Combine($projectRoot, 'Docs', 'AI', 'Maps', ($mapName + '.map.json'))
 $resourcePath = [System.IO.Path]::Combine($projectRoot, 'Assets', 'Resources', 'Maps', ($mapName + '.json'))
 

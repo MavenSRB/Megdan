@@ -12,7 +12,7 @@ The schema is map-scoped so future maps can coexist:
 - A match selects one immutable definition by `(mapId, revision)`. Coordinate-based rules and queries then operate locally within that selected definition instead of qualifying every internal coordinate individually.
 - Zones and spawn points are collections owned by the selected map specification. A future map receives its own zone and spawn collections rather than extending this map through name-based branches.
 
-Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v59, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
+Milestones 4.1-4.1a defined and hardened the data/validation contract. Milestone 4.2 loaded an immutable selected definition through the reusable catalog boundary, bound it to authoritative board state, and began persisting its `mapId`/revision in the versioned snapshot at that era's schema version 2; the snapshot schema has since advanced to v60, and the map's `(mapId, revision)` identity still rides it. Milestone 4.2a replaced the temporary scene geometry, and milestone 4.3 added zone adjacency and the ordered Lane relationship.
 
 ## Alternate small-map preparation
 
@@ -49,9 +49,9 @@ The first pictured map is an implemented additional option for **2v2 and 3v3**. 
 
 Do not apply the separate maps' two active Battle Zones or 4v4/5v5 formats to this first image. Use its reviewed topology, setup and rules; do not infer additional rules from the artwork.
 
-### Future two-lane maps for 4v4 and 5v5
+### Two-lane maps for 4v4 and 5v5
 
-The second map and the last lava/bridge image are **both two-lane maps for 4v4 and 5v5**. The user's correction explicitly supersedes the last image's initial 2v2 description. Implementation of two-lane support and both map choices is queued as [9.62](../Roadmap/PHASE_9.md#962-implement-the-two-lane-maps-for-4v4-and-5v5), not authorized.
+The second map and the last lava/bridge image are **both implemented two-lane maps for 4v4 and 5v5**. The user's correction explicitly supersedes the last image's initial 2v2 description. W-072 completed their executable support under [9.62](../Roadmap/PHASE_9_EXPERIMENTS_AND_MAPS.md#x-962-implement-the-two-lane-maps-for-4v4-and-5v5).
 
 Second map, green terrain around central water:
 
@@ -64,9 +64,13 @@ Last map, ice/lava terrain with a central bridge:
 - File: `Docs/Guards of Atlantis II - Map References/two-lane-4v4-5v5-lava-bridge-user-reference-2026-10-05.png`, copied from `codex-clipboard-88a35206-cbd7-4af5-a3f0-f28fc583d5b6.png`.
 - PNG, **900 x 900**, 1,776,026 bytes; SHA-256 `0c9f29e6d66a18fe95d3438e250b99c160149f17e122ddb74a359092a1f7543e`. Source and saved copy match exactly. The initially misclassified 2v2 filename was corrected without changing the image bytes.
 
-The agreed two-lane design is **one match with one shared initiative/turn order**, **two separate active Battle Zones**, and **independent pushing of those Battle Zones**. A push in either lane reaching the opposing Throne ends the **whole match**; the other lane need not also reach a Throne. No other rules changes were requested beyond extra players and these lane/Battle Zone semantics. Do not introduce parallel lane turns, separate matches, a requirement to win both lanes or unrequested balance changes.
+The agreed two-lane design is **one match with one shared initiative/turn order**, **two separate active Battle Zones**, and **independent pushing of those Battle Zones**. A push in either lane reaching the opposing Throne ends the **whole match**; the other lane need not also reach a Throne. Rulebook p.20 supplies the official setup: 7 Wave counters per lane, 6 Lives per team for 4v4 and 7 Lives per team for 5v5; minions remain bound to their original lane, and the two Minion Battles resolve separately but simultaneously. The existing host Waves and Lives inputs remain configurable. For a two-lane map, a host toggle chooses whether the entered Waves value is applied independently to each lane (the official-rule default) or used as one shared total consumed by pushes in either lane. In the shared-total variant, reaching zero on tied combined position totals enters sudden death until a later push produces one winner (user decision, 2026-10-13). Do not introduce parallel lane turns, separate matches, a requirement to win both lanes or unrequested balance changes.
 
-Before implementation, review each map's coordinate/terrain/zone/spawn inventory and applicable setup values for eight and ten players. Audit references to the Battle Zone, Minion Battles, Lane Pushes and wave handling against two-lane state; resolve ambiguous mapping rather than silently inventing rules. These rules do not change the separate 2v2/3v3 reference or shipped behavior.
+User source correction, 2026-10-13: the green board has **three distinct playable central off-lane Zones**—the outlined snow, water and forest areas—and the lava board has **one playable central off-lane bridge Zone**. Treat all of their full-grid-outline hexes as playable regardless of colour. These Zones participate in ordinary movement and board queries but are excluded from both ordered Lane lists, do not become Battle Zones and do not receive either lane's Minion Battle or Lane Push.
+
+The executable specifications preserve the reviewed coordinate, terrain, zone and spawn inventories for eight and ten players. A full grid outline makes a hex playable regardless of its colour; terrain remains an independent inventory that includes the complete board edge and internal obstacles. The implementation and focused tests cover two active Battle Zones, lane-bound Minion Battles, independent Lane Pushes, and host-selected per-lane or shared Wave handling. These rules do not change the separate 2v2/3v3 reference or shipped behavior.
+
+Presentation shows both live lane pools for per-lane allocation or the one shared total. Snapshot schema v60 and private wire /54 preserve and admit map topology, Wave allocation and live pools.
 
 ### User-edited spawn artwork
 

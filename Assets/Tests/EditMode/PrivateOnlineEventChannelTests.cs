@@ -604,7 +604,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(52),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(54),
                 "W-015 carries optional resolved attack totals on public log rows for animation cards. " +
                 "9.32a carries A FACEDOWN TURN-SLOT CARD: every turn-slot assignment row, current and " +
                 "completed, ends with whether its card was placed facedown, and another seat's row " +

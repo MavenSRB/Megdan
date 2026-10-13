@@ -328,7 +328,8 @@ namespace GuardsDigital.Application
             // a restart and a retained-prefix Undo begin with a full Wave pool, no push running and no
             // transition paused, and re-derive any paused one by replaying the commands that paused it.
             var rebuiltLanePushAuthority = new LanePushTransitionAuthority(
-                rebuiltBoard, initialState.Setup.WaveCount);
+                rebuiltBoard, initialState.Setup.WaveCount,
+                initialState.Setup.WaveCounterAllocation);
             // Milestone 7.5. p.15's leveling is the second production consumer of the continuation
             // contract, and its rules are rebuilt here beside the Lane Push's for the same reason: they
             // are about this match's own participants, content and cards. The states a purchase moves

@@ -245,11 +245,20 @@ namespace GuardsDigital.Core.Rules.LanePush
     /// </summary>
     internal static class LanePushPrefixRules
     {
+        public static LanePushPrefixRejectionReason Validate(
+            ILaneAdvanceAuthority board,
+            TeamSide winningSide,
+            TeamSide losingSide) =>
+            board.CurrentBattleZoneId.HasValue
+                ? Validate(board, board.CurrentBattleZoneId.Value, winningSide, losingSide)
+                : LanePushPrefixRejectionReason.NoCurrentBattleZone;
+
         /// <summary>
         /// Whether this push can begin at all, decided before p.8's first step spends anything.
         /// </summary>
         public static LanePushPrefixRejectionReason Validate(
             ILaneAdvanceAuthority board,
+            ZoneId battleZoneId,
             TeamSide winningSide,
             TeamSide losingSide)
         {
@@ -262,13 +271,14 @@ namespace GuardsDigital.Core.Rules.LanePush
                 return LanePushPrefixRejectionReason.UndeclaredSides;
             }
 
-            if (!board.CurrentBattleZoneId.HasValue)
+            if (!board.CurrentBattleZoneIds.Contains(battleZoneId))
             {
                 return LanePushPrefixRejectionReason.NoCurrentBattleZone;
             }
 
-            var lane = board.MapDefinition.OrderedLaneZoneIds;
-            var currentIndex = IndexOf(lane, board.CurrentBattleZoneId.Value);
+            if (!board.MapDefinition.TryGetLaneContaining(battleZoneId, out _, out var lane))
+                return LanePushPrefixRejectionReason.BattleZoneOffTheLane;
+            var currentIndex = IndexOf(lane, battleZoneId);
             if (currentIndex < 0)
             {
                 return LanePushPrefixRejectionReason.BattleZoneOffTheLane;
@@ -317,12 +327,17 @@ namespace GuardsDigital.Core.Rules.LanePush
         /// sign.
         /// </summary>
         public static LanePushZoneAdvancePlan PlanZoneAdvance(
-            ILaneAdvanceAuthority board, TeamSide losingSide)
+            ILaneAdvanceAuthority board, TeamSide losingSide) =>
+            PlanZoneAdvance(board, board.CurrentBattleZoneId.Value, losingSide);
+
+        public static LanePushZoneAdvancePlan PlanZoneAdvance(
+            ILaneAdvanceAuthority board, ZoneId battleZoneId, TeamSide losingSide)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
-            var lane = board.MapDefinition.OrderedLaneZoneIds;
-            var currentIndex = IndexOf(lane, board.CurrentBattleZoneId.Value);
+            if (!board.MapDefinition.TryGetLaneContaining(battleZoneId, out _, out var lane))
+                throw new InvalidOperationException($"Battle Zone '{battleZoneId}' is not on an ordered Lane.");
+            var currentIndex = IndexOf(lane, battleZoneId);
             ThroneZoneQuery.TryGetThroneZone(board.MapDefinition, losingSide, out var losingThrone);
             var throneIndex = IndexOf(lane, losingThrone.Id);
             var nextIndex = currentIndex + (throneIndex > currentIndex ? 1 : -1);

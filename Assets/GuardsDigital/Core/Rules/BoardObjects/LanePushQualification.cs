@@ -171,7 +171,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
                 return LanePushQualification.None;
             }
 
-            if (!BattleZoneQuery.TryGetCurrentBattleZone(board, out var battleZone))
+            if (!BattleZoneQuery.TryGetCurrentBattleZone(board, removedFrom, out var battleZone))
             {
                 // A board with no current Battle Zone - every synthetic one - has no lane to push,
                 // which is the same reading the displaced-minion correction takes.
@@ -181,11 +181,6 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             // p.8 asks about "the last remaining enemy minion in the Battle Zone", so a removal that
             // happened outside it qualifies nothing even when that side has none inside: the zone is
             // no emptier than it was before the piece was taken.
-            if (!BattleZoneQuery.IsInCurrentBattleZone(board, removedFrom))
-            {
-                return LanePushQualification.None;
-            }
-
             // The operation's own subject never counts towards what remains. For a completed removal
             // that is a no-op - the piece has already left the board - and for p.13's Defeat whose
             // removal was prevented it is the whole of milestone 6.9's third acceptance check: p.8
@@ -194,7 +189,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             // collects its coins. So the Defeat sentence is answered by the Defeat, and the miniature
             // still standing there is the one this rule just accounted for.
             var remaining = BattleZoneQuery
-                .FindEffectiveMinionsInside(board, participants, modifications)
+                .FindEffectiveMinionsInside(board, battleZone.Id, participants, modifications)
                 .Any(minion => minion.TeamSide == removedSide && !minion.Unit.Equals(removedUnit));
             return remaining
                 ? LanePushQualification.None

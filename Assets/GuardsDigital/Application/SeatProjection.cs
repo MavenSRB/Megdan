@@ -950,7 +950,7 @@ namespace GuardsDigital.Application
     /// projection reports, so a client never decides its own legality and the two can never
     /// disagree.</para>
     /// </remarks>
-    public sealed class SeatProjection : IMatchReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
+    public sealed class SeatProjection : IMatchReadModel, ILaneWaveCounterReadModel, IExperimentalReadModel, ICardValueReadModel, IModeTurnRosterReadModel
     {
         public IReadOnlyList<HeroId> OptionalTurnHeroIds { get; }
         private readonly SeatPendingSurface pending;
@@ -1047,6 +1047,7 @@ namespace GuardsDigital.Application
             IsTurnActive = source.IsTurnActive;
             TeamLifeCounters = source.TeamLifeCounters;
             RemainingWaveCounters = source.RemainingWaveCounters;
+            RemainingWaveCountersByLane = source.RemainingWaveCountersByLane;
             TeamVictoryTallies = source.TeamVictoryTallies;
             HeroProgression = source.HeroProgression;
             HeroDefenseModifiers = source.HeroDefenseModifiers;
@@ -1123,6 +1124,8 @@ namespace GuardsDigital.Application
         /// the Director's.
         /// </summary>
         public int RemainingWaveCounters { get; }
+
+        public IReadOnlyList<int> RemainingWaveCountersByLane { get; }
 
         /// <summary>
         /// Milestone 9.30g. Every team's count toward a printed team victory (Gydion's Wish), taken

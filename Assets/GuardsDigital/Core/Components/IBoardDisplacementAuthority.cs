@@ -194,6 +194,7 @@ namespace GuardsDigital.Core.Components
         /// p.18's displaced-minion correction, p.8's own Lane-Push cause - already arrives here.
         /// </summary>
         ZoneId? CurrentBattleZoneId { get; }
+        IReadOnlyList<ZoneId> CurrentBattleZoneIds { get; }
 
         IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroOccupancy> Occupancies { get; }
 

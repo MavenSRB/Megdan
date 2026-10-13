@@ -47,14 +47,16 @@ namespace GuardsDigital.Presentation.Match
             int roundIndex = 0,
             int turnIndex = 0,
             bool isAwaitingViewerInput = false,
-            int? remainingWaveCounters = null, MatchClockState clock = null)
+            int? remainingWaveCounters = null, MatchClockState clock = null,
+            IReadOnlyList<int> remainingWaveCountersByLane = null)
         {
             Clock = clock ?? MatchClockState.Disabled;
             IsAwaitingViewerInput = isAwaitingViewerInput;
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             var waveCount = remainingWaveCounters ?? setup.WaveCount;
-            Text = Format(tieBreaker, setup, teamLifeCounters, waveCount);
+            var waveLabel = FormatWaves(setup, waveCount, remainingWaveCountersByLane);
+            Text = Format(tieBreaker, setup, teamLifeCounters, waveLabel);
             Color = tieBreaker.IsDefined
                 ? tieBreaker.RevealedSide == TeamSide.Red
                     ? new Color(0.72f, 0.16f, 0.12f)
@@ -78,8 +80,7 @@ namespace GuardsDigital.Presentation.Match
             // the pool spent down; the label now says REMAINING explicitly, matching the strip's own
             // compact "LABEL VALUE" convention (RedLifeLabel, BlueLifeLabel) rather than inventing a
             // colon this strip has never used.
-            WaveLabel = "WAVES REMAINING " +
-                waveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            WaveLabel = waveLabel;
             TieBreakerLabel = "TIEBREAKER";
         }
 
@@ -131,7 +132,7 @@ namespace GuardsDigital.Presentation.Match
             TieBreakerState state,
             QuickGameSetupState setup,
             IReadOnlyList<KeyValuePair<TeamId, int>> counters,
-            int waveCount)
+            string waveLabel)
         {
             var redLives = Counters(setup, counters, TeamSide.Red);
             var blueLives = Counters(setup, counters, TeamSide.Blue);
@@ -140,7 +141,24 @@ namespace GuardsDigital.Presentation.Match
                 : state.RevealedSide == TeamSide.Red
                     ? "TIE BREAKER  [R] RED"
                     : "TIE BREAKER  [B] BLUE";
-            return $"QUICK GAME  WAVES REMAINING {waveCount}\nLIVES  [R] {redLives}  [B] {blueLives}\n{tieBreaker}";
+            return $"QUICK GAME  {waveLabel}\nLIVES  [R] {redLives}  [B] {blueLives}\n{tieBreaker}";
+        }
+
+        private static string FormatWaves(
+            QuickGameSetupState setup,
+            int waveCount,
+            IReadOnlyList<int> remainingWaveCountersByLane)
+        {
+            if (setup.WaveCounterAllocation != WaveCounterAllocation.PerLane ||
+                remainingWaveCountersByLane == null || remainingWaveCountersByLane.Count <= 1)
+            {
+                return "WAVES REMAINING " +
+                    waveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return "WAVES REMAINING  " + string.Join("  ·  ",
+                remainingWaveCountersByLane.Select((remaining, index) =>
+                    $"LANE {index + 1} {remaining.ToString(System.Globalization.CultureInfo.InvariantCulture)}"));
         }
     }
 
