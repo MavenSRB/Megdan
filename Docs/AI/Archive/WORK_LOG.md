@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-066 | Safe local branch cleanup removed 41 branches fully merged into `main` and attached to no worktree, reducing 163 local branches to 122. `git branch -d` refused `pve-first-slice` because of its upstream state, so it was preserved; all unmerged/worktree branches, untracked `.claude/` content and remotes were untouched. | `work/W-066` |
 | W-065 | Local `main` fast-forwarded through the completed W047-W064 sequence after ancestry proved it had no unique commits. Existing focused and exact-package evidence remains applicable; living documentation and diff hygiene passed. Other worktrees, untracked `.claude/`, packages and remotes were untouched. | `work/W-065` |
 | W-064 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W060-W063 over W059 under one admission-compatible stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-064` |
 | W-063 | Every PvP and PvE Director tray now contains only Undo and Event Log; Reset remains an underlying reconstruction diagnostic, not a live host control. Explicit seated/unseated PvE and unseated PvP regressions prove the tray contract, while the PvE observer also refuses a valid remote-player command. Focused Edit/Play and rendered PvE checks passed. Source-only; W059 packages unchanged. | `work/W-063` |
@@ -71,6 +72,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-066 Prune safely merged local branches
+
+Requested on 2026-10-13 after inventory found 163 local branches. The bounded first pass selected only branches Git reported merged into `main`, excluded `main` and every worktree-attached branch, and used safe `git branch -d` semantics. It deleted 41 branches and reduced the local count to 122. Git refused `pve-first-slice` because its configured upstream is not fully merged into `origin/pve-first-slice`; no force deletion was attempted, and that branch remains. The 115 branches not merged by ancestry, seven worktree-attached branches, pre-existing untracked `.claude/` content, tags, packages and all remote refs were preserved.
+
+Historical evidence: completion commit addressed by immutable `work/W-066`; exact before/after census and the safe refusal live in its body.
 
 ### [x] W-065 Fast-forward completed work to local main
 
