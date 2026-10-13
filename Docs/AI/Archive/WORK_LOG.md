@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-071 | Archived and verified the exact tips of all five fully merged non-main branches, removed their worktrees and safely deleted their refs. `main` is now the only local branch. A generated Crashpad log and ignored generated/private checkout copies were discarded only with their obsolete worktrees; detached worktrees, remotes and packages were untouched. | `work/W-071` |
 | W-070 | Archived and verified the exact superseded `takahide-932i` tip, then removed its clean worktree through normal non-force removal and deleted its branch. Only ignored generated bin/obj/tmp output was discarded. Six local branches remain, all worktree-owned; other worktrees, remotes and packages were untouched. | `work/W-070` |
 | W-069 | Archived the exact local `pve-first-slice` tip, verified it was already an ancestor of `main`, and removed only its local branch. The distinct `origin/pve-first-slice` ref remained byte-identical. Seven local branches remain, each owned by a worktree. | `work/W-069` |
 | W-068 | Archived and verified the exact tips of all 83 dormant unattached branches with non-equivalent patches, then removed only their branch refs. Local branches fell from 91 to eight; every removed line is recoverable from `archive/local/*`. Worktree-attached branches, `pve-first-slice`, remotes, packages and `.claude/` were preserved. | `work/W-068` |
@@ -76,6 +77,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-071 Retire fully merged worktree branches
+
+Requested on 2026-10-13 after ancestry checks proved `widget-borrow-investigation`, `takahide-inventory`, `codex/hero-defense-shield`, `codex/hero-token-shift-card-preview` and `codex/experimental-playtest` were each zero commits ahead of and already ancestors of `main`. Their exact tips were preserved and verified under matching `archive/local/*` tags. Four checkouts had no tracked or untracked changes; the experimental checkout's only untracked file was a 314-byte generated Chromium Crashpad error log. After removing that log, Git removed the worktrees without force. Windows long-path handling finished deleting ignored Unity/build caches and private excluded copies left behind after three worktree registrations were removed. Safe `git branch -d` then deleted all five fully merged refs. `main` is now the sole local branch; detached historical/validation worktrees, packages, remotes and unrelated parent-directory content were untouched.
+
+Historical evidence: completion commit addressed by immutable `work/W-071`; exact archive identities, ancestry, cleanliness, removal and final branch census live in its body.
 
 ### [x] W-070 Retire superseded Takahide worktree
 
