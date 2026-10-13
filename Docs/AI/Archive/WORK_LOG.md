@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-068 | Archived and verified the exact tips of all 83 dormant unattached branches with non-equivalent patches, then removed only their branch refs. Local branches fell from 91 to eight; every removed line is recoverable from `archive/local/*`. Worktree-attached branches, `pve-first-slice`, remotes, packages and `.claude/` were preserved. | `work/W-068` |
 | W-067 | Archived 31 unattached branch tips whose patches were entirely equivalent to `main` under exact `archive/local/<branch>` tags, verified every tag, then removed those branch refs. Local branches fell from 122 to 91; all unique-patch, worktree-attached, protected-upstream and remote refs were preserved. | `work/W-067` |
 | W-066 | Safe local branch cleanup removed 41 branches fully merged into `main` and attached to no worktree, reducing 163 local branches to 122. `git branch -d` refused `pve-first-slice` because of its upstream state, so it was preserved; all unmerged/worktree branches, untracked `.claude/` content and remotes were untouched. | `work/W-066` |
 | W-065 | Local `main` fast-forwarded through the completed W047-W064 sequence after ancestry proved it had no unique commits. Existing focused and exact-package evidence remains applicable; living documentation and diff hygiene passed. Other worktrees, untracked `.claude/`, packages and remotes were untouched. | `work/W-065` |
@@ -73,6 +74,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-068 Archive dormant unique-patch branches
+
+Continued on 2026-10-13 after the patch-equivalent cleanup. Of the 84 remaining branches with non-equivalent patches, `takahide-932i` was attached to a worktree and preserved; the other 83 were dormant and unattached. Each exact tip was tagged first as `archive/local/<original-branch>` and verified against its source SHA before its branch ref was deleted. Local branch count fell from 91 to eight. Every removed history is recoverable from its archive tag; all worktrees, `pve-first-slice`, packages, pre-existing untracked `.claude/` content and remote refs remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-068`; exact selection, tag verification and before/after census live in its body.
 
 ### [x] W-067 Archive and prune patch-equivalent branches
 
