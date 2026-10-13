@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-070 | Archived and verified the exact superseded `takahide-932i` tip, then removed its clean worktree through normal non-force removal and deleted its branch. Only ignored generated bin/obj/tmp output was discarded. Six local branches remain, all worktree-owned; other worktrees, remotes and packages were untouched. | `work/W-070` |
 | W-069 | Archived the exact local `pve-first-slice` tip, verified it was already an ancestor of `main`, and removed only its local branch. The distinct `origin/pve-first-slice` ref remained byte-identical. Seven local branches remain, each owned by a worktree. | `work/W-069` |
 | W-068 | Archived and verified the exact tips of all 83 dormant unattached branches with non-equivalent patches, then removed only their branch refs. Local branches fell from 91 to eight; every removed line is recoverable from `archive/local/*`. Worktree-attached branches, `pve-first-slice`, remotes, packages and `.claude/` were preserved. | `work/W-068` |
 | W-067 | Archived 31 unattached branch tips whose patches were entirely equivalent to `main` under exact `archive/local/<branch>` tags, verified every tag, then removed those branch refs. Local branches fell from 122 to 91; all unique-patch, worktree-attached, protected-upstream and remote refs were preserved. | `work/W-067` |
@@ -75,6 +76,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-070 Retire superseded Takahide worktree
+
+Requested on 2026-10-13 after inspecting the six commits unique to `takahide-932i`. Their gate, staging and journey behavior is already present or further evolved on `main`; the gate test is byte-identical and the journey coverage has advanced. The clean `.claude/worktrees/takahide-932d` checkout had no tracked or untracked changes; its ignored content was limited to generated Dotnet bin/obj and temporary output. Its exact `93aabe12` tip was preserved and verified as `archive/local/takahide-932i`, then the worktree was removed normally without force and the branch was deleted. Six local branches remain, all checked out by worktrees; other worktrees, packages, remotes and parent `.claude/` content were untouched.
+
+Historical evidence: completion commit addressed by immutable `work/W-070`; exact archive identity, cleanliness checks and final branch ownership live in its body.
 
 ### [x] W-069 Retire local pve-first-slice ref
 
