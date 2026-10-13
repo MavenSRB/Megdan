@@ -10,15 +10,15 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W073 Large Maps**, `Builds/Playtest-W073-large-maps.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. Stamp `1.0-W073-large-maps+20261014004216-33ddb87f`; package SHA-256 `45494847903836caea9031f867420f115cc4b0c722717ea9cf2ca919850215ce`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W075 Large Lobby Fix**, `Builds/Playtest-W075-large-lobby-fix.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. W-074 fixes ten-seat host admission and double-lane setup inheritance. Stamp `1.0-W075-large-lobby-fix+20261014030500-a2644161`; package SHA-256 `d2a0e62cbab6f58df34fc10b00556522cdfd93cbc31ced0308c90c2047829a9d`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-Matching Mac package: `Builds/Playtest-W073-large-maps-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W073 build stamp/content; SHA-256 `4af630737e51797913586ead01c17b1fd2499b76121f1850049a5b5161a4e521`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+Matching Mac package: `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W075 build stamp/content; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
 - Last completed work: **9.62**.
-- Active authorized work: **W-075**, producing corrected Windows/Mac packages after W-074 repaired both 4v4/5v5 admission defects.
-- Next proposed work: **W-075 completion** after exact-artifact 5v5 host/join and package evidence.
+- Active authorized work: **none**.
+- Next proposed work: **none**.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
