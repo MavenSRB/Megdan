@@ -16,11 +16,11 @@ Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified
 
 Matching Mac package: `Builds/Playtest-W064-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W064 build stamp/content; SHA-256 `eda28601cb277b57123b7157712c08b4cd1fe03ce75088c447d172ba5c69bbb2`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-066**.
+- Last completed work: **W-067**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
-W066 safely prunes 41 merged, unattached local branches. Git refused `pve-first-slice`, so it, every unmerged branch, all worktree branches and remotes remain preserved.
+W067 archives 31 patch-equivalent tips under `archive/local/*` and removes their branch refs, leaving 91 local branches. Unique-patch, worktree and remote refs remain preserved.
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 

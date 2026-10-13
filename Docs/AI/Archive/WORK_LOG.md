@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-067 | Archived 31 unattached branch tips whose patches were entirely equivalent to `main` under exact `archive/local/<branch>` tags, verified every tag, then removed those branch refs. Local branches fell from 122 to 91; all unique-patch, worktree-attached, protected-upstream and remote refs were preserved. | `work/W-067` |
 | W-066 | Safe local branch cleanup removed 41 branches fully merged into `main` and attached to no worktree, reducing 163 local branches to 122. `git branch -d` refused `pve-first-slice` because of its upstream state, so it was preserved; all unmerged/worktree branches, untracked `.claude/` content and remotes were untouched. | `work/W-066` |
 | W-065 | Local `main` fast-forwarded through the completed W047-W064 sequence after ancestry proved it had no unique commits. Existing focused and exact-package evidence remains applicable; living documentation and diff hygiene passed. Other worktrees, untracked `.claude/`, packages and remotes were untouched. | `work/W-065` |
 | W-064 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W060-W063 over W059 under one admission-compatible stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-064` |
@@ -72,6 +73,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-067 Archive and prune patch-equivalent branches
+
+Requested on 2026-10-13 as the next branch-cleanup pass. `git cherry main` identified 31 unattached branches with no unique patch, despite their commits not being ancestors of `main`. Each exact tip was preserved first as `archive/local/<original-branch>` and verified against its source SHA; only then was the branch ref force-deleted. Local branch count fell from 122 to 91. The remaining 84 non-main patches, all worktree-attached branches, `pve-first-slice`, packages, pre-existing untracked `.claude/` content and every remote ref remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-067`; the exact archive map, tag verification and before/after census live in its body.
 
 ### [x] W-066 Prune safely merged local branches
 
