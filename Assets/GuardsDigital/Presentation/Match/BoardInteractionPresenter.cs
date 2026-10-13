@@ -1135,7 +1135,8 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private bool SubmitEffectChoiceSelection(DirectorCommand command)
         {
-            if (command == null || command.Kind != DirectorCommandKind.AnswerEffectChoice)
+            if (!MatchClientAuthority.CanSubmitPlayerCommands(session) ||
+                command == null || command.Kind != DirectorCommandKind.AnswerEffectChoice)
             {
                 return false;
             }
@@ -1172,6 +1173,11 @@ namespace GuardsDigital.Presentation.Match
 
         private bool Execute(DirectorCommand command)
         {
+            if (!MatchClientAuthority.CanSubmitPlayerCommands(session))
+            {
+                return false;
+            }
+
             var result = session.Submit(command);
             if (result.Accepted)
             {

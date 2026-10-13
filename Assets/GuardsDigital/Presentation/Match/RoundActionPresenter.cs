@@ -39,6 +39,7 @@ namespace GuardsDigital.Presentation.Match
         private RoundActionViewModel lastViewModel;
         private IMatchReadModel clearModeProjection;
         private ActionDefinitionId clearModeActionDefinitionId;
+        private bool? lastCanSubmitPlayerCommands;
 
 
         /// <summary>
@@ -1699,6 +1700,13 @@ namespace GuardsDigital.Presentation.Match
 
         private RoundActionViewModel GetOrCreateViewModel(IMatchReadModel projection)
         {
+            var canSubmitPlayerCommands = MatchClientAuthority.CanSubmitPlayerCommands(session);
+            if (lastCanSubmitPlayerCommands != canSubmitPlayerCommands)
+            {
+                lastCanSubmitPlayerCommands = canSubmitPlayerCommands;
+                lastProjection = null;
+            }
+
             // Milestone 6.3a: an open Clear belongs to the projection it was opened against. A
             // projection-version change - an accepted or refused command, End Turn, Undo, restart,
             // restore, or replay - drops it, so a stale token control or subset can never be
@@ -1714,7 +1722,9 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                lastViewModel = directorPlayerSide.HasValue && session.IsDirector &&
+                lastViewModel = !canSubmitPlayerCommands
+                    ? CreateNarrationOnlyViewModel(projection)
+                    : directorPlayerSide.HasValue && session.IsDirector &&
                     !global::GuardsDigital.Presentation.Match.DirectorPlayerSide.OwnsTheMoment(
                         projection, directorPlayerSide.Value)
                     ? CreateNarrationOnlyViewModel(projection)

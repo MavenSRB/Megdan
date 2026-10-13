@@ -873,6 +873,12 @@ namespace GuardsDigital.Tests.PlayMode
                     card.Group == TrayCardGroup.Available || card.IsResolving), Is.True);
                 Assert.That(hand.UnavailableTrayCards.All(card =>
                     card.Group != TrayCardGroup.Available && !card.IsResolving), Is.True);
+                var spectatorVersion = runtime.ReadModel.Version;
+                var validPlayerCard = hand.PlayableTrayCards.First(card =>
+                    card.Group == TrayCardGroup.Available).CardInstanceId;
+                Assert.That(runtime.HandsPresenter.CommitCardImmediately(validPlayerCard), Is.False,
+                    "The unseated PvP host may inspect a hand but cannot issue that player's command.");
+                Assert.That(runtime.ReadModel.Version, Is.EqualTo(spectatorVersion));
 
                 Assert.That(runtime.BoardView.TryForwardHeroViewIntent(heroes[1]), Is.True);
                 yield return null;

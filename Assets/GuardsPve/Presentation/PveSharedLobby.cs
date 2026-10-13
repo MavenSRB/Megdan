@@ -266,7 +266,12 @@ namespace GuardsDigital.Pve.Presentation
                     runtime.AttachSeatlessHostView(server.RepublishProjections);
                 else
                 {
-                    runtime.AttachOnlineClient(active);
+                    runtime.AttachOnlineClient(
+                        active,
+                        exposeHostDirectorTools: server != null,
+                        republishAfterHostDebugChange: server == null
+                            ? (Action)null
+                            : server.RepublishProjections);
                     runtime.LocalHeroSelection = SelectOwnedHero;
                 }
                 AttachSavedNarration();
@@ -279,7 +284,7 @@ namespace GuardsDigital.Pve.Presentation
                         return accepted;
                     });
                 view.Root.style.display = DisplayStyle.None;
-            }, sessionDecorator: seatlessHost
+            }, sessionDecorator: server != null
                 ? new Func<IMatchHost, IMatchSession, IMatchSession>((_, _) => match.Session)
                 : null,
                 directorPlayerSide: TeamSide.Blue);
@@ -291,7 +296,12 @@ namespace GuardsDigital.Pve.Presentation
             if (ReferenceEquals(active, owner)) return;
             if (owner.State != PrivateSessionClientState.Seated || !owner.HasMatchStarted || owner.LatestProjection == null) return;
             active = owner;
-            runtime.AttachOnlineClient(active);
+            runtime.AttachOnlineClient(
+                active,
+                exposeHostDirectorTools: server != null,
+                republishAfterHostDebugChange: server == null
+                    ? (Action)null
+                    : server.RepublishProjections);
             projectionRevision = -1;
         }
 

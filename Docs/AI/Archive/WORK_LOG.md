@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-062 | Unseated hosts now retain the live full-information view but cannot issue any player's commands; the separate Director drawer retains host Undo. PvE hosts receive that drawer whether seated or unseated, bound to the live encounter authority and pointer-reachable above the compact enemy overlay. Focused Edit/Play regressions and seated/unseated rendered inspection passed. Source-only; W059 packages unchanged. | `work/W-062` |
 | W-061 | Resolved Attacks retain their strike-time attacker/target spaces for spotlight and kinetic presentation, so immediate Lane Push cannot redirect the delayed hit to the defeated minion identity's adjacent-zone respawn. Focused log/network/spotlight/kinetic checks, exact live-scene reproduction and rendered inspection passed. Rules and W059 packages unchanged. | `work/W-061` |
 | W-060 | PvE playtest repair batch: unseated-host live spectator refresh, inert Minion Battle despite enemy category membership, pointer-safe Level Up, fresh-process reserved-seat reclaim, lifecycle-correct enemy token pips, host-authorized Blue Initiative ties, and typed category colours across enemy faces/rails/pips. Focused rules, presenter, real-loopback lobby, token and rendered-launcher checks passed. Source-only; W059 packages unchanged. | `work/W-060` |
 | W-059 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W052-W058 over W050 under one admission-compatible build stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-059` |
@@ -67,6 +68,14 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-062 Host spectator authority and PvE Director Undo
+
+Requested after playtesting showed that an unseated PvP host could use the full local Director client to issue any player's commands, while an unseated PvE host needed a reliable live view and every PvE host needed Director Undo. The hosting spectator now uses a full-information observe-only client: direct commands, agreements and seat Undo are refused, hands are read-only, command panels collapse to narration and board forwarding is guarded. The explicit Director drawer remains a separate local-authority path for Undo/restart/log in PvP and PvE. PvE binds that drawer to the live encounter authority for seated and unseated hosts; its replacement enemy rail no longer creates a transient pointer blocker, reserves the Director button's space, and yields panel order while the drawer is open.
+
+T2 acceptance covers the observer refusal and read-only tray, real-loopback seatless PvP viewing plus Director Undo, real-loopback seated/unseated PvE entry and encounter Undo, and non-batch pointer/open/render checks for both PvE host roles. The first Play run corrected an overly narrow test expectation because PvE Undo legitimately rewinds an automatic encounter checkpoint; the visual run then exposed and closed the enemy-overlay pointer/layer defect before acceptance. Review found no remaining in-scope player-experience, authority, maintainability or project-risk defect. Rules, owner projections, snapshot 59, wire /52, remote joiners and W059 packages are unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-062`; exact checks/results, corrected failures and limitations live in its body.
 
 ### [x] W-061 Preserve attack-time positions through immediate Lane Push
 

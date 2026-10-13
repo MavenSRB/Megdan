@@ -1861,7 +1861,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(ordinaryView.Model.ViewedHand.UnavailableTrayCards, Has.Count.EqualTo(1));
 
             var trustedView = new CapturingHandsView();
-            var trusted = new DirectorHandsPresenter(session, trustedView)
+            var observer = new ObserverMatchClient(session);
+            var trusted = new DirectorHandsPresenter(observer, trustedView)
             {
                 UseTrustedLocalHeroPerspective = true
             };
@@ -1887,6 +1888,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(trusted.ConfirmSelectedCard(), Is.False);
             Assert.That(trusted.CommitCardImmediately(otherCard.Id), Is.False);
             Assert.That(trusted.Pass(otherHero.HeroId), Is.False);
+            var standingCommand = session.Projection.Commitments
+                .Where(commitment => commitment.Status == TurnCardCommitmentStatus.AwaitingResponse)
+                .Select(commitment => session.Projection.Cards.First(card =>
+                    card.OwnerId.Equals(commitment.HeroId) &&
+                    card.State.Location == CardLocation.Hand))
+                .Select(card => DirectorCommand.CommitCard(card.OwnerId, card.Id))
+                .First();
+            Assert.That(observer.Submit(standingCommand).Accepted, Is.False,
+                "The full-information host observer refuses a valid command even if another " +
+                "surface tries to forward it directly.");
             Assert.That(session.Projection.AcceptedCommands,
                 Has.Count.EqualTo(acceptedCommandCount),
                 "Read-only host inspection must reject every card and pass command at the presenter boundary.");

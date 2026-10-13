@@ -71,11 +71,33 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Optional presentation-facing authority description. Clients that do not implement it retain
+    /// the historical command-capable behaviour; a trusted local spectator implements it to keep
+    /// the full match reading while removing every player-command surface.
+    /// </summary>
+    public interface IMatchClientAuthority
+    {
+        bool CanSubmitPlayerCommands { get; }
+        bool UsesFullInformationProjection { get; }
+    }
+
+    public static class MatchClientAuthority
+    {
+        public static bool CanSubmitPlayerCommands(IMatchClient client) =>
+            !(client is IMatchClientAuthority authority) || authority.CanSubmitPlayerCommands;
+
+        public static bool UsesFullInformationProjection(IMatchClient client) =>
+            client.IsDirector || client is IMatchClientAuthority authority &&
+                authority.UsesFullInformationProjection;
+    }
+
+    /// <summary>
     /// Milestone 8.35b. One stable client reference for presenters whose authority changes once:
     /// from the locally composed content projection behind the lobby to the admitted network seat.
     /// The presenters never learn that a transport exists and therefore keep one rules-facing path.
     /// </summary>
-    public sealed class SwitchableMatchClient : IMatchClient, ICoordinationClient, IExperimentalMatchClient
+    public sealed class SwitchableMatchClient : IMatchClient, ICoordinationClient, IExperimentalMatchClient,
+        IMatchClientAuthority
     {
         private IMatchClient current;
 
@@ -85,6 +107,9 @@ namespace GuardsDigital.Application
         public IMatchReadModel Projection => current.Projection;
 
         public bool IsDirector => current.IsDirector;
+        public bool CanSubmitPlayerCommands => MatchClientAuthority.CanSubmitPlayerCommands(current);
+        public bool UsesFullInformationProjection =>
+            MatchClientAuthority.UsesFullInformationProjection(current);
         public ExperimentalMatchOptions Experiments =>
             (current as IExperimentalMatchClient)?.Experiments ??
             (current.Projection as IExperimentalReadModel)?.Experiments ??
@@ -153,6 +178,41 @@ namespace GuardsDigital.Application
                 "Director mode undoes from its own drawer, not from a seat control.",
                 session.Projection,
                 true);
+    }
+
+    /// <summary>
+    /// The hosting process's full-information spectator. It deliberately retains the Director read
+    /// model so every public/live surface can be observed, but no player command, agreement, or
+    /// seat Undo can cross this port. The separate Director drawer still talks directly to its
+    /// local session and may therefore provide the explicitly retained host Undo.
+    /// </summary>
+    public sealed class ObserverMatchClient : IMatchClient, IExperimentalMatchClient, IMatchClientAuthority
+    {
+        private readonly IMatchSession session;
+
+        public ObserverMatchClient(IMatchSession session)
+        {
+            this.session = session ?? throw new ArgumentNullException(nameof(session));
+        }
+
+        public IMatchReadModel Projection => session.Projection;
+        public bool IsDirector => false;
+        public bool CanSubmitPlayerCommands => false;
+        public bool UsesFullInformationProjection => true;
+        public ExperimentalMatchOptions Experiments =>
+            (session as MatchSession)?.Experiments ??
+            (session as LocalDirectorMatchClient)?.Experiments ??
+            ExperimentalMatchOptions.Disabled;
+
+        public MatchClientResult Submit(DirectorCommand command) => Refused();
+        public MatchClientResult SubmitAgreement(TeamAgreementCommand command) => Refused();
+        public MatchClientResult SubmitUndo() => Refused();
+
+        private MatchClientResult Refused() => new MatchClientResult(
+            false,
+            "A host spectator cannot issue player commands.",
+            session.Projection,
+            true);
     }
 
     /// <summary>

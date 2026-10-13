@@ -223,7 +223,10 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(button.enabledInHierarchy, Is.True);
             var point = button.worldBound.center;
             var picked = button.panel.Pick(point);
-            Assert.That(picked == button || button.Contains(picked), Is.True, "Pointer reachable: " + button.name);
+            Assert.That(picked == button || button.Contains(picked), Is.True,
+                "Pointer reachable: " + button.name + "; picked=" +
+                (picked == null ? "(none)" : picked.name + "/" + picked.GetType().Name +
+                    "@" + picked.worldBound) + "; target@" + button.worldBound);
             using (var down = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, mousePosition = point, button = 0, clickCount = 1 }))
             { down.target = picked; picked.SendEvent(down); }
             using (var up = PointerUpEvent.GetPooled(new Event { type = EventType.MouseUp, mousePosition = point, button = 0, clickCount = 1 }))
@@ -272,6 +275,10 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(Field<PrivateSessionClient>(lobby, "active").State,
                 Is.EqualTo(PrivateSessionClientState.Admitted));
             Assert.That(runtime.ReadModel.Version, Is.EqualTo(authority.Session.Projection.Version));
+            var spectatorRoot = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var spectatorDirector = spectatorRoot.Hud.RootElement.Q<Button>("gd-director-toggle");
+            Assert.That(spectatorDirector.style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                "An unseated PvE host retains the Director tray and its Undo.");
 
             for (var placed = 0; placed < peers.Count; placed++)
             {
@@ -294,10 +301,16 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             }
             Assert.That(runtime.ReadModel.Heroes.Count(hero =>
                 runtime.ReadModel.Participants.GetTeamForHero(hero.HeroId).Side == TeamSide.Blue), Is.EqualTo(3));
+            var beforeUndo = authority.Session.Projection.AcceptedCommands.Count;
+            Assert.That(runtime.Undo(), Is.True, "The unseated PvE host can use Director Undo.");
+            Assert.That(authority.Session.Projection.AcceptedCommands.Count, Is.LessThan(beforeUndo));
             if (!UnityEngine.Application.isBatchMode)
             {
+                Click(spectatorDirector);
+                yield return null;
+                Assert.That(spectatorRoot.Hud.IsDirectorDrawerOpen, Is.True);
                 yield return new WaitForEndOfFrame();
-                ScreenCapture.CaptureScreenshot("tmp/w060-pve-host-spectator.png");
+                ScreenCapture.CaptureScreenshot("tmp/w062-pve-unseated-host-director.png");
             }
         }
 
@@ -350,6 +363,10 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(runtime.IsSeatlessHostView, Is.False);
             Assert.That(runtime.Seat, Is.Not.Null, "An ordinary playing host is never raced into spectator scope.");
             Assert.That(runtime.InitialState.Experiments.TeammateCoordination, Is.True);
+            var playingHostRoot = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            var playingHostDirector = playingHostRoot.Hud.RootElement.Q<Button>("gd-director-toggle");
+            Assert.That(playingHostDirector.style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                "A seated PvE host retains the Director tray and its Undo.");
             var root = lobby.GetComponent<UIDocument>().rootVisualElement;
             Assert.That(root.Query<Button>().ToList().Any(b => b.name.StartsWith("pve-control-")), Is.False);
             for (var placed = 0; placed < 3; placed++)
@@ -473,12 +490,20 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             Assert.That(saved, Does.Not.Contain("shared-test"), "Never save the session key");
             server.RepublishProjections();
             Assert.That(ReadLive(narrationPath), Is.EqualTo(saved), "Duplicate publishes do not duplicate narration");
+            var beforeDirectorUndo = authority.Session.Projection.AcceptedCommands.Count;
+            Assert.That(runtime.Undo(), Is.True, "The seated PvE host can use Director Undo.");
+            Assert.That(authority.Session.Projection.AcceptedCommands.Count,
+                Is.LessThan(beforeDirectorUndo),
+                "PvE Undo may rewind the whole automatic encounter step, not just one inner command.");
             var capture = Field<PrivateOnlineEvidenceFile>(lobby, "hostEvidence");
             Assert.That(ReadLive(capture.Path), Does.Contain("role=host"));
             if (!UnityEngine.Application.isBatchMode)
             {
+                Click(playingHostDirector);
+                yield return null;
+                Assert.That(playingHostRoot.Hud.IsDirectorDrawerOpen, Is.True);
                 yield return new WaitForEndOfFrame();
-                ScreenCapture.CaptureScreenshot("tmp/w047-solo-shared-lobby.png");
+                ScreenCapture.CaptureScreenshot("tmp/w062-pve-seated-host-director.png");
             }
             Object.Destroy(lobby.gameObject);
             yield return null;

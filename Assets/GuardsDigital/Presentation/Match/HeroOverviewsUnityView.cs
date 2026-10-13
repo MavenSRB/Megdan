@@ -253,6 +253,25 @@ namespace GuardsDigital.Presentation.Match
         public Func<HeroId, bool> LocalHeroSelection { get; set; }
 
         /// <summary>
+        /// A mode that replaces the Red rail with its own public rail can suppress this column at
+        /// the view boundary. Render respects the suppression, so an authority refresh cannot
+        /// briefly reintroduce an invisible pointer blocker before the mode's next LateUpdate.
+        /// </summary>
+        public bool ShowRedColumn
+        {
+            get => showRedColumn;
+            set
+            {
+                showRedColumn = value;
+                redColumn.style.display = value && redColumn.childCount > 0
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+            }
+        }
+
+        private bool showRedColumn = true;
+
+        /// <summary>
         /// Raised after either rail column resolves a new live bound. The configured HUD uses Red's
         /// edge to place `DIRECTOR` immediately after the third hero, and Blue's edge to expose only
         /// the genuinely empty lower-right area to the board fitter.
@@ -278,6 +297,7 @@ namespace GuardsDigital.Presentation.Match
         {
             bounds = default;
             if (column.panel == null ||
+                column.style.display.value == DisplayStyle.None ||
                 column.resolvedStyle.display == DisplayStyle.None ||
                 column.childCount == 0)
             {
@@ -598,7 +618,9 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
-            redColumn.style.display = redColumn.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            redColumn.style.display = showRedColumn && redColumn.childCount > 0
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
             blueColumn.style.display = blueColumn.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Milestone 9.30h. An open drawer follows the projection it was opened over: redrawn from

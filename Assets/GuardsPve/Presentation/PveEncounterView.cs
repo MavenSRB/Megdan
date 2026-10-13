@@ -142,6 +142,10 @@ namespace GuardsDigital.Pve.Presentation
             {
                 TurnSlotsOverride = hero => PlannedSlots(hero)
             };
+            // W-062. This root is deliberately stretched across the viewport below. It is only a
+            // layout host: the actual enemy rows remain pickable children, while empty left-rail
+            // space must pass through to the lower match HUD (including the Director drawer).
+            sharedEnemyView.Root.pickingMode = PickingMode.Ignore;
             sharedEnemyView.HeroHighlighted += hero => runtime.BoardView.SetHoveredHero(hero);
             root.Add(sharedEnemyView.Root);
             runtime.ModeCardPipsOverride = EnemyCardPips;
@@ -200,8 +204,11 @@ namespace GuardsDigital.Pve.Presentation
             if (runtime == null) return;
             root.style.display = runtime.VictoryScreenView.Model == null ? DisplayStyle.Flex : DisplayStyle.None;
             if (runtime.VictoryScreenView.Model != null) return;
-            RefreshEnemyRail();
+            // Hide the shared HUD's replaced Red rail before the enemy rail reserves and relays out
+            // the Director controls; otherwise its stale six-hero bound wins for that frame and
+            // leaves the Director button underneath the hand fan.
             AdaptHudRails();
+            RefreshEnemyRail();
         }
 
         private void OnBoardHeroHighlighted(HeroId hero)
@@ -325,8 +332,11 @@ namespace GuardsDigital.Pve.Presentation
             }
             // Fit the live rows, retaining the existing hand clearance only as an overflow cap.
             var availableHeight = Mathf.Max(0f, root.resolvedStyle.height - EnemyRailTop - EnemyRailBottomClearance);
-            enemyRail.style.height = Mathf.Min(enemyRows.Count * (EnemyRowHeight + EnemyRowGap), availableHeight);
+            var enemyRailHeight = Mathf.Min(enemyRows.Count * (EnemyRowHeight + EnemyRowGap), availableHeight);
+            enemyRail.style.height = enemyRailHeight;
             enemyRail.style.display = enemyRows.Count == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            hudRenderer?.SetDirectorControlsMinimumTop(
+                enemyRows.Count == 0 ? 0f : EnemyRailTop + enemyRailHeight + EnemyRowGap);
             sharedEnemyView.Root.style.width = root.resolvedStyle.width;
             sharedEnemyView.Root.style.height = root.resolvedStyle.height;
             sharedEnemyView.Root.BringToFront();
@@ -421,6 +431,7 @@ namespace GuardsDigital.Pve.Presentation
                 runtime.ModeCardPipsOverride = null;
                 runtime.ModeCardPipInspection = null;
             }
+            hudRenderer?.SetDirectorControlsMinimumTop(0f);
             if (document != null && document.panelSettings != null) Destroy(document.panelSettings);
         }
 
@@ -436,7 +447,12 @@ namespace GuardsDigital.Pve.Presentation
             var hudDocument = hudRenderer.GetComponent<UIDocument>();
             var hudRoot = hudDocument == null ? null : hudDocument.rootVisualElement;
             if (hudRoot == null) return;
+            // The compact enemy rail normally paints above the shared HUD. While the Director
+            // drawer is open, lift the HUD panel so the drawer that opens upward is not hidden
+            // behind those enemy rows; closing it restores the established enemy-preview order.
+            hudDocument.panelSettings.sortingOrder = hudRenderer.IsDirectorDrawerOpen ? 400f : 100f;
             var red = hudRoot.Q("gd-hero-rail-red");
+            runtime.HeroOverviewsView.ShowRedColumn = false;
             if (red != null) red.style.display = DisplayStyle.None;
             var blue = hudRoot.Q("gd-hero-rail-blue");
             var heroes = encounter.Heroes.Count;

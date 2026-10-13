@@ -352,6 +352,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMinionChoiceView view;
         private IMatchReadModel lastProjection;
         private MinionChoiceViewModel lastViewModel;
+        private bool? lastCanSubmitPlayerCommands;
 
 
         /// <summary>
@@ -373,6 +374,21 @@ namespace GuardsDigital.Presentation.Match
 
         public void Refresh()
         {
+            var canSubmitPlayerCommands = MatchClientAuthority.CanSubmitPlayerCommands(session);
+            if (lastCanSubmitPlayerCommands != canSubmitPlayerCommands)
+            {
+                lastCanSubmitPlayerCommands = canSubmitPlayerCommands;
+                lastProjection = null;
+            }
+
+            if (!canSubmitPlayerCommands)
+            {
+                lastProjection = session.Projection;
+                lastViewModel = null;
+                view.Render(null);
+                return;
+            }
+
             var projection = session.Projection;
             if (!ReferenceEquals(projection, lastProjection))
             {

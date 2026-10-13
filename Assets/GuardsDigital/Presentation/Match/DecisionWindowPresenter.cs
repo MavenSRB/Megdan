@@ -48,6 +48,7 @@ namespace GuardsDigital.Presentation.Match
         private DecisionWindowViewModel lastViewModel;
         private Func<bool> presentationDeferred;
         private Func<DirectorCommand, bool> tiedInitiativeSubmit;
+        private bool? lastCanSubmitPlayerCommands;
 
         // The manual toggle. It is keyed by the decision it was made on, so it survives exactly as
         // long as that decision stands: the user's rule is that every NEW decision re-decides the
@@ -270,10 +271,19 @@ namespace GuardsDigital.Presentation.Match
 
         private DecisionWindowViewModel GetOrCreateViewModel(IMatchReadModel projection)
         {
+            var canSubmitPlayerCommands = MatchClientAuthority.CanSubmitPlayerCommands(session);
+            if (lastCanSubmitPlayerCommands != canSubmitPlayerCommands)
+            {
+                lastCanSubmitPlayerCommands = canSubmitPlayerCommands;
+                lastProjection = null;
+            }
+
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                var next = directorPlayerSide.HasValue && session.IsDirector &&
+                var next = !canSubmitPlayerCommands
+                    ? null
+                    : directorPlayerSide.HasValue && session.IsDirector &&
                     !global::GuardsDigital.Presentation.Match.DirectorPlayerSide.OwnsTheMoment(
                         projection, directorPlayerSide.Value)
                     ? null

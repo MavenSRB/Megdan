@@ -16,9 +16,11 @@ Current private Windows package: **W059 Unified**, `Builds/Playtest-W059-unified
 
 Matching Mac package: `Builds/Playtest-W059-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W059 build stamp/content; SHA-256 `deea4f4d2733d6ce8521d670dea44a509b3847ee0518ba6891adaae2541c071d`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-061**.
+- Last completed work: **W-062**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
+
+W062 repairs the host-view authority boundary: an unseated host retains the live full-information view but cannot issue any player's commands, while the separate Director drawer retains host Undo. PvE hosts receive that drawer whether seated or unseated, bound to the live encounter authority and pointer-reachable above the compact enemy overlay. Focused Edit/Play regressions and seated/unseated rendered inspection passed. Rules, remote-seat authority, snapshot 59, wire /52 and W059 packages are unchanged.
 
 W061 repairs the repeated immediate-Lane-Push animation defect: resolved Attack rows now retain the attacker's strike-time space and the target's pre-consequence space through the existing public/network coordinate fields. Spotlight framing and lunges use that historical pair, while a same-identity minion respawned in the adjacent zone is not flashed there. The exact last-minion kill/push/reuse scene, affected log/network/spotlight/kinetic checks and rendered Game View passed. Rules, Lane Push resolution, snapshot 59 and wire /52 are unchanged; source-only, with W059 packages unchanged.
 

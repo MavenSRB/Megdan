@@ -31,6 +31,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
         private bool seatlessHostView;
+        private bool hostDebugRepublishAttached;
 
         public ConfiguredMatchSceneRuntime(
             BoardMapDefinition map,
@@ -700,14 +701,20 @@ namespace GuardsDigital.Presentation.Match
             if (Seat != null)
                 throw new InvalidOperationException("A seated host already has its player HUD.");
 
+            // W-062. The hosting process may retain the full local reading and the explicit
+            // Director drawer, but spectating is never an implicit seat with every hero's command
+            // authority. Undo remains on UndoRestartPresenter's separate session path.
+            client.Replace(new ObserverMatchClient(session));
             seatlessHostView = true;
             HeroOverviewsView.CardInspection.UseTrustedLocalHeroPerspective = true;
             HandsPresenter.UseTrustedLocalHeroPerspective = true;
             hud.SetDirectorToolsVisible(true);
-            if (republishAfterHostDebugChange != null && UndoRestartPresenter != null)
+            if (!hostDebugRepublishAttached && republishAfterHostDebugChange != null &&
+                UndoRestartPresenter != null)
             {
                 UndoRestartPresenter.SessionProjectionChanged +=
                     _ => republishAfterHostDebugChange();
+                hostDebugRepublishAttached = true;
             }
             RefreshAll();
         }
@@ -794,11 +801,13 @@ namespace GuardsDigital.Presentation.Match
             signalControlsAuthorized = exposeHostDirectorTools;
             BindHomeHero(Seat.HeroId);
             hud.SetDirectorToolsVisible(exposeHostDirectorTools);
-            if (exposeHostDirectorTools && republishAfterHostDebugChange != null &&
+            if (!hostDebugRepublishAttached && exposeHostDirectorTools &&
+                republishAfterHostDebugChange != null &&
                 UndoRestartPresenter != null)
             {
                 UndoRestartPresenter.SessionProjectionChanged +=
                     _ => republishAfterHostDebugChange();
+                hostDebugRepublishAttached = true;
             }
             RefreshAll();
         }

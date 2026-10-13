@@ -707,6 +707,22 @@ namespace GuardsDigital.Presentation.Match
             LayoutEndTurnControl();
         }
 
+        private float directorControlsMinimumTop;
+
+        /// <summary>
+        /// Lets a mode-owned left rail reserve its actual vertical footprint above the Director
+        /// controls. Both panels use the shared HUD scaling contract, so the supplied coordinate is
+        /// in this renderer's panel space. Zero removes the reservation.
+        /// </summary>
+        public void SetDirectorControlsMinimumTop(float top)
+        {
+            var next = Mathf.Max(0f, top);
+            if (Mathf.Approximately(directorControlsMinimumTop, next)) return;
+            directorControlsMinimumTop = next;
+            LayoutDirectorControls();
+            LayoutEndTurnControl();
+        }
+
         public void RenderClock(GuardsDigital.Application.MatchClockState state)
         {
             statusBar?.RenderClock(state);
@@ -2332,6 +2348,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 lowestY = Mathf.Max(lowestY, liveRed.yMax + DirectorRailGap);
             }
+            lowestY = Mathf.Max(lowestY, directorControlsMinimumTop);
 
             return new Rect(
                 rail.xMin,
