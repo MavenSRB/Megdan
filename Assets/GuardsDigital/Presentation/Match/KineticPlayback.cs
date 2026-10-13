@@ -255,6 +255,35 @@ namespace GuardsDigital.Presentation.Match
             return KineticSubject.None;
         }
 
+        public GuardsDigital.Core.Board.HexCoordinate? LungeTargetSpaceFor(KineticSubject subject)
+        {
+            for (var index = 0; index < running.Count; index++)
+            {
+                var cue = running[index].Cue;
+                if (cue.Kind == KineticCueKind.Lunge && cue.Subject.Equals(subject))
+                {
+                    return cue.TargetSpace;
+                }
+            }
+
+            return null;
+        }
+
+        public GuardsDigital.Core.Board.HexCoordinate? SubjectSpaceFor(
+            KineticSubject subject, KineticCueKind kind)
+        {
+            for (var index = 0; index < running.Count; index++)
+            {
+                var cue = running[index].Cue;
+                if (cue.Kind == kind && cue.Subject.Equals(subject))
+                {
+                    return cue.SubjectSpace;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// The slide route a running slide on <paramref name="subject"/> travels, or null. A view maps
         /// these to world points itself, because hex-to-world is the board's business, not the clock's.

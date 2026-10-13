@@ -724,13 +724,18 @@ namespace GuardsDigital.Presentation.Match
                             entry.Sequence,
                             KineticCueKind.Lunge,
                             attacker,
-                            defender)
+                            defender,
+                            subjectSpace: entry.HasOrigin ? (HexCoordinate?)entry.Origin : null,
+                            targetSpace: entry.HasDestination ? (HexCoordinate?)entry.Destination : null)
                     };
 
                     if (landed)
                     {
                         strike.Add(new KineticCue(
-                            entry.Sequence, KineticCueKind.Flash, defender));
+                            entry.Sequence,
+                            KineticCueKind.Flash,
+                            defender,
+                            subjectSpace: entry.HasDestination ? (HexCoordinate?)entry.Destination : null));
                     }
 
                     scenes.Add(new KineticScene(

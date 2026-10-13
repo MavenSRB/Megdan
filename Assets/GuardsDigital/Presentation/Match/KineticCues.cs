@@ -148,8 +148,9 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// The piece a cue is about, by the same stable identity the board already binds its views to.
-    /// A cue never carries a coordinate for its subject: where a piece stands is the projection's
-    /// answer, asked fresh every frame, which is what makes an interrupted kinetic snap to truth.
+    /// Standing-state cues use the projection's current coordinate. A resolved Attack may additionally
+    /// carry its historical pair on <see cref="KineticCue"/> so identity reuse after Lane Push cannot
+    /// redirect that one delayed lunge; interruption still snaps the real piece to projection truth.
     /// </summary>
     public readonly struct KineticSubject : IEquatable<KineticSubject>
     {
@@ -219,7 +220,9 @@ namespace GuardsDigital.Presentation.Match
             KineticSubject target = default,
             IReadOnlyList<HexCoordinate> route = null,
             CardInstanceId cardInstanceId = default,
-            int amount = 0)
+            int amount = 0,
+            HexCoordinate? subjectSpace = null,
+            HexCoordinate? targetSpace = null)
         {
             if (sequence < 1)
             {
@@ -298,6 +301,8 @@ namespace GuardsDigital.Presentation.Match
             Route = new ReadOnlyCollection<HexCoordinate>(waypoints);
             CardInstanceId = cardInstanceId;
             Amount = amount;
+            SubjectSpace = subjectSpace;
+            TargetSpace = targetSpace;
             DurationSeconds = KineticTiming.DurationFor(kind);
         }
 
@@ -327,6 +332,10 @@ namespace GuardsDigital.Presentation.Match
         /// the route drops it in here without a view changing at all.</para>
         /// </summary>
         public IReadOnlyList<HexCoordinate> Route { get; }
+
+        /// <summary>Historical Attack spaces; null on legacy rows and non-spatial cues.</summary>
+        public HexCoordinate? SubjectSpace { get; }
+        public HexCoordinate? TargetSpace { get; }
 
 
         /// <summary>

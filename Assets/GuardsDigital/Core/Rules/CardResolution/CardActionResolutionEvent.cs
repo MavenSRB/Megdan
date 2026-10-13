@@ -95,7 +95,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId discardedCardInstanceId = default,
             CardInstanceId spellCardInstanceId = default,
             int spellCount = 0,
-            CardSwapFact cardSwap = null)
+            CardSwapFact cardSwap = null,
+            HexCoordinate? attackOrigin = null,
+            HexCoordinate? attackTarget = null)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -162,6 +164,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             SpellCardInstanceId = spellCardInstanceId;
             SpellCount = spellCount;
             CardSwap = cardSwap;
+            AttackOrigin = attackOrigin;
+            AttackTarget = attackTarget;
             MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
             CoinAwards = Array.AsReadOnly((coinAwards ?? Enumerable.Empty<CoinResourceOperation>()).ToArray());
         }
@@ -248,6 +252,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public TokenInstanceId TargetTokenInstanceId { get; }
         public TokenDefinitionReference TargetTokenDefinitionReference { get; }
         public HexCoordinate TargetTokenCoordinate { get; }
+
+        /// <summary>
+        /// Where the attacker and its bound target stood on an AttackStarted fact. These are historical
+        /// presentation facts: a later removal, Lane Push, respawn, or card-text move must not make a
+        /// delayed animation point at the pieces' new projected spaces.
+        /// </summary>
+        public HexCoordinate? AttackOrigin { get; }
+        public HexCoordinate? AttackTarget { get; }
 
         /// <summary>Milestone 6.12: the marker p.13's defeat return took back, or <c>default</c>.</summary>
         public MarkerInstanceId ReturnedMarkerInstanceId { get; }
@@ -398,9 +410,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return FromAttackResolution(CardActionResolutionEventKind.AttackTargetChoiceRequested, resolution);
         }
 
-        public static CardActionResolutionEvent AttackStarted(PendingAttackResolution resolution)
+        public static CardActionResolutionEvent AttackStarted(
+            PendingAttackResolution resolution,
+            HexCoordinate? attackerSpace = null)
         {
-            return FromAttackResolution(CardActionResolutionEventKind.AttackStarted, resolution);
+            return FromAttackResolution(
+                CardActionResolutionEventKind.AttackStarted, resolution,
+                attackOriginOverride: attackerSpace);
         }
 
         /// <summary>
@@ -791,6 +807,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 TargetTokenInstanceId.Equals(other.TargetTokenInstanceId) &&
                 TargetTokenDefinitionReference.Equals(other.TargetTokenDefinitionReference) &&
                 TargetTokenCoordinate.Equals(other.TargetTokenCoordinate) &&
+                Nullable.Equals(AttackOrigin, other.AttackOrigin) &&
+                Nullable.Equals(AttackTarget, other.AttackTarget) &&
                 CorrectionEvent.Equals(other.CorrectionEvent) &&
                 HeroDefeatFactKind == other.HeroDefeatFactKind &&
                 ResolvedCardInstanceId.Equals(other.ResolvedCardInstanceId) &&
@@ -837,6 +855,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ TargetTokenInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenDefinitionReference.GetHashCode();
                 hashCode = (hashCode * 397) ^ TargetTokenCoordinate.GetHashCode();
+                hashCode = (hashCode * 397) ^ AttackOrigin.GetHashCode();
+                hashCode = (hashCode * 397) ^ AttackTarget.GetHashCode();
                 hashCode = (hashCode * 397) ^ CorrectionEvent.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)HeroDefeatFactKind;
                 hashCode = (hashCode * 397) ^ ResolvedCardInstanceId.GetHashCode();
@@ -1292,7 +1312,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static CardActionResolutionEvent FromAttackResolution(
             CardActionResolutionEventKind kind,
             PendingAttackResolution resolution,
-            AttackResolutionOutcome outcome = AttackResolutionOutcome.None)
+            AttackResolutionOutcome outcome = AttackResolutionOutcome.None,
+            HexCoordinate? attackOriginOverride = null)
         {
             if (resolution == null)
             {
@@ -1325,7 +1346,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // (MatchLogProjection's Optional("minion"), and through it the kinetic cues) could
                 // only decline to name a target it was never told. Both arms are defaulted when the
                 // resolution has no target yet, so a targetless step is unchanged.
-                targetMinionId: resolution.TargetMinionId);
+                targetMinionId: resolution.TargetMinionId,
+                attackOrigin: kind == CardActionResolutionEventKind.AttackStarted
+                    ? attackOriginOverride ?? resolution.ActorSpaceAtActionStart
+                    : null,
+                attackTarget: kind == CardActionResolutionEventKind.AttackStarted
+                    ? resolution.TargetSpaceBeforeConsequences
+                    : null);
         }
 
         private static CardActionResolutionEvent FromFastTravel(

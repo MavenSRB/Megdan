@@ -240,6 +240,15 @@ namespace GuardsDigital.Tests.PlayMode
                 "The chosen hero discards one projected hand card, completing Shock's rider.");
             Assert.That(runtime.PendingEffectChoice, Is.Null);
 
+            var attackRow = runtime.ReadModel.MatchLog.Last(value =>
+                value.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.Attack);
+            Assert.That(attackRow.Origin, Is.EqualTo(attackerAt));
+            Assert.That(attackRow.Destination, Is.EqualTo(oldCoordinate),
+                "The public animation row freezes the strike before Lane Push reuses the identity.");
+            Assert.That(runtime.SpotlightPresenter.Stage.Current.DefenderSpace,
+                Is.EqualTo(oldCoordinate),
+                "The already-queued spotlight keeps the killed minion's Attack-time space.");
+
             var respawned = runtime.BoardView.Model.Minions.Single(value =>
                 value.MinionId.Equals(target.MinionId));
             Assert.That(respawned.Coordinate, Is.Not.EqualTo(oldCoordinate),
@@ -270,6 +279,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.KineticView.Playback.LungeTargetFor(attacker),
                 Is.EqualTo(KineticSubject.ForMinion(target.MinionId)),
                 "The framed strike still names the killed minion.");
+            Assert.That(runtime.KineticView.Playback.LungeTargetSpaceFor(attacker),
+                Is.EqualTo(oldCoordinate),
+                "The lunge aims at the old-space death, not the same identity's adjacent-zone respawn.");
             Assert.That(ghost.transform.position, Is.EqualTo(oldPosition),
                 "At the strike itself the minion has not jumped to the next zone.");
             Assert.That(targetView.gameObject.activeSelf, Is.False);

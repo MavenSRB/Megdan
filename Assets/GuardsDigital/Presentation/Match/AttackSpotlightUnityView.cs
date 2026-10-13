@@ -375,10 +375,12 @@ namespace GuardsDigital.Presentation.Match
         {
             attacker = default;
             defender = default;
-            return TryResolve(scene.Attacker, out attacker) && TryResolve(scene.Defender, out defender);
+            return TryResolve(scene.Attacker, scene.AttackerSpace, out attacker) &&
+                TryResolve(scene.Defender, scene.DefenderSpace, out defender);
         }
 
-        private bool TryResolve(KineticSubject subject, out Vector3 world)
+        private bool TryResolve(
+            KineticSubject subject, HexCoordinate? recordedSpace, out Vector3 world)
         {
             world = default;
             if (subject.Kind == KineticSubjectKind.Hero)
@@ -394,7 +396,7 @@ namespace GuardsDigital.Presentation.Match
 
                     world = ToWorld(
                         hero.transform,
-                        hero.Coordinate,
+                        recordedSpace ?? hero.Coordinate,
                         hero.OuterRadius,
                         hero.VerticalOffset);
                     return true;
@@ -417,7 +419,7 @@ namespace GuardsDigital.Presentation.Match
 
                     world = ToWorld(
                         minion.transform,
-                        minion.Occupancy.Coordinate,
+                        recordedSpace ?? minion.Occupancy.Coordinate,
                         minion.OuterRadius,
                         StandardMinionView.DefaultVerticalOffset);
                     return true;

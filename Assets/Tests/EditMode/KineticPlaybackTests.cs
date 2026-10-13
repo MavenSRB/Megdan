@@ -154,6 +154,25 @@ namespace GuardsDigital.Tests.EditMode
                 "And returns to where the projection stands it.");
         }
 
+        [Test]
+        public void ALungeRetainsItsRecordedTargetSpaceWhileTheIdentityCanMoveLater()
+        {
+            var struckAt = new HexCoordinate(4, -1);
+            var playback = new KineticPlayback();
+            playback.Begin(new[]
+            {
+                new KineticCue(
+                    2, KineticCueKind.Lunge, Attacker, Minion,
+                    subjectSpace: new HexCoordinate(3, -1), targetSpace: struckAt),
+                new KineticCue(
+                    2, KineticCueKind.Flash, Minion, subjectSpace: struckAt)
+            });
+
+            Assert.That(playback.LungeTargetFor(Attacker), Is.EqualTo(Minion));
+            Assert.That(playback.LungeTargetSpaceFor(Attacker), Is.EqualTo(struckAt));
+            Assert.That(playback.SubjectSpaceFor(Minion, KineticCueKind.Flash), Is.EqualTo(struckAt));
+        }
+
         /// <summary>
         /// The interruption rule, which is what lets the whole pass sit on an authoritative surface:
         /// the next projection's cues end every motion the previous one started.

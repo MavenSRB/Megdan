@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-061 | Resolved Attacks retain their strike-time attacker/target spaces for spotlight and kinetic presentation, so immediate Lane Push cannot redirect the delayed hit to the defeated minion identity's adjacent-zone respawn. Focused log/network/spotlight/kinetic checks, exact live-scene reproduction and rendered inspection passed. Rules and W059 packages unchanged. | `work/W-061` |
 | W-060 | PvE playtest repair batch: unseated-host live spectator refresh, inert Minion Battle despite enemy category membership, pointer-safe Level Up, fresh-process reserved-seat reclaim, lifecycle-correct enemy token pips, host-authorized Blue Initiative ties, and typed category colours across enemy faces/rails/pips. Focused rules, presenter, real-loopback lobby, token and rendered-launcher checks passed. Source-only; W059 packages unchanged. | `work/W-060` |
 | W-059 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W052-W058 over W050 under one admission-compatible build stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-059` |
 | W-058 | Resolved orange PvE enemy cards remain in their public tray slots and dim immediately to the established spent-Defense opacity. Current/unresolved cards and full-card hover remain bright; Undo/replay and solo/co-op projection checks passed. Source-only; W050/W051 unchanged. | `work/W-058` |
@@ -66,6 +67,14 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-061 Preserve attack-time positions through immediate Lane Push
+
+Requested after the playtest again showed the last-minion kill pushing the wave and then animating the hero toward the same minion identity in the adjacent zone. The resolved Attack event now records the attacker's actual strike-time space and the target's pre-consequence space; the existing public match-log origin/destination fields carry them unchanged through seat projections and wire /52. Spotlight framing and the lunge consume that historical pair, and hit flash is suppressed when the reused identity currently stands elsewhere. Authoritative attack, removal, Lane Push, replay and snapshot contracts are unchanged.
+
+T2 acceptance covers the attack-row fold and network channel, spotlight and kinetic derivation/playback, the exact configured-scene last-minion kill/Lane-Push/same-identity respawn path, and a non-batch rendered frame showing the old-space strike. Review found no remaining in-scope rules, player-experience, maintainability or project-risk defect. Source-only; W059 packages and remote state remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-061`; exact checks/results and limitations live in its body.
 
 ### [x] W-060 PvE playtest repairs
 

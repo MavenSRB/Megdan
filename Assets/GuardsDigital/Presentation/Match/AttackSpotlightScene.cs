@@ -1,4 +1,5 @@
 using System;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Diagnostics;
 
 namespace GuardsDigital.Presentation.Match
@@ -53,7 +54,9 @@ namespace GuardsDigital.Presentation.Match
             TrayCardViewModel attackCard = null,
             TrayCardViewModel defenseCard = null,
             bool isRangedAttack = false,
-            SpellCardViewModel attackSpell = null)
+            SpellCardViewModel attackSpell = null,
+            HexCoordinate? attackerSpace = null,
+            HexCoordinate? defenderSpace = null)
         {
             if (sequence < 1)
             {
@@ -84,6 +87,8 @@ namespace GuardsDigital.Presentation.Match
             AttackSpell = attackSpell;
             DefenseCard = defenseCard;
             IsRangedAttack = isRangedAttack;
+            AttackerSpace = attackerSpace;
+            DefenderSpace = defenderSpace;
         }
 
         /// <summary>The Attack row's own sequence. The scene's identity and its merge key.</summary>
@@ -92,6 +97,10 @@ namespace GuardsDigital.Presentation.Match
         public KineticSubject Attacker { get; }
 
         public KineticSubject Defender { get; }
+
+        /// <summary>The resolved pair's spaces before later moves, removal, or Lane Push.</summary>
+        public HexCoordinate? AttackerSpace { get; }
+        public HexCoordinate? DefenderSpace { get; }
 
         /// <summary>
         /// Whether the attack went through or was defended. It is the one word the spotlight's own

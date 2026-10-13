@@ -161,10 +161,17 @@ namespace GuardsDigital.Tests.EditMode
         {
             var cues = CuesFor(Row(
                 9, MatchLogEntryKind.Attack, subjectHero: Attacker, subjectMinion: Minion,
+                origin: new HexCoordinate(2, 1), destination: new HexCoordinate(3, 1),
+                hasOrigin: true, hasDestination: true,
                 outcome: MatchLogOutcome.AttackSuccessful));
 
             Assert.That(cues[0].Target, Is.EqualTo(KineticSubject.ForMinion(Minion)));
             Assert.That(cues[0].Target.Kind, Is.EqualTo(KineticSubjectKind.Minion));
+            Assert.That(cues[0].SubjectSpace, Is.EqualTo(new HexCoordinate(2, 1)));
+            Assert.That(cues[0].TargetSpace, Is.EqualTo(new HexCoordinate(3, 1)),
+                "A delayed lunge aims at the defeated minion's Attack-time space, not its respawn.");
+            Assert.That(cues[1].SubjectSpace, Is.EqualTo(new HexCoordinate(3, 1)),
+                "The hit flash can reject the same identity after it respawns on another space.");
         }
 
         /// <summary>

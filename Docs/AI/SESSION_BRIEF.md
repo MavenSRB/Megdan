@@ -16,9 +16,11 @@ Current private Windows package: **W059 Unified**, `Builds/Playtest-W059-unified
 
 Matching Mac package: `Builds/Playtest-W059-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W059 build stamp/content; SHA-256 `deea4f4d2733d6ce8521d670dea44a509b3847ee0518ba6891adaae2541c071d`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-060**.
+- Last completed work: **W-061**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
+
+W061 repairs the repeated immediate-Lane-Push animation defect: resolved Attack rows now retain the attacker's strike-time space and the target's pre-consequence space through the existing public/network coordinate fields. Spotlight framing and lunges use that historical pair, while a same-identity minion respawned in the adjacent zone is not flashed there. The exact last-minion kill/push/reuse scene, affected log/network/spotlight/kinetic checks and rendered Game View passed. Rules, Lane Push resolution, snapshot 59 and wire /52 are unchanged; source-only, with W059 packages unchanged.
 
 W060 completes the latest PvE playtest repair batch: seatless-host live viewing, inert Minion Battle, pointer-safe Level Up, fresh-process reserved-seat reclaim, unresolved-plan/available-Defense token pips, host-routed Blue Initiative ties and typed category colours across enemy faces/rails/pips. Focused rules, presenter, real-loopback lobby, shared indicator and non-batch rendered checks passed. Source-only; W059 packages remain unchanged.
 

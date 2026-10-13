@@ -291,7 +291,8 @@ namespace GuardsDigital.Tests.EditMode
                 var references = "round=3;turn=1;resolution=r9;hero=brogan;card=c2;action=a2;target=sabina";
                 var throughOutcome = new[]
                 {
-                    Entry(1, "Action.AttackStarted", references, "step=s1"),
+                    Entry(1, "Action.AttackStarted", references,
+                        "step=s1;attackSpaces=(-2, 4)->(-1, 4)"),
                     Entry(2, "Action.AttackTotalCalculated", references, "step=s2;attack=4"),
                     Entry(3, resolved, references, "step=s3;outcome=Successful")
                 };
@@ -310,6 +311,10 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(log[0].TargetHeroId, Is.EqualTo(new HeroId("sabina")));
                 Assert.That(log[0].Outcome, Is.EqualTo(expected), resolved);
                 Assert.That(log[0].ResolvedAttackTotal, Is.EqualTo(4), resolved);
+                Assert.That(log[0].HasOrigin, Is.True, resolved);
+                Assert.That(log[0].Origin, Is.EqualTo(new HexCoordinate(-2, 4)), resolved);
+                Assert.That(log[0].HasDestination, Is.True, resolved);
+                Assert.That(log[0].Destination, Is.EqualTo(new HexCoordinate(-1, 4)), resolved);
             }
         }
 
@@ -320,7 +325,8 @@ namespace GuardsDigital.Tests.EditMode
                 "round=2;turn=3;resolution=r5;hero=wasp;card=shock;action=attack;minion=m2";
             var throughStart = new[]
             {
-                Entry(1, "Action.AttackStarted", references, "step=s1")
+                Entry(1, "Action.AttackStarted", references,
+                    "step=s1;attackSpaces=(5, -2)->(6, -2)")
             };
             var beforeAfterAttackText = MatchLogProjection.Derive(throughStart);
             var completed = MatchLogProjection.Derive(throughStart.Concat(new[]
@@ -335,6 +341,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(beforeAfterAttackText[0].SubjectMinionId, Is.EqualTo(new MinionId("m2")));
             Assert.That(beforeAfterAttackText[0].Outcome,
                 Is.EqualTo(MatchLogOutcome.AttackSuccessful));
+            Assert.That(beforeAfterAttackText[0].Origin, Is.EqualTo(new HexCoordinate(5, -2)));
+            Assert.That(beforeAfterAttackText[0].Destination, Is.EqualTo(new HexCoordinate(6, -2)),
+                "The row keeps the defeated minion's old space even if Lane Push respawns that ID elsewhere.");
             Assert.That(completed.Count(value => value.Kind == MatchLogEntryKind.Attack), Is.EqualTo(1));
         }
 

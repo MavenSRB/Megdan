@@ -240,6 +240,10 @@ namespace GuardsDigital.Core.Diagnostics
         {
             public MatchLogOutcome Outcome;
             public int? Total;
+            public bool HasOrigin;
+            public HexCoordinate Origin;
+            public bool HasTarget;
+            public HexCoordinate Target;
         }
 
         private sealed class DefenseFold
@@ -317,7 +321,16 @@ namespace GuardsDigital.Core.Diagnostics
 
             if (type == AttackStarted)
             {
-                attacks[Required(references, "resolution", entry)] = new AttackFold();
+                var fold = new AttackFold();
+                if (TryReadMove(detail, "attackSpaces", out var origin, out var target))
+                {
+                    fold.HasOrigin = true;
+                    fold.Origin = origin;
+                    fold.HasTarget = true;
+                    fold.Target = target;
+                }
+
+                attacks[Required(references, "resolution", entry)] = fold;
                 var minion = Optional(references, "minion", value => new MinionId(value));
                 if (minion.IsDefined)
                 {
@@ -332,6 +345,10 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectHeroId: Hero(references, entry),
                         subjectMinionId: minion,
                         subjectCardInstanceId: Card(references),
+                        origin: fold.Origin,
+                        destination: fold.Target,
+                        hasOrigin: fold.HasOrigin,
+                        hasDestination: fold.HasTarget,
                         outcome: MatchLogOutcome.AttackSuccessful));
                 }
 
@@ -368,6 +385,10 @@ namespace GuardsDigital.Core.Diagnostics
                     targetHeroId: Optional(references, "target", value => new HeroId(value)),
                     subjectMinionId: Optional(references, "minion", value => new MinionId(value)),
                     subjectCardInstanceId: Card(references),
+                    origin: fold.Origin,
+                    destination: fold.Target,
+                    hasOrigin: fold.HasOrigin,
+                    hasDestination: fold.HasTarget,
                     outcome: fold.Outcome,
                     resolvedAttackTotal: detail.ContainsKey("attack")
                         ? (int?)Number(detail, "attack") : fold.Total));

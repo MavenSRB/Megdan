@@ -1169,7 +1169,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 true);
 
             steps.Add(ResolutionStep.FromFact(
-                CardActionResolutionEvent.AttackStarted(defenseResolution)));
+                CardActionResolutionEvent.AttackStarted(
+                    defenseResolution, ActorSpaceOf(defenseResolution.ActorId))));
             steps.Add(ResolutionStep.FromFact(
                 CardActionResolutionEvent.AttackTotalCalculated(defenseResolution)));
             steps.Add(ResolutionStep.AtCheckpoint(
@@ -1653,7 +1654,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 RuleObject.ForHero(resolution.ActorId), adjacentMoveAuthority, participants, modifications))
             {
                 var replacedSteps = precedingSteps ?? new List<ResolutionStep>();
-                replacedSteps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution)));
+                replacedSteps.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.AttackStarted(
+                        resolution, ActorSpaceOf(resolution.ActorId))));
                 replacedSteps.AddRange(StepsAfterMinionDefeat(resolution, definitions));
                 pendingAttackResolution = null;
                 pendingAttackTargetChoice = null;
@@ -1686,7 +1689,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 var paused = precedingSteps ?? new List<ResolutionStep>();
                 paused.Add(ResolutionStep.FromFact(
-                    CardActionResolutionEvent.AttackStarted(resolution)));
+                    CardActionResolutionEvent.AttackStarted(
+                        resolution, ActorSpaceOf(resolution.ActorId))));
                 paused.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.RemovalPreventionRequested(
                         resolution, pendingRemovalPrevention)));
@@ -1709,7 +1713,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // moments that survive are the attacker's own, and they keep the page's positions around
             // the defeat that replaces the comparison.
             var events = precedingSteps ?? new List<ResolutionStep>();
-            events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution)));
+            events.Add(ResolutionStep.FromFact(
+                CardActionResolutionEvent.AttackStarted(
+                    resolution, ActorSpaceOf(resolution.ActorId))));
             events.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
                 CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact))));
             events.AddRange(StepsAfterMinionDefeat(resolution, definitions));

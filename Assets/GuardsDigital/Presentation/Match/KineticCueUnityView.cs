@@ -190,7 +190,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var subject = KineticSubject.ForHero(hero.Occupancy.HeroId);
-            var motion = playback.MotionFor(subject);
+            var motion = WithoutStaleFlash(subject, hero.Coordinate, playback.MotionFor(subject));
             if (motion.IsStill)
             {
                 Restore(hero.transform);
@@ -214,7 +214,8 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var subject = KineticSubject.ForMinion(minion.Occupancy.MinionId);
-            var motion = playback.MotionFor(subject);
+            var motion = WithoutStaleFlash(
+                subject, minion.Occupancy.Coordinate, playback.MotionFor(subject));
             if (motion.IsStill)
             {
                 Restore(minion.transform);
@@ -279,7 +280,11 @@ namespace GuardsDigital.Presentation.Match
             if (motion.LungeLean > 0f)
             {
                 var target = playback.LungeTargetFor(subject);
-                if (TryWorldPositionOf(target, out var struck))
+                var recordedTarget = playback.LungeTargetSpaceFor(subject);
+                var struck = recordedTarget.HasValue
+                    ? HexWorldLayout.ToWorld(recordedTarget.Value, radius)
+                    : Vector3.zero;
+                if (recordedTarget.HasValue || TryWorldPositionOf(target, out struck))
                 {
                     var toward = struck - authoritative;
                     var distance = toward.magnitude;
@@ -293,6 +298,25 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return displacement;
+        }
+
+        private KineticPieceMotion WithoutStaleFlash(
+            KineticSubject subject, HexCoordinate current, KineticPieceMotion motion)
+        {
+            var recorded = playback.SubjectSpaceFor(subject, KineticCueKind.Flash);
+            if (!recorded.HasValue || recorded.Value.Equals(current) || motion.FlashStrength <= 0f)
+            {
+                return motion;
+            }
+
+            return new KineticPieceMotion(
+                motion.RouteProgress,
+                motion.HasRouteTravel,
+                motion.LungeLean,
+                motion.Scale,
+                motion.Opacity,
+                0f,
+                motion.HoldVisible);
         }
 
         /// <summary>The point at <paramref name="progress"/> along a hex route, in board space.</summary>

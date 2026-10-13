@@ -399,6 +399,10 @@ namespace GuardsDigital.Tests.EditMode
                         subjectHeroId: Attacker,
                         subjectMinionId: Minion,
                         subjectCardInstanceId: AttackCard,
+                        origin: new HexCoordinate(2, -3),
+                        destination: new HexCoordinate(3, -3),
+                        hasOrigin: true,
+                        hasDestination: true,
                         outcome: MatchLogOutcome.AttackSuccessful)
                 },
                 new[] { Card(AttackCard, Attacker), Card(DefenseCard, Defender) });
@@ -406,6 +410,9 @@ namespace GuardsDigital.Tests.EditMode
             var scene = view.Model.Scene;
             Assert.That(scene.Defender.Kind, Is.EqualTo(KineticSubjectKind.Minion));
             Assert.That(scene.Defender.MinionId, Is.EqualTo(Minion));
+            Assert.That(scene.AttackerSpace, Is.EqualTo(new HexCoordinate(2, -3)));
+            Assert.That(scene.DefenderSpace, Is.EqualTo(new HexCoordinate(3, -3)),
+                "Spotlight framing keeps the strike location even if the minion identity respawns elsewhere.");
             Assert.That(scene.HasDefenseCard, Is.False,
                 "Nothing but a hero answers a defense, so an attack on a minion looks for no card.");
         }

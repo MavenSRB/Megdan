@@ -36,6 +36,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Rules resolve independently of animations.
 - The presentation layer consumes ordered rule events and animates them.
 - Skipping or accelerating animation never changes game state.
+- A resolved Attack carries its attacker and target spaces into its public presentation row. Spotlight framing and the lunge use that historical pair, so a defeated minion whose identity is immediately reused by Lane Push is struck at its old space and is not flashed at its new spawn.
 - Target animation coverage for each of the six pitch heroes: idle, movement, attack, hit/defeat, and respawn, reusing shared rigs/clips where suitable without sacrificing hero readability.
 - Minions use a smaller shared animation set.
 - The pitch receives a small sound-effects pass for UI confirmation, card reveal, movement, attack, hit/defeat, minion battle, and lane push.

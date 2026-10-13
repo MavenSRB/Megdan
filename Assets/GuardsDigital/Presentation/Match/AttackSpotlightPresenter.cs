@@ -416,7 +416,9 @@ namespace GuardsDigital.Presentation.Match
                     projection, entry.SubjectCardInstanceId, entry.SubjectHeroId),
                 // Milestone 9.34. Gydion's spell attacks name the spell card they were cast from
                 // (9.30c), and a spell is drawn by its own face - never by the hero-card builder.
-                CaptureSpell(projection, entry));
+                CaptureSpell(projection, entry),
+                entry.HasOrigin ? (GuardsDigital.Core.Board.HexCoordinate?)entry.Origin : null,
+                entry.HasDestination ? (GuardsDigital.Core.Board.HexCoordinate?)entry.Destination : null);
         }
 
         /// <summary>

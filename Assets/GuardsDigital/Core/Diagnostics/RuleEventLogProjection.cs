@@ -430,6 +430,11 @@ namespace GuardsDigital.Core.Diagnostics
                 detailParts.Add($"attack={ruleEvent.AttackTotal}");
             }
 
+            if (ruleEvent.AttackOrigin.HasValue && ruleEvent.AttackTarget.HasValue)
+            {
+                detailParts.Add($"attackSpaces={ruleEvent.AttackOrigin.Value}->{ruleEvent.AttackTarget.Value}");
+            }
+
             // Milestone 9.30h. A refill's count - how many spells returned, never which.
             if (ruleEvent.SpellCount > 0)
             {
