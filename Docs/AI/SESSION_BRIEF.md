@@ -10,11 +10,11 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W060-W063 over W059. Stamp `1.0-W064-unified+20261013095758-4bb271b3`; package SHA-256 `8c7adef18f14b61de851b1174025284b7f1a376a7ef60773b95a4abd465ac652`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W073 Large Maps**, `Builds/Playtest-W073-large-maps.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. Stamp `1.0-W073-large-maps+20261014004216-33ddb87f`; package SHA-256 `45494847903836caea9031f867420f115cc4b0c722717ea9cf2ca919850215ce`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-Matching Mac package: `Builds/Playtest-W064-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W064 build stamp/content; SHA-256 `eda28601cb277b57123b7157712c08b4cd1fe03ce75088c447d172ba5c69bbb2`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+Matching Mac package: `Builds/Playtest-W073-large-maps-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W073 build stamp/content; SHA-256 `4af630737e51797913586ead01c17b1fd2499b76121f1850049a5b5161a4e521`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
 - Last completed work: **9.62**.
 - Active authorized work: **none**.
