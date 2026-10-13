@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-069 | Archived the exact local `pve-first-slice` tip, verified it was already an ancestor of `main`, and removed only its local branch. The distinct `origin/pve-first-slice` ref remained byte-identical. Seven local branches remain, each owned by a worktree. | `work/W-069` |
 | W-068 | Archived and verified the exact tips of all 83 dormant unattached branches with non-equivalent patches, then removed only their branch refs. Local branches fell from 91 to eight; every removed line is recoverable from `archive/local/*`. Worktree-attached branches, `pve-first-slice`, remotes, packages and `.claude/` were preserved. | `work/W-068` |
 | W-067 | Archived 31 unattached branch tips whose patches were entirely equivalent to `main` under exact `archive/local/<branch>` tags, verified every tag, then removed those branch refs. Local branches fell from 122 to 91; all unique-patch, worktree-attached, protected-upstream and remote refs were preserved. | `work/W-067` |
 | W-066 | Safe local branch cleanup removed 41 branches fully merged into `main` and attached to no worktree, reducing 163 local branches to 122. `git branch -d` refused `pve-first-slice` because of its upstream state, so it was preserved; all unmerged/worktree branches, untracked `.claude/` content and remotes were untouched. | `work/W-066` |
@@ -74,6 +75,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-069 Retire local pve-first-slice ref
+
+Continued on 2026-10-13 after dormant-branch archival. Local `pve-first-slice` at `815a9f82` was already an ancestor of `main`, but safe deletion had refused it because its configured upstream pointed to the distinct older remote history at `26a9bc9f`. The exact local tip was preserved and verified as `archive/local/pve-first-slice`, then only the local branch was removed. `origin/pve-first-slice` remained byte-identical. Seven local branches remain, and every one is checked out by a worktree; no worktree, package, `.claude/` content or remote ref changed.
+
+Historical evidence: completion commit addressed by immutable `work/W-069`; exact local/remote identities and final branch ownership live in its body.
 
 ### [x] W-068 Archive dormant unique-patch branches
 
