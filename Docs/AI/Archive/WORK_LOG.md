@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-064 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W060-W063 over W059 under one admission-compatible stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-064` |
 | W-063 | Every PvP and PvE Director tray now contains only Undo and Event Log; Reset remains an underlying reconstruction diagnostic, not a live host control. Explicit seated/unseated PvE and unseated PvP regressions prove the tray contract, while the PvE observer also refuses a valid remote-player command. Focused Edit/Play and rendered PvE checks passed. Source-only; W059 packages unchanged. | `work/W-063` |
 | W-062 | Unseated hosts now retain the live full-information view but cannot issue any player's commands; the separate Director drawer retains host Undo. PvE hosts receive that drawer whether seated or unseated, bound to the live encounter authority and pointer-reachable above the compact enemy overlay. Focused Edit/Play regressions and seated/unseated rendered inspection passed. Source-only; W059 packages unchanged. | `work/W-062` |
 | W-061 | Resolved Attacks retain their strike-time attacker/target spaces for spotlight and kinetic presentation, so immediate Lane Push cannot redirect the delayed hit to the defeated minion identity's adjacent-zone respawn. Focused log/network/spotlight/kinetic checks, exact live-scene reproduction and rendered inspection passed. Rules and W059 packages unchanged. | `work/W-061` |
@@ -69,6 +70,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-064 Current matched Windows and macOS builds
+
+Requested on 2026-10-13: make Mac and Windows builds. W064 packages current source through W063 over the preserved W059 pair. Both targets carry `1.0-W064-unified+20261013095758-4bb271b3`, wire /52, snapshot 59 and PvE format 4. Change-based acceptance reuses W060-W063's focused source evidence and freshly verifies the final Windows candidate through player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, a 184-file manifest, ZIP extraction and extracted-package launch. The matching universal Mac bundle verifies both native architectures, PvE assemblies, source-identical JSON, a 185-file manifest, extracted hashes and executable modes. Native Mac launch/render/cross-platform networking, signing/notarization, internet/NAT and packaged reconnect remain unverified; no remote publication or main merge was requested.
+
+Historical evidence: completion commit addressed by immutable `work/W-064`; exact checks/results, environmental retries and limitations live in its body.
 
 ### [x] W-063 Undo-only Director trays
 

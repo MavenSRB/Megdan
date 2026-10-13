@@ -10,19 +10,21 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2/3v3 and host-selected Waves/Lives. Snapshot schema v59 persists the fixed board partition; wire protocol /52 carries immutable Experimental modifier-display controls, their visible live card projections, and resolved animation attack totals. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W059 Unified**, `Builds/Playtest-W059-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W052-W058 over W050, including PvE Undo, smaller enemy waves and dimmed resolved enemy cards. Stamp `1.0-W059-unified+20261012211105-4d906506`; package SHA-256 `e0c6e6f33b9a0ec41f128c45157902b5406022660cee4dc6386b1519f9796613`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE. Includes W060-W063 over W059. Stamp `1.0-W064-unified+20261013095758-4bb271b3`; package SHA-256 `8c7adef18f14b61de851b1174025284b7f1a376a7ef60773b95a4abd465ac652`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-Matching Mac package: `Builds/Playtest-W059-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W059 build stamp/content; SHA-256 `deea4f4d2733d6ce8521d670dea44a509b3847ee0518ba6891adaae2541c071d`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+Matching Mac package: `Builds/Playtest-W064-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W064 build stamp/content; SHA-256 `eda28601cb277b57123b7157712c08b4cd1fe03ce75088c447d172ba5c69bbb2`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-063**.
+- Last completed work: **W-064**.
 - Active authorized work: **None**.
 - Next proposed work: **None**.
 
-W062 makes unseated hosts full-information observers without player-command authority. PvE binds seated and unseated host Undo to live encounter authority and keeps its drawer pointer-reachable above the enemy overlay. Focused regressions and rendering passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
+W064 packages current source through W063 for Windows and universal Intel/Apple Silicon macOS under one admission-compatible stamp. Exact-artifact and archive checks passed; native Mac execution remains unverified.
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
+
+W062 makes unseated hosts full-information observers without player-command authority. PvE binds seated and unseated host Undo to live encounter authority and keeps its drawer pointer-reachable above the enemy overlay. Focused regressions and rendering passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 
 W061 retains Attack strike-time spaces through public/network coordinates, so immediate Lane Push cannot redirect delayed presentation to a same-identity adjacent-zone respawn. Exact-scene, consumer and rendered checks passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 
