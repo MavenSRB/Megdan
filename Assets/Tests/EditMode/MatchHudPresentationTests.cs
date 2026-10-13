@@ -2625,7 +2625,7 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void TheDirectorDrawer_ForwardsUndoResetAndTheEventLogAndOpensWithoutTouchingTheMatch()
+        public void TheDirectorDrawer_ForwardsUndoAndTheEventLogWithoutExposingReset()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var undoRestartView = new UndoRestartUnityView();
@@ -2633,15 +2633,14 @@ namespace GuardsDigital.Tests.EditMode
             var undoRestart = new UndoRestartPresenter(session, undoRestartView);
             var diagnostics = new DiagnosticLogPresenter(session, diagnosticView);
             undoRestartView.UndoRequested += () => undoRestart.Undo();
-            undoRestartView.RestartRequested += () => undoRestart.Restart();
             diagnosticView.ToggleRequested += () => diagnostics.Toggle();
             undoRestart.Refresh();
             diagnostics.Refresh();
 
-            // The drawer holds exactly the three tools the milestone names, each on its own control.
+            // Restart remains a session diagnostic, but no live Director tray exposes it.
             Assert.That(
                 Descendants(undoRestartView.Root).OfType<Button>().Select(button => button.text),
-                Is.EqualTo(new[] { "UNDO", "RESET" }));
+                Is.EqualTo(new[] { "UNDO" }));
             Assert.That(((Button)diagnosticView.ToggleRoot).text, Does.StartWith("EVENT LOG"));
 
             var card = session.Projection.Cards.First(value => value.State.Location == CardLocation.Hand);
@@ -2660,11 +2659,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(diagnosticView.Model.IsExpanded, Is.True,
                 "`EVENT LOG` toggles the existing collapsible diagnostic log.");
 
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
-            Assert.That(session.Projection.AcceptedCommands, Is.Not.Empty);
-            undoRestartView.ForwardRestart();
-            Assert.That(session.Projection.AcceptedCommands, Is.Empty,
-                "`RESET` is presentation terminology for the existing Restart, which empties the history.");
         }
 
         [Test]

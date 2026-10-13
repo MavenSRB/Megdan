@@ -1159,7 +1159,7 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// Rulebook p.13's Defeat takes her piece off the board, p.13's respawn puts it back on a space
-        /// a player clicks, and the Director's RESET rebuilds the whole session from its initial state.
+        /// a player clicks, and the restart diagnostic rebuilds the session from its initial state.
         /// </summary>
         [UnityTest]
         public IEnumerator HerDefeatedPieceRespawnsAndRestartRebuildsTheSession()
@@ -1213,13 +1213,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             OpenDirectorDrawer(root.Hud);
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(root.Hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             yield return null;
             yield return null;
             yield return null;
             Assert.That(runtime.AcceptedCommands, Is.Empty,
-                "RESET returns the initial state with no accepted history. " + Remaining(runtime));
+                "Restart reconstruction returns the initial state with no accepted history. " + Remaining(runtime));
             Assert.That(
                 Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None)
                     .Count(view => view.Occupancy.HeroId.Equals(hers)),

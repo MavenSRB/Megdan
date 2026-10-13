@@ -851,7 +851,11 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(director, Is.Not.Null);
                 Assert.That(director.style.display.value, Is.EqualTo(DisplayStyle.Flex),
                     "The trusted local host keeps its Director controls while spectating.");
-
+                var directorButtons = composition.Hud.RootElement.Query<Button>().ToList();
+                Assert.That(directorButtons.Any(button => button.text == "UNDO"), Is.True);
+                Assert.That(directorButtons.Any(button => button.text.StartsWith("EVENT LOG")), Is.True);
+                Assert.That(directorButtons.Any(button => button.text == "RESET"), Is.False,
+                    "No PvP Director tray exposes match Reset.");
                 var heroes = runtime.Host.Seats.Seats.Select(seat => seat.HeroId).Take(2).ToArray();
                 Assert.That(heroes, Has.Length.EqualTo(2));
                 Assert.That(runtime.HeroOverviewsView.CardInspection.IsOpen, Is.False);

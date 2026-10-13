@@ -627,20 +627,17 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void DirectorUndoAndRestart_DrawTheSharedChromeAndWireMotion()
+        public void DirectorUndo_DrawsTheSharedChromeAndWiresMotionWithoutReset()
         {
             var view = new UndoRestartUnityView();
 
             var undo = Descendants(view.Root).OfType<Button>().Single(button => button.text == "UNDO");
-            var restart = Descendants(view.Root).OfType<Button>().Single(button => button.text == "RESET");
-
-            foreach (var control in new[] { undo, restart })
-            {
-                Assert.That(control.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
-                Assert.That(control.style.borderTopLeftRadius.value.value,
-                    Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
-                AssertScaleMotionIsWired(control, control.text);
-            }
+            Assert.That(Descendants(view.Root).OfType<Button>().Select(button => button.text),
+                Is.EqualTo(new[] { "UNDO" }));
+            Assert.That(undo.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+            Assert.That(undo.style.borderTopLeftRadius.value.value,
+                Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
+            AssertScaleMotionIsWired(undo, undo.text);
         }
 
         [Test]

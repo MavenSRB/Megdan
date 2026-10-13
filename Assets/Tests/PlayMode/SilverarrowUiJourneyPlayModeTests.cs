@@ -221,7 +221,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return PointTrayAt(root, seat.HeroId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, seat.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty,

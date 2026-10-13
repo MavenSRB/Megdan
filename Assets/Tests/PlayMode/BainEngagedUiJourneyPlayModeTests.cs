@@ -74,16 +74,9 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// The four session shapes his gate names, each driven through the Director drawer's own
-        /// controls.
-        ///
-        /// <para><b>RESET is taken BEFORE the restore, and the order is the whole lesson of this
-        /// journey.</b> <c>CanRestart</c> is <c>AcceptedCommands.Count &gt; 0</c>, and a snapshot
-        /// restore rebuilds the session from a payload that carries the POSITION rather than the
-        /// command history - so the restored board is correct and its accepted-command list is empty,
-        /// which leaves RESET legitimately disabled. Reaching for RESET after a restore is asking for
-        /// a control the product is right to withhold; the restore therefore goes last and proves
-        /// continuation.</para>
+        /// The player-facing Undo is driven through the Director drawer. Restart remains a direct
+        /// reconstruction diagnostic and is deliberately exercised before snapshot restore, whose
+        /// payload carries the position rather than accepted command history.
         /// </summary>
         [UnityTest]
         public IEnumerator HisEngagedBoardRestores_Undoes_Replays_AndRestarts()
@@ -112,16 +105,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse),
                 "His commitment undoes back to the retained prefix.");
 
-            // RestartReconstruction. The re-commit is what puts a command back on the accepted list,
-            // which is the condition RESET is gated on.
+            // RestartReconstruction remains an engine diagnostic after the tray control's removal.
             yield return PointTrayAt(root, bainId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, bainId));
-            OpenDirectorDrawer(hud);
-            yield return null;
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             Assert.That(runtime.AcceptedCommands, Is.Empty,
-                "RESET returns him to the staged initial state with nothing accepted.");
+                "Restart reconstruction returns him to the staged initial state.");
 
             var restarted = Object.FindObjectsByType<PrimitiveHeroView>();
             var bainView = restarted.Single(view => view.Occupancy.HeroId.Equals(bainId));
@@ -149,20 +139,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedBain);
             var root = Root();
             var runtime = root.Runtime;
-            var hud = root.Hud;
             var bainId = BainSeat(runtime).HeroId;
 
             var before = runtime.HandsView.Model.Hands
                 .Single(value => value.HeroId.Equals(bainId)).TrayCards.Count;
             Assert.That(before, Is.GreaterThan(0), "His hand draws before the rebuild.");
 
-            // Committing first makes the rebuild do work rather than redraw an untouched scene, and
-            // the drawer's RESET is the reload path a player actually has.
+            // Committing first makes the diagnostic rebuild do work rather than redraw an untouched scene.
             yield return PointTrayAt(root, bainId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, bainId));
-            OpenDirectorDrawer(hud);
-            yield return null;
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             yield return null;
 

@@ -232,7 +232,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return PointTrayAt(root, sabinaSetup.HeroId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, sabinaSetup.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty,

@@ -226,7 +226,7 @@ namespace GuardsDigital.Tests.PlayMode
             // back on his own spawn and no accepted history behind it.
             yield return PointTrayAt(root, arienSetup.HeroId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, arienSetup.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty,

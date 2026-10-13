@@ -512,7 +512,6 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.30b: a seat-scoped runtime composes no Director presenter, so these controls
             // are wired to nothing rather than wired to something that would refuse them.
             UndoRestartView.UndoRequested += () => UndoRestartPresenter?.Undo();
-            UndoRestartView.RestartRequested += () => UndoRestartPresenter?.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter?.Toggle();
             MatchLogView.ToggleRequested += () => MatchLogPresenter.Toggle();
             MatchLogView.DismissRequested += () => MatchLogPresenter.Dismiss();

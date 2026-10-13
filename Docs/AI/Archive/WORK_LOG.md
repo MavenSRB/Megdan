@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-063 | Every PvP and PvE Director tray now contains only Undo and Event Log; Reset remains an underlying reconstruction diagnostic, not a live host control. Explicit seated/unseated PvE and unseated PvP regressions prove the tray contract, while the PvE observer also refuses a valid remote-player command. Focused Edit/Play and rendered PvE checks passed. Source-only; W059 packages unchanged. | `work/W-063` |
 | W-062 | Unseated hosts now retain the live full-information view but cannot issue any player's commands; the separate Director drawer retains host Undo. PvE hosts receive that drawer whether seated or unseated, bound to the live encounter authority and pointer-reachable above the compact enemy overlay. Focused Edit/Play regressions and seated/unseated rendered inspection passed. Source-only; W059 packages unchanged. | `work/W-062` |
 | W-061 | Resolved Attacks retain their strike-time attacker/target spaces for spotlight and kinetic presentation, so immediate Lane Push cannot redirect the delayed hit to the defeated minion identity's adjacent-zone respawn. Focused log/network/spotlight/kinetic checks, exact live-scene reproduction and rendered inspection passed. Rules and W059 packages unchanged. | `work/W-061` |
 | W-060 | PvE playtest repair batch: unseated-host live spectator refresh, inert Minion Battle despite enemy category membership, pointer-safe Level Up, fresh-process reserved-seat reclaim, lifecycle-correct enemy token pips, host-authorized Blue Initiative ties, and typed category colours across enemy faces/rails/pips. Focused rules, presenter, real-loopback lobby, token and rendered-launcher checks passed. Source-only; W059 packages unchanged. | `work/W-060` |
@@ -68,6 +69,14 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-063 Undo-only Director trays
+
+The user's follow-up clarified that Reset should be removed from both mode trays for every host role. The shared Director view now constructs only `UNDO`; the drawer retains `EVENT LOG`, while Restart remains available solely through the underlying session/runtime diagnostic used by reconstruction coverage. Restart-dependent player-path fixtures now call that diagnostic explicitly instead of pretending a live Reset control exists. The unseated-PvE lobby regression additionally proves that no player decision is rendered and that a valid remote owner's placement command is refused without advancing authority state.
+
+T2 acceptance covers the shared drawer chrome/forwarding contract, real-loopback unseated PvP, seated and unseated PvE, a direct valid-command refusal at the PvE observer client, representative restart-reconstruction journeys, and non-batch pointer-opened PvE drawers for both host roles. The first non-batch run exposed a test-induced panel-order transition after a premature drawer toggle; inspecting the already-composed controls without toggling closed that fixture defect, and the exact visual rerun passed with only Undo and Event Log visible. Review found no remaining in-scope player-experience, authority, maintainability or project-risk defect. Rules, engine Restart semantics, snapshot 59, wire /52, remote joiners and W059 packages are unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-063`; exact checks/results and limitations live in its body.
 
 ### [x] W-062 Host spectator authority and PvE Director Undo
 

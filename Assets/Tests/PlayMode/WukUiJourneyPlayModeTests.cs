@@ -746,7 +746,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(SpaceOf(runtime, wuk), Is.EqualTo(respawn));
             OpenDirectorDrawer(root.Hud);
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(root.Hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             yield return null;
             Assert.That(runtime.AcceptedCommands, Is.Empty);

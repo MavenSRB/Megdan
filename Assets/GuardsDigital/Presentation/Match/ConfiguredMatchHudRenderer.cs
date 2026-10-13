@@ -756,7 +756,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// Opens or closes the `DIRECTOR` drawer. It submits nothing: the tools inside it forward the
-        /// existing Undo, Restart, and event-log operations exactly as they always have, and opening or
+        /// existing Undo and event-log operations, and opening or
         /// closing the drawer itself changes no match state at all.
         /// </summary>
         public void ToggleDirectorDrawer()

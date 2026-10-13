@@ -378,11 +378,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.DiagnosticView.Model.IsExpanded, Is.True);
 
             yield return CommitThroughTray(root, "LIFT UP");
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             Assert.That(runtime.GetCommitmentStatus(committedHeroId),
                 Is.EqualTo(TurnCardCommitmentStatus.AwaitingResponse),
-                "RESET restarts the match, so the commitment is gone.");
+                "Restart reconstruction removes the commitment.");
             Assert.That(runtime.AcceptedCommands, Is.Empty,
                 "A restart adopts the initial state with no accepted history.");
         }

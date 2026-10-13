@@ -273,11 +273,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>
         /// Opens the Director drawer only when it is shut. <b>It TOGGLES, and its own trigger's label
         /// changes when it is open</b>, so a blind second click closes a drawer an earlier step
-        /// already opened. RESET is the tell, because it is drawn only while the drawer is open.
+        /// already opened. UNDO is the tell, because it is drawn only while the drawer is open.
         /// </summary>
         internal static void OpenDirectorDrawer(ConfiguredMatchHudRenderer hud)
         {
-            if (!UiPlayer.HasButton(hud, "RESET"))
+            if (!UiPlayer.HasButton(hud, "UNDO"))
             {
                 UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             }

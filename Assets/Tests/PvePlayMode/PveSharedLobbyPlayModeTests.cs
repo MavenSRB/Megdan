@@ -279,6 +279,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var spectatorDirector = spectatorRoot.Hud.RootElement.Q<Button>("gd-director-toggle");
             Assert.That(spectatorDirector.style.display.value, Is.EqualTo(DisplayStyle.Flex),
                 "An unseated PvE host retains the Director tray and its Undo.");
+            var spectatorDirectorButtons = spectatorRoot.Hud.RootElement.Query<Button>().ToList();
+            Assert.That(spectatorDirectorButtons.Any(button => button.text == "UNDO"), Is.True);
+            Assert.That(spectatorDirectorButtons.Any(button => button.text.StartsWith("EVENT LOG")), Is.True);
+            Assert.That(spectatorDirectorButtons.Any(button => button.text == "RESET"), Is.False,
+                "No unseated PvE Director tray exposes match Reset.");
 
             for (var placed = 0; placed < peers.Count; placed++)
             {
@@ -291,6 +296,15 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                     command.Kind == GuardsDigital.Core.Replay.DirectorCommandKind.AnswerSystemTransitionStep);
                 var placedHero = runtime.Host.Seats.Find(owner.Client.TargetSeat).HeroId;
                 var before = authority.Session.Projection.Version;
+                if (placed == 0)
+                {
+                    Assert.That(runtime.SystemTransitionPrompt, Is.Null,
+                        "The observer sees setup progress but receives no player decision control.");
+                    var observer = Field<SwitchableMatchClient>(runtime, "client");
+                    Assert.That(observer.Submit(placement).Accepted, Is.False,
+                        "A valid remote player's PvE command is refused by the unseated host client.");
+                    Assert.That(authority.Session.Projection.Version, Is.EqualTo(before));
+                }
                 Assert.That(owner.Client.TrySubmitCommand(placement, out _), Is.True);
                 yield return Until(() => authority.Session.Projection.Version > before &&
                     runtime.ReadModel.Version == authority.Session.Projection.Version &&
@@ -310,7 +324,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 yield return null;
                 Assert.That(spectatorRoot.Hud.IsDirectorDrawerOpen, Is.True);
                 yield return new WaitForEndOfFrame();
-                ScreenCapture.CaptureScreenshot("tmp/w062-pve-unseated-host-director.png");
+                ScreenCapture.CaptureScreenshot("tmp/w063-pve-unseated-host-director.png");
             }
         }
 
@@ -367,6 +381,11 @@ namespace GuardsDigital.Tests.Pve.PlayMode
             var playingHostDirector = playingHostRoot.Hud.RootElement.Q<Button>("gd-director-toggle");
             Assert.That(playingHostDirector.style.display.value, Is.EqualTo(DisplayStyle.Flex),
                 "A seated PvE host retains the Director tray and its Undo.");
+            var playingHostDirectorButtons = playingHostRoot.Hud.RootElement.Query<Button>().ToList();
+            Assert.That(playingHostDirectorButtons.Any(button => button.text == "UNDO"), Is.True);
+            Assert.That(playingHostDirectorButtons.Any(button => button.text.StartsWith("EVENT LOG")), Is.True);
+            Assert.That(playingHostDirectorButtons.Any(button => button.text == "RESET"), Is.False,
+                "No seated PvE Director tray exposes match Reset.");
             var root = lobby.GetComponent<UIDocument>().rootVisualElement;
             Assert.That(root.Query<Button>().ToList().Any(b => b.name.StartsWith("pve-control-")), Is.False);
             for (var placed = 0; placed < 3; placed++)
@@ -503,7 +522,7 @@ namespace GuardsDigital.Tests.Pve.PlayMode
                 yield return null;
                 Assert.That(playingHostRoot.Hud.IsDirectorDrawerOpen, Is.True);
                 yield return new WaitForEndOfFrame();
-                ScreenCapture.CaptureScreenshot("tmp/w062-pve-seated-host-director.png");
+                ScreenCapture.CaptureScreenshot("tmp/w063-pve-seated-host-director.png");
             }
             Object.Destroy(lobby.gameObject);
             yield return null;

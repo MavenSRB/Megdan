@@ -110,7 +110,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.PlacedTokens.Single().Id, Is.EqualTo(token.Id));
             Healthy(runtime);
             OpenDirectorDrawer(root.Hud); yield return null;
-            UiPlayer.Click(UiPlayer.Button(root.Hud,"RESET")); yield return null; yield return null;
+            UiPlayer.RestartForReconstruction(runtime); yield return null; yield return null;
             Assert.That(runtime.AcceptedCommands, Is.Empty);
             Assert.That(runtime.BoardView.Model.PlacedTokens, Is.Empty);
             Assert.That(Object.FindObjectsByType<PrimitiveHeroView>().Count(view => view.Occupancy.HeroId.Equals(actor)), Is.EqualTo(1));

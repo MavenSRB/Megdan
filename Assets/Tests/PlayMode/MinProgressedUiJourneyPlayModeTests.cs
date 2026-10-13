@@ -906,7 +906,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// Rulebook p.13's Defeat takes her piece off the board and p.19's next sentence leaves her
         /// tokens exactly where they stand - "Tokens are not removed when the hero who placed them is
         /// defeated" - p.13's respawn puts the piece back on a space a player clicks, and the Director's
-        /// RESET rebuilds the whole session from its initial state.
+        /// the restart diagnostic rebuilds the whole session from its initial state.
         /// </summary>
         [UnityTest]
         public IEnumerator HerDefeatedPieceRespawnsWithHerMinesStandingAndRestartRebuildsTheSession()
@@ -971,13 +971,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             OpenDirectorDrawer(root.Hud);
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(root.Hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
             yield return null;
             yield return null;
             yield return null;
             Assert.That(runtime.AcceptedCommands, Is.Empty,
-                "RESET returns the initial state with no accepted history. " + Remaining(runtime));
+                "Restart reconstruction returns the initial state with no accepted history. " + Remaining(runtime));
             Assert.That(Tokens(runtime), Is.Empty,
                 "and a rebuilt board holds no token anybody placed.");
             Assert.That(

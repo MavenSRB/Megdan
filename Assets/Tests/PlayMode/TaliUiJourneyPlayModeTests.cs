@@ -185,7 +185,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, taliSetup.HeroId);
             yield return CommitThroughTray(
                 root, LowestInitiativeCardOf(runtime, taliSetup.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty);

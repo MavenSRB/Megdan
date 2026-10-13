@@ -237,7 +237,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, tigerclawSetup.HeroId);
             yield return CommitThroughTray(
                 root, LowestInitiativeCardOf(runtime, tigerclawSetup.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty,

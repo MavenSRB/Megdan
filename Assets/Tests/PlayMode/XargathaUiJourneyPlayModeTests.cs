@@ -238,7 +238,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, xargathaSetup.HeroId);
             yield return CommitThroughTray(
                 root, LowestInitiativeCardOf(runtime, xargathaSetup.HeroId));
-            UiPlayer.Click(UiPlayer.Button(hud, "RESET"));
+            UiPlayer.RestartForReconstruction(runtime);
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Is.Empty,

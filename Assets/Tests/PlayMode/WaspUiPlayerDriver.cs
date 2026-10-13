@@ -546,6 +546,14 @@ namespace GuardsDigital.Tests.PlayMode
                 .OfType<Button>()
                 .Count(candidate => IsShown(candidate) && candidate.text == label) == 1;
 
+        /// <summary>
+        /// Exercises restart reconstruction without restoring the removed live-tray RESET control.
+        /// Restart remains an engine diagnostic used by lifecycle coverage, not a player-facing action.
+        /// </summary>
+        public static void RestartForReconstruction(ConfiguredMatchSceneRuntime runtime) =>
+            Assert.That(runtime.Restart(), Is.True,
+                "The engine reconstruction diagnostic should restart an advanced session.");
+
         /// <summary>Every shown button label, for a failure message that names what was on screen.</summary>
         public static string Describe(ConfiguredMatchHudRenderer hud) =>
             string.Join(" | ", Descendants(hud.RootElement)
