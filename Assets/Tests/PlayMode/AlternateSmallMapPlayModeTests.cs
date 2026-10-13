@@ -84,6 +84,88 @@ namespace GuardsDigital.Tests.PlayMode
             PrivateLobbyDriver.FieldMemoryOverride=null;PrivateLobbyDriver.SuppressRouterQuestion=false;
         }
 
+        [UnityTest] public IEnumerator PlayingHostIsAdmittedToTenSeatLavaLobbyOverRealTcp()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat=null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root=ArienUiJourneyPlayModeTests.Root();
+            root.Recompose(MatchCompositionPlan.Printed(
+                MatchFormat.CreateConfigured(5,7,7),OfficialBoardMapCatalog.LavaBridgeDoubleLane,
+                WaveCounterAllocation.PerLane));
+            PrivateLobbyDriver.FieldMemoryOverride=new InMemoryPrivateLobbyFieldMemory();
+            PrivateLobbyDriver.SuppressRouterQuestion=true;
+            var owner=new GameObject("large-map-playing-host");
+            var driver=owner.AddComponent<PrivateLobbyDriver>();driver.Configure(root);
+            yield return null;yield return null;
+            var entry=new PrivateLobbyEntry(string.Empty,AvailablePort().ToString(),string.Empty,default,
+                map:OfficialBoardMapCatalog.LavaBridgeDoubleLane,waveCount:7,lifeCountPerTeam:7,
+                waveCounterAllocation:WaveCounterAllocation.PerLane);
+            driver.Presenter.Press(PrivateLobbyControl.Host,entry);
+            var deadline=Time.realtimeSinceStartup+10;
+            while(Time.realtimeSinceStartup<deadline &&
+                !driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat))yield return null;
+            Assert.That(driver.Presenter.Model.Role,Is.EqualTo(PrivateLobbyRole.Host),
+                driver.Presenter.Model.FeedbackLabel);
+            Assert.That(driver.Presenter.Model.Seats.Count,Is.EqualTo(10));
+            Assert.That(driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat),Is.True,
+                "The playing host's own client must decode the 5v5 welcome roster.");
+            Assert.That(root.ComposedPlan.Map,Is.EqualTo(OfficialBoardMapCatalog.LavaBridgeDoubleLane));
+            driver.Presenter.Press(PrivateLobbyControl.Leave,null);yield return null;yield return null;
+            Object.Destroy(owner);yield return null;
+            PrivateLobbyDriver.FieldMemoryOverride=null;PrivateLobbyDriver.SuppressRouterQuestion=false;
+        }
+
+        [UnityTest] public IEnumerator JoinInheritsTenSeatLavaMapAndFormatOverRealTcp()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat=null;
+            yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root=ArienUiJourneyPlayModeTests.Root();
+            var configured=MatchFormat.CreateConfigured(5,7,7);
+            root.Recompose(MatchCompositionPlan.Printed(configured,
+                OfficialBoardMapCatalog.LavaBridgeDoubleLane,WaveCounterAllocation.PerLane));
+            var host=root.Runtime.Host;var identity=root.Runtime.SessionIdentity;
+            root.Recompose(MatchCompositionPlan.Printed(MatchFormat.ThreeVersusThreeQuick));
+            PrivateLobbyDriver.FieldMemoryOverride=new InMemoryPrivateLobbyFieldMemory();
+            PrivateLobbyDriver.SuppressRouterQuestion=true;
+            var owner=new GameObject("large-map-inheritance-client");
+            var driver=owner.AddComponent<PrivateLobbyDriver>();driver.Configure(root);
+            PrivateSessionClient Client() => (PrivateSessionClient)typeof(PrivateLobbyDriver).GetProperty("RehearsalClient",
+                System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).GetValue(driver);
+            yield return null;yield return null;
+            Assert.That(PrivateSessionEndpoint.TryCreate("127.0.0.1",AvailablePort(),out var endpoint,out var error),Is.True,error);
+            using(var listener=new TcpSessionListener())
+            {
+                listener.Start(endpoint);
+                var session=new PrivateSessionHost(host,identity,"large-map-inheritance",listener,new CryptoNonceSource());
+                driver.Presenter.Press(PrivateLobbyControl.Join,new PrivateLobbyEntry(
+                    "127.0.0.1",listener.BoundPort.ToString(),"large-map-inheritance",default));
+                var deadline=Time.realtimeSinceStartup+15;
+                while(Time.realtimeSinceStartup<deadline && Client()?.State!=PrivateSessionClientState.Admitted)
+                {
+                    foreach(var item in listener.Drain())
+                    {
+                        switch(item.Kind)
+                        {
+                            case TransportEventKind.Connected:session.OnConnected(item.Ordinal,DateTime.UtcNow.Ticks);break;
+                            case TransportEventKind.Frame:session.OnFrame(item.Ordinal,item.Frame);break;
+                            case TransportEventKind.Disconnected:session.OnDisconnected(item.Ordinal);break;
+                            case TransportEventKind.StreamRejected:session.OnStreamRejected(item.Ordinal,item.Reason);break;
+                        }
+                    }
+                    yield return null;
+                }
+                Assert.That(Client().State,Is.EqualTo(PrivateSessionClientState.Admitted),Client().RejectionDetail);
+                Assert.That(Client().Roster.Count,Is.EqualTo(10));
+                Assert.That(root.ComposedPlan.Map,Is.EqualTo(OfficialBoardMapCatalog.LavaBridgeDoubleLane));
+                Assert.That(root.ComposedPlan.Format,Is.EqualTo(configured));
+                Assert.That(root.ComposedPlan.WaveCounterAllocation,Is.EqualTo(WaveCounterAllocation.PerLane));
+                Assert.That(Client().RejectionReason,Is.EqualTo(SessionRejectionReason.None));
+                driver.Presenter.Press(PrivateLobbyControl.Leave,null);yield return null;
+            }
+            Object.Destroy(owner);yield return null;
+            PrivateLobbyDriver.FieldMemoryOverride=null;PrivateLobbyDriver.SuppressRouterQuestion=false;
+        }
+
         [UnityTest] public IEnumerator StandardHostSelectorAndMapArtworkWorkAtBothSizes()
         {
             var oldWidth=(uint)Screen.width;var oldHeight=(uint)Screen.height;

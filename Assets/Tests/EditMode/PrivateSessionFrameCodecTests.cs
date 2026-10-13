@@ -78,6 +78,26 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void Welcome_RoundTripsTheSupportedTenSeatRoster()
+        {
+            var roster = Enumerable.Range(1, 10)
+                .Select(index => new SeatRosterEntry(
+                    new SeatId("seat-" + index),
+                    new HeroId("hero-" + index),
+                    index <= 5 ? TeamSide.Red : TeamSide.Blue,
+                    SeatOccupancyState.Open))
+                .ToArray();
+            var frame = OneFrame(PrivateSessionFrameCodec.WelcomeFrame(
+                new SessionWelcomeMessage("large-map-correlation", roster)));
+
+            Assert.That(PrivateSessionProtocol.MaxSeats, Is.EqualTo(10),
+                "The wire bound must cover the supported 5v5 format.");
+            Assert.That(PrivateSessionFrameCodec.TryDecodeWelcome(frame.Payload, out var decoded),
+                Is.True, "A 5v5 host welcome must not be discarded as a malformed roster.");
+            Assert.That(decoded.Roster.Count, Is.EqualTo(10));
+        }
+
+        [Test]
         public void Reject_RoundTripsReasonAndBoundedDetail()
         {
             var frame = OneFrame(PrivateSessionFrameCodec.RejectFrame(

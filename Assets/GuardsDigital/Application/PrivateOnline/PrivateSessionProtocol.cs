@@ -501,11 +501,11 @@ namespace GuardsDigital.Application
         /// <summary>The most characters a rejection detail may carry to a peer.</summary>
         public const int MaxRejectDetailChars = 200;
 
-        /// <summary>The official configuration's six seats.</summary>
-        public const int MaxSeats = 6;
+        /// <summary>The largest supported table: five players on each team.</summary>
+        public const int MaxSeats = 10;
 
         /// <summary>
-        /// The most simultaneous connections the host keeps: the six seats plus headroom for a
+        /// The most simultaneous connections the host keeps: the ten seats plus headroom for a
         /// rejected straggler or two. Anything past this is refused at accept.
         /// </summary>
         public const int MaxConcurrentConnections = 12;

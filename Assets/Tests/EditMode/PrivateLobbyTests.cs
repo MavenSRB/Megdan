@@ -595,7 +595,7 @@ namespace GuardsDigital.Tests.EditMode
             harness.Pump();
 
             var model = PrivateLobbyModel.ForClient(harness.Client(ordinal));
-            Assert.That(model.Seats.Count, Is.EqualTo(PrivateSessionProtocol.MaxSeats));
+            Assert.That(model.Seats.Count, Is.EqualTo(6));
             foreach (var row in model.Seats)
             {
                 Assert.That(row.TeamLabel, Is.Not.Empty);
@@ -633,7 +633,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.IsShown, Is.True);
             Assert.That(model.Controls,
                 Is.EqualTo(new[] { PrivateLobbyControl.Host, PrivateLobbyControl.Join }));
-            Assert.That(model.Seats.Count, Is.EqualTo(PrivateSessionProtocol.MaxSeats),
+            Assert.That(model.Seats.Count, Is.EqualTo(6),
                 "Every invited player runs this build, so the six seats can be offered as picks " +
                 "before any host has answered.");
             Assert.That(model.Seats.All(row => row.HeroLabel.Length == 0), Is.True,

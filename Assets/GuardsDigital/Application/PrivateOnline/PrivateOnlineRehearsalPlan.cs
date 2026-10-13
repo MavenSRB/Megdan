@@ -169,7 +169,7 @@ namespace GuardsDigital.Application
     {
         public const int HostProcessCount = 1;
         public const int HostSeatCount = 0;
-        public const int ClientProcessCount = PrivateSessionProtocol.MaxSeats;
+        public const int ClientProcessCount = 6;
         public const int TotalProcessCount = HostProcessCount + ClientProcessCount;
 
         static PrivateOnlineRehearsalPlan()

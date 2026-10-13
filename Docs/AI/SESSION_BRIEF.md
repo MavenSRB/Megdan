@@ -17,8 +17,8 @@ Current private Windows package: **W073 Large Maps**, `Builds/Playtest-W073-larg
 Matching Mac package: `Builds/Playtest-W073-large-maps-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W073 build stamp/content; SHA-256 `4af630737e51797913586ead01c17b1fd2499b76121f1850049a5b5161a4e521`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
 - Last completed work: **9.62**.
-- Active authorized work: **none**.
-- Next proposed work: **none**.
+- Active authorized work: **W-075**, producing corrected Windows/Mac packages after W-074 repaired both 4v4/5v5 admission defects.
+- Next proposed work: **W-075 completion** after exact-artifact 5v5 host/join and package evidence.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 

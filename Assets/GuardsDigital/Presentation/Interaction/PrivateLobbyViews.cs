@@ -2762,7 +2762,20 @@ namespace GuardsDigital.Presentation.Interaction
                 enabled = false;
                 return true;
             }
-            var hostFormat = MatchFormat.FindById(refused?.HostFormatId);
+            var hostFormatId = refused?.HostFormatId ?? string.Empty;
+            var hostWaveAllocation = WaveCounterAllocation.SharedTotal;
+            const string perLaneSuffix = ";waves=per-lane";
+            const string sharedTotalSuffix = ";waves=shared-total";
+            if (hostFormatId.EndsWith(perLaneSuffix, StringComparison.Ordinal))
+            {
+                hostFormatId = hostFormatId.Substring(0, hostFormatId.Length - perLaneSuffix.Length);
+                hostWaveAllocation = WaveCounterAllocation.PerLane;
+            }
+            else if (hostFormatId.EndsWith(sharedTotalSuffix, StringComparison.Ordinal))
+            {
+                hostFormatId = hostFormatId.Substring(0, hostFormatId.Length - sharedTotalSuffix.Length);
+            }
+            var hostFormat = MatchFormat.FindById(hostFormatId);
             var hostMap = OfficialBoardMapCatalog.Load().Definitions.FirstOrDefault(m =>
                 m.Id.Value == refused?.HostMapId && m.ContentRevision == refused.HostMapRevision);
             if (hostFormat == null || hostMap == null)
@@ -2775,11 +2788,17 @@ namespace GuardsDigital.Presentation.Interaction
             formatInheritanceAttempted = true;
 
             if (compositionRoot.ComposedPlan == null || !compositionRoot.ComposedPlan.Map.Equals(hostMap.Reference) ||
+                compositionRoot.ComposedPlan.WaveCounterAllocation != hostWaveAllocation ||
                 !string.Equals(
                     compositionRoot.ComposedPlan.Format.Id, hostFormat.Id, StringComparison.Ordinal))
             {
-                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat, hostMap.Reference));
-                PrivateOnlineMarkers.Log("LOBBY_FORMAT_INHERITED format=" + hostFormat.Id);
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(
+                    hostFormat, hostMap.Reference, hostWaveAllocation));
+                PrivateOnlineMarkers.Log(
+                    "LOBBY_FORMAT_INHERITED format=" + hostFormat.Id +
+                    " waves=" + (hostWaveAllocation == WaveCounterAllocation.PerLane
+                        ? "per-lane"
+                        : "shared-total"));
             }
 
             // The seat a player pre-selected on the entry form may not exist in the host's format - a
