@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-065 | Local `main` fast-forwarded through the completed W047-W064 sequence after ancestry proved it had no unique commits. Existing focused and exact-package evidence remains applicable; living documentation and diff hygiene passed. Other worktrees, untracked `.claude/`, packages and remotes were untouched. | `work/W-065` |
 | W-064 | Matched current Windows and universal Intel/Apple Silicon macOS packages include W060-W063 over W059 under one admission-compatible stamp. Fresh Windows player/PvP/PvE/render/extracted-package checks and both archives' manifest/hash checks passed; Mac architecture/content/mode checks passed, with native Mac launch/render/network still unverified. Older packages preserved. | `work/W-064` |
 | W-063 | Every PvP and PvE Director tray now contains only Undo and Event Log; Reset remains an underlying reconstruction diagnostic, not a live host control. Explicit seated/unseated PvE and unseated PvP regressions prove the tray contract, while the PvE observer also refuses a valid remote-player command. Focused Edit/Play and rendered PvE checks passed. Source-only; W059 packages unchanged. | `work/W-063` |
 | W-062 | Unseated hosts now retain the live full-information view but cannot issue any player's commands; the separate Director drawer retains host Undo. PvE hosts receive that drawer whether seated or unseated, bound to the live encounter authority and pointer-reachable above the compact enemy overlay. Focused Edit/Play regressions and seated/unseated rendered inspection passed. Source-only; W059 packages unchanged. | `work/W-062` |
@@ -70,6 +71,12 @@ Return to [archive index](README.md). Post-phase work records live here after co
 | W-043 | Heavy Hurl repeat, straight-line Hook and adjacent post-defense Thick Hide counterattack. | `work/W-043` |
 
 Identifier note (merge of 2026-10-11): two completed records carry W-020. The PvE-decisions record is commit `bb2f2627` (local tag `work/W-020`); the artwork publication is commit `5b3b12b7` from the private remote. Both are preserved as recorded; neither is renumbered.
+
+### [x] W-065 Fast-forward completed work to local main
+
+Requested on 2026-10-13: merge all completed work to `main`. Before integration, local `main` at `815a9f82` was an ancestor of `codex/pve-ui-cleanup`, had no unique commits and was 21 completed commits behind W064. After the required active work-record commit, `main` fast-forwarded to `d621d16f` with no conflicts or merge commit. This integration changes no executable content, so W047-W064's focused and exact W064 package evidence remains applicable. Other worktrees, the pre-existing untracked `.claude/` tree, private package artifacts and all remote refs were preserved.
+
+Historical evidence: completion commit addressed by immutable `work/W-065`; ancestry, final identity and documentation checks live in its body.
 
 ### [x] W-064 Current matched Windows and macOS builds
 

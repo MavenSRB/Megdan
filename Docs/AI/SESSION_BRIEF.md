@@ -16,11 +16,11 @@ Current private Windows package: **W064 Unified**, `Builds/Playtest-W064-unified
 
 Matching Mac package: `Builds/Playtest-W064-unified-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W064 build stamp/content; SHA-256 `eda28601cb277b57123b7157712c08b4cd1fe03ce75088c447d172ba5c69bbb2`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-064**.
-- Active authorized work: **W-065 fast-forward completed work to local main**.
+- Last completed work: **W-065**.
+- Active authorized work: **None**.
 - Next proposed work: **None**.
 
-W064 packages current source through W063 for Windows and universal Intel/Apple Silicon macOS under one admission-compatible stamp. Exact-artifact and archive checks passed; native Mac execution remains unverified.
+W065 fast-forwards the completed W047-W064 sequence to local `main`; package evidence is unchanged and no remote was modified.
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 
