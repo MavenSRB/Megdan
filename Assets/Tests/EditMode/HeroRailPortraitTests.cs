@@ -485,6 +485,18 @@ namespace GuardsDigital.Tests.EditMode
                     Descendants(rail).All(element =>
                         element.name != "gd-hero-identity-plate" &&
                         element.name != "gd-turn-slot-active")), Is.True);
+            foreach (var current in rails
+                .Where(rail => rail.ClassListContains("gd-hero-rail-compact"))
+                .Select(rail => Descendants(rail).Single(element =>
+                    element.name == "gd-current-card-slot")))
+            {
+                Assert.That(
+                    current.style.width.value.value / current.style.height.value.value,
+                    Is.EqualTo(
+                        HeroOverviewsUnityView.CurrentCardWidth /
+                        HeroOverviewsUnityView.CurrentCardHeight).Within(0.001f),
+                    "Compact layout must scale both axes together instead of flattening the card.");
+            }
         }
 
         private static HeroOverviewViewModel Overview(

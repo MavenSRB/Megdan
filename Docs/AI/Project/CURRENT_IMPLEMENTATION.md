@@ -17,6 +17,8 @@ Canonical implementation. [Project index](../PROJECT_CONTEXT.md); [unified PvP/P
 
 **W-074 large-lobby admission repair.** Private-session roster frames accept the supported ten seats, so a 4v4/5v5 playing host reaches seat selection instead of a connection fault. A default-map joiner decodes the double-lane admission suffix, inherits both the host's custom format and per-lane/shared-total Wave allocation, and performs the existing single bounded re-dial. This supersedes the older six-client scale sentence below for ordinary play; six remains only the canonical fault-rehearsal topology.
 
+**W-076 compact hero rails.** The 4v4/5v5 compact tray preserves the current-card marker's original proportions, removes the otherwise empty row below its turn cards while retaining the violet active-source outline, and temporarily presents the complete hero tray on pointer hover. Leaving the rail restores its compact form; selection and match authority are unchanged.
+
 The current persisted snapshot schema is v60.
 
 **9.70 setup amendment.** The host selects 2v2/3v3 and positive whole-number Wave/Life counts up to 99. Defaults retain former Quick values (2v2: 3/4; 3v3: 3/5); Quick/Long rows remain reference fixtures. These immutable inputs compose both maps, admission, hero draft, HUD/victory, restart, replay, Undo, snapshots and joined projections. Other tuples use `custom-<players>p-w<waves>-l<lives>`, reconstructible before a current joiner's one retry.

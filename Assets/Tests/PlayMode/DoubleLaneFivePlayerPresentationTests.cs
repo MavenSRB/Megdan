@@ -3,8 +3,10 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -60,6 +62,58 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(rails.Count(rail =>
                         rail.ClassListContains("gd-hero-rail-compact")), Is.EqualTo(8),
                         "At the opening commitment, one awaited hero per team is expanded.");
+
+                    var compactRail = rails.First(rail =>
+                        rail.ClassListContains("gd-hero-rail-compact"));
+                    var hoveredId = (HeroId)compactRail.userData;
+                    var hoveredColumn = compactRail.parent;
+                    var compactCurrent = UiPlayer.Descendants(rails.First(rail =>
+                            rail.userData is HeroId id && id.Equals(hoveredId)))
+                        .Single(element => element.name == "gd-current-card-slot");
+                    Assert.That(
+                        compactCurrent.resolvedStyle.width / compactCurrent.resolvedStyle.height,
+                        Is.EqualTo(
+                            HeroOverviewsUnityView.CurrentCardWidth /
+                            HeroOverviewsUnityView.CurrentCardHeight).Within(0.03f),
+                        "The compact current-card marker keeps its original proportions.");
+                    var compactSlots = UiPlayer.Descendants(rails.First(rail =>
+                            rail.userData is HeroId id && id.Equals(hoveredId)))
+                        .Single(element => element.name == "gd-turn-slots");
+                    Assert.That(
+                        rails.First(rail => rail.userData is HeroId id && id.Equals(hoveredId))
+                            .resolvedStyle.height - compactSlots.resolvedStyle.height,
+                        Is.LessThanOrEqualTo(10f),
+                        "The compact tray must hug the outlined turn-slot row without an empty label strip below it.");
+
+                    UiPlayer.PointAt(rails.First(rail =>
+                        rail.userData is HeroId id && id.Equals(hoveredId)));
+                    yield return null;
+                    yield return null;
+                    rails = UiPlayer.Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-hero-rail")
+                        .ToArray();
+                    var hovered = rails.Single(rail =>
+                        rail.userData is HeroId id && id.Equals(hoveredId));
+                    Assert.That(hovered.ClassListContains("gd-hero-rail-compact"), Is.False,
+                        "A compact hero tray expands while the mouse is over it.");
+                    Assert.That(UiPlayer.Descendants(hovered).Any(element =>
+                        element.name == "gd-hero-identity-plate"), Is.True,
+                        "Hover expansion presents the complete tray, not only a larger compact row.");
+                    Assert.That(rails.Count(rail =>
+                        rail.ClassListContains("gd-hero-rail-compact")), Is.EqualTo(7));
+
+                    if (width == 2560u && map.Equals(OfficialBoardMapCatalog.LavaBridgeDoubleLane))
+                        yield return UiPlayer.CaptureScreen("tmp/w076-five-player-hover-expanded.png");
+
+                    UiPlayer.PointAway(hoveredColumn);
+                    yield return null;
+                    yield return null;
+                    rails = UiPlayer.Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-hero-rail")
+                        .ToArray();
+                    Assert.That(rails.Count(rail =>
+                        rail.ClassListContains("gd-hero-rail-compact")), Is.EqualTo(8),
+                        "Leaving the tray restores the compact layout.");
 
                     foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
                     {

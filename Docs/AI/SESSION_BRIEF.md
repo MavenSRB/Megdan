@@ -16,11 +16,13 @@ Current private Windows package: **W075 Large Lobby Fix**, `Builds/Playtest-W075
 
 Matching Mac package: `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W075 build stamp/content; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **9.62**.
+- Last completed work: **W-076**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
+
+W076 corrects those compact rails: current-card markers retain their established card proportions, the empty Active-label strip no longer leaves dead space below the turn-card row, and hovering temporarily presents the complete hero tray until pointer leave. Violet active-source outlines and click selection are preserved. Focused structure and both-large-map/two-viewport interaction, geometry, boundary and rendered checks passed. Source-only; W075 packages remain unchanged.
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 

@@ -64,6 +64,8 @@ namespace GuardsDigital.Presentation.Match
 
         private object highlighted;
         private HeroId highlightedHero;
+        private HeroId hoverExpandedHero;
+        private bool forceHoverRender;
 
         // Milestone 9.30h. The SPELLBOOK drawer (approved mockups B and C): a host spanning the open
         // area between the two rails, holding one panel sized to its content. Which hero's book is
@@ -110,6 +112,10 @@ namespace GuardsDigital.Presentation.Match
             Root.Add(preview);
             CardInspection = new HeroCardInspectionUnityView(read);
             Root.Add(CardInspection.Root);
+            // Columns survive rail rerenders. Clearing hover here therefore still works after the
+            // compact rail under the pointer has been replaced by its full-tray presentation.
+            redColumn.RegisterCallback<PointerLeaveEvent>(_ => SetHoverExpandedHero(default));
+            blueColumn.RegisterCallback<PointerLeaveEvent>(_ => SetHoverExpandedHero(default));
             redColumn.RegisterCallback<GeometryChangedEvent>(_ =>
                 ColumnGeometryChanged?.Invoke());
             blueColumn.RegisterCallback<GeometryChangedEvent>(_ =>
@@ -569,11 +575,15 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(HeroOverviewsViewModel model)
         {
-            if (ReferenceEquals(Model, model))
+            if (ReferenceEquals(Model, model) && !forceHoverRender)
             {
                 return;
             }
 
+            var isHoverRender = forceHoverRender;
+            forceHoverRender = false;
+            if (!isHoverRender)
+                hoverExpandedHero = default;
             Model = model ?? throw new ArgumentNullException(nameof(model));
             // A revealed card belongs to the model it was read from, exactly as milestone 6.5c's board
             // cues do: a rebuilt model drops it, so the rail never keeps a face for a slot that is no
@@ -596,8 +606,10 @@ namespace GuardsDigital.Presentation.Match
             foreach (var hero in Model.Heroes)
             {
                 var column = hero.TeamSide == TeamSide.Red ? redColumn : blueColumn;
-                var compact = teamGroups[hero.TeamSide].Length > 3 &&
+                var canCompact = teamGroups[hero.TeamSide].Length > 3 &&
                     !ReferenceEquals(expandedRailByTeam[hero.TeamSide], hero);
+                var hoverExpanded = canCompact && hero.HeroId.Equals(hoverExpandedHero);
+                var compact = canCompact && !hoverExpanded;
                 var rail = BuildOverview(hero, compact);
                 heroRails.Add(hero.HeroId, rail);
                 heroRailRestingTopColors.Add(
@@ -605,6 +617,10 @@ namespace GuardsDigital.Presentation.Match
                     hero.IsViewed ? MatchHudTheme.SelectedOutline : new Color(0f, 0f, 0f, 0f));
                 HudElements.OnPointedAt(rail, pointedAt =>
                     ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
+                if (compact)
+                    rail.RegisterCallback<PointerEnterEvent>(_ => SetHoverExpandedHero(hero.HeroId));
+                else if (hoverExpanded)
+                    rail.RegisterCallback<PointerLeaveEvent>(_ => SetHoverExpandedHero(default));
                 rail.AddManipulator(new Clickable(() =>
                 {
                     if (LocalHeroSelection?.Invoke(hero.HeroId) == true) return;
@@ -636,6 +652,16 @@ namespace GuardsDigital.Presentation.Match
             // the new model, and closed if that hero no longer has a book to show.
             RebuildSpellbook();
             CardInspection.Refresh();
+        }
+
+        private void SetHoverExpandedHero(HeroId hero)
+        {
+            if (hoverExpandedHero.Equals(hero) || Model == null)
+                return;
+
+            hoverExpandedHero = hero;
+            forceHoverRender = true;
+            Render(Model);
         }
 
         private static VisualElement Column(string name)
@@ -739,7 +765,9 @@ namespace GuardsDigital.Presentation.Match
                 compactSlots.style.flexGrow = 1f;
                 compactSlots.style.flexBasis = 0f;
                 var current = BuildCurrentCard(hero, mirrored);
-                current.style.height = MiniCardHeight + 4f;
+                var compactCurrentHeight = MiniCardHeight + 4f;
+                current.style.height = compactCurrentHeight;
+                current.style.width = CurrentCardWidth * compactCurrentHeight / CurrentCardHeight;
                 var token = BuildHeroPortrait(hero, accent, 0.55f);
                 if (mirrored)
                 {
@@ -2108,13 +2136,9 @@ namespace GuardsDigital.Presentation.Match
                 }
                 column.Add(outline);
 
-                var activeLabel = HudElements.Text(
-                    slot.ActiveLabel, 7f, MatchHudTheme.ActiveEffectAccent, FontStyle.Bold);
-                activeLabel.name = "gd-turn-slot-active";
-                activeLabel.style.height = 10f;
-                activeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                activeLabel.style.whiteSpace = WhiteSpace.NoWrap;
-                column.Add(activeLabel);
+                // The compact rail keeps the active card's purple outline above. A second text row
+                // below every slot reserved ten empty pixels even when it had nothing to say, which
+                // made the tray visibly taller than its token and cards.
                 slots.Add(column);
             }
 
