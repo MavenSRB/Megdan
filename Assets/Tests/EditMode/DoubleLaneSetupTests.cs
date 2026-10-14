@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
 
@@ -40,6 +41,42 @@ namespace GuardsDigital.Tests.EditMode
                 Has.All.EqualTo(heroesPerTeam == 4 ? 6 : 7));
             AssertExtraHeroesUsePlayableThroneHexesBesideOccupiedPrintedSpawns(
                 map, setup, heroesPerTeam);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void BothLargeMaps_BindTwoMeleeOneRangedAndOneHeavyMiniatureToEachTeamInEachLane(
+            bool lava)
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(lava
+                ? OfficialBoardMapCatalog.LavaBridgeDoubleLane
+                : OfficialBoardMapCatalog.GreenDoubleLane);
+            var format = MatchFormat.DefaultForTeamSize(5);
+            var lineup = RegisteredHeroRoster.DefaultLineup(5);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(format, lineup, map, WaveCounterAllocation.PerLane),
+                HeroLineupComposition.ComposeParticipants(lineup),
+                map,
+                new TieBreakerState(TeamSide.Red));
+
+            foreach (var lane in map.OrderedLanes)
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var laneMinions = setup.Minions.Where(minion =>
+                {
+                    var spawn = map.SpawnPoints.Single(point =>
+                        point.Id.Equals(minion.SpawnPoint.SpawnPointId));
+                    var zone = map.GetZoneForSpace(spawn.SpaceId).Id;
+                    return minion.TeamSide == side && lane.Contains(zone);
+                }).ToArray();
+
+                Assert.That(laneMinions.Count(minion =>
+                    minion.MinionType == StandardMinionType.Melee), Is.EqualTo(2));
+                Assert.That(laneMinions.Count(minion =>
+                    minion.MinionType == StandardMinionType.Ranged), Is.EqualTo(1));
+                Assert.That(laneMinions.Count(minion =>
+                    minion.MinionType == StandardMinionType.Heavy), Is.EqualTo(1));
+            }
         }
 
         private static void AssertExtraHeroesUsePlayableThroneHexesBesideOccupiedPrintedSpawns(

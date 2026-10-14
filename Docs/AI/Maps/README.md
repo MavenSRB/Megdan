@@ -70,6 +70,34 @@ User source correction, 2026-10-13: the green board has **three distinct playabl
 
 The executable specifications preserve the reviewed coordinate, terrain, zone and spawn inventories for eight and ten players. A full grid outline makes a hex playable regardless of its colour; terrain remains an independent inventory that includes the complete board edge and internal obstacles. The implementation and focused tests cover two active Battle Zones, lane-bound Minion Battles, independent Lane Pushes, and host-selected per-lane or shared Wave handling. These rules do not change the separate 2v2/3v3 reference or shipped behavior.
 
+#### Reviewed two-lane minion-spawn inventory
+
+W-077 rechecked every printed minion glyph in both edited large-map references against the canonical and runtime specifications. Counts below are `Melee / Ranged / Heavy`; Throne and central off-lane Zones contain no minion spawn points. Each starting Battle Zone carries `2 / 1 / 1` for each team. A defending pre-Throne/gate side carries one additional Melee point (`3 / 1 / 1`), matching rulebook p.8's worked Lane-Push example: the defending team has more spawn points and one matching miniature is not respawned when supply is short.
+
+| Green-water zone | Red M/R/H | Blue M/R/H |
+| --- | ---: | ---: |
+| Top Blue Approach | 2 / 1 / 1 | 3 / 1 / 1 |
+| Top Starting Battle Zone | 2 / 1 / 1 | 2 / 1 / 1 |
+| Top Red Approach | 2 / 1 / 1 | 2 / 1 / 1 |
+| Top Red Gate | 3 / 1 / 1 | 2 / 1 / 1 |
+| Bottom Blue Gate | 2 / 1 / 1 | 3 / 1 / 1 |
+| Bottom Blue Approach | 2 / 1 / 1 | 2 / 1 / 1 |
+| Bottom Starting Battle Zone | 2 / 1 / 1 | 2 / 1 / 1 |
+| Bottom Red Approach | 3 / 1 / 1 | 2 / 1 / 1 |
+
+Green-water totals are symmetric per team: 18 Melee, 8 Ranged and 8 Heavy minion points, plus three Hero points (74 spawn points overall).
+
+| Lava-bridge zone | Red M/R/H | Blue M/R/H |
+| --- | ---: | ---: |
+| Top Blue Approach | 2 / 1 / 1 | 3 / 1 / 1 |
+| Top Starting Battle Zone | 2 / 1 / 1 | 2 / 1 / 1 |
+| Top Red Approach | 3 / 1 / 1 | 2 / 1 / 1 |
+| Bottom Blue Approach | 2 / 1 / 1 | 3 / 1 / 1 |
+| Bottom Starting Battle Zone | 2 / 1 / 1 | 2 / 1 / 1 |
+| Bottom Red Approach | 3 / 1 / 1 | 2 / 1 / 1 |
+
+Lava-bridge totals are symmetric per team: 14 Melee, 6 Ranged and 6 Heavy minion points, plus three Hero points (58 spawn points overall). The bottom-edge glyph reported during W-077 is `red-melee-minion-14` at axial `(-13,16)`, the third Red Melee point in Bottom Red Approach. It is present and correctly typed in both canonical and runtime data. A lane owns only the `2 / 1 / 1` miniatures placed in its starting Battle Zone, so one of that zone's three Red Melee points remains empty after a push by design; the marker itself was not omitted.
+
 Presentation shows both live lane pools for per-lane allocation or the one shared total. Snapshot schema v60 and private wire /54 preserve and admit map topology, Wave allocation and live pools.
 
 ### User-edited spawn artwork

@@ -19,6 +19,8 @@ Canonical implementation. [Project index](../PROJECT_CONTEXT.md); [unified PvP/P
 
 **W-076 compact hero rails.** The 4v4/5v5 compact tray preserves the current-card marker's original proportions, removes the otherwise empty row below its turn cards while retaining the violet active-source outline, and temporarily presents the complete hero tray on pointer hover. Leaving the rail restores its compact form; selection and match authority are unchanged.
 
+**W-077 large-map spawn audit.** Every printed minion glyph on both 4v4/5v5 boards is pinned by exact zone/team/type counts. Normal and starting zones carry two Melee, one Ranged and one Heavy point per team; a defending pre-Throne/gate side carries a third Melee point. The reported bottom-edge lava glyph is correctly present as the third Red Melee point in Bottom Red Approach. Because each lane owns only the two Melee miniatures placed in its starting Battle Zone, one of those three defending points remains empty after a push under rulebook p.8's short-supply example; no map or runtime spawn data changed.
+
 The current persisted snapshot schema is v60.
 
 **9.70 setup amendment.** The host selects 2v2/3v3 and positive whole-number Wave/Life counts up to 99. Defaults retain former Quick values (2v2: 3/4; 3v3: 3/5); Quick/Long rows remain reference fixtures. These immutable inputs compose both maps, admission, hero draft, HUD/victory, restart, replay, Undo, snapshots and joined projections. Other tuples use `custom-<players>p-w<waves>-l<lives>`, reconstructible before a current joiner's one retry.
