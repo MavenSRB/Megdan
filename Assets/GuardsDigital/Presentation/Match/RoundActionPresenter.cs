@@ -1420,7 +1420,8 @@ namespace GuardsDigital.Presentation.Match
                     !previews.ContainsKey(candidate.Value))
                 {
                     invocations.Add(new TypedInvocationViewModel(
-                        FormatSupplyMinionLabel(projection, candidate.Value.MinionId, ordinals[candidate]),
+                        FormatSupplyMinionLabel(projection.Setup, projection.SelectedMap,
+                            candidate.Value.MinionId, ordinals[candidate]),
                         command));
                     continue;
                 }
@@ -1687,10 +1688,11 @@ namespace GuardsDigital.Presentation.Match
         /// the intrinsic type, which is the same pair a standing minion is named by, so a supply
         /// candidate and a board candidate read alike rather than one of them reading as an ordinal.
         /// </summary>
-        private static string FormatSupplyMinionLabel(
-            IMatchReadModel projection, MinionId minionId, int ordinal)
+        internal static string FormatSupplyMinionLabel(
+            QuickGameSetupState setup, BoardMapDefinition map, MinionId minionId, int ordinal)
         {
-            var declared = projection.Setup.Minions.SingleOrDefault(value =>
+            var declared = setup.Minions.Concat(QuickGameSetupAuthority.CreateLaneReserve(map, setup.Minions))
+                .SingleOrDefault(value =>
                 value.MinionId.Equals(minionId));
             return declared == null
                 ? EffectChoiceLabels.CandidateLabel(default, ordinal)

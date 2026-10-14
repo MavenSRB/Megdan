@@ -1,7 +1,11 @@
 using System.Collections;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -16,6 +20,67 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class DoubleLaneFivePlayerPresentationTests
     {
+        [UnityTest]
+        public IEnumerator BothLargeMaps_RenderEveryDefendingGlyphIncludingTheBottomLavaMinion()
+        {
+            foreach (var map in new[] { OfficialBoardMapCatalog.GreenDoubleLane, OfficialBoardMapCatalog.LavaBridgeDoubleLane })
+            {
+                MatchSceneCompositionRoot.NextComposedSeat = new SeatId("red-player-01");
+                MatchSceneCompositionRoot.NextComposedMap = map;
+                MatchSceneCompositionRoot.NextComposedMatchFormat = MatchFormat.DefaultForTeamSize(5);
+                MatchSceneCompositionRoot.NextComposedLineup = RegisteredHeroRoster.DefaultLineup(5);
+                yield return BroganEngagedUiJourneyPlayModeTests.LoadStagedScene(SceneCardContent.ConfiguredMatch);
+                var root = ArienUiJourneyPlayModeTests.Root();
+                root.Recompose(new MatchCompositionPlan(MatchFormat.DefaultForTeamSize(5),
+                    RegisteredHeroRoster.DefaultLineup(5), map, WaveCounterAllocation.PerLane));
+                UiPlayer.SetPlayerViewport(1920, 1080, "W-078 defending minion spawns");
+                yield return null;
+                yield return null;
+                var runtime = root.Runtime;
+                var grid = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+                Assert.That(grid.CurrentMinionViews, Has.Count.EqualTo(20), "The roster includes four hidden reserve views.");
+                Assert.That(grid.CurrentMinionViews.Count(view => view.gameObject.activeSelf), Is.EqualTo(16));
+
+                // Stage the production lane transition at its authoritative seam, then cross the
+                // real snapshot/runtime/presentation boundary. No new player input path is introduced.
+                var payload = runtime.CaptureSnapshot();
+                var authoritative = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope)
+                    ? envelope.AuthoritativePayload : payload;
+                var restored = AuthoritativeSnapshotSerializer.Deserialize(runtime.ContentCatalogs,
+                    authoritative, runtime.InitialState.Scenario.CardDefinitions,
+                    runtime.InitialState.AvailableMaps, runtime.InitialState.Setup.Minions);
+                var push = restored.Round.LanePush.TryConsume(new LanePushRequestId("w078-bottom-red"),
+                    new ZoneId("bottom-starting-battle-zone"), TeamSide.Blue, TeamSide.Red,
+                    new TieBreakerState(TeamSide.Red));
+                Assert.That(push.Accepted, Is.True, push.RejectionReason.ToString());
+                Assert.That(push.IsPaused, Is.False);
+                Assert.That(runtime.RestoreSnapshot(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board)),
+                    Is.True, runtime.LastOperationDetail);
+                yield return new WaitForSecondsRealtime(0.65f);
+                yield return null;
+
+                Assert.That(runtime.ReadModel.Minions, Has.Count.EqualTo(17));
+                Assert.That(grid.CurrentMinionViews.Count(view => view.gameObject.activeSelf), Is.EqualTo(17));
+                foreach (var minion in runtime.ReadModel.Minions)
+                {
+                    var view = grid.CurrentMinionViews.Single(candidate => candidate.BoundMinionId.Equals(minion.MinionId));
+                    Assert.That(view.gameObject.activeSelf, Is.True, minion.MinionId.Value);
+                    Assert.That(view.Occupancy.Coordinate, Is.EqualTo(minion.Coordinate));
+                }
+                if (map.Equals(OfficialBoardMapCatalog.LavaBridgeDoubleLane))
+                    Assert.That(runtime.ReadModel.Minions.Any(minion => minion.Coordinate.Equals(new HexCoordinate(-13, 16)) &&
+                        minion.TeamSide == TeamSide.Red && minion.MinionType == StandardMinionType.Melee), Is.True);
+
+                var after = runtime.CaptureSnapshot();
+                Assert.That(runtime.RestoreSnapshot(after), Is.True, runtime.LastOperationDetail);
+                yield return null;
+                yield return null;
+                Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(after));
+                Assert.That(grid.CurrentMinionViews.Select(view => view.BoundMinionId).Distinct().Count(), Is.EqualTo(20));
+                yield return UiPlayer.CaptureScreen("tmp/w078-" + map.MapId.Value + "-defending-minions.png");
+            }
+        }
+
         [UnityTest]
         public IEnumerator BothLargeMaps_ShowFiveRailsPerTeamWithoutCrossingTheHandBoundary()
         {

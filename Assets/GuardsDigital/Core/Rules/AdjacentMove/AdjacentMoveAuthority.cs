@@ -159,7 +159,11 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                 (initialMinions ?? throw new ArgumentNullException(nameof(initialMinions)))
                     .Select(minion => minion == null
                         ? throw new ArgumentException("Initial minions must be non-null and have unique IDs.", nameof(initialMinions))
-                        : MinionOccupancy.FromSetup(minion)))
+                        : MinionOccupancy.FromSetup(minion)),
+                Enumerable.Empty<PlacedToken>(),
+                QuickGameSetupAuthority.CreateLaneReserve(mapDefinition, initialMinions)
+                    .Select(MinionOccupancy.FromSetup),
+                Enumerable.Empty<HeroBodySupply>())
         {
         }
 
@@ -192,7 +196,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                         ? throw new ArgumentException("Initial minions must be non-null and have unique IDs.", nameof(initialMinions))
                         : MinionOccupancy.FromSetup(minion)),
                 Enumerable.Empty<PlacedToken>(),
-                Enumerable.Empty<MinionOccupancy>(),
+                QuickGameSetupAuthority.CreateLaneReserve(mapDefinition, initialMinions)
+                    .Select(MinionOccupancy.FromSetup),
                 heroBodySupplies)
         {
         }
@@ -213,8 +218,8 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         }
 
         // The reserve arm, for a restore that knows the whole configured roster and only some of it is
-        // standing. A live match reaches the same state through a removal rather than through this
-        // constructor, so every other entry point declares an empty reserve (milestone 6.5).
+        // standing. W-078 also supplies the two-lane setup reserve here; removal returns a miniature
+        // to the same pool during play.
         private AdjacentMoveAuthority(
             BoardMapDefinition mapDefinition,
             IEnumerable<HeroOccupancy> initialOccupancies,
@@ -846,7 +851,9 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             if (mapDefinition == null) throw new ArgumentNullException(nameof(mapDefinition));
             if (configuredMinions == null) throw new ArgumentNullException(nameof(configuredMinions));
 
-            var available = configuredMinions.ToArray();
+            var configured = configuredMinions.ToArray();
+            var available = configured.Concat(
+                QuickGameSetupAuthority.CreateLaneReserve(mapDefinition, configured)).ToArray();
             if (state.RemainingMinions.Any(position => available.Count(minion => minion.MinionId.Equals(position.MinionId)) != 1))
             {
                 throw new ArgumentException(

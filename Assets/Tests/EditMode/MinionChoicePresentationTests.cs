@@ -30,6 +30,26 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class MinionChoicePresentationTests
     {
+        [TestCase(false)]
+        [TestCase(true)]
+        public void LargeLaneReserveChoices_NameTeamAndMinionType(bool lava)
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(lava
+                ? OfficialBoardMapCatalog.LavaBridgeDoubleLane : OfficialBoardMapCatalog.GreenDoubleLane);
+            var lineup = RegisteredHeroRoster.DefaultLineup(5);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(MatchFormat.DefaultForTeamSize(5), lineup, map),
+                HeroLineupComposition.ComposeParticipants(lineup), map, new TieBreakerState(TeamSide.Red));
+            var reserve = QuickGameSetupAuthority.CreateLaneReserve(map, setup.Minions);
+            Assert.That(reserve, Has.Count.EqualTo(4));
+            foreach (var minion in reserve)
+            {
+                var label = RoundActionPresenter.FormatSupplyMinionLabel(setup, map, minion.MinionId, 1);
+                Assert.That(label, Does.Contain(minion.TeamSide.ToString().ToUpperInvariant())
+                    .And.Contain("MELEE").And.Contain("#1"));
+            }
+        }
+
         [Test]
         public void Prompt_NamesTheChooserAndOffersExactlyTheLegalCandidates()
         {

@@ -16,7 +16,7 @@ Current private Windows package: **W075 Large Lobby Fix**, `Builds/Playtest-W075
 
 Matching Mac package: `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE, same W075 build stamp/content; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-077**.
+- Last completed work: **W-078**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -24,7 +24,7 @@ W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared
 
 W076 corrects those compact rails: current-card markers retain their established card proportions, the empty Active-label strip no longer leaves dead space below the turn-card row, and hovering temporarily presents the complete hero tray until pointer leave. Violet active-source outlines and click selection are preserved. Focused structure and both-large-map/two-viewport interaction, geometry, boundary and rendered checks passed. Source-only; W075 packages remain unchanged.
 
-W077 audited every printed minion glyph on both large maps by zone, team and type. The reported bottom-edge lava glyph is correctly present as the third Red Melee point in Bottom Red Approach; each lane owns only two Red Melee miniatures, so rulebook p.8's defending-side short supply deliberately leaves one of those three points empty after a push. Exact inventories and lane supplies are now pinned by focused tests. No executable map or gameplay behavior changed; W075 packages remain unchanged.
+W078 corrects W077's rejected shortage explanation: every printed minion glyph in either large map's active Battle Zones receives its matching minion. Each team/lane now has a third Melee in reserve for defending zones; initial waves stay unchanged. Every lane zone, snapshot restoration, joined-client identity and both-map rendering are covered, including the bottom lava glyph. Source-only; W075 packages remain unchanged. Exact inventories and authority: [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
 
 W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 
@@ -48,9 +48,7 @@ W048 saved PvE logs and W049 generated enemy faces/board-gated turns are include
 
 W052 separates Turn timer from Card Modifiers in Experimental and makes keyed-host address discovery fall back from local UPnP to bounded HTTPS public-IPv4 lookups. Responses are accepted only as exact public IPv4 values; failure remains an explicitly labelled LAN/unknown result. This does not open or verify the selected port. Source-only; the W050/W051 packages and local main remain unchanged.
 
-W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. W050 includes these changes; local `main` remains at `815a9f82`. W047 itself was source-only; no main merge or remote push followed.
-
-W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; W047 replaces Control buttons with tray/token clicks and automatic awaited-seat selection. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the W046 artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
+Earlier W045/W047 startup context is preserved in [startup history](Archive/W078_STARTUP_HISTORY.md); current behavior is owned by [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 
 PvE now defaults to PvP's TCP 45677 for direct internet play with a session key and a reachable host port. Join automatically adopts the host seed (PVE-D33); only address, port and key need sharing, with matching build/data. Keyed local Host/Join/reconnect and rejection boundaries are verified; external internet reachability is not. These source changes are not in W035. See [PvE implementation](Project/PVE_IMPLEMENTATION.md).
 

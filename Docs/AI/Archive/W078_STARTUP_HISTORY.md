@@ -1,0 +1,7 @@
+# Startup context routed at W-078
+
+Return to [archive index](README.md) and [session brief](../SESSION_BRIEF.md). These completed-work summaries were moved intact from the brief to restore its size boundary; current behavior follows [PvE implementation](../Project/PVE_IMPLEMENTATION.md).
+
+W047 implements PVE-D39 on `codex/pve-ui-cleanup`: board-click initial placement, seeded automatic enemy choices, removal of manual level grants and redundant PvE/control panels, owned tray/token selection with automatic awaited-seat switching, header-free enemy trays with larger numbers, and the shared Blue-only end screen. Focused rules/network/real-input UI checks and visual review passed. W050 includes these changes; local `main` remains at `815a9f82`. W047 itself was source-only; no main merge or remote push followed.
+
+W045 unifies PvP/PvE on the existing Take Seats and hero-pick screens (PVE-D38). PvE has exactly three Blue seats; a player may claim one, two or all three. Each owned seat retains its own authenticated client/projection; W047 replaces Control buttons with tray/token clicks and automatic awaited-seat selection. Join inherits the host's mode and seed. PvE hides Experimental and always enables teammate coordination; PvP settings remain unchanged. Solo/two/three-process PvE and host/two-joiner PvP passed against the W046 artifact; focused Editor reconnect passed, but no new internet or packaged reconnect claim. See [PvE implementation](../Project/PVE_IMPLEMENTATION.md).

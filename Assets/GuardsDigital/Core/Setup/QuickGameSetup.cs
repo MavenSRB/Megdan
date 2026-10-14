@@ -1725,6 +1725,47 @@ namespace GuardsDigital.Core.Setup
 
     public static class QuickGameSetupAuthority
     {
+        /// <summary>
+        /// W-078: two-lane maps fill every printed spawn in the active Zone. Starting placements
+        /// alone are not the whole supply: a later defending Zone can print more of a given type.
+        /// Reserve identities and lane anchors derive from immutable setup/map content, so restore
+        /// reconstructs the same roster without persisting a second supply count.
+        /// </summary>
+        public static IReadOnlyList<QuickGameMinionSetupState> CreateLaneReserve(
+            BoardMapDefinition map, IEnumerable<QuickGameMinionSetupState> initialMinions)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (initialMinions == null) throw new ArgumentNullException(nameof(initialMinions));
+            var reserve = new List<QuickGameMinionSetupState>();
+            if (map.OrderedLanes.Count <= 1) return reserve;
+            var initial = initialMinions.ToArray();
+            if (initial.Any(minion => minion == null))
+                throw new ArgumentException("Initial minions must be non-null.", nameof(initialMinions));
+            foreach (var lane in map.OrderedLanes)
+            {
+                var laneMinions = initial.Where(minion =>
+                {
+                    var spawn = map.SpawnPoints.Single(point => point.Id.Equals(minion.SpawnPoint.SpawnPointId));
+                    return lane.Contains(map.GetZoneForSpace(spawn.SpaceId).Id);
+                });
+                foreach (var group in laneMinions.GroupBy(minion => new { minion.TeamSide, minion.MinionType }))
+                {
+                    var anchor = group.OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal).First();
+                    var team = anchor.TeamSide == TeamSide.Red ? "red" : "blue";
+                    var unitType = GetMapUnitType(anchor.MinionType);
+                    var required = lane.Max(zone => map.SpawnPoints.Count(spawn =>
+                        spawn.TeamId == team && spawn.UnitType == unitType &&
+                        map.GetZoneForSpace(spawn.SpaceId).Id.Equals(zone)));
+                    for (var index = group.Count(); index < required; index++)
+                        reserve.Add(new QuickGameMinionSetupState(
+                            new MinionId(anchor.MinionId.Value + "-reserve-" + (index + 1)),
+                            anchor.TeamId, anchor.TeamSide, anchor.MinionType,
+                            anchor.SpawnPoint, anchor.OccupiedSpace, anchor.Coordinate));
+                }
+            }
+            return reserve;
+        }
+
         public static QuickGameSetupState Create(
             QuickGameSetupConfiguration configuration,
             MatchParticipants participants,

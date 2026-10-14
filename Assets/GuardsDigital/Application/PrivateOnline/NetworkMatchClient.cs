@@ -523,7 +523,9 @@ namespace GuardsDigital.Application
         public IReadOnlyList<MinionOccupancy> Minions => wire == null ? trusted.Minions :
             Array.AsReadOnly(wire.Minions.Select(row =>
             {
-                var original = trusted.Minions.Single(value => value.MinionId.Value == row.MinionId);
+                var original = trusted.Minions.SingleOrDefault(value => value.MinionId.Value == row.MinionId)
+                    ?? MinionOccupancy.FromSetup(QuickGameSetupAuthority.CreateLaneReserve(SelectedMap, Setup.Minions)
+                        .Single(value => value.MinionId.Value == row.MinionId));
                 var coordinate = new HexCoordinate(row.Q, row.R);
                 var space = SelectedMap.Spaces.Single(value => value.Coordinate.Equals(coordinate));
                 return original.WithPosition(

@@ -16,6 +16,8 @@ W-005 (2026-10-09): the user identified both blue lower-left/upper-right regions
 
 ## Authority hierarchy
 
+W-078 (2026-10-14): the user clarified that every printed minion glyph in an active Battle Zone on either large two-lane map must receive the matching minion; there is no supply-shortage exception on those maps. This supersedes W-077's incorrect shortage interpretation. The map inventories and lane supply contract are owned by the [reviewed two-lane inventory](Maps/README.md#reviewed-two-lane-minion-spawn-inventory); the single-lane rulebook behavior remains unchanged.
+
 When sources conflict or a rule is ambiguous, use this order:
 
 1. Published second-printing errata or another published official ruling that clearly supersedes the source.

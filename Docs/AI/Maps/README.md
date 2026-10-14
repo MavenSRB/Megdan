@@ -72,7 +72,7 @@ The executable specifications preserve the reviewed coordinate, terrain, zone an
 
 #### Reviewed two-lane minion-spawn inventory
 
-W-077 rechecked every printed minion glyph in both edited large-map references against the canonical and runtime specifications. Counts below are `Melee / Ranged / Heavy`; Throne and central off-lane Zones contain no minion spawn points. Each starting Battle Zone carries `2 / 1 / 1` for each team. A defending pre-Throne/gate side carries one additional Melee point (`3 / 1 / 1`), matching rulebook p.8's worked Lane-Push example: the defending team has more spawn points and one matching miniature is not respawned when supply is short.
+W-078 rechecked every printed minion glyph in both edited large-map references against the canonical and runtime specifications. Counts below are `Melee / Ranged / Heavy`; Throne and central off-lane Zones contain no minion spawn points. Each starting Battle Zone carries `2 / 1 / 1` for each team. A defending pre-Throne/gate side carries one additional Melee point (`3 / 1 / 1`). User clarification, 2026-10-14: every printed glyph in either large map's active Battle Zones receives its matching minion. There is no supply-shortage exception for these maps. This supersedes W-077's incorrect application of the single-lane shortage example.
 
 | Green-water zone | Red M/R/H | Blue M/R/H |
 | --- | ---: | ---: |
@@ -96,7 +96,7 @@ Green-water totals are symmetric per team: 18 Melee, 8 Ranged and 8 Heavy minion
 | Bottom Starting Battle Zone | 2 / 1 / 1 | 2 / 1 / 1 |
 | Bottom Red Approach | 3 / 1 / 1 | 2 / 1 / 1 |
 
-Lava-bridge totals are symmetric per team: 14 Melee, 6 Ranged and 6 Heavy minion points, plus three Hero points (58 spawn points overall). The bottom-edge glyph reported during W-077 is `red-melee-minion-14` at axial `(-13,16)`, the third Red Melee point in Bottom Red Approach. It is present and correctly typed in both canonical and runtime data. A lane owns only the `2 / 1 / 1` miniatures placed in its starting Battle Zone, so one of that zone's three Red Melee points remains empty after a push by design; the marker itself was not omitted.
+Lava-bridge totals are symmetric per team: 14 Melee, 6 Ranged and 6 Heavy minion points, plus three Hero points (58 spawn points overall). The bottom-edge glyph reported during W-077 is `red-melee-minion-14` at axial `(-13,16)`, the third Red Melee point in Bottom Red Approach. It is present and correctly typed in both canonical and runtime data. The defect was a lane supply derived only from the `2 / 1 / 1` starting placements. W-078 supplies the maximum per-zone demand of `3 / 1 / 1` per team and lane, keeping the extra Melee miniature off the board until needed. All printed active-zone points are filled at setup and after a Lane Push, with the existing occupied-spawn placement rule retained. Single-lane supply behavior is unchanged.
 
 Presentation shows both live lane pools for per-lane allocation or the one shared total. Snapshot schema v60 and private wire /54 preserve and admit map topology, Wave allocation and live pools.
 

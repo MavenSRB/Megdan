@@ -511,8 +511,10 @@ namespace GuardsDigital.Presentation.Board
                 }
             }
 
-            var currentViews = new List<StandardMinionView>(setupState.Minions.Count);
-            foreach (var setupMinion in setupState.Minions.OrderBy(value => value.MinionId.Value))
+            var roster = setupState.Minions.Concat(
+                QuickGameSetupAuthority.CreateLaneReserve(RenderedDefinition, setupState.Minions)).ToArray();
+            var currentViews = new List<StandardMinionView>(roster.Length);
+            foreach (var setupMinion in roster.OrderBy(value => value.MinionId.Value))
             {
                 if (!viewsById.TryGetValue(setupMinion.MinionId, out var view))
                 {
@@ -521,6 +523,8 @@ namespace GuardsDigital.Presentation.Board
                 }
 
                 view.Configure(GuardsDigital.Core.Units.Minions.MinionOccupancy.FromSetup(setupMinion), outerRadius);
+                if (setupState.Minions.All(placed => !placed.MinionId.Equals(setupMinion.MinionId)))
+                    view.gameObject.SetActive(false);
                 currentViews.Add(view);
                 viewsById.Remove(setupMinion.MinionId);
             }

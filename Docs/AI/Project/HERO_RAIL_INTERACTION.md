@@ -2,6 +2,10 @@
 
 Canonical interaction owner, split from [the match HUD](MATCH_HUD.md) to preserve its precise contracts within the active-leaf limit. Return to [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 
+## Layout
+
+Edge rails keep every participating hero visible. Up to three heroes per team use the established full plaque. In 4v4/5v5, the awaited hero (otherwise the viewed hero) stays full and every teammate uses a thin selectable rail: small official hero token at the screen edge, four authoritative resolved-card slots, and the reserved current-card slot toward the board. The compact current-card slot scales in both axes with its established card proportions. The compact form hugs that one row and omits identity/status/item/discard rows and the empty Active-label line; an Active source still keeps the violet outline around its individual card. Pointer hover temporarily presents that compact hero's full tray and pointer leave restores it; selecting the rail still changes the viewed hero without covering the hand or introducing scrolling. Lobby seats retain stable team colour order. Full plaques retain the public player-name banner, official face, name, Level, worth, items, coins, current card, resolved cards and discard. `DIRECTOR` contains `UNDO` and `EVENT LOG`, never Reset. Its Undo is the Director's, not the seat control.
+
 ## Identity and selection
 
 Hero identity is permanently linked across surfaces: pointing at a plaque gives that hero's board piece the warm-ivory six-corner glow, while pointing at the board piece changes only the plaque's reserved two-unit top edge to ivory. The same channel also accepts a tied-Initiative hero button and survives ordinary rail/view recomposition without submitting a command.

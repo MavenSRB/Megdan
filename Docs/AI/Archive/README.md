@@ -45,6 +45,8 @@ Active definitions remain indexed from [ROADMAP.md](../ROADMAP.md).
 
 ## Other historical evidence
 
+- [W045/W047 startup context routed at W078](W078_STARTUP_HISTORY.md).
+
 - [Removed and superseded roadmap definitions](ROADMAP_HISTORY.md)
 - [Superseded testing recipes](TESTING_HISTORY.md)
 - [Pre-governance project-status snapshot](PROJECT_STATUS_PRE_GOVERNANCE.md)

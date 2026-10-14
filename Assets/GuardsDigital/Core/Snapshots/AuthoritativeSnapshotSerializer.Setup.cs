@@ -482,7 +482,9 @@ namespace GuardsDigital.Core.Snapshots
             var obstacles = ReadMany(reader, "obstacle occupancies", () => new ObstacleOccupancy(
                 new ObstacleId(reader.ReadString()),
                 ReadCoordinate(reader)));
-            var availableMinions = (minions ?? throw new ArgumentNullException(nameof(minions))).ToArray();
+            var configuredMinions = (minions ?? throw new ArgumentNullException(nameof(minions))).ToArray();
+            var availableMinions = configuredMinions.Concat(
+                QuickGameSetupAuthority.CreateLaneReserve(mapDefinition, configuredMinions)).ToArray();
             var remainingMinions = ReadMany(reader, "remaining minions", () => new RestoredMinionPosition(
                 new MinionId(reader.ReadString()),
                 ReadCoordinate(reader)));
@@ -562,7 +564,7 @@ namespace GuardsDigital.Core.Snapshots
                     exclusions, lastWalk, bodySupplies, actingBodies,
                     currentStart, previousStart, mutations),
                 mapDefinition,
-                availableMinions);
+                configuredMinions);
         }
 
         /// <summary>
