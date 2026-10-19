@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-081 | Preserved the experimental one-Life hero cost through atomic rollback and retained-checkpoint Undo; the reported second Red defeat followed an Undo that had silently restored official tier pricing. [Scope and acceptance](#x-w-081-preserve-one-life-experiment-through-undo). | `work/W-081` |
 | W-080 | Scoped standing Heavy-minion immunity to the Heavy's own active Battle Zone, so another lane's escort cannot suppress its target offer. Both directions on both large maps, affected immunity/targeting regressions, the structural query guard and the full 7,000-test harness passed. [Scope and acceptance](#x-w-080-scope-heavy-minion-immunity-to-its-lane). | `work/W-080` |
 | W-079 | Produced the current private Windows package with every completed fix through W-078. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, manifest/archive verification and extracted launch. W075 and older packages remain preserved; Mac remains W075. [Scope and acceptance](#x-w-079-package-all-current-fixes-for-windows). | `work/W-079` |
 | W-078 | Filled both large maps' defending minion spawns and corrected W-077's shortage explanation; [scope and acceptance](#x-w-078-fill-every-large-map-minion-spawn). | `work/W-078` |
@@ -643,3 +644,11 @@ The user's Fire/Ice-map playtest report identified that Lane 1 Heavy minions wer
 The new regression failed in both large maps before the fix and passes afterward; its final form covers both lane directions on green-water and lava-bridge. The directly affected 95-test immunity/targeting set, the revised structural guard and the full 7,000-test cross-platform harness pass. The current W079 gameplay file existed but had no mandatory match header or readable event rows, so it was not the reported match; the narration format also records accepted outcomes rather than complete offer candidates. No Unity-facing path changed, so no Unity run was required. Source only; W079 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-080`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-081 Preserve one-Life experiment through Undo
+
+The Fire/Ice playtest's second Red-team defeat spent two Life after Cutter reached Tier II despite the one-Life experiment being enabled. The log places Director Undo before the defeats. Retained-checkpoint replay restored a Core snapshot whose card-action resolver defaults to official tier pricing; unlike ordinary snapshot restore, that rollback path did not rebind the immutable match experiment. Cutter's first post-Undo Tier-I defeat masked the loss, while the later Tier-II defeat exposed it.
+
+All authoritative deserialization now rebinds the configured one-Life base alongside the existing mode rules before any restored graph is installed, covering snapshot restore, atomic rollback and retained-checkpoint Undo without changing disabled official play. The exact rollback regression failed from four Life to two before the fix and passes at three afterward. Direct experimental/official defeat pricing plus affected rollback, replay, snapshot, modifier and experimental-identity regressions pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-081`; exact checks/results, failing-to-passing transition, review and limitations live in its body.

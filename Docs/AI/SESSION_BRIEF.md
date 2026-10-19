@@ -16,7 +16,7 @@ Current private Windows package: **W079 Current Fixes**, `Builds/Playtest-W079-c
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-080**.
+- Last completed work: **W-081**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -26,9 +26,7 @@ W076 corrects those compact rails: current-card markers retain their established
 
 W078 corrects W077's rejected shortage explanation: every printed minion glyph in either large map's active Battle Zones receives its matching minion. Each team/lane now has a third Melee in reserve for defending zones; initial waves stay unchanged. Every lane zone, snapshot restoration, joined-client identity and both-map rendering are covered, including the bottom lava glyph. Included in W079 Windows; the W075 Mac package remains unchanged. Exact inventories and authority: [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
 
-W080 scopes Heavy immunity to its active Battle Zone; the other lane cannot suppress targeting. Both maps, lanes and the full harness passed. Packages remain unchanged.
-
-W063 removes Reset from every PvP/PvE Director tray, retaining Undo and Event Log. Restart remains an engine diagnostic. PvE observer command refusal and both PvE host-role drawers passed focused and rendered checks; rules, snapshot 59, wire /52 and W059 packages are unchanged.
+W081 preserves the experimental one-Life hero cost through Undo/rollback checkpoints. The reported second Red defeat followed Director Undo; a retained snapshot restored the official Tier cost until this fix. Source-only; packages remain unchanged.
 
 W062 makes unseated hosts full-information observers without player-command authority. PvE binds seated and unseated host Undo to live encounter authority and keeps its drawer pointer-reachable above the enemy overlay. Focused regressions and rendering passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 

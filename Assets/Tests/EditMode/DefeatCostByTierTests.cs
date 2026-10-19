@@ -87,6 +87,35 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Counters(session, enemyTeam), Is.EqualTo(before - 1));
         }
 
+        [Test]
+        public void ExperimentalBaseOne_SurvivesTheRetainedCheckpointRollbackUsedByUndo()
+        {
+            var board = SabinaBoard.Create(
+                tier: 2,
+                branch: SabinaUpgradeBranch.FirstSibling,
+                heroPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["primitive-hero"] = StagedHeroBoard.FirstAdjacent
+                },
+                experiments: new GuardsDigital.Application.ExperimentalMatchOptions(
+                    heroDefeatBaseLifeCostIsOne: true));
+            var session = board.Session;
+            var enemyTeam = session.Projection.Participants.GetTeamForHero(board.Enemy).Id;
+
+            // Undo replays long command histories from a retained serialized pre-image through this
+            // rollback boundary. The experiment is immutable match configuration rather than Core
+            // snapshot data, so the restored resolver must be rebound before play continues.
+            session.aggregate.Rollback(session.aggregate.CapturePreImage());
+
+            var before = Counters(session, enemyTeam);
+            board.PlayAttackAt(SabinaCardContent.PointBlankShot, board.Enemy, defendSuccessfully: false);
+            var defense = session.Projection.PendingDefenseChoice;
+            board.Accept(DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId));
+
+            Assert.That(Counters(session, enemyTeam), Is.EqualTo(before - 1),
+                "A retained-checkpoint Undo must not silently restore the official Tier-II base cost.");
+        }
+
 
         private static int Counters(GuardsDigital.Application.MatchSession session, TeamId team) =>
             session.Projection.TeamLifeCounters.Single(entry => entry.Key.Equals(team)).Value;

@@ -407,8 +407,6 @@ namespace GuardsDigital.Application
             var hasEnvelope = RuleEventLogSnapshotEnvelope.TryDeserialize(payload, out var envelope);
             var authoritativePayload = hasEnvelope ? envelope.AuthoritativePayload : payload;
             var restored = DeserializeAuthoritative(authoritativePayload);
-            restored.CardActions.BindHeroDefeatBaseLifeCost(
-                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
 
             ReplaceGraphs(hasEnvelope
                 ? MatchGraphSet.ForRestore(
@@ -444,9 +442,13 @@ namespace GuardsDigital.Application
                     : (int?)null,
                 modeRules: initialState.ModeRules);
 
-            // W-022. Bound here rather than by each caller, so a snapshot restore, a rollback and a
-            // checkpoint Undo all rebind the same mode rules; existing matches bind null.
+            // W-022 and W-081. These immutable match-level rules are deliberately outside the Core
+            // snapshot. Bind them here rather than in individual callers so snapshot restore,
+            // atomic rollback and retained-checkpoint Undo all resume under the configured match,
+            // never the deserializer's official/default settings.
             restored.Round.BindModeRules(initialState.ModeRules);
+            restored.CardActions.BindHeroDefeatBaseLifeCost(
+                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
 
             if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
             {
