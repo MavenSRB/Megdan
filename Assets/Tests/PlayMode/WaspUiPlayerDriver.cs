@@ -656,12 +656,17 @@ namespace GuardsDigital.Tests.PlayMode
         /// Rests the pointer on a control - the hover half of the pipeline, which is what raises the
         /// Defense breakdown, the board target cue, and every other pointed-at reading.
         /// </summary>
-        public static void PointAt(VisualElement element)
+        public static void PointAt(VisualElement element) =>
+            PointAt(element, EventModifiers.None);
+
+        /// <summary>Rests the pointer on a control while the named keyboard modifiers are held.</summary>
+        public static void PointAt(VisualElement element, EventModifiers modifiers)
         {
             Assert.That(element?.panel, Is.Not.Null);
             Assert.That(TryFindReachablePoint(element, out _, out _), Is.True,
                 $"No painted point remains exposed on '{DescribeElement(element)}'.");
-            using (var enter = PointerEnterEvent.GetPooled())
+            var systemEvent = new Event { type = EventType.MouseMove, modifiers = modifiers };
+            using (var enter = PointerEnterEvent.GetPooled(systemEvent))
             {
                 enter.target = element;
                 element.SendEvent(enter);

@@ -132,6 +132,9 @@ namespace GuardsDigital.Tests.PlayMode
                         rail.ClassListContains("gd-hero-rail-compact"));
                     var hoveredId = (HeroId)compactRail.userData;
                     var hoveredColumn = compactRail.parent;
+                    var unaffectedRails = rails
+                        .Where(rail => !((HeroId)rail.userData).Equals(hoveredId))
+                        .ToDictionary(rail => (HeroId)rail.userData, rail => rail);
                     var compactCurrent = UiPlayer.Descendants(rails.First(rail =>
                             rail.userData is HeroId id && id.Equals(hoveredId)))
                         .Single(element => element.name == "gd-current-card-slot");
@@ -157,10 +160,29 @@ namespace GuardsDigital.Tests.PlayMode
                     rails = UiPlayer.Descendants(root.Hud.RootElement)
                         .Where(element => element.name == "gd-hero-rail")
                         .ToArray();
+                    var ordinarilyHovered = rails.Single(rail =>
+                        rail.userData is HeroId id && id.Equals(hoveredId));
+                    Assert.That(ordinarilyHovered, Is.SameAs(compactRail),
+                        "Ordinary hover must leave the compact tray and its element intact.");
+                    Assert.That(ordinarilyHovered.ClassListContains("gd-hero-rail-compact"), Is.True,
+                        "Compact trays expand only while Shift is held.");
+                    UiPlayer.PointAway(hoveredColumn);
+
+                    UiPlayer.PointAt(ordinarilyHovered, EventModifiers.Shift);
+                    yield return null;
+                    yield return null;
+                    rails = UiPlayer.Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-hero-rail")
+                        .ToArray();
                     var hovered = rails.Single(rail =>
                         rail.userData is HeroId id && id.Equals(hoveredId));
+                    foreach (var unaffected in unaffectedRails)
+                        Assert.That(rails.Single(rail =>
+                                rail.userData is HeroId id && id.Equals(unaffected.Key)),
+                            Is.SameAs(unaffected.Value),
+                            "Expanding one compact tray must not rebuild every other hero rail.");
                     Assert.That(hovered.ClassListContains("gd-hero-rail-compact"), Is.False,
-                        "A compact hero tray expands while the mouse is over it.");
+                        "A compact hero tray expands while Shift is held and the mouse enters it.");
                     Assert.That(UiPlayer.Descendants(hovered).Any(element =>
                         element.name == "gd-hero-identity-plate"), Is.True,
                         "Hover expansion presents the complete tray, not only a larger compact row.");
@@ -176,6 +198,11 @@ namespace GuardsDigital.Tests.PlayMode
                     rails = UiPlayer.Descendants(root.Hud.RootElement)
                         .Where(element => element.name == "gd-hero-rail")
                         .ToArray();
+                    foreach (var unaffected in unaffectedRails)
+                        Assert.That(rails.Single(rail =>
+                                rail.userData is HeroId id && id.Equals(unaffected.Key)),
+                            Is.SameAs(unaffected.Value),
+                            "Collapsing one tray must leave every unrelated rail intact.");
                     Assert.That(rails.Count(rail =>
                         rail.ClassListContains("gd-hero-rail-compact")), Is.EqualTo(8),
                         "Leaving the tray restores the compact layout.");

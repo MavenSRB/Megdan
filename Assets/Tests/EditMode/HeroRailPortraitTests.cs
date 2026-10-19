@@ -476,6 +476,9 @@ namespace GuardsDigital.Tests.EditMode
                 .All(rail => Descendants(rail).Any(element =>
                     element.name == "gd-compact-card-row")), Is.True);
             Assert.That(rails.Where(rail => rail.ClassListContains("gd-hero-rail-compact"))
+                .All(rail => rail.tooltip.Contains("Shift")), Is.True,
+                "Every compact tray explains its deliberate Shift-hover expansion.");
+            Assert.That(rails.Where(rail => rail.ClassListContains("gd-hero-rail-compact"))
                 .All(rail => Descendants(rail).Any(element =>
                     element.name == "gd-turn-slots") &&
                     Descendants(rail).Any(element =>

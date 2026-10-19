@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
 | W-081 | Preserved the experimental one-Life hero cost through atomic rollback and retained-checkpoint Undo; the reported second Red defeat followed an Undo that had silently restored official tier pricing. [Scope and acceptance](#x-w-081-preserve-one-life-experiment-through-undo). | `work/W-081` |
 | W-080 | Scoped standing Heavy-minion immunity to the Heavy's own active Battle Zone, so another lane's escort cannot suppress its target offer. Both directions on both large maps, affected immunity/targeting regressions, the structural query guard and the full 7,000-test harness passed. [Scope and acceptance](#x-w-080-scope-heavy-minion-immunity-to-its-lane). | `work/W-080` |
 | W-079 | Produced the current private Windows package with every completed fix through W-078. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, manifest/archive verification and extracted launch. W075 and older packages remain preserved; Mac remains W075. [Scope and acceptance](#x-w-079-package-all-current-fixes-for-windows). | `work/W-079` |
@@ -652,3 +653,11 @@ The Fire/Ice playtest's second Red-team defeat spent two Life after Cutter reach
 All authoritative deserialization now rebinds the configured one-Life base alongside the existing mode rules before any restored graph is installed, covering snapshot restore, atomic rollback and retained-checkpoint Undo without changing disabled official play. The exact rollback regression failed from four Life to two before the fix and passes at three afterward. Direct experimental/official defeat pricing plus affected rollback, replay, snapshot, modifier and experimental-identity regressions pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-081`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-082 Make compact trays Shift-hover without full HUD reload
+
+The reported 4v4/5v5 tray flicker was a complete presentation rebuild: entering one compact rail called `Render` on the unchanged model, cleared both team columns and recreated all ten rails. Compact trays now ignore ordinary hover and explain their explicit Shift gesture. Shift+hover replaces only the selected compact rail at its existing index; leaving the rail column restores only that rail. Unrelated rail elements, inspection anchors and selection state remain intact, while authoritative models and match behavior are unchanged.
+
+The identity-stability regression failed before the fix because an unrelated rail was a new element and passes afterward. Its final form covers ordinary hover, Shift expansion, collapse, layout boundaries and all four combinations of large map and supported viewport. The focused hero-rail EditMode suite and rendered inspection pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-082`; exact checks/results, failing-to-passing transition, review and limitations live in its body.

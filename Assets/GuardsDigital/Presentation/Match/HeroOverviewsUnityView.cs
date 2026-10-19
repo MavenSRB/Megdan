@@ -65,7 +65,6 @@ namespace GuardsDigital.Presentation.Match
         private object highlighted;
         private HeroId highlightedHero;
         private HeroId hoverExpandedHero;
-        private bool forceHoverRender;
 
         // Milestone 9.30h. The SPELLBOOK drawer (approved mockups B and C): a host spanning the open
         // area between the two rails, holding one panel sized to its content. Which hero's book is
@@ -575,15 +574,12 @@ namespace GuardsDigital.Presentation.Match
 
         public void Render(HeroOverviewsViewModel model)
         {
-            if (ReferenceEquals(Model, model) && !forceHoverRender)
+            if (ReferenceEquals(Model, model))
             {
                 return;
             }
 
-            var isHoverRender = forceHoverRender;
-            forceHoverRender = false;
-            if (!isHoverRender)
-                hoverExpandedHero = default;
+            hoverExpandedHero = default;
             Model = model ?? throw new ArgumentNullException(nameof(model));
             // A revealed card belongs to the model it was read from, exactly as milestone 6.5c's board
             // cues do: a rebuilt model drops it, so the rail never keeps a face for a slot that is no
@@ -608,25 +604,12 @@ namespace GuardsDigital.Presentation.Match
                 var column = hero.TeamSide == TeamSide.Red ? redColumn : blueColumn;
                 var canCompact = teamGroups[hero.TeamSide].Length > 3 &&
                     !ReferenceEquals(expandedRailByTeam[hero.TeamSide], hero);
-                var hoverExpanded = canCompact && hero.HeroId.Equals(hoverExpandedHero);
-                var compact = canCompact && !hoverExpanded;
+                var compact = canCompact;
                 var rail = BuildOverview(hero, compact);
-                heroRails.Add(hero.HeroId, rail);
                 heroRailRestingTopColors.Add(
                     hero.HeroId,
                     hero.IsViewed ? MatchHudTheme.SelectedOutline : new Color(0f, 0f, 0f, 0f));
-                HudElements.OnPointedAt(rail, pointedAt =>
-                    ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
-                if (compact)
-                    rail.RegisterCallback<PointerEnterEvent>(_ => SetHoverExpandedHero(hero.HeroId));
-                else if (hoverExpanded)
-                    rail.RegisterCallback<PointerLeaveEvent>(_ => SetHoverExpandedHero(default));
-                rail.AddManipulator(new Clickable(() =>
-                {
-                    if (LocalHeroSelection?.Invoke(hero.HeroId) == true) return;
-                    if (!OpenCardInspection(hero.HeroId))
-                        HeroSelected?.Invoke(hero.HeroId);
-                }));
+                AttachRail(hero, rail, compact);
                 column.Add(rail);
             }
 
@@ -659,9 +642,78 @@ namespace GuardsDigital.Presentation.Match
             if (hoverExpandedHero.Equals(hero) || Model == null)
                 return;
 
+            SetHighlight(null);
+            var previous = hoverExpandedHero;
+            hoverExpandedHero = default;
+            if (previous.IsDefined)
+                ReplaceRail(previous, compact: true);
+
+            var next = Model.Heroes.FirstOrDefault(candidate => candidate.HeroId.Equals(hero));
+            if (next == null || !CanCompact(next))
+                return;
+
             hoverExpandedHero = hero;
-            forceHoverRender = true;
-            Render(Model);
+            ReplaceRail(hero, compact: false);
+        }
+
+        private bool CanCompact(HeroOverviewViewModel hero)
+        {
+            var team = Model.Heroes.Where(candidate => candidate.TeamSide == hero.TeamSide).ToArray();
+            var permanentExpanded = team.FirstOrDefault(candidate => candidate.IsAwaited) ??
+                team.FirstOrDefault(candidate => candidate.IsViewed);
+            return team.Length > 3 && !ReferenceEquals(permanentExpanded, hero);
+        }
+
+        private void ReplaceRail(HeroId heroId, bool compact)
+        {
+            if (!heroRails.TryGetValue(heroId, out var oldRail))
+                return;
+            var hero = Model.Heroes.First(candidate => candidate.HeroId.Equals(heroId));
+            if (!CanCompact(hero))
+                return;
+
+            var column = oldRail.parent;
+            var index = column.IndexOf(oldRail);
+            var staleModels = revealAnchors
+                .Where(pair => oldRail.Contains(pair.Value))
+                .Select(pair => pair.Key)
+                .ToArray();
+            foreach (var stale in staleModels)
+            {
+                revealAnchors.Remove(stale);
+                withheldOwners.Remove(stale);
+            }
+            playerNamePlates.Remove(heroId);
+            heroRails.Remove(heroId);
+            oldRail.RemoveFromHierarchy();
+
+            var replacement = BuildOverview(hero, compact);
+            AttachRail(hero, replacement, compact);
+            column.Insert(index, replacement);
+            if (highlightedHero.Equals(heroId))
+            {
+                replacement.style.borderTopWidth = HeroIdentityEdgeWidth;
+                replacement.style.borderTopColor = HexCornerHighlightTemplate.AllyColor;
+            }
+        }
+
+        private void AttachRail(HeroOverviewViewModel hero, VisualElement rail, bool compact)
+        {
+            heroRails.Add(hero.HeroId, rail);
+            HudElements.OnPointedAt(rail, pointedAt =>
+                ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
+            if (compact)
+                rail.RegisterCallback<PointerEnterEvent>(evt =>
+                {
+                    if (evt.shiftKey)
+                        SetHoverExpandedHero(hero.HeroId);
+                });
+            rail.AddManipulator(new Clickable(() =>
+            {
+                if (LocalHeroSelection?.Invoke(hero.HeroId) == true) return;
+                if (!OpenCardInspection(hero.HeroId))
+                    HeroSelected?.Invoke(hero.HeroId);
+            }));
         }
 
         private static VisualElement Column(string name)
@@ -783,7 +835,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 rail.Add(cardRow);
-                rail.tooltip = hero.HeroDisplayName + ": select to expand the full tray.";
+                rail.tooltip = hero.HeroDisplayName + ": hold Shift and point here to expand the full tray.";
                 if (hero.IsAwaited)
                     rail.Add(AwaitedGlowBand(colourRead != null ? (Color?)accent : null));
                 return rail;
