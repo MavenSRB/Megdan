@@ -118,9 +118,10 @@ namespace GuardsDigital.Tests.EditMode
             //
             // It replaces 6.8g's direct ImmunityQuery-to-EffectiveUnitKindQuery link, which was that
             // second derivation asking the effective question itself. The chain is now the same two
-            // links the Minion Battle's is, and the assertion above supplies the second one: nothing
-            // weakened, because a query that reached the shared set without the shared set asking the
-            // effective type would fail there instead.
+            // links the Minion Battle's is, including the Zone-qualified overload that keeps one
+            // lane's accompaniment out of the other. The assertion above supplies the second link:
+            // nothing weakened, because a query that reached the shared set without the shared set
+            // asking the effective type would fail there instead.
             //
             // The link is asserted rather than tested behaviourally because what went wrong was
             // structural: both readings answered the configured board identically, so no scenario
@@ -129,7 +130,11 @@ namespace GuardsDigital.Tests.EditMode
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(typeof(ImmunityQuery)),
                     ILConformanceScanner.Method(
-                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside))),
+                        typeof(BattleZoneQuery), nameof(BattleZoneQuery.FindEffectiveMinionsInside),
+                        typeof(GuardsDigital.Core.Components.IBoardDisplacementAuthority),
+                        typeof(GuardsDigital.Core.Board.ZoneId),
+                        typeof(GuardsDigital.Core.Participants.MatchParticipants),
+                        typeof(RuleModificationSet))),
                 Is.True,
                 "p.13's Heavy accompaniment clause must read the Battle Zone through the shared " +
                 "effective query, or a second derivation of the same set drifts from it unnoticed.");

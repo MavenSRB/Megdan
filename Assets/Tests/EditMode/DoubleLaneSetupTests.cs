@@ -3,10 +3,12 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.LanePush;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Snapshots;
@@ -86,6 +88,57 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(laneMinions.Count(minion =>
                     minion.MinionType == StandardMinionType.Heavy), Is.EqualTo(1));
             }
+        }
+
+        [TestCase(false, true)]
+        [TestCase(false, false)]
+        [TestCase(true, true)]
+        [TestCase(true, false)]
+        public void HeavyImmunity_IsScopedToTheHeavysOwnActiveBattleZone(bool lava, bool firstLane)
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(lava
+                ? OfficialBoardMapCatalog.LavaBridgeDoubleLane
+                : OfficialBoardMapCatalog.GreenDoubleLane);
+            var lineup = RegisteredHeroRoster.DefaultLineup(5);
+            var participants = HeroLineupComposition.ComposeParticipants(lineup);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(MatchFormat.DefaultForTeamSize(5), lineup, map),
+                participants, map, new TieBreakerState(TeamSide.Red));
+            var board = new AdjacentMoveAuthority(map, Array.Empty<HeroOccupancy>(),
+                Array.Empty<ObstacleOccupancy>(), setup.Minions);
+            var targetBattleZone = board.CurrentBattleZoneIds.Single(zone =>
+                zone.Value.StartsWith(firstLane ? "top-" : "bottom-", StringComparison.Ordinal));
+            var otherBattleZone = board.CurrentBattleZoneIds.Single(zone =>
+                zone.Value.StartsWith(firstLane ? "bottom-" : "top-", StringComparison.Ordinal));
+            var heavy = board.Minions.Single(minion =>
+                minion.TeamSide == TeamSide.Red &&
+                minion.MinionType == StandardMinionType.Heavy &&
+                map.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(targetBattleZone));
+            var target = RuleObject.ForMinion(heavy.MinionId);
+
+            Assert.That(ImmunityQuery.IsImmuneTo(
+                target, RuleActivity.Attack, RuleObject.None,
+                board, participants, RuleModificationSet.Empty), Is.True,
+                "A friendly non-Heavy in the same active Battle Zone protects the Heavy.");
+
+            foreach (var escort in board.Minions.Where(minion =>
+                minion.TeamSide == heavy.TeamSide &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                map.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(targetBattleZone)).ToArray())
+            {
+                Assert.That(board.CommitValidatedRemoval(
+                    BoardObjectReference.ForMinion(escort.MinionId)).Accepted, Is.True);
+            }
+
+            Assert.That(board.Minions.Any(minion =>
+                minion.TeamSide == heavy.TeamSide &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                map.GetZoneForSpace(minion.OccupiedSpace.SpaceId).Id.Equals(otherBattleZone)), Is.True,
+                "The other lane deliberately retains the escort that exposed the regression.");
+            Assert.That(ImmunityQuery.IsImmuneTo(
+                target, RuleActivity.Attack, RuleObject.None,
+                board, participants, RuleModificationSet.Empty), Is.False,
+                "A non-Heavy in the other lane cannot protect a lone Heavy in this Battle Zone.");
         }
 
         [TestCase(false)]

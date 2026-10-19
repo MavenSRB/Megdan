@@ -166,12 +166,16 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             var heavy = board.Minions.SingleOrDefault(minion => minion.MinionId.Equals(target.MinionId));
             if (heavy == null || heavy.MinionType != StandardMinionType.Heavy ||
-                !BattleZoneQuery.IsInCurrentBattleZone(board, heavy.OccupiedSpace.SpaceId))
+                !BattleZoneQuery.TryGetCurrentBattleZone(board, heavy.Coordinate, out var battleZone))
             {
                 return false;
             }
 
-            return BattleZoneQuery.FindEffectiveMinionsInside(board, participants, modifications)
+            // A double-lane map has two simultaneous Battle Zones, but p.13's accompaniment is local
+            // to "the Battle Zone" containing this Heavy. Pooling both zones let an escort in the
+            // other lane protect it, leaving a lone Heavy untargetable until both lanes were cleared.
+            return BattleZoneQuery.FindEffectiveMinionsInside(
+                    board, battleZone.Id, participants, modifications)
                 .Any(candidate => Accompanies(candidate, target, heavy.TeamSide));
         }
 
