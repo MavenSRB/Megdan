@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-084 | Aligned next-phase scope with the self-funded prototype and saved the agreed short Fund inquiry without sending. [Scope and acceptance](#x-w-084-clarify-smart-start-scope-and-draft-fund-inquiry). | `work/W-084` |
 | W-083 | Prepared the separate original-IP Smart Start documentation branch; [scope and acceptance](#x-w-083-prepare-the-smart-start-application-documentation-branch). | `work/W-083` |
 | W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
 | W-081 | Preserved the experimental one-Life hero cost through atomic rollback and retained-checkpoint Undo; the reported second Red defeat followed an Undo that had silently restored official tier pricing. [Scope and acceptance](#x-w-081-preserve-one-life-experiment-through-undo). | `work/W-081` |
@@ -670,3 +671,11 @@ Request: create a separate local preparation branch, review the supplied program
 Result: `codex/smart-start-preparation` contains an indexed source/requirements register, English form-aligned narrative draft, proposed delivery/budget/validation plan and explicit evidence/rights/applicant prerequisites. AI is described as a production aid, not an invented product capability. Existing private content and builds are unchanged. Closing checks cover source-to-claim review, distinction between facts/proposals/unknowns, local links, budget arithmetic, living documentation and diff hygiene. Submission readiness remains a separate backlog item.
 
 Historical evidence: completion commit addressed by immutable `work/W-083`; exact checks/results, review and limitations live in its body.
+
+### [x] W-084 Clarify Smart Start scope and draft Fund inquiry
+
+Request, finalized after the interrupted draft: save the user's exact short question and align documentation with the self-funded working prototype followed by new heroes/mechanics, 2D/3D art and animations. Do not send. The earlier two-variant proposal and mandatory six-hero demo were superseded before commit.
+
+Result: the agreed Serbian message is saved verbatim, without the original-hero adjective, separate IP discussion or market-validation phrase. Internal formal requirements remain intact. Dossier, English draft, delivery plan, product route and backlog reflect optional synthetic art/prepared examples, no six-hero pre-application prerequisite, unresolved funded hero count and a budget requiring recosting. Acceptance: consistent scope, exact message, local links/word limits, living documentation and diff checks. No implementation, email draft in an external service, sending or publication.
+
+Historical evidence: completion commit addressed by immutable `work/W-084`; exact checks/results, review and limitations live in its body.

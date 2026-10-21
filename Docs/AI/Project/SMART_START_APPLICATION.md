@@ -10,7 +10,7 @@ Project IF ID: [ASSIGNED PORTAL ID]
 
 Team name: [CONFIRM]
 
-One sentence: An original 3v3 turn-based tactical game for adult MOBA players who want coordinated hero-based competition without continuous reflex-driven execution.
+One sentence: An original 3v3 turn-based tactical game with 3D presentation and a freely movable camera, for adult MOBA players who want coordinated hero-based competition without continuous reflex-driven execution.
 
 Duration: 9 months [PROPOSED, applicant approval required].
 
@@ -22,7 +22,7 @@ Eligibility questionnaire: [ALL ANSWERS REQUIRE MEMBER FACTS; do not pre-tick].
 
 ## Development phase and innovation level
 
-Proposed stage selection: Other, with explanation: “A playable private technical prototype exists. The proposed original-IP product is at concept validation stage; its original content, independent market validation and commercial model remain to be developed.” Verify exact status at submission and resolve any Fund-stage question.
+Stage selection remains unresolved pending the [agreed next-phase inquiry](SMART_START_FUND_QUESTION.md). A functional private prototype already exists and is played/tested. Stefan reports developing it through his own work and funds. Future support is sought for new heroes/mechanics, 2D/3D art and animations. Presentation may use temporary/synthetic art or selected prepared examples; six completed new heroes are not a prerequisite. Describe the actual baseline accurately and obtain clarification of program fit before choosing the official stage option.
 
 Innovation level: [DECIDE AFTER COMPETITOR/USER EVIDENCE]. Do not claim breakthrough innovation or a new market merely because the combination is unusual.
 
@@ -48,7 +48,9 @@ Alternatives include continuing to play real-time MOBAs, switching to individual
 
 We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
 
-The bounded MVP will contain six original heroes, their original card content, one original map, a coherent visual identity inspired by Slavic mythology, and an understandable path from joining a session to completing a match. Existing technical work provides a starting point, but only components with established reuse rights will enter the proposed product. Third-party game content is not part of the intended commercial deliverable.
+The next development phase builds on a self-funded functional prototype. Support would fund new heroes and their mechanics/cards, 2D/3D art and animations, toward the intended 3D presentation with a freely movable camera and a visual identity inspired by Slavic mythology. Exact hero quantities, models/rigs, animation and card-art inventories remain to be costed. Existing technical work is the starting point, not a request for retrospective reimbursement. Rights requirements remain part of the formal application checklist.
+
+[Approximately twenty further heroes are an ambition, not yet a funded commitment. Six completed new heroes before application are not required; temporary/synthetic art or selected examples may support the presentation.]
 
 Development will combine implementation, observed playtests and structured user feedback. AI tools are used to assist production; the customer value is the game experience, not an unproven AI capability. The project will test whether the intended audience understands the game, returns voluntarily and values it enough to support a viable business.
 
@@ -62,7 +64,7 @@ For players who want the coordination and individual hero responsibility of a MO
 
 A private playable prototype already provides a deterministic rules foundation, multiplayer session handling and debugging/replay capabilities. It uses legacy content and is not presented as the finished original-IP product.
 
-The proposed nine-month project begins with rights/provenance confirmation, a mentor-approved milestone plan and target-user validation. Development then focuses on six original heroes and their cards, an original map and visual identity, and an accessible 3v3 player journey. The second half includes documented MVP testing and iteration, followed by commercial-model validation and a final demonstration.
+The provisional nine-month plan begins with a documented baseline, production inventory and mentor-approved plan. Future work covers costed batches of new hero mechanics/cards, 2D/3D art and animations, including the scoped 3D scene and free camera. Timing and costs require re-estimation after defining asset counts and specialist needs. Testing, required target-group research, business-model work and final demonstration remain in the implementation plan. The Fund has not yet confirmed whether this next development phase fits the program.
 
 Reusable technology will be reviewed rather than assumed commercially clear. Online usability, group formation, content appeal and viable pricing remain material product questions. No public-service scalability or unsupported platform capability is claimed from private-host testing.
 

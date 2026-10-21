@@ -23,7 +23,7 @@ This is a project boundary, not a legal determination.
 
 ## Product tracks
 
-- Original-IP Smart Start preparation: the user authorized a separate local documentation branch and a bounded six-hero 3v3 concept. [Preparation owner](SMART_START.md) records scope, sources, draft and open decisions. This does not authorize commercial reuse of legacy content, implementation or submission; the existing private-game boundaries below remain intact.
+- Smart Start preparation: a separate local documentation branch starts from the self-funded functional prototype and seeks support for new heroes/mechanics, 2D/3D art and animations, with 3D/free-camera direction. [Preparation owner](SMART_START.md) records unresolved Fund fit and exact scope. No mandatory six-hero pre-application demo. This does not authorize commercial reuse of legacy content, implementation or submission; existing private-game boundaries remain intact.
 
 - Existing game: feedback, fixes, UI improvements and requested packages, prioritized through the shared backlog. Large maps remain a planned expansion, including the existing 4v4/5v5 two-lane proposal; select a bounded implementation slice once its map/setup/rule prerequisites are settled. PvE does not replace this direction.
 - PvE: design the first playable encounter, approve its rules and scope, implement and playtest, then decide what to expand.

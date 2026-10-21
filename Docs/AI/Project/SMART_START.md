@@ -4,7 +4,13 @@ Canonical preparation owner. Return to [project context](../PROJECT_CONTEXT.md).
 
 ## Scope and status
 
-The user approved preparation on the separate local branch `codex/smart-start-preparation`. The existing private game remains unchanged. Original-IP direction: a six-hero 3v3 MVP, original hero/card content and map, synthetic artwork and Slavic-mythology inspiration. This is not authorization to redesign the entire existing roster, implement new rules, publish a build or submit an application.
+The user approved preparation on the separate local branch `codex/smart-start-preparation`. The existing private game remains unchanged. Stefan reports that he developed the functional prototype on his own initiative, with his own work and funds; it is already played and tested. Credit this achievement rather than portraying the project as an undeveloped idea.
+
+Requested future support: new heroes and their mechanics/cards, 2D/3D art production and animations. Product direction remains a 3v3 tactical game in 3D with a freely movable camera and a visual identity inspired by Slavic mythology. A few prepared examples or temporary/synthetic artwork can support the presentation; completing six new heroes before applying is NOT a prerequisite. A token-art-only demo is not mandatory either. The prior two-variant framing is superseded by one question about eligibility of the next development phase.
+
+The broader ambition is approximately twenty additional heroes with new mechanics/cards as well as art. The exact grant deliverable count remains to be costed and agreed; neither six nor twenty is a binding promise. Existing work is the self-funded baseline, not a request for retrospective reimbursement. See the [agreed short inquiry](SMART_START_FUND_QUESTION.md). No implementation, publication or sending is authorized.
+
+3D/free-camera direction does not yet decide whether hero pieces are flat tokens in a 3D board, simple models or fully rigged characters. Camera controls/bounds, animation catalogue, model/rig requirements and card-art inventory require scope decisions and estimates. Describe existing capabilities and future production separately. No artificial reduction of demonstrated functionality is planned.
 
 Generic engine, networking, Undo and replay are candidates for reuse, subject to provenance and license review. Existing tabletop-derived content, branding and assets must not silently become commercial content. A branch preserves history; it does not itself establish IP separation or rights clearance. The private 32-hero game and its evidence remain preserved.
 
@@ -13,6 +19,7 @@ Generic engine, networking, Undo and replay are candidates for reuse, subject to
 - [Sources, requirements and strategy fit](SMART_START_REQUIREMENTS.md)
 - [English application working draft](SMART_START_APPLICATION.md)
 - [Proposed delivery, budget and validation plan](SMART_START_PLAN.md)
+- [Agreed short inquiry to the Fund — saved, not sent](SMART_START_FUND_QUESTION.md)
 
 ## Positioning decision
 
@@ -48,7 +55,7 @@ Do not discard existing evidence or restart validation from zero. Audit it, obta
 
 ## Prepared questions for the Fund — not sent
 
-1. We have a private experimental implementation using third-party game content and intend to develop a distinct original-IP MVP with demonstrably cleared reusable technology. How should we describe this starting stage, and does this proposed development scope fit the first-prototype/MVP objective?
+1. Use only the [agreed Serbian inquiry](SMART_START_FUND_QUESTION.md) for the proposed initial contact: self-funded functional prototype followed by new heroes/mechanics, 2D/3D art and animations. It is saved, not sent. The remaining questions below are internal notes, not additions to the approved message.
 2. The English version 6 manual retains a reference to “version 5” in section 3.2. Please confirm use of the version 6 files linked on the September 2026 documentation page.
 3. Which reporting-template versions will apply to this call? The public reporting page currently links several files named 2024.
 4. Before final budgeting, can the Fund confirm eligibility of the specifically itemized external original-art, usability-testing and software-development services? We will not classify marketing as development.
