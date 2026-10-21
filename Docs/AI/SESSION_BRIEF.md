@@ -10,13 +10,13 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W079 Current Fixes**, `Builds/Playtest-W079-current-fixes.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. It includes W-074's large-lobby admission repair, W-076's compact-rail repair and W-078's complete large-map starting minion population. Stamp `1.0-W079-current-fixes+20261019182935-4a0d4058`; package SHA-256 `a585faf73e91fca1ae0d9d5ed00213fc439fa4c24dfa845ea8037f8769999635`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W090 Main Fixes**, `Builds/Playtest-W090-main-fixes.zip`. It includes executable `main` through W-082: lane-scoped Heavy immunity, one-Life Undo restoration and Shift+hover compact trays, plus W079. Stamp `1.0-W090-main-fixes+20261021172601-1966d1b3`; SHA-256 `995faffb3ba65f73156e5e62ab1c8152ea176d4f374314b0ef15cdc93401bdbd`. Identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
-Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
+Mac remains W075 (`Builds/Playtest-W075-large-lobby-fix-mac.zip`), universal Intel/Apple Silicon, PvP/PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It lacks later fixes and cannot join W090. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-089**.
+- Last completed work: **W-090**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -24,11 +24,11 @@ Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, univ
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
-W076 corrects those compact rails: current-card markers retain their established card proportions and the empty Active-label strip no longer leaves dead space below the turn-card row. W082 replaces ordinary hover expansion with explicit Shift+hover and swaps only that hero's rail instead of rebuilding both columns; pointer leave restores the compact form. Violet active-source outlines and click selection are preserved. Focused structure and both-large-map/two-viewport interaction, geometry, identity stability, boundary and rendered checks passed. W082 is source-only; W079 Windows and W075 Mac packages remain unchanged.
+W076 corrects those compact rails: current-card markers retain their established card proportions and the empty Active-label strip no longer leaves dead space below the turn-card row. W082 replaces ordinary hover expansion with explicit Shift+hover and swaps only that hero's rail instead of rebuilding both columns; pointer leave restores the compact form. Violet active-source outlines and click selection are preserved. Focused structure and both-large-map/two-viewport interaction, geometry, identity stability, boundary and rendered checks passed. Included in W090 Windows; W079 and W075 Mac remain unchanged.
 
 W078 corrects W077's rejected shortage explanation: every printed minion glyph in either large map's active Battle Zones receives its matching minion. Each team/lane now has a third Melee in reserve for defending zones; initial waves stay unchanged. Every lane zone, snapshot restoration, joined-client identity and both-map rendering are covered, including the bottom lava glyph. Included in W079 Windows; the W075 Mac package remains unchanged. Exact inventories and authority: [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
 
-W081 preserves the experimental one-Life hero cost through Undo/rollback checkpoints. The reported second Red defeat followed Director Undo; a retained snapshot restored the official Tier cost until this fix. Source-only; packages remain unchanged.
+W081 preserves the experimental one-Life hero cost through Undo/rollback checkpoints. The reported second Red defeat followed Director Undo; a retained snapshot restored the official Tier cost until this fix. Included in W090 Windows; W079 and W075 Mac remain unchanged.
 
 W062 makes unseated hosts full-information observers without player-command authority. PvE binds seated and unseated host Undo to live encounter authority and keeps its drawer pointer-reachable above the enemy overlay. Focused regressions and rendering passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 

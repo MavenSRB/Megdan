@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-090 | Produced the current private Windows package from executable `main` through W-082, including W-080's lane-scoped Heavy immunity, W-081's one-Life Undo restoration and W-082's Shift+hover compact trays. Exact-artifact player, PvP, PvE, render, manifest/archive and extracted-launch checks passed; W079 and older packages remain preserved, while Mac remains W075. | `work/W-090` |
 | W-089 | Defined a coherent 3D board world and interaction layer with a separate 2D screen overlay; no flat token stand-ins on the target board. [Scope and acceptance](#x-w-089-define-the-hybrid-3d-world2d-overlay-presentation). | `work/W-089` |
 | W-088 | Removed game-audio work from the pre-application slice and reserved the complete audio layer for a separately quoted grant-budget package. [Scope and acceptance](#x-w-088-move-all-game-audio-into-the-grant-budget). | `work/W-088` |
 | W-087 | Kept six selected hero kits mechanically unchanged, scoped new card/visual presentation, enumerated the board-visible 3D layer and added the absent audio layer. [Scope and acceptance](#x-w-087-refine-vertical-slice-content-and-add-audio). | `work/W-087` |
@@ -724,3 +725,11 @@ Request: if the board presentation becomes 3D, every element on the board must a
 Result: the target presentation is explicitly hybrid. The 3D/world-space layer includes map geometry, spaces/zones, heroes, minions, tokens/markers, props, selection/target feedback and movement/attack cues. Screen-space cards, hand/hero panels, buttons, tooltips and scoreboard remain 2D overlay UI. The target board has no flat 2D token stand-ins. Acceptance: consistent dossier/application/plan/evidence/backlog wording, application word limits, living-document validation and diff hygiene.
 
 Historical evidence: completion commit addressed by immutable `work/W-089`; exact checks/results, review and limitations live in its body.
+
+### [x] W-090 Package current main fixes for Windows
+
+Requested on 2026-10-21 because completed fixes postdated W079. The private W090 archive packages executable local `main` at W-082, adding W-080's lane-scoped Heavy immunity, W-081's one-Life Undo restoration and W-082's Shift+hover compact trays over the preserved W079 content. No new behavior was implemented during packaging.
+
+Change-based acceptance reused the included work items' focused green evidence. One stamped candidate passed player interaction, board rendering, bounded PvP with one playing host and two real joiners, and PvE with one, two and three players. Its 184 payload hashes reproduced after ZIP extraction, source-identical PvE data and required unified assemblies were present, and the extracted executable passed a fresh one-player PvE/render launch. W079 and every older package remain preserved; Mac remains W075 and is admission-incompatible. No internet/NAT, packaged reconnect, native Mac or full-suite claim; nothing was published.
+
+Historical evidence: completion commit addressed by immutable `work/W-090`; exact checks/results, package identity, review and limitations live in its body.
