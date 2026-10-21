@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-091 | Recorded **Megdan** as the working project title and the approved six-hero identity mapping, while keeping clearance open and visual/card/implementation work out of scope. [Scope and acceptance](#x-w-091-record-the-megdan-title-and-six-hero-identity-mapping). | `work/W-091` |
 | W-090 | Produced the current private Windows package from executable `main` through W-082, including W-080's lane-scoped Heavy immunity, W-081's one-Life Undo restoration and W-082's Shift+hover compact trays. Exact-artifact player, PvP, PvE, render, manifest/archive and extracted-launch checks passed; W079 and older packages remain preserved, while Mac remains W075. | `work/W-090` |
 | W-089 | Defined a coherent 3D board world and interaction layer with a separate 2D screen overlay; no flat token stand-ins on the target board. [Scope and acceptance](#x-w-089-define-the-hybrid-3d-world2d-overlay-presentation). | `work/W-089` |
 | W-088 | Removed game-audio work from the pre-application slice and reserved the complete audio layer for a separately quoted grant-budget package. [Scope and acceptance](#x-w-088-move-all-game-audio-into-the-grant-budget). | `work/W-088` |
@@ -733,3 +734,13 @@ Requested on 2026-10-21 because completed fixes postdated W079. The private W090
 Change-based acceptance reused the included work items' focused green evidence. One stamped candidate passed player interaction, board rendering, bounded PvP with one playing host and two real joiners, and PvE with one, two and three players. Its 184 payload hashes reproduced after ZIP extraction, source-identical PvE data and required unified assemblies were present, and the extracted executable passed a fresh one-player PvE/render launch. W079 and every older package remain preserved; Mac remains W075 and is admission-incompatible. No internet/NAT, packaged reconnect, native Mac or full-suite claim; nothing was published.
 
 Historical evidence: completion commit addressed by immutable `work/W-090`; exact checks/results, package identity, review and limitations live in its body.
+
+### [x] W-091 Record the Megdan title and six-hero identity mapping
+
+Request: continue the Smart Start project documentation without beginning hero visual design, card redesign or implementation.
+
+Result: the preparation owner, English application draft and delivery plan now agree on the working **Megdan** title and the presentation identities Svarog, Stribog, Morana, Mokoš, Veles and Perun. They map internally to the unchanged Brogan, Swift, Misa, Tali, Tigerclaw and Wasp kits. Name/trademark clearance remains an explicit pre-submission gate. No gameplay, art, card, model, audio, Fund contact, submission or publication work was performed.
+
+Acceptance: living-document validation and diff hygiene passed.
+
+Historical evidence: completion commit addressed by immutable `work/W-091`; exact checks/results, review and limitations live in its body.

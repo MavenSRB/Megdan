@@ -4,7 +4,7 @@ Return to [preparation owner](SMART_START.md). Draft for discussion, not a compl
 
 ## Brief summary
 
-Project title: [APPROVE ORIGINAL TITLE; do not use the legacy brand as a cleared commercial name]
+Project title: **Megdan** [WORKING TITLE; complete name/trademark clearance before submission or publication]
 
 Project IF ID: [ASSIGNED PORTAL ID]
 
@@ -49,6 +49,8 @@ Alternatives include continuing to play real-time MOBAs, switching to individual
 We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
 
 The next phase builds on a self-funded functional prototype. Six proven kits retain gameplay while receiving new identities, illustrations and card/UI design. Support would fund a coherent 3D world: map geometry, spaces/zones, heroes, minions, tokens/markers, props and board interaction cues, plus a free camera, animation/VFX and audio. Screen-space cards and controls remain 2D. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing work is the starting point, not retrospective reimbursement. Rights requirements remain part of the formal checklist.
+
+The working six-hero presentation roster is Svarog, Stribog, Morana, Mokoš, Veles and Perun. Internally these map to the mechanically unchanged Brogan, Swift, Misa, Tali, Tigerclaw and Wasp source kits respectively; those source-kit references are not submission-facing identities.
 
 [Approximately twenty further heroes remain a post-grant ambition. Clearly labelled AI-generated placeholder visuals may support the slice but are not presented as final production assets. Game audio is future grant-budgeted work.]
 

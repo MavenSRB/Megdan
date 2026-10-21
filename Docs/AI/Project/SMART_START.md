@@ -8,6 +8,8 @@ The user approved preparation on the separate local branch `codex/smart-start-pr
 
 Requested future support is now scoped as a 3v3 grant MVP built on six selected, mechanically proven hero kits. Their gameplay stays unchanged while names, visual identities, illustrations and card/UI design are replaced. The production scope adds a coherent 3D world for every board-bound element: map geometry, spaces/zones, six heroes, minions, tokens/markers, props, and selection, target, movement and attack feedback. A freely movable camera, animation/VFX and the game's currently absent audio layer complete the production scope. The visual identity is inspired by Slavic mythology.
 
+The approved working project title is **Megdan**, pending ordinary name/trademark clearance before submission or publication. The six presentation identities and their internal mechanically unchanged source kits are: Svarog (Brogan), Stribog (Swift), Morana (Misa), Mokoš (Tali), Veles (Tigerclaw) and Perun (Wasp). Source-kit names are internal development references only. This mapping does not authorize visual design, card rewriting or implementation; those remain later, separately scoped work.
+
 The broader post-grant ambition remains approximately twenty additional heroes, but that is not the grant promise. The grant scope is six. Existing work is the self-funded baseline, not a request for retrospective reimbursement. See the [agreed short inquiry](SMART_START_FUND_QUESTION.md). No implementation, publication or sending is authorized.
 
 The presentation target is a full AI-assisted visual vertical slice built on the existing playable foundation: one 3v3 match using the six selected kits, new neutral identities/card visuals, an AI-generated placeholder 3D world including board interaction cues, temporary animations/VFX and an AI-assisted freely movable camera. No flat 2D token stand-ins remain on the target 3D board. Screen-space cards, hand/hero panels, buttons, tooltips and scoreboard remain 2D overlay UI. The slice intentionally has no game-audio production before application. Disclose AI use and label temporary assets.
@@ -47,7 +49,7 @@ Do not discard existing evidence or restart validation from zero. Audit it, obta
 | Decision/evidence | Owner | Closing condition |
 | --- | --- | --- |
 | Actual team of 2–5, roles, residency, ownership/representative status and other Fund engagements | Applicant | Eligibility questionnaire supported by facts for every member; eligible founder structure |
-| Project/team title and portal ID | Applicant | Approved title after name clearance; actual assigned ID |
+| Project title, team title and portal ID | Applicant | **Megdan** cleared or replaced before submission; team title approved; actual portal ID assigned |
 | Applicant experience, achievements and availability | Each member | Accurate biographies and workload, not invented credentials |
 | IP provenance and rights in reusable technology/content | Applicant with qualified adviser | Declaration can truthfully be signed; evidence and third-party contracts retained |
 | Existing prototype versus proposed first original MVP | Applicant; Fund clarification if needed | Transparent current-stage description; any unresolved program-stage question answered |
