@@ -4,6 +4,11 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 
 ## Canonical active shards
 
+- [Smart Start original-IP preparation](Project/SMART_START.md)
+- [Smart Start sources and requirements](Project/SMART_START_REQUIREMENTS.md)
+- [Smart Start English application draft](Project/SMART_START_APPLICATION.md)
+- [Smart Start delivery and budget proposal](Project/SMART_START_PLAN.md)
+
 - [PvE design and rule decisions](Project/PVE_DESIGN.md)
 - [PvE implementation and isolation](Project/PVE_IMPLEMENTATION.md)
 - [Private build records](Project/BUILDS.md)

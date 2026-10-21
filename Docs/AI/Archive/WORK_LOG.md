@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-083 | Prepared the separate original-IP Smart Start documentation branch; [scope and acceptance](#x-w-083-prepare-the-smart-start-application-documentation-branch). | `work/W-083` |
 | W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
 | W-081 | Preserved the experimental one-Life hero cost through atomic rollback and retained-checkpoint Undo; the reported second Red defeat followed an Undo that had silently restored official tier pricing. [Scope and acceptance](#x-w-081-preserve-one-life-experiment-through-undo). | `work/W-081` |
 | W-080 | Scoped standing Heavy-minion immunity to the Heavy's own active Battle Zone, so another lane's escort cannot suppress its target offer. Both directions on both large maps, affected immunity/targeting regressions, the structural query guard and the full 7,000-test harness passed. [Scope and acceptance](#x-w-080-scope-heavy-minion-immunity-to-its-lane). | `work/W-080` |
@@ -661,3 +662,11 @@ The reported 4v4/5v5 tray flicker was a complete presentation rebuild: entering 
 The identity-stability regression failed before the fix because an unrelated rail was a new element and passes afterward. Its final form covers ordinary hover, Shift expansion, collapse, layout boundaries and all four combinations of large map and supported viewport. The focused hero-rail EditMode suite and rendered inspection pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-082`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-083 Prepare the Smart Start application documentation branch
+
+Request: create a separate local preparation branch, review the supplied program/strategy and relevant linked documents, and prepare a bounded original six-hero 3v3 application dossier. Documentation and evidence review only; no game implementation, submission, publication or third-party contact.
+
+Result: `codex/smart-start-preparation` contains an indexed source/requirements register, English form-aligned narrative draft, proposed delivery/budget/validation plan and explicit evidence/rights/applicant prerequisites. AI is described as a production aid, not an invented product capability. Existing private content and builds are unchanged. Closing checks cover source-to-claim review, distinction between facts/proposals/unknowns, local links, budget arithmetic, living documentation and diff hygiene. Submission readiness remains a separate backlog item.
+
+Historical evidence: completion commit addressed by immutable `work/W-083`; exact checks/results, review and limitations live in its body.
