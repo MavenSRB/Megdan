@@ -40,9 +40,9 @@ We will test the problem with current and former MOBA players, distinguish execu
 
 Our initial customer hypothesis is adult PC players with MOBA experience who enjoy coordinated competition with friends but prefer deliberate decisions over continuous mechanical execution. Early adopters may overlap with tactical-strategy and tabletop-game communities.
 
-Alternatives include continuing to play real-time MOBAs, switching to individual tactical games, arranging tabletop sessions, or choosing other multiplayer games with friends. The comparison must consider coordination, individual agency, execution pressure, learning effort, session duration, group size and price, rather than only visual similarity.
+The direct behavioral alternative is continuing with a real-time MOBA such as Dota 2, which already supplies one-hero responsibility, role mastery, parties and matchmaking without an upfront game purchase. Tactical alternatives solve different parts of the problem: Skygard Arena offers 1v1 turn-based control of three-Champion squads; Gloomhaven offers cooperative card-driven hero tactics; and Blood Bowl 3 offers competitive turn-based positioning with one person controlling an entire team.
 
-[ADD CURRENT, SOURCED COMPETITOR MATRIX. Do not claim no competition; include historical team-turn-based titles as well as active substitutes.]
+Atlas Reactor is the closest identified historical precedent: coordinated 4v4 arena combat with one Freelancer focus and simultaneous timed turns. Its 2019 shutdown for lack of sustainability makes acquisition, retention and service cost central risks rather than evidence of an empty market. Megdan must demonstrate that three independently controlled heroes, card-driven initiative and lane/minion objectives create sufficient value to overcome group formation, match length and purchase friction. [Dated comparison and sources](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
 
 ## Solution — maximum 300 words
 
@@ -58,9 +58,7 @@ Development will combine implementation, observed playtests and structured user 
 
 ## Differentiation — one or two sentences, maximum 200 words
 
-For players who want the coordination and individual hero responsibility of a MOBA without continuous reflex execution, we are developing an original 3v3 tactical game where deliberate decisions shape team success. Unlike a single-player-controlled squad experience, the proposed format makes each person's hero and cooperation central to the match.
-
-[This is a proposed value proposition, not proof of superiority over every alternative.]
+For players who want MOBA-style coordination and individual hero responsibility without continuous reflex execution, Megdan is an original 3v3 card-and-initiative tactical arena in which each person owns one hero and deliberate decisions shape team success. Unlike squad-control tactics, and unlike Atlas Reactor's timed simultaneous prediction, Megdan combines independently controlled teammates with visible initiative, lane/minion pressure and a deliberately paced shared plan; this is a testable value proposition, not proven superiority.
 
 ## Current technology and MVP steps — maximum 200 words
 
@@ -80,13 +78,15 @@ We have not yet established a consented, independently recruited target-user dat
 
 ## Market size and trends — maximum 300 words
 
-[NOT SUBMISSION-READY: current quantitative market research is missing.]
+[PARTIAL: platform context is sourced; reachable-market and conversion evidence remain missing.]
 
 The intended market is international PC gaming, with an initial focus on current/former MOBA players who also value tactical play and social coordination. Total gaming revenue is not a defensible estimate of our reachable market. We will build a bottom-up estimate from a defined launch geography/language, reachable communities, qualified interest and observed conversion, with explicit low/base/high assumptions.
 
+Valve reports that Steam reached 42 million peak concurrent users in 2025. This establishes that a PC title can use a global distribution platform; it does not establish Megdan's addressable audience. The same platform supports free-to-play Dota 2 and paid tactical products, so platform reach alone does not select our price or business model. [Valve platform source and competitor evidence](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
+
 The relevant commercial question is whether enough groups prefer this specific experience and can be reached at a cost compatible with net revenue per customer. Group formation and concurrent availability are risks, not benefits to assume away.
 
-[INSERT dated primary sources, actual competitor facts, plausible acquisition reach and calculation; avoid applying general gamer age averages specifically to MOBA players.]
+[INSERT actual qualified-audience reach, conversion and price evidence; avoid applying general gamer age averages specifically to MOBA players.]
 
 ## Target group — maximum 200 words
 

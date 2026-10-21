@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-093 | Established a dated competitor matrix, replaced the unsupported “no such game” claim with a defensible position against the closest historical precedent, and added bounded Steam platform context without treating it as reachable demand. [Scope and acceptance](#x-w-093-establish-the-initial-competitor-matrix-and-market-context). | `work/W-093` |
 | W-092 | Recorded the confirmed two-person Smart Start team facts, proposed ownership and employment/availability boundaries, and drafted Stefan's evidence-based biography from his supplied CV. [Scope and acceptance](#x-w-092-record-confirmed-smart-start-team-facts). | `work/W-092` |
 | W-091 | Recorded **Megdan** as the working project title and the approved six-hero identity mapping, while keeping clearance open and visual/card/implementation work out of scope. [Scope and acceptance](#x-w-091-record-the-megdan-title-and-six-hero-identity-mapping). | `work/W-091` |
 | W-090 | Produced the current private Windows package from executable `main` through W-082, including W-080's lane-scoped Heavy immunity, W-081's one-Life Undo restoration and W-082's Shift+hover compact trays. Exact-artifact player, PvP, PvE, render, manifest/archive and extracted-launch checks passed; W079 and older packages remain preserved, while Mac remains W075. | `work/W-090` |
@@ -755,3 +756,13 @@ Result: the dossier records Stefan Petrovic and Veljko Petrovic as the proposed 
 Acceptance: supplied-CV text extraction and single-page visual review supported the biography; the team section remains within its 400-word limit; living-document validation and diff hygiene passed.
 
 Historical evidence: completion commit addressed by immutable `work/W-092`; exact checks/results, review and limitations live in its body.
+
+### [x] W-093 Establish the initial competitor matrix and market context
+
+Request: continue preparing the Smart Start project documentation.
+
+Result: the requirements register now compares Megdan with Dota 2, Atlas Reactor, Skygard Arena, Gloomhaven and Blood Bowl 3 using official publisher/store sources checked on 21 October 2026. Atlas Reactor is correctly identified as the closest historical structural precedent and its shutdown as a sustainability warning, so the dossier no longer relies on “no such game has existed.” The application states a testable distinction through 3v3 independently controlled heroes, card-driven visible initiative and lane/minion objectives. Valve's 42-million peak-concurrent platform figure is retained only as distribution context, never TAM or a sales forecast.
+
+Acceptance: affected-users/alternatives is 172/200 words, differentiation 70/200 and market context 183/300; every external fact has a first-party or official-store link; living-document validation and diff hygiene passed. No pricing forecast, outreach, submission, publication or game change occurred.
+
+Historical evidence: completion commit addressed by immutable `work/W-093`; exact checks/results, review and limitations live in its body.
