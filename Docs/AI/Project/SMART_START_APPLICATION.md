@@ -22,7 +22,7 @@ Eligibility questionnaire: [ALL ANSWERS REQUIRE MEMBER FACTS; do not pre-tick].
 
 ## Development phase and innovation level
 
-Stage selection remains unresolved pending the [agreed next-phase inquiry](SMART_START_FUND_QUESTION.md). A functional private prototype already exists and is played/tested. Stefan reports developing it through his own work and funds. The proposed grant MVP consists of six production-ready new heroes and their mechanics/cards, one production-ready 3D map with a freely movable camera, and associated 2D/3D art and animations. A pre-application AI-assisted vertical slice may demonstrate this direction using clearly labelled AI-generated placeholder visuals, neutral test content and temporary animations. Any completed slice work is disclosed as the self-funded baseline, not charged retrospectively.
+Stage selection remains unresolved pending Fund clarification. A functional private prototype already exists and is played/tested. The proposed grant MVP selects six mechanically proven hero kits and retains their gameplay while replacing names, visual identities, illustrations and card/UI design. It adds production-ready 3D models for heroes and other board-visible elements, one 3D map, a freely movable camera, animation/VFX and a currently absent audio layer. A pre-application AI-assisted vertical slice may demonstrate the direction with disclosed placeholders. Completed slice work is self-funded baseline, not charged retrospectively. The [saved inquiry](SMART_START_FUND_QUESTION.md) predates this refinement and must not be sent unrevised.
 
 Innovation level: [DECIDE AFTER COMPETITOR/USER EVIDENCE]. Do not claim breakthrough innovation or a new market merely because the combination is unusual.
 
@@ -48,9 +48,9 @@ Alternatives include continuing to play real-time MOBAs, switching to individual
 
 We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
 
-The next development phase builds on a self-funded functional prototype. Support would fund six production-ready new heroes and their mechanics/cards, one production-ready 3D map with a freely movable camera, and associated 2D/3D art and animations, with a visual identity inspired by Slavic mythology. The exact model/rig depth, animation/VFX catalogue and card-art inventory remain to be costed. Existing technical work is the starting point, not a request for retrospective reimbursement. Rights requirements remain part of the formal application checklist.
+The next development phase builds on a self-funded functional prototype. Six proven hero kits retain their gameplay while receiving new identities, illustrations and card/UI design. Support would fund their production-ready presentation, 3D models for all relevant board-visible elements, one 3D map, a freely movable camera, animation/VFX and audio, with a visual identity inspired by Slavic mythology. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing technical work is the starting point, not a request for retrospective reimbursement. Rights requirements remain part of the formal application checklist.
 
-[Approximately twenty further heroes remain a post-grant ambition, not part of this six-hero grant MVP. Clearly labelled AI-generated placeholder art may support the presentation but is not presented as final production art.]
+[Approximately twenty further heroes remain a post-grant ambition. Clearly labelled AI-generated placeholder visuals/audio may support the slice but are not presented as final production assets.]
 
 Development will combine implementation, observed playtests and structured user feedback. AI tools assist code and visual prototyping, including the planned vertical slice; AI generation itself is not the customer value. The project will test whether the intended audience understands the game, returns voluntarily and values it enough to support a viable business.
 
@@ -62,9 +62,9 @@ For players who want the coordination and individual hero responsibility of a MO
 
 ## Current technology and MVP steps — maximum 200 words
 
-A self-funded playable prototype already supports private multiplayer from 2v2 to 5v5, 32 configured heroes and four maps. Its complete tactical loop includes card selection, initiative, movement, combat, abilities, minions, lane progression, hero progression and victory scoring. It also provides reconnect/resynchronization, deterministic rules, snapshots and Undo/replay capabilities. An experimental cooperative mode exists. These are existing-prototype capabilities, not a claim that the future new heroes and production art are finished. [Evidence and source/build distinctions](SMART_START_PROTOTYPE_EVIDENCE.md).
+A self-funded playable prototype supports private multiplayer from 2v2 to 5v5, 32 configured heroes and four maps. Its tactical loop includes cards, initiative, movement, combat, abilities, minions, lane progression, progression and victory scoring. It also provides reconnect/resynchronization, deterministic rules, snapshots and Undo/replay. An experimental cooperative mode exists. It currently has no audio. These are existing capabilities, not finished production assets. [Evidence and source/build distinctions](SMART_START_PROTOTYPE_EVIDENCE.md).
 
-The provisional nine-month plan begins with a documented baseline, production inventory and mentor-approved plan. Future work covers six new hero kits/cards, one 3D map and free camera, plus the costed 2D/3D art and animation inventory. Timing and costs require re-estimation after defining asset counts and specialist needs. Testing, required target-group research, business-model work and final demonstration remain in the implementation plan. The Fund has not yet confirmed whether this next development phase fits the program.
+The nine-month proposal starts with a baseline and production inventory. Future work productionizes the six selected kits' new card/visual design, all board-visible 3D models, one map/free camera, animation/VFX and audio. Timing and costs follow asset counts and specialist needs. Testing, target-group research, business-model work and final demonstration remain required. The Fund has not confirmed fit.
 
 Reusable technology will be reviewed rather than assumed commercially clear. Online usability, group formation, content appeal and viable pricing remain material product questions. No public-service scalability or unsupported platform capability is claimed from private-host testing.
 
@@ -118,7 +118,7 @@ For each of 2–5 members collect: full name; project role and deliverables; rel
 
 ## Video — maximum three minutes
 
-Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted vertical slice demonstrating one 3v3 match, 3D map and free camera, with placeholders visibly disclosed; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, remaining production work and project outcome. Adjust timings for actual team size. English, clear audio, accessible link, no recognizable borrowed-content demonstration. No video or vertical slice has yet been created under this plan.
+Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted vertical slice demonstrating one 3v3 match, complete 3D board presentation, free camera and placeholder audio, with all placeholders visibly disclosed; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, remaining production work and project outcome. Adjust timings for actual team size. English, clear narration, accessible link, no recognizable borrowed-content demonstration. No video or vertical slice has yet been created under this plan.
 
 ## Mentorship — maximum 200 words
 

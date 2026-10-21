@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-087 | Kept six selected hero kits mechanically unchanged, scoped new card/visual presentation, enumerated the board-visible 3D layer and added the absent audio layer. [Scope and acceptance](#x-w-087-refine-vertical-slice-content-and-add-audio). | `work/W-087` |
 | W-086 | Locked the six-hero production grant MVP and the separately disclosed AI-assisted vertical-slice presentation strategy. [Scope and acceptance](#x-w-086-lock-the-smart-start-grant-mvp-scope). | `work/W-086` |
 | W-085 | Documented implemented prototype capabilities and reproducible local match statistics, separating timed sessions, repeat observations and metadata-only completions. [Scope and acceptance](#x-w-085-audit-prototype-and-match-evidence). | `work/W-085` |
 | W-084 | Aligned next-phase scope with the self-funded prototype and saved the agreed short Fund inquiry without sending. [Scope and acceptance](#x-w-084-clarify-smart-start-scope-and-draft-fund-inquiry). | `work/W-084` |
@@ -697,3 +698,11 @@ Request: adopt a six-hero 3v3 grant MVP and use AI tools for a full presentation
 Result: the dossier consistently separates the planned self-funded AI-assisted slice from the funded production outcome. The slice combines the existing playable foundation with six neutral placeholder hero presentations, an AI-generated placeholder 3D visual layer, temporary animation and AI-assisted camera work, all disclosed. The grant MVP is six production-ready new heroes/mechanics/cards, one production-ready 3D map/free camera and the associated 2D/3D art and animations. Pre-contract work is baseline rather than retrospective cost; approximately twenty heroes remain post-grant ambition. Acceptance: consistent owner/application/plan/evidence/backlog wording, application word limits, living-document validation and diff hygiene. The Fund inquiry remains unchanged and unsent.
 
 Historical evidence: completion commit addressed by immutable `work/W-086`; exact checks/results, review and limitations live in its body.
+
+### [x] W-087 Refine vertical-slice content and add audio
+
+Request: select six heroes for the vertical slice, retain their mechanics, replace names/art/card design, create 3D models for everything else in the match presentation, add the camera, and include audio because the prototype has none. Documentation/scope only; no implementation, contact, submission or publication.
+
+Result: the slice now selects six proven kits whose gameplay is unchanged while their identities, illustrations and complete card/UI presentation are replaced. Cards/UI remain 2D; all relevant board-visible categories are explicitly 3D: six heroes, minions, map/terrain, tokens/markers and props, with free camera and temporary animation/VFX. Placeholder music/SFX complete the slice. Production scope adds final music, ambience, UI and gameplay SFX; voice/barks require a cost decision. The saved Fund inquiry predates this refinement and is marked not to send unrevised. Acceptance: consistent dossier/application/plan/evidence/backlog, existing-versus-funded boundary, application word limits, living-document validation and diff hygiene.
+
+Historical evidence: completion commit addressed by immutable `work/W-087`; exact checks/results, review and limitations live in its body.
