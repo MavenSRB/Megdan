@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-088 | Removed game-audio work from the pre-application slice and reserved the complete audio layer for a separately quoted grant-budget package. [Scope and acceptance](#x-w-088-move-all-game-audio-into-the-grant-budget). | `work/W-088` |
 | W-087 | Kept six selected hero kits mechanically unchanged, scoped new card/visual presentation, enumerated the board-visible 3D layer and added the absent audio layer. [Scope and acceptance](#x-w-087-refine-vertical-slice-content-and-add-audio). | `work/W-087` |
 | W-086 | Locked the six-hero production grant MVP and the separately disclosed AI-assisted vertical-slice presentation strategy. [Scope and acceptance](#x-w-086-lock-the-smart-start-grant-mvp-scope). | `work/W-086` |
 | W-085 | Documented implemented prototype capabilities and reproducible local match statistics, separating timed sessions, repeat observations and metadata-only completions. [Scope and acceptance](#x-w-085-audit-prototype-and-match-evidence). | `work/W-085` |
@@ -706,3 +707,11 @@ Request: select six heroes for the vertical slice, retain their mechanics, repla
 Result: the slice now selects six proven kits whose gameplay is unchanged while their identities, illustrations and complete card/UI presentation are replaced. Cards/UI remain 2D; all relevant board-visible categories are explicitly 3D: six heroes, minions, map/terrain, tokens/markers and props, with free camera and temporary animation/VFX. Placeholder music/SFX complete the slice. Production scope adds final music, ambience, UI and gameplay SFX; voice/barks require a cost decision. The saved Fund inquiry predates this refinement and is marked not to send unrevised. Acceptance: consistent dossier/application/plan/evidence/backlog, existing-versus-funded boundary, application word limits, living-document validation and diff hygiene.
 
 Historical evidence: completion commit addressed by immutable `work/W-087`; exact checks/results, review and limitations live in its body.
+
+### [x] W-088 Move all game audio into the grant budget
+
+Request: do not spend time on audio before application; budget it as future work only if the grant is approved. Documentation/scope only; no production, procurement, implementation, contact, submission or publication.
+
+Result: the pre-application vertical slice is explicitly visual/gameplay-only and retains the prototype's no-audio state. The proposed project creates the audio layer from zero after award. Music, ambience, UI and gameplay SFX form a separately quoted work package; voice/barks must be priced and explicitly included or excluded. The presentation video may have clear spoken narration but makes no claim of finished game audio. Acceptance: consistent dossier/application/plan/video wording, existing-versus-funded boundary, application word limits, living-document validation and diff hygiene.
+
+Historical evidence: completion commit addressed by immutable `work/W-088`; exact checks/results, review and limitations live in its body.

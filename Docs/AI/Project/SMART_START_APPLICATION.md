@@ -50,7 +50,7 @@ We propose an original 3v3 turn-based tactical game in which each player control
 
 The next development phase builds on a self-funded functional prototype. Six proven hero kits retain their gameplay while receiving new identities, illustrations and card/UI design. Support would fund their production-ready presentation, 3D models for all relevant board-visible elements, one 3D map, a freely movable camera, animation/VFX and audio, with a visual identity inspired by Slavic mythology. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing technical work is the starting point, not a request for retrospective reimbursement. Rights requirements remain part of the formal application checklist.
 
-[Approximately twenty further heroes remain a post-grant ambition. Clearly labelled AI-generated placeholder visuals/audio may support the slice but are not presented as final production assets.]
+[Approximately twenty further heroes remain a post-grant ambition. Clearly labelled AI-generated placeholder visuals may support the slice but are not presented as final production assets. Game audio is future grant-budgeted work.]
 
 Development will combine implementation, observed playtests and structured user feedback. AI tools assist code and visual prototyping, including the planned vertical slice; AI generation itself is not the customer value. The project will test whether the intended audience understands the game, returns voluntarily and values it enough to support a viable business.
 
@@ -118,7 +118,7 @@ For each of 2–5 members collect: full name; project role and deliverables; rel
 
 ## Video — maximum three minutes
 
-Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted vertical slice demonstrating one 3v3 match, complete 3D board presentation, free camera and placeholder audio, with all placeholders visibly disclosed; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, remaining production work and project outcome. Adjust timings for actual team size. English, clear narration, accessible link, no recognizable borrowed-content demonstration. No video or vertical slice has yet been created under this plan.
+Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted vertical slice demonstrating one 3v3 match, complete 3D board presentation and free camera, with visual placeholders disclosed and no claim of finished game audio; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, remaining production work and project outcome. Adjust timings for actual team size. English, clear spoken narration, accessible link, no recognizable borrowed-content demonstration. No video or vertical slice has yet been created under this plan.
 
 ## Mentorship — maximum 200 words
 
