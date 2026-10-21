@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-086 | Locked the six-hero production grant MVP and the separately disclosed AI-assisted vertical-slice presentation strategy. [Scope and acceptance](#x-w-086-lock-the-smart-start-grant-mvp-scope). | `work/W-086` |
 | W-085 | Documented implemented prototype capabilities and reproducible local match statistics, separating timed sessions, repeat observations and metadata-only completions. [Scope and acceptance](#x-w-085-audit-prototype-and-match-evidence). | `work/W-085` |
 | W-084 | Aligned next-phase scope with the self-funded prototype and saved the agreed short Fund inquiry without sending. [Scope and acceptance](#x-w-084-clarify-smart-start-scope-and-draft-fund-inquiry). | `work/W-084` |
 | W-083 | Prepared the separate original-IP Smart Start documentation branch; [scope and acceptance](#x-w-083-prepare-the-smart-start-application-documentation-branch). | `work/W-083` |
@@ -688,3 +689,11 @@ Request: extract existing prototype capabilities, inspect match statistics in lo
 Result: an indexed evidence snapshot and read-only reproducibility script cover implemented features with source/package distinctions, timestamped gameplay logs and online run metadata. The application now uses the timed completed cohort without inflating counts with technical trials, repeated final-state observations or overlapping formats. Acceptance: inspect format semantics, reconcile counts/durations and word limits, preserve private raw logs, review claim boundaries, validate living documentation and diff hygiene. Fund inquiry remains unchanged and unsent.
 
 Historical evidence: completion commit addressed by immutable `work/W-085`; exact checks/results, review and limitations live in its body.
+
+### [x] W-086 Lock the Smart Start grant MVP scope
+
+Request: adopt a six-hero 3v3 grant MVP and use AI tools for a full presentation vertical slice, including placeholder visuals, 3D map and free camera. Documentation/scope only; do not implement the slice, contact the Fund, submit or publish.
+
+Result: the dossier consistently separates the planned self-funded AI-assisted slice from the funded production outcome. The slice combines the existing playable foundation with six neutral placeholder hero presentations, an AI-generated placeholder 3D visual layer, temporary animation and AI-assisted camera work, all disclosed. The grant MVP is six production-ready new heroes/mechanics/cards, one production-ready 3D map/free camera and the associated 2D/3D art and animations. Pre-contract work is baseline rather than retrospective cost; approximately twenty heroes remain post-grant ambition. Acceptance: consistent owner/application/plan/evidence/backlog wording, application word limits, living-document validation and diff hygiene. The Fund inquiry remains unchanged and unsent.
+
+Historical evidence: completion commit addressed by immutable `work/W-086`; exact checks/results, review and limitations live in its body.

@@ -4,9 +4,9 @@ Return to [preparation owner](SMART_START.md). This is a proposal for discussion
 
 ## Nine-month proposal
 
-Conditional on [Fund clarification of next-phase eligibility](SMART_START_FUND_QUESTION.md). The starting point is a functional, already played/tested prototype developed with Stefan's own work and funds. Support is sought for future new heroes/mechanics, 2D/3D art and animations, not reimbursement of prior work. No six-hero pre-application deliverable is required. Presentation may use temporary/synthetic art or selected prepared examples. Approximately twenty further heroes remain the broader ambition; exact grant quantity and schedule require production estimates and Fund guidance. The table is a provisional delivery skeleton, not an approved production commitment.
+Conditional on [Fund clarification of next-phase eligibility](SMART_START_FUND_QUESTION.md). The starting point is a functional, already played/tested prototype developed with Stefan's own work and funds. The proposed grant MVP is six production-ready new heroes and their mechanics/cards, one production-ready 3D map with a freely movable camera, and associated 2D/3D art and animations; it does not reimburse prior work. A full pre-application AI-assisted vertical slice may combine the existing playable foundation with six neutral placeholder hero presentations, an AI-generated placeholder 3D visual layer, temporary animations and an AI-assisted free camera. It demonstrates direction, not completion. Approximately twenty further heroes remain a post-grant ambition. The table is a provisional delivery skeleton pending production estimates and Fund guidance.
 
-The product target is 3D presentation with a freely movable camera. Before costing, decide token-in-3D-board versus modeled/rigged heroes, camera movement/rotation/zoom and usability limits, required animation/VFX list, map/environment assets and per-card illustration counts. Preparing token art is optional, not an application prerequisite. Confirm Veljko's 3D/animation capability or budget for specialist help; UI/UX and illustration portfolio evidence alone does not establish modeling/rigging experience.
+Before costing, define the six-hero model/rig depth, camera movement/rotation/zoom and usability limits, required animation/VFX list, the single map's environment assets and per-card illustration counts. Record which vertical-slice assets/code were completed before the contractual start and exclude them from requested costs; budget only the remaining production-ready work. Confirm Veljko's 3D/animation capability or budget for specialist help; UI/UX and illustration portfolio evidence alone does not establish modeling/rigging experience.
 
 Months run from the eventual contractual start, not today's date. Applicant availability and approved scope must determine final dates.
 
@@ -14,14 +14,14 @@ Months run from the eventual contractual start, not today's date. Applicant avai
 | --- | --- | --- |
 | Baseline and plan | Month 1 | Rights-cleared technical baseline, exact original-MVP scope, named owners, costs, measurement protocol and mentor/Fund-approved milestone plan |
 | Problem/market validation | Months 1–3 | Target-group survey, methods/sample/limitations, audited historical evidence and explicit decision on audience/value proposition; validation report |
-| Hero and visual production | Months 2–5, provisional | New hero kits/cards in costed batches; scoped 3D scene/free camera, animations and token/card/UI art; affected rules/replay/network checks and observed sessions. Quantity and dates must follow asset/rig inventory and measured production capacity; exclude completed pre-project work |
+| Hero and visual production | Months 2–5, provisional | Six new hero kits/cards in costed batches; one 3D map/free camera, animations and hero/card/UI art; affected rules/replay/network checks and observed sessions. Dates must follow the asset/rig inventory and measured production capacity; exclude completed pre-project work |
 | MVP validation | Months 5–6 | Original-MVP demonstration, usability and technical evidence, issue disposition, rights manifest; MVP report in the second half of the contract, not earlier |
 | Business model | Months 6–8 | Competitor and pricing evidence, acquisition/group-formation assumptions, cost model, financial forecast and launch decision; business-model report |
 | Final demonstration | Month 9 | Final report, approximately 15-minute presentation, honest before/after development status, future financing plan and settlement requirements |
 
 The reports occur in the required order even if development activities overlap. Agree exact dates with the mentor/Fund. Standard duration is 6–9 months; exceptional extension up to three months needs justification and Fund approval, requested at least 15 days before the end. Do not rely on an extension to make the original plan feasible.
 
-Not committed in this plan: replacing all 32 legacy heroes, approximately twenty additional original heroes, ranked matchmaking, a live-service backend, mobile release, extra modes or AI gameplay research. Full-roster ambition remains visible but needs a production estimate and a separate grant-scope decision. Scope changes require a decision, not gradual additions to the grant promise.
+Not committed in this plan: replacing all 32 legacy heroes, expanding to the approximately twenty-hero post-grant ambition, ranked matchmaking, a live-service backend, mobile release, extra modes or AI gameplay research. Scope changes require a decision, not gradual additions to the six-hero grant promise.
 
 ## Validation that builds on existing play
 
