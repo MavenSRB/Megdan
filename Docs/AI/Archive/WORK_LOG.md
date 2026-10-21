@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-089 | Defined a coherent 3D board world and interaction layer with a separate 2D screen overlay; no flat token stand-ins on the target board. [Scope and acceptance](#x-w-089-define-the-hybrid-3d-world2d-overlay-presentation). | `work/W-089` |
 | W-088 | Removed game-audio work from the pre-application slice and reserved the complete audio layer for a separately quoted grant-budget package. [Scope and acceptance](#x-w-088-move-all-game-audio-into-the-grant-budget). | `work/W-088` |
 | W-087 | Kept six selected hero kits mechanically unchanged, scoped new card/visual presentation, enumerated the board-visible 3D layer and added the absent audio layer. [Scope and acceptance](#x-w-087-refine-vertical-slice-content-and-add-audio). | `work/W-087` |
 | W-086 | Locked the six-hero production grant MVP and the separately disclosed AI-assisted vertical-slice presentation strategy. [Scope and acceptance](#x-w-086-lock-the-smart-start-grant-mvp-scope). | `work/W-086` |
@@ -715,3 +716,11 @@ Request: do not spend time on audio before application; budget it as future work
 Result: the pre-application vertical slice is explicitly visual/gameplay-only and retains the prototype's no-audio state. The proposed project creates the audio layer from zero after award. Music, ambience, UI and gameplay SFX form a separately quoted work package; voice/barks must be priced and explicitly included or excluded. The presentation video may have clear spoken narration but makes no claim of finished game audio. Acceptance: consistent dossier/application/plan/video wording, existing-versus-funded boundary, application word limits, living-document validation and diff hygiene.
 
 Historical evidence: completion commit addressed by immutable `work/W-088`; exact checks/results, review and limitations live in its body.
+
+### [x] W-089 Define the hybrid 3D-world/2D-overlay presentation
+
+Request: if the board presentation becomes 3D, every element on the board must also be 3D. Documentation/scope only; no implementation, contact, submission or publication.
+
+Result: the target presentation is explicitly hybrid. The 3D/world-space layer includes map geometry, spaces/zones, heroes, minions, tokens/markers, props, selection/target feedback and movement/attack cues. Screen-space cards, hand/hero panels, buttons, tooltips and scoreboard remain 2D overlay UI. The target board has no flat 2D token stand-ins. Acceptance: consistent dossier/application/plan/evidence/backlog wording, application word limits, living-document validation and diff hygiene.
+
+Historical evidence: completion commit addressed by immutable `work/W-089`; exact checks/results, review and limitations live in its body.
