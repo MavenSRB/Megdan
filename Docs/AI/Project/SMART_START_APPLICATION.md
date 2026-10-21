@@ -62,7 +62,7 @@ For players who want the coordination and individual hero responsibility of a MO
 
 ## Current technology and MVP steps — maximum 200 words
 
-A private playable prototype already provides a deterministic rules foundation, multiplayer session handling and debugging/replay capabilities. It uses legacy content and is not presented as the finished original-IP product.
+A self-funded playable prototype already supports private multiplayer from 2v2 to 5v5, 32 configured heroes and four maps. Its complete tactical loop includes card selection, initiative, movement, combat, abilities, minions, lane progression, hero progression and victory scoring. It also provides reconnect/resynchronization, deterministic rules, snapshots and Undo/replay capabilities. An experimental cooperative mode exists. These are existing-prototype capabilities, not a claim that the future new heroes and production art are finished. [Evidence and source/build distinctions](SMART_START_PROTOTYPE_EVIDENCE.md).
 
 The provisional nine-month plan begins with a documented baseline, production inventory and mentor-approved plan. Future work covers costed batches of new hero mechanics/cards, 2D/3D art and animations, including the scoped 3D scene and free camera. Timing and costs require re-estimation after defining asset counts and specialist needs. Testing, required target-group research, business-model work and final demonstration remain in the implementation plan. The Fund has not yet confirmed whether this next development phase fits the program.
 
@@ -70,11 +70,11 @@ Reusable technology will be reviewed rather than assumed commercially clear. Onl
 
 ## Potential-customer feedback — maximum 200 words
 
-The private prototype has been played in repeated sessions, with local logs available for audit. This is meaningful evidence of technical execution and engagement with that prototype. We will report verified session counts and elapsed durations with a clear methodology and distinguish developer/testing sessions from independent player participation.
+An audit of local build logs identified 14 completed six-seat sessions lasting at least 30 minutes, totaling 21.14 elapsed match-hours across 10 play dates from September 17 to October 8, 2026 (UTC). Mean duration was 90.61 minutes. Each has explicit start/end events and no negative/local seat claims. Short technical sessions and a repeated terminal observation are excluded from this cohort. Newer completion records lack duration timestamps and are reported separately. This supports sustained use of the working prototype, not merely a concept demonstration. [Audit method and limitations](SMART_START_PROTOTYPE_EVIDENCE.md).
 
 We have not yet established a consented, independently recruited target-user dataset for the original product. The next validation combines this existing behavioral evidence with a structured target-group survey and observed original-MVP sessions. It will record reasons for playing and returning, perceived alternatives, barriers to arranging a group and willingness to pay.
 
-[ADD APPROVED AUDITED COUNTS AND ACTUAL FEEDBACK. No retention, referrals or purchase results are currently asserted.]
+[ADD ACTUAL PARTICIPANT FEEDBACK. Logs do not verify unique humans or target-group membership; no retention, referrals or purchase results are asserted.]
 
 ## Market size and trends — maximum 300 words
 

@@ -20,6 +20,7 @@ Generic engine, networking, Undo and replay are candidates for reuse, subject to
 - [English application working draft](SMART_START_APPLICATION.md)
 - [Proposed delivery, budget and validation plan](SMART_START_PLAN.md)
 - [Agreed short inquiry to the Fund — saved, not sent](SMART_START_FUND_QUESTION.md)
+- [Implemented prototype and audited match evidence](SMART_START_PROTOTYPE_EVIDENCE.md)
 
 ## Positioning decision
 
@@ -33,7 +34,7 @@ Original mythology-inspired expression supports product identity; changing names
 
 Existing playable builds and match histories are valuable evidence of technical execution and sustained use of the private prototype. They are not evidence that the new original content has already been tested.
 
-The preliminary local review of `Builds/**/match-*.log` found 67 distinct files, including 42 with a start event. A selected subset contained 14 completed, long-duration six-seat matches, approximately 21.1 elapsed match-hours, with mean/median around 90.6 minutes and a 71.2–128.7 minute range. Starts in that subset span 2026-09-17 to 2026-10-08 UTC; the last completion is on October 9 in local time. These are provisional internal figures, not approved application statistics: the filter, session deduplication, host/client roles, smoke-test exclusions and coverage of newer log formats still require a reproducible audit before external use.
+The [reproducible local audit](SMART_START_PROTOTYPE_EVIDENCE.md) now owns the capability summary, timed session table, inventory of both gameplay and online metadata formats, duplicate/test boundaries and coverage limitations. The application draft uses its conservative timed cohort; newer completion metadata is reported separately rather than added to the same matches twice.
 
 Six claimed seats do not prove six distinct humans. Logs alone do not identify age, MOBA background, voluntary return, friend referrals, purchase intention or population retention. Elapsed match time may include pauses. Do not multiply match-hours by six and report verified human player-hours. `SessionComplete` is not a match-end event. Seven wins per side in a small selected subset would not prove balance.
 

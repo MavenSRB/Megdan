@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-085 | Documented implemented prototype capabilities and reproducible local match statistics, separating timed sessions, repeat observations and metadata-only completions. [Scope and acceptance](#x-w-085-audit-prototype-and-match-evidence). | `work/W-085` |
 | W-084 | Aligned next-phase scope with the self-funded prototype and saved the agreed short Fund inquiry without sending. [Scope and acceptance](#x-w-084-clarify-smart-start-scope-and-draft-fund-inquiry). | `work/W-084` |
 | W-083 | Prepared the separate original-IP Smart Start documentation branch; [scope and acceptance](#x-w-083-prepare-the-smart-start-application-documentation-branch). | `work/W-083` |
 | W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
@@ -679,3 +680,11 @@ Request, finalized after the interrupted draft: save the user's exact short ques
 Result: the agreed Serbian message is saved verbatim, without the original-hero adjective, separate IP discussion or market-validation phrase. Internal formal requirements remain intact. Dossier, English draft, delivery plan, product route and backlog reflect optional synthetic art/prepared examples, no six-hero pre-application prerequisite, unresolved funded hero count and a budget requiring recosting. Acceptance: consistent scope, exact message, local links/word limits, living documentation and diff checks. No implementation, email draft in an external service, sending or publication.
 
 Historical evidence: completion commit addressed by immutable `work/W-084`; exact checks/results, review and limitations live in its body.
+
+### [x] W-085 Audit prototype and match evidence
+
+Request: extract existing prototype capabilities, inspect match statistics in local builds and update the Smart Start documentation; do not send anything. Documentation/evidence only, no game changes.
+
+Result: an indexed evidence snapshot and read-only reproducibility script cover implemented features with source/package distinctions, timestamped gameplay logs and online run metadata. The application now uses the timed completed cohort without inflating counts with technical trials, repeated final-state observations or overlapping formats. Acceptance: inspect format semantics, reconcile counts/durations and word limits, preserve private raw logs, review claim boundaries, validate living documentation and diff hygiene. Fund inquiry remains unchanged and unsent.
+
+Historical evidence: completion commit addressed by immutable `work/W-085`; exact checks/results, review and limitations live in its body.

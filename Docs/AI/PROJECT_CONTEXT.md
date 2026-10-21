@@ -9,6 +9,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Smart Start English application draft](Project/SMART_START_APPLICATION.md)
 - [Smart Start delivery and budget proposal](Project/SMART_START_PLAN.md)
 - [Smart Start unsent Fund inquiry](Project/SMART_START_FUND_QUESTION.md)
+- [Smart Start prototype and audited match evidence](Project/SMART_START_PROTOTYPE_EVIDENCE.md)
 
 - [PvE design and rule decisions](Project/PVE_DESIGN.md)
 - [PvE implementation and isolation](Project/PVE_IMPLEMENTATION.md)
