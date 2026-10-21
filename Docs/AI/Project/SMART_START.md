@@ -10,6 +10,8 @@ Requested future support is now scoped as a 3v3 grant MVP built on six selected,
 
 The approved working project title is **Megdan**, pending ordinary name/trademark clearance before submission or publication. The six presentation identities and their internal mechanically unchanged source kits are: Svarog (Brogan), Stribog (Swift), Morana (Misa), Mokoš (Tali), Veles (Tigerclaw) and Perun (Wasp). Source-kit names are internal development references only. This mapping does not authorize visual design, card rewriting or implementation; those remain later, separately scoped work.
 
+The proposed team is Stefan Petrovic and Veljko Petrovic, both Serbian residents. Applicant-reported eligibility facts: neither holds an ownership share or representative role in another Serbian company, neither participates in another current Fund project/application, and neither has previously submitted the same or a substantially similar project to the Fund. Proposed ownership of the new company is Stefan 70% and Veljko 30%; the representative remains to be selected. Stefan remains employed by Pmax Automation and develops Megdan alongside that work. Veljko currently freelances and is provisionally expected to work full time on the project, subject to his confirmation and the approved budget. Studio/team name remains open.
+
 The broader post-grant ambition remains approximately twenty additional heroes, but that is not the grant promise. The grant scope is six. Existing work is the self-funded baseline, not a request for retrospective reimbursement. See the [agreed short inquiry](SMART_START_FUND_QUESTION.md). No implementation, publication or sending is authorized.
 
 The presentation target is a full AI-assisted visual vertical slice built on the existing playable foundation: one 3v3 match using the six selected kits, new neutral identities/card visuals, an AI-generated placeholder 3D world including board interaction cues, temporary animations/VFX and an AI-assisted freely movable camera. No flat 2D token stand-ins remain on the target 3D board. Screen-space cards, hand/hero panels, buttons, tooltips and scoreboard remain 2D overlay UI. The slice intentionally has no game-audio production before application. Disclose AI use and label temporary assets.
@@ -48,9 +50,9 @@ Do not discard existing evidence or restart validation from zero. Audit it, obta
 
 | Decision/evidence | Owner | Closing condition |
 | --- | --- | --- |
-| Actual team of 2–5, roles, residency, ownership/representative status and other Fund engagements | Applicant | Eligibility questionnaire supported by facts for every member; eligible founder structure |
+| Team eligibility and founder structure | Applicant | Stefan and Veljko confirm the recorded residency/company/Fund facts in the official form; 70/30 ownership retained or revised; representative selected |
 | Project title, team title and portal ID | Applicant | **Megdan** cleared or replaced before submission; team title approved; actual portal ID assigned |
-| Applicant experience, achievements and availability | Each member | Accurate biographies and workload, not invented credentials |
+| Applicant experience, achievements and availability | Each member | Stefan biography reviewed; Veljko portfolio/biography and exact commitment confirmed; workloads reconciled with budget |
 | IP provenance and rights in reusable technology/content | Applicant with qualified adviser | Declaration can truthfully be signed; evidence and third-party contracts retained |
 | Existing prototype versus proposed first original MVP | Applicant; Fund clarification if needed | Transparent current-stage description; any unresolved program-stage question answered |
 | Commercial model, price tests and scope | Applicant | Approved assumptions, cost model and validation thresholds |

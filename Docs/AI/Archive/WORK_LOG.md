@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-092 | Recorded the confirmed two-person Smart Start team facts, proposed ownership and employment/availability boundaries, and drafted Stefan's evidence-based biography from his supplied CV. [Scope and acceptance](#x-w-092-record-confirmed-smart-start-team-facts). | `work/W-092` |
 | W-091 | Recorded **Megdan** as the working project title and the approved six-hero identity mapping, while keeping clearance open and visual/card/implementation work out of scope. [Scope and acceptance](#x-w-091-record-the-megdan-title-and-six-hero-identity-mapping). | `work/W-091` |
 | W-090 | Produced the current private Windows package from executable `main` through W-082, including W-080's lane-scoped Heavy immunity, W-081's one-Life Undo restoration and W-082's Shift+hover compact trays. Exact-artifact player, PvP, PvE, render, manifest/archive and extracted-launch checks passed; W079 and older packages remain preserved, while Mac remains W075. | `work/W-090` |
 | W-089 | Defined a coherent 3D board world and interaction layer with a separate 2D screen overlay; no flat token stand-ins on the target board. [Scope and acceptance](#x-w-089-define-the-hybrid-3d-world2d-overlay-presentation). | `work/W-089` |
@@ -744,3 +745,13 @@ Result: the preparation owner, English application draft and delivery plan now a
 Acceptance: living-document validation and diff hygiene passed.
 
 Historical evidence: completion commit addressed by immutable `work/W-091`; exact checks/results, review and limitations live in its body.
+
+### [x] W-092 Record confirmed Smart Start team facts
+
+Request: use the applicant's answers and Stefan's supplied CV to continue the Smart Start team documentation.
+
+Result: the dossier records Stefan Petrovic and Veljko Petrovic as the proposed Serbian-resident founders; applicant-reported absence of conflicting company/Fund participation and prior similar submissions; proposed 70/30 ownership; Stefan's continued Pmax employment and intensive parallel Megdan work; and Veljko's provisional full-time intent. The application contains a 351-word team section and an evidence-based Stefan biography. Veljko's portfolio/biography, exact commitment, representative and studio name remain explicit open items. CV contact details were not copied. No Fund contact, submission, publication or game change occurred.
+
+Acceptance: supplied-CV text extraction and single-page visual review supported the biography; the team section remains within its 400-word limit; living-document validation and diff hygiene passed.
+
+Historical evidence: completion commit addressed by immutable `work/W-092`; exact checks/results, review and limitations live in its body.

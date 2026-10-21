@@ -114,9 +114,19 @@ The application declaration will only be signed when its present-tense rights as
 
 ## Team — maximum 400 words, plus individual biographies
 
-[Supply actual members; do not treat AI tools as a team member.]
+The proposed two-person founding team is Stefan Petrovic and Veljko Petrovic. Both report Serbian residency, no ownership share or representative role in another Serbian company, no participation in another current Fund project/application and no previous submission of the same or a substantially similar project. Proposed ownership is Stefan 70% and Veljko 30%; the company representative and studio name remain to be selected.
 
-For each of 2–5 members collect: full name; project role and deliverables; relevant achievements with evidence; current job; education; availability; residency and company interests; other Fund engagements. Explain who owns engineering, original game/content design, player research, commercial development and project delivery. One person may own several functions, but gaps and outside support must be explicit. Existing build history can support execution claims only when attributed to the correct person and contribution.
+Stefan is the engineering and project lead. He independently developed the functional multiplayer prototype with his own work and funds. His responsibilities cover software architecture, deterministic game systems, networking, tools, technical integration and project delivery; game design, research and commercial ownership must be stated precisely before submission. He remains employed by Pmax Automation and reports sustained intensive Megdan development alongside that job. The project plan must use a credible declared availability rather than describe him as grant-funded full time.
+
+Veljko is the proposed art lead. He currently works freelance and is provisionally expected to commit full time during the project. His intended scope is original visual development and production for the six-hero MVP. His portfolio, biography, exact 2D/3D/animation responsibilities, availability and compensation must be reviewed and confirmed before the application and budget are approved. Specialist support remains budgetable where the portfolio does not cover a required production discipline.
+
+### Stefan Petrovic — working biography
+
+Stefan is an automation engineer and electrical/computer engineering graduate with professional experience since 2017. He has worked at Pmax Automation since 2020 on industrial software development, drive parameterization, commissioning, systems integration, PLC communication and troubleshooting. His supplied CV documents responsibility across complex material-tracking, automated handling, production-line and process-control systems, including international commissioning work. This background supports his ability to integrate deterministic software, diagnose failures and deliver technically complex systems. For Megdan, the stronger direct evidence is the functioning self-funded prototype and its repository/build history; final biography wording should connect specific project outcomes to Stefan without overstating game-industry employment.
+
+### Veljko Petrovic — information still required
+
+[Review portfolio and collect education/training, professional history, strongest credited works, tools, exact production disciplines and confirmed project availability. Do not infer 3D, rigging or animation capability from the word “artist.”]
 
 ## Video — maximum three minutes
 
