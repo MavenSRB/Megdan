@@ -45,6 +45,12 @@ Measure separately:
 
 Before tests, define decision thresholds with the applicant/mentor for comprehension, completion, return, pricing and group formation. Record negative results and pivots. Do not promise product-market fit merely for delivering the reports.
 
+### Pricing hypothesis
+
+Test USD 19.99 for one license against a three-player value target of USD 44.99 total (USD 15.00 per player, approximately 25% below three individual copies at USD 59.97). Ask unaided willingness-to-pay questions before showing either price. Separate “sounds fair” from a concrete choice, identify whether one organizer or three individuals would pay, and record currency/region. No payment collection is authorized by this plan.
+
+Do not describe the group target as a Steam three-pack: current Steamworks documentation says new packages cannot grant multiple copies of the same application. Confirm a compliant direct/external-key path and its payment, tax, refund, fraud and key-policy consequences, or test a platform-supported alternative. Until then the bottom-up model may compare individual and group economics, but the group channel remains unresolved.
+
 ## Illustrative budget — replace with quotations and actual people
 
 The following numerical model is retained only as the earlier arithmetic illustration, NOT the updated requested budget. All figures are RSD excluding VAT. It does not price the 3D, animation/VFX or audio scope or establish available financing. Replace it after confirming next-phase eligibility and inventorying future production work.

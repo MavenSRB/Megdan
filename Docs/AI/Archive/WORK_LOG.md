@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-094 | Recorded the USD 19.99 individual and USD 44.99 three-player pricing hypothesis, its exact discount and validation approach, while preserving Steam's current multi-copy-package restriction and leaving the compliant group channel unresolved. [Scope and acceptance](#x-w-094-record-the-initial-pricing-hypothesis-and-platform-constraint). | `work/W-094` |
 | W-093 | Established a dated competitor matrix, replaced the unsupported “no such game” claim with a defensible position against the closest historical precedent, and added bounded Steam platform context without treating it as reachable demand. [Scope and acceptance](#x-w-093-establish-the-initial-competitor-matrix-and-market-context). | `work/W-093` |
 | W-092 | Recorded the confirmed two-person Smart Start team facts, proposed ownership and employment/availability boundaries, and drafted Stefan's evidence-based biography from his supplied CV. [Scope and acceptance](#x-w-092-record-confirmed-smart-start-team-facts). | `work/W-092` |
 | W-091 | Recorded **Megdan** as the working project title and the approved six-hero identity mapping, while keeping clearance open and visual/card/implementation work out of scope. [Scope and acceptance](#x-w-091-record-the-megdan-title-and-six-hero-identity-mapping). | `work/W-091` |
@@ -766,3 +767,13 @@ Result: the requirements register now compares Megdan with Dota 2, Atlas Reactor
 Acceptance: affected-users/alternatives is 172/200 words, differentiation 70/200 and market context 183/300; every external fact has a first-party or official-store link; living-document validation and diff hygiene passed. No pricing forecast, outreach, submission, publication or game change occurred.
 
 Historical evidence: completion commit addressed by immutable `work/W-093`; exact checks/results, review and limitations live in its body.
+
+### [x] W-094 Record the initial pricing hypothesis and platform constraint
+
+Request: use USD 19.99 individual pricing and a USD 44.99 three-player offer as the applicant's initial commercial hypothesis.
+
+Result: the application and plan now test USD 19.99 per license against a USD 44.99 three-player value target: USD 15.00 per player and 24.98% below three individual copies at USD 59.97. They distinguish unaided willingness to pay, organizer versus individual payment and actual channel feasibility. Official Steamworks documentation is recorded: new packages cannot grant multiple copies of the same app, so no Steam three-pack is promised. A compliant direct/external-key route or a platform-supported alternative remains unresolved.
+
+Acceptance: arithmetic reproduced; Sustainable business is 234/300 words; official Steam package, bundle and pricing sources support the constraint; living-document validation and diff hygiene passed. No storefront setup, key request, payment collection, forecast, outreach, submission, publication or game change occurred.
+
+Historical evidence: completion commit addressed by immutable `work/W-094`; exact checks/results, review and limitations live in its body.

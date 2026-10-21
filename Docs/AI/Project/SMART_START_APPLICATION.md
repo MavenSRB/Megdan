@@ -96,7 +96,9 @@ Segmentation will distinguish current versus former MOBA players, preferred sess
 
 ## Sustainable business and rollout — maximum 300 words
 
-Our initial business-model hypothesis is a paid PC game, subject to price and group-purchase testing. We will compare individual purchase with a group-friendly offer and estimate net receipts after platform charges, taxes/refunds where applicable, customer support and online operating costs. No price or sales forecast has yet been validated.
+Our initial business-model hypothesis is a paid PC game at USD 19.99 per license. We will test this against a group-value target of USD 44.99 for three players: USD 15.00 per player, approximately 25% below three individual copies. These are applicant hypotheses, not validated willingness to pay or a sales forecast.
+
+Steam does not currently create new packages that grant multiple copies of the same application, so the three-player target cannot be presented as an available Steam three-pack. Before committing to it, we must confirm a compliant direct/external-key route or replace it with a platform-supported promotion. Validation will first measure unaided price expectations, then compare the individual and group propositions and record who would actually organize and pay for a team. Net receipts must account for platform/payment deductions, regional pricing, taxes and refunds where applicable, customer support and online operating costs.
 
 The proposed rollout begins with invited, rights-cleared MVP testing, then a commercial-readiness decision based on user evidence and the cost model. A public demo/store presence and community-led discovery are potential later steps requiring separate approval and funding. Marketing expenditure will not be placed in an ineligible grant cost category.
 
