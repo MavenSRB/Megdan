@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-097 | Defined a complete publisher-ready six-hero 3v3 vertical slice as the funded end state and separated it from the optional pre-application AI-placeholder proof of direction. [Scope and acceptance](#x-w-097-define-the-complete-funded-vertical-slice-outcome). | `work/W-097` |
 | W-096 | Made a validated publisher-ready MVP the funded outcome and publisher partnership the preferred post-grant scaling route, while retaining customer validation and unit economics as the team's responsibilities. [Scope and acceptance](#x-w-096-make-publisher-partnership-the-post-grant-commercialization-route). | `work/W-096` |
 | W-095 | Added bounded low/base/high paid-team sensitivity cases with reproducible gross-receipt arithmetic, while explicitly withholding market-reach, forecast and break-even claims. [Scope and acceptance](#x-w-095-add-a-bounded-sales-sensitivity-model). | `work/W-095` |
 | W-094 | Recorded the USD 19.99 individual and USD 44.99 three-player pricing hypothesis, its exact discount and validation approach, while preserving Steam's current multi-copy-package restriction and leaving the compliant group channel unresolved. [Scope and acceptance](#x-w-094-record-the-initial-pricing-hypothesis-and-platform-constraint). | `work/W-094` |
@@ -799,3 +800,15 @@ Result: the dossier, application and nine-month plan now define the funded outco
 Acceptance: existing/funded/post-grant boundaries agree across the dossier; customer evidence and economics remain team responsibilities; Sustainable business is 297/300 words and Mentorship 94/200; living-document validation and diff hygiene passed. No publisher list, outreach, deal terms, submission, publication or game change occurred.
 
 Historical evidence: completion commit addressed by immutable `work/W-096`; exact checks/results, review and limitations live in its body.
+
+### [x] W-097 Define the complete funded vertical-slice outcome
+
+Request: make a finished vertical slice the end-of-project result.
+
+Result: the dossier now distinguishes an optional pre-application AI-assisted proof-of-direction presentation, with disclosed placeholders and no game audio, from the funded final result. The latter is a complete publisher-ready vertical slice: an installable stable end-to-end 3v3 match on one production-quality original map; six original heroes with final slice card/UI presentation; all required 3D board elements, rigs, animation/VFX, camera and state feedback; music, ambience and UI/gameplay SFX; affected lobby/network/reconnect behavior; performance/usability and player-validation evidence; and a rights manifest. Voice/barks remain optional only if explicitly excluded after quotation.
+
+“Complete” is bounded to that slice, not the full commercial game. Later heroes, maps/modes, public matchmaking/service infrastructure, full localization and launch marketing remain outside the grant promise and form the publisher-stage production plan.
+
+Acceptance: preparation owner, application, delivery plan and backlog agree on the two states; Solution is 247/300 words, Current technology 164/200, Sustainable business 297/300 and Mentorship 94/200; living-document validation and diff hygiene passed. No visual production, card redesign, implementation, audio procurement, publisher outreach, submission or publication occurred.
+
+Historical evidence: completion commit addressed by immutable `work/W-097`; exact checks/results, review and limitations live in its body.

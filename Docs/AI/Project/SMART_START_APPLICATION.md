@@ -22,7 +22,7 @@ Eligibility questionnaire: [ALL ANSWERS REQUIRE MEMBER FACTS; do not pre-tick].
 
 ## Development phase and innovation level
 
-Stage selection remains unresolved pending Fund clarification. A functional private prototype already exists and is played/tested. The proposed grant MVP selects six proven kits, retains gameplay and replaces names, identities, illustrations and card/UI design. It adds a production-ready 3D world for all board-bound pieces and interaction cues, one map, a free camera, animation/VFX and the absent audio layer. Cards, hand/hero panels, controls, tooltips and scoreboard remain a 2D screen overlay. A disclosed AI-assisted slice may demonstrate the direction; completed slice work is self-funded baseline. The [saved inquiry](SMART_START_FUND_QUESTION.md) predates this refinement and must not be sent unrevised.
+Stage selection remains unresolved pending Fund clarification. A functional private prototype already exists and is played/tested. A disclosed AI-assisted proof-of-direction presentation may demonstrate the proposed look with placeholders and no game audio; any completed pre-contract work remains self-funded baseline. The grant outcome is a complete publisher-ready vertical slice: six original heroes with unchanged proven mechanics, final card/UI presentation, one production-quality 3D world for every board-bound piece and cue, a free camera, required animation/VFX and the absent audio layer. The [saved inquiry](SMART_START_FUND_QUESTION.md) predates this refinement and must not be sent unrevised.
 
 Innovation level: [DECIDE AFTER COMPETITOR/USER EVIDENCE]. Do not claim breakthrough innovation or a new market merely because the combination is unusual.
 
@@ -48,7 +48,7 @@ Atlas Reactor is the closest identified historical precedent: coordinated 4v4 ar
 
 We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
 
-The next phase builds on a self-funded functional prototype. Six proven kits retain gameplay while receiving new identities, illustrations and card/UI design. Support would fund a coherent 3D world: map geometry, spaces/zones, heroes, minions, tokens/markers, props and board interaction cues, plus a free camera, animation/VFX and audio. Screen-space cards and controls remain 2D. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing work is the starting point, not retrospective reimbursement. Rights requirements remain part of the formal checklist.
+The next phase builds on a self-funded functional prototype and delivers a complete publisher-ready vertical slice. Six proven kits retain gameplay while receiving new identities, illustrations and final card/UI design. Support would fund one production-quality 3D world: map geometry, spaces/zones, heroes, minions, tokens/markers, props and board interaction cues, plus a free camera, required animation/VFX and audio. Screen-space cards and controls remain 2D. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing and pre-contract presentation work is the starting point, not retrospective reimbursement.
 
 The working six-hero presentation roster is Svarog, Stribog, Morana, Mokoš, Veles and Perun. Internally these map to the mechanically unchanged Brogan, Swift, Misa, Tali, Tigerclaw and Wasp source kits respectively; those source-kit references are not submission-facing identities.
 
@@ -64,7 +64,7 @@ For players who want MOBA-style coordination and individual hero responsibility 
 
 A self-funded playable prototype supports private multiplayer from 2v2 to 5v5, 32 configured heroes and four maps. Its tactical loop includes cards, initiative, movement, combat, abilities, minions, lane progression, progression and victory scoring. It also provides reconnect/resynchronization, deterministic rules, snapshots and Undo/replay. An experimental cooperative mode exists. It currently has no audio. These are existing capabilities, not finished production assets. [Evidence and source/build distinctions](SMART_START_PROTOTYPE_EVIDENCE.md).
 
-The nine-month proposal starts with a baseline and production inventory. Future work productionizes the six kits' new card/visual design, complete 3D board world and cues, one map/free camera, animation/VFX and audio. Timing and costs follow asset counts and specialist needs. Testing, target-group research, business-model work and final demonstration remain required. The Fund has not confirmed fit.
+The nine-month proposal starts with a baseline and production inventory, then completes the six kits' new card/visual design, 3D board world and cues, one map/free camera, required animation/VFX and audio as a stable end-to-end 3v3 vertical slice. Testing, target-group research, business-model work, rights evidence and final publisher-readiness demonstration remain required. Timing and costs follow asset counts and specialist needs. The Fund has not confirmed fit.
 
 Reusable technology will be reviewed rather than assumed commercially clear. Online usability, group formation, content appeal and viable pricing remain material product questions. No public-service scalability or unsupported platform capability is claimed from private-host testing.
 
@@ -136,7 +136,7 @@ Stefan is an automation engineer and electrical/computer engineering graduate wi
 
 ## Video — maximum three minutes
 
-Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted vertical slice demonstrating one 3v3 match, complete 3D board presentation and free camera, with visual placeholders disclosed and no claim of finished game audio; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, remaining production work and project outcome. Adjust timings for actual team size. English, clear spoken narration, accessible link, no recognizable borrowed-content demonstration. No video or vertical slice has yet been created under this plan.
+Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-assisted proof-of-direction presentation demonstrating one 3v3 match, 3D board direction and free camera, with placeholders disclosed and no claim of finished game audio; 1:15–2:25 all members visibly introduce roles and contributions; 2:25–3:00 audited evidence, work required for the complete funded vertical slice and publisher-ready outcome. Adjust timings for actual team size. English, clear spoken narration, accessible link, no recognizable borrowed-content demonstration. No video or presentation slice has yet been created under this plan.
 
 ## Mentorship — maximum 200 words
 
