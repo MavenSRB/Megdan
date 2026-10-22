@@ -2,9 +2,9 @@
 
 Current status and next work: [session brief](Docs/AI/SESSION_BRIEF.md).
 
-A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
+A private collaboration repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 
-The project owner states that the public repository and included rulebook are shared with the relevant permission. Builds and excluded reference material are not public releases. See [Rights and distribution](#rights-and-distribution).
+The project owner states that the tracked source, prepared runtime artwork and included rulebook are shared privately with the relevant permission. Builds and excluded reference material are not releases. See [Rights and distribution](#rights-and-distribution).
 
 ## What this is
 
@@ -100,5 +100,5 @@ If you contribute here, whether human or agent:
 Guards of Atlantis II is the property of its rights holders. This is an unaffiliated private implementation.
 
 - The rulebook PDF is included through Git LFS under the project owner's stated distribution permission. The extracted card corpus and map references remain deliberately excluded from Git and must not be distributed without separate permission.
-- The public source repository and tracked rulebook are the only currently authorized publication. Builds and other excluded or untracked material remain private unless both the project owner and relevant rights holder authorize their distribution.
-- No Git remote is configured. The previously authorized `maven/guards-digital` Gitea `origin` was removed at the project owner's direction on 2026-08-15; the repository is maintained locally.
+- The private `MavenSRB/Megdan` GitHub repository may contain tracked source, the authorized rulebook and the prepared runtime artwork authorized under W-008 and W-020. Builds and other excluded or untracked material remain private unless both the project owner and relevant rights holder authorize their distribution.
+- The `github` remote is the current private collaboration route. The legacy private Gitea `origin` remains configured but is unavailable and is not the active collaboration route.

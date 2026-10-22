@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-100 | Established the private `MavenSRB/Megdan` GitHub collaboration remote with the Smart Start branch and all reachable tracked LFS artwork. [Scope and acceptance](#x-w-100-establish-the-private-megdan-collaboration-remote). | `work/W-100` |
 | W-099 | Recorded Veljko's confirmed 2D capability, provisional bounded 3D contribution and the remaining specialist-production boundary. [Scope and acceptance](#x-w-099-record-veljkos-confirmed-production-scope). | `work/W-099` |
 | W-098 | Audited the complete vertical slice into source-backed production quantities and explicit pre-budget quotation decisions. [Scope and acceptance](#x-w-098-audit-the-smart-start-production-inventory). | `work/W-098` |
 | W-097 | Defined a complete publisher-ready six-hero 3v3 vertical slice as the funded end state and separated it from the optional pre-application AI-placeholder proof of direction. [Scope and acceptance](#x-w-097-define-the-complete-funded-vertical-slice-outcome). | `work/W-097` |
@@ -834,3 +835,13 @@ Result: the dossier, application, delivery plan and production inventory now ass
 Acceptance: team and production-capacity wording agrees across the affected Smart Start owners; the Team section remains within its 400-word limit; living-document validation and diff hygiene passed. No Unity or game implementation was run.
 
 Historical evidence: completion commit addressed by immutable `work/W-099`; exact checks/results, review and limitations live in its body.
+
+### [x] W-100 Establish the private Megdan collaboration remote
+
+Request: create a new private online repository for working with the user's brother and share the Smart Start branch with its tracked artwork.
+
+Result: created the private `MavenSRB/Megdan` GitHub repository, added a dedicated `Megdan development PC` SSH authentication key, configured the separate `github` remote and published `codex/smart-start-preparation`. Git LFS uploaded all 2,104 unique objects reachable from the branch (333 MB). Raw references, builds, logs and other ignored/untracked material remain excluded.
+
+Acceptance: GitHub visibly reports the repository as private; SSH access succeeds using GitHub's published Ed25519 host key; remote and local branch heads both resolve to `d66f52501b9e53b84ac7e4ea17eba8d1601397b4`; the explicit all-history LFS push completed 2,104/2,104; living-document validation and diff hygiene passed. No Unity launch was required because gameplay and project content did not change. The collaborator invitation remains a user handoff pending the brother's GitHub username or email address.
+
+Historical evidence: completion commit addressed by immutable `work/W-100`; exact checks/results, review and limitations live in its body.

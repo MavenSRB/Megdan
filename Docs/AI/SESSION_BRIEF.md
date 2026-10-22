@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-10-21
+Last updated: 2026-10-22
 
 ## Purpose and authority
 
@@ -16,11 +16,13 @@ Current private Windows package: **W090 Main Fixes**, `Builds/Playtest-W090-main
 
 Mac remains W075 (`Builds/Playtest-W075-large-lobby-fix-mac.zip`), universal Intel/Apple Silicon, PvP/PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It lacks later fixes and cannot join W090. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-099**.
+- Last completed work: **W-100**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
 [Smart Start dossier](Project/SMART_START.md): `codex/smart-start-preparation`, documentation only; no implementation or submission authorization.
+
+W100 established private `MavenSRB/Megdan` GitHub collaboration with the Smart Start branch and its tracked LFS artwork; ignored material remains local.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
