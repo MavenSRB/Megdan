@@ -51,6 +51,18 @@ Test USD 19.99 for one license against a three-player value target of USD 44.99 
 
 Do not describe the group target as a Steam three-pack: current Steamworks documentation says new packages cannot grant multiple copies of the same application. Confirm a compliant direct/external-key path and its payment, tax, refund, fraud and key-policy consequences, or test a platform-supported alternative. Until then the bottom-up model may compare individual and group economics, but the group channel remains unresolved.
 
+### Sales sensitivity — not a forecast
+
+These round cases test arithmetic only; they are not derived from audience reach, wishlists, conversion or validated demand. “Group-target gross” multiplies complete three-player groups by USD 44.99. “All-individual gross” multiplies the same paid seats by USD 19.99. Any mixed purchase result would fall between those gross columns before platform/payment deductions, regional pricing, tax treatment, refunds and operating costs.
+
+| Case | Complete paying groups | Paid seats | Group-target gross | All-individual gross |
+| --- | ---: | ---: | ---: | ---: |
+| Low sensitivity | 300 | 900 | USD 13,497 | USD 17,991 |
+| Base sensitivity | 1,500 | 4,500 | USD 67,485 | USD 89,955 |
+| High sensitivity | 5,000 | 15,000 | USD 224,950 | USD 299,850 |
+
+Do not label any case conservative, expected or achievable until a dated acquisition model supplies reachable qualified people, cost per qualified lead, store/demo conversion, team-formation completion and refund assumptions. Break-even also remains open until the costed production and operating model is approved. Convert to RSD only at an explicitly dated budget exchange rate.
+
 ## Illustrative budget — replace with quotations and actual people
 
 The following numerical model is retained only as the earlier arithmetic illustration, NOT the updated requested budget. All figures are RSD excluding VAT. It does not price the 3D, animation/VFX or audio scope or establish available financing. Replace it after confirming next-phase eligibility and inventorying future production work.

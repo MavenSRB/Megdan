@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-095 | Added bounded low/base/high paid-team sensitivity cases with reproducible gross-receipt arithmetic, while explicitly withholding market-reach, forecast and break-even claims. [Scope and acceptance](#x-w-095-add-a-bounded-sales-sensitivity-model). | `work/W-095` |
 | W-094 | Recorded the USD 19.99 individual and USD 44.99 three-player pricing hypothesis, its exact discount and validation approach, while preserving Steam's current multi-copy-package restriction and leaving the compliant group channel unresolved. [Scope and acceptance](#x-w-094-record-the-initial-pricing-hypothesis-and-platform-constraint). | `work/W-094` |
 | W-093 | Established a dated competitor matrix, replaced the unsupported “no such game” claim with a defensible position against the closest historical precedent, and added bounded Steam platform context without treating it as reachable demand. [Scope and acceptance](#x-w-093-establish-the-initial-competitor-matrix-and-market-context). | `work/W-093` |
 | W-092 | Recorded the confirmed two-person Smart Start team facts, proposed ownership and employment/availability boundaries, and drafted Stefan's evidence-based biography from his supplied CV. [Scope and acceptance](#x-w-092-record-confirmed-smart-start-team-facts). | `work/W-092` |
@@ -777,3 +778,13 @@ Result: the application and plan now test USD 19.99 per license against a USD 44
 Acceptance: arithmetic reproduced; Sustainable business is 234/300 words; official Steam package, bundle and pricing sources support the constraint; living-document validation and diff hygiene passed. No storefront setup, key request, payment collection, forecast, outreach, submission, publication or game change occurred.
 
 Historical evidence: completion commit addressed by immutable `work/W-094`; exact checks/results, review and limitations live in its body.
+
+### [x] W-095 Add a bounded sales-sensitivity model
+
+Request: continue the Smart Start commercial documentation after approving the initial pricing hypotheses.
+
+Result: the delivery/business plan and application now show three deliberately round sensitivity cases: 300, 1,500 and 5,000 complete paying groups, equivalent to 900, 4,500 and 15,000 paid seats. At USD 44.99 per complete group they produce USD 13,497, USD 67,485 and USD 224,950 gross; the same seats at USD 19.99 individually produce USD 17,991, USD 89,955 and USD 299,850. The dossier states that these are arithmetic cases, not evidence of reach, conversion, expected sales or break-even.
+
+Acceptance: all group/seat/gross calculations reproduced; Market size and trends remains 238/300 words; missing acquisition, conversion, deduction, cost and exchange-rate evidence remains explicit; living-document validation and diff hygiene passed. No storefront setup, outreach, submission, publication or game change occurred.
+
+Historical evidence: completion commit addressed by immutable `work/W-095`; exact checks/results, review and limitations live in its body.

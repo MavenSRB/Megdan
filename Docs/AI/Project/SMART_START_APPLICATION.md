@@ -84,6 +84,8 @@ The intended market is international PC gaming, with an initial focus on current
 
 Valve reports that Steam reached 42 million peak concurrent users in 2025. This establishes that a PC title can use a global distribution platform; it does not establish Megdan's addressable audience. The same platform supports free-to-play Dota 2 and paid tactical products, so platform reach alone does not select our price or business model. [Valve platform source and competitor evidence](SMART_START_REQUIREMENTS.md#initial-competitor-evidence).
 
+For sensitivity only, 300, 1,500 and 5,000 complete three-player groups correspond to 900, 4,500 and 15,000 paid seats. At the USD 44.99 group-value target, approximate gross receipts would be USD 13,497, USD 67,485 and USD 224,950; all-individual purchases at USD 19.99 would produce USD 17,991, USD 89,955 and USD 299,850. These cases are not forecasts.
+
 The relevant commercial question is whether enough groups prefer this specific experience and can be reached at a cost compatible with net revenue per customer. Group formation and concurrent availability are risks, not benefits to assume away.
 
 [INSERT actual qualified-audience reach, conversion and price evidence; avoid applying general gamer age averages specifically to MOBA players.]
