@@ -48,7 +48,7 @@ Atlas Reactor is the closest identified historical precedent: coordinated 4v4 ar
 
 We propose an original 3v3 turn-based tactical game in which each player controls one hero and contributes to a shared team objective. The intended experience combines hero specialization, positional decisions and team coordination while moving skill expression away from continuous reflex execution.
 
-The next phase builds on a self-funded functional prototype and delivers a complete publisher-ready vertical slice. Six proven kits retain gameplay while receiving new identities, illustrations and final card/UI design. Support would fund one production-quality 3D world: map geometry, spaces/zones, heroes, minions, tokens/markers, props and board interaction cues, plus a free camera, required animation/VFX and audio. Screen-space cards and controls remain 2D. Exact model/rig, animation, card-art and audio inventories remain to be costed. Existing and pre-contract presentation work is the starting point, not retrospective reimbursement.
+The next phase builds on a self-funded functional prototype and delivers a complete publisher-ready vertical slice. Six proven kits retain gameplay while receiving new identities and 108 final playable card-face layouts; unique illustration count follows the approved reuse policy, while six unused Handicap faces remain optional. Support would fund six hero and three minion model/rig families, one production-quality original 3D map, required tokens/cues, a free camera, animation/VFX and audio. Screen-space cards and controls remain 2D. Map assets, signature animation/VFX and exact audio clips will be fixed through production matrices and quotations. Existing and pre-contract work is the starting point, not retrospective reimbursement.
 
 The working six-hero presentation roster is Svarog, Stribog, Morana, Mokoš, Veles and Perun. Internally these map to the mechanically unchanged Brogan, Swift, Misa, Tali, Tigerclaw and Wasp source kits respectively; those source-kit references are not submission-facing identities.
 
@@ -106,7 +106,7 @@ Steam does not currently create new packages that grant multiple copies of the s
 
 The rollout begins with invited MVP testing and a commercial-readiness decision. The post-grant route is a targeted publisher process using the validated evidence package. A public demo/store page, community campaign or self-published launch remains a later joint or fallback decision requiring separate funding. Marketing will not be placed in an ineligible grant category.
 
-Digital distribution enables international reach, but acquisition, content production, service operations and concurrent participation still constrain growth. A publisher does not remove these risks; the project must quantify them well enough to support partner due diligence and a defensible next-stage plan.
+Digital distribution enables international reach, but acquisition and concurrent participation still constrain growth. We must quantify those risks for partner due diligence.
 
 ## Patent search and current IP — maximum 200 words
 

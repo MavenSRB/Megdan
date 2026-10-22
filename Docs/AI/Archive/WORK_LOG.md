@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-098 | Audited the complete vertical slice into source-backed production quantities and explicit pre-budget quotation decisions. [Scope and acceptance](#x-w-098-audit-the-smart-start-production-inventory). | `work/W-098` |
 | W-097 | Defined a complete publisher-ready six-hero 3v3 vertical slice as the funded end state and separated it from the optional pre-application AI-placeholder proof of direction. [Scope and acceptance](#x-w-097-define-the-complete-funded-vertical-slice-outcome). | `work/W-097` |
 | W-096 | Made a validated publisher-ready MVP the funded outcome and publisher partnership the preferred post-grant scaling route, while retaining customer validation and unit economics as the team's responsibilities. [Scope and acceptance](#x-w-096-make-publisher-partnership-the-post-grant-commercialization-route). | `work/W-096` |
 | W-095 | Added bounded low/base/high paid-team sensitivity cases with reproducible gross-receipt arithmetic, while explicitly withholding market-reach, forecast and break-even claims. [Scope and acceptance](#x-w-095-add-a-bounded-sales-sensitivity-model). | `work/W-095` |
@@ -812,3 +813,13 @@ Result: the dossier now distinguishes an optional pre-application AI-assisted pr
 Acceptance: preparation owner, application, delivery plan and backlog agree on the two states; Solution is 247/300 words, Current technology 164/200, Sustainable business 297/300 and Mentorship 94/200; living-document validation and diff hygiene passed. No visual production, card redesign, implementation, audio procurement, publisher outreach, submission or publication occurred.
 
 Historical evidence: completion commit addressed by immutable `work/W-097`; exact checks/results, review and limitations live in its body.
+
+### [x] W-098 Audit the Smart Start production inventory
+
+Request: continue the Smart Start documentation by turning the approved complete vertical-slice outcome into a countable production inventory before pricing it. Documentation only; no visual production, implementation, procurement, Fund contact, submission or publication.
+
+Result: the new production inventory fixes 108 required playable card-face layouts and separates the six optional Handicap faces from the strict 3v3 slice. It distinguishes face layouts from still-undecided unique illustration count; records six hero and three minion model/rig families, Mokoš's shared three-piece/three-state token supply and Veles's six-instance/two-strength Poison UI state; and defines the map, camera, overlay, animation/VFX, audio, engineering, validation and rights work packages. Original-map assets, illustration reuse, signature animation/VFX and exact audio counts remain explicit pre-budget decisions rather than invented quantities. Voice/barks remain outside the baseline unless expressly included after a separate quotation.
+
+Acceptance: dossier/application/plan/backlog wording agrees; Solution remains 268/300 words and the other bounded application sections remain within their limits; living-document validation and diff hygiene passed. No Unity or game implementation was run.
+
+Historical evidence: completion commit addressed by immutable `work/W-098`; exact checks/results, review and limitations live in its body.

@@ -8,6 +8,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Smart Start sources and requirements](Project/SMART_START_REQUIREMENTS.md)
 - [Smart Start English application draft](Project/SMART_START_APPLICATION.md)
 - [Smart Start delivery and budget proposal](Project/SMART_START_PLAN.md)
+- [Smart Start vertical-slice production inventory](Project/SMART_START_PRODUCTION_INVENTORY.md)
 - [Smart Start unsent Fund inquiry](Project/SMART_START_FUND_QUESTION.md)
 - [Smart Start prototype and audited match evidence](Project/SMART_START_PROTOTYPE_EVIDENCE.md)
 
