@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-096 | Made a validated publisher-ready MVP the funded outcome and publisher partnership the preferred post-grant scaling route, while retaining customer validation and unit economics as the team's responsibilities. [Scope and acceptance](#x-w-096-make-publisher-partnership-the-post-grant-commercialization-route). | `work/W-096` |
 | W-095 | Added bounded low/base/high paid-team sensitivity cases with reproducible gross-receipt arithmetic, while explicitly withholding market-reach, forecast and break-even claims. [Scope and acceptance](#x-w-095-add-a-bounded-sales-sensitivity-model). | `work/W-095` |
 | W-094 | Recorded the USD 19.99 individual and USD 44.99 three-player pricing hypothesis, its exact discount and validation approach, while preserving Steam's current multi-copy-package restriction and leaving the compliant group channel unresolved. [Scope and acceptance](#x-w-094-record-the-initial-pricing-hypothesis-and-platform-constraint). | `work/W-094` |
 | W-093 | Established a dated competitor matrix, replaced the unsupported “no such game” claim with a defensible position against the closest historical precedent, and added bounded Steam platform context without treating it as reachable demand. [Scope and acceptance](#x-w-093-establish-the-initial-competitor-matrix-and-market-context). | `work/W-093` |
@@ -788,3 +789,13 @@ Result: the delivery/business plan and application now show three deliberately r
 Acceptance: all group/seat/gross calculations reproduced; Market size and trends remains 238/300 words; missing acquisition, conversion, deduction, cost and exchange-rate evidence remains explicit; living-document validation and diff hygiene passed. No storefront setup, outreach, submission, publication or game change occurred.
 
 Historical evidence: completion commit addressed by immutable `work/W-095`; exact checks/results, review and limitations live in its body.
+
+### [x] W-096 Make publisher partnership the post-grant commercialization route
+
+Request: define the funded outcome as a valid original MVP that the team can use after the project to seek publisher collaboration, rather than assuming the two founders can independently acquire and serve a global audience.
+
+Result: the dossier, application and nine-month plan now define the funded outcome as a rights-cleared, validated, publisher-ready six-hero MVP. Post-grant publisher collaboration is the preferred route for further production financing, marketing, distribution and launch scaling. The readiness package includes the build, player/technical evidence, remaining production scope/cost, rights manifest, team capacity, unit economics, pitch materials and partner criteria. No publisher interest is claimed, and outreach, negotiations, exclusivity or rights transfer remain separately authorized future actions. Pricing and sales cases remain hypotheses rather than a self-publishing commitment.
+
+Acceptance: existing/funded/post-grant boundaries agree across the dossier; customer evidence and economics remain team responsibilities; Sustainable business is 297/300 words and Mentorship 94/200; living-document validation and diff hygiene passed. No publisher list, outreach, deal terms, submission, publication or game change occurred.
+
+Historical evidence: completion commit addressed by immutable `work/W-096`; exact checks/results, review and limitations live in its body.

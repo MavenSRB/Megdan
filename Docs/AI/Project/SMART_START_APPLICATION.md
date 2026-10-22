@@ -98,13 +98,15 @@ Segmentation will distinguish current versus former MOBA players, preferred sess
 
 ## Sustainable business and rollout — maximum 300 words
 
-Our initial business-model hypothesis is a paid PC game at USD 19.99 per license. We will test this against a group-value target of USD 44.99 for three players: USD 15.00 per player, approximately 25% below three individual copies. These are applicant hypotheses, not validated willingness to pay or a sales forecast.
+The funded outcome is a rights-cleared, validated, publisher-ready PC MVP, not an independently launched global service. After the project, we intend to approach suitable publishers for production financing, marketing, distribution and launch support. Publisher interest is not assumed; the build, player evidence, production plan, budget, rights manifest and unit economics must make the opportunity assessable.
+
+Our consumer-price hypothesis is USD 19.99 per license, tested against a group-value target of USD 44.99 for three players: USD 15.00 per player, approximately 25% below three individual copies. These figures test value and commercial potential for both the team and a prospective partner; they are not validated willingness to pay, a sales forecast or a self-publishing commitment.
 
 Steam does not currently create new packages that grant multiple copies of the same application, so the three-player target cannot be presented as an available Steam three-pack. Before committing to it, we must confirm a compliant direct/external-key route or replace it with a platform-supported promotion. Validation will first measure unaided price expectations, then compare the individual and group propositions and record who would actually organize and pay for a team. Net receipts must account for platform/payment deductions, regional pricing, taxes and refunds where applicable, customer support and online operating costs.
 
-The proposed rollout begins with invited, rights-cleared MVP testing, then a commercial-readiness decision based on user evidence and the cost model. A public demo/store presence and community-led discovery are potential later steps requiring separate approval and funding. Marketing expenditure will not be placed in an ineligible grant cost category.
+The rollout begins with invited MVP testing and a commercial-readiness decision. The post-grant route is a targeted publisher process using the validated evidence package. A public demo/store page, community campaign or self-published launch remains a later joint or fallback decision requiring separate funding. Marketing will not be placed in an ineligible grant category.
 
-Digital distribution could enable international reach without proportionally increasing production effort per copy. However, acquisition, content production, service operations and sufficient concurrent participation still constrain growth. The project will therefore test a credible small-scale launch path before promising broad service scale or additional platforms.
+Digital distribution enables international reach, but acquisition, content production, service operations and concurrent participation still constrain growth. A publisher does not remove these risks; the project must quantify them well enough to support partner due diligence and a defensible next-stage plan.
 
 ## Patent search and current IP — maximum 200 words
 
@@ -138,9 +140,9 @@ Proposed outline: 0:00–0:30 problem and how identified; 0:30–1:15 the AI-ass
 
 ## Mentorship — maximum 200 words
 
-We would benefit from a mentor with experience commercializing multiplayer PC games, validating niche player demand and helping small teams scope a viable first release. Relevant expertise includes community-led discovery, group participation barriers, pricing, distribution economics and realistic content/service budgets.
+We would benefit from a mentor with experience commercializing multiplayer PC games, validating niche player demand and preparing small teams for publisher due diligence. Relevant expertise includes group participation barriers, pricing, production and service budgets, publisher positioning, pitch materials and evaluating whether proposed partnership terms support a sustainable studio.
 
-The most important question is: which initial audience and purchase model can sustain this team-based tactical experience, given the need for players to bring or find teammates? We seek a mentor who will challenge our assumptions using user behavior and economics rather than optimize only the pitch.
+The most important question is: what evidence and MVP scope make this team-based tactical experience credible to both its intended players and an appropriate publishing partner? We seek a mentor who will challenge our audience, product and economic assumptions rather than optimize only the pitch.
 
 ## Returning projects — maximum 200 words
 

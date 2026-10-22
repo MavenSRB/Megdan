@@ -20,7 +20,8 @@ Months run from the eventual contractual start, not today's date. Applicant avai
 | Audio production | Months 3–6, provisional | Grant-budgeted music, ambience, UI and gameplay SFX from a costed provider/work package; voice/barks only if expressly included after quotation; integration, mix and in-build review |
 | MVP validation | Months 5–6 | Original-MVP demonstration, usability and technical evidence, issue disposition, rights manifest; MVP report in the second half of the contract, not earlier |
 | Business model | Months 6–8 | Competitor and pricing evidence, acquisition/group-formation assumptions, cost model, financial forecast and launch decision; business-model report |
-| Final demonstration | Month 9 | Final report, approximately 15-minute presentation, honest before/after development status, future financing plan and settlement requirements |
+| Publisher-readiness package | Months 7–9 | Rights-cleared MVP build, player/technical evidence summary, production scope and cost model, rights manifest, pitch materials and target-partner criteria; no claim of publisher interest |
+| Final demonstration | Month 9 | Final report, approximately 15-minute presentation, honest before/after development status, publisher-partnership route with fallback decision, future financing plan and settlement requirements |
 
 The reports occur in the required order even if development activities overlap. Agree exact dates with the mentor/Fund. Standard duration is 6–9 months; exceptional extension up to three months needs justification and Fund approval, requested at least 15 days before the end. Do not rely on an extension to make the original plan feasible.
 
@@ -62,6 +63,12 @@ These round cases test arithmetic only; they are not derived from audience reach
 | High sensitivity | 5,000 | 15,000 | USD 224,950 | USD 299,850 |
 
 Do not label any case conservative, expected or achievable until a dated acquisition model supplies reachable qualified people, cost per qualified lead, store/demo conversion, team-formation completion and refund assumptions. Break-even also remains open until the costed production and operating model is approved. Convert to RSD only at an explicitly dated budget exchange rate.
+
+### Post-grant publisher route
+
+The grant outcome should be usable for publisher due diligence: an original rights-cleared six-hero MVP; reproducible player and technical evidence; defined audience and price hypotheses; remaining full-production scope, schedule and budget; operating assumptions; team biographies and capacity; and a concise pitch/video package. During the project, define what kind of publisher is suitable: multiplayer PC experience, relevant territories and channels, production/QA capability, marketing capacity, transparent recoup and revenue terms, IP/control expectations and realistic support for a small Serbian studio.
+
+Publisher outreach, negotiation and any exclusivity or rights transfer occur only after separate approval; no interested publisher currently exists in the evidence set. A publisher is the preferred scaling route, not a substitute for validating the customer problem or understanding unit economics. If the MVP does not justify outreach or suitable terms are unavailable, the final decision must explicitly choose further validation, reduced-scope self-publishing, other financing or stopping rather than assume launch.
 
 ## Illustrative budget — replace with quotations and actual people
 
