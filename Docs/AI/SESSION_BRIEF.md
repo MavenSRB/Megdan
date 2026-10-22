@@ -16,7 +16,7 @@ Current private Windows package: **W090 Main Fixes**, `Builds/Playtest-W090-main
 
 Mac remains W075 (`Builds/Playtest-W075-large-lobby-fix-mac.zip`), universal Intel/Apple Silicon, PvP/PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It lacks later fixes and cannot join W090. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-098**.
+- Last completed work: **W-099**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 

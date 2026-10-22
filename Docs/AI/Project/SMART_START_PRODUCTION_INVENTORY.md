@@ -118,7 +118,7 @@ Public matchmaking/service infrastructure, ranked play, additional maps/modes, t
 2. Choose the card-illustration reuse level; then count unique commissioned illustrations independently of 108 layouts.
 3. Complete the 108-face action-presentation matrix and count unique animation/VFX units.
 4. Confirm whether the six Handicap faces are included or remain post-slice.
-5. Confirm Veljko's deliverable ownership and capacity across concept, 2D, 3D, rigging and animation; quote uncovered disciplines.
+5. Assign Veljko the confirmed 2D deliverables; use portfolio/task evidence to name the bounded 3D deliverables he can own. Do not assign rigging or animation without evidence; quote all uncovered 3D, rigging and animation/VFX work.
 6. Complete the audio event map and obtain a baseline no-voice offer plus an optional voice/barks offer.
 7. Fix target PC/resolution, performance criteria and the precise camera acceptance test.
 8. Obtain comparable written offers, map each cost to an eligible Smart Start category and exclude all self-funded/pre-contract work.

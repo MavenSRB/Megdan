@@ -124,7 +124,7 @@ The proposed two-person founding team is Stefan Petrovic and Veljko Petrovic. Bo
 
 Stefan is the engineering and project lead. He independently developed the functional multiplayer prototype with his own work and funds. His responsibilities cover software architecture, deterministic game systems, networking, tools, technical integration and project delivery; game design, research and commercial ownership must be stated precisely before submission. He remains employed by Pmax Automation and reports sustained intensive Megdan development alongside that job. The project plan must use a credible declared availability rather than describe him as grant-funded full time.
 
-Veljko is the proposed art lead. He currently works freelance and is provisionally expected to commit full time during the project. His intended scope is original visual development and production for the six-hero MVP. His portfolio, biography, exact 2D/3D/animation responsibilities, availability and compensation must be reviewed and confirmed before the application and budget are approved. Specialist support remains budgetable where the portfolio does not cover a required production discipline.
+Veljko is the proposed art lead. He currently works freelance and is provisionally expected to commit full time during the project. The applicant confirms that he can own 2D production and may deliver a bounded part of 3D production, subject to portfolio/task review. Rigging and animation are not yet attributed to him. His biography, exact deliverables, availability and compensation must be confirmed before the application and budget are approved. Uncovered 3D, rigging, animation/VFX and audio work remains budgetable specialist support.
 
 ### Stefan Petrovic — working biography
 
@@ -132,7 +132,7 @@ Stefan is an automation engineer and electrical/computer engineering graduate wi
 
 ### Veljko Petrovic — information still required
 
-[Review portfolio and collect education/training, professional history, strongest credited works, tools, exact production disciplines and confirmed project availability. Do not infer 3D, rigging or animation capability from the word “artist.”]
+[Review portfolio and collect education/training, professional history, strongest credited works, tools and confirmed availability. Define his 2D deliverables; use portfolio/task evidence to bound any 3D contribution. Do not infer rigging or animation capability without evidence.]
 
 ## Video — maximum three minutes
 

@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-099 | Recorded Veljko's confirmed 2D capability, provisional bounded 3D contribution and the remaining specialist-production boundary. [Scope and acceptance](#x-w-099-record-veljkos-confirmed-production-scope). | `work/W-099` |
 | W-098 | Audited the complete vertical slice into source-backed production quantities and explicit pre-budget quotation decisions. [Scope and acceptance](#x-w-098-audit-the-smart-start-production-inventory). | `work/W-098` |
 | W-097 | Defined a complete publisher-ready six-hero 3v3 vertical slice as the funded end state and separated it from the optional pre-application AI-placeholder proof of direction. [Scope and acceptance](#x-w-097-define-the-complete-funded-vertical-slice-outcome). | `work/W-097` |
 | W-096 | Made a validated publisher-ready MVP the funded outcome and publisher partnership the preferred post-grant scaling route, while retaining customer validation and unit economics as the team's responsibilities. [Scope and acceptance](#x-w-096-make-publisher-partnership-the-post-grant-commercialization-route). | `work/W-096` |
@@ -823,3 +824,13 @@ Result: the new production inventory fixes 108 required playable card-face layou
 Acceptance: dossier/application/plan/backlog wording agrees; Solution remains 268/300 words and the other bounded application sections remain within their limits; living-document validation and diff hygiene passed. No Unity or game implementation was run.
 
 Historical evidence: completion commit addressed by immutable `work/W-098`; exact checks/results, review and limitations live in its body.
+
+### [x] W-099 Record Veljko's confirmed production scope
+
+Request: record that Veljko can cover 2D production and may cover part of 3D production. Documentation only; no procurement, implementation, Fund contact, submission or publication.
+
+Result: the dossier, application, delivery plan and production inventory now assign Veljko 2D production while keeping any 3D contribution provisional and bounded by portfolio/task evidence. Rigging and animation are not attributed to him without evidence; uncovered 3D, rigging, animation/VFX and audio remain visible specialist-budget work. His full-time intent, availability, compensation, biography and exact deliverables still require confirmation.
+
+Acceptance: team and production-capacity wording agrees across the affected Smart Start owners; the Team section remains within its 400-word limit; living-document validation and diff hygiene passed. No Unity or game implementation was run.
+
+Historical evidence: completion commit addressed by immutable `work/W-099`; exact checks/results, review and limitations live in its body.
