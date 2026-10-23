@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-101 | Invited GitHub user `Kerkanovic` to the private `MavenSRB/Megdan` collaboration repository; acceptance remains pending. [Scope and acceptance](#x-w-101-invite-the-megdan-collaborator). | `work/W-101` |
 | W-100 | Established the private `MavenSRB/Megdan` GitHub collaboration remote with the Smart Start branch and all reachable tracked LFS artwork. [Scope and acceptance](#x-w-100-establish-the-private-megdan-collaboration-remote). | `work/W-100` |
 | W-099 | Recorded Veljko's confirmed 2D capability, provisional bounded 3D contribution and the remaining specialist-production boundary. [Scope and acceptance](#x-w-099-record-veljkos-confirmed-production-scope). | `work/W-099` |
 | W-098 | Audited the complete vertical slice into source-backed production quantities and explicit pre-budget quotation decisions. [Scope and acceptance](#x-w-098-audit-the-smart-start-production-inventory). | `work/W-098` |
@@ -845,3 +846,13 @@ Result: created the private `MavenSRB/Megdan` GitHub repository, added a dedicat
 Acceptance: GitHub visibly reports the repository as private; SSH access succeeds using GitHub's published Ed25519 host key; remote and local branch heads both resolve to `d66f52501b9e53b84ac7e4ea17eba8d1601397b4`; the explicit all-history LFS push completed 2,104/2,104; living-document validation and diff hygiene passed. No Unity launch was required because gameplay and project content did not change. The collaborator invitation remains a user handoff pending the brother's GitHub username or email address.
 
 Historical evidence: completion commit addressed by immutable `work/W-100`; exact checks/results, review and limitations live in its body.
+
+### [x] W-101 Invite the Megdan collaborator
+
+Request: invite the user's brother, GitHub user `Kerkanovic`, to the private `MavenSRB/Megdan` repository so both brothers can work on the Smart Start branch and its tracked artwork.
+
+Result: GitHub sent the repository invitation to `Kerkanovic`. The private repository, published branch and tracked Git LFS artwork are unchanged; GitHub reports one pending invitation awaiting his response.
+
+Acceptance: GitHub visibly confirmed that `Kerkanovic` was added as a collaborator and the repository access page identifies the account as `@Kerkanovic`, `Pending Invite`, and `Awaiting Kerkanovic's response`. Living-document validation and diff hygiene passed. No Unity launch was required because source, project content and gameplay did not change.
+
+Historical evidence: completion commit addressed by immutable `work/W-101`; exact checks/results, review and limitations live in its body.
