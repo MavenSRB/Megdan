@@ -1244,8 +1244,8 @@ namespace GuardsDigital.Presentation.Match
                 }
                 column.Add(outline);
 
-                // Always drawn, empty when nothing is live, so a slot's height does not change with an
-                // effect and the four of them stay on one line.
+                // W-082 removed the separate ACTIVE text strip below each card: the outline and the
+                // slot's assistive wording carry the same fact without reserving dead vertical space.
                 slots.Add(column);
             }
 
@@ -1288,7 +1288,9 @@ namespace GuardsDigital.Presentation.Match
             pile.style.flexShrink = 1f;
             foreach (var card in hero.DiscardCards)
             {
-                pile.Add(BuildMiniCard("gd-discard-card", card, card.AssistiveLabel, card));
+                pile.Add(BuildMiniCard(
+                    "gd-discard-card", card, card.AssistiveLabel, card,
+                    showActiveEffectOutline: true));
             }
 
             // Milestone 9.32g: a facedown card this seat may not name, by its known colour (mockup B).
@@ -1859,12 +1861,24 @@ namespace GuardsDigital.Presentation.Match
         /// change this milestone has no reason to make.</para>
         /// </summary>
         private VisualElement BuildMiniCard(
-            string name, TrayCardViewModel card, string assistiveLabel, object revealed)
+            string name,
+            TrayCardViewModel card,
+            string assistiveLabel,
+            object revealed,
+            bool showActiveEffectOutline = false)
         {
             var element = BuildMiniCardShape(name);
             element.style.backgroundColor = MatchHudTheme.Face(card.Color);
             HudElements.Border(element, MatchHudTheme.PanelBorder, 1f, 3f);
-            ConfiguredCardFaceView.AddExteriorOutline(element, 1.5f, 4.5f);
+            var exterior = ConfiguredCardFaceView.AddExteriorOutline(element, 1.5f, 4.5f);
+            if (showActiveEffectOutline && card.IsActiveEffectSource)
+            {
+                // W-131. A Defense card can be both discarded and the source of an unended
+                // `This turn`/`This round` effect. The discard miniature is the rail's visible copy,
+                // so its existing outside perimeter wears the same violet as the full card and turn
+                // slot. Reusing the perimeter preserves the pile's footprint and pointer target.
+                HudElements.Border(exterior, MatchHudTheme.ActiveEffectAccent, 1.5f, 4.5f);
+            }
 
             var band = new VisualElement { name = "gd-mini-card-band" };
             band.style.height = 4f;

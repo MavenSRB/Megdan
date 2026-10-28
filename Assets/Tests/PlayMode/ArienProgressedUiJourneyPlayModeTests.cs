@@ -291,6 +291,25 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.IsActiveEffectSource(duelistCardId), Is.True,
                 "\"This turn: You are immune to attack actions of all enemy heroes, except this " +
                 "attacker\" - the spent card is the live source a player can read.");
+            var arienRail = UiPlayer.Descendants(runtime.HeroOverviewsView.Root).Single(element =>
+                element.name == "gd-hero-rail" && element.userData is HeroId id && id.Equals(arienId));
+            var discardedDuelist = UiPlayer.Descendants(arienRail).Single(element =>
+                element.name == "gd-discard-card");
+            Assert.That(runtime.HeroOverviewsView.Model.Heroes
+                    .Single(hero => hero.HeroId.Equals(arienId)).DiscardCards
+                    .Single(card => card.CardInstanceId.Equals(duelistCardId)).IsActiveEffectSource,
+                Is.True,
+                "The discard presentation receives the authority's standing-source fact.");
+            Assert.That(
+                UiPlayer.Descendants(discardedDuelist)
+                    .Single(element => element.name == "gd-card-exterior-outline")
+                    .style.borderTopColor.value,
+                Is.EqualTo(MatchHudTheme.ActiveEffectAccent),
+                "The spent Blue card stays visibly violet in the discard pile while its effect is live.");
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return UiPlayer.CaptureScreen("tmp/w131-arien-active-discard.png");
+            }
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(arienId)), Is.True,
                 "and the printed Defense 6 answered the Attack it was spent on.");
         }

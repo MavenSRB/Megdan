@@ -1726,8 +1726,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Descendants(view.Root).OfType<Label>()
                     .Count(label => label.name == "gd-turn-slot-active" && label.text == "ACTIVE"),
-                Is.EqualTo(1),
-                "and the word is drawn, so the state is never carried by colour alone.");
+                Is.EqualTo(0),
+                "W-082 removed the separate ACTIVE strip; the slot's assistive label carries the " +
+                "word without reserving dead space below every card.");
 
             // The other surface, from the same projected fact, on the same position.
             var handsView = new DirectorHandsUnityView();
@@ -2720,6 +2721,14 @@ namespace GuardsDigital.Tests.EditMode
                 Descendants(view.Root).Count(element => element.name == "gd-discard-card"),
                 Is.EqualTo(view.Model.Heroes.Sum(value => value.DiscardCards.Count)),
                 "and the discard pile is one icon per projected card rather than a count.");
+            Assert.That(
+                Descendants(view.Root)
+                    .Where(element => element.name == "gd-discard-card")
+                    .Select(card => Descendants(card)
+                        .Single(element => element.name == "gd-card-exterior-outline")
+                        .style.borderTopColor.value),
+                Is.All.EqualTo(Color.black),
+                "A discarded card whose effect is not standing keeps the ordinary dark perimeter.");
 
             // The point of the milestone, as a fact rather than a screenshot: nothing on either row
             // prints a number any more.
