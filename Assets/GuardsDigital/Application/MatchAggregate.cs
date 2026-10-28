@@ -349,8 +349,6 @@ namespace GuardsDigital.Application
             var rebuiltLanePush = new LanePushConsumption(rebuiltLanePushAuthority, rebuiltTransitions);
             var rebuiltCardActions = new CardActionResolutionAuthority(
                 rebuiltConfiguration.ContentCatalogs, rebuiltBoard, rebuiltMarkers);
-            rebuiltCardActions.BindHeroDefeatBaseLifeCost(
-                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
             var rebuiltRound = new RoundResolutionAuthority(
                 rebuiltConfiguration.CardDefinitions,
                 rebuiltConfiguration.CardInstances,
@@ -442,13 +440,9 @@ namespace GuardsDigital.Application
                     : (int?)null,
                 modeRules: initialState.ModeRules);
 
-            // W-022 and W-081. These immutable match-level rules are deliberately outside the Core
-            // snapshot. Bind them here rather than in individual callers so snapshot restore,
-            // atomic rollback and retained-checkpoint Undo all resume under the configured match,
-            // never the deserializer's official/default settings.
+            // W-022. This immutable mode rule is deliberately outside the Core snapshot. Rebind it
+            // here so every deserialized graph resumes under the configured match.
             restored.Round.BindModeRules(initialState.ModeRules);
-            restored.CardActions.BindHeroDefeatBaseLifeCost(
-                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
 
             if (!restored.Board.SelectedMap.Equals(initialState.Setup.SelectedMap))
             {
@@ -618,6 +612,12 @@ namespace GuardsDigital.Application
             configuration = graphs.Configuration;
             board = graphs.Board;
             cardActions = graphs.CardActions;
+            // W-132. The experimental one-Life base cost is immutable match configuration rather
+            // than snapshot state. This is the one seam used by initial/private-online composition,
+            // replay adoption, restore, rollback and retained-prefix replay, so binding here
+            // prevents any installed resolver from silently returning to official Tier pricing.
+            cardActions.BindHeroDefeatBaseLifeCost(
+                initialState.Experiments.HeroDefeatBaseLifeCostIsOne);
             round = graphs.Round;
             roundEvents.Reset(graphs.RoundEvents);
             graphs.ApplyEventLogTo(eventLog);

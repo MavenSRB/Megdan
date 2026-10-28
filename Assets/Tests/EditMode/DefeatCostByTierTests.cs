@@ -116,6 +116,38 @@ namespace GuardsDigital.Tests.EditMode
                 "A retained-checkpoint Undo must not silently restore the official Tier-II base cost.");
         }
 
+        [Test]
+        public void ExperimentalBaseOne_IsReboundWheneverTheAggregateInstallsAGraph()
+        {
+            var board = SabinaBoard.Create(
+                tier: 2,
+                branch: SabinaUpgradeBranch.FirstSibling,
+                heroPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["primitive-hero"] = StagedHeroBoard.FirstAdjacent
+                },
+                experiments: new GuardsDigital.Application.ExperimentalMatchOptions(
+                    heroDefeatBaseLifeCostIsOne: true));
+            var session = board.Session;
+            var enemyTeam = session.Projection.Participants.GetTeamForHero(board.Enemy).Id;
+
+            // W-132. Private-online hero selection replaces its provisional host with a freshly
+            // composed match. Initial composition and every later graph adoption must therefore
+            // share one binding seam rather than rely on whichever caller installed the graph.
+            var replacement = session.aggregate.Capture();
+            replacement.CardActions.BindHeroDefeatBaseLifeCost(false);
+            session.aggregate.Adopt(replacement);
+
+            var before = Counters(session, enemyTeam);
+            board.PlayAttackAt(SabinaCardContent.PointBlankShot, board.Enemy, defendSuccessfully: false);
+            var defense = session.Projection.PendingDefenseChoice;
+            board.Accept(DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId));
+
+            Assert.That(Counters(session, enemyTeam), Is.EqualTo(before - 1),
+                "Every installed graph must take the match's immutable one-Life experiment; a " +
+                "Tier-II hero cannot silently regain official two-Life pricing.");
+        }
+
 
         private static int Counters(GuardsDigital.Application.MatchSession session, TeamId team) =>
             session.Projection.TeamLifeCounters.Single(entry => entry.Key.Equals(team)).Value;

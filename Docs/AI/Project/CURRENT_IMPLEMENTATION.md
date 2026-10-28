@@ -21,6 +21,8 @@ Canonical implementation. [Project index](../PROJECT_CONTEXT.md); [unified PvP/P
 
 **W-131 discarded Active-effect sources.** A discarded card that still sources an unended Active effect keeps the established violet outline on its hero-rail discard miniature. The standing-source projection remains authoritative, ordinary discards retain their black perimeter, and card lifecycle and effect duration are unchanged.
 
+**W-132 one-Life authority binding.** The experimental one-Life hero base cost is rebound at the aggregate's single graph-install seam, covering fresh/private-online composition, replay adoption, restore, rollback and Undo. Progressed Defeats therefore spend one base Life while printed additions still apply; disabled matches retain official Tier pricing.
+
 **W-078 large-map minion supply.** Both 4v4/5v5 boards fill every printed minion spawn in each active Battle Zone, including the bottom-edge lava glyph. The starting waves retain two Melee, one Ranged and one Heavy per team/lane; a deterministic extra Melee reserve supports the three printed defending Melee points and survives restore. W-077's shortage explanation was incorrect and is superseded by the user's clarification. Exact inventories and authority: [Maps](../Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
 
 The current persisted snapshot schema is v60.

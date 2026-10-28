@@ -34,6 +34,56 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class WaspProgressedUiJourneyPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator ExperimentalOneLife_RemainsOneAfterAProgressedSceneGraphIsInstalled()
+        {
+            yield return LoadStage(SceneCardContent.VerifiedTierTwoEngagedMirror);
+            var initial = Root().Runtime.InitialState;
+            var stagedWithExperiment = new GuardsDigital.Application.MatchSessionInitialState(
+                initial.Scenario,
+                initial.Setup,
+                initial.AvailableMaps,
+                initial.InitialConfiguration,
+                initial.InitialTiming,
+                initial.StagedProgression,
+                new GuardsDigital.Application.ExperimentalMatchOptions(
+                    heroDefeatBaseLifeCostIsOne: true),
+                initial.ModeRules);
+            MatchSceneCompositionRoot.NextComposedExternalMatch =
+                new ExternalMatchComposition(stagedWithExperiment);
+            yield return LoadStage(SceneCardContent.VerifiedTierTwoEngagedMirror);
+
+            var root = Root();
+            var runtime = root.Runtime;
+            var redHeroId = HeroOf(runtime, TeamSide.Red);
+            var redTeamId = runtime.ReadModel.Participants.GetTeamForHero(redHeroId).Id;
+            var before = runtime.ReadModel.TeamLifeCounters
+                .Single(entry => entry.Key.Equals(redTeamId)).Value;
+
+            // The same real Tier-II opening as Charged Boomerang's journey below. Red holds, Blue
+            // attacks the levelled hero and the defender declines, so p.13 must spend a Life.
+            Commit(runtime, TeamSide.Red, WaspCardContent.MagneticDagger);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
+            Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its earlier turn.");
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var redHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(redHeroId));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, redHeroView.transform.position), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
+            Assert.That(runtime.DeclineDefense(), Is.True);
+            yield return null;
+            yield return null;
+
+            var after = runtime.ReadModel.TeamLifeCounters
+                .Single(entry => entry.Key.Equals(redTeamId)).Value;
+            Assert.That(after, Is.EqualTo(before - 1),
+                "The gold-only experiment marker and the installed authority must agree: a " +
+                "Tier-II hero Defeat spends one base Life, not two.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Tier II
         // ---------------------------------------------------------------------------------------

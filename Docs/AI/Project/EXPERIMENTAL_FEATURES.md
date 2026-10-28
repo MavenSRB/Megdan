@@ -211,11 +211,11 @@ schema, hero/card content, timer, coordination permissions or map selection.
 
 ## One-Life hero base cost
 
-Milestone 9.71 adds an independent host option, off for new games. Enabled makes a hero Defeat's base
-Life cost 1, then applies existing additions. Tier-based assist coins and the defeating hero's exact-
-Level reward do not change. Tray badges retain their Tier 1/2/3 number but become yellow-only;
-situational Life modifiers never alter it. The immutable setting follows restart, replay, Undo,
-restore, projections and reconnect. Disabled play remains official.
+Milestone 9.71 adds an independent host option, off by default. It makes every hero Defeat's base
+Life cost 1 before existing additions. Tier-based assist coins and exact-Level rewards remain; tray
+badges keep their Tier number but become yellow-only. W-132 binds this immutable setting at the
+aggregate's single graph-install seam, covering fresh/private-online composition, restart, replay,
+Undo, restore and reconnect. Disabled play remains official.
 ## Modifier presentation controls
 
 W-019 adds seven independent host options, all off for every fresh hosted game. The hero-token Defense shield always includes the net standard-minion contribution, including an effective token that the typed rules currently make a minion. Its **Items**, **Active effects**, and **Card effects** options add those categories independently. The card-face group separately exposes **Items**, **Minion contribution**, **Active effects**, and **Card effects**.

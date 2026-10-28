@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-132 | Kept the experimental one-Life hero base cost authoritative through every graph installation, including fresh private-online composition and progressed Defeats. [Scope and acceptance](#x-w-132-keep-one-life-hero-defeats-authoritative-in-private-online-play). | `work/W-132` |
 | W-131 | Kept discarded cards visibly violet while they remain standing Active-effect sources, including Arien's spent Blue Defense cards; ordinary discards remain black. [Scope and acceptance](#x-w-131-keep-discarded-active-effect-sources-visibly-active). | `work/W-131` |
 | W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
 | W-081 | Preserved the experimental one-Life hero cost through atomic rollback and retained-checkpoint Undo; the reported second Red defeat followed an Undo that had silently restored official tier pricing. [Scope and acceptance](#x-w-081-preserve-one-life-experiment-through-undo). | `work/W-081` |
@@ -670,3 +671,11 @@ Arien's Blue Defense cards can enter the discard pile while their `This turn` or
 The exact Arien journey regression failed before the repair because the discarded miniature was black and passes afterward. The affected 127-test hero-overview EditMode fixture, eight-test Arien PlayMode fixture and targeted non-batch rendered inspection pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-131`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-132 Keep one-Life hero defeats authoritative in private online play
+
+The October 27 W079 five-Life private-online match had no Undo or version rewind, yet its three progressed Blue Defeats exhausted all five counters while gold-only markers presented the one-Life experiment. The immutable option was bound by selected callers rather than by the aggregate's one graph-install seam. That seam now reapplies it for fresh/private-online composition, replay adoption, restore, rollback and Undo. Official disabled pricing and printed additional-Life modifiers are unchanged.
+
+The new graph-install regression failed before the repair because a Tier-II Defeat spent two Lives and passes afterward. A real Tier-II scene Defeat spends exactly one, and affected authority, replay/rollback, additional-cost, experimental coordination and private-online recomposition fixtures pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-132`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
