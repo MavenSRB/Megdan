@@ -434,6 +434,63 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
+        /// <summary>
+        /// W-134 regression. A complete owner projection is republished after every accepted command.
+        /// Another player's commitment may change that projection while this seat owns pointer capture,
+        /// but it must not tear down a still-authorized local gesture for the same card.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator AnotherPlayersCommitRefresh_KeepsAStillEligibleLocalCardDragAndSubmitsItOnce()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            yield return LoadSeatScene(0);
+            var root = Root();
+            var runtime = root.Runtime;
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var localCard = runtime.HandsView.Model.ViewedHand.TrayCards.Last(card => card.IsSelectable);
+            var localControl = CardControl(root.Hud.RootElement, localCard);
+            var drop = root.Hud.CameraSafeLayout.UpperRegion.center;
+            var target = BeginDrag(localControl, out _);
+            SendPointerMove(target, drop);
+            Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+
+            var otherSeat = runtime.Host.Seats.Seats.First(seat => !seat.Id.Equals(runtime.Seat.Id) &&
+                runtime.Host.ProjectionForSeat(seat.Id).AuthorizedCommands.Any(command =>
+                    command.Kind == DirectorCommandKind.CommitCard));
+            var otherCommand = runtime.Host.ProjectionForSeat(otherSeat.Id).AuthorizedCommands
+                .First(command => command.Kind == DirectorCommandKind.CommitCard);
+            var before = runtime.Host.Version;
+            Assert.That(new SeatMatchClient(runtime.Host.ClientForSeat(otherSeat.Id))
+                .Submit(otherCommand).Accepted, Is.True);
+            runtime.RefreshAll();
+            yield return null;
+
+            Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+            Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex),
+                "Another player's commit must not reset this seat's still-valid drag.");
+            Assert.That(localControl.parent.resolvedStyle.visibility, Is.EqualTo(Visibility.Hidden));
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return Capture("tmp/w134-remote-commit-drag-preserved.png");
+            }
+
+            SendPointerUp(target, drop);
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.Host.Version, Is.EqualTo(before + 2),
+                "The preserved drag submits exactly one local commitment after the remote one.");
+            Assert.That(runtime.GetCommitmentStatus(runtime.Seat.HeroId),
+                Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+            Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+        }
+
         [UnityTest]
         public IEnumerator UnavailableCardGroup_StaysBrightAndCannotCommitAcrossRefreshAndSessionReplacementAtBothDesktopViewports()
         {

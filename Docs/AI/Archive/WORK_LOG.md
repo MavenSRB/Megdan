@@ -686,3 +686,11 @@ Historical evidence: completion commit addressed by immutable `work/W-132`; exac
 The new private W133 Windows archive supersedes W079 for current playtesting and packages W-080 through W-082 plus W-131 and W-132 without another behavior change. One freshly stamped candidate passed player interaction, bounded PvP with one playing host and two real joiners, PvE with one/two/three player processes and board rendering. Its 184 payload hashes reproduced after ZIP extraction, and the extracted package passed a fresh one-player PvE/render launch. Every older package remains preserved; the Mac package remains W075 and is not admission-compatible. No internet/NAT, packaged reconnect, native Mac or full-suite claim; nothing was published.
 
 Historical evidence: completion commit addressed by immutable `work/W-133`; exact checks/results, package identity and limitations live in its body.
+
+### [x] W-134 Preserve a valid local card drag across another player's commit
+
+Another player's accepted commitment republishes a complete owner projection, but no longer resets this seat's pointer-captured drag when the same exact hand card remains selectable. The hand retains the live card proxy and hidden source slot, adopts the latest compatible projection before release, then submits once through the existing owner-scoped command path. Missing, hidden, replaced and newly ineligible gestures retain their cancellation behavior; rules, snapshot, wire and card content are unchanged.
+
+The exact remote-commit-during-drag regression failed before the repair because the proxy disappeared and passes afterward. The 17-case seat-scoped HUD Play Mode fixture, including existing click, cancellation, session-replacement and exact-once submission paths, passes. A focused non-batch Game View capture confirms the complete dragged face remains visible over the board after the remote refresh. Source only; W133 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-134`; exact checks/results, failing-to-passing transition, review and limitations live in its body.

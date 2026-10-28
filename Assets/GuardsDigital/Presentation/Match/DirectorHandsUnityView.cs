@@ -239,6 +239,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly CardCommitmentDragState dragState = new CardCommitmentDragState();
         private VisualElement dragCapture;
         private VisualElement draggedCardSlot;
+        private DirectorHandsViewModel pendingDragModel;
         private Func<Vector2, bool> isMapDropPoint;
         private bool confirmLayoutReady;
         private bool trayHidden;
@@ -421,8 +422,48 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            Model = model ?? throw new ArgumentNullException(nameof(model));
+            model = model ?? throw new ArgumentNullException(nameof(model));
+            if (CanContinueDrag(model))
+            {
+                // W-134. Every accepted remote command republishes a complete owner projection. The
+                // hand must eventually adopt that projection, but rebuilding it while UI Toolkit owns
+                // pointer capture detaches the source button and turns another player's commit into a
+                // local cancellation. Keep only the latest model until release while that same exact
+                // card remains selectable. A missing/replaced/ineligible card falls through and uses
+                // the ordinary rebuild cancellation path.
+                pendingDragModel = model;
+                return;
+            }
+
+            pendingDragModel = null;
+            ApplyModel(model);
+        }
+
+        private bool CanContinueDrag(DirectorHandsViewModel model)
+        {
+            if (!dragState.IsDragging || contextOnly || trayHidden || model.ViewedHand == null)
+            {
+                return false;
+            }
+
+            return model.ViewedHand.TrayCards.Any(card =>
+                card.CardInstanceId.Equals(dragState.CardInstanceId) && card.IsSelectable);
+        }
+
+        private void ApplyModel(DirectorHandsViewModel model)
+        {
+            Model = model;
             Rebuild();
+        }
+
+        private void ApplyPendingDragModel()
+        {
+            var pending = pendingDragModel;
+            pendingDragModel = null;
+            if (pending != null)
+            {
+                ApplyModel(pending);
+            }
         }
 
         /// <summary>
@@ -907,7 +948,9 @@ namespace GuardsDigital.Presentation.Match
                 // Suppress Button.Clickable's pointer-up path: a drag is one input path and cannot
                 // also select the card or reveal the confirmation banner beneath it.
                 evt.StopImmediatePropagation();
-                if (!contextOnly && isMapDropPoint?.Invoke(evt.position) == true)
+                var submits = !contextOnly && isMapDropPoint?.Invoke(evt.position) == true;
+                ApplyPendingDragModel();
+                if (submits)
                 {
                     CardDroppedOnMap?.Invoke(cardId);
                 }
@@ -961,6 +1004,7 @@ namespace GuardsDigital.Presentation.Match
             dragState.Cancel();
             dragCapture = null;
             HideDragProxy();
+            ApplyPendingDragModel();
         }
 
         private void ReleaseDragCapture(int pointerId)
