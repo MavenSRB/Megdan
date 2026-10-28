@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-133 | Produced the current private Windows package with W-080 through W-082 plus W-131 and W-132 over W079. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, 184-file manifest/archive verification and extracted launch. Older packages remain preserved; Mac remains W075 and is admission-incompatible. [Scope and acceptance](#x-w-133-package-current-fixes-for-windows). | `work/W-133` |
 | W-132 | Kept the experimental one-Life hero base cost authoritative through every graph installation, including fresh private-online composition and progressed Defeats. [Scope and acceptance](#x-w-132-keep-one-life-hero-defeats-authoritative-in-private-online-play). | `work/W-132` |
 | W-131 | Kept discarded cards visibly violet while they remain standing Active-effect sources, including Arien's spent Blue Defense cards; ordinary discards remain black. [Scope and acceptance](#x-w-131-keep-discarded-active-effect-sources-visibly-active). | `work/W-131` |
 | W-082 | Replaced automatic 4v4/5v5 compact-tray expansion with Shift+hover and stopped expansion/collapse from rebuilding both hero columns; ordinary hover and every unrelated rail now remain stable. [Scope and acceptance](#x-w-082-make-compact-trays-shift-hover-without-full-hud-reload). | `work/W-082` |
@@ -679,3 +680,9 @@ The October 27 W079 five-Life private-online match had no Undo or version rewind
 The new graph-install regression failed before the repair because a Tier-II Defeat spent two Lives and passes afterward. A real Tier-II scene Defeat spends exactly one, and affected authority, replay/rollback, additional-cost, experimental coordination and private-online recomposition fixtures pass. Source only; W079 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-132`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-133 Package current fixes for Windows
+
+The new private W133 Windows archive supersedes W079 for current playtesting and packages W-080 through W-082 plus W-131 and W-132 without another behavior change. One freshly stamped candidate passed player interaction, bounded PvP with one playing host and two real joiners, PvE with one/two/three player processes and board rendering. Its 184 payload hashes reproduced after ZIP extraction, and the extracted package passed a fresh one-player PvE/render launch. Every older package remains preserved; the Mac package remains W075 and is not admission-compatible. No internet/NAT, packaged reconnect, native Mac or full-suite claim; nothing was published.
+
+Historical evidence: completion commit addressed by immutable `work/W-133`; exact checks/results, package identity and limitations live in its body.
