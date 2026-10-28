@@ -8,18 +8,37 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
+    internal sealed class TimeoutCannotProgressException : InvalidOperationException
+    {
+        public TimeoutCannotProgressException(string message) : base(message) { }
+    }
+
     /// <summary>The explicitly opted-in timeout policy. It only selects currently offered typed commands.</summary>
     internal static class TimeoutChoicePolicy
     {
+        public static bool CanUseUndoFallback(
+            MatchSessionProjection projection,
+            MatchClockKind kind,
+            MatchSeat seat,
+            HeroId actor,
+            bool undoAuthorized)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            return undoAuthorized && projection.PendingTurnRelease == null &&
+                kind == MatchClockKind.Resolution && seat?.Owns(actor) == true &&
+                !projection.HasPendingAttackResolution && projection.PendingAttackTargetChoice == null;
+        }
+
         public static DirectorCommand Choose(MatchSessionProjection p, IReadOnlyList<DirectorCommand> offered,
             Func<int, int> random, IReadOnlyDictionary<RuleObject, int> votes = null)
         {
             var commands = offered.Where(c => c.Kind != DirectorCommandKind.DeselectMinionBattleRemoval &&
                 c.EffectChoice?.Kind != EffectChoiceCommandKind.Deselect).ToArray();
-            if (commands.Length == 0) throw new InvalidOperationException("Timeout has no completing legal command.");
+            if (commands.Length == 0) throw new TimeoutCannotProgressException("Timeout has no completing legal command.");
             var end = commands.FirstOrDefault(c => c.Kind == DirectorCommandKind.PerformHold || c.Kind == DirectorCommandKind.ReleaseTurn);
             if (end != null) return end;
             var decline = commands.FirstOrDefault(c => c.Kind == DirectorCommandKind.StopMovement ||
@@ -71,7 +90,7 @@ namespace GuardsDigital.Application
                     commands = commands.Where((c,i)=>Distance(actor.Coordinate,points[i].Value)==nearest).ToArray();
                 }
             }
-            if (commands.Length == 0) throw new InvalidOperationException("Timeout cannot complete the current constrained selection.");
+            if (commands.Length == 0) throw new TimeoutCannotProgressException("Timeout cannot complete the current constrained selection.");
             return commands[random(commands.Length)];
         }
         private static CardInstanceId Card(MatchSessionProjection p, DirectorCommand c)

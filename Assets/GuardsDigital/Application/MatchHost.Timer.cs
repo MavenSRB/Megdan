@@ -135,14 +135,7 @@ namespace GuardsDigital.Application
                         if (expired == null) return;
                         var actor=SeatProjectionFactory.DecidingActor(p);
                         var entry=clock.Capture().Entries.Single(e=>e.Id==expired.Id);
-                        if (p.PendingTurnRelease==null && entry.Kind==MatchClockKind.Resolution && expired.Seat.Owns(actor) &&
-                            !expired.Commands.Any(c=>c.Kind==DirectorCommandKind.PerformHold) && CanSeatUndo(expired.Seat,out _))
-                        {
-                            var undo=Execute(MatchSubmission.ForUndo());
-                            if (!undo.Accepted) throw new InvalidOperationException("Authorized timeout Undo was refused: "+undo.Detail);
-                            RefreshSeatUndoWatermark(default,null,afterRewind:true);
-                        }
-                        else
+                        try
                         {
                             IReadOnlyDictionary<RuleObject,int> votes=null;
                             if (p.PendingMinionBattleChoice != null)
@@ -159,6 +152,21 @@ namespace GuardsDigital.Application
                             }
                             var command=TimeoutChoicePolicy.Choose(p,offered,NextTimeoutRandom,votes);
                             AcceptTimeout(command,expired.Seat);
+                        }
+                        catch (TimeoutCannotProgressException)
+                        {
+                            // W-135. Undo is the last-resort escape from a genuinely forward-blocked
+                            // mandatory resolution, never a shortcut around an offered Stop/Decline.
+                            // In particular, Movement already offers StopMovement and must retain every
+                            // accepted destination. Attack is excluded even before the ordinary seat
+                            // rewind boundary is asked: timeout never backs out of an Attack.
+                            var undoAuthorized=CanSeatUndo(expired.Seat,out _);
+                            if (!TimeoutChoicePolicy.CanUseUndoFallback(
+                                    p,entry.Kind,expired.Seat,actor,undoAuthorized))
+                                throw;
+                            var undo=Execute(MatchSubmission.ForUndo());
+                            if (!undo.Accepted) throw new InvalidOperationException("Authorized timeout Undo was refused: "+undo.Detail);
+                            RefreshSeatUndoWatermark(default,null,afterRewind:true);
                         }
                         decisions=SynchronizeClocks();
                     }

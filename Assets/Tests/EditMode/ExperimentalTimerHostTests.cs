@@ -67,6 +67,46 @@ namespace GuardsDigital.Tests.EditMode
             }
             Assert.That(families.Count,Is.EqualTo(13),"Every declared pending family must be exercised.");
         }
+        [Test] public void ExpiringAfterMovementStopsAtTheCurrentSpaceInsteadOfUndoingTheMove()
+        {
+            var source=EngagedAt("movement");
+            var host=WithTimer(source);
+            var actor=host.Projection.SelectedActor.ActorId;
+            var seat=host.Seats.FindByHero(actor);
+            Assert.That(seat,Is.Not.Null);
+            var before=host.Projection.Heroes.Single(value=>value.HeroId.Equals(actor)).Coordinate;
+            var move=host.ProjectionForSeat(seat.Id).AuthorizedCommands.First(value=>
+                value.Kind==DirectorCommandKind.ChooseMovementDestination);
+            Assert.That(host.SubmitForSeat(seat.Id,new SeatSubmission(
+                new SubmissionId("move-before-timeout"),host.Version,move)).Accepted,Is.True);
+            var moved=host.Projection.Heroes.Single(value=>value.HeroId.Equals(actor)).Coordinate;
+            Assert.That(moved,Is.Not.EqualTo(before));
+
+            Ready(host);
+            host.AdvanceClock(TimeSpan.FromSeconds(2).Ticks);
+
+            Assert.That(host.TimeoutFailure,Is.Empty);
+            Assert.That(host.Projection.AcceptedCommands,Does.Contain(move),
+                "Timeout must keep the accepted move rather than truncating it through Undo.");
+            Assert.That(host.Projection.Heroes.Single(value=>value.HeroId.Equals(actor)).Coordinate,
+                Is.EqualTo(moved),"Stop Movement must end from the hero's current space.");
+        }
+        [Test] public void TimeoutUndoFallbackIsNeverPermittedForAnAttack()
+        {
+            var attack=WithTimer(EngagedAt("attack-target"));
+            var actor=attack.Projection.SelectedActor.ActorId;
+            var seat=attack.Seats.FindByHero(actor);
+            Assert.That(attack.Projection.HasPendingAttackResolution,Is.True);
+            Assert.That(TimeoutChoicePolicy.CanUseUndoFallback(
+                attack.Projection,MatchClockKind.Resolution,seat,actor,undoAuthorized:true),Is.False);
+
+            var movement=WithTimer(EngagedAt("movement"));
+            actor=movement.Projection.SelectedActor.ActorId;
+            seat=movement.Seats.FindByHero(actor);
+            Assert.That(TimeoutChoicePolicy.CanUseUndoFallback(
+                movement.Projection,MatchClockKind.Resolution,seat,actor,undoAuthorized:true),Is.True,
+                "A genuinely forward-blocked mandatory non-Attack state retains the original escape hatch.");
+        }
         [Test] public void SharedBoardVotesRejectStaleAndDirectCommandsAndResolveUnanimity()
         {
             var h=WithTimer(LanePushTransitionTests.CreatePausedLanePushPlaceSession(sixPlayers:true));

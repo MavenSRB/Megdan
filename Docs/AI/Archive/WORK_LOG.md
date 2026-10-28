@@ -694,3 +694,11 @@ Another player's accepted commitment republishes a complete owner projection, bu
 The exact remote-commit-during-drag regression failed before the repair because the proxy disappeared and passes afterward. The 17-case seat-scoped HUD Play Mode fixture, including existing click, cancellation, session-replacement and exact-once submission paths, passes. A focused non-batch Game View capture confirms the complete dragged face remains visible over the board after the remote refresh. Source only; W133 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-134`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-135 Prefer forward timeout completion and preserve movement
+
+Timer expiry now asks the typed timeout policy for a legal completing forward command before considering the existing mandatory-state Undo escape. Movement therefore selects its offered Stop Movement command, retains every accepted destination and ends from the hero's current space. Optional work still declines/stops, mandatory work still completes forward, and only a genuinely forward-blocked mandatory non-Attack state may use ordinary authorized in-turn Undo. Attack states are explicitly excluded from that fallback. Ordinary player/Director Undo, timer-off play, rules, snapshot v60, wire /54 and card content are unchanged.
+
+The exact seat-authorized move-then-expire regression failed before the repair because timeout Undo truncated `ChooseMovementDestination` and passes afterward. A focused policy case proves Attack is ineligible while preserving the non-Attack escape hatch. The five directly affected timer, map, commitment, narration and presenter fixtures pass 188/188 Edit Mode cases, including all declared pending families and bounded empty-bank round progression. Source only; W133 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-135`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
