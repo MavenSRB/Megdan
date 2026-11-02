@@ -159,6 +159,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EquivalentTo(directionCandidates.Select(value => value.Neighbour)),
                 "and each one is drawn on the space its own candidate names.");
 
+            yield return UiPlayer.CaptureScreen("tmp/w148-tali-cold-snap-direction-arrows.png");
+
             // MILESTONE 8.86. The direction is CHOSEN rather than taken first-come, and the choice is
             // what makes the assertion below a real one: this journey used to press whichever arrow a
             // player could reach and then accept EITHER outcome - "the enemy either stayed (the 'if

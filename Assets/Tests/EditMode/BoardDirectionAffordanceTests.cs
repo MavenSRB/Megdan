@@ -228,6 +228,14 @@ namespace GuardsDigital.Tests.EditMode
                 "Two meshes and two materials, however many arrows point at them.");
             foreach (var arrow in drawn)
             {
+                foreach (var layer in arrow.GetComponentsInChildren<MeshRenderer>())
+                {
+                    Assert.That(layer.sortingOrder, Is.EqualTo(HexDirectionArrow.SortingOrder));
+                    Assert.That(layer.sortingOrder, Is.GreaterThan(10),
+                        "A direction answer must paint above the order-10 minion token that can " +
+                        "legally occupy its space, rather than disappearing beneath that piece.");
+                }
+
                 var space = HexWorldLayout.ToWorld(arrow.Space, HexWorldLayout.DefaultOuterRadius);
                 Assert.That(arrow.transform.localPosition.x, Is.EqualTo(space.x).Within(0.0001f));
                 Assert.That(arrow.transform.localPosition.z, Is.EqualTo(space.z).Within(0.0001f),

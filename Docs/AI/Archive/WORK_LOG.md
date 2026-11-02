@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-148 | Kept every shared direction-choice arrow above heroes, minions, tokens and their ordinary board cues, so Tali's Blue-card arrows cannot disappear beneath an occupied neighbouring space. The shared affordance regression, exact Cold Snap journey and rendered inspection pass. [Scope and acceptance](#x-w-148-keep-direction-arrows-visible-above-board-pieces). | `work/W-148` |
 | W-147 | Kept all shared docked decision windows clear of playable map hexes and pieces by temporarily excluding the bar from both board-camera safe arms. Level Up and Minion Battle geometry plus rendered captures pass across supported viewport shapes. [Scope and acceptance](#x-w-147-keep-the-docked-decision-bar-clear-of-map-hexes). | `work/W-147` |
 | W-133 | Produced the current private Windows package with W-080 through W-082 plus W-131 and W-132 over W079. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, 184-file manifest/archive verification and extracted launch. Older packages remain preserved; Mac remains W075 and is admission-incompatible. [Scope and acceptance](#x-w-133-package-current-fixes-for-windows). | `work/W-133` |
 | W-132 | Kept the experimental one-Life hero base cost authoritative through every graph installation, including fresh private-online composition and progressed Defeats. [Scope and acceptance](#x-w-132-keep-one-life-hero-defeats-authoritative-in-private-online-play). | `work/W-132` |
@@ -711,3 +712,11 @@ Every map choice using the shared docked decision window now temporarily moves b
 The rendered geometry gate covers Level Up and Minion Battle at reference, ultrawide and narrow viewports and directly measures projected playable hex bounds. The affected 58-case Play Mode set and the targeted non-batch decision-window capture pass; visual review confirms the bar is clear of hexes while decorative artwork may continue behind HUD chrome. Source only; W133 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-147`; exact checks/results, corrected active-run failures, review and limitations live in its body.
+
+### [x] W-148 Keep direction arrows visible above board pieces
+
+Every shared six-arrow direction choice now renders above heroes, minions, tokens and their ordinary rings and shields. Tali's Blue-card arrows therefore remain readable regardless of which neighbouring spaces are occupied; dedicated card-state pips retain their higher layer. Geometry, colour, hover, click-through selection, candidates, commands, movement resolution and card content are unchanged.
+
+The shared layer regression failed before the repair because both arrow meshes used order zero beneath order-ten minion tokens, then passed with the shared order. The complete seven-case board-direction fixture, exact Cold Snap Play Mode journey and targeted non-batch Game View capture pass; visual review confirms all six arrows remain readable around Tali's occupied centre cluster. Source only; W133 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-148`; exact checks/results, failing-to-passing transition, review and limitations live in its body.

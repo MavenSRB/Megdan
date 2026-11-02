@@ -144,6 +144,13 @@ namespace GuardsDigital.Presentation.Board
         public const string HaloLayerName = "Direction Arrow Halo";
         public const string CoreLayerName = "Direction Arrow Core";
 
+        /// <summary>
+        /// Direction answers remain readable when a hero, minion or token occupies the neighbouring
+        /// space they name. Board pieces and their ordinary rings/shields top out at order 30; card
+        /// state pips remain above this at their dedicated order 100.
+        /// </summary>
+        public const int SortingOrder = 31;
+
         /// <summary>The two heights the six-corner marks already use, so nothing z-fights them.</summary>
         public const float HaloHeight = 0.075f;
         public const float CoreHeight = 0.085f;
@@ -243,6 +250,7 @@ namespace GuardsDigital.Presentation.Board
             if (renderer == null) renderer = child.gameObject.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            renderer.sortingOrder = SortingOrder;
             renderer.sharedMaterial = layerName == HaloLayerName ? template.Halo : template.Core;
             return renderer;
         }
