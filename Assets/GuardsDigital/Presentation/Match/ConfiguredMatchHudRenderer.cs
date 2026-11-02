@@ -1807,7 +1807,7 @@ namespace GuardsDigital.Presentation.Match
             // can change without the header changing - a pause is rendered into it by its own
             // presenter - so it is placed here, on the same per-frame pass and by the same
             // changed-state rule the tray host above uses.
-            LayoutDecisionWindow(force: false);
+            var decisionLayoutChanged = LayoutDecisionWindow(force: false);
             // Milestone 8.63 keeps ordinary HUD layers below the decision window. Milestone 9.72's
             // explicitly opened inspection is the one modal reading surface above it, so its CLOSE
             // control cannot be trapped behind a decision that appeared after it opened.
@@ -1820,6 +1820,16 @@ namespace GuardsDigital.Presentation.Match
             if (hostChanged || round.HasUpgradeComparisonBand != trayShowsUpgradeComparison)
             {
                 Layout();
+            }
+            else if (decisionLayoutChanged)
+            {
+                // W-147. A docked window is also a temporary board-camera exclusion. Re-publish
+                // when any shared docked decision opens, closes or expands so map choices from every
+                // family get the same complete-hex clearance without permanently shrinking the map.
+                var viewport = PanelViewport;
+                var tray = CalculateCardPanelRect(viewport.x, viewport.y);
+                var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
+                PublishCameraSafeLayout(tray, playfield, viewport);
             }
 
             // Milestone 8.53, last on this pass for the same reason it is last in `Layout`: every
@@ -2453,9 +2463,13 @@ namespace GuardsDigital.Presentation.Match
             // Status and Director live on the left; Blue's rail owns the right edge. Between them the
             // broad part of the map may use the whole remaining screen height. Compact hand previews
             // and their full hover reveals stay wholly left of this arm.
+            var decisionRight = decisionWindow?.Model?.State == DecisionWindowState.Docked
+                ? CalculateDecisionWindowDockedRect(viewport.x, viewport.y).xMax + BoardHexUiGap
+                : 0f;
             var upperLeft = Mathf.Max(
                 red.xMax + BoardHexUiGap,
-                red.xMin + StatusDockWidth + BoardHexUiGap);
+                red.xMin + StatusDockWidth + BoardHexUiGap,
+                decisionRight);
             var unavailableRect = CalculateUnavailableCardGroupRect(viewport.x, viewport.y);
             var upperRight = Mathf.Max(
                 upperLeft,
@@ -2480,7 +2494,9 @@ namespace GuardsDigital.Presentation.Match
             // The lower arm begins after the furthest possible full-size hover reveal: the fifth
             // compact slot's left edge plus one standard card width. This keeps a revealed card clear
             // of every playable hex while reclaiming the width the other four full faces used to hold.
-            var lowerLeft = CompactHandRightEdge + BoardCardHexUiGap;
+            var lowerLeft = Mathf.Max(
+                CompactHandRightEdge + BoardCardHexUiGap,
+                decisionRight);
             var lowerRight = Mathf.Max(
                 lowerLeft,
                 unavailableRect.xMin - BoardCardHexUiGap);
@@ -2582,11 +2598,11 @@ namespace GuardsDigital.Presentation.Match
         /// that the viewport itself may have - the two-state answer <see cref="ApplyExclusiveContext"/>
         /// already prefers to twenty style writes a frame.</para>
         /// </summary>
-        private void LayoutDecisionWindow(bool force)
+        private bool LayoutDecisionWindow(bool force)
         {
             if (decisionWindow == null)
             {
-                return;
+                return false;
             }
 
             var model = decisionWindow.Model;
@@ -2596,7 +2612,7 @@ namespace GuardsDigital.Presentation.Match
             if (!force && string.Equals(key, laidOutDecisionKey, StringComparison.Ordinal) &&
                 state == laidOutDecisionState && viewport == laidOutDecisionViewport)
             {
-                return;
+                return false;
             }
 
             laidOutDecisionKey = key;
@@ -2611,6 +2627,7 @@ namespace GuardsDigital.Presentation.Match
             host.style.top = rect.y;
             host.style.width = rect.width;
             host.style.height = rect.height;
+            return true;
         }
 
         private void KeepCardInspectionAboveTheHand()

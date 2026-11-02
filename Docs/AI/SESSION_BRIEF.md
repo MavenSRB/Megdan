@@ -16,7 +16,7 @@ Current private Windows package: **W133 Current Fixes**, `Builds/Playtest-W133-c
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-135**.
+- Last completed work: **W-147**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
@@ -27,6 +27,8 @@ W076/W082 correct compact rails: current-card proportions stay intact, dead Acti
 W134 keeps a still-valid local commitment drag attached through the complete owner-projection refresh caused by another player's commit. The latest compatible hand projection is applied before the local drop submits; missing, hidden, replaced or ineligible gestures still cancel. Focused failing-to-passing, affected drag/cancellation and rendered checks passed. Source-only; W133 Windows and W075 Mac remain unchanged.
 
 W135 makes timer expiry consume legal forward answers before considering its mandatory-state Undo escape. Movement now takes Stop Movement and ends from the hero's current space instead of truncating accepted destinations; the fallback remains only for a forward-blocked mandatory non-Attack state and is expressly unavailable to Attacks. Focused failing-to-passing and 188 affected timer/timeout checks passed. Source-only; W133 Windows and W075 Mac remain unchanged.
+
+W147 keeps every shared docked decision bar clear of playable map hexes and pieces. While Level Up, Minion Battle or another map choice is docked, both camera-safe map arms begin beyond the bar; closing or expanding it restores the ordinary footprint. Focused rendered geometry and visual captures pass at reference, ultrawide and narrow viewports. Source-only; W133 Windows and W075 Mac remain unchanged.
 
 W078 corrects W077's rejected shortage explanation: every printed minion glyph in either large map's active Battle Zones receives its matching minion. Each team/lane now has a third Melee in reserve for defending zones; initial waves stay unchanged. Every lane zone, snapshot restoration, joined-client identity and both-map rendering are covered, including the bottom lava glyph. Included in W079 Windows; the W075 Mac package remains unchanged. Exact inventories and authority: [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
 

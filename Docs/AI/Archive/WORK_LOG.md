@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-147 | Kept all shared docked decision windows clear of playable map hexes and pieces by temporarily excluding the bar from both board-camera safe arms. Level Up and Minion Battle geometry plus rendered captures pass across supported viewport shapes. [Scope and acceptance](#x-w-147-keep-the-docked-decision-bar-clear-of-map-hexes). | `work/W-147` |
 | W-133 | Produced the current private Windows package with W-080 through W-082 plus W-131 and W-132 over W079. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, 184-file manifest/archive verification and extracted launch. Older packages remain preserved; Mac remains W075 and is admission-incompatible. [Scope and acceptance](#x-w-133-package-current-fixes-for-windows). | `work/W-133` |
 | W-132 | Kept the experimental one-Life hero base cost authoritative through every graph installation, including fresh private-online composition and progressed Defeats. [Scope and acceptance](#x-w-132-keep-one-life-hero-defeats-authoritative-in-private-online-play). | `work/W-132` |
 | W-131 | Kept discarded cards visibly violet while they remain standing Active-effect sources, including Arien's spent Blue Defense cards; ordinary discards remain black. [Scope and acceptance](#x-w-131-keep-discarded-active-effect-sources-visibly-active). | `work/W-131` |
@@ -702,3 +703,11 @@ Timer expiry now asks the typed timeout policy for a legal completing forward co
 The exact seat-authorized move-then-expire regression failed before the repair because timeout Undo truncated `ChooseMovementDestination` and passes afterward. A focused policy case proves Attack is ineligible while preserving the non-Attack escape hatch. The five directly affected timer, map, commitment, narration and presenter fixtures pass 188/188 Edit Mode cases, including all declared pending families and bounded empty-bank round progression. Source only; W133 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-135`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-147 Keep the docked decision bar clear of map hexes
+
+Every map choice using the shared docked decision window now temporarily moves both board-camera safe arms beyond the bar plus the existing complete-hex gutter. Level Up, Minion Battle and every other docked family therefore keep playable hexes and pieces out from under the panel while retaining the full two-line bar and ordinary hand. Closing or expanding the window restores the ordinary map footprint; expanded-window geometry, rules, authority, card content and decorative map artwork are unchanged.
+
+The rendered geometry gate covers Level Up and Minion Battle at reference, ultrawide and narrow viewports and directly measures projected playable hex bounds. The affected 58-case Play Mode set and the targeted non-batch decision-window capture pass; visual review confirms the bar is clear of hexes while decorative artwork may continue behind HUD chrome. Source only; W133 Windows and W075 Mac packages remain unchanged.
+
+Historical evidence: completion commit addressed by immutable `work/W-147`; exact checks/results, corrected active-run failures, review and limitations live in its body.

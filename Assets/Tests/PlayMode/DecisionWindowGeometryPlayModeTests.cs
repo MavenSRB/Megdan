@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -134,34 +135,63 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
                     yield return null;
 
-                    StandMinionBattle(root);
-                    yield return null;
-                    yield return null;
+                    foreach (var dockedCase in new[]
+                    {
+                        (Label: "Minion Battle", Stand: (System.Action<MatchSceneCompositionRoot>)StandMinionBattle),
+                        (Label: "Level Up", Stand: (System.Action<MatchSceneCompositionRoot>)StandDockedLevelUp)
+                    })
+                    {
+                        dockedCase.Stand(root);
+                        yield return null;
+                        yield return null;
 
-                    var panel = ConfiguredMatchHudRenderer.PanelViewport;
-                    var expected = ConfiguredMatchHudRenderer.CalculateDecisionWindowDockedRect(
-                        panel.x, panel.y);
-                    var live = Window(root).worldBound;
-                    AssertBoundsEqual(expected, live, viewport.Label);
-                    // Milestone 8.58: the bar takes the dock's TOP BAND and begins inside the dock,
-                    // but it is no longer bounded by the dock's right edge. The user's capture showed
-                    // both of its second lines ending in an ellipsis inside 444 units; the mockup's
-                    // own `.dock` is 27% of the reference, and the dock's right edge at 732 is not a
-                    // thing a player can see. What the bar must respect is the RAIL it begins past and
-                    // the BOARD it may never cover, and both are asserted below.
-                    var dock = ConfiguredMatchHudRenderer.CalculateStatusDockRect(panel.x, panel.y);
-                    Assert.That(live.xMin, Is.GreaterThanOrEqualTo(dock.xMin - UiPlayer.PixelSnapping()),
-                        "The docked window begins inside the round dock at " + viewport.Label + ".");
-                    Assert.That(live.yMin, Is.GreaterThanOrEqualTo(dock.yMin - UiPlayer.PixelSnapping()),
-                        "and takes its top band at " + viewport.Label + ".");
-                    Assert.That(live.yMax, Is.LessThanOrEqualTo(dock.yMax + UiPlayer.PixelSnapping()),
-                        "without reaching past its bottom at " + viewport.Label + ".");
-                    AssertClearOfEverythingThatExists(root, live, panel, viewport.Label);
-                    Assert.That(
-                        ConfiguredMatchHudRenderer.CalculatePlayfieldRect(panel.x, panel.y)
-                            .Overlaps(live), Is.False,
-                        "A board-answered decision never covers the pieces its own question is " +
-                        "about, at " + viewport.Label + ".");
+                        var panel = ConfiguredMatchHudRenderer.PanelViewport;
+                        var expected = ConfiguredMatchHudRenderer.CalculateDecisionWindowDockedRect(
+                            panel.x, panel.y);
+                        var live = Window(root).worldBound;
+                        var caseLabel = dockedCase.Label + " at " + viewport.Label;
+                        AssertBoundsEqual(expected, live, caseLabel);
+                        // Milestone 8.58: the bar takes the dock's TOP BAND and begins inside the dock,
+                        // but it is no longer bounded by the dock's right edge. The user's capture showed
+                        // both of its second lines ending in an ellipsis inside 444 units; the mockup's
+                        // own `.dock` is 27% of the reference, and the dock's right edge at 732 is not a
+                        // thing a player can see. What the bar must respect is the RAIL it begins past and
+                        // the BOARD it may never cover, and both are asserted below.
+                        var dock = ConfiguredMatchHudRenderer.CalculateStatusDockRect(panel.x, panel.y);
+                        Assert.That(live.xMin, Is.GreaterThanOrEqualTo(dock.xMin - UiPlayer.PixelSnapping()),
+                            "The docked window begins inside the round dock at " + caseLabel + ".");
+                        Assert.That(live.yMin, Is.GreaterThanOrEqualTo(dock.yMin - UiPlayer.PixelSnapping()),
+                            "and takes its top band at " + caseLabel + ".");
+                        Assert.That(live.yMax, Is.LessThanOrEqualTo(dock.yMax + UiPlayer.PixelSnapping()),
+                            "without reaching past its bottom at " + caseLabel + ".");
+                        AssertClearOfEverythingThatExists(root, live, panel, caseLabel);
+                        Assert.That(
+                            ConfiguredMatchHudRenderer.CalculatePlayfieldRect(panel.x, panel.y)
+                                .Overlaps(live), Is.False,
+                            "A board-answered decision never covers the pieces its own question is " +
+                            "about, at " + caseLabel + ".");
+                        var safe = root.Hud.CameraSafeLayout;
+                        var requiredLeft = live.xMax + ConfiguredMatchHudRenderer.BoardHexUiGap;
+                        Assert.That(safe.UpperRegion.xMin,
+                            Is.GreaterThanOrEqualTo(requiredLeft - UiPlayer.PixelSnapping()),
+                            "Every shared docked decision excludes its complete width from the upper " +
+                            "map surface at " + caseLabel + ".");
+                        Assert.That(safe.LowerRightRegion.xMin,
+                            Is.GreaterThanOrEqualTo(requiredLeft - UiPlayer.PixelSnapping()),
+                            "and from the reclaimed lower map surface at " + caseLabel + ".");
+
+                        var camera = Object.FindAnyObjectByType<Camera>();
+                        var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+                        var projectedHexes = mapView.CurrentTiles
+                            .Where(tile => tile.IsPlayable)
+                            .Select(tile => ProjectedPanelBounds(
+                                tile, camera, panel, mapView.OuterRadius))
+                            .ToArray();
+                        Assert.That(projectedHexes, Is.Not.Empty);
+                        Assert.That(projectedHexes.Any(live.Overlaps), Is.False,
+                            "No playable map hex is underneath the shared docked window at " +
+                            caseLabel + ".");
+                    }
                 }
             }
             finally
@@ -427,6 +457,19 @@ namespace GuardsDigital.Tests.PlayMode
                 "1 of 2 chosen"));
         }
 
+        private static void StandDockedLevelUp(MatchSceneCompositionRoot root)
+        {
+            root.Runtime.DecisionWindowView.Render(new DecisionWindowViewModel(
+                3L,
+                DecisionWindowFamily.LevelUp,
+                DecisionWindowState.Docked,
+                "w147-geometry-level-up",
+                "UPGRADE A CARD",
+                "RED WASP REACHED LEVEL 2 - UPGRADE A CARD",
+                "Choose one upgrade.",
+                "PAID 3 COINS - 4 REMAINING"));
+        }
+
         // -----------------------------------------------------------------------------------------
         // Measurement
         // -----------------------------------------------------------------------------------------
@@ -610,6 +653,32 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(live.yMin, Is.EqualTo(expected.yMin).Within(snap));
             Assert.That(live.width, Is.EqualTo(expected.width).Within(snap));
             Assert.That(live.height, Is.EqualTo(expected.height).Within(snap));
+        }
+
+        private static Rect ProjectedPanelBounds(
+            HexTileView tile,
+            Camera camera,
+            Vector2 panelViewport,
+            float outerRadius)
+        {
+            var mesh = tile.GetComponent<MeshFilter>()?.sharedMesh;
+            Assert.That(mesh, Is.Not.Null);
+            var points = mesh.vertices
+                .Skip(1)
+                .Select(vertex => tile.transform.TransformPoint(vertex))
+                .Select(camera.WorldToScreenPoint)
+                .Select(screen => new Vector2(
+                    (screen.x / Screen.width) * panelViewport.x,
+                    (1f - (screen.y / Screen.height)) * panelViewport.y))
+                .ToArray();
+            var pixelsPerWorld = panelViewport.y / (2f * camera.orthographicSize);
+            var clearance = PlaceholderTestGridView.ReservedPlayfieldCameraPadding *
+                outerRadius * pixelsPerWorld;
+            return Rect.MinMaxRect(
+                points.Min(point => point.x) - clearance,
+                points.Min(point => point.y) - clearance,
+                points.Max(point => point.x) + clearance,
+                points.Max(point => point.y) + clearance);
         }
 
         private static VisualElement Window(MatchSceneCompositionRoot root)
