@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-156 Three heroes with verified cards and supplied frog wizard
+
+Request: static scene before video, with wizard above and rules-faithful cards. User rejected the invented human wizard and supplied Veljko's frog artwork; the final v9 uses its AI-assisted background extraction on board and card, with original and provenance preserved privately. Cold Snap, Mad Dash, Focus and Challenge Accepted follow verified hero shards and the shot-plan roles. The still distinguishes three revealed commitments from the defense card remaining in hand and labels editorial opponent-hand visibility. Acceptance: source value/text review, valid hex staging, four grass variants, native card proportions and rendered visual inspection. No runtime, video or publication.
+
+Historical evidence: immutable `work/W-156`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-155 Illustrated cards beside the board
 
 User requested new cards resembling the real game after approving the grass preview. Reused the approved original-art card builder at native 372:520 aspect with title/tier, left stat ribbon and action/effect panel. The new board-cards-v7.png presents Quick Cut and Steel Guard alongside the preserved grass board; secondary hand silhouettes are explicitly layout placeholders. Values/effects remain undefined. Acceptance: aspect checks, successful rendering and visual review for readable faces and unobscured board. No runtime or video changes.
@@ -16,6 +22,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-156 | Three-hero pre-resolution still with verified cards and Veljko's supplied frog wizard. | `work/W-156` |
 | W-155 | Illustrated native-aspect cards integrated into the grass-board still. | `work/W-155` |
 | W-154 | Preserved five supplied grass JPEGs privately and composed their four unique variants into the existing board still. Acceptance: matching source/copy hashes, duplicate detection, all four variants used and visual inspection of the resulting still; no video or runtime change. | `work/W-154` |
 | W-153 | Separated complete Megdan source, grant materials, creative assets and latest packages. | `work/W-153` |
