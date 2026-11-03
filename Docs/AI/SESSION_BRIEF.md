@@ -10,33 +10,21 @@ Read once at startup. This brief alone owns current authorization and next routi
 
 Unity 6000.5.9f1 / URP 17.5; 32 configured heroes, private host/join play, 2v2 through 5v5, host-selected Waves/Lives and four maps including two large two-lane boards. Snapshot schema v60 persists lane identity/allocation; wire protocol /54 carries live per-lane Wave pools. See [current implementation](Project/CURRENT_IMPLEMENTATION.md) for precise behavior and limits.
 
-Current private Windows package: **W133 Current Fixes**, `Builds/Playtest-W133-current-fixes.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. It includes W-080's lane-scoped Heavy immunity, W-081/W-132's authoritative one-Life repair, W-082's Shift-hover compact trays and W-131's active discarded-source outline over W079. Stamp `1.0-W133-current-fixes+20261028-b665eb9c`; package SHA-256 `6334a199313354ad1cb506c36593f483dd7de8ecde6d553092e7cc74a8ca40f2`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
+Current private Windows package: **W152 Direction Arrows**, `Builds/Playtest-W152-direction-arrows.zip`. `GuardsDigital.exe` opens the shared Host/Join menu; Map selects PvP or PvE, including W-072's 4v4/5v5 boards. It includes W-134/W-135's drag/timer repairs, W-147's docked-window map clearance and W-151's always-visible direction arrows over W133. Stamp `1.0-W152-direction-arrows+20261103-e7092b1a`; package SHA-256 `e6e6a51badc7e5ee5a7a15830cd5758675b8856b2f0570b2ab9a53230edf784c`. Package identity and evidence: [build record](Project/BUILDS.md). Older packages remain preserved.
 
 ## Current authorization and next route
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-151**.
+- Last completed work: **W-152**.
 - Active authorized work: **none**.
 - Next proposed work: **none**.
 
 W072 added both saved 900x900 two-lane maps for 4v4/5v5. It preserves one shared initiative order, gives each lane its own active Battle Zone and push progression, and ends the whole match when either lane reaches the opposing Throne. Green's snow, water and forest centers and lava's bridge center are separate playable off-lane Zones, never terrain or lane-push spaces. Hosts choose official per-lane or shared-total Waves. Five-player teams retain one full rail and four thin token/card/current-card rails. Source-only; no package or publication.
 
-W076/W082 correct compact rails: current-card proportions stay intact, dead Active-label space is gone, and Shift+hover swaps only the addressed rail. W131 keeps Arien's discarded Blue Defense violet for its authoritative `This turn` or `This round` effect; ordinary discards remain black. Focused structure, interaction, failing-to-passing and rendered checks passed. Included in W133 Windows; W075 Mac remains unchanged.
+W152 packages the completed executable repairs since W133, including W134/W135's drag and timer fixes, W147's docked-window map clearance and W151's always-visible direction arrows. Fresh player, board, PvP/PvE, archive and extracted-launch checks pass; [work history](Archive/WORK_LOG.md) owns each detailed outcome.
 
-W134 keeps a still-valid local commitment drag attached through the complete owner-projection refresh caused by another player's commit. The latest compatible hand projection is applied before the local drop submits; missing, hidden, replaced or ineligible gestures still cancel. Focused failing-to-passing, affected drag/cancellation and rendered checks passed. Source-only; W133 Windows and W075 Mac remain unchanged.
-
-W135 makes timer expiry consume legal forward answers before considering its mandatory-state Undo escape. Movement now takes Stop Movement and ends from the hero's current space instead of truncating accepted destinations; the fallback remains only for a forward-blocked mandatory non-Attack state and is expressly unavailable to Attacks. Focused failing-to-passing and 188 affected timer/timeout checks passed. Source-only; W133 Windows and W075 Mac remain unchanged.
-
-W147 keeps every shared docked decision bar clear of playable map hexes and pieces. While Level Up, Minion Battle or another map choice is docked, both camera-safe map arms begin beyond the bar; closing or expanding it restores the ordinary footprint. Focused rendered geometry and visual captures pass at reference, ultrawide and narrow viewports. Source-only; W133 Windows and W075 Mac remain unchanged.
-
-W148 keeps the shared six-arrow direction choice above heroes, minions, tokens and their ordinary board cues, so Tali's Blue-card arrows no longer disappear beneath an occupied neighbouring space. Card-state pips retain their dedicated higher layer. The shared affordance regression, exact Cold Snap journey and targeted rendered inspection pass. Rules and direction candidates are unchanged; source-only, with W133 Windows and W075 Mac unchanged.
-
-W151 closes W148's rendered-depth gap: the southwest/8-o'clock Cold Snap arrow was still fully hidden by the rabbit token even though its renderer had a higher sorting order. Shared direction arrows now use a Resources-backed always-visible overlay below card-state pips and sit above ordinary piece planes. The layer/height regressions and exact rendered Cold Snap journey pass with the southwest answer visible. Rules and candidates are unchanged; source-only until the separately requested Windows package is cut.
-
-W078 corrects W077's rejected shortage explanation: every printed minion glyph in either large map's active Battle Zones receives its matching minion. Each team/lane now has a third Melee in reserve for defending zones; initial waves stay unchanged. Every lane zone, snapshot restoration, joined-client identity and both-map rendering are covered, including the bottom lava glyph. Included in W079 Windows; the W075 Mac package remains unchanged. Exact inventories and authority: [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory).
-
-W081/W132 keep the experimental one-Life hero base cost bound through every authoritative graph installation: fresh/private-online composition, restore, rollback, replay adoption and Undo. The October 27 W079 five-Life log confirmed progressed Defeats were still tier-priced despite gold-only markers and no Undo. Failing-to-passing graph-install, Tier-II scene, affected authority and private-online checks passed. Included in W133 Windows; W075 Mac remains unchanged.
+Large-map minion inventories and the one-Life experimental contract remain owned by [Maps](Maps/README.md#reviewed-two-lane-minion-spawn-inventory) and [experimental features](Project/EXPERIMENTAL_FEATURES.md); their completed repairs are included in the current Windows package.
 
 W062 makes unseated hosts full-information observers without player-command authority. PvE binds seated and unseated host Undo to live encounter authority and keeps its drawer pointer-reachable above the enemy overlay. Focused regressions and rendering passed; rules, snapshot 59, wire /52 and W059 packages are unchanged.
 

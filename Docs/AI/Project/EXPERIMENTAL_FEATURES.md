@@ -1,8 +1,8 @@
 # Experiments
 
-Canonical designs and acceptance requirements; implementation status belongs to the owning roadmap. [9.55](../Roadmap/PHASE_9.md#x-955-record-the-experimental-timer-and-header-design) and [9.57](../Roadmap/PHASE_9.md#x-957-record-the-experimental-teammate-coordination-design) record documentation only. Implementation [9.56](../Roadmap/PHASE_9.md#956-implement-and-gate-the-experimental-timer-and-header) and [9.58](../Roadmap/PHASE_9.md#958-implement-and-gate-experimental-teammate-coordination) is authorized now in an isolated worktree, in the sequence recorded by the session brief; reconcile final hero changes before merging. Return to [project context](../PROJECT_CONTEXT.md). The [session brief](../SESSION_BRIEF.md) alone owns active work. Standard board-game rules remain governed by [the rules ledger](../RULES_LEDGER.md); this opt-in digital variant is recorded there separately.
+Canonical experiment designs and acceptance requirements; the [roadmap](../Roadmap/PHASE_9.md) owns implementation status and the [session brief](../SESSION_BRIEF.md) owns active work. Return to [project context](../PROJECT_CONTEXT.md). Standard rules remain governed by the [rules ledger](../RULES_LEDGER.md); these opt-in digital variants are separate.
 
-The [implementation preparation packet](EXPERIMENTAL_PREPARATION.md) maps these decisions to existing source, proposed contracts, concrete acceptance cases and the post-hero handoff; it does not authorize runtime work.
+The [preparation packet](EXPERIMENTAL_PREPARATION.md) maps source and acceptance; it grants no runtime authority.
 
 ## Experimental menu
 
