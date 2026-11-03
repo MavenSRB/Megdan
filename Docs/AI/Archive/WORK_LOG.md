@@ -4,6 +4,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-151 | Closed W148's depth gap: every shared direction arrow now uses a Resources-backed always-visible overlay below card pips and sits above ordinary piece planes, so Tali's southwest/8-o'clock answer remains visible over the rabbit token. [Scope and acceptance](#x-w-151-keep-every-direction-arrow-visible-over-occupied-spaces). | `work/W-151` |
 | W-148 | Kept every shared direction-choice arrow above heroes, minions, tokens and their ordinary board cues, so Tali's Blue-card arrows cannot disappear beneath an occupied neighbouring space. The shared affordance regression, exact Cold Snap journey and rendered inspection pass. [Scope and acceptance](#x-w-148-keep-direction-arrows-visible-above-board-pieces). | `work/W-148` |
 | W-147 | Kept all shared docked decision windows clear of playable map hexes and pieces by temporarily excluding the bar from both board-camera safe arms. Level Up and Minion Battle geometry plus rendered captures pass across supported viewport shapes. [Scope and acceptance](#x-w-147-keep-the-docked-decision-bar-clear-of-map-hexes). | `work/W-147` |
 | W-133 | Produced the current private Windows package with W-080 through W-082 plus W-131 and W-132 over W079. The exact candidate passed player interaction, PvP host/two joiners, PvE one/two/three players, board rendering, 184-file manifest/archive verification and extracted launch. Older packages remain preserved; Mac remains W075 and is admission-incompatible. [Scope and acceptance](#x-w-133-package-current-fixes-for-windows). | `work/W-133` |
@@ -720,3 +721,11 @@ Every shared six-arrow direction choice now renders above heroes, minions, token
 The shared layer regression failed before the repair because both arrow meshes used order zero beneath order-ten minion tokens, then passed with the shared order. The complete seven-case board-direction fixture, exact Cold Snap Play Mode journey and targeted non-batch Game View capture pass; visual review confirms all six arrows remain readable around Tali's occupied centre cluster. Source only; W133 Windows and W075 Mac packages remain unchanged.
 
 Historical evidence: completion commit addressed by immutable `work/W-148`; exact checks/results, failing-to-passing transition, review and limitations live in its body.
+
+### [x] W-151 Keep every direction arrow visible over occupied spaces
+
+W148's sorting order was insufficient for 3D rendering: Tali still showed only five readable answers because the rabbit token completely covered the southwest/8-o'clock arrow at its lower depth. Both shared arrow layers now sit above ordinary piece planes and use one transparent Resources-backed shader with an always-passing depth test, queued immediately below card-state pips. Shape, colour, hover, click-through selection, candidates, commands, occupancy, movement resolution and card content are unchanged.
+
+The mesh-height regression failed at 0.075 against the 0.18 piece plane, and the render-state regression then failed at the ordinary 3000 queue before the final shared overlay was installed. The complete seven-case board-direction fixture and exact non-batch Cold Snap journey pass; visual review confirms the southwest answer is visible over the occupied cluster. The first raised-height and queue-only captures were correctly rejected because they did not fix the rendered defect. Source only; package delivery is the separately requested next work item.
+
+Historical evidence: completion commit addressed by immutable `work/W-151`; exact checks/results, failing-to-passing transitions, rejected intermediate captures, review and limitations live in its body.

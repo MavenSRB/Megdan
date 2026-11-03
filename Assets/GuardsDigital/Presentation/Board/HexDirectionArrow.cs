@@ -1,15 +1,16 @@
 using System;
 using GuardsDigital.Core.Board;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace GuardsDigital.Presentation.Board
 {
     /// <summary>
     /// Milestone 8.46d. One shared arrow construction, built exactly the way
     /// <see cref="HexCornerHighlightTemplate"/> is: a wide soft halo drawn as LIGHT under a narrow
-    /// near-white core drawn as paint, both copied from the shipped Resources templates so the
-    /// blended variant reaches a player build (the milestone 8.31b trap
-    /// <see cref="BoardOverlayMaterial"/> exists to stop each caller repeating).
+    /// near-white core drawn as paint. Both use one Resources-backed always-visible shader so a
+    /// neighbouring piece cannot win the depth test and so the required variant reaches a player
+    /// build rather than existing only in the Editor.
     ///
     /// <para>The colour is <see cref="HexCornerHighlightTemplate.EffectColor"/> - the board's declared
     /// "every other selectable effect" grey - because an arrow IS an effect-choice candidate. It says
@@ -26,6 +27,8 @@ namespace GuardsDigital.Presentation.Board
         public const string MeshName = "Hex Direction Arrow";
         public const string HaloMaterialName = "Direction Arrow Shine Halo";
         public const string CoreMaterialName = "Direction Arrow Shine Core";
+        public const string OverlayShaderResourcePath = "Rendering/BoardAlwaysVisibleOverlay";
+        public const int OverlayRenderQueue = 3999;
 
         /// <summary>How far the arrow reaches from the centre of the space it stands on.</summary>
         public const float LengthRatio = 0.46f;
@@ -56,11 +59,14 @@ namespace GuardsDigital.Presentation.Board
             haloMesh.name = MeshName + " Halo";
             coreMesh = BuildArrowMesh(outerRadius, CoreWidthScale);
             coreMesh.name = MeshName + " Core";
-            halo = BoardOverlayMaterial.CreateLuminous(
-                HaloMaterialName, HexCornerHighlightTemplate.EffectColor);
-            core = BoardOverlayMaterial.CreateUnlitBlended(
+            halo = CreateAlwaysVisibleMaterial(
+                HaloMaterialName,
+                HexCornerHighlightTemplate.EffectColor,
+                additive: true);
+            core = CreateAlwaysVisibleMaterial(
                 CoreMaterialName,
-                Color.Lerp(HexCornerHighlightTemplate.EffectColor, Color.white, 0.82f));
+                Color.Lerp(HexCornerHighlightTemplate.EffectColor, Color.white, 0.82f),
+                additive: false);
         }
 
         public Mesh HaloMesh => haloMesh;
@@ -70,6 +76,35 @@ namespace GuardsDigital.Presentation.Board
 
         /// <summary>Two meshes and two materials, however many arrows point at them.</summary>
         public int OwnedNativeResourceCount => 4;
+
+        private static Material CreateAlwaysVisibleMaterial(
+            string name,
+            Color color,
+            bool additive)
+        {
+            var shader = Resources.Load<Shader>(OverlayShaderResourcePath);
+            if (shader == null)
+            {
+                throw new InvalidOperationException(
+                    $"Direction arrows require Resources/{OverlayShaderResourcePath}.shader.");
+            }
+
+            var material = new Material(shader)
+            {
+                name = name,
+                hideFlags = HideFlags.DontSave,
+                color = additive
+                    ? BoardOverlayMaterial.AtLuminousAlpha(color)
+                    : color,
+                renderQueue = OverlayRenderQueue
+            };
+            material.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+            material.SetInt("_DstBlend", additive
+                ? (int)BlendMode.One
+                : (int)BlendMode.OneMinusSrcAlpha);
+            material.SetInt("_ZTest", (int)CompareFunction.Always);
+            return material;
+        }
 
         /// <summary>
         /// A flat arrow in the XZ plane pointing along +X, centred on the origin. Seven vertices and
@@ -151,9 +186,13 @@ namespace GuardsDigital.Presentation.Board
         /// </summary>
         public const int SortingOrder = 31;
 
-        /// <summary>The two heights the six-corner marks already use, so nothing z-fights them.</summary>
-        public const float HaloHeight = 0.075f;
-        public const float CoreHeight = 0.085f;
+        /// <summary>
+        /// Both layers sit above the highest ordinary board-piece plane (minions at 0.18). Sorting
+        /// order does not bypass the 3D depth buffer, so the former corner-mark heights let a token
+        /// completely hide an arrow whose silhouette it covered.
+        /// </summary>
+        public const float HaloHeight = 0.205f;
+        public const float CoreHeight = 0.215f;
 
         private MeshRenderer halo;
         private MeshRenderer core;

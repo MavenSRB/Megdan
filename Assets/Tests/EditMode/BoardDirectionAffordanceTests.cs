@@ -10,6 +10,7 @@ using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -234,6 +235,17 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(layer.sortingOrder, Is.GreaterThan(10),
                         "A direction answer must paint above the order-10 minion token that can " +
                         "legally occupy its space, rather than disappearing beneath that piece.");
+                    Assert.That(layer.transform.localPosition.y,
+                        Is.GreaterThan(StandardMinionView.DefaultVerticalOffset),
+                        "Sorting order alone does not bypass the 3D depth buffer; a fully covered " +
+                        "arrow such as Tali's southwest answer must stand above its token plane.");
+                    Assert.That(layer.sharedMaterial.renderQueue,
+                        Is.EqualTo(HexDirectionArrowTemplate.OverlayRenderQueue));
+                    Assert.That(layer.sharedMaterial.shader.name,
+                        Is.EqualTo("GuardsDigital/Board Always Visible Overlay"));
+                    Assert.That(layer.sharedMaterial.GetInt("_ZTest"), Is.EqualTo(
+                            (int)UnityEngine.Rendering.CompareFunction.Always),
+                        "An occupied direction must paint after the token depth at that space.");
                 }
 
                 var space = HexWorldLayout.ToWorld(arrow.Space, HexWorldLayout.DefaultOuterRadius);
