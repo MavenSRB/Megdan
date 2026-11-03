@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-157 Animate the approved three-hero initiative sequence
+
+User requested commitments/reveal, frog displacement, cat charge/attack, knight defense and subsequent movement on its own committed card. Delivered a private 44-second captioned concept animation using supplied artwork and verified prototype cards. Initiative 9/7/3; one-space enemy move; straight two-space charge and Attack 6; uncommitted Defense 6 spent to discard; Focus secondary Movement 2 into two clear grass hexes. Resolved commitments remain in the turn area; defense is a response. Acceptance: focused geometry/timeline checks, keyframe review and exact artifact metadata/decode checks. No runtime, rules, narration or publication changes.
+
+Historical evidence: immutable `work/W-157`; exact checks/results and limitations live in its commit body.
+
 ### [x] W-156 Three heroes with verified cards and supplied frog wizard
 
 Request: static scene before video, with wizard above and rules-faithful cards. User rejected the invented human wizard and supplied Veljko's frog artwork; the final v9 uses its AI-assisted background extraction on board and card, with original and provenance preserved privately. Cold Snap, Mad Dash, Focus and Challenge Accepted follow verified hero shards and the shot-plan roles. The still distinguishes three revealed commitments from the defense card remaining in hand and labels editorial opponent-hand visibility. Acceptance: source value/text review, valid hex staging, four grass variants, native card proportions and rendered visual inspection. No runtime, video or publication.
@@ -22,6 +28,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-157 | Animated private three-hero commitment, initiative, attack/defense and movement sequence. | `work/W-157` |
 | W-156 | Three-hero pre-resolution still with verified cards and Veljko's supplied frog wizard. | `work/W-156` |
 | W-155 | Illustrated native-aspect cards integrated into the grass-board still. | `work/W-155` |
 | W-154 | Preserved five supplied grass JPEGs privately and composed their four unique variants into the existing board still. Acceptance: matching source/copy hashes, duplicate detection, all four variants used and visual inspection of the resulting still; no video or runtime change. | `work/W-154` |
