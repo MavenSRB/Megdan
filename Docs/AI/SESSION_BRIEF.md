@@ -6,7 +6,7 @@ Last updated: 2026-11-03
 
 Read once at startup. This brief alone owns current authorization and next routing. [Workflow](ROADMAP.md) owns execution; [governance](DOCUMENTATION_GOVERNANCE.md) owns subject routing and preservation.
 
-Independent root: `C:/Projects/Megdan`. [Smart Start](Project/SMART_START.md) and [creative presentation](Project/MEGDAN_CREATIVE.md) own grant and visual continuity. Biome variations are still missing; show stills before videos. No implementation authorized.
+Independent root: `C:/Projects/Megdan`. [Smart Start](Project/SMART_START.md) and [creative presentation](Project/MEGDAN_CREATIVE.md) own grant and visual continuity. Four grass variations are preserved and composed into a still; other biome variations remain missing. Show stills before videos. No game implementation authorized.
 
 ## Current implementation
 
@@ -18,7 +18,7 @@ Current private Windows package: **W152 Direction Arrows**, `Builds/Playtest-W15
 
 Current Mac package remains `Builds/Playtest-W075-large-lobby-fix-mac.zip`, universal Intel/Apple Silicon, both PvP and PvE; SHA-256 `e71e239f890d34c7a957e41584f588126f4f0825fb1f696fd78fddda9a4fed3b`. It does not include W-076 or W-078 and does not share W079's build identity, so it cannot join W079 Windows sessions. Build/bundle/archive checks passed on Windows; native Mac launch, rendering and cross-platform networking remain unverified. See [build record](Project/BUILDS.md).
 
-- Last completed work: **W-153**.
+- Last completed work: **W-154**.
 - Active authorized work: **none**.
 - Next proposed work: **None**.
 

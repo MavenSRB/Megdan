@@ -14,10 +14,11 @@ Latest approved card direction: native 372:520 aspect, title/tier above, initiat
 
 Discussed 3D direction: thick hex tiles, angled camera, upright illustrated characters with shadows. Full 3D heroes need models and rigs; none have been created in this work.
 
-Latest requested change: multiple variants within each biome. Only one 390x93 screenshot with one water/sand/lava/grass tile each was supplied. Actual variation files/folder are still missing. Next step is to locate or receive them and show a still preview. Do not fabricate variants as Veljko's work.
+W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals also retained in Downloads); two are byte-identical, leaving four distinct grass variants. All four are composed into the existing board still using preview-grass.py, adapting flat-top source hexes to the existing point-top lattice while retaining upright decorations. Water/sand/lava still use the earlier 390x93 source screenshot; their variation files remain missing. Await feedback on the still before any video work. No game-rule or runtime changes.
 
 ## Latest artifacts
 
+- [Grass variations still](../../../Creative/gameplay-mockup-cutout/grass-variants-v6.png)
 - [Card concepts](../../../Creative/gameplay-mockup-cutout/card-faces-v5.png)
 - [Attack and defense clip](../../../Creative/gameplay-mockup-cutout/Megdan-attack-and-defense-v4.mp4)
 - [Side cards](../../../Creative/gameplay-mockup-cutout/side-hands-v3.png)

@@ -1,9 +1,16 @@
 # Work completion index
 
+### [x] W-154 Grass variations in the board still
+
+Historical evidence: immutable `work/W-154`; exact checks and limitations live in its commit body.
+
+User requested local preservation of five supplied JPEGs and a first still using four grass variants. Copies are in Art/Inputs/Grass; exact duplicate retained, four unique images used in Creative/gameplay-mockup-cutout/grass-variants-v6.png. Existing characters, side hands and other biomes remain. Accepted through copy-hash checks, four-variant composition and visual review. Private creative files remain excluded from Git. Evidence: `work/W-154` commit body.
+
 Return to [archive index](README.md). Post-phase work records live here after completion; current plans live in [current work](../Roadmap/CURRENT_WORK.md). Preserve request, acceptance and outcome once here; exact validation evidence lives in the linked commit body. Tags are immutable local work/ID tags.
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-154 | Preserved five supplied grass JPEGs privately and composed their four unique variants into the existing board still. Acceptance: matching source/copy hashes, duplicate detection, all four variants used and visual inspection of the resulting still; no video or runtime change. | `work/W-154` |
 | W-153 | Separated complete Megdan source, grant materials, creative assets and latest packages. | `work/W-153` |
 | W-152 | Produced the current private Windows package from exact W151 source with the corrected always-visible six-arrow direction overlay. Fresh player, built-board, PvP host/two-joiner, PvE one/two/three-player, shader-inclusion, manifest/archive and extracted launch checks pass. [Scope and acceptance](#x-w-152-package-the-direction-arrow-repair-for-windows). | `work/W-152` |
 | W-151 | Closed W148's depth gap: every shared direction arrow now uses a Resources-backed always-visible overlay below card pips and sits above ordinary piece planes, so Tali's southwest/8-o'clock answer remains visible over the rabbit token. [Scope and acceptance](#x-w-151-keep-every-direction-arrow-visible-over-occupied-spaces). | `work/W-151` |
