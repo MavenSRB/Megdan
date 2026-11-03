@@ -18,6 +18,7 @@ W-154: Five supplied WhatsApp JPEGs are preserved in Art/Inputs/Grass (originals
 
 ## Latest artifacts
 
+- [Board with illustrated cards](../../../Creative/gameplay-mockup-cutout/board-cards-v7.png) — W-155 replaces generic side buttons with the approved native-aspect Quick Cut / Steel Guard concept faces. Lower hand silhouettes are layout placeholders; stats/effects remain undefined. Renderer: preview-real-cards.py. Await user feedback; not integrated into video.
 - [Grass variations still](../../../Creative/gameplay-mockup-cutout/grass-variants-v6.png)
 - [Card concepts](../../../Creative/gameplay-mockup-cutout/card-faces-v5.png)
 - [Attack and defense clip](../../../Creative/gameplay-mockup-cutout/Megdan-attack-and-defense-v4.mp4)

@@ -2,4 +2,4 @@
 
 Return to [workflow](../ROADMAP.md). Authorization lives in the [brief](../SESSION_BRIEF.md).
 
-No current approved work. W-154 preserved the supplied grass art and delivered a still using all four unique variants. Await user feedback on the preview.
+No current approved work. W-155 replaced the generic side action buttons with illustrated native-aspect card faces in a new still. Await visual feedback.

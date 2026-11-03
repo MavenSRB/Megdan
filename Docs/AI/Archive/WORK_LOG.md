@@ -1,5 +1,11 @@
 # Work completion index
 
+### [x] W-155 Illustrated cards beside the board
+
+User requested new cards resembling the real game after approving the grass preview. Reused the approved original-art card builder at native 372:520 aspect with title/tier, left stat ribbon and action/effect panel. The new board-cards-v7.png presents Quick Cut and Steel Guard alongside the preserved grass board; secondary hand silhouettes are explicitly layout placeholders. Values/effects remain undefined. Acceptance: aspect checks, successful rendering and visual review for readable faces and unobscured board. No runtime or video changes.
+
+Historical evidence: immutable `work/W-155`; exact checks and limitations live in its commit body.
+
 ### [x] W-154 Grass variations in the board still
 
 Historical evidence: immutable `work/W-154`; exact checks and limitations live in its commit body.
@@ -10,6 +16,7 @@ Return to [archive index](README.md). Post-phase work records live here after co
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| W-155 | Illustrated native-aspect cards integrated into the grass-board still. | `work/W-155` |
 | W-154 | Preserved five supplied grass JPEGs privately and composed their four unique variants into the existing board still. Acceptance: matching source/copy hashes, duplicate detection, all four variants used and visual inspection of the resulting still; no video or runtime change. | `work/W-154` |
 | W-153 | Separated complete Megdan source, grant materials, creative assets and latest packages. | `work/W-153` |
 | W-152 | Produced the current private Windows package from exact W151 source with the corrected always-visible six-arrow direction overlay. Fresh player, built-board, PvP host/two-joiner, PvE one/two/three-player, shader-inclusion, manifest/archive and extracted launch checks pass. [Scope and acceptance](#x-w-152-package-the-direction-arrow-repair-for-windows). | `work/W-152` |
